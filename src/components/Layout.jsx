@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, Map, Plus, User, Wallet } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import SideMenu from '@/components/SideMenu';
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד' },
@@ -14,13 +14,16 @@ export default function Layout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Page content */}
-      <div className="pb-24">
+    <div style={{ minHeight: '100vh', background: '#fafafa' }}>
+      {/* Side menu */}
+      <SideMenu />
+
+      {/* Page content with bottom padding so nav doesn't cover content */}
+      <div style={{ paddingBottom: 80 }}>
         <Outlet />
       </div>
 
-      {/* Bottom Nav — fixed to viewport bottom, full width */}
+      {/* Bottom Nav */}
       <div
         style={{
           position: 'fixed',
@@ -29,38 +32,68 @@ export default function Layout() {
           right: 0,
           zIndex: 9999,
           background: 'white',
-          borderTop: '1px solid #f0f0f0',
-          boxShadow: '0 -2px 16px rgba(0,0,0,0.07)',
+          borderTop: '1px solid #efefef',
+          boxShadow: '0 -2px 16px rgba(0,0,0,0.06)',
         }}
       >
-        <div className="flex items-end justify-around px-4 py-2">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-around',
+            padding: '8px 16px 12px',
+          }}
+        >
           {navItems.map(({ to, icon: Icon, label, primary }) => {
             const active = location.pathname === to;
+
             if (primary) {
               return (
-                <Link key={to} to={to} className="flex flex-col items-center -mt-5">
+                <Link
+                  key={to}
+                  to={to}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginTop: -20,
+                    textDecoration: 'none',
+                  }}
+                >
                   <div
                     style={{
-                      width: 56,
-                      height: 56,
+                      width: 54,
+                      height: 54,
                       borderRadius: '50%',
                       background: 'black',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
                     }}
                   >
-                    <Icon size={24} color="white" />
+                    <Icon size={22} color="white" />
                   </div>
                   <span style={{ fontSize: 10, color: '#888', marginTop: 4, fontWeight: 500 }}>{label}</span>
                 </Link>
               );
             }
+
             return (
-              <Link key={to} to={to} className="flex flex-col items-center gap-1 px-3 py-1">
-                <Icon size={20} color={active ? '#000' : '#aaa'} />
-                <span style={{ fontSize: 10, color: active ? '#000' : '#aaa', fontWeight: active ? 700 : 500 }}>
+              <Link
+                key={to}
+                to={to}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
+                  padding: '4px 12px',
+                  textDecoration: 'none',
+                }}
+              >
+                <Icon size={20} color={active ? '#000' : '#bbb'} />
+                <span style={{ fontSize: 10, color: active ? '#000' : '#bbb', fontWeight: active ? 700 : 500 }}>
                   {label}
                 </span>
               </Link>
