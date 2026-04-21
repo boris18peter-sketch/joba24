@@ -1,0 +1,42 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "admin"
+      ],
+      "default": "user"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "default": 0
+    },
+    "rating_count": {
+      "type": "number",
+      "default": 0
+    },
+    "completed_tasks": {
+      "type": "number",
+      "default": 0
+    },
+    "wallet_balance": {
+      "type": "number",
+      "default": 0
+    },
+    "bio": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    }
+  }
+}

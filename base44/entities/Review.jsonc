@@ -1,0 +1,34 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "reviewer_id": {
+      "type": "string"
+    },
+    "reviewee_id": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "client",
+        "worker"
+      ]
+    }
+  },
+  "required": [
+    "task_id",
+    "reviewer_id",
+    "reviewee_id",
+    "rating"
+  ]
+}

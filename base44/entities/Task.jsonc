@@ -1,0 +1,101 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "location_name": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "estimated_time": {
+      "type": "string",
+      "enum": [
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "custom"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "OPEN",
+        "TAKEN",
+        "COMPLETED",
+        "CANCELLED"
+      ],
+      "default": "OPEN"
+    },
+    "client_id": {
+      "type": "string"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "client_rating": {
+      "type": "number"
+    },
+    "worker_id": {
+      "type": "string"
+    },
+    "worker_name": {
+      "type": "string"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "properties": {
+        "vehicle": {
+          "type": "boolean"
+        },
+        "two_people": {
+          "type": "boolean"
+        },
+        "experience": {
+          "type": "boolean"
+        }
+      }
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "moving",
+        "shopping",
+        "repairs",
+        "cleaning",
+        "other"
+      ]
+    },
+    "worker_confirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "client_confirmed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "price"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "task_title": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "earning",
+        "payment",
+        "withdrawal"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed"
+      ]
+    }
+  },
+  "required": [
+    "user_id",
+    "amount",
+    "type"
+  ]
+}
