@@ -188,7 +188,7 @@ export default function CreateTask() {
         <Button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full h-14 rounded-2xl text-base font-semibold shadow-lg shadow-primary/30"
+          className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡ פרסם משימה'}
         </Button>

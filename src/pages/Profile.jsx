@@ -41,13 +41,13 @@ export default function Profile() {
   return (
     <div className="min-h-screen" dir="rtl">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground px-4 pt-14 pb-8">
+      <div className="bg-black text-white px-4 pt-14 pb-8">
         <div className="flex items-start justify-between mb-4">
           <h1 className="text-lg font-bold opacity-80">הפרופיל שלי</h1>
           <Button
             variant="ghost"
             size="icon"
-            className="text-primary-foreground hover:bg-white/10 rounded-xl"
+            className="text-white hover:bg-white/10 rounded-xl"
             onClick={() => base44.auth.logout()}
           >
             <LogOut className="w-5 h-5" />
@@ -56,7 +56,7 @@ export default function Profile() {
 
         {/* Avatar */}
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold">
+          <div className="w-20 h-20 rounded-2xl bg-white/15 flex items-center justify-center text-3xl font-black">
             {me?.full_name?.[0]?.toUpperCase() || '?'}
           </div>
           <div>

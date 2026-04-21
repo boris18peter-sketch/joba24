@@ -89,8 +89,8 @@ export default function Chat() {
                 )}
                 <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                   isMe
-                    ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                    : 'bg-card border border-border text-foreground rounded-tl-sm'
+                    ? 'bg-black text-white rounded-tr-sm'
+                    : 'bg-white border border-gray-100 text-black rounded-tl-sm shadow-sm'
                 }`}>
                   {msg.content}
                 </div>
@@ -107,7 +107,7 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg bg-card border-t border-border px-4 py-3 flex gap-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-2 max-w-lg mx-auto">
         <Input
           placeholder="כתוב הודעה..."
           value={input}

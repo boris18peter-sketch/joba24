@@ -78,7 +78,7 @@ export default function TaskDetail() {
 
       <div className="px-4 py-5 space-y-5">
         {/* Price Hero */}
-        <div className="bg-primary rounded-2xl p-5 text-primary-foreground">
+        <div className="bg-black rounded-2xl p-5 text-white">
           <div className="text-sm opacity-80 mb-1">תשלום</div>
           <div className="text-4xl font-bold">₪{task.price}</div>
           {task.estimated_time && (
@@ -172,7 +172,7 @@ export default function TaskDetail() {
             <Button
               onClick={() => takeMutation.mutate()}
               disabled={takeMutation.isPending}
-              className="w-full h-14 rounded-2xl text-base font-semibold shadow-lg shadow-primary/30"
+              className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
             >
               {takeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡ קח את המשימה'}
             </Button>

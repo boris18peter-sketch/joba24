@@ -25,7 +25,7 @@ export default function Wallet() {
   return (
     <div className="min-h-screen" dir="rtl">
       {/* Balance Hero */}
-      <div className="bg-primary text-primary-foreground px-4 pt-14 pb-8">
+      <div className="bg-black text-white px-4 pt-14 pb-8">
         <div className="flex items-center gap-2 mb-6 opacity-80">
           <WalletIcon className="w-5 h-5" />
           <h1 className="text-lg font-bold">הארנק שלי</h1>

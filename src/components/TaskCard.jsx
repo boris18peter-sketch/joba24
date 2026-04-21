@@ -1,15 +1,6 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Star, ChevronLeft } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { MapPin, Clock, Star } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-
-const categoryColors = {
-  moving: 'bg-orange-100 text-orange-700',
-  shopping: 'bg-green-100 text-green-700',
-  repairs: 'bg-blue-100 text-blue-700',
-  cleaning: 'bg-purple-100 text-purple-700',
-  other: 'bg-gray-100 text-gray-700',
-};
 
 const categoryLabels = {
   moving: '🚛 הובלה',
@@ -20,60 +11,64 @@ const categoryLabels = {
 };
 
 const statusConfig = {
-  OPEN: { label: 'פתוח', color: 'bg-green-100 text-green-700' },
-  TAKEN: { label: 'נלקח', color: 'bg-blue-100 text-blue-700' },
-  COMPLETED: { label: 'הושלם', color: 'bg-gray-100 text-gray-700' },
-  CANCELLED: { label: 'בוטל', color: 'bg-red-100 text-red-700' },
+  OPEN: { label: 'פתוח', dot: 'bg-green-500' },
+  TAKEN: { label: 'נלקח', dot: 'bg-blue-500' },
+  COMPLETED: { label: 'הושלם', dot: 'bg-gray-400' },
+  CANCELLED: { label: 'בוטל', dot: 'bg-red-400' },
 };
 
 export default function TaskCard({ task }) {
   const status = statusConfig[task.status] || statusConfig.OPEN;
-  const catColor = categoryColors[task.category] || categoryColors.other;
   const catLabel = categoryLabels[task.category] || categoryLabels.other;
 
   return (
-    <Link to={`/task/${task.id}`} className="block animate-fade-in">
-      <div className="bg-card rounded-2xl border border-border p-4 hover:shadow-md hover:border-primary/30 transition-all duration-200 active:scale-[0.99]">
-        <div className="flex items-start justify-between gap-3">
+    <Link to={`/task/${task.id}`} className="block">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 active:scale-[0.985] transition-transform shadow-sm hover:shadow-md hover:border-gray-200 transition-all">
+        {/* Top row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${catColor}`}>{catLabel}</span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status.color}`}>{status.label}</span>
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="text-xs text-gray-500 font-medium">{catLabel}</span>
+              <span className="text-gray-300">·</span>
+              <span className="flex items-center gap-1 text-xs text-gray-500">
+                <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                {status.label}
+              </span>
             </div>
-            <h3 className="font-semibold text-foreground text-base leading-tight truncate">{task.title}</h3>
-            {task.description && (
-              <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{task.description}</p>
+            <h3 className="font-bold text-black text-[15px] leading-tight">{task.title}</h3>
+          </div>
+          <div className="text-xl font-black text-black shrink-0">₪{task.price}</div>
+        </div>
+
+        {/* Description */}
+        {task.description && (
+          <p className="text-gray-500 text-sm mb-3 line-clamp-1">{task.description}</p>
+        )}
+
+        {/* Bottom row */}
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <div className="flex items-center gap-3">
+            {task.location_name && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {task.location_name}
+              </span>
             )}
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
-              {task.location_name && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  {task.location_name}
-                </span>
-              )}
-              {task.estimated_time && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {task.estimated_time}
-                </span>
-              )}
-              {task.created_date && (
-                <span>{formatDistanceToNow(new Date(task.created_date), { addSuffix: true })}</span>
-              )}
-            </div>
-            {task.client_name && (
-              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                <span>{task.client_rating?.toFixed(1) || '—'}</span>
-                <span>·</span>
-                <span>{task.client_name}</span>
-              </div>
+            {task.estimated_time && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {task.estimated_time}
+              </span>
             )}
           </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <div className="text-xl font-bold text-primary">₪{task.price}</div>
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-          </div>
+          {task.client_name && (
+            <span className="flex items-center gap-1">
+              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              {task.client_rating?.toFixed(1) || '—'}
+              <span className="text-gray-300 mx-0.5">·</span>
+              {task.client_name}
+            </span>
+          )}
         </div>
       </div>
     </Link>
