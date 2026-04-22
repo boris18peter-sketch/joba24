@@ -14,6 +14,8 @@ import Chat from '@/pages/Chat';
 import MapView from '@/pages/MapView';
 import Profile from '@/pages/Profile';
 import Wallet from '@/pages/Wallet';
+import EditTask from '@/pages/EditTask';
+import Leaderboard from '@/pages/Leaderboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +46,8 @@ const AuthenticatedApp = () => {
         <Route path="/wallet" element={<Wallet />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/task/:id" element={<TaskDetail />} />
+        <Route path="/edit-task/:id" element={<EditTask />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Route>
       <Route path="/chat/:taskId" element={<Chat />} />
       <Route path="*" element={<PageNotFound />} />

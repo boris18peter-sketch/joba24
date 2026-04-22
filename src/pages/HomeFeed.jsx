@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Search, SlidersHorizontal } from 'lucide-react';
@@ -6,11 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import TaskCard from '@/components/TaskCard';
 import FilterSheet from '@/components/FilterSheet';
+import InstantMatchPopup from '@/components/InstantMatchPopup';
 
 export default function HomeFeed() {
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ maxPrice: '', time: '' });
+  const [filters, setFilters] = useState({ maxPrice: '', time: '', city: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
@@ -18,13 +22,45 @@ export default function HomeFeed() {
     refetchInterval: 15000,
   });
 
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      });
+    }
+  }, []);
+
+  // Auto price bump: if task open > 3 minutes, bump price by 10%
+  useEffect(() => {
+    tasks.forEach(task => {
+      if (task.status !== 'OPEN') return;
+      const age = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
+      if (age > 3 && !task._bumped) {
+        base44.entities.Task.update(task.id, { price: Math.round(task.price * 1.1), _bumped: true });
+      }
+    });
+  }, [tasks]);
+
+  function getDistance(lat1, lng1, lat2, lng2) {
+    if (!lat1 || !lng1 || !lat2 || !lng2) return null;
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lng2 - lng1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
   const filtered = tasks.filter(t => {
     if (t.status === 'CANCELLED') return false;
     const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
     const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
     const matchTime = !filters.time || t.estimated_time === filters.time;
-    return matchSearch && matchPrice && matchTime;
-  });
+    const matchCity = !filters.city || t.city?.includes(filters.city) || t.location_name?.includes(filters.city);
+    return matchSearch && matchPrice && matchTime && matchCity;
+  }).map(t => ({
+    ...t,
+    _distKm: userLocation ? getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng) : null,
+  }));
 
   const openTasks = filtered.filter(t => t.status === 'OPEN');
   const otherTasks = filtered.filter(t => t.status !== 'OPEN');
@@ -34,7 +70,9 @@ export default function HomeFeed() {
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
         <div className="px-4 pt-14 pb-4">
-          <h1 className="text-2xl font-black text-black tracking-tight mb-0.5">QuickTasks</h1>
+          <div className="flex items-center justify-between mb-0.5">
+            <h1 className="text-2xl font-black text-black tracking-tight">QuickTasks</h1>
+          </div>
           <p className="text-sm text-gray-400 mb-4">{openTasks.length} משימות פתוחות</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -49,12 +87,19 @@ export default function HomeFeed() {
             <Button
               variant="outline"
               size="icon"
-              className="rounded-xl h-11 w-11 border-gray-200 bg-white shrink-0"
+              className={`rounded-xl h-11 w-11 border-gray-200 shrink-0 ${filters.city || filters.maxPrice || filters.time ? 'bg-black text-white border-black' : 'bg-white'}`}
               onClick={() => setShowFilters(true)}
             >
               <SlidersHorizontal className="w-4 h-4" />
             </Button>
           </div>
+          {(filters.city || filters.maxPrice || filters.time) && (
+            <div className="flex gap-2 mt-2 flex-wrap">
+              {filters.city && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.city}</span>}
+              {filters.maxPrice && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">עד ₪{filters.maxPrice}</span>}
+              {filters.time && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.time}</span>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -91,6 +136,7 @@ export default function HomeFeed() {
       </div>
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
+      <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
     </div>
   );
 }

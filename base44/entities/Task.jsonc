@@ -11,7 +11,13 @@
     "price": {
       "type": "number"
     },
+    "suggested_price": {
+      "type": "number"
+    },
     "location_name": {
+      "type": "string"
+    },
+    "city": {
       "type": "string"
     },
     "lat": {
@@ -29,6 +35,13 @@
         "2h",
         "custom"
       ]
+    },
+    "estimated_travel_minutes": {
+      "type": "number"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
     },
     "status": {
       "type": "string",

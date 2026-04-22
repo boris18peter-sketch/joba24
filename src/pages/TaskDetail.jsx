@@ -3,10 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
+import TaskExpiry from '@/components/TaskExpiry';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: 'text-green-700 bg-green-100' },
@@ -193,6 +194,15 @@ export default function TaskDetail() {
               <Button variant="outline" className="w-full h-12 rounded-2xl">
                 <MessageCircle className="w-4 h-4 ml-2" />
                 פתח צ'אט
+              </Button>
+            </Link>
+          )}
+
+          {isOwner && task.status === 'OPEN' && (
+            <Link to={`/edit-task/${id}`}>
+              <Button variant="outline" className="w-full h-12 rounded-2xl border-gray-300 font-semibold">
+                <Pencil className="w-4 h-4 ml-2" />
+                עריכת משימה
               </Button>
             </Link>
           )}
