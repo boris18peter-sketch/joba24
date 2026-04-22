@@ -11,6 +11,16 @@
     "price": {
       "type": "number"
     },
+    "base_price": {
+      "type": "number"
+    },
+    "max_price": {
+      "type": "number"
+    },
+    "auto_bump_enabled": {
+      "type": "boolean",
+      "default": false
+    },
     "suggested_price": {
       "type": "number"
     },

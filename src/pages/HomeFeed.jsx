@@ -30,13 +30,25 @@ export default function HomeFeed() {
     }
   }, []);
 
-  // Auto price bump: if task open > 3 minutes, bump price by 10%
+  // Auto price bump: every 5 minutes, step price toward max_price over ~1 hour (12 steps)
   useEffect(() => {
+    if (!tasks.length) return;
     tasks.forEach(task => {
       if (task.status !== 'OPEN') return;
-      const age = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
-      if (age > 3 && !task._bumped) {
-        base44.entities.Task.update(task.id, { price: Math.round(task.price * 1.1), _bumped: true });
+      if (!task.auto_bump_enabled || !task.max_price) return;
+      if (task.price >= task.max_price) return;
+
+      const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
+      if (ageMinutes < 5) return; // wait at least 5 min before first bump
+
+      // How many 5-min intervals have passed (max 12 = 1 hour)
+      const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
+      const base = task.base_price || task.price;
+      const step = (task.max_price - base) / 12;
+      const expectedPrice = Math.min(Math.round(base + step * intervals), task.max_price);
+
+      if (expectedPrice > task.price) {
+        base44.entities.Task.update(task.id, { price: expectedPrice });
       }
     });
   }, [tasks]);

@@ -26,6 +26,8 @@ export default function CreateTask() {
     title: '',
     description: '',
     price: '',
+    max_price: '',
+    auto_bump_enabled: false,
     location_name: '',
     city: '',
     estimated_time: '1h',
@@ -45,6 +47,9 @@ export default function CreateTask() {
     await base44.entities.Task.create({
       ...form,
       price: Number(form.price),
+      base_price: Number(form.price),
+      max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
+      auto_bump_enabled: form.auto_bump_enabled,
       status: 'OPEN',
       client_id: me?.id,
       client_name: me?.full_name,
@@ -114,6 +119,48 @@ export default function CreateTask() {
             estimatedTime={form.estimated_time}
             onAccept={p => set('price', String(p))}
           />
+        </div>
+
+        {/* Auto Price Bump */}
+        <div>
+          <button
+            type="button"
+            onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
+            className={`w-full flex items-center gap-3 p-4 rounded-xl text-right transition-all border ${
+              form.auto_bump_enabled ? 'bg-amber-50 border-amber-300' : 'bg-secondary border-transparent'
+            }`}
+          >
+            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
+              form.auto_bump_enabled ? 'bg-amber-500 border-amber-500' : 'border-gray-300'
+            }`}>
+              {form.auto_bump_enabled && <span className="text-white text-xs">✓</span>}
+            </div>
+            <div className="text-right flex-1">
+              <div className="text-sm font-semibold">⚡ העלאת מחיר אוטומטית</div>
+              <div className="text-xs text-gray-500 mt-0.5">אם המשימה לא נלקחת, המחיר יעלה כל 5 דקות עד המקסימום</div>
+            </div>
+          </button>
+
+          {form.auto_bump_enabled && (
+            <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+              <Label className="text-sm font-semibold block text-amber-800">מחיר מקסימלי (₪)</Label>
+              <Input
+                type="number"
+                placeholder={`לדוגמה: ${form.price ? Math.round(Number(form.price) * 1.25) : 250}`}
+                value={form.max_price}
+                onChange={e => set('max_price', e.target.value)}
+                className="bg-white border-amber-200 rounded-xl h-11 text-base font-bold"
+              />
+              {form.price && form.max_price && Number(form.max_price) > Number(form.price) && (
+                <p className="text-xs text-amber-700">
+                  המחיר יעלה מ-₪{form.price} עד ₪{form.max_price} תוך כשעה (כל 5 דקות +₪{Math.round((Number(form.max_price) - Number(form.price)) / 12)})
+                </p>
+              )}
+              {form.price && form.max_price && Number(form.max_price) <= Number(form.price) && (
+                <p className="text-xs text-red-500">המחיר המקסימלי חייב להיות גבוה מהמחיר ההתחלתי</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Location */}
