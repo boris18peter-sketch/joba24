@@ -67,7 +67,7 @@ export default function TaskCard({ task }) {
                 {task.estimated_time}
               </span>
             )}
-            {dist !== null && (
+            {dist != null && !isNaN(dist) && (
               <span className="flex items-center gap-1 text-blue-500 font-semibold">
                 <Navigation className="w-3 h-3" />
                 {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
