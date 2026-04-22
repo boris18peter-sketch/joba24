@@ -63,6 +63,20 @@
       ],
       "default": "OPEN"
     },
+    "worker_status": {
+      "type": "string",
+      "enum": [
+        "on_the_way",
+        "arrived"
+      ],
+      "description": "Status of the worker after taking the task"
+    },
+    "worker_lat": {
+      "type": "number"
+    },
+    "worker_lng": {
+      "type": "number"
+    },
     "client_id": {
       "type": "string"
     },
