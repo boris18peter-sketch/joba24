@@ -71,6 +71,17 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Worker status badge */}
+        {me?.profession && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="flex items-center gap-1.5 text-xs bg-green-500/20 text-green-300 border border-green-500/30 px-2.5 py-1 rounded-full font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              עובד פעיל
+            </span>
+            <span className="text-xs opacity-60">{me.profession}</span>
+          </div>
+        )}
+
         {/* Certificates */}
         {me?.certificates?.length > 0 && (
           <div className="flex gap-2 flex-wrap mt-3">

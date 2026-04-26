@@ -33,6 +33,7 @@ export default function TaskDetail() {
   const [applyLoading, setApplyLoading] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [taskTaken, setTaskTaken] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task, isLoading } = useQuery({
@@ -116,6 +117,7 @@ export default function TaskDetail() {
     });
     setApplyLoading(false);
     setShowApplyForm(false);
+    setHasApplied(true);
     toast.success('הבקשה נשלחה לבעל המשימה!');
   };
 
@@ -341,15 +343,26 @@ export default function TaskDetail() {
             </Button>
           )}
 
+          {/* Applied pending status */}
+          {hasApplied && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+              <div className="text-2xl">⏳</div>
+              <div>
+                <div className="font-bold text-amber-800 text-sm">הבקשה נשלחה!</div>
+                <div className="text-xs text-amber-600 mt-0.5">ממתין לאישור בעל המשימה</div>
+              </div>
+            </div>
+          )}
+
           {/* Apply for manual */}
-          {canApplyManual && !showApplyForm && (
+          {canApplyManual && !showApplyForm && !hasApplied && (
             <Button onClick={() => setShowApplyForm(true)}
               className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
             >
               📩 שלח בקשה לביצוע
             </Button>
           )}
-          {canApplyManual && showApplyForm && (
+          {canApplyManual && showApplyForm && !hasApplied && (
             <div className="bg-gray-50 rounded-2xl p-4 space-y-3 border border-gray-200">
               <p className="text-sm font-semibold text-gray-700">הוסף הודעה לבעל המשימה (לא חובה)</p>
               <Input placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."

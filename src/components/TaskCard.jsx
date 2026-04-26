@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Star, Navigation, Sparkles } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { MapPin, Clock, Star, Navigation, Sparkles, Zap, Users } from 'lucide-react';
 import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
 
@@ -31,6 +30,15 @@ export default function TaskCard({ task }) {
                 <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                 {status.label}
               </span>
+              {task.approval_mode === 'instant' ? (
+                <span className="flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                  <Zap className="w-3 h-3" /> מיידי
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  <Users className="w-3 h-3" /> בקשה
+                </span>
+              )}
               {task.expires_at && (
                 <TaskExpiry expiresAt={task.expires_at} price={task.price} taskId={task.id} />
               )}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, BookmarkCheck } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import ImageUploader from '@/components/ImageUploader';
@@ -15,6 +15,7 @@ import { CATEGORIES } from '@/lib/categories';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 
 const EXPIRY_OPTIONS = [
+  { label: 'ללא תוקף', hours: null },
   { label: '6 שעות', hours: 6 },
   { label: 'יום', hours: 24 },
   { label: '2 ימים', hours: 48 },
@@ -35,7 +36,8 @@ export default function CreateTask() {
     estimated_time: '1h',
     category: 'other',
     approval_mode: 'instant',
-    expiry_hours: 24,
+    expiry_hours: null,
+    custom_time: '',
     is_story: false,
     images: [],
     requirements: { vehicle: false, two_people: false, experience: false },
@@ -47,10 +49,15 @@ export default function CreateTask() {
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
 
   const handleSubmit = async () => {
-    if (!form.title || !form.price) { toast.error('נא למלא כותרת ומחיר'); return; }
+    if (!form.title) { toast.error('חובה למלא כותרת'); return; }
+    if (!form.description) { toast.error('חובה למלא תיאור מפורט'); return; }
+    if (!form.price) { toast.error('חובה למלא מחיר'); return; }
+    if (!form.city) { toast.error('חובה למלא עיר'); return; }
+    if (!form.location_name) { toast.error('חובה למלא כתובת'); return; }
     setLoading(true);
-    const expires = new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString();
+    const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
+    const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
     await base44.entities.Task.create({
       title: form.title,
@@ -61,10 +68,10 @@ export default function CreateTask() {
       auto_bump_enabled: form.auto_bump_enabled,
       location_name: form.location_name,
       city: form.city,
-      estimated_time: form.estimated_time,
+      estimated_time: estimatedTime,
       category: form.category,
       approval_mode: form.approval_mode,
-      expiry_duration_hours: form.expiry_hours,
+      expiry_duration_hours: form.expiry_hours || null,
       expires_at: expires,
       is_story: form.is_story,
       story_expires_at: storyExpires,
@@ -90,6 +97,14 @@ export default function CreateTask() {
       </div>
 
       <div className="px-4 py-5 space-y-5 pb-12">
+        {/* Info banner */}
+        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+          <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-800 leading-relaxed">
+            <strong>חשוב!</strong> ככל שהמשימה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים. מלא את כל הפרטים.
+          </p>
+        </div>
+
         {/* Category */}
         <div>
           <Label className="text-sm font-semibold mb-2 block">קטגוריה</Label>
@@ -117,10 +132,10 @@ export default function CreateTask() {
 
         {/* Description */}
         <div>
-          <Label className="text-sm font-semibold mb-2 block">תיאור מפורט</Label>
-          <Textarea placeholder="תאר את המשימה, מה נדרש, איפה..."
+          <Label className="text-sm font-semibold mb-2 block">תיאור מפורט *</Label>
+          <Textarea placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description} onChange={e => set('description', e.target.value)}
-            className="bg-secondary border-0 rounded-xl resize-none" rows={3}
+            className="bg-secondary border-0 rounded-xl resize-none" rows={4}
           />
         </div>
 
@@ -190,14 +205,14 @@ export default function CreateTask() {
           <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> תוקף המשימה</Label>
           <div className="flex gap-2 flex-wrap">
             {EXPIRY_OPTIONS.map(opt => (
-              <button key={opt.hours} onClick={() => set('expiry_hours', opt.hours)}
+              <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
                   form.expiry_hours === opt.hours ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
                 }`}
               >{opt.label}</button>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-1.5">אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label || form.expiry_hours + ' שעות'} המשימה תסומן כפגת תוקף</p>
+          {form.expiry_hours && <p className="text-xs text-gray-400 mt-1.5">המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>}
         </div>
 
         {/* Story */}
@@ -239,9 +254,18 @@ export default function CreateTask() {
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
                   form.estimated_time === t ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
                 }`}
-              >{t}</button>
+              >{t === 'custom' ? '⌨️ מותאם' : t}</button>
             ))}
           </div>
+          {form.estimated_time === 'custom' && (
+            <input
+              type="text"
+              placeholder="לדוגמה: 3 שעות, יום שלם, שבוע..."
+              value={form.custom_time}
+              onChange={e => set('custom_time', e.target.value)}
+              className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary border-0 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          )}
         </div>
 
         {/* Requirements */}
@@ -262,6 +286,13 @@ export default function CreateTask() {
                 <span className="text-sm font-medium">{label}</span>
               </button>
             ))}
+            <input
+              type="text"
+              placeholder="דרישה נוספת... (לדוגמה: ניסיון עם מוצרי חשמל)"
+              value={form.requirements.custom || ''}
+              onChange={e => setReq('custom', e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-secondary border-0 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            />
           </div>
         </div>
 

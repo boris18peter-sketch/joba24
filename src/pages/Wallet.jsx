@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, Zap, CreditCard, CircleDollarSign } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, Zap, CreditCard, CircleDollarSign, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 
 const typeConfig = {
@@ -18,6 +18,7 @@ export default function Wallet() {
   });
 
   const balance = me?.wallet_balance || 0;
+  const escrow = me?.escrow_balance || 0;
   const totalEarned = transactions.filter(t => t.type === 'earning').reduce((s, t) => s + t.amount, 0);
   const totalSpent = transactions.filter(t => t.type === 'payment').reduce((s, t) => s + t.amount, 0);
   const taskCount = transactions.filter(t => t.type === 'earning').length;
@@ -50,6 +51,12 @@ export default function Wallet() {
           <div style={{ color:'white', fontSize:48, fontWeight:900, letterSpacing:-2 }}>
             ₪{balance.toLocaleString()}
           </div>
+          {escrow > 0 && (
+            <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, background:'rgba(255,255,255,0.1)', borderRadius:10, padding:'6px 12px', width:'fit-content' }}>
+              <Lock size={12} color="#fbbf24" />
+              <span style={{ color:'#fbbf24', fontSize:12, fontWeight:700 }}>₪{escrow.toLocaleString()} בהחזקת ביניים (Escrow)</span>
+            </div>
+          )}
         </div>
 
         {/* Chip design element */}
@@ -72,6 +79,19 @@ export default function Wallet() {
               <div style={{ color:'rgba(255,255,255,0.5)', fontSize:11 }}>{label}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Escrow explanation */}
+      <div style={{ padding:'16px 16px 0' }}>
+        <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:16, padding:'14px', display:'flex', gap:10, alignItems:'flex-start' }}>
+          <Lock size={16} color="#d97706" style={{ flexShrink:0, marginTop:1 }} />
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:'#92400e' }}>איך עובדים הכספים?</div>
+            <div style={{ fontSize:12, color:'#b45309', marginTop:3, lineHeight:1.5 }}>
+              לקוח משלם → כסף נכנס להחזקת ביניים (Escrow) → לאחר אישור ביצוע → כסף מועבר לעובד
+            </div>
+          </div>
         </div>
       </div>
 

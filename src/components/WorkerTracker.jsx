@@ -197,11 +197,16 @@ export default function WorkerTracker({ task, isOwner, isWorker, onUpdate }) {
 
   return (
     <div className="space-y-3">
-      {(isOwner || (!isOwner && !isWorker && task.status === 'OPEN')) && (
-        <ClientTracker task={task} />
-      )}
-      {isWorker && task.status === 'TAKEN' && (
+      {isOwner && <ClientTracker task={task} />}
+      {isWorker && (task.status === 'TAKEN' || task.status === 'OPEN') && (
         <WorkerActions task={task} onUpdate={onUpdate} />
+      )}
+      {isWorker && task.status === 'TAKEN' && task.worker_status === 'arrived' && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
+          <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+          <div className="font-bold text-green-800">הגעת למיקום!</div>
+          <div className="text-xs text-green-600 mt-1">סמן ביצוע לאחר סיום העבודה</div>
+        </div>
       )}
     </div>
   );

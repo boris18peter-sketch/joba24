@@ -12,7 +12,7 @@ import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 export default function HomeFeed() {
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({ maxPrice: '', time: '', city: '', category: '' });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
 
@@ -68,11 +68,13 @@ export default function HomeFeed() {
     .filter(t => {
       if (t.status === 'CANCELLED' || t.status === 'EXPIRED' || t.status === 'COMPLETED') return false;
       const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
+      const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
       const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
       const matchTime = !filters.time || t.estimated_time === filters.time;
       const matchCity = !filters.city || t.city?.includes(filters.city) || t.location_name?.includes(filters.city);
       const matchCat = !filters.category || t.category === filters.category;
-      return matchSearch && matchPrice && matchTime && matchCity && matchCat;
+      const matchApproval = !filters.approvalMode || t.approval_mode === filters.approvalMode;
+      return matchSearch && matchMinPrice && matchPrice && matchTime && matchCity && matchCat && matchApproval;
     })
     .map(t => {
       let relevance = 0;
@@ -91,7 +93,7 @@ export default function HomeFeed() {
     .sort((a, b) => b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date));
   const otherTasks = scored.filter(t => t.status !== 'OPEN');
 
-  const hasFilters = filters.city || filters.maxPrice || filters.time || filters.category;
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.category || filters.approvalMode;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -145,8 +147,9 @@ export default function HomeFeed() {
           {hasFilters && (
             <div className="flex gap-2 mt-2 flex-wrap">
               {filters.city && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.city}</span>}
-              {filters.maxPrice && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">עד ₪{filters.maxPrice}</span>}
+              {(filters.minPrice || filters.maxPrice) && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
               {filters.time && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.time}</span>}
+              {filters.approvalMode && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.approvalMode === 'instant' ? '⚡ מיידי' : '👥 בקשה'}</span>}
             </div>
           )}
         </div>

@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, Plus, X, Save, Loader2, Award, Star } from 'lucide-react';
+import { ArrowRight, Plus, X, Save, Loader2, Award, Star, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CATEGORIES } from '@/lib/categories';
 import { toast } from 'sonner';
+import TaskCard from '@/components/TaskCard';
 
 const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
 
@@ -16,6 +17,12 @@ export default function WorkerProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  const { data: workerTasks = [] } = useQuery({
+    queryKey: ['workerTasks', me?.id],
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 20),
+    enabled: !!me?.id,
+  });
 
   const [form, setForm] = useState(null);
   const [newCert, setNewCert] = useState('');
@@ -186,6 +193,19 @@ export default function WorkerProfile() {
         >
           {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5 ml-2" />שמור פרופיל</>}
         </Button>
+
+        {/* Work History */}
+        {workerTasks.length > 0 && (
+          <div>
+            <Label className="text-sm font-semibold mb-3 flex items-center gap-2 block">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              היסטוריית עבודות ({workerTasks.filter(t => t.status === 'COMPLETED').length} הושלמו)
+            </Label>
+            <div className="space-y-3">
+              {workerTasks.map(t => <TaskCard key={t.id} task={t} />)}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
