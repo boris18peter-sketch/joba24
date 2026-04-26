@@ -1,26 +1,20 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Star, Navigation } from 'lucide-react';
+import { MapPin, Clock, Star, Navigation, Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import TaskExpiry from '@/components/TaskExpiry';
-
-const categoryLabels = {
-  moving: '🚛 הובלה',
-  shopping: '🛒 קניות',
-  repairs: '🔧 תיקון',
-  cleaning: '🧹 ניקיון',
-  other: '📋 אחר',
-};
+import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', dot: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200' },
   TAKEN: { label: 'נלקח', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
   COMPLETED: { label: 'הושלם', dot: 'bg-gray-400', badge: 'bg-gray-50 text-gray-600 border-gray-200' },
   CANCELLED: { label: 'בוטל', dot: 'bg-red-400', badge: 'bg-red-50 text-red-700 border-red-200' },
+  EXPIRED: { label: 'פג תוקף', dot: 'bg-orange-400', badge: 'bg-orange-50 text-orange-700 border-orange-200' },
 };
 
 export default function TaskCard({ task }) {
   const status = statusConfig[task.status] || statusConfig.OPEN;
-  const catLabel = categoryLabels[task.category] || categoryLabels.other;
+  const catLabel = getCategoryLabel(task.category);
   const dist = task._distKm;
 
   return (
@@ -31,6 +25,7 @@ export default function TaskCard({ task }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className="text-xs text-gray-500 font-medium">{catLabel}</span>
+              {task.is_story && <Sparkles className="w-3 h-3 text-purple-500" />}
               <span className="text-gray-300">·</span>
               <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${status.badge}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />

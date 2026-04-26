@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MapPin } from 'lucide-react';
+import { CATEGORIES } from '@/lib/categories';
 
 const timeOptions = ['15m', '30m', '1h', '2h'];
 const cities = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה'];
@@ -13,7 +14,7 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
 
   const handleApply = () => { onApply(local); onClose(); };
   const handleReset = () => {
-    const reset = { maxPrice: '', time: '', city: '' };
+    const reset = { maxPrice: '', time: '', city: '', category: '' };
     setLocal(reset); onApply(reset); onClose();
   };
 
@@ -36,6 +37,18 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
                 <button key={t} onClick={() => setLocal(p => ({ ...p, time: p.time === t ? '' : t }))}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${local.time === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'}`}
                 >{t}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm font-medium mb-2 block">קטגוריה</Label>
+            <div className="flex gap-2 flex-wrap">
+              {CATEGORIES.map(c => (
+                <button key={c.value} onClick={() => setLocal(p => ({ ...p, category: p.category === c.value ? '' : c.value }))}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
+                    local.category === c.value ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
+                  }`}
+                >{c.label}</button>
               ))}
             </div>
           </div>

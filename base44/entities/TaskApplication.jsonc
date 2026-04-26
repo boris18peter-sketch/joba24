@@ -1,0 +1,40 @@
+{
+  "name": "TaskApplication",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "worker_id": {
+      "type": "string"
+    },
+    "worker_name": {
+      "type": "string"
+    },
+    "worker_score": {
+      "type": "number"
+    },
+    "worker_rating": {
+      "type": "number"
+    },
+    "worker_tasks_count": {
+      "type": "number"
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "task_id",
+    "worker_id"
+  ]
+}

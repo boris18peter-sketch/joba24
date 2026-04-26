@@ -5,38 +5,80 @@
     "role": {
       "type": "string",
       "enum": [
-        "user",
-        "admin"
+        "admin",
+        "user"
       ],
       "default": "user"
     },
-    "avatar_url": {
+    "bio": {
       "type": "string"
     },
+    "phone": {
+      "type": "string"
+    },
+    "profession": {
+      "type": "string"
+    },
+    "certificates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_categories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "plumbing",
+          "electricity",
+          "gardening",
+          "cleaning",
+          "moving",
+          "painting",
+          "carpentry",
+          "ac",
+          "locksmith",
+          "shopping",
+          "delivery",
+          "babysitting",
+          "tutoring",
+          "it_support",
+          "other"
+        ]
+      }
+    },
+    "preferred_cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "rating": {
-      "type": "number",
-      "default": 0
+      "type": "number"
     },
     "rating_count": {
-      "type": "number",
-      "default": 0
-    },
-    "completed_tasks": {
-      "type": "number",
-      "default": 0
+      "type": "number"
     },
     "wallet_balance": {
       "type": "number",
       "default": 0
     },
-    "bio": {
-      "type": "string"
+    "score_tasks": {
+      "type": "number",
+      "default": 0
     },
-    "lat": {
-      "type": "number"
+    "score_speed": {
+      "type": "number",
+      "default": 0
     },
-    "lng": {
-      "type": "number"
+    "score_quality": {
+      "type": "number",
+      "default": 0
+    },
+    "worker_score": {
+      "type": "number",
+      "default": 0
     }
   }
 }

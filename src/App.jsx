@@ -16,6 +16,7 @@ import Profile from '@/pages/Profile';
 import Wallet from '@/pages/Wallet';
 import EditTask from '@/pages/EditTask';
 import Leaderboard from '@/pages/Leaderboard';
+import WorkerProfile from '@/pages/WorkerProfile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,6 +49,7 @@ const AuthenticatedApp = () => {
         <Route path="/task/:id" element={<TaskDetail />} />
         <Route path="/edit-task/:id" element={<EditTask />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/worker-profile" element={<WorkerProfile />} />
       </Route>
       <Route path="/chat/:taskId" element={<Chat />} />
       <Route path="*" element={<PageNotFound />} />

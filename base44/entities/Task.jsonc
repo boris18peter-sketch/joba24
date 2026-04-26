@@ -46,12 +46,12 @@
         "custom"
       ]
     },
-    "estimated_travel_minutes": {
-      "type": "number"
-    },
     "expires_at": {
       "type": "string",
       "format": "date-time"
+    },
+    "expiry_duration_hours": {
+      "type": "number"
     },
     "status": {
       "type": "string",
@@ -59,17 +59,26 @@
         "OPEN",
         "TAKEN",
         "COMPLETED",
-        "CANCELLED"
+        "CANCELLED",
+        "EXPIRED"
       ],
       "default": "OPEN"
+    },
+    "approval_mode": {
+      "type": "string",
+      "enum": [
+        "instant",
+        "manual"
+      ],
+      "default": "instant",
+      "description": "instant = first worker takes it, manual = owner picks from applicants"
     },
     "worker_status": {
       "type": "string",
       "enum": [
         "on_the_way",
         "arrived"
-      ],
-      "description": "Status of the worker after taking the task"
+      ]
     },
     "worker_lat": {
       "type": "number"
@@ -92,11 +101,40 @@
     "worker_name": {
       "type": "string"
     },
+    "applicants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "worker_id": {
+            "type": "string"
+          },
+          "worker_name": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "applied_at": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "List of workers who applied (for manual approval mode)"
+    },
     "images": {
       "type": "array",
       "items": {
         "type": "string"
       }
+    },
+    "is_story": {
+      "type": "boolean",
+      "default": false
+    },
+    "story_expires_at": {
+      "type": "string",
+      "format": "date-time"
     },
     "requirements": {
       "type": "object",
@@ -115,10 +153,20 @@
     "category": {
       "type": "string",
       "enum": [
-        "moving",
-        "shopping",
-        "repairs",
+        "plumbing",
+        "electricity",
+        "gardening",
         "cleaning",
+        "moving",
+        "painting",
+        "carpentry",
+        "ac",
+        "locksmith",
+        "shopping",
+        "delivery",
+        "babysitting",
+        "tutoring",
+        "it_support",
         "other"
       ]
     },
