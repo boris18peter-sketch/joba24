@@ -198,7 +198,7 @@ export default function TaskDetail() {
             <div className="text-right">
               <div className="text-xs opacity-60 mb-1">{getCategoryLabel(task.category)}</div>
               {task.expires_at && task.status === 'OPEN' && (
-                <TaskExpiry expiresAt={task.expires_at} price={task.price} taskId={task.id} />
+                <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} />
               )}
               {task.approval_mode === 'manual' && (
                 <div className="mt-2 text-xs bg-white/20 px-2 py-1 rounded-lg">
@@ -221,7 +221,13 @@ export default function TaskDetail() {
 
         {/* Worker Tracker (GetTaxi-style) */}
         {(isOwner || isWorker) && task.status !== 'EXPIRED' && (
-          <WorkerTracker task={task} isOwner={isOwner} isWorker={isWorker} onUpdate={handleWorkerUpdate} />
+          <WorkerTracker
+            task={task}
+            isOwner={isOwner}
+            isWorker={isWorker}
+            onUpdate={handleWorkerUpdate}
+            onConfirmDone={() => setShowCompletion(true)}
+          />
         )}
 
         {/* Owner sees applicants for manual mode */}
@@ -291,6 +297,20 @@ export default function TaskDetail() {
                 <div className="text-xs text-muted-foreground">פורסם</div>
                 <div className="font-medium text-sm">{formatDistanceToNow(new Date(task.created_date), { addSuffix: true })}</div>
               </div>
+            </div>
+          )}
+          {task.expires_at && task.status === 'OPEN' && (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 text-orange-500" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs text-muted-foreground">המשימה פגה בתאריך</div>
+                <div className="font-medium text-sm text-orange-600">
+                  {new Date(task.expires_at).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+              <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} />
             </div>
           )}
           {task.client_name && (
@@ -380,11 +400,11 @@ export default function TaskDetail() {
             </div>
           )}
 
-          {(isOwner || isWorker) && task.status === 'TAKEN' && (
+          {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
             <Button onClick={() => setShowCompletion(true)}
               className="w-full h-14 rounded-2xl text-base font-semibold bg-green-600 hover:bg-green-700 shadow-lg"
             >
-              <CheckCircle2 className="w-5 h-5 ml-2" />סמן כהושלם
+              <CheckCircle2 className="w-5 h-5 ml-2" />סיימתי את המשימה! 🎉
             </Button>
           )}
 

@@ -47,9 +47,9 @@ export default function TaskCard({ task }) {
             </span>
           )}
 
-          {/* Expiry timer */}
+          {/* Expiry timer - only shows when < 6 hours left */}
           {task.expires_at && task.status === 'OPEN' && (
-            <TaskExpiry expiresAt={task.expires_at} price={task.price} taskId={task.id} />
+            <TaskExpiry expiresAt={task.expires_at} />
           )}
         </div>
 

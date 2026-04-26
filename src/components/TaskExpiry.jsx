@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Timer } from 'lucide-react';
 
-export default function TaskExpiry({ expiresAt, price, taskId, onPriceUpdate }) {
+// showOnlyWhenUrgent=true → only shows timer when < 6 hours left (for task cards)
+// showOnlyWhenUrgent=false → always shows (for task detail page)
+export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true }) {
   const [timeLeft, setTimeLeft] = useState('');
-  const [bumped, setBumped] = useState(false);
+  const [hoursLeft, setHoursLeft] = useState(null);
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -13,10 +15,12 @@ export default function TaskExpiry({ expiresAt, price, taskId, onPriceUpdate }) 
       const diff = exp - now;
       if (diff <= 0) {
         setTimeLeft('פג תוקף');
+        setHoursLeft(0);
         clearInterval(interval);
       } else {
         const hours = Math.floor(diff / 3600000);
         const mins = Math.floor((diff % 3600000) / 60000);
+        setHoursLeft(hours);
         if (hours > 0) {
           setTimeLeft(`${hours}ש' ${mins}ד'`);
         } else {
@@ -28,9 +32,13 @@ export default function TaskExpiry({ expiresAt, price, taskId, onPriceUpdate }) 
     return () => clearInterval(interval);
   }, [expiresAt]);
 
-  if (!expiresAt) return null;
+  if (!expiresAt || !timeLeft) return null;
 
-  const isUrgent = timeLeft && timeLeft !== 'פג תוקף' && parseInt(timeLeft) < 2;
+  // In card mode: only show when < 6 hours left
+  if (showOnlyWhenUrgent && hoursLeft !== null && hoursLeft >= 6) return null;
+
+  const isExpired = timeLeft === 'פג תוקף';
+  const isUrgent = !isExpired && hoursLeft !== null && hoursLeft < 2;
 
   return (
     <div
@@ -38,17 +46,17 @@ export default function TaskExpiry({ expiresAt, price, taskId, onPriceUpdate }) 
         display: 'inline-flex',
         alignItems: 'center',
         gap: 5,
-        background: isUrgent ? '#fef2f2' : '#f8fafc',
-        border: `1px solid ${isUrgent ? '#fca5a5' : '#e2e8f0'}`,
+        background: isUrgent ? '#fef2f2' : '#fff7ed',
+        border: `1px solid ${isUrgent ? '#fca5a5' : '#fed7aa'}`,
         borderRadius: 8,
         padding: '3px 8px',
         fontSize: 12,
         fontWeight: 600,
-        color: isUrgent ? '#dc2626' : '#64748b',
+        color: isUrgent ? '#dc2626' : '#ea580c',
       }}
     >
-      <Timer size={12} color={isUrgent ? '#dc2626' : '#94a3b8'} />
-      {timeLeft || '...'}
+      <Timer size={12} color={isUrgent ? '#dc2626' : '#f97316'} />
+      {timeLeft}
     </div>
   );
 }

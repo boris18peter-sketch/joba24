@@ -28,22 +28,29 @@ export default function CompletionModal({ task, me, onClose }) {
         comment,
         role: isWorker ? 'worker' : 'client',
       });
-      // Add transaction for worker
-      if (isWorker) {
-        await base44.entities.Transaction.create({
-          user_id: me.id,
-          task_id: task.id,
-          task_title: task.title,
-          amount: task.price,
-          type: 'earning',
-          status: 'completed',
-        });
-      }
+      // Release payment to worker (client confirms OR worker self-marks)
+      await base44.entities.Transaction.create({
+        user_id: task.worker_id,
+        task_id: task.id,
+        task_title: task.title,
+        amount: task.price,
+        type: 'earning',
+        status: 'completed',
+      });
+      // Deduct from client
+      await base44.entities.Transaction.create({
+        user_id: task.client_id,
+        task_id: task.id,
+        task_title: task.title,
+        amount: task.price,
+        type: 'payment',
+        status: 'completed',
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      toast.success('המשימה הושלמה! 🎉');
+      toast.success(isWorker ? 'מעולה! התשלום ממתין לאישור הלקוח 💪' : '🎉 אישרת את הביצוע! התשלום שוחרר לעובד');
       onClose();
       navigate('/');
     },
@@ -53,36 +60,42 @@ export default function CompletionModal({ task, me, onClose }) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="mx-4 rounded-2xl" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-center">🎉 השלמת משימה</DialogTitle>
+          <DialogTitle className="text-center text-xl">
+            {isWorker ? '💪 סיימת עבודה מעולה!' : '💸 אשר ושחרר תשלום'}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <p className="text-center text-muted-foreground text-sm">
-            {isWorker ? 'דרג את הלקוח' : 'דרג את המבצע'}
+          <div className="bg-gray-50 rounded-2xl p-3 text-center">
+            <div className="text-sm text-gray-500">{isWorker ? 'משימה' : 'תשלום לשחרור'}</div>
+            <div className="font-bold text-gray-900">{task.title}</div>
+            <div className="text-2xl font-black text-black mt-1">₪{task.price}</div>
+          </div>
+          <p className="text-center text-muted-foreground text-sm font-medium">
+            {isWorker ? `איך היה לעבוד עם ${task.client_name || 'הלקוח'}?` : `איך היה לעבוד עם ${task.worker_name || 'הביצועיסט'}?`}
           </p>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map(s => (
               <button key={s} onClick={() => setRating(s)}>
-                <Star
-                  className={`w-8 h-8 transition-colors ${
-                    s <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
-                  }`}
-                />
+                <Star className={`w-9 h-9 transition-colors ${s <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
               </button>
             ))}
           </div>
           <Textarea
-            placeholder="הוסף תגובה (אופציונלי)..."
+            placeholder="שתף חוויה (אופציונלי)..."
             value={comment}
             onChange={e => setComment(e.target.value)}
             className="bg-secondary border-0 rounded-xl resize-none"
-            rows={3}
+            rows={2}
           />
           <Button
             onClick={() => completeMutation.mutate()}
             disabled={completeMutation.isPending}
-            className="w-full h-12 rounded-2xl font-semibold"
+            className="w-full h-14 rounded-2xl font-bold text-base"
+            style={{ background: isWorker ? '#16a34a' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
           >
-            {completeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'אשר השלמה'}
+            {completeMutation.isPending
+              ? <Loader2 className="w-5 h-5 animate-spin" />
+              : isWorker ? '✅ סיימתי! שלח לאישור לקוח' : '💸 אשר ושחרר תשלום'}
           </Button>
         </div>
       </DialogContent>
