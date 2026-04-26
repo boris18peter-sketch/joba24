@@ -66,7 +66,7 @@ export default function HomeFeed() {
 
   const scored = tasks
     .filter(t => {
-      if (t.status === 'CANCELLED' || t.status === 'EXPIRED') return false;
+      if (t.status === 'CANCELLED' || t.status === 'EXPIRED' || t.status === 'COMPLETED') return false;
       const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
       const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
       const matchTime = !filters.time || t.estimated_time === filters.time;
@@ -96,12 +96,15 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
+      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(240,253,244,0.97)', borderColor: '#bbf7d0', backdropFilter: 'blur(8px)' }}>
         <div className="px-4 pt-14 pb-3">
           <div className="flex items-center justify-between mb-0.5">
-            <h1 className="text-2xl font-black text-black tracking-tight">QuickTasks</h1>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🌿</span>
+              <h1 className="text-2xl font-black tracking-tight" style={{ color: '#14532d' }}>EcoTask</h1>
+            </div>
           </div>
-          <p className="text-sm text-gray-400 mb-3">{openTasks.length} משימות פתוחות</p>
+          <p className="text-sm mb-3" style={{ color: '#4ade80' }}>🌱 {openTasks.length} משימות פתוחות</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -115,7 +118,8 @@ export default function HomeFeed() {
             <Button
               variant="outline"
               size="icon"
-              className={`rounded-xl h-11 w-11 border-gray-200 shrink-0 ${hasFilters ? 'bg-black text-white border-black' : 'bg-white'}`}
+              className={`rounded-xl h-11 w-11 shrink-0`}
+              style={hasFilters ? { background: '#16a34a', color: 'white', borderColor: '#16a34a' } : { borderColor: '#d1fae5' }}
               onClick={() => setShowFilters(true)}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -126,12 +130,14 @@ export default function HomeFeed() {
           <div className="flex gap-2 mt-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
             <button
               onClick={() => setFilters(f => ({ ...f, category: '' }))}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${!filters.category ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
+              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={!filters.category ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
             >הכל</button>
             {CATEGORIES.map(c => (
               <button key={c.value}
                 onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filters.category === c.value ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
+                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={filters.category === c.value ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
               >{c.label}</button>
             ))}
           </div>

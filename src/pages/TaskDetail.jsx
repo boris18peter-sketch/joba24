@@ -4,10 +4,11 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowRight, MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
+import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
 import WorkerTracker from '@/components/WorkerTracker';
 import TaskApplicants from '@/components/TaskApplicants';
@@ -30,6 +31,7 @@ export default function TaskDetail() {
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
+  const [confetti, setConfetti] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task, isLoading } = useQuery({
@@ -72,6 +74,8 @@ export default function TaskDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 100);
       toast.success('לקחת את המשימה! 🎉');
     },
   });
@@ -133,6 +137,7 @@ export default function TaskDetail() {
 
   return (
     <div className="min-h-screen" dir="rtl">
+      <TaskTakenConfetti trigger={confetti} />
       {/* Worker 3-min alert */}
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
@@ -235,10 +240,42 @@ export default function TaskDetail() {
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <MapPin className="w-4 h-4 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="text-xs text-muted-foreground">מיקום</div>
                 <div className="font-medium text-sm">{task.location_name}</div>
               </div>
+              {task.lat && task.lng && (
+                <div className="flex gap-1.5">
+                  <a
+                    href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
+                    style={{ background: '#1da462' }}
+                  >🚗 Waze</a>
+                  <a
+                    href={`https://maps.google.com/?q=${task.lat},${task.lng}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
+                    style={{ background: '#4285f4' }}
+                  >🗺️ GPS</a>
+                </div>
+              )}
+              {!task.lat && task.location_name && (
+                <div className="flex gap-1.5">
+                  <a
+                    href={`https://waze.com/ul?q=${encodeURIComponent(task.location_name)}&navigate=yes`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
+                    style={{ background: '#1da462' }}
+                  >🚗 Waze</a>
+                  <a
+                    href={`https://maps.google.com/?q=${encodeURIComponent(task.location_name)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
+                    style={{ background: '#4285f4' }}
+                  >🗺️ GPS</a>
+                </div>
+              )}
             </div>
           )}
           {task.created_date && (

@@ -19,7 +19,7 @@ export default function TaskCard({ task }) {
 
   return (
     <Link to={`/task/${task.id}`} className="block">
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 active:scale-[0.985] transition-all shadow-sm hover:shadow-md hover:border-gray-200">
+      <div className="bg-white rounded-2xl p-4 active:scale-[0.985] transition-all shadow-sm hover:shadow-md" style={{ border: '1px solid #e9f7ee' }}>
         {/* Top row */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">

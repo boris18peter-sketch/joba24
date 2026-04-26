@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Slider } from '@/components/ui/slider';
+import { Navigation } from 'lucide-react';
 
-// Fix leaflet default icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -17,18 +17,26 @@ L.Icon.Default.mergeOptions({
 
 const createPin = (color) => L.divIcon({
   className: '',
-  html: `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);transform:rotate(-45deg)"></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 28],
+  html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.25);transform:rotate(-45deg)"></div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
 });
 
 const pinColors = {
-  OPEN: '#22c55e',
+  OPEN: '#16a34a',
   TAKEN: '#3b82f6',
   COMPLETED: '#9ca3af',
 };
 
-const CENTER = [32.0853, 34.7818]; // Tel Aviv
+const CENTER = [32.0853, 34.7818];
+
+function openWaze(lat, lng) {
+  window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+}
+
+function openMaps(lat, lng) {
+  window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
+}
 
 export default function MapView() {
   const [radius, setRadius] = useState(10);
@@ -40,26 +48,29 @@ export default function MapView() {
   });
 
   const tasksWithCoords = tasks.filter(t =>
-    t.lat && t.lng && t.status !== 'CANCELLED'
+    t.lat && t.lng && t.status !== 'CANCELLED' && t.status !== 'EXPIRED' && t.status !== 'COMPLETED'
   );
 
-  const mockTasks = tasks.filter(t => !t.lat && !t.lng && t.status !== 'CANCELLED').map((t, i) => ({
-    ...t,
-    lat: CENTER[0] + (Math.random() - 0.5) * 0.05,
-    lng: CENTER[1] + (Math.random() - 0.5) * 0.05,
-  }));
+  const mockTasks = tasks
+    .filter(t => !t.lat && !t.lng && t.status !== 'CANCELLED' && t.status !== 'EXPIRED' && t.status !== 'COMPLETED')
+    .map((t, i) => ({
+      ...t,
+      lat: CENTER[0] + (Math.random() - 0.5) * 0.05,
+      lng: CENTER[1] + (Math.random() - 0.5) * 0.05,
+    }));
 
   const displayTasks = [...tasksWithCoords, ...mockTasks];
 
   return (
     <div className="h-screen flex flex-col" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-[1000] bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-12 pb-3">
-        <h1 className="text-lg font-bold mb-3">מפת משימות</h1>
-        <div className="bg-card border border-border rounded-2xl p-3 space-y-2">
+      <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-12 pb-3"
+        style={{ background: 'rgba(240,253,244,0.95)', borderColor: '#bbf7d0' }}>
+        <h1 className="text-lg font-bold mb-3 text-green-900">🗺️ מפת משימות</h1>
+        <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #d1fae5' }}>
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-muted-foreground">רדיוס חיפוש</span>
-            <span className="font-bold text-primary">{radius} ק"מ</span>
+            <span className="font-medium text-green-700">רדיוס חיפוש</span>
+            <span className="font-bold text-green-700">{radius} ק"מ</span>
           </div>
           <Slider
             value={[radius]}
@@ -68,11 +79,11 @@ export default function MapView() {
             className="w-full"
           />
         </div>
-        <div className="flex gap-3 mt-2 text-xs">
-          {[{ color: '#22c55e', label: 'פתוח' }, { color: '#3b82f6', label: 'נלקח' }, { color: '#9ca3af', label: 'הושלם' }].map(({ color, label }) => (
-            <div key={label} className="flex items-center gap-1">
+        <div className="flex gap-4 mt-2 text-xs">
+          {[{ color: '#16a34a', label: 'פתוח' }, { color: '#3b82f6', label: 'נלקח' }].map(({ color, label }) => (
+            <div key={label} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ background: color }} />
-              <span className="text-muted-foreground">{label}</span>
+              <span className="text-green-800 font-medium">{label}</span>
             </div>
           ))}
         </div>
@@ -80,12 +91,7 @@ export default function MapView() {
 
       {/* Map */}
       <div className="flex-1 relative">
-        <MapContainer
-          center={CENTER}
-          zoom={13}
-          className="w-full h-full"
-          style={{ zIndex: 1 }}
-        >
+        <MapContainer center={CENTER} zoom={13} className="w-full h-full" style={{ zIndex: 1 }}>
           <TileLayer
             attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -97,17 +103,37 @@ export default function MapView() {
               icon={createPin(pinColors[task.status] || pinColors.OPEN)}
             >
               <Popup className="rounded-xl">
-                <div className="p-1 min-w-[160px]" dir="rtl">
-                  <div className="font-bold text-sm mb-1">{task.title}</div>
-                  <div className="text-primary font-bold text-lg mb-2">₪{task.price}</div>
+                <div className="p-1 min-w-[180px]" dir="rtl">
+                  <div className="font-bold text-sm mb-1 text-green-900">{task.title}</div>
+                  <div className="font-black text-xl mb-1" style={{ color: '#16a34a' }}>₪{task.price}</div>
                   {task.location_name && (
-                    <div className="text-xs text-gray-500 mb-2">{task.location_name}</div>
+                    <div className="text-xs text-gray-500 mb-2">📍 {task.location_name}</div>
                   )}
+
+                  {/* Navigation buttons */}
+                  <div className="flex gap-1.5 mb-2">
+                    <button
+                      onClick={() => openWaze(task.lat, task.lng)}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-bold py-1.5 px-2 rounded-lg text-white"
+                      style={{ background: '#1da462' }}
+                    >
+                      🚗 Waze
+                    </button>
+                    <button
+                      onClick={() => openMaps(task.lat, task.lng)}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-bold py-1.5 px-2 rounded-lg text-white"
+                      style={{ background: '#4285f4' }}
+                    >
+                      🗺️ מפות
+                    </button>
+                  </div>
+
                   <Link
                     to={`/task/${task.id}`}
-                    className="block text-center bg-blue-600 text-white text-xs font-medium py-1.5 px-3 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="block text-center text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors"
+                    style={{ background: '#16a34a' }}
                   >
-                    צפה במשימה
+                    צפה במשימה ←
                   </Link>
                 </div>
               </Popup>

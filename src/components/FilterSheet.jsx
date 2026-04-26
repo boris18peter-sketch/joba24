@@ -71,7 +71,7 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
         </div>
         <div className="flex gap-2 pb-4">
           <Button variant="outline" onClick={handleReset} className="flex-1 rounded-xl">איפוס</Button>
-          <Button onClick={handleApply} className="flex-1 rounded-xl bg-black hover:bg-gray-900">החל פילטרים</Button>
+          <Button onClick={handleApply} className="flex-1 rounded-xl" style={{ background: '#16a34a' }}>החל פילטרים</Button>
         </div>
       </SheetContent>
     </Sheet>

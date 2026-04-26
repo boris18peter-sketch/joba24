@@ -15,9 +15,14 @@ export default function TaskExpiry({ expiresAt, price, taskId, onPriceUpdate }) 
         setTimeLeft('פג תוקף');
         clearInterval(interval);
       } else {
-        const mins = Math.floor(diff / 60000);
-        const secs = Math.floor((diff % 60000) / 1000);
-        setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+        const hours = Math.floor(diff / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        if (hours > 0) {
+          setTimeLeft(`${hours}ש' ${mins}ד'`);
+        } else {
+          const secs = Math.floor((diff % 60000) / 1000);
+          setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+        }
       }
     }, 1000);
     return () => clearInterval(interval);
