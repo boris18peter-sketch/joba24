@@ -93,7 +93,7 @@ export default function HomeFeed() {
     .sort((a, b) => b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date));
   const otherTasks = scored.filter(t => t.status !== 'OPEN');
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.category || filters.approvalMode;
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -128,20 +128,33 @@ export default function HomeFeed() {
             </Button>
           </div>
 
-          {/* Category quick filter */}
+          {/* Category quick filter - sorted by task count */}
           <div className="flex gap-2 mt-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
             <button
               onClick={() => setFilters(f => ({ ...f, category: '' }))}
               className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={!filters.category ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
             >הכל</button>
-            {CATEGORIES.map(c => (
-              <button key={c.value}
-                onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                style={filters.category === c.value ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
-              >{c.label}</button>
-            ))}
+            {[...CATEGORIES]
+              .sort((a, b) => {
+                const countA = tasks.filter(t => t.category === a.value && t.status === 'OPEN').length;
+                const countB = tasks.filter(t => t.category === b.value && t.status === 'OPEN').length;
+                return countB - countA;
+              })
+              .map(c => {
+                const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
+                if (count === 0 && !filters.category) return null;
+                return (
+                  <button key={c.value}
+                    onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1"
+                    style={filters.category === c.value ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
+                  >
+                    {c.label}
+                    {count > 0 && <span className="opacity-70">({count})</span>}
+                  </button>
+                );
+              })}
           </div>
 
           {hasFilters && (
@@ -149,7 +162,7 @@ export default function HomeFeed() {
               {filters.city && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.city}</span>}
               {(filters.minPrice || filters.maxPrice) && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
               {filters.time && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.time}</span>}
-              {filters.approvalMode && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.approvalMode === 'instant' ? '⚡ מיידי' : '👥 בקשה'}</span>}
+              {filters.approvalMode && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.approvalMode === 'instant' ? '⚡ מיידי' : '✋ לאישור'}</span>}
             </div>
           )}
         </div>

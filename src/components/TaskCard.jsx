@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Star, Navigation, Sparkles, Zap, Users } from 'lucide-react';
+import { MapPin, Clock, Navigation, Zap, Users } from 'lucide-react';
 import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
 
@@ -19,70 +19,63 @@ export default function TaskCard({ task }) {
   return (
     <Link to={`/task/${task.id}`} className="block">
       <div className="bg-white rounded-2xl p-4 active:scale-[0.985] transition-all shadow-sm hover:shadow-md" style={{ border: '1px solid #e9f7ee' }}>
-        {/* Top row */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="text-xs text-gray-500 font-medium">{catLabel}</span>
-              {task.is_story && <Sparkles className="w-3 h-3 text-purple-500" />}
-              <span className="text-gray-300">·</span>
-              <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${status.badge}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                {status.label}
-              </span>
-              {task.approval_mode === 'instant' ? (
-                <span className="flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                  <Zap className="w-3 h-3" /> מיידי
-                </span>
-              ) : (
-                <span className="flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                  <Users className="w-3 h-3" /> בקשה
-                </span>
-              )}
-              {task.expires_at && (
-                <TaskExpiry expiresAt={task.expires_at} price={task.price} taskId={task.id} />
-              )}
-            </div>
-            <h3 className="font-bold text-black text-[15px] leading-tight">{task.title}</h3>
-          </div>
-          <div className="text-right">
-            <div className="text-xl font-black text-black">₪{task.price}</div>
-          </div>
+        {/* Top row: title + price */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3 className="font-bold text-black text-[15px] leading-tight flex-1">{task.title}</h3>
+          <div className="text-xl font-black text-black shrink-0">₪{task.price}</div>
+        </div>
+
+        {/* Tags row */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-2">
+          {/* Category */}
+          <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">{catLabel}</span>
+
+          {/* Status */}
+          <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${status.badge}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+            {status.label}
+          </span>
+
+          {/* Approval mode */}
+          {task.approval_mode === 'instant' ? (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              ⚡ מיידי
+            </span>
+          ) : (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+              ✋ ממתין לאישור
+            </span>
+          )}
+
+          {/* Expiry timer */}
+          {task.expires_at && task.status === 'OPEN' && (
+            <TaskExpiry expiresAt={task.expires_at} price={task.price} taskId={task.id} />
+          )}
         </div>
 
         {/* Description */}
         {task.description && (
-          <p className="text-gray-500 text-sm mb-3 line-clamp-1">{task.description}</p>
+          <p className="text-gray-400 text-xs mb-2 line-clamp-1">{task.description}</p>
         )}
 
-        {/* Bottom row */}
-        <div className="flex items-center justify-between text-xs text-gray-400">
-          <div className="flex items-center gap-3 flex-wrap">
-            {task.location_name && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {task.location_name}
-              </span>
-            )}
-            {task.estimated_time && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {task.estimated_time}
-              </span>
-            )}
-            {dist != null && !isNaN(dist) && (
-              <span className="flex items-center gap-1 text-blue-500 font-semibold">
-                <Navigation className="w-3 h-3" />
-                {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
-              </span>
-            )}
-          </div>
-          {task.client_name && (
+        {/* Bottom row: location, time, distance */}
+        <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+          {task.location_name && (
             <span className="flex items-center gap-1">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              {task.client_rating?.toFixed(1) || '—'}
-              <span className="text-gray-300 mx-0.5">·</span>
-              {task.client_name}
+              <MapPin className="w-3 h-3" />
+              {task.location_name}
+            </span>
+          )}
+          {task.estimated_time && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {task.estimated_time}
+            </span>
+          )}
+          {dist != null && !isNaN(dist) && (
+            <span className="flex items-center gap-1 text-blue-500 font-semibold">
+              <Navigation className="w-3 h-3" />
+              {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
             </span>
           )}
         </div>
