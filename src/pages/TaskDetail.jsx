@@ -32,6 +32,7 @@ export default function TaskDetail() {
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
   const [confetti, setConfetti] = useState(false);
+  const [taskTaken, setTaskTaken] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task, isLoading } = useQuery({
@@ -72,6 +73,7 @@ export default function TaskDetail() {
       worker_name: me?.full_name,
     }),
     onSuccess: () => {
+      setTaskTaken(true);
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setConfetti(true);
@@ -131,7 +133,7 @@ export default function TaskDetail() {
   const isOwner = me?.id === task.client_id;
   const isWorker = me?.id === task.worker_id;
   const isExpired = task.status === 'EXPIRED';
-  const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant';
+  const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !taskTaken;
   const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual';
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
