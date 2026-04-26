@@ -131,7 +131,7 @@ export default function TaskDetail() {
   if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
 
   const isOwner = me?.id === task.client_id;
-  const isWorker = me?.id === task.worker_id;
+  const isWorker = me?.id === task.worker_id || taskTaken;
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !taskTaken;
   const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual';
