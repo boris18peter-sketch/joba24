@@ -159,7 +159,7 @@ export default function HomeFeed() {
           </div>
 
           {/* Category quick filter - sorted by task count */}
-          <div className="flex gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
             <button
               onClick={() => setFilters(f => ({ ...f, category: '' }))}
               className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
@@ -198,8 +198,10 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {/* Stories */}
+      {/* Stories - מעוכב לטעינה */}
+      <React.Suspense fallback={null}>
       <StoriesBar />
+      </React.Suspense>
 
       <div className="px-4 py-4 space-y-3">
         {isLoading ? (
