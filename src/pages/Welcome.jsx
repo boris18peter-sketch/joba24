@@ -1,73 +1,92 @@
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
 
 export default function Welcome() {
   return (
     <div className="min-h-screen flex flex-col" dir="rtl"
-      style={{ background: 'linear-gradient(160deg, #0f2b6b 0%, #1a6fd4 60%, #3b8fe8 100%)' }}>
+      style={{ background: 'linear-gradient(170deg, #0a1f5c 0%, #1352b8 55%, #2e7de0 100%)' }}>
 
-      {/* Logo / Hero */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-16 pb-8 text-center">
-        <div style={{
-          width: 88, height: 88, borderRadius: 24,
-          background: 'rgba(255,255,255,0.15)',
-          border: '2px solid rgba(255,255,255,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 44, marginBottom: 24,
-          backdropFilter: 'blur(8px)',
-        }}>
-          ⚡
+      {/* Hero */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-12 pb-6 text-center">
+
+        {/* Logo */}
+        <div style={{ position: 'relative', marginBottom: 20 }}>
+          <div style={{
+            width: 100, height: 100, borderRadius: 28,
+            background: 'rgba(255,255,255,0.12)',
+            border: '2px solid rgba(255,255,255,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(8px)',
+            overflow: 'hidden',
+          }}>
+            <img
+              src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/44bbb0a3f_generated_image.png"
+              alt="Joba24"
+              style={{ width: 80, height: 80, objectFit: 'contain' }}
+            />
+          </div>
         </div>
 
-        <h1 style={{ color: 'white', fontSize: 32, fontWeight: 900, marginBottom: 10, lineHeight: 1.2 }}>
-          ברוך הבא ל-TaskGo
-        </h1>
-        <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 15, lineHeight: 1.6, maxWidth: 300 }}>
-          פלטפורמה למציאת עבודה מהירה ומשימות מקומיות. פרסם משימה, מצא עובד, וקבל עזרה תוך דקות.
-        </p>
+        {/* Brand */}
+        <div style={{ color: 'white', fontSize: 38, fontWeight: 900, letterSpacing: -1, marginBottom: 4 }}>
+          Joba<span style={{ color: '#fbbf24' }}>24</span>
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 500, marginBottom: 28 }}>
+          הפלטפורמה למשימות מהירות
+        </div>
 
-        {/* Features */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 32, width: '100%', maxWidth: 320 }}>
+        {/* Tagline */}
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          borderRadius: 20, padding: '20px 24px',
+          maxWidth: 340, width: '100%',
+          backdropFilter: 'blur(6px)',
+          marginBottom: 20,
+        }}>
+          <p style={{ color: 'white', fontSize: 18, fontWeight: 800, lineHeight: 1.4, margin: 0 }}>
+            פרסם משימה, מצא עובד —<br />
+            <span style={{ color: '#fbbf24' }}>תוך כמה דקות.</span>
+          </p>
+        </div>
+
+        {/* 3 Features */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 340 }}>
           {[
-            { icon: '🔍', title: 'מצא עבודה קרובה אליך', desc: 'עיין במשימות לפי מיקום וקטגוריה' },
-            { icon: '⚡', title: 'התחל לעבוד מיד', desc: 'קח משימות מיידיות בלחיצה אחת' },
-            { icon: '💸', title: 'קבל תשלום מהיר', desc: 'ארנק מובנה עם העברה אוטומטית' },
+            { icon: '📋', text: 'פתח משימה בכל סוג — ניקיון, שינוע, תיקונים ועוד' },
+            { icon: '👷', text: 'עובדים מוסמכים מגיעים אליך מהר' },
+            { icon: '💸', text: 'תשלום מהיר ובטוח ישירות בפלטפורמה' },
           ].map(f => (
-            <div key={f.title} style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: 16, padding: '12px 16px',
-              border: '1px solid rgba(255,255,255,0.15)',
-              backdropFilter: 'blur(4px)',
+            <div key={f.text} style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: 14, padding: '11px 14px',
+              border: '1px solid rgba(255,255,255,0.1)',
               textAlign: 'right',
             }}>
-              <div style={{ fontSize: 24, flexShrink: 0 }}>{f.icon}</div>
-              <div>
-                <div style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>{f.title}</div>
-                <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 1 }}>{f.desc}</div>
-              </div>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{f.icon}</span>
+              <span style={{ color: 'rgba(255,255,255,0.88)', fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>{f.text}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* CTA Buttons */}
-      <div style={{ padding: '0 24px 48px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* CTA */}
+      <div style={{ padding: '0 24px 52px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button
           onClick={() => base44.auth.redirectToLogin(window.location.href)}
           style={{
-            width: '100%', height: 54, borderRadius: 16,
-            background: 'white', color: '#0f2b6b',
-            fontWeight: 800, fontSize: 16, border: 'none', cursor: 'pointer',
+            width: '100%', height: 56, borderRadius: 18,
+            background: '#fbbf24', color: '#0a1f5c',
+            fontWeight: 900, fontSize: 17, border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            boxShadow: '0 8px 28px rgba(251,191,36,0.4)',
+            letterSpacing: 0.3,
           }}
         >
-          <span style={{ fontSize: 20 }}>🚀</span>
-          התחל / התחבר
+          🚀 הצטרף / התחבר עכשיו
         </button>
-        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 4 }}>
-          Google · Apple · אימייל — בחר את השיטה שמתאימה לך
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: 0 }}>
+          Google · Apple · אימייל
         </p>
       </div>
     </div>
