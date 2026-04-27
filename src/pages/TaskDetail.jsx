@@ -44,7 +44,17 @@ export default function TaskDetail() {
     queryFn: () => base44.entities.Task.filter({ id }),
     select: data => data[0],
     refetchInterval: 1000,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
+
+  // DEBUG: Log task data every render
+  useEffect(() => {
+    if (task) {
+      console.log('TASK DATA:', task);
+    }
+  }, [task]);
 
   // Check if MY application was approved for this task
   const { data: myApp } = useQuery({
@@ -92,8 +102,12 @@ export default function TaskDetail() {
 
   const handleWorkerUpdate = async (data) => {
     await base44.entities.Task.update(id, data);
-    queryClient.invalidateQueries({ queryKey: ['task', id] });
+    // CRITICAL: Invalidate BEFORE refetch to clear stale cache
+    await queryClient.invalidateQueries({ queryKey: ['task', id] });
+    // CRITICAL: Force immediate fresh fetch
+    await queryClient.refetchQueries({ queryKey: ['task', id] });
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    console.log('✅ WORKER UPDATE COMPLETE - Task refetched');
   };
 
   // Check expiry
@@ -112,12 +126,16 @@ export default function TaskDetail() {
       worker_id: me?.id,
       worker_name: me?.full_name,
     }),
-    onSuccess: () => {
+    onSuccess: async () => {
       setTaskTaken(true);
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      // CRITICAL: Invalidate BEFORE refetch to clear stale cache
+      await queryClient.invalidateQueries({ queryKey: ['task', id] });
+      // CRITICAL: Force immediate fresh fetch
+      await queryClient.refetchQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
+      console.log('✅ TAKE TASK MUTATION COMPLETE - Task refetched');
       toast.success('קחת את הג\'ובה! 🎉');
     },
   });

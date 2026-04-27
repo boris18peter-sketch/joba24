@@ -25,14 +25,26 @@ export default function ApprovedPopup({ task, onClose }) {
           worker_lat: pos.coords.latitude,
           worker_lng: pos.coords.longitude,
         });
-        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        // CRITICAL: Invalidate BEFORE refetch to clear stale cache
+        await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        // CRITICAL: Force immediate fresh fetch
+        await queryClient.refetchQueries({ queryKey: ['task', task.id] });
+        console.log('✅ WORKER STATUS UPDATE COMPLETE - Task refetched');
       }, async () => {
         await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
-        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        // CRITICAL: Invalidate BEFORE refetch to clear stale cache
+        await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        // CRITICAL: Force immediate fresh fetch
+        await queryClient.refetchQueries({ queryKey: ['task', task.id] });
+        console.log('✅ WORKER STATUS UPDATE COMPLETE (no geolocation) - Task refetched');
       });
     } else {
       await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      // CRITICAL: Invalidate BEFORE refetch to clear stale cache
+      await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      // CRITICAL: Force immediate fresh fetch
+      await queryClient.refetchQueries({ queryKey: ['task', task.id] });
+      console.log('✅ WORKER STATUS UPDATE COMPLETE (no geolocation) - Task refetched');
     }
     onClose();
   };

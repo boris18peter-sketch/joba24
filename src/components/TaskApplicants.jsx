@@ -26,9 +26,13 @@ export default function TaskApplicants({ task, onApprove }) {
       await Promise.all(others.map(a => base44.entities.TaskApplication.update(a.id, { status: 'rejected' })));
     },
     onSuccess: async () => {
-      // Force immediate refetch of the task
+      // CRITICAL: Invalidate BEFORE refetch to clear cache
+      await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      // CRITICAL: Force immediate fresh fetch
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
+      await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
+      console.log('✅ APPROVAL MUTATION COMPLETE - Task refetched');
       onApprove?.();
     },
   });
