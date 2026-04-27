@@ -160,6 +160,25 @@ export default function TaskDetail() {
     },
   });
 
+  const cancelTakeMutation = useMutation({
+    mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('יצאת מהמשימה');
+      navigate('/');
+    },
+  });
+
+  const cancelApplicationMutation = useMutation({
+    mutationFn: () => base44.entities.TaskApplication.delete(myApp.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      toast.success('בקשה בוטלה');
+      setHasApplied(false);
+    },
+  });
+
   const handleApply = async () => {
     setApplyLoading(true);
     await base44.entities.TaskApplication.create({
@@ -470,9 +489,25 @@ export default function TaskDetail() {
             </button>
           )}
 
+          {isWorker && task.status === 'TAKEN' && (
+            <button onClick={() => cancelTakeMutation.mutate()} disabled={cancelTakeMutation.isPending}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
+            >
+              {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚪 צא מהמשימה'}
+            </button>
+          )}
+
           {!isOwner && !isWorker && task.status === 'OPEN' && (
             <button style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
               <Flag size={15} />דיווח
+            </button>
+          )}
+
+          {hasApplied && myApp?.status === 'pending' && (
+            <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
+            >
+              {cancelApplicationMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '❌ בטל בקשה'}
             </button>
           )}
         </div>

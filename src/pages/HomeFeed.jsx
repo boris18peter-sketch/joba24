@@ -5,6 +5,7 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import TaskCard from '@/components/TaskCard';
+import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
@@ -15,6 +16,7 @@ export default function HomeFeed() {
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [dismissedTasks, setDismissedTasks] = useState(new Set());
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -75,6 +77,7 @@ export default function HomeFeed() {
   const scored = tasks
     .filter(t => {
       if (t.status === 'CANCELLED' || t.status === 'EXPIRED' || t.status === 'COMPLETED') return false;
+      if (dismissedTasks.has(t.id)) return false;
       const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
       const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
       const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
@@ -226,9 +229,9 @@ export default function HomeFeed() {
                           </button>
                         </div>
                       )}
-                      <div style={myApp ? { borderRadius: myApp ? '0 0 16px 16px' : undefined, overflow: 'hidden' } : {}}>
-                        <TaskCard task={task} />
-                      </div>
+                      <TaskCardWithSwipe task={task} myApp={myApp} onDismiss={(taskId) => {
+                        setDismissedTasks(prev => new Set([...prev, taskId]));
+                      }} />
                     </div>
                   );
                 })}
@@ -236,8 +239,10 @@ export default function HomeFeed() {
             )}
             {otherTasks.length > 0 && (
               <div className="space-y-3 mt-5">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">משימות אחרות</h2>
-                {otherTasks.map(task => <TaskCard key={task.id} task={task} />)}
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">משימות לא מעניינות</h2>
+                {otherTasks.map(task => <TaskCardWithSwipe key={task.id} task={task} onDismiss={(taskId) => {
+                  setDismissedTasks(prev => new Set([...prev, taskId]));
+                }} />)}
               </div>
             )}
           </>
