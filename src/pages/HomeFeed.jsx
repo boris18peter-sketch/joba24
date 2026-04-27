@@ -208,19 +208,20 @@ export default function HomeFeed() {
                   return (
                     <div key={task.id}>
                       {myApp?.status === 'pending' && (
-                        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '12px 12px 0 0', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: -4 }}>
-                          <span style={{ fontSize: 14 }}>⏳</span>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>בקשתך ממתינה לאישור פותח המשימה</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(90deg,#fffbeb,#fef9c3)', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', boxShadow: '0 1px 4px rgba(234,179,8,0.15)' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'ping 1.5s ease-in-out infinite' }} />
+                            ממתין לאישור
+                          </span>
                         </div>
                       )}
                       {myApp?.status === 'approved' && (
-                        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px 12px 0 0', padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: -4 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 14 }}>✅</span>
-                            <span style={{ fontSize: 12, fontWeight: 800, color: '#15803d' }}>בקשת ביצוע אושרה! צא לדרך</span>
-                          </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(90deg,#f0fdf4,#dcfce7)', border: '1px solid #86efac', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d', boxShadow: '0 1px 4px rgba(22,163,74,0.15)' }}>
+                            <span style={{ fontSize: 10 }}>✅</span> בקשה אושרה
+                          </span>
                           <button onClick={(e) => { e.preventDefault(); window.location.href = `/task/${task.id}`; }}
-                            style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                            style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: 'none', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
                             צא לדרך ←
                           </button>
                         </div>
