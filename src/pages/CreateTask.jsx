@@ -82,7 +82,7 @@ export default function CreateTask() {
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
     });
-    toast.success('המשימה פורסמה! ⚡');
+    toast.success('הג\'ובה פורסמה! ⚡');
     setLoading(false);
     navigate('/');
   };
@@ -93,7 +93,7 @@ export default function CreateTask() {
         <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
           <ArrowRight className="w-4 h-4" />
         </button>
-        <h1 className="text-lg font-bold">פרסום משימה חדשה</h1>
+        <h1 className="text-lg font-bold">פרסום ג'ובה חדשה</h1>
       </div>
 
       <div className="px-4 py-5 space-y-5 pb-12">
@@ -101,7 +101,7 @@ export default function CreateTask() {
         <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
           <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
           <p className="text-sm text-blue-800 leading-relaxed">
-            <strong>חשוב!</strong> ככל שהמשימה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים. מלא את כל הפרטים.
+            <strong>חשוב!</strong> ככל שהג'ובה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים. מלא את כל הפרטים.
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export default function CreateTask() {
             </div>
             <div className="text-right flex-1">
               <div className="text-sm font-semibold">⚡ העלאת מחיר אוטומטית</div>
-              <div className="text-xs text-gray-500 mt-0.5">אם המשימה לא נלקחת, המחיר יעלה כל 5 דקות עד המקסימום</div>
+              <div className="text-xs text-gray-500 mt-0.5">אם הג'ובה לא נלקחת, המחיר יעלה כל 5 דקות עד המקסימום</div>
             </div>
           </button>
           {form.auto_bump_enabled && (
@@ -202,7 +202,7 @@ export default function CreateTask() {
 
         {/* Expiry */}
         <div>
-          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> תוקף המשימה</Label>
+          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> תוקף הג'ובה</Label>
           <div className="flex gap-2 flex-wrap">
             {EXPIRY_OPTIONS.map(opt => (
               <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
@@ -227,7 +227,7 @@ export default function CreateTask() {
               <div className="text-sm font-semibold flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-500" /> הצג כ-Story
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">המשימה תופיע בשורת Stories למשך 24 שעות (₪5 — יחויב בהמשך)</div>
+              <div className="text-xs text-gray-500 mt-0.5">הג'ובה תופיע בשורת Stories למשך 24 שעות (₪5 — יחויב בהמשך)</div>
             </div>
           </button>
         </div>
@@ -300,7 +300,7 @@ export default function CreateTask() {
           className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
           style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5 ml-1" />פרסם משימה</>}
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5 ml-1" />פרסם ג'ובה</>}
         </Button>
       </div>
     </div>

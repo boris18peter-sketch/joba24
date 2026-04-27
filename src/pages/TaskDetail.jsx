@@ -79,7 +79,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
-      toast.success('לקחת את המשימה! 🎉');
+      toast.success('קחת את הג\'ובה! 🎉');
     },
   });
 
@@ -88,7 +88,7 @@ export default function TaskDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       navigate('/');
-      toast.success('המשימה בוטלה');
+      toast.success('הג\'ובה בוטלה');
     },
   });
 
@@ -99,7 +99,7 @@ export default function TaskDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('המשימה נפתחה מחדש ל-24 שעות!');
+      toast.success('הג\'ובה נפתחה מחדש ל-24 שעות!');
     },
   });
 
@@ -118,7 +118,7 @@ export default function TaskDetail() {
     setApplyLoading(false);
     setShowApplyForm(false);
     setHasApplied(true);
-    toast.success('הבקשה נשלחה לבעל המשימה!');
+      toast.success('הבקשה נשלחה לבעל הג\'ובה!');
   };
 
   // Signal reopen (worker sending to expired task owner)
@@ -130,7 +130,7 @@ export default function TaskDetail() {
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
-  if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
+  if (!task) return <div className="p-8 text-center text-muted-foreground">ג'ובה לא נמצאה</div>;
 
   const isOwner = me?.id === task.client_id;
   const isWorker = me?.id === task.worker_id || taskTaken;
@@ -161,22 +161,22 @@ export default function TaskDetail() {
             <div className="flex items-center gap-3 mb-3">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
               <div>
-                <div className="font-bold text-orange-800">משימה פגת תוקף</div>
-                <div className="text-xs text-orange-600">המשימה הייתה פתוחה ופגה תוקפה</div>
+                <div className="font-bold text-orange-800">הג'ובה פגה תוקף</div>
+                <div className="text-xs text-orange-600">הג'ובה הייתה פתוחה ופג תוקפה</div>
               </div>
             </div>
             {isOwner && (
               <Button onClick={() => reopenMutation.mutate()} disabled={reopenMutation.isPending}
                 className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11"
               >
-                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח מחדש ל-24 שעות</>}
+                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את הג'ובה מחדש ל-24 שעות</>}
               </Button>
             )}
             {!isOwner && (
               <Button onClick={handleSignalReopen} variant="outline"
                 className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
               >
-                📣 שלח איתות לבעל המשימה
+                📣 שלח איתות לבעל הג'ובה
               </Button>
             )}
           </div>
@@ -346,7 +346,7 @@ export default function TaskDetail() {
             <Button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
               className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
             >
-              {takeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡ קח את המשימה'}
+              {takeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡ קח את הג\'ובה'}
             </Button>
           )}
 
@@ -356,7 +356,7 @@ export default function TaskDetail() {
               <div className="text-2xl">⏳</div>
               <div>
                 <div className="font-bold text-amber-800 text-sm">הבקשה נשלחה!</div>
-                <div className="text-xs text-amber-600 mt-0.5">ממתין לאישור בעל המשימה</div>
+                <div className="text-xs text-amber-600 mt-0.5">ממתין לאישור בעל הג'ובה</div>
               </div>
             </div>
           )}
@@ -366,12 +366,12 @@ export default function TaskDetail() {
             <Button onClick={() => setShowApplyForm(true)}
               className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
             >
-              📩 שלח בקשה לביצוע
+              📩 רוצה לבצע את הג'ובה
             </Button>
           )}
           {canApplyManual && showApplyForm && !hasApplied && (
             <div className="bg-gray-50 rounded-2xl p-4 space-y-3 border border-gray-200">
-              <p className="text-sm font-semibold text-gray-700">הוסף הודעה לבעל המשימה (לא חובה)</p>
+              <p className="text-sm font-semibold text-gray-700">הוסף הודעה לבעל הג'ובה (לא חובה)</p>
               <Input placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
                 value={applyMessage} onChange={e => setApplyMessage(e.target.value)}
                 className="bg-white border-gray-200 rounded-xl"
@@ -400,7 +400,7 @@ export default function TaskDetail() {
           {isOwner && task.status === 'OPEN' && (
             <Link to={`/edit-task/${id}`}>
               <Button variant="outline" className="w-full h-12 rounded-2xl border-gray-300 font-semibold">
-                <Pencil className="w-4 h-4 ml-2" />עריכת משימה
+                <Pencil className="w-4 h-4 ml-2" />עריכת הג'ובה
               </Button>
             </Link>
           )}
@@ -409,7 +409,7 @@ export default function TaskDetail() {
             <Button variant="outline" onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}
               className="w-full h-12 rounded-2xl border-destructive/30 text-destructive hover:bg-destructive/5"
             >
-              {cancelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ביטול משימה'}
+              {cancelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ביטול הג\'ובה'}
             </Button>
           )}
 

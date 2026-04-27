@@ -106,7 +106,7 @@ export default function HomeFeed() {
               <h1 className="text-2xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
             </div>
           </div>
-          <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} משימות פתוחות</p>
+          <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} ג'ובות פתוחות</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
