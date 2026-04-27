@@ -15,6 +15,7 @@ export default function TaskApplicants({ task, onApprove }) {
 
   const approveMutation = useMutation({
     mutationFn: async (app) => {
+      console.log('🔄 STARTING APPROVAL:', app);
       // Use backend function for atomic approval + data consistency
       const response = await base44.functions.invoke('approveWorker', {
         taskId: task.id,
@@ -23,8 +24,10 @@ export default function TaskApplicants({ task, onApprove }) {
         workerName: app.worker_name,
       });
 
+      console.log('📦 BACKEND RESPONSE:', response);
+
       if (!response.data.success) {
-        throw new Error(response.data.error || 'Approval failed');
+        throw new Error(response.data.error || 'אישור נכשל');
       }
 
       // Reject others
@@ -34,14 +37,19 @@ export default function TaskApplicants({ task, onApprove }) {
       return response.data;
     },
     onSuccess: async () => {
+      console.log('✅ APPROVAL SUCCESS - Refetching data');
       // CRITICAL: Invalidate BEFORE refetch to clear cache
       await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       // CRITICAL: Force immediate fresh fetch
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
       await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
-      console.log('✅ APPROVAL MUTATION COMPLETE - Verified via backend function');
+      toast.success(`${approveMutation.data?.task?.worker_name} אושר! ✨`);
       onApprove?.();
+    },
+    onError: (error) => {
+      console.error('❌ APPROVAL ERROR:', error);
+      toast.error(`שגיאה: ${error.message}`);
     },
   });
 
@@ -111,9 +119,19 @@ export default function TaskApplicants({ task, onApprove }) {
               size="sm"
               onClick={() => approveMutation.mutate(app)}
               disabled={approveMutation.isPending}
-              className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-xs h-9"
+              className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold text-xs h-9 transition-all"
             >
-              {approveMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <><CheckCircle2 className="w-3.5 h-3.5 ml-1" />אשר</>}
+              {approveMutation.isPending ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin ml-1" />
+                  אישור בעיצומו...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 ml-1" />
+                  אשר
+                </>
+              )}
             </Button>
           </div>
         </div>
