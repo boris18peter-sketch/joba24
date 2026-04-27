@@ -4,9 +4,9 @@ import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, Zap, CreditCard, Circl
 import { format } from 'date-fns';
 
 const typeConfig = {
-  earning: { label: 'הכנסה', color: '#16a34a', bg: 'linear-gradient(135deg,#dcfce7,#bbf7d0)', icon: ArrowDownLeft, sign: '+' },
-  payment: { label: 'תשלום', color: '#dc2626', bg: 'linear-gradient(135deg,#fee2e2,#fecaca)', icon: ArrowUpRight, sign: '-' },
-  withdrawal: { label: 'משיכה', color: '#d97706', bg: 'linear-gradient(135deg,#fef3c7,#fde68a)', icon: ArrowUpRight, sign: '-' },
+  earning: { label: 'הכנסה', color: '#16a34a', bg: '#f0fdf4', icon: ArrowDownLeft, sign: '+' },
+  payment: { label: 'תשלום', color: '#dc2626', bg: '#fef2f2', icon: ArrowUpRight, sign: '-' },
+  withdrawal: { label: 'משיכה', color: '#d97706', bg: '#fffbeb', icon: ArrowUpRight, sign: '-' },
 };
 
 export default function Wallet() {
@@ -69,13 +69,13 @@ export default function Wallet() {
         {/* Stats row */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
           {[
-            { icon: TrendingUp, label:'הכנסות', value:`₪${totalEarned.toLocaleString()}`, color:'#4ade80' },
-            { icon: ArrowUpRight, label:'הוצאות', value:`₪${totalSpent.toLocaleString()}`, color:'#f87171' },
-            { icon: Trophy, label:'משימות', value:taskCount, color:'#fbbf24' },
-          ].map(({ icon: Icon, label, value, color }) => (
+            { icon: TrendingUp, label:'הכנסות', value:`₪${totalEarned.toLocaleString()}` },
+            { icon: ArrowUpRight, label:'הוצאות', value:`₪${totalSpent.toLocaleString()}` },
+            { icon: Trophy, label:'ג\'ובות', value:taskCount },
+          ].map(({ icon: Icon, label, value }) => (
             <div key={label} style={{ background:'rgba(255,255,255,0.1)', borderRadius:14, padding:'12px 10px', backdropFilter:'blur(4px)', border:'1px solid rgba(255,255,255,0.08)' }}>
-              <Icon size={14} color={color} style={{ marginBottom:6 }} />
-              <div style={{ color, fontSize:16, fontWeight:800 }}>{value}</div>
+              <Icon size={14} color="rgba(255,255,255,0.7)" style={{ marginBottom:6 }} />
+              <div style={{ color:'white', fontSize:16, fontWeight:800 }}>{value}</div>
               <div style={{ color:'rgba(255,255,255,0.5)', fontSize:11 }}>{label}</div>
             </div>
           ))}
@@ -84,16 +84,16 @@ export default function Wallet() {
 
       {/* Escrow explanation */}
       <div style={{ padding:'16px 16px 0' }}>
-        <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:16, padding:'14px', display:'flex', gap:10, alignItems:'flex-start' }}>
-          <Lock size={16} color="#d97706" style={{ flexShrink:0, marginTop:1 }} />
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:'#92400e' }}>איך עובדים הכספים?</div>
-            <div style={{ fontSize:12, color:'#b45309', marginTop:3, lineHeight:1.8 }}>
-              <div>📤 <strong>לקוח משלם</strong> → הכסף נעול ב-Escrow</div>
-              <div>✅ <strong>לאחר אישור ביצוע</strong> → הכסף מועבר לעובד כ"יתרה זמינה"</div>
-              <div>🏦 <strong>משיכה</strong> → מהיתרה הזמינה לחשבון בנק</div>
-            </div>
+        <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:16, padding:'14px', display:'flex', gap:10, alignItems:'flex-start' }}>
+        <Lock size={16} color="#64748b" style={{ flexShrink:0, marginTop:1 }} />
+        <div>
+          <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>איך עובדים הכספים?</div>
+          <div style={{ fontSize:12, color:'#666', marginTop:3, lineHeight:1.8 }}>
+            <div>📤 <strong>לקוח משלם</strong> → הכסף נעול ב-Escrow</div>
+            <div>✅ <strong>לאחר אישור ביצוע</strong> → הכסף מועבר לעובד כ"יתרה זמינה"</div>
+            <div>🏦 <strong>משיכה</strong> → מהיתרה הזמינה לחשבון בנק</div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -101,14 +101,14 @@ export default function Wallet() {
       <div style={{ padding:'16px 16px 0' }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           {[
-            { icon: Zap, label:'משיכת כסף', desc:'לחשבון בנק', color:'#7c3aed' },
-            { icon: CircleDollarSign, label:'טעינת יתרה', desc:'קנה מטבעות', color:'#0891b2' },
-          ].map(({ icon: Icon, label, desc, color }) => (
+            { icon: Zap, label:'משיכת כסף', desc:'לחשבון בנק' },
+            { icon: CircleDollarSign, label:'טעינת יתרה', desc:'קנה מטבעות' },
+          ].map(({ icon: Icon, label, desc }) => (
             <button key={label} style={{
               background:'white',
               borderRadius:16,
               padding:'14px 12px',
-              border:'1px solid #f0f0f0',
+              border:'1px solid #e8edf2',
               cursor:'pointer',
               textAlign:'right',
               display:'flex',
@@ -116,8 +116,8 @@ export default function Wallet() {
               gap:10,
               boxShadow:'0 1px 8px rgba(0,0,0,0.06)',
             }}>
-              <div style={{ width:36, height:36, borderRadius:10, background:`${color}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <Icon size={18} color={color} />
+              <div style={{ width:36, height:36, borderRadius:10, background:'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <Icon size={18} color="#1a6fd4" />
               </div>
               <div>
                 <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{label}</div>
@@ -138,8 +138,8 @@ export default function Wallet() {
         {transactions.length === 0 ? (
           <div style={{ textAlign:'center', padding:'48px 0' }}>
             <div style={{ fontSize:48, marginBottom:12 }}>💳</div>
-            <p style={{ color:'#888', fontWeight:600 }}>אין עסקאות עדיין</p>
-            <p style={{ color:'#bbb', fontSize:13, marginTop:4 }}>בצע משימה כדי להתחיל להרוויח</p>
+            <p style={{ color:'#666', fontWeight:600 }}>אין עסקאות עדיין</p>
+            <p style={{ color:'#999', fontSize:13, marginTop:4 }}>בצע ג'ובה כדי להתחיל להרוויח</p>
           </div>
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>

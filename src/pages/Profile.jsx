@@ -70,12 +70,12 @@ export default function Profile() {
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           {[
-            { label: 'משימות בוצעו', value: completedCount, icon: CheckCircle, color: '#60efb0' },
-            { label: 'דירוג ממוצע', value: avgRating + (rating > 0 ? '★' : ''), icon: Star, color: '#fbbf24' },
-            { label: 'יתרה זמינה', value: `₪${balance}`, icon: CreditCard, color: '#7dd3fc' },
-          ].map(({ label, value, icon: Icon, color }) => (
+            { label: 'ג\'ובות בוצעו', value: completedCount, icon: CheckCircle },
+            { label: 'דירוג ממוצע', value: avgRating + (rating > 0 ? '★' : ''), icon: Star },
+            { label: 'יתרה זמינה', value: `₪${balance}`, icon: CreditCard },
+          ].map(({ label, value, icon: Icon }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: '12px 10px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
-              <Icon size={16} color={color} style={{ marginBottom: 6, margin: '0 auto 6px' }} />
+              <Icon size={16} color="rgba(255,255,255,0.7)" style={{ marginBottom: 6, margin: '0 auto 6px' }} />
               <div style={{ color: 'white', fontSize: 17, fontWeight: 800 }}>{value}</div>
               <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 10, marginTop: 2 }}>{label}</div>
             </div>
@@ -92,9 +92,9 @@ export default function Profile() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>ניקוד עובד</div>
-              <div style={{ fontSize: 12, color: '#999', marginTop: 1 }}>{completedCount} משימות הושלמו</div>
+              <div style={{ fontSize: 12, color: '#999', marginTop: 1 }}>{completedCount} ג'ובות הושלמו</div>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#ca8a04' }}>{workerScore.toFixed(0)}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#111' }}>{workerScore.toFixed(0)}</div>
           </div>
         </div>
       )}
@@ -106,7 +106,7 @@ export default function Profile() {
             <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 8 }}>קטגוריות מועדפות</div>
             <div className="flex gap-2 flex-wrap">
               {me.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1d4ed8', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
+                <span key={c} style={{ fontSize: 12, background: '#f1f5f9', color: '#444', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
                   {getCategoryLabel(c)}
                 </span>
               ))}
@@ -122,7 +122,7 @@ export default function Profile() {
             <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 8 }}>תעודות ואישורים</div>
             <div className="flex gap-2 flex-wrap">
               {me.certificates.map(cert => (
-                <span key={cert} style={{ fontSize: 12, background: '#f0fdf4', color: '#15803d', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
+                <span key={cert} style={{ fontSize: 12, background: '#f1f5f9', color: '#444', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
                   ✅ {cert}
                 </span>
               ))}
@@ -135,17 +135,17 @@ export default function Profile() {
       {!me?.profession && (
         <div style={{ padding: '12px 16px 0' }}>
           <Link to="/worker-profile">
-            <div style={{ background: 'white', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', border: '1px solid #dbeafe' }}>
+            <div style={{ background: 'white', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', border: '1px solid #e8edf2' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Briefcase size={18} color="#1d4ed8" />
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Briefcase size={18} color="#1a6fd4" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a' }}>השלם פרופיל עובד</div>
-                  <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 1 }}>הוסף מקצוע, תעודות וערים מועדפות</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>השלם פרופיל עובד</div>
+                  <div style={{ fontSize: 12, color: '#999', marginTop: 1 }}>הוסף מקצוע, תעודות וערים מועדפות</div>
                 </div>
               </div>
-              <ChevronLeft size={18} color="#93c5fd" />
+              <ChevronLeft size={18} color="#ccc" />
             </div>
           </Link>
         </div>
@@ -155,11 +155,11 @@ export default function Profile() {
       <div style={{ padding: '12px 16px 0' }}>
         <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', border: '1px solid #e8f0fe' }}>
           <Link to="/worker-profile" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', textDecoration: 'none', borderBottom: '1px solid #f0f4fa' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Settings size={17} color="#1d4ed8" />
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Settings size={17} color="#666" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e3a8a', flex: 1 }}>הגדרות פרופיל</span>
-            <ChevronLeft size={16} color="#93c5fd" />
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#111', flex: 1 }}>הגדרות פרופיל</span>
+            <ChevronLeft size={16} color="#ccc" />
           </Link>
           <button
             onClick={() => base44.auth.logout()}
