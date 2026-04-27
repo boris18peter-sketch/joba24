@@ -102,8 +102,8 @@ export default function HomeFeed() {
         <div className="px-4 pt-10 pb-3">
           <div className="flex items-center justify-between mb-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-xl">⚡</span>
-              <h1 className="text-2xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>TaskUp</h1>
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/44bbb0a3f_generated_image.png" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              <h1 className="text-2xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
             </div>
           </div>
           <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} משימות פתוחות</p>

@@ -58,12 +58,13 @@ export default function SideMenu() {
               width: 36, height: 36, borderRadius: 10,
               background: 'rgba(255,255,255,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
             }}>
-              <Zap size={18} color="#60a5fa" />
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/44bbb0a3f_generated_image.png" alt="Joba24" style={{ width: 30, height: 30, objectFit: 'contain' }} />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>TaskUp</div>
-              <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>מצא משימות בקרבתך ⚡</div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></div>
+              <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>משימות מהירות בכל רחבי הארץ</div>
             </div>
           </div>
           <button onClick={() => setOpen(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -95,7 +96,7 @@ export default function SideMenu() {
 
         <div style={{ padding: '16px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ fontSize: 11, color: '#93c5fd', textAlign: 'center', opacity: 0.7 }}>
-            ⚡ משימות מהירות בכל רחבי הארץ
+            🐣 Joba24 — פרסם, מצא, הרוויח
           </div>
         </div>
       </div>
