@@ -1,18 +1,30 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Home, Map, Plus, User, Wallet } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
-
-const navItems = [
-  { to: '/', icon: Home, label: 'פיד' },
-  { to: '/map', icon: Map, label: 'מפה' },
-
-  { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
-  { to: '/wallet', icon: Wallet, label: 'ארנק' },
-  { to: '/profile', icon: User, label: 'פרופיל' },
-];
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 
 export default function Layout() {
   const location = useLocation();
+
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: workerTasks = [] } = useQuery({
+    queryKey: ['workerTasksLayout', me?.id],
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    refetchInterval: 15000,
+  });
+
+  // Tasks in progress = TAKEN and worker confirmed (active work)
+  const inProgressCount = workerTasks.filter(t => t.status === 'TAKEN').length;
+
+  const navItems = [
+    { to: '/', icon: Home, label: 'פיד' },
+    { to: '/map', icon: Map, label: 'מפה' },
+    { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
+    { to: '/wallet', icon: Wallet, label: 'ארנק', badge: inProgressCount },
+    { to: '/profile', icon: User, label: 'פרופיל' },
+  ];
 
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7fb' }}>
@@ -28,7 +40,7 @@ export default function Layout() {
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
-          {navItems.map(({ to, icon: Icon, label, primary }) => {
+          {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
             const active = location.pathname === to;
             if (primary) {
               return (
@@ -46,8 +58,20 @@ export default function Layout() {
               );
             }
             return (
-              <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none' }}>
-                <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
+              <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
+                <div style={{ position: 'relative' }}>
+                  <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
+                  {badge > 0 && (
+                    <div style={{
+                      position: 'absolute', top: -6, right: -8,
+                      background: '#dc2626', color: 'white',
+                      fontSize: 9, fontWeight: 900,
+                      width: 16, height: 16, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1.5px solid white',
+                    }}>{badge}</div>
+                  )}
+                </div>
                 <span style={{ fontSize: 10, color: active ? '#1a6fd4' : '#a0b8d8', fontWeight: active ? 700 : 500 }}>{label}</span>
               </Link>
             );

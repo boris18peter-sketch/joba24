@@ -27,6 +27,8 @@ import WorkerProfile from '@/pages/WorkerProfile';
 import Welcome from '@/pages/Welcome';
 import FAQ from '@/pages/FAQ';
 import DailyGoal from '@/pages/DailyGoal';
+import Presentation from '@/pages/Presentation';
+import SimulatorPanel from '@/pages/SimulatorPanel';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
@@ -62,8 +64,10 @@ const AuthenticatedApp = () => {
         <Route path="/worker-profile" element={<WorkerProfile />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/daily-goal" element={<DailyGoal />} />
+        <Route path="/simulator" element={<SimulatorPanel />} />
       </Route>
       <Route path="/chat/:taskId" element={<Chat />} />
+      <Route path="/presentation" element={<Presentation />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

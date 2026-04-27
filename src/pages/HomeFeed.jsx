@@ -18,6 +18,14 @@ export default function HomeFeed() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
+  // My applications — to show status on feed cards
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myApplicationsFeed', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 100),
+    enabled: !!me?.id,
+    refetchInterval: 15000,
+  });
+
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 50),
@@ -195,7 +203,34 @@ export default function HomeFeed() {
           <>
             {openTasks.length > 0 && (
               <div className="space-y-3">
-                {openTasks.map(task => <TaskCard key={task.id} task={task} />)}
+                {openTasks.map(task => {
+                  const myApp = myApplications.find(a => a.task_id === task.id);
+                  return (
+                    <div key={task.id}>
+                      {myApp?.status === 'pending' && (
+                        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '12px 12px 0 0', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: -4 }}>
+                          <span style={{ fontSize: 14 }}>⏳</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>בקשתך ממתינה לאישור פותח המשימה</span>
+                        </div>
+                      )}
+                      {myApp?.status === 'approved' && (
+                        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px 12px 0 0', padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: -4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 14 }}>✅</span>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: '#15803d' }}>בקשת ביצוע אושרה! צא לדרך</span>
+                          </div>
+                          <button onClick={(e) => { e.preventDefault(); window.location.href = `/task/${task.id}`; }}
+                            style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                            צא לדרך ←
+                          </button>
+                        </div>
+                      )}
+                      <div style={myApp ? { borderRadius: myApp ? '0 0 16px 16px' : undefined, overflow: 'hidden' } : {}}>
+                        <TaskCard task={task} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
             {otherTasks.length > 0 && (
