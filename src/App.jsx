@@ -24,6 +24,7 @@ import Wallet from '@/pages/Wallet';
 import EditTask from '@/pages/EditTask';
 import Leaderboard from '@/pages/Leaderboard';
 import WorkerProfile from '@/pages/WorkerProfile';
+import Welcome from '@/pages/Welcome';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -40,8 +41,7 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
+      return <Welcome />;
     }
   }
 

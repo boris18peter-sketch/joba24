@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Trophy, Star, ArrowRight, Leaf } from 'lucide-react';
+import { Trophy, Star, ArrowRight, Medal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Leaderboard() {
@@ -56,29 +56,29 @@ export default function Leaderboard() {
     .slice(0, 20);
 
   const medals = ['🥇', '🥈', '🥉'];
-  const podiumColors = ['#16a34a', '#65a30d', '#15803d'];
+  const podiumColors = ['#1a6fd4', '#3b8fe8', '#0a52b0'];
 
   return (
-    <div className="min-h-screen" style={{ background: 'hsl(120,20%,97%)' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b px-4 pt-14 pb-4 flex items-center gap-3"
-        style={{ background: 'rgba(240,253,244,0.97)', borderColor: '#bbf7d0', backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-40 border-b px-4 pt-10 pb-4 flex items-center gap-3"
+        style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: '#dcfce7' }}>
-          <ArrowRight className="w-4 h-4 text-green-700" />
+          style={{ background: '#dce8f5' }}>
+          <ArrowRight className="w-4 h-4 text-blue-700" />
         </button>
         <div>
-          <h1 className="text-xl font-black text-green-900">לוח מובילים 🏆</h1>
-          <p className="text-xs text-green-600">גיבורי הסביבה שביצעו הכי הרבה משימות</p>
+          <h1 className="text-xl font-black" style={{ color: '#0f2b6b' }}>לוח מובילים 🏆</h1>
+          <p className="text-xs" style={{ color: '#1a6fd4' }}>המבצעים המובילים בפלטפורמה</p>
         </div>
       </div>
 
       {/* Top 3 Podium */}
       {sorted.length >= 3 && (
         <div className="px-4 pt-6 pb-2">
-          <div className="rounded-3xl p-5" style={{ background: 'linear-gradient(135deg, #14532d, #166534)' }}>
-            <div className="text-center text-white/70 text-xs mb-4 font-semibold uppercase tracking-widest">🌿 גיבורי החודש</div>
+          <div className="rounded-3xl p-5" style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+            <div className="text-center text-white/70 text-xs mb-4 font-semibold uppercase tracking-widest">⭐ מובילי החודש</div>
             <div className="flex items-end justify-center gap-3">
               {[1, 0, 2].map(i => {
                 const user = sorted[i];
@@ -100,10 +100,10 @@ export default function Leaderboard() {
                       {user.name}
                     </div>
                     {user.profession && (
-                      <div style={{ fontSize: 10, color: '#86efac', textAlign: 'center', marginTop: 1 }}>{user.profession}</div>
+                      <div style={{ fontSize: 10, color: '#93c5fd', textAlign: 'center', marginTop: 1 }}>{user.profession}</div>
                     )}
-                    <div style={{ fontSize: 13, fontWeight: 900, color: '#4ade80', marginTop: 2 }}>₪{user.earnings.toLocaleString()}</div>
-                    <div style={{ fontSize: 11, color: '#86efac' }}>{user.count} משימות</div>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: '#7dd3fc', marginTop: 2 }}>₪{user.earnings.toLocaleString()}</div>
+                    <div style={{ fontSize: 11, color: '#93c5fd' }}>{user.count} משימות</div>
                     <div style={{
                       marginTop: 8, height: isFirst ? 72 : i === 1 ? 48 : 40, width: '100%',
                       background: `rgba(255,255,255,0.08)`,
@@ -122,32 +122,32 @@ export default function Leaderboard() {
       <div className="px-4 py-3 space-y-2">
         {isLoading ? (
           Array(5).fill(0).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 animate-pulse h-16 border" style={{ borderColor: '#d1fae5' }} />
+            <div key={i} className="bg-white rounded-2xl p-4 animate-pulse h-16 border" style={{ borderColor: '#dce8f5' }} />
           ))
         ) : sorted.length === 0 ? (
           <div className="text-center py-16">
-            <Leaf className="w-12 h-12 mx-auto text-green-300 mb-3" />
-            <p className="text-green-700 font-semibold">אין נתונים עדיין</p>
-            <p className="text-sm text-green-500 mt-1">בצע משימות כדי להופיע בלוח!</p>
+            <Trophy className="w-12 h-12 mx-auto mb-3" style={{ color: '#93c5fd' }} />
+            <p className="font-semibold" style={{ color: '#0f2b6b' }}>אין נתונים עדיין</p>
+            <p className="text-sm mt-1" style={{ color: '#1a6fd4' }}>בצע משימות כדי להופיע בלוח!</p>
           </div>
         ) : (
           sorted.map((user, idx) => (
             <div
               key={user.user_id}
               className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm"
-              style={{ border: idx < 3 ? '1px solid #bbf7d0' : '1px solid #f0fdf4' }}
+              style={{ border: idx < 3 ? '1px solid #bfdbfe' : '1px solid #dce8f5' }}
             >
-              <div className="text-lg font-black w-7 text-center" style={{ color: idx < 3 ? '#16a34a' : '#9ca3af' }}>
+              <div className="text-lg font-black w-7 text-center" style={{ color: idx < 3 ? '#1a6fd4' : '#9ca3af' }}>
                 {idx < 3 ? medals[idx] : `${idx + 1}`}
               </div>
               <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-base text-white shrink-0"
-                style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+                style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)' }}>
                 {user.avatar}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm truncate text-green-900">{user.name}</div>
+                <div className="font-bold text-sm truncate" style={{ color: '#0f2b6b' }}>{user.name}</div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {user.profession && <span className="text-xs text-green-600">{user.profession}</span>}
+                  {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{user.profession}</span>}
                   <span className="text-xs text-gray-400">{user.count} משימות</span>
                   {user.avg > 0 && (
                     <span className="flex items-center gap-0.5 text-xs text-yellow-600">
@@ -158,7 +158,7 @@ export default function Leaderboard() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-black text-base" style={{ color: '#16a34a' }}>₪{user.earnings.toLocaleString()}</div>
+                <div className="font-black text-base" style={{ color: '#1a6fd4' }}>₪{user.earnings.toLocaleString()}</div>
                 <div className="text-xs text-gray-400">הכנסות</div>
               </div>
             </div>
