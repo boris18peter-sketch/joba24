@@ -14,12 +14,12 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
 
-  if (!task.worker_id) return null;
-
   // סנכרון עם task.worker_status מ-props
   useEffect(() => {
     setLocalStatus(task?.worker_status ?? null);
   }, [task?.worker_status]);
+
+  if (!task.worker_id) return null;
 
   // Get current step index - משתמש ב-localStatus
   const currentStepIndex = localStatus ? STEPS.findIndex(s => s.key === localStatus) : -1;
