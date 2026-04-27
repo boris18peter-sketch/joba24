@@ -46,17 +46,27 @@ export default function TaskDetail() {
     refetchInterval: 5000,
   });
 
-  // Detect when I got approved — worker_id changed to me
+  // Check if MY application was approved for this task
+  const { data: myApp } = useQuery({
+    queryKey: ['myApp', id, me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
+    select: data => data[0],
+    enabled: !!me?.id,
+    refetchInterval: 5000,
+  });
+  const isApproved = myApp?.status === 'approved';
+
+  // Detect when my application just got approved
   useEffect(() => {
-    if (!task || !me) return;
+    if (!myApp) return;
     const prev = prevWorkerIdRef.current;
-    if (prev !== null && prev !== me.id && task.worker_id === me.id) {
+    if (prev === 'pending' && myApp.status === 'approved') {
       setShowApprovedPopup(true);
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
     }
-    prevWorkerIdRef.current = task.worker_id;
-  }, [task?.worker_id, me?.id]);
+    prevWorkerIdRef.current = myApp.status;
+  }, [myApp?.status]);
 
   // Real-time subscription
   useEffect(() => {
@@ -148,7 +158,7 @@ export default function TaskDetail() {
   if (!task) return <div className="p-8 text-center text-muted-foreground">ג'ובה לא נמצאה</div>;
 
   const isOwner = me?.id === task.client_id;
-  const isWorker = me?.id === task.worker_id || taskTaken;
+  const isWorker = me?.id === task.worker_id || taskTaken || isApproved;
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !taskTaken;
   // For manual mode: can apply only if not yet applied and not already the worker
@@ -244,8 +254,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker Tracker (GetTaxi-style) — show for owner/worker on TAKEN, or if I just got approved */}
-        {(isOwner || isWorker) && (task.status === 'TAKEN' || task.status === 'COMPLETED') && task.status !== 'EXPIRED' && (
+        {/* Worker Tracker — show for owner/worker on TAKEN/COMPLETED, or if my application was approved */}
+        {(isOwner || isWorker) && (task.status === 'TAKEN' || task.status === 'COMPLETED' || isApproved) && task.status !== 'EXPIRED' && (
           <WorkerTracker
             task={task}
             isOwner={isOwner}
