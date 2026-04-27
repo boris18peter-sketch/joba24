@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, Zap, CreditCard, Lock } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, Zap, CreditCard, Lock, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
+import TaskCard from '@/components/TaskCard';
 
 const typeConfig = {
   earning: { label: 'הכנסה', color: '#16a34a', bg: '#f0fdf4', icon: ArrowDownLeft, sign: '+' },
@@ -16,6 +17,12 @@ export default function Wallet() {
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions', me?.id],
     queryFn: () => base44.entities.Transaction.filter({ user_id: me.id }, '-created_date', 50),
+    enabled: !!me?.id,
+  });
+
+  const { data: workerTasks = [] } = useQuery({
+    queryKey: ['walletWorkerTasks', me?.id],
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 30),
     enabled: !!me?.id,
   });
 
@@ -112,6 +119,25 @@ export default function Wallet() {
           </div>
         </button>
       </div>
+
+      {/* Active / recent worker tasks */}
+      {workerTasks.length > 0 && (
+        <div style={{ padding: '20px 16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Briefcase size={16} color="#0f2b6b" />
+            <h2 style={{ fontWeight: 800, fontSize: 16, color: '#0f2b6b' }}>הג'ובות שלי</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {workerTasks.map(t => {
+              const badge =
+                t.status === 'OPEN' ? 'active' :
+                t.status === 'TAKEN' ? 'awaiting' :
+                t.status === 'COMPLETED' ? 'paid' : null;
+              return <TaskCard key={t.id} task={t} workerBadge={badge} />;
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Transactions */}
       <div style={{ padding: '20px 16px 24px' }}>

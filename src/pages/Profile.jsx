@@ -189,42 +189,15 @@ export default function Profile() {
                 <div style={{ fontWeight: 600 }}>עדיין לא פרסמת משימות</div>
               </div>
             ) : (
-              myTasks.map(t => (
-                <div key={t.id}>
-                  {/* Status banner above card */}
-                  {t.status === 'OPEN' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8' }}>ממתינה לביצוע</span>
-                    </div>
-                  )}
-                  {t.status === 'TAKEN' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6', display: 'inline-block' }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#6d28d9' }}>בביצוע</span>
-                    </div>
-                  )}
-                  {t.status === 'COMPLETED' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>הושלמה ✅</span>
-                    </div>
-                  )}
-                  {t.status === 'CANCELLED' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#b91c1c' }}>בוטלה</span>
-                    </div>
-                  )}
-                  {t.status === 'EXPIRED' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 4 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f97316', display: 'inline-block' }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#ea580c' }}>פגה תוקף</span>
-                    </div>
-                  )}
-                  <TaskCard task={t} />
-                </div>
-              ))
+              myTasks.map(t => {
+                const badge =
+                  t.status === 'OPEN' ? 'open' :
+                  t.status === 'TAKEN' ? 'inprogress' :
+                  t.status === 'COMPLETED' ? 'done' :
+                  t.status === 'CANCELLED' ? 'cancelled' :
+                  t.status === 'EXPIRED' ? 'expired' : null;
+                return <TaskCard key={t.id} task={t} clientBadge={badge} />;
+              })
             )}
           </TabsContent>
 
@@ -235,27 +208,13 @@ export default function Profile() {
                 <div style={{ fontWeight: 600 }}>עדיין לא ביצעת משימות</div>
               </div>
             ) : (
-              workerTasks.map(t => (
-                <div key={t.id}>
-                  {/* Awaiting client confirmation highlight */}
-                  {t.status === 'TAKEN' && t.worker_status === 'done' && (
-                    <div style={{ background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 12, padding: '8px 14px', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>⏳</span>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e' }}>ממתין לאישור הלקוח</div>
-                        <div style={{ fontSize: 11, color: '#b45309' }}>לאחר האישור הכסף יועבר אליך</div>
-                      </div>
-                    </div>
-                  )}
-                  {t.status === 'COMPLETED' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, paddingRight: 4 }}>
-                      <span style={{ fontSize: 14 }}>✅</span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#15803d' }}>הלקוח אישר — הכסף הועבר!</span>
-                    </div>
-                  )}
-                  <TaskCard task={t} />
-                </div>
-              ))
+              workerTasks.map(t => {
+                const badge =
+                  t.status === 'TAKEN' ? 'awaiting' :
+                  t.status === 'COMPLETED' ? 'paid' :
+                  t.status === 'OPEN' ? 'active' : null;
+                return <TaskCard key={t.id} task={t} workerBadge={badge} />;
+              })
             )}
           </TabsContent>
 

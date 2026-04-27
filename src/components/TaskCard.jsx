@@ -11,7 +11,7 @@ const statusConfig = {
   EXPIRED: { label: 'פג תוקף', dot: 'bg-orange-400', badge: 'bg-orange-50 text-orange-700 border-orange-200' },
 };
 
-export default function TaskCard({ task }) {
+export default function TaskCard({ task, workerBadge, clientBadge }) {
   const status = statusConfig[task.status] || statusConfig.OPEN;
   const catLabel = getCategoryLabel(task.category);
   const dist = task._distKm;
@@ -52,6 +52,58 @@ export default function TaskCard({ task }) {
             <TaskExpiry expiresAt={task.expires_at} />
           )}
         </div>
+
+        {/* Worker badge - payment status for worker */}
+        {workerBadge && (
+          <div style={{ marginBottom: 6 }}>
+            {workerBadge === 'awaiting' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#92400e' }}>
+                ⏳ ממתין לאישור לקוח
+              </div>
+            )}
+            {workerBadge === 'paid' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d' }}>
+                ✅ תשלום התקבל!
+              </div>
+            )}
+            {workerBadge === 'active' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>
+                🔵 משימה פעילה
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Client badge - status for task publisher */}
+        {clientBadge && (
+          <div style={{ marginBottom: 6 }}>
+            {clientBadge === 'open' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>
+                🔵 ממתינה לביצוע
+              </div>
+            )}
+            {clientBadge === 'inprogress' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#6d28d9' }}>
+                🟣 בביצוע
+              </div>
+            )}
+            {clientBadge === 'done' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d' }}>
+                ✅ הושלמה
+              </div>
+            )}
+            {clientBadge === 'cancelled' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#b91c1c' }}>
+                ❌ בוטלה
+              </div>
+            )}
+            {clientBadge === 'expired' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#ea580c' }}>
+                ⏰ פגה תוקף
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Description */}
         {task.description && (
