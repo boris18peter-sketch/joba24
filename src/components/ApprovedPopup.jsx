@@ -1,16 +1,43 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, X } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 
 export default function ApprovedPopup({ task, onClose }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   // Auto-close after 8 seconds
   useEffect(() => {
     const t = setTimeout(onClose, 8000);
     return () => clearTimeout(t);
   }, []);
+
+  const handleStartWork = async () => {
+    // Update worker_status to on_the_way immediately
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        await base44.entities.Task.update(task.id, {
+          worker_status: 'on_the_way',
+          worker_lat: pos.coords.latitude,
+          worker_lng: pos.coords.longitude,
+        });
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        onClose();
+      }, async () => {
+        await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        onClose();
+      });
+    } else {
+      await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      onClose();
+    }
+  };
 
   return (
     <>
@@ -69,7 +96,7 @@ export default function ApprovedPopup({ task, onClose }) {
 
           {/* CTA */}
           <button
-            onClick={onClose}
+            onClick={handleStartWork}
             style={{
               width: '100%',
               background: 'linear-gradient(135deg, #16a34a, #15803d)',
