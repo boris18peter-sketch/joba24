@@ -280,10 +280,9 @@ export default function TaskDetail() {
         )}
 
         {/* Owner sees applicants for manual mode — only when OPEN and no worker assigned */}
-        {isOwner && task.status === 'OPEN' && task.approval_mode === 'manual' && !task.worker_id && (
+        {isOwner && task.approval_mode === 'manual' && task.status === 'OPEN' && !task.worker_id && (
           <TaskApplicants task={task} onApprove={() => {
-            queryClient.invalidateQueries({ queryKey: ['task', id] });
-            queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+            queryClient.refetchQueries({ queryKey: ['task', id] });
           }} />
         )}
 

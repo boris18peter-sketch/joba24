@@ -25,9 +25,10 @@ export default function TaskApplicants({ task, onApprove }) {
       const others = applications.filter(a => a.id !== app.id && a.status === 'pending');
       await Promise.all(others.map(a => base44.entities.TaskApplication.update(a.id, { status: 'rejected' })));
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+    onSuccess: async () => {
+      // Force immediate refetch of the task
+      await queryClient.refetchQueries({ queryKey: ['task', task.id] });
+      await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       onApprove?.();
     },
   });
