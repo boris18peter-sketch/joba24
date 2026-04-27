@@ -68,43 +68,62 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     }
   };
 
-  // Worker view - action buttons
-  if (isWorker) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-4 shadow-sm">
-        <h3 className="font-bold text-sm text-gray-900">עדכון התקדמות</h3>
-        
-        {/* Progress bar */}
-        <div className="flex items-end justify-between gap-1.5">
-          {STEPS.map((step, idx) => {
-            const isActive = idx === currentStepIndex;
-            const isDone = idx < currentStepIndex;
-            const Icon = step.icon;
-            
-            return (
-              <div key={step.key} className="flex-1 flex flex-col items-center gap-1.5">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
-                  style={{
-                    background: isDone ? step.color : isActive ? step.bg : '#f3f4f6',
-                    color: isDone || isActive ? step.color : '#d1d5db',
-                  }}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-medium text-center text-gray-600">{step.label}</span>
+  // Unified view - shows same progress for both worker and owner
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-4 shadow-sm">
+      <h3 className="font-bold text-sm text-gray-900">התקדמות המשימה</h3>
+      
+      {/* Progress timeline */}
+      <div className="space-y-3">
+        {STEPS.map((step, idx) => {
+          const isDone = idx <= currentStepIndex;
+          const isActive = idx === currentStepIndex;
+          const Icon = step.icon;
+          const timestamp = 
+            step.key === 'on_the_way' ? task.on_the_way_at :
+            step.key === 'arrived' ? task.arrived_at :
+            step.key === 'done' ? task.completed_at : null;
+          
+          return (
+            <div key={step.key} className="flex gap-3 items-start">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all"
+                style={{
+                  background: isDone ? step.color : isActive ? step.bg : '#f3f4f6',
+                  color: isDone || isActive ? step.color : '#d1d5db',
+                }}
+              >
+                <Icon className="w-4 h-4" />
               </div>
-            );
-          })}
-        </div>
+              
+              <div className="flex-1 pt-0.5">
+                <div className="font-medium text-sm text-gray-900">{step.label}</div>
+                {isDone && timestamp && (
+                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatDistanceToNow(new Date(timestamp), { addSuffix: true })}
+                  </div>
+                )}
+                {!isDone && <div className="text-xs text-gray-400 mt-0.5">ממתין...</div>}
+              </div>
 
-        {/* Action buttons */}
-        <div className="space-y-2">
+              {isDone && (
+                <div className="text-xs font-bold text-green-600 pt-0.5">✓</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Action buttons - only for worker */}
+      {isWorker && (
+        <div className="space-y-2 pt-2 border-t border-gray-100">
           {currentStepIndex === -1 && (
             <Button
               onClick={() => handleStepClick(STEPS[0])}
               disabled={loading}
-              className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold h-12"
+              className="w-full rounded-xl text-white font-bold h-11"
+              style={{ background: '#1a6fd4' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Navigation className="w-4 h-4 ml-2" />}
               יצאתי לדרך
@@ -115,7 +134,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             <Button
               onClick={() => handleStepClick(STEPS[1])}
               disabled={loading}
-              className="w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold h-12"
+              className="w-full rounded-xl text-white font-bold h-11"
+              style={{ background: '#1a6fd4' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <CheckCircle2 className="w-4 h-4 ml-2" />}
               הגעתי למיקום
@@ -126,7 +146,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             <Button
               onClick={() => handleStepClick(STEPS[2])}
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12"
+              className="w-full rounded-xl text-white font-bold h-11"
+              style={{ background: '#1a6fd4' }}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <PartyPopper className="w-4 h-4 ml-2" />}
               ביצעתי את העבודה
@@ -134,75 +155,15 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
           )}
 
           {currentStepIndex === 2 && (
-            <div className="text-center py-2">
-              <p className="text-sm font-bold text-emerald-700">✅ ממתין לאישור הלקוח</p>
+            <div className="text-center py-2 bg-blue-50 rounded-lg">
+              <p className="text-sm font-bold text-blue-700">✅ ממתין לאישור הלקוח</p>
               <p className="text-xs text-gray-500 mt-1">הלקוח יאשר את הביצוע וישחרר את התשלום</p>
             </div>
           )}
         </div>
-      </div>
-    );
-  }
-
-  // Client view - read-only progress tracker
-  if (isOwner) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-        <h3 className="font-bold text-sm text-gray-900 mb-4">התקדמות העובד</h3>
-        
-        {/* Progress timeline */}
-        <div className="space-y-3">
-          {STEPS.map((step, idx) => {
-            const isDone = idx <= currentStepIndex;
-            const Icon = step.icon;
-            const timestamp = 
-              step.key === 'on_the_way' ? task.on_the_way_at :
-              step.key === 'arrived' ? task.arrived_at :
-              step.key === 'done' ? task.completed_at : null;
-            
-            return (
-              <div key={step.key} className="flex gap-3 items-start">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1"
-                  style={{
-                    background: isDone ? step.color : '#f3f4f6',
-                    color: isDone ? 'white' : '#d1d5db',
-                  }}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                
-                <div className="flex-1 pt-0.5">
-                  <div className="font-medium text-sm text-gray-900">{step.label}</div>
-                  {isDone && timestamp && (
-                    <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDistanceToNow(new Date(timestamp), { addSuffix: true })}
-                    </div>
-                  )}
-                  {!isDone && <div className="text-xs text-gray-400 mt-0.5">ממתין...</div>}
-                </div>
-
-                {isDone && (
-                  <div className="text-xs font-bold text-green-600 pt-0.5">✓</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Approval action for completed tasks */}
-        {currentStepIndex === 2 && (
-          <Button
-            onClick={() => {/* Trigger completion modal */}}
-            className="w-full rounded-xl mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold h-12"
-          >
-            אשר ביצוע ושחרר תשלום
-          </Button>
-        )}
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
 
   return null;
 }

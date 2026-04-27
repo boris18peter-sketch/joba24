@@ -41,11 +41,7 @@ export default function TaskCard({ task, workerBadge, clientBadge }) {
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
               ⚡ מיידי
             </span>
-          ) : (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-              ✋ ממתין לאישור
-            </span>
-          )}
+          ) : null}
 
           {/* Expiry timer - only shows when < 6 hours left */}
           {task.expires_at && task.status === 'OPEN' && (
@@ -83,27 +79,27 @@ export default function TaskCard({ task, workerBadge, clientBadge }) {
         {clientBadge && (
           <div style={{ marginBottom: 6 }}>
             {clientBadge === 'open' && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>
-                🔵 ממתינה לביצוע
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>
+                📌 משימה שלי
               </div>
             )}
             {clientBadge === 'inprogress' && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#6d28d9' }}>
-                🟣 בביצוע
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#92400e' }}>
+                ⏳ בביצוע
               </div>
             )}
             {clientBadge === 'done' && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#15803d' }}>
                 ✅ הושלמה
               </div>
             )}
             {clientBadge === 'cancelled' && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#b91c1c' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#b91c1c' }}>
                 ❌ בוטלה
               </div>
             )}
             {clientBadge === 'expired' && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#ea580c' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '4px 12px', fontSize: 11, fontWeight: 700, color: '#ea580c' }}>
                 ⏰ פגה תוקף
               </div>
             )}

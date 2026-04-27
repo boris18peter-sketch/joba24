@@ -76,7 +76,8 @@ export default function HomeFeed() {
 
   const scored = tasks
     .filter(t => {
-      if (t.status === 'CANCELLED' || t.status === 'EXPIRED' || t.status === 'COMPLETED') return false;
+      // Show only OPEN tasks, exclude TAKEN, COMPLETED, CANCELLED, EXPIRED
+      if (t.status !== 'OPEN') return false;
       if (dismissedTasks.has(t.id)) return false;
       const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
       const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
@@ -98,11 +99,12 @@ export default function HomeFeed() {
       };
     });
 
-  // Sort: OPEN first, then by relevance, then by date
-  const openTasks = scored
-    .filter(t => t.status === 'OPEN')
-    .sort((a, b) => b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date));
-  const otherTasks = scored.filter(t => t.status !== 'OPEN');
+  // Sort by relevance, then by date
+  const sortedTasks = scored.sort((a, b) => b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date));
+  
+  // Separate my tasks from others
+  const myTasks = sortedTasks.filter(t => t.client_id === me?.id);
+  const otherTasks = sortedTasks.filter(t => t.client_id !== me?.id);
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode;
 
@@ -204,15 +206,28 @@ export default function HomeFeed() {
           </div>
         ) : (
           <>
-            {openTasks.length > 0 && (
+            {myTasks.length > 0 && (
               <div className="space-y-3">
-                {openTasks.map(task => {
+                <h2 className="text-xs font-semibold text-amber-600 uppercase tracking-widest px-1 flex items-center gap-2">
+                  <span className="text-base">📌</span> משימותיי
+                </h2>
+                {myTasks.map(task => (
+                  <TaskCardWithSwipe key={task.id} task={task} clientBadge="open" onDismiss={(taskId) => {
+                    setDismissedTasks(prev => new Set([...prev, taskId]));
+                  }} />
+                ))}
+              </div>
+            )}
+            {otherTasks.length > 0 && (
+              <div className="space-y-3 mt-5">
+                {myTasks.length > 0 && <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">משימות אחרות</h2>}
+                {otherTasks.map(task => {
                   const myApp = myApplications.find(a => a.task_id === task.id);
                   return (
                     <div key={task.id}>
                       {myApp?.status === 'pending' && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(90deg,#fffbeb,#fef9c3)', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', boxShadow: '0 1px 4px rgba(234,179,8,0.15)' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', boxShadow: '0 1px 4px rgba(234,179,8,0.15)' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'ping 1.5s ease-in-out infinite' }} />
                             ממתין לאישור
                           </span>
@@ -220,11 +235,11 @@ export default function HomeFeed() {
                       )}
                       {myApp?.status === 'approved' && (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(90deg,#f0fdf4,#dcfce7)', border: '1px solid #86efac', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d', boxShadow: '0 1px 4px rgba(22,163,74,0.15)' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d', boxShadow: '0 1px 4px rgba(22,163,74,0.15)' }}>
                             <span style={{ fontSize: 10 }}>✅</span> בקשה אושרה
                           </span>
                           <button onClick={(e) => { e.preventDefault(); window.location.href = `/task/${task.id}`; }}
-                            style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: 'none', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
+                            style={{ background: '#1a6fd4', color: 'white', border: 'none', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
                             צא לדרך ←
                           </button>
                         </div>
@@ -235,14 +250,6 @@ export default function HomeFeed() {
                     </div>
                   );
                 })}
-              </div>
-            )}
-            {otherTasks.length > 0 && (
-              <div className="space-y-3 mt-5">
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">משימות לא מעניינות</h2>
-                {otherTasks.map(task => <TaskCardWithSwipe key={task.id} task={task} onDismiss={(taskId) => {
-                  setDismissedTasks(prev => new Set([...prev, taskId]));
-                }} />)}
               </div>
             )}
           </>

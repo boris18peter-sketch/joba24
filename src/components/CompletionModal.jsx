@@ -99,14 +99,14 @@ export default function CompletionModal({ task, me, onClose }) {
             rows={2}
           />
           <Button
-            onClick={() => completeMutation.mutate()}
-            disabled={completeMutation.isPending}
-            className="w-full h-14 rounded-2xl font-bold text-base"
-            style={{ background: isWorker ? '#16a34a' : 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}
+           onClick={() => completeMutation.mutate()}
+           disabled={completeMutation.isPending}
+           className="w-full h-14 rounded-2xl font-bold text-base text-white"
+           style={{ background: '#1a6fd4' }}
           >
-            {completeMutation.isPending
-              ? <Loader2 className="w-5 h-5 animate-spin" />
-              : isWorker ? '✅ סיימתי! שלח לאישור לקוח' : '💸 אשר ושחרר תשלום'}
+           {completeMutation.isPending
+             ? <Loader2 className="w-5 h-5 animate-spin" />
+             : isWorker ? '✅ סיימתי! שלח לאישור לקוח' : '💸 אשר ושחרר תשלום'}
           </Button>
         </div>
       </DialogContent>
