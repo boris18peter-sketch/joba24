@@ -130,9 +130,9 @@ export default function Wallet() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {workerTasks.map(t => {
               const badge =
-                t.status === 'OPEN' ? 'active' :
-                t.status === 'TAKEN' ? 'awaiting' :
-                t.status === 'COMPLETED' ? 'paid' : null;
+                t.status === 'TAKEN' ? 'inprogress' :
+                t.status === 'COMPLETED' ? 'paid' :
+                t.status === 'OPEN' ? 'active' : null;
               return <TaskCard key={t.id} task={t} workerBadge={badge} />;
             })}
           </div>

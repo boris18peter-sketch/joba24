@@ -56,6 +56,11 @@ export default function TaskCard({ task, workerBadge, clientBadge }) {
         {/* Worker badge - payment status for worker */}
         {workerBadge && (
           <div style={{ marginBottom: 6 }}>
+            {workerBadge === 'inprogress' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#6d28d9' }}>
+                🟣 בתהליך ביצוע
+              </div>
+            )}
             {workerBadge === 'awaiting' && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 8, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#92400e' }}>
                 ⏳ ממתין לאישור לקוח

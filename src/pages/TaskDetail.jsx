@@ -418,7 +418,7 @@ export default function TaskDetail() {
 
       {/* Sticky bottom CTA */}
       {(canTakeInstant || (canApplyManual && !showApplyForm && !hasApplied)) && (
-        <div style={{ position: 'fixed', bottom: 72, left: 16, right: 16, zIndex: 50 }}>
+        <div style={{ position: 'fixed', bottom: 96, left: 16, right: 16, zIndex: 50 }}>
           {canTakeInstant && (
             <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
