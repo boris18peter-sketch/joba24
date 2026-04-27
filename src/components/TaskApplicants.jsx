@@ -23,6 +23,7 @@ export default function TaskApplicants({ task, onApprove }) {
         status: 'TAKEN',
         worker_id: app.worker_id,
         worker_name: app.worker_name,
+        worker_status: null,
       });
       console.log('✅ Task updated with worker');
 
