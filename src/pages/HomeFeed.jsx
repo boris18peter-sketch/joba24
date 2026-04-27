@@ -98,15 +98,15 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(240,253,244,0.97)', borderColor: '#bbf7d0', backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <div className="px-4 pt-14 pb-3">
           <div className="flex items-center justify-between mb-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-xl">🌿</span>
-              <h1 className="text-2xl font-black tracking-tight" style={{ color: '#14532d' }}>EcoTask</h1>
+              <span className="text-xl">⚡</span>
+              <h1 className="text-2xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>TaskUp</h1>
             </div>
           </div>
-          <p className="text-sm mb-3" style={{ color: '#4ade80' }}>🌱 {openTasks.length} משימות פתוחות</p>
+          <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} משימות פתוחות</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -121,7 +121,7 @@ export default function HomeFeed() {
               variant="outline"
               size="icon"
               className={`rounded-xl h-11 w-11 shrink-0`}
-              style={hasFilters ? { background: '#16a34a', color: 'white', borderColor: '#16a34a' } : { borderColor: '#d1fae5' }}
+              style={hasFilters ? { background: '#1a6fd4', color: 'white', borderColor: '#1a6fd4' } : { borderColor: '#dbeafe' }}
               onClick={() => setShowFilters(true)}
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function HomeFeed() {
             <button
               onClick={() => setFilters(f => ({ ...f, category: '' }))}
               className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={!filters.category ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
+              style={!filters.category ? { background: '#1a6fd4', color: 'white' } : { background: '#dbeafe', color: '#1d4ed8' }}
             >הכל</button>
             {[...CATEGORIES]
               .sort((a, b) => {
@@ -148,7 +148,7 @@ export default function HomeFeed() {
                   <button key={c.value}
                     onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
                     className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1"
-                    style={filters.category === c.value ? { background: '#16a34a', color: 'white' } : { background: '#dcfce7', color: '#15803d' }}
+                    style={filters.category === c.value ? { background: '#1a6fd4', color: 'white' } : { background: '#dbeafe', color: '#1d4ed8' }}
                   >
                     {c.label}
                     {count > 0 && <span className="opacity-70">({count})</span>}

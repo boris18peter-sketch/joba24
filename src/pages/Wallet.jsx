@@ -27,7 +27,7 @@ export default function Wallet() {
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Hero Card */}
       <div style={{
-        background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
+        background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4, #0a52b0)',
         padding: '56px 20px 32px',
         position: 'relative',
         overflow: 'hidden',
@@ -88,8 +88,10 @@ export default function Wallet() {
           <Lock size={16} color="#d97706" style={{ flexShrink:0, marginTop:1 }} />
           <div>
             <div style={{ fontSize:13, fontWeight:700, color:'#92400e' }}>איך עובדים הכספים?</div>
-            <div style={{ fontSize:12, color:'#b45309', marginTop:3, lineHeight:1.5 }}>
-              לקוח משלם → כסף נכנס להחזקת ביניים (Escrow) → לאחר אישור ביצוע → כסף מועבר לעובד
+            <div style={{ fontSize:12, color:'#b45309', marginTop:3, lineHeight:1.8 }}>
+              <div>📤 <strong>לקוח משלם</strong> → הכסף נעול ב-Escrow</div>
+              <div>✅ <strong>לאחר אישור ביצוע</strong> → הכסף מועבר לעובד כ"יתרה זמינה"</div>
+              <div>🏦 <strong>משיכה</strong> → מהיתרה הזמינה לחשבון בנק</div>
             </div>
           </div>
         </div>

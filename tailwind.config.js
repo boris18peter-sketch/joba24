@@ -61,10 +61,9 @@ module.exports = {
   },
   plugins: [require("tailwindcss-animate")],
   safelist: [
-    'bg-green-500', 'bg-red-500', 'bg-gray-400',
-    'text-green-700', 'text-red-700', 'text-gray-700',
-    'bg-green-100', 'bg-red-100', 'bg-gray-100',
-    'bg-blue-100', 'text-blue-700',
-    'border-green-200', 'border-red-200', 'border-gray-200', 'border-blue-200'
+    'bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-gray-400',
+    'text-blue-700', 'text-green-700', 'text-red-700', 'text-gray-700',
+    'bg-blue-100', 'bg-green-100', 'bg-red-100', 'bg-gray-100',
+    'border-blue-200', 'border-green-200', 'border-red-200', 'border-gray-200'
   ]
 }

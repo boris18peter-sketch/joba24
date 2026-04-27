@@ -16,8 +16,8 @@ import WorkerStatusAlert from '@/components/WorkerStatusAlert';
 import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
-  OPEN: { label: 'פתוח', color: 'text-green-700 bg-green-100' },
-  TAKEN: { label: 'נלקח', color: 'text-blue-700 bg-blue-100' },
+  OPEN: { label: 'פתוח', color: 'text-blue-700 bg-blue-100' },
+  TAKEN: { label: 'נלקח', color: 'text-indigo-700 bg-indigo-100' },
   COMPLETED: { label: 'הושלם', color: 'text-gray-700 bg-gray-100' },
   CANCELLED: { label: 'בוטל', color: 'text-red-700 bg-red-100' },
   EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' },
@@ -147,7 +147,7 @@ export default function TaskDetail() {
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-12 pb-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
+        <button onClick={() => navigate('/')} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
           <ArrowRight className="w-4 h-4" />
         </button>
         <h1 className="text-lg font-bold truncate flex-1">{task.title}</h1>
@@ -299,20 +299,7 @@ export default function TaskDetail() {
               </div>
             </div>
           )}
-          {task.expires_at && task.status === 'OPEN' && (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4 text-orange-500" />
-              </div>
-              <div className="flex-1">
-                <div className="text-xs text-muted-foreground">המשימה פגה בתאריך</div>
-                <div className="font-medium text-sm text-orange-600">
-                  {new Date(task.expires_at).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-              <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} />
-            </div>
-          )}
+
           {task.client_name && (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-yellow-100 flex items-center justify-center shrink-0">

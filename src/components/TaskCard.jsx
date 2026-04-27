@@ -4,8 +4,8 @@ import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
-  OPEN: { label: 'פתוח', dot: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200' },
-  TAKEN: { label: 'נלקח', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  OPEN: { label: 'פתוח', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  TAKEN: { label: 'נלקח', dot: 'bg-indigo-500', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   COMPLETED: { label: 'הושלם', dot: 'bg-gray-400', badge: 'bg-gray-50 text-gray-600 border-gray-200' },
   CANCELLED: { label: 'בוטל', dot: 'bg-red-400', badge: 'bg-red-50 text-red-700 border-red-200' },
   EXPIRED: { label: 'פג תוקף', dot: 'bg-orange-400', badge: 'bg-orange-50 text-orange-700 border-orange-200' },
@@ -18,7 +18,7 @@ export default function TaskCard({ task }) {
 
   return (
     <Link to={`/task/${task.id}`} className="block">
-      <div className="bg-white rounded-2xl p-4 active:scale-[0.985] transition-all shadow-sm hover:shadow-md" style={{ border: '1px solid #e9f7ee' }}>
+      <div className="bg-white rounded-2xl p-4 active:scale-[0.985] transition-all shadow-sm hover:shadow-md" style={{ border: '1px solid #dce8f5' }}>
         {/* Top row: title + price */}
         <div className="flex items-start justify-between gap-3 mb-2">
           <h3 className="font-bold text-black text-[15px] leading-tight flex-1">{task.title}</h3>
