@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import TaskExpiry from '@/components/TaskExpiry';
 import WorkerTracker from '@/components/WorkerTracker';
 import TaskApplicants from '@/components/TaskApplicants';
 import WorkerStatusAlert from '@/components/WorkerStatusAlert';
+import ApprovedPopup from '@/components/ApprovedPopup';
 import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
@@ -34,14 +35,28 @@ export default function TaskDetail() {
   const [confetti, setConfetti] = useState(false);
   const [taskTaken, setTaskTaken] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [showApprovedPopup, setShowApprovedPopup] = useState(false);
+  const prevWorkerIdRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: data => data[0],
-    refetchInterval: 8000,
+    refetchInterval: 5000,
   });
+
+  // Detect when I got approved — worker_id changed to me
+  useEffect(() => {
+    if (!task || !me) return;
+    const prev = prevWorkerIdRef.current;
+    if (prev !== null && prev !== me.id && task.worker_id === me.id) {
+      setShowApprovedPopup(true);
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 100);
+    }
+    prevWorkerIdRef.current = task.worker_id;
+  }, [task?.worker_id, me?.id]);
 
   // Real-time subscription
   useEffect(() => {
@@ -136,12 +151,16 @@ export default function TaskDetail() {
   const isWorker = me?.id === task.worker_id || taskTaken;
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !taskTaken;
-  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual';
+  // For manual mode: can apply only if not yet applied and not already the worker
+  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !isWorker;
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
     <div className="min-h-screen" dir="rtl">
       <TaskTakenConfetti trigger={confetti} />
+      {showApprovedPopup && (
+        <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />
+      )}
       {/* Worker 3-min alert */}
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
@@ -225,8 +244,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker Tracker (GetTaxi-style) */}
-        {(isOwner || isWorker) && task.status !== 'EXPIRED' && (
+        {/* Worker Tracker (GetTaxi-style) — show for owner/worker on TAKEN, or if I just got approved */}
+        {(isOwner || isWorker) && (task.status === 'TAKEN' || task.status === 'COMPLETED') && task.status !== 'EXPIRED' && (
           <WorkerTracker
             task={task}
             isOwner={isOwner}
