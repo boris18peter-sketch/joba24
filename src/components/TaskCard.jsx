@@ -48,6 +48,20 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
               <TaskExpiry expiresAt={task.expires_at} />
             )}
 
+            {/* Category + Approval Mode */}
+            <div className="flex gap-2">
+              {task.approval_mode === 'instant' && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                  ⚡ מיידי
+                </span>
+              )}
+              {task.approval_mode === 'manual' && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  ✋ נדרש אישור
+                </span>
+              )}
+            </div>
+
             {/* My task badge */}
             {isMyTask && (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">

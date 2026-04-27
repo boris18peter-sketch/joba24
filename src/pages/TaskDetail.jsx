@@ -176,6 +176,7 @@ export default function TaskDetail() {
     onSuccess: () => {
       prevWorkerIdRef.current = null; // Reset ref to prevent popup on cancel
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', id] }); // Refetch on task detail
       toast.success('בקשה בוטלה');
       setHasApplied(false);
     },

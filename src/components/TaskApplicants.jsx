@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { Star, CheckCircle2, XCircle, Loader2, Zap, Award } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -78,6 +79,7 @@ export default function TaskApplicants({ task, onApprove }) {
     return unsubscribe;
   }, [task.id]);
 
+  // Only show pending (not rejected/approved)
   const pending = applications.filter(a => a.status === 'pending');
 
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
@@ -116,17 +118,22 @@ export default function TaskApplicants({ task, onApprove }) {
                   {app.worker_rating > 0 && (
                     <span className="flex items-center gap-0.5">
                       <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      {app.worker_rating.toFixed(1)}
+                      {app.worker_rating.toFixed(1)} דירוג
                     </span>
                   )}
                   {app.worker_tasks_count > 0 && (
-                    <span>{app.worker_tasks_count} משימות</span>
+                    <span>{app.worker_tasks_count} משימות הושלמו</span>
                   )}
                 </div>
                 {app.message && (
-                  <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2">{app.message}</p>
+                  <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2 italic">{app.message}</p>
                 )}
               </div>
+              <Link to={`/worker-profile?id=${app.worker_id}`} className="shrink-0">
+                <button className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all">
+                  צפה בפרופיל
+                </button>
+              </Link>
             </div>
           </div>
           <div className="flex gap-2 mt-3">
