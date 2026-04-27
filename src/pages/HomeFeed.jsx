@@ -70,7 +70,7 @@ export default function HomeFeed() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  // Smart sort: preferred categories/cities float to top
+  // Smart sort: distance + price + preference
   const preferredCategories = me?.preferred_categories || [];
   const preferredCities = me?.preferred_cities || [];
 
@@ -89,22 +89,34 @@ export default function HomeFeed() {
       return matchSearch && matchMinPrice && matchPrice && matchTime && matchCity && matchCat && matchApproval;
     })
     .map(t => {
+      const distKm = userLocation ? getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng) : null;
       let relevance = 0;
-      if (preferredCategories.includes(t.category)) relevance += 2;
-      if (preferredCities.some(c => t.city?.includes(c) || t.location_name?.includes(c))) relevance += 1;
+      
+      // Preferred category: +3
+      if (preferredCategories.includes(t.category)) relevance += 3;
+      
+      // Preferred city: +2
+      if (preferredCities.some(c => t.city?.includes(c) || t.location_name?.includes(c))) relevance += 2;
+      
+      // Distance factor (closer is better): up to +2
+      if (distKm != null && !isNaN(distKm)) {
+        if (distKm < 2) relevance += 2;
+        else if (distKm < 5) relevance += 1;
+      }
+      
+      // Price factor (higher pays more): up to +1.5
+      if (t.price > 300) relevance += 1.5;
+      else if (t.price > 150) relevance += 0.75;
+      
       return {
         ...t,
-        _distKm: userLocation ? getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng) : null,
+        _distKm: distKm,
         _relevance: relevance,
       };
     });
 
   // Sort by relevance, then by date
   const sortedTasks = scored.sort((a, b) => b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date));
-  
-  // Separate my tasks from others
-  const myTasks = sortedTasks.filter(t => t.client_id === me?.id);
-  const otherTasks = sortedTasks.filter(t => t.client_id !== me?.id);
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode;
 
@@ -205,54 +217,23 @@ export default function HomeFeed() {
             <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
           </div>
         ) : (
-          <>
-            {myTasks.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-xs font-semibold text-amber-600 uppercase tracking-widest px-1 flex items-center gap-2">
-                  <span className="text-base">📌</span> משימותיי
-                </h2>
-                {myTasks.map(task => (
-                  <TaskCardWithSwipe key={task.id} task={task} clientBadge="open" onDismiss={(taskId) => {
+          <div className="space-y-3">
+            {sortedTasks.map(task => {
+              const myApp = myApplications.find(a => a.task_id === task.id);
+              const isMyTask = task.client_id === me?.id;
+              return (
+                <TaskCardWithSwipe 
+                  key={task.id} 
+                  task={task} 
+                  myApp={myApp}
+                  isMyTask={isMyTask}
+                  onDismiss={(taskId) => {
                     setDismissedTasks(prev => new Set([...prev, taskId]));
-                  }} />
-                ))}
-              </div>
-            )}
-            {otherTasks.length > 0 && (
-              <div className="space-y-3 mt-5">
-                {myTasks.length > 0 && <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1">משימות אחרות</h2>}
-                {otherTasks.map(task => {
-                  const myApp = myApplications.find(a => a.task_id === task.id);
-                  return (
-                    <div key={task.id}>
-                      {myApp?.status === 'pending' && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', boxShadow: '0 1px 4px rgba(234,179,8,0.15)' }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'ping 1.5s ease-in-out infinite' }} />
-                            ממתין לאישור
-                          </span>
-                        </div>
-                      )}
-                      {myApp?.status === 'approved' && (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 700, color: '#15803d', boxShadow: '0 1px 4px rgba(22,163,74,0.15)' }}>
-                            <span style={{ fontSize: 10 }}>✅</span> בקשה אושרה
-                          </span>
-                          <button onClick={(e) => { e.preventDefault(); window.location.href = `/task/${task.id}`; }}
-                            style={{ background: '#1a6fd4', color: 'white', border: 'none', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
-                            צא לדרך ←
-                          </button>
-                        </div>
-                      )}
-                      <TaskCardWithSwipe task={task} myApp={myApp} onDismiss={(taskId) => {
-                        setDismissedTasks(prev => new Set([...prev, taskId]));
-                      }} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+                  }} 
+                />
+              );
+            })}
+          </div>
         )}
       </div>
 

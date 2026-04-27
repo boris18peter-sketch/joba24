@@ -11,10 +11,10 @@ const statusConfig = {
   EXPIRED: { label: 'פג תוקף', dot: 'bg-orange-400', badge: 'bg-orange-50 text-orange-700 border-orange-200' },
 };
 
-export default function TaskCard({ task, workerBadge, clientBadge }) {
-  const status = statusConfig[task.status] || statusConfig.OPEN;
-  const catLabel = getCategoryLabel(task.category);
-  const dist = task._distKm;
+export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTask }) {
+   const status = statusConfig[task.status] || statusConfig.OPEN;
+   const catLabel = getCategoryLabel(task.category);
+   const dist = task._distKm;
 
   return (
     <Link to={`/task/${task.id}`} className="block">
@@ -44,10 +44,31 @@ export default function TaskCard({ task, workerBadge, clientBadge }) {
           ) : null}
 
           {/* Expiry timer - only shows when < 6 hours left */}
-          {task.expires_at && task.status === 'OPEN' && (
-            <TaskExpiry expiresAt={task.expires_at} />
-          )}
-        </div>
+            {task.expires_at && task.status === 'OPEN' && (
+              <TaskExpiry expiresAt={task.expires_at} />
+            )}
+
+            {/* My task badge */}
+            {isMyTask && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                📌 משימה שלי
+              </span>
+            )}
+
+            {/* My application status */}
+            {myApp?.status === 'pending' && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                ממתין לאישור
+              </span>
+            )}
+
+            {myApp?.status === 'approved' && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                ✅ בקשה אושרה
+              </span>
+            )}
+          </div>
 
         {/* Worker badge - payment status for worker */}
         {workerBadge && (
