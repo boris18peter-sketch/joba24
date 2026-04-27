@@ -184,10 +184,14 @@ function ClientTracker({ task, onConfirmDone }) {
 export default function WorkerTracker({ task, isOwner, isWorker, onUpdate, onConfirmDone }) {
   if (task.status === 'COMPLETED' || task.status === 'CANCELLED') return null;
 
+  // isWorker is true either from DB (task.worker_id matches) or just taken (taskTaken flag)
+  // Show worker actions when task is TAKEN or just taken (status may not yet be updated in cache)
+  const showWorkerActions = isWorker && (task.status === 'TAKEN' || task.status === 'OPEN') && task.worker_status !== 'done';
+
   return (
     <div className="space-y-3">
-      {isOwner && <ClientTracker task={task} onConfirmDone={onConfirmDone} />}
-      {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
+      {isOwner && !isWorker && <ClientTracker task={task} onConfirmDone={onConfirmDone} />}
+      {showWorkerActions && (
         <WorkerActions task={task} onUpdate={onUpdate} />
       )}
       {isWorker && task.worker_status === 'done' && (
