@@ -129,7 +129,7 @@ export default function HomeFeed() {
           </div>
 
           {/* Category quick filter - sorted by task count */}
-          <div className="flex gap-2 mt-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             <button
               onClick={() => setFilters(f => ({ ...f, category: '' }))}
               className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"

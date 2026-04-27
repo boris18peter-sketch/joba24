@@ -159,9 +159,10 @@ function StoriesViewer({ stories, startIndex, onClose }) {
         <Link
           to={`/task/${task.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="w-full h-13 bg-white text-black rounded-2xl flex items-center justify-center font-bold text-sm py-3"
+          className="w-full rounded-2xl flex items-center justify-center font-bold text-sm py-3.5 text-white"
+          style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)' }}
         >
-          ⚡ לצפייה במשימה
+          ⚡ קח את המשימה
         </Link>
       </div>
     </div>

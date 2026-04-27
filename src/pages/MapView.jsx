@@ -23,8 +23,8 @@ const createPin = (color) => L.divIcon({
 });
 
 const pinColors = {
-  OPEN: '#16a34a',
-  TAKEN: '#3b82f6',
+  OPEN: '#1a6fd4',
+  TAKEN: '#6366f1',
   COMPLETED: '#9ca3af',
 };
 
@@ -65,12 +65,12 @@ export default function MapView() {
     <div className="h-screen flex flex-col" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-12 pb-3"
-        style={{ background: 'rgba(240,253,244,0.95)', borderColor: '#bbf7d0' }}>
-        <h1 className="text-lg font-bold mb-3 text-green-900">🗺️ מפת משימות</h1>
-        <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #d1fae5' }}>
+        style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5' }}>
+        <h1 className="text-lg font-bold mb-3" style={{ color: '#0f2b6b' }}>🗺️ מפת משימות</h1>
+        <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #dbeafe' }}>
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-green-700">רדיוס חיפוש</span>
-            <span className="font-bold text-green-700">{radius} ק"מ</span>
+            <span className="font-medium" style={{ color: '#1a6fd4' }}>רדיוס חיפוש</span>
+            <span className="font-bold" style={{ color: '#1a6fd4' }}>{radius} ק"מ</span>
           </div>
           <Slider
             value={[radius]}
@@ -80,10 +80,10 @@ export default function MapView() {
           />
         </div>
         <div className="flex gap-4 mt-2 text-xs">
-          {[{ color: '#16a34a', label: 'פתוח' }, { color: '#3b82f6', label: 'נלקח' }].map(({ color, label }) => (
+          {[{ color: '#1a6fd4', label: 'פתוח' }, { color: '#6366f1', label: 'נלקח' }].map(({ color, label }) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ background: color }} />
-              <span className="text-green-800 font-medium">{label}</span>
+              <span className="font-medium" style={{ color: '#0f2b6b' }}>{label}</span>
             </div>
           ))}
         </div>
@@ -104,8 +104,8 @@ export default function MapView() {
             >
               <Popup className="rounded-xl">
                 <div className="p-1 min-w-[180px]" dir="rtl">
-                  <div className="font-bold text-sm mb-1 text-green-900">{task.title}</div>
-                  <div className="font-black text-xl mb-1" style={{ color: '#16a34a' }}>₪{task.price}</div>
+                  <div className="font-bold text-sm mb-1" style={{ color: '#0f2b6b' }}>{task.title}</div>
+                  <div className="font-black text-xl mb-1" style={{ color: '#1a6fd4' }}>₪{task.price}</div>
                   {task.location_name && (
                     <div className="text-xs text-gray-500 mb-2">📍 {task.location_name}</div>
                   )}
@@ -131,7 +131,7 @@ export default function MapView() {
                   <Link
                     to={`/task/${task.id}`}
                     className="block text-center text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors"
-                    style={{ background: '#16a34a' }}
+                    style={{ background: '#1a6fd4' }}
                   >
                     צפה במשימה ←
                   </Link>

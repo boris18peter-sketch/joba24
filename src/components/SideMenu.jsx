@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, Leaf } from 'lucide-react';
+import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, Zap } from 'lucide-react';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'פיד', emoji: '🌿' },
-  { to: '/map', icon: Map, label: 'מפה', emoji: '🗺️' },
-  { to: '/create-task', icon: Plus, label: 'פרסם משימה', emoji: '➕' },
-  { to: '/wallet', icon: Wallet, label: 'ארנק', emoji: '💚' },
-  { to: '/profile', icon: User, label: 'פרופיל', emoji: '👤' },
-  { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים', emoji: '🏆' },
+  { to: '/', icon: Home, label: 'פיד משימות' },
+  { to: '/map', icon: Map, label: 'מפת משימות' },
+  { to: '/create-task', icon: Plus, label: 'פרסם משימה' },
+  { to: '/wallet', icon: Wallet, label: 'ארנק' },
+  { to: '/profile', icon: User, label: 'פרופיל' },
+  { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },
 ];
 
 export default function SideMenu() {
@@ -22,9 +22,9 @@ export default function SideMenu() {
         style={{
           position: 'fixed', top: 16, left: 16, zIndex: 10000,
           width: 42, height: 42, borderRadius: 14,
-          background: 'linear-gradient(135deg, #16a34a, #15803d)',
+          background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: 'none', cursor: 'pointer', boxShadow: '0 2px 14px rgba(22,163,74,0.4)',
+          border: 'none', cursor: 'pointer', boxShadow: '0 2px 14px rgba(26,111,212,0.4)',
         }}
       >
         <Menu size={20} color="white" />
@@ -39,7 +39,7 @@ export default function SideMenu() {
       <div
         style={{
           position: 'fixed', top: 0, left: 0, bottom: 0, width: 270,
-          background: 'linear-gradient(180deg, #052e16 0%, #14532d 40%, #166534 100%)',
+          background: 'linear-gradient(180deg, #0a1f4e 0%, #0f2b6b 40%, #1a3a80 100%)',
           zIndex: 10002,
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
@@ -59,34 +59,34 @@ export default function SideMenu() {
               background: 'rgba(255,255,255,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Leaf size={18} color="#4ade80" />
+              <Zap size={18} color="#60a5fa" />
             </div>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>EcoTask</div>
-              <div style={{ fontSize: 11, color: '#86efac', fontWeight: 500, marginTop: 1 }}>עוזרים לסביבה 🌱</div>
+              <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>TaskUp</div>
+              <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>מצא משימות בקרבתך ⚡</div>
             </div>
           </div>
           <button onClick={() => setOpen(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <X size={18} color="#86efac" />
+            <X size={18} color="#93c5fd" />
           </button>
         </div>
 
         <nav style={{ flex: 1, padding: '12px 0' }}>
-          {navItems.map(({ to, icon: Icon, label, emoji }) => {
+          {navItems.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
             return (
               <Link key={to} to={to} onClick={() => setOpen(false)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
-                  background: active ? 'rgba(74,222,128,0.15)' : 'transparent',
-                  color: active ? '#4ade80' : '#bbf7d0',
+                  background: active ? 'rgba(96,165,250,0.15)' : 'transparent',
+                  color: active ? '#60a5fa' : '#bfdbfe',
                   fontWeight: active ? 700 : 500, fontSize: 15,
                   textDecoration: 'none',
-                  borderLeft: active ? '3px solid #4ade80' : '3px solid transparent',
+                  borderLeft: active ? '3px solid #60a5fa' : '3px solid transparent',
                   transition: 'all 0.15s',
                 }}
               >
-                <span style={{ fontSize: 16 }}>{emoji}</span>
+                <Icon size={18} style={{ opacity: active ? 1 : 0.7 }} />
                 {label}
               </Link>
             );
@@ -94,8 +94,8 @@ export default function SideMenu() {
         </nav>
 
         <div style={{ padding: '16px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 11, color: '#4ade80', textAlign: 'center', opacity: 0.7 }}>
-            🌍 כל משימה עוזרת לסביבה
+          <div style={{ fontSize: 11, color: '#93c5fd', textAlign: 'center', opacity: 0.7 }}>
+            ⚡ משימות מהירות בכל רחבי הארץ
           </div>
         </div>
       </div>
