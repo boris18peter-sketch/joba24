@@ -26,6 +26,7 @@ import Leaderboard from '@/pages/Leaderboard';
 import WorkerProfile from '@/pages/WorkerProfile';
 import Welcome from '@/pages/Welcome';
 import FAQ from '@/pages/FAQ';
+import DailyGoal from '@/pages/DailyGoal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/worker-profile" element={<WorkerProfile />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/daily-goal" element={<DailyGoal />} />
       </Route>
       <Route path="/chat/:taskId" element={<Chat />} />
       <Route path="*" element={<PageNotFound />} />

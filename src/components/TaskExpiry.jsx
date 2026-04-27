@@ -50,13 +50,14 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true }) {
         border: `1px solid ${isUrgent ? '#fca5a5' : '#fed7aa'}`,
         borderRadius: 8,
         padding: '3px 8px',
-        fontSize: 12,
-        fontWeight: 600,
+        fontSize: 11,
+        fontWeight: 700,
         color: isUrgent ? '#dc2626' : '#ea580c',
       }}
+      title="הג'ובה תיסגר אוטומטית בסיום הטיימר"
     >
       <Timer size={12} color={isUrgent ? '#dc2626' : '#f97316'} />
-      {timeLeft}
+      <span>נסגר בעוד {timeLeft}</span>
     </div>
   );
 }

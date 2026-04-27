@@ -340,13 +340,9 @@ export default function TaskDetail() {
         )}
 
         {/* Actions */}
-        <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ paddingBottom: canTakeInstant || (canApplyManual && !showApplyForm && !hasApplied) ? 100 : 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {canTakeInstant && (
-            <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
-              style={{ width: '100%', height: 56, borderRadius: 18, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-            >
-              {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
-            </button>
+            <div /> /* placeholder — actual button is sticky below */
           )}
 
           {hasApplied && (
@@ -360,11 +356,7 @@ export default function TaskDetail() {
           )}
 
           {canApplyManual && !showApplyForm && !hasApplied && (
-            <button onClick={() => setShowApplyForm(true)}
-              style={{ width: '100%', height: 56, borderRadius: 18, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)' }}
-            >
-              📩 רוצה לבצע את הג'ובה
-            </button>
+            <div /> /* placeholder — actual button is sticky below */
           )}
           {canApplyManual && showApplyForm && !hasApplied && (
             <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -417,6 +409,26 @@ export default function TaskDetail() {
           )}
         </div>
       </div>
+
+      {/* Sticky bottom CTA */}
+      {(canTakeInstant || (canApplyManual && !showApplyForm && !hasApplied)) && (
+        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, padding: '12px 16px 28px', background: 'linear-gradient(to top, rgba(244,247,251,1) 70%, rgba(244,247,251,0))' }}>
+          {canTakeInstant && (
+            <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
+              style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
+            </button>
+          )}
+          {canApplyManual && !showApplyForm && !hasApplied && (
+            <button onClick={() => setShowApplyForm(true)}
+              style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              📩 רוצה לבצע את הג'ובה
+            </button>
+          )}
+        </div>
+      )}
 
       {showCompletion && (
         <CompletionModal task={task} me={me} onClose={() => setShowCompletion(false)} />

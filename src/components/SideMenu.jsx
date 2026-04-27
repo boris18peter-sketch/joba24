@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle } from 'lucide-react';
+import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד ג\'ובות' },
   { to: '/map', icon: Map, label: 'מפת ג\'ובות' },
   { to: '/create-task', icon: Plus, label: 'פרסם ג\'ובה' },
+  { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
   { to: '/wallet', icon: Wallet, label: 'ארנק' },
   { to: '/profile', icon: User, label: 'פרופיל' },
   { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },

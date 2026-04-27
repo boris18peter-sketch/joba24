@@ -120,10 +120,11 @@ function StoriesViewer({ stories, startIndex, onClose }) {
         ))}
       </div>
 
-      {/* Close */}
+      {/* Close - top-right corner, away from menu button */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        className="absolute top-16 left-4 z-30 w-9 h-9 bg-black/50 rounded-full flex items-center justify-center"
+        className="absolute top-4 right-4 z-30 w-9 h-9 bg-black/60 rounded-full flex items-center justify-center"
+        style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <X className="w-4 h-4 text-white" />
       </button>
@@ -139,7 +140,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
       </div>
 
       {/* Category badge */}
-      <div className="absolute top-16 right-4 z-20">
+      <div className="absolute top-16 left-4 z-20">
         <span className="bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full">{label}</span>
       </div>
 
@@ -151,7 +152,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
           <p className="text-sm text-white/80 mb-3 line-clamp-2">{task.description}</p>
         )}
         {task.location_name && (
-          <div className="flex items-center gap-1.5 text-xs text-white/70 mb-4">
+          <div className="flex items-center gap-1.5 text-xs text-white/70 mb-3">
             <MapPin className="w-3.5 h-3.5" />
             {task.location_name}
           </div>
@@ -159,10 +160,10 @@ function StoriesViewer({ stories, startIndex, onClose }) {
         <Link
           to={`/task/${task.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="w-full rounded-2xl flex items-center justify-center font-bold text-sm py-3.5 text-white"
+          className="w-full rounded-2xl flex items-center justify-center font-bold text-base py-4 text-white"
           style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)' }}
         >
-          ⚡ קח את הג'ובה
+          🔍 בדוק את הג'ובה
         </Link>
       </div>
     </div>
