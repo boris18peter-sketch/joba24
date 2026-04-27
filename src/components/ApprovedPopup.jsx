@@ -17,11 +17,14 @@ export default function ApprovedPopup({ task, onClose }) {
   }, []);
 
   const handleStartWork = async () => {
-    // ONLY update worker_status — DO NOT change task.status or worker_id
+    // Update task to assign worker and set status to TAKEN
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         await base44.entities.Task.update(task.id, {
+          status: 'TAKEN',
           worker_status: 'on_the_way',
+          worker_id: me?.id,
+          worker_name: me?.full_name,
           worker_lat: pos.coords.latitude,
           worker_lng: pos.coords.longitude,
         });
@@ -29,22 +32,35 @@ export default function ApprovedPopup({ task, onClose }) {
         await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         // CRITICAL: Force immediate fresh fetch
         await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-        console.log('✅ WORKER STATUS UPDATE COMPLETE - Task refetched');
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        console.log('✅ WORKER START WORK COMPLETE - Task refetched');
       }, async () => {
-        await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
+        await base44.entities.Task.update(task.id, {
+          status: 'TAKEN',
+          worker_status: 'on_the_way',
+          worker_id: me?.id,
+          worker_name: me?.full_name,
+        });
         // CRITICAL: Invalidate BEFORE refetch to clear stale cache
         await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         // CRITICAL: Force immediate fresh fetch
         await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-        console.log('✅ WORKER STATUS UPDATE COMPLETE (no geolocation) - Task refetched');
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        console.log('✅ WORKER START WORK COMPLETE (no geolocation) - Task refetched');
       });
     } else {
-      await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
+      await base44.entities.Task.update(task.id, {
+        status: 'TAKEN',
+        worker_status: 'on_the_way',
+        worker_id: me?.id,
+        worker_name: me?.full_name,
+      });
       // CRITICAL: Invalidate BEFORE refetch to clear stale cache
       await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       // CRITICAL: Force immediate fresh fetch
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-      console.log('✅ WORKER STATUS UPDATE COMPLETE (no geolocation) - Task refetched');
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      console.log('✅ WORKER START WORK COMPLETE (no geolocation) - Task refetched');
     }
     onClose();
   };
