@@ -27,17 +27,18 @@ export default function Layout() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f7fb' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f4f7fb', overflow: 'hidden' }}>
       <SideMenu />
-      <div style={{ paddingBottom: 80 }}>
+      <div style={{ flex: 1, overflow: 'auto', paddingBottom: 80 }}>
         <Outlet />
       </div>
 
       {/* Bottom Nav */}
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 9999,
         background: 'white', borderTop: '1px solid #dce8f5',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
+        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
           {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
