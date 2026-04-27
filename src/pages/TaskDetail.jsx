@@ -43,7 +43,7 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: data => data[0],
-    refetchInterval: 5000,
+    refetchInterval: 1000,
   });
 
   // Check if MY application was approved for this task
@@ -71,10 +71,18 @@ export default function TaskDetail() {
   // Real-time subscriptions
   useEffect(() => {
     const unsubscribe1 = base44.entities.Task.subscribe((event) => {
-      if (event.id === id) queryClient.invalidateQueries({ queryKey: ['task', id] });
+      if (event.id === id) {
+        queryClient.invalidateQueries({ queryKey: ['task', id] });
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      }
     });
     const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === id) queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      if (event.data?.task_id === id) {
+        // When approval happens, refetch both myApp AND the task immediately
+        queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+        queryClient.invalidateQueries({ queryKey: ['task', id] });
+        queryClient.invalidateQueries({ queryKey: ['applications', id] });
+      }
     });
     return () => {
       unsubscribe1();
@@ -271,9 +279,12 @@ export default function TaskDetail() {
           />
         )}
 
-        {/* Owner sees applicants for manual mode — only when no worker approved yet */}
+        {/* Owner sees applicants for manual mode — only when OPEN and no worker assigned */}
         {isOwner && task.status === 'OPEN' && task.approval_mode === 'manual' && !task.worker_id && (
-          <TaskApplicants task={task} onApprove={() => queryClient.invalidateQueries({ queryKey: ['task', id] })} />
+          <TaskApplicants task={task} onApprove={() => {
+            queryClient.invalidateQueries({ queryKey: ['task', id] });
+            queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+          }} />
         )}
 
         {/* Description */}
