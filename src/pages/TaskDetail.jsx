@@ -125,7 +125,7 @@ export default function TaskDetail() {
       status: 'TAKEN',
       worker_id: me?.id,
       worker_name: me?.full_name,
-      worker_status: null,
+      worker_status: 'on_the_way',
     }),
     onSuccess: async () => {
       setTaskTaken(true);
