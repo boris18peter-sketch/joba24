@@ -1,0 +1,27 @@
+{
+  "name": "EarlySignup",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "interest_type": {
+      "type": "string",
+      "enum": [
+        "worker",
+        "client",
+        "both"
+      ],
+      "default": "both"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}

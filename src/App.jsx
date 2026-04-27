@@ -35,6 +35,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 // Add page imports here
+import Landing from '@/pages/Landing';
 import HomeFeed from '@/pages/HomeFeed';
 import CreateTask from '@/pages/CreateTask';
 import TaskDetail from '@/pages/TaskDetail';
@@ -73,6 +74,7 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
+      <Route path="/landing" element={<Landing />} />
       <Route element={<Layout />}>
         <Route path="/" element={<HomeFeed />} />
         <Route path="/map" element={<MapView />} />
