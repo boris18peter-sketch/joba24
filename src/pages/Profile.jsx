@@ -49,19 +49,6 @@ export default function Profile() {
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '56px 20px 28px' }}>
         <div className="flex items-center justify-between mb-6">
           <h1 style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600 }}>הפרופיל שלי</h1>
-          <div className="flex gap-2">
-            <Link to="/worker-profile">
-              <button style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <Settings size={18} color="white" />
-              </button>
-            </Link>
-            <button
-              onClick={() => base44.auth.logout()}
-              style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <LogOut size={18} color="white" />
-            </button>
-          </div>
         </div>
 
         {/* Avatar + Name */}
@@ -163,6 +150,28 @@ export default function Profile() {
           </Link>
         </div>
       )}
+
+      {/* Settings & Logout */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', border: '1px solid #e8f0fe' }}>
+          <Link to="/worker-profile" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', textDecoration: 'none', borderBottom: '1px solid #f0f4fa' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Settings size={17} color="#1d4ed8" />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e3a8a', flex: 1 }}>הגדרות פרופיל</span>
+            <ChevronLeft size={16} color="#93c5fd" />
+          </Link>
+          <button
+            onClick={() => base44.auth.logout()}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LogOut size={17} color="#dc2626" />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', flex: 1, textAlign: 'right' }}>התנתקות</span>
+          </button>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div style={{ padding: '16px 16px 24px' }}>

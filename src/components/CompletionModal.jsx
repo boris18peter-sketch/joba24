@@ -28,28 +28,42 @@ export default function CompletionModal({ task, me, onClose }) {
         comment,
         role: isWorker ? 'worker' : 'client',
       });
-      // Release payment to worker (client confirms OR worker self-marks)
-      await base44.entities.Transaction.create({
-        user_id: task.worker_id,
-        task_id: task.id,
-        task_title: task.title,
-        amount: task.price,
-        type: 'earning',
-        status: 'completed',
-      });
-      // Deduct from client
-      await base44.entities.Transaction.create({
-        user_id: task.client_id,
-        task_id: task.id,
-        task_title: task.title,
-        amount: task.price,
-        type: 'payment',
-        status: 'completed',
-      });
+
+      // רק כשהלקוח (פותח המשימה) מאשר — מעביר כסף לארנק העובד
+      if (!isWorker) {
+        // Create earning transaction for worker
+        await base44.entities.Transaction.create({
+          user_id: task.worker_id,
+          task_id: task.id,
+          task_title: task.title,
+          amount: task.price,
+          type: 'earning',
+          status: 'completed',
+        });
+        // Create payment transaction for client
+        await base44.entities.Transaction.create({
+          user_id: task.client_id,
+          task_id: task.id,
+          task_title: task.title,
+          amount: task.price,
+          type: 'payment',
+          status: 'completed',
+        });
+        // Update worker's wallet balance directly
+        const workerUsers = await base44.entities.User.filter({ id: task.worker_id });
+        if (workerUsers?.length > 0) {
+          const worker = workerUsers[0];
+          const currentBalance = worker.wallet_balance || 0;
+          await base44.auth.updateMe({ wallet_balance: currentBalance + task.price });
+          // Since updateMe only updates current user, use asServiceRole approach via entities
+          await base44.entities.User.update(task.worker_id, { wallet_balance: currentBalance + task.price });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
       toast.success(isWorker ? 'מעולה! התשלום ממתין לאישור הלקוח 💪' : '🎉 אישרת את הביצוע! התשלום שוחרר לעובד');
       onClose();
       navigate('/');
