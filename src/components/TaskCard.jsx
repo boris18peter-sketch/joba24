@@ -69,18 +69,22 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
               </span>
             )}
 
-            {/* My application status */}
-            {myApp?.status === 'pending' && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                ממתין לאישור
-              </span>
-            )}
+            {/* My application status - only show if pending */}
+            {myApp && (
+              <>
+                {myApp.status === 'pending' && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    ממתין לאישור
+                  </span>
+                )}
 
-            {myApp?.status === 'approved' && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
-                ✅ בקשה אושרה
-              </span>
+                {myApp.status === 'approved' && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                    ✅ בקשה אושרה
+                  </span>
+                )}
+              </>
             )}
           </div>
 
