@@ -102,7 +102,7 @@ export default function HomeFeed() {
         <div className="px-4 pt-10 pb-3">
           <div className="flex items-center justify-between mb-0.5">
             <div className="flex items-center gap-2">
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/44bbb0a3f_generated_image.png" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
               <h1 className="text-2xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
             </div>
           </div>

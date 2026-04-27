@@ -19,9 +19,9 @@ export default function Welcome() {
             overflow: 'hidden',
           }}>
             <img
-              src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/44bbb0a3f_generated_image.png"
+              src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg"
               alt="Joba24"
-              style={{ width: 80, height: 80, objectFit: 'contain' }}
+              style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 24 }}
             />
           </div>
         </div>

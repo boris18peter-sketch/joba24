@@ -60,7 +60,7 @@ export default function SideMenu() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               overflow: 'hidden',
             }}>
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/44bbb0a3f_generated_image.png" alt="Joba24" style={{ width: 30, height: 30, objectFit: 'contain' }} />
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8 }} />
             </div>
             <div>
               <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></div>
