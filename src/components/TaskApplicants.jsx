@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Star, CheckCircle2, XCircle, Loader2, Zap, Award } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
