@@ -99,7 +99,7 @@ export default function HomeFeed() {
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
-        <div className="px-4 pt-14 pb-3">
+        <div className="px-4 pt-10 pb-3">
           <div className="flex items-center justify-between mb-0.5">
             <div className="flex items-center gap-2">
               <span className="text-xl">⚡</span>

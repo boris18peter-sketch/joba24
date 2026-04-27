@@ -146,7 +146,7 @@ export default function TaskDetail() {
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-12 pb-3 flex items-center gap-3">
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-10 pb-3 flex items-center gap-3">
         <button onClick={() => navigate('/')} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
           <ArrowRight className="w-4 h-4" />
         </button>

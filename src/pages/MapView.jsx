@@ -64,7 +64,7 @@ export default function MapView() {
   return (
     <div className="h-screen flex flex-col" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-12 pb-3"
+      <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-10 pb-3"
         style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5' }}>
         <h1 className="text-lg font-bold mb-3" style={{ color: '#0f2b6b' }}>🗺️ מפת משימות</h1>
         <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #dbeafe' }}>
