@@ -27,15 +27,18 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       if (step.key === 'on_the_way') {
         update.on_the_way_at = new Date().toISOString();
         
-        // Try to capture location
+        // Capture location with proper async
         if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              update.worker_lat = pos.coords.latitude;
-              update.worker_lng = pos.coords.longitude;
-            },
-            () => {} // Silent fail
-          );
+          await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                update.worker_lat = pos.coords.latitude;
+                update.worker_lng = pos.coords.longitude;
+                resolve();
+              },
+              () => resolve() // Silent fail
+            );
+          });
         }
       } else if (step.key === 'arrived') {
         update.arrived_at = new Date().toISOString();
@@ -47,8 +50,10 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       toast.success(`✅ ${step.label}`);
     } catch (err) {
       toast.error('שגיאה בעדכון סטטוס');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Worker view - action buttons
