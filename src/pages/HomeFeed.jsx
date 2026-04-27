@@ -123,7 +123,7 @@ export default function HomeFeed() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
             </span>
-            <p className="text-sm" style={{ color: '#1a6fd4' }}>{openTasks.length} ג'ובות פתוחות</p>
+            <p className="text-sm" style={{ color: '#1a6fd4' }}>{sortedTasks.length} ג'ובות פתוחות</p>
           </div>
           <div className="flex gap-2">
             <div className="relative flex-1">
