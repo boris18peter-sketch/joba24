@@ -17,7 +17,7 @@ export default function ApprovedPopup({ task, onClose }) {
   }, []);
 
   const handleStartWork = async () => {
-    // Update worker_status to on_the_way immediately
+    // ONLY update worker_status — DO NOT change task.status or worker_id
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         await base44.entities.Task.update(task.id, {
@@ -26,17 +26,15 @@ export default function ApprovedPopup({ task, onClose }) {
           worker_lng: pos.coords.longitude,
         });
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-        onClose();
       }, async () => {
         await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-        onClose();
       });
     } else {
       await base44.entities.Task.update(task.id, { worker_status: 'on_the_way' });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      onClose();
     }
+    onClose();
   };
 
   return (

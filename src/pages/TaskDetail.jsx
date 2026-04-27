@@ -172,11 +172,11 @@ export default function TaskDetail() {
   if (!task) return <div className="p-8 text-center text-muted-foreground">ג'ובה לא נמצאה</div>;
 
   const isOwner = me?.id === task.client_id;
-  const isWorker = me?.id === task.worker_id || taskTaken || isApproved;
+  const hasWorker = !!task.worker_id;
+  const isWorker = me?.id === task.worker_id;
   const isExpired = task.status === 'EXPIRED';
-  const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !taskTaken;
-  // For manual mode: can apply only if not yet applied and not already the worker
-  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !isWorker;
+  const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !hasWorker;
+  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !hasWorker;
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
@@ -268,8 +268,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker Tracker — show for owner when task TAKEN, or for worker anytime */}
-        {(isWorker || (isOwner && task.worker_id)) && task.status !== 'EXPIRED' && task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
+        {/* If worker is assigned — show tracker; else for manual mode show applicants */}
+        {hasWorker && task.status !== 'EXPIRED' && task.status !== 'COMPLETED' && task.status !== 'CANCELLED' ? (
           <WorkerTracker
             task={task}
             isOwner={isOwner}
@@ -277,13 +277,12 @@ export default function TaskDetail() {
             onUpdate={handleWorkerUpdate}
             onConfirmDone={() => setShowCompletion(true)}
           />
-        )}
-
-        {/* Owner sees applicants for manual mode — only when OPEN and no worker assigned */}
-        {isOwner && task.approval_mode === 'manual' && task.status === 'OPEN' && !task.worker_id && (
-          <TaskApplicants task={task} onApprove={() => {
-            queryClient.refetchQueries({ queryKey: ['task', id] });
-          }} />
+        ) : (
+          isOwner && task.approval_mode === 'manual' && task.status === 'OPEN' && (
+            <TaskApplicants task={task} onApprove={() => {
+              queryClient.refetchQueries({ queryKey: ['task', id] });
+            }} />
+          )
         )}
 
         {/* Description */}
