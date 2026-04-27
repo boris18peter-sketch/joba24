@@ -15,15 +15,23 @@ export default function TaskApplicants({ task, onApprove }) {
 
   const approveMutation = useMutation({
     mutationFn: async (app) => {
-      await base44.entities.Task.update(task.id, {
-        status: 'TAKEN',
-        worker_id: app.worker_id,
-        worker_name: app.worker_name,
+      // Use backend function for atomic approval + data consistency
+      const response = await base44.functions.invoke('approveWorker', {
+        taskId: task.id,
+        applicationId: app.id,
+        workerId: app.worker_id,
+        workerName: app.worker_name,
       });
-      await base44.entities.TaskApplication.update(app.id, { status: 'approved' });
-      // reject others
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Approval failed');
+      }
+
+      // Reject others
       const others = applications.filter(a => a.id !== app.id && a.status === 'pending');
       await Promise.all(others.map(a => base44.entities.TaskApplication.update(a.id, { status: 'rejected' })));
+
+      return response.data;
     },
     onSuccess: async () => {
       // CRITICAL: Invalidate BEFORE refetch to clear cache
@@ -32,7 +40,7 @@ export default function TaskApplicants({ task, onApprove }) {
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
       await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
-      console.log('✅ APPROVAL MUTATION COMPLETE - Task refetched');
+      console.log('✅ APPROVAL MUTATION COMPLETE - Verified via backend function');
       onApprove?.();
     },
   });
