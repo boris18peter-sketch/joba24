@@ -13,7 +13,7 @@ import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
 import WorkerStatusAlert from '@/components/WorkerStatusAlert';
 import ApprovedPopup from '@/components/ApprovedPopup';
-import WorkerStatusUpdater from '@/components/WorkerStatusUpdater';
+import WorkerTrackerBar from '@/components/WorkerTrackerBar';
 import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
@@ -306,9 +306,14 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Status updater for worker */}
-        {isWorker && hasWorker && task.status === 'TAKEN' && (
-          <WorkerStatusUpdater task={task} isWorker={isWorker} onUpdate={handleWorkerUpdate} />
+        {/* Worker tracker - 3 step progress */}
+        {hasWorker && task.status === 'TAKEN' && (
+          <WorkerTrackerBar
+            task={task}
+            isWorker={isWorker}
+            isOwner={isOwner}
+            onUpdate={handleWorkerUpdate}
+          />
         )}
 
         {/* Applicants for manual approval mode */}

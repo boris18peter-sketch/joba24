@@ -77,7 +77,8 @@
       "type": "string",
       "enum": [
         "on_the_way",
-        "arrived"
+        "arrived",
+        "done"
       ]
     },
     "worker_lat": {
@@ -85,6 +86,21 @@
     },
     "worker_lng": {
       "type": "number"
+    },
+    "on_the_way_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when worker started on the way"
+    },
+    "arrived_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when worker arrived"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when worker completed task"
     },
     "client_id": {
       "type": "string"
