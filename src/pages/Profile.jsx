@@ -176,7 +176,7 @@ export default function Profile() {
       {/* Tabs */}
       <div style={{ padding: '16px 16px 24px' }}>
         <Tabs defaultValue="published">
-          <TabsList className="w-full bg-white rounded-xl border border-gray-100" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+          <TabsList className="w-full bg-white rounded-xl border border-blue-100" style={{ boxShadow: '0 1px 4px rgba(26,111,212,0.08)', direction: 'rtl' }}>
             <TabsTrigger value="published" className="flex-1 rounded-xl text-xs">פרסמתי ({myTasks.length})</TabsTrigger>
             <TabsTrigger value="worked" className="flex-1 rounded-xl text-xs">ביצעתי ({completedCount})</TabsTrigger>
             <TabsTrigger value="reviews" className="flex-1 rounded-xl text-xs">ביקורות ({reviews.length})</TabsTrigger>

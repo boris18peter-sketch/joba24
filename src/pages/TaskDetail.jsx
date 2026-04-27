@@ -146,23 +146,23 @@ export default function TaskDetail() {
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-10 pb-3 flex items-center gap-3">
-        <button onClick={() => navigate('/')} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-          <ArrowRight className="w-4 h-4" />
+      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => navigate('/')} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
+          <ArrowRight size={18} color="#1a6fd4" />
         </button>
-        <h1 className="text-lg font-bold truncate flex-1">{task.title}</h1>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>{status.label}</span>
+        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</h1>
+        <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', flexShrink: 0 }}>{status.label}</span>
       </div>
 
-      <div className="px-4 py-5 space-y-5">
+      <div style={{ padding: '16px 16px 0' }} className="space-y-4">
         {/* Expired banner */}
         {isExpired && (
-          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <AlertTriangle className="w-5 h-5 text-orange-500" />
+          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 20, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <AlertTriangle size={20} color="#f97316" />
               <div>
-                <div className="font-bold text-orange-800">הג'ובה פגה תוקף</div>
-                <div className="text-xs text-orange-600">הג'ובה הייתה פתוחה ופג תוקפה</div>
+                <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 14 }}>הג'ובה פגה תוקף</div>
+                <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>הג'ובה הייתה פתוחה ופג תוקפה</div>
               </div>
             </div>
             {isOwner && (
@@ -183,27 +183,27 @@ export default function TaskDetail() {
         )}
 
         {/* Price Hero */}
-        <div className="bg-black rounded-2xl p-5 text-white">
-          <div className="flex items-start justify-between">
+        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 20, padding: '20px 20px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -20, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
-              <div className="text-sm opacity-80 mb-1">תשלום</div>
-              <div className="text-4xl font-bold">₪{task.price}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>תשלום</div>
+              <div style={{ fontSize: 42, fontWeight: 900, letterSpacing: -2 }}>₪{task.price}</div>
               {task.estimated_time && (
-                <div className="flex items-center gap-1 mt-2 text-sm opacity-80">
-                  <Clock className="w-3.5 h-3.5" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                  <Clock size={13} />
                   <span>זמן משוער: {task.estimated_time}</span>
                 </div>
               )}
             </div>
-            <div className="text-right">
-              <div className="text-xs opacity-60 mb-1">{getCategoryLabel(task.category)}</div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>{getCategoryLabel(task.category)}</div>
               {task.expires_at && task.status === 'OPEN' && (
                 <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} />
               )}
               {task.approval_mode === 'manual' && (
-                <div className="mt-2 text-xs bg-white/20 px-2 py-1 rounded-lg">
-                  <Users className="w-3 h-3 inline ml-1" />
-                  אישור ידני
+                <div style={{ marginTop: 8, fontSize: 12, background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Users size={12} /> אישור ידני
                 </div>
               )}
             </div>
@@ -237,14 +237,14 @@ export default function TaskDetail() {
 
         {/* Description */}
         {task.description && (
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <h2 className="font-semibold mb-2 text-sm text-muted-foreground">תיאור</h2>
-            <p className="text-foreground leading-relaxed">{task.description}</p>
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>תיאור</h2>
+            <p style={{ color: '#333', lineHeight: 1.65, fontSize: 14 }}>{task.description}</p>
           </div>
         )}
 
         {/* Details */}
-        <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+        <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }} className="space-y-3">
           {task.location_name && (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -315,8 +315,8 @@ export default function TaskDetail() {
 
         {/* Requirements */}
         {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <h2 className="font-semibold mb-3 text-sm text-muted-foreground">דרישות</h2>
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 10 }}>דרישות</h2>
             <div className="flex flex-wrap gap-2">
               {task.requirements.vehicle && (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-xl text-sm font-medium"><Car className="w-3.5 h-3.5" /> רכב</span>
@@ -333,90 +333,87 @@ export default function TaskDetail() {
 
         {/* Worker info */}
         {task.worker_name && task.status === 'TAKEN' && (
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <h2 className="font-semibold mb-2 text-sm text-muted-foreground">מבצע</h2>
-            <div className="font-medium">{task.worker_name}</div>
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>מבצע</h2>
+            <div style={{ fontWeight: 700, color: '#0f2b6b' }}>{task.worker_name}</div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="space-y-3 pb-4">
-          {/* Instant take */}
+        <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {canTakeInstant && (
-            <Button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
-              className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
+            <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
+              style={{ width: '100%', height: 56, borderRadius: 18, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              {takeMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡ קח את הג\'ובה'}
-            </Button>
+              {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
+            </button>
           )}
 
-          {/* Applied pending status */}
           {hasApplied && (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-              <div className="text-2xl">⏳</div>
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ fontSize: 24 }}>⏳</div>
               <div>
-                <div className="font-bold text-amber-800 text-sm">הבקשה נשלחה!</div>
-                <div className="text-xs text-amber-600 mt-0.5">ממתין לאישור בעל הג'ובה</div>
+                <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14 }}>הבקשה נשלחה!</div>
+                <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>ממתין לאישור בעל הג'ובה</div>
               </div>
             </div>
           )}
 
-          {/* Apply for manual */}
           {canApplyManual && !showApplyForm && !hasApplied && (
-            <Button onClick={() => setShowApplyForm(true)}
-              className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-lg"
+            <button onClick={() => setShowApplyForm(true)}
+              style={{ width: '100%', height: 56, borderRadius: 18, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)' }}
             >
               📩 רוצה לבצע את הג'ובה
-            </Button>
+            </button>
           )}
           {canApplyManual && showApplyForm && !hasApplied && (
-            <div className="bg-gray-50 rounded-2xl p-4 space-y-3 border border-gray-200">
-              <p className="text-sm font-semibold text-gray-700">הוסף הודעה לבעל הג'ובה (לא חובה)</p>
+            <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל הג'ובה (לא חובה)</p>
               <Input placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
                 value={applyMessage} onChange={e => setApplyMessage(e.target.value)}
-                className="bg-white border-gray-200 rounded-xl"
+                style={{ background: 'white', border: '1px solid #bfdbfe', borderRadius: 12 }}
               />
-              <div className="flex gap-2">
-                <Button onClick={handleApply} disabled={applyLoading}
-                  className="flex-1 rounded-xl bg-black hover:bg-gray-900 font-bold"
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleApply} disabled={applyLoading}
+                  style={{ flex: 1, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  {applyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'שלח בקשה'}
-                </Button>
-                <Button variant="outline" onClick={() => setShowApplyForm(false)} className="rounded-xl">ביטול</Button>
+                  {applyLoading ? <Loader2 size={18} className="animate-spin" /> : 'שלח בקשה'}
+                </button>
+                <button onClick={() => setShowApplyForm(false)}
+                  style={{ height: 44, padding: '0 16px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#666', fontWeight: 600, cursor: 'pointer' }}
+                >ביטול</button>
               </div>
             </div>
           )}
-
-
 
           {(isOwner || isWorker) && task.status === 'TAKEN' && (
             <Link to={`/chat/${id}`}>
-              <Button variant="outline" className="w-full h-12 rounded-2xl">
-                <MessageCircle className="w-4 h-4 ml-2" />פתח צ'אט
-              </Button>
+              <button style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#1a6fd4', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
+                <MessageCircle size={18} />פתח צ'אט
+              </button>
             </Link>
           )}
 
           {isOwner && task.status === 'OPEN' && (
             <Link to={`/edit-task/${id}`}>
-              <Button variant="outline" className="w-full h-12 rounded-2xl border-gray-300 font-semibold">
-                <Pencil className="w-4 h-4 ml-2" />עריכת הג'ובה
-              </Button>
+              <button style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#0f2b6b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
+                <Pencil size={18} />עריכת הג'ובה
+              </button>
             </Link>
           )}
 
           {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED') && (
-            <Button variant="outline" onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}
-              className="w-full h-12 rounded-2xl border-destructive/30 text-destructive hover:bg-destructive/5"
+            <button onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
-              {cancelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ביטול הג\'ובה'}
-            </Button>
+              {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'ביטול הג\'ובה'}
+            </button>
           )}
 
           {!isOwner && !isWorker && task.status === 'OPEN' && (
-            <Button variant="ghost" className="w-full h-10 rounded-2xl text-muted-foreground text-sm">
-              <Flag className="w-4 h-4 ml-1" />דיווח
-            </Button>
+            <button style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
+              <Flag size={15} />דיווח
+            </button>
           )}
         </div>
       </div>
