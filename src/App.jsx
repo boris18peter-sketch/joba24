@@ -27,7 +27,7 @@ import WorkerProfile from '@/pages/WorkerProfile';
 import Welcome from '@/pages/Welcome';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -37,12 +37,13 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      return <Welcome />;
-    }
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
+  }
+
+  // Show Welcome screen if user is not authenticated
+  if (!isAuthenticated) {
+    return <Welcome />;
   }
 
   return (
