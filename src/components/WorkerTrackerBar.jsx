@@ -27,7 +27,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       if (step.key === 'on_the_way') {
         update.on_the_way_at = new Date().toISOString();
         
-        // Capture location with proper async
+        // Capture location before updating
         if (navigator.geolocation) {
           await new Promise((resolve) => {
             navigator.geolocation.getCurrentPosition(
@@ -46,6 +46,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         update.completed_at = new Date().toISOString();
       }
 
+      // Update after timestamps are set
       await onUpdate(update);
       toast.success(`✅ ${step.label}`);
     } catch (err) {
