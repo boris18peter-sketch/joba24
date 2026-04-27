@@ -45,6 +45,13 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl" style={{ textAlign: 'right' }}>
 
+      {/* Back Button */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '8px 16px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center' }}>
+        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>
+          ← חזור
+        </button>
+      </div>
+
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '56px 20px 28px' }}>
         <div style={{ marginBottom: 20 }}>
@@ -189,15 +196,33 @@ export default function Profile() {
                 <div style={{ fontWeight: 600 }}>עדיין לא פרסמת משימות</div>
               </div>
             ) : (
-              myTasks.map(t => {
-                const badge =
-                  t.status === 'OPEN' ? 'open' :
-                  t.status === 'TAKEN' ? 'inprogress' :
-                  t.status === 'COMPLETED' ? 'done' :
-                  t.status === 'CANCELLED' ? 'cancelled' :
-                  t.status === 'EXPIRED' ? 'expired' : null;
-                return <TaskCard key={t.id} task={t} clientBadge={badge} />;
-              })
+              <div className="grid gap-3">
+                {myTasks.map(t => {
+                  const badge =
+                    t.status === 'OPEN' ? 'open' :
+                    t.status === 'TAKEN' ? 'inprogress' :
+                    t.status === 'COMPLETED' ? 'done' :
+                    t.status === 'CANCELLED' ? 'cancelled' :
+                    t.status === 'EXPIRED' ? 'expired' : null;
+                  return (
+                    <div key={t.id} style={{ background: 'white', borderRadius: 16, padding: '14px 16px', border: '1px solid #e8f0fe', boxShadow: '0 1px 4px rgba(26,111,212,0.05)', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</h3>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: '#111', whiteSpace: 'nowrap' }}>₪{t.price}</span>
+                      </div>
+                      {t.description && (
+                        <p style={{ fontSize: 12, color: '#666', marginBottom: 8, lineHeight: 1.4 }}>{t.description}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, background: '#f1f5f9', color: '#333', padding: '3px 8px', borderRadius: 8, fontWeight: 600 }}>{getCategoryLabel(t.category)}</span>
+                        <span style={{ fontSize: 11, background: badge === 'open' ? '#dbeafe' : badge === 'inprogress' ? '#fed7aa' : badge === 'done' ? '#dcfce7' : '#ffe2e2', color: badge === 'open' ? '#1d4ed8' : badge === 'inprogress' ? '#b45309' : badge === 'done' ? '#166534' : '#991b1b', padding: '3px 8px', borderRadius: 8, fontWeight: 600 }}>
+                          {badge === 'open' ? 'פתוח' : badge === 'inprogress' ? 'בעבודה' : badge === 'done' ? 'הושלם' : badge === 'cancelled' ? 'בוטל' : 'פג תוקף'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </TabsContent>
 

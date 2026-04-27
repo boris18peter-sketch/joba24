@@ -57,22 +57,22 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen" dir="rtl">
+    <div className="flex flex-col h-screen" dir="rtl" style={{ background: '#f4f7fb' }}>
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-card border-b border-border px-4 pt-12 pb-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-          <ArrowRight className="w-4 h-4" />
+      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
+          <ArrowRight size={18} color="white" />
         </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="font-bold truncate">{task?.title || 'צ\'אט'}</h1>
-          <p className="text-xs text-muted-foreground">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 style={{ fontWeight: 800, color: 'white', fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task?.title || 'צ\'אט'}</h1>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', margin: '4px 0 0 0' }}>
             {task?.client_name} ↔ {task?.worker_name || 'ממתין למבצע'}
           </p>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-20">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-20" style={{ background: '#f4f7fb' }}>
         {messages.length === 0 && (
           <div className="text-center py-12">
             <div className="text-3xl mb-2">💬</div>
@@ -107,22 +107,21 @@ export default function Chat() {
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-2 max-w-lg mx-auto">
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: '1px solid #dce8f5', padding: '12px 16px', display: 'flex', gap: 8, maxWidth: '512px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         <Input
           placeholder="כתוב הודעה..."
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && sendMessage()}
-          className="flex-1 bg-secondary border-0 rounded-xl"
+          style={{ flex: 1, background: '#f1f5f9', border: 'none', borderRadius: 12, fontSize: 14, padding: '10px 14px' }}
         />
-        <Button
+        <button
           onClick={sendMessage}
           disabled={sending || !input.trim()}
-          size="icon"
-          className="rounded-xl w-10 h-10 shrink-0"
+          style={{ width: 40, height: 40, borderRadius: 12, background: input.trim() ? '#1a6fd4' : '#ddd', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', fontSize: 18, fontWeight: 700 }}
         >
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </Button>
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : '↩️'}
+        </button>
       </div>
     </div>
   );

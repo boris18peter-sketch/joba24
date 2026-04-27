@@ -72,6 +72,13 @@ export default function Wallet() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+      {/* Back Button */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '8px 16px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center' }}>
+        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>
+          ← חזור
+        </button>
+      </div>
+
       {/* Hero Card */}
       <div style={{
         background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4, #0a52b0)',

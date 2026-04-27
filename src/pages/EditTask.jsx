@@ -101,11 +101,11 @@ export default function EditTask() {
 
   return (
     <div className="min-h-screen" dir="rtl">
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-12 pb-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-          <ArrowRight className="w-4 h-4" />
+      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
+          <ArrowRight size={18} color="#1a6fd4" />
         </button>
-        <h1 className="text-lg font-bold">עריכת משימה</h1>
+        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>עריכת משימה</h1>
       </div>
 
       <div className="px-4 py-5 space-y-5 pb-12">

@@ -9,6 +9,7 @@ import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
+import MyTasksCarousel from '@/components/MyTasksCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 export default function HomeFeed() {
@@ -19,6 +20,14 @@ export default function HomeFeed() {
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  // My published tasks
+  const { data: myTasks = [] } = useQuery({
+    queryKey: ['myTasks', me?.id],
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
+    enabled: !!me?.id,
+    refetchInterval: 15000,
+  });
 
   // My applications — to show status on feed cards
   const { data: myApplications = [] } = useQuery({
@@ -74,7 +83,14 @@ export default function HomeFeed() {
   const preferredCategories = me?.preferred_categories || [];
   const preferredCities = me?.preferred_cities || [];
 
-  const scored = tasks
+  // Filter out my own tasks from the main feed
+  const otherTasks = tasks.filter(t => t.client_id !== me?.id);
+
+  // Sort approved applications to top for workers
+  const approvedApps = myApplications.filter(a => a.status === 'approved');
+  const approvedTaskIds = new Set(approvedApps.map(a => a.task_id));
+
+  const scored = otherTasks
     .filter(t => {
       // Show only OPEN tasks, exclude TAKEN, COMPLETED, CANCELLED, EXPIRED
       if (t.status !== 'OPEN') return false;
@@ -115,8 +131,13 @@ export default function HomeFeed() {
       };
     });
 
-  // Sort by relevance, then by date
-  const sortedTasks = scored.sort((a, b) => b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date));
+  // Sort by: approved apps first, then relevance, then date
+  const sortedTasks = scored.sort((a, b) => {
+    const aIsApproved = approvedTaskIds.has(a.id) ? 0 : 1;
+    const bIsApproved = approvedTaskIds.has(b.id) ? 0 : 1;
+    if (aIsApproved !== bIsApproved) return aIsApproved - bIsApproved;
+    return b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date);
+  });
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode;
 
@@ -198,6 +219,9 @@ export default function HomeFeed() {
         </div>
       </div>
 
+      {/* My Tasks Carousel */}
+      <MyTasksCarousel myTasks={myTasks} />
+
       {/* Stories - מעוכב לטעינה */}
       <React.Suspense fallback={null}>
       <StoriesBar />
@@ -222,13 +246,12 @@ export default function HomeFeed() {
           <div className="space-y-3">
             {sortedTasks.map(task => {
               const myApp = myApplications.find(a => a.task_id === task.id);
-              const isMyTask = task.client_id === me?.id;
               return (
                 <TaskCardWithSwipe 
                   key={task.id} 
                   task={task} 
                   myApp={myApp}
-                  isMyTask={isMyTask}
+                  isMyTask={false}
                   onDismiss={(taskId) => {
                     setDismissedTasks(prev => new Set([...prev, taskId]));
                   }} 
