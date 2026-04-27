@@ -71,14 +71,17 @@ export default function MapView() {
   return (
     <div className="h-screen flex flex-col" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-10 pb-3"
+      <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-10 pb-3 flex items-center gap-3"
         style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5' }}>
-        <h1 className="text-lg font-bold mb-3" style={{ color: '#0f2b6b' }}>🗺️ מפת ג'ובות</h1>
-        <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #dbeafe' }}>
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium" style={{ color: '#1a6fd4' }}>רדיוס חיפוש</span>
-            <span className="font-bold" style={{ color: '#1a6fd4' }}>{radius} ק"מ</span>
-          </div>
+        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>
+          ←
+        </button>
+        <h1 className="text-lg font-bold" style={{ color: '#0f2b6b' }}>🗺️ מפת ג'ובות</h1>
+        <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #dbeafe', marginBottom: 0 }}>
+           <div className="flex items-center justify-between text-sm">
+             <span className="font-medium" style={{ color: '#1a6fd4' }}>רדיוס חיפוש</span>
+             <span className="font-bold" style={{ color: '#1a6fd4' }}>{radius} ק"מ</span>
+           </div>
           <Slider
             value={[radius]}
             onValueChange={([v]) => setRadius(v)}

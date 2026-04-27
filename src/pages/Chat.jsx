@@ -59,17 +59,20 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen" dir="rtl" style={{ background: '#f4f7fb' }}>
       {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>
-          <ArrowRight size={18} color="white" />
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ fontWeight: 800, color: 'white', fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task?.title || 'צ\'אט'}</h1>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', margin: '4px 0 0 0' }}>
-            {task?.client_name} ↔ {task?.worker_name || 'ממתין למבצע'}
-          </p>
-        </div>
-      </div>
+       <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
+           <ArrowRight size={18} color="#1a6fd4" />
+         </button>
+         <div style={{ flex: 1, minWidth: 0 }}>
+           <h1 style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task?.title || 'צ\'אט'}</h1>
+           <p style={{ fontSize: 12, color: '#1a6fd4', margin: '2px 0 0 0', cursor: 'pointer' }} onClick={() => {
+             const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
+             if (otherPersonId) navigate(`/worker-profile?id=${otherPersonId}`);
+           }} title="לחץ לצפייה בפרופיל">
+             👤 {me?.id === task?.client_id ? task?.worker_name || 'ממתין למבצע' : task?.client_name}
+           </p>
+         </div>
+       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-20" style={{ background: '#f4f7fb' }}>

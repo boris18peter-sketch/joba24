@@ -86,9 +86,11 @@ export default function HomeFeed() {
   // Filter out my own tasks from the main feed
   const otherTasks = tasks.filter(t => t.client_id !== me?.id);
 
-  // Sort approved applications to top for workers
+  // Categorize applications
   const approvedApps = myApplications.filter(a => a.status === 'approved');
+  const pendingApps = myApplications.filter(a => a.status === 'pending');
   const approvedTaskIds = new Set(approvedApps.map(a => a.task_id));
+  const pendingTaskIds = new Set(pendingApps.map(a => a.task_id));
 
   const scored = otherTasks
     .filter(t => {
@@ -131,11 +133,14 @@ export default function HomeFeed() {
       };
     });
 
-  // Sort by: approved apps first, then relevance, then date
+  // Sort by: 1) approved (accepted tasks), 2) pending (waiting for approval), 3) others by relevance
   const sortedTasks = scored.sort((a, b) => {
-    const aIsApproved = approvedTaskIds.has(a.id) ? 0 : 1;
-    const bIsApproved = approvedTaskIds.has(b.id) ? 0 : 1;
-    if (aIsApproved !== bIsApproved) return aIsApproved - bIsApproved;
+    const aIsApproved = approvedTaskIds.has(a.id) ? 0 : 2;
+    const bIsApproved = approvedTaskIds.has(b.id) ? 0 : 2;
+    const aIsPending = !approvedTaskIds.has(a.id) && pendingTaskIds.has(a.id) ? 1 : aIsApproved;
+    const bIsPending = !approvedTaskIds.has(b.id) && pendingTaskIds.has(b.id) ? 1 : bIsApproved;
+    
+    if (aIsPending !== bIsPending) return aIsPending - bIsPending;
     return b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date);
   });
 
@@ -219,13 +224,18 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {/* My Tasks Carousel */}
-      <MyTasksCarousel myTasks={myTasks} />
-
       {/* Stories - מעוכב לטעינה */}
       <React.Suspense fallback={null}>
       <StoriesBar />
       </React.Suspense>
+
+      {/* My Published Tasks Carousel */}
+      <div style={{ padding: '12px 16px 4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b' }}>משימות שפרסמתי</span>
+        </div>
+      </div>
+      <MyTasksCarousel myTasks={myTasks} />
 
       <div className="px-4 py-4 space-y-3">
         {isLoading ? (

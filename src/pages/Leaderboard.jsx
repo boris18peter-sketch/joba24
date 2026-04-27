@@ -64,9 +64,9 @@ export default function Leaderboard() {
       <div className="sticky top-0 z-40 border-b px-4 pt-10 pb-4 flex items-center gap-3"
         style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <button onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: '#dce8f5' }}>
-          <ArrowRight className="w-4 h-4 text-blue-700" />
+          className="flex items-center justify-center"
+          style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', cursor: 'pointer' }}>
+          <ArrowRight className="w-4 h-4" color="#1a6fd4" />
         </button>
         <div>
           <h1 className="text-xl font-black" style={{ color: '#0f2b6b' }}>לוח מובילים 🏆</h1>

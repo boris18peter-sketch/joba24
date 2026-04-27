@@ -90,10 +90,17 @@ function FAQItem({ q, a }) {
 export default function FAQ() {
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+      {/* Back Button */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '8px 16px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center' }}>
+        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>
+          ←
+        </button>
+      </div>
+
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)',
-        padding: '56px 20px 32px',
+        padding: '48px 20px 32px',
       }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
         <h1 style={{ color: 'white', fontSize: 24, fontWeight: 900, marginBottom: 6 }}>שאלות ותשובות</h1>
