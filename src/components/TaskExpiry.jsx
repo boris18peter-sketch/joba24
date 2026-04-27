@@ -3,7 +3,7 @@ import { Timer } from 'lucide-react';
 
 // showOnlyWhenUrgent=true → only shows timer when < 6 hours left (for task cards)
 // showOnlyWhenUrgent=false → always shows (for task detail page)
-export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true }) {
+export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inline = false }) {
   const [timeLeft, setTimeLeft] = useState('');
   const [hoursLeft, setHoursLeft] = useState(null);
 
@@ -40,6 +40,11 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true }) {
   const isExpired = timeLeft === 'פג תוקף';
   const isUrgent = !isExpired && hoursLeft !== null && hoursLeft < 2;
 
+  // inline mode: just returns the text for embedding inside another element
+  if (inline) {
+    return <span style={{ fontWeight: 700 }}>{timeLeft}</span>;
+  }
+
   return (
     <div
       style={{
@@ -57,7 +62,7 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true }) {
       title="הג'ובה תיסגר אוטומטית בסיום הטיימר"
     >
       <Timer size={12} color={isUrgent ? '#dc2626' : '#f97316'} />
-      <span>נסגר בעוד {timeLeft}</span>
+      <span>נסגרת בעוד {timeLeft}</span>
     </div>
   );
 }

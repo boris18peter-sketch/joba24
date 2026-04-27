@@ -189,24 +189,30 @@ export default function TaskDetail() {
             <div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>תשלום</div>
               <div style={{ fontSize: 42, fontWeight: 900, letterSpacing: -2 }}>₪{task.price}</div>
-              {task.estimated_time && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
-                  <Clock size={13} />
-                  <span>זמן משוער: {task.estimated_time}</span>
-                </div>
-              )}
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>{getCategoryLabel(task.category)}</div>
-              {task.expires_at && task.status === 'OPEN' && (
-                <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} />
-              )}
               {task.approval_mode === 'manual' && (
-                <div style={{ marginTop: 8, fontSize: 12, background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ fontSize: 12, background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Users size={12} /> אישור ידני
                 </div>
               )}
             </div>
+          </div>
+          {/* Bottom row: time + expiry */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+            {task.estimated_time && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                <Clock size={13} />
+                <span>זמן משוער: {task.estimated_time}</span>
+              </div>
+            )}
+            {task.expires_at && task.status === 'OPEN' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 10, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
+                <Clock size={12} />
+                <span>⏳ נסגרת בעוד: <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -412,7 +418,7 @@ export default function TaskDetail() {
 
       {/* Sticky bottom CTA */}
       {(canTakeInstant || (canApplyManual && !showApplyForm && !hasApplied)) && (
-        <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, padding: '12px 16px 28px', background: 'linear-gradient(to top, rgba(244,247,251,1) 70%, rgba(244,247,251,0))' }}>
+        <div style={{ position: 'fixed', bottom: 72, left: 16, right: 16, zIndex: 50 }}>
           {canTakeInstant && (
             <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}

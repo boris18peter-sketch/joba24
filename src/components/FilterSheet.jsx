@@ -30,21 +30,26 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto" dir="rtl">
-        <SheetHeader><SheetTitle>פילטרים</SheetTitle></SheetHeader>
+        <SheetHeader>
+          <SheetTitle style={{ color: '#0f2b6b', fontWeight: 800 }}>פילטרים</SheetTitle>
+        </SheetHeader>
         <div className="space-y-5 py-4">
 
           {/* Price */}
           <div>
-            <Label className="text-sm font-semibold mb-2 block">מחיר</Label>
+            <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>מחיר</Label>
             <div className="flex gap-2 flex-wrap">
               {PRICE_OPTIONS.map(opt => {
                 const isActive = activePriceOption?.label === opt.label;
                 return (
                   <button key={opt.label}
                     onClick={() => setLocal(p => ({ ...p, minPrice: opt.min, maxPrice: opt.max }))}
-                    className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
-                      isActive ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
-                    }`}
+                    style={{
+                      padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                      background: isActive ? '#1a6fd4' : 'white',
+                      color: isActive ? 'white' : '#555',
+                      border: isActive ? '1px solid #1a6fd4' : '1px solid #dce8f5',
+                    }}
                   >{opt.label}</button>
                 );
               })}
@@ -53,13 +58,16 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
 
           {/* Approval mode */}
           <div>
-            <Label className="text-sm font-semibold mb-2 block">סוג ביצוע</Label>
-            <div className="flex gap-2">
+            <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>סוג ביצוע</Label>
+            <div className="flex gap-2 flex-wrap">
               {[{ val: '', label: 'הכל' }, { val: 'instant', label: '⚡ מיידי' }, { val: 'manual', label: '✋ ממתין לאישור' }].map(opt => (
                 <button key={opt.val} onClick={() => setLocal(p => ({ ...p, approvalMode: opt.val }))}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
-                    local.approvalMode === opt.val ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
-                  }`}
+                  style={{
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    background: local.approvalMode === opt.val ? '#1a6fd4' : 'white',
+                    color: local.approvalMode === opt.val ? 'white' : '#555',
+                    border: local.approvalMode === opt.val ? '1px solid #1a6fd4' : '1px solid #dce8f5',
+                  }}
                 >{opt.label}</button>
               ))}
             </div>
@@ -67,13 +75,16 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
 
           {/* Time */}
           <div>
-            <Label className="text-sm font-semibold mb-2 block">זמן ביצוע</Label>
+            <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>זמן ביצוע</Label>
             <div className="flex gap-2 flex-wrap">
               {timeOptions.map(t => (
                 <button key={t} onClick={() => setLocal(p => ({ ...p, time: p.time === t ? '' : t }))}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
-                    local.time === t ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
-                  }`}
+                  style={{
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    background: local.time === t ? '#1a6fd4' : 'white',
+                    color: local.time === t ? 'white' : '#555',
+                    border: local.time === t ? '1px solid #1a6fd4' : '1px solid #dce8f5',
+                  }}
                 >{t}</button>
               ))}
             </div>
@@ -81,17 +92,23 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
 
           {/* City */}
           <div>
-            <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><MapPin className="w-4 h-4" /> עיר</Label>
+            <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MapPin size={14} /> עיר
+            </Label>
             <div className="flex gap-2 flex-wrap">
               {cities.map(c => (
                 <button key={c} onClick={() => setLocal(p => ({ ...p, city: p.city === c ? '' : c }))}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all border ${
-                    local.city === c ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
-                  }`}
+                  style={{
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    background: local.city === c ? '#1a6fd4' : 'white',
+                    color: local.city === c ? 'white' : '#555',
+                    border: local.city === c ? '1px solid #1a6fd4' : '1px solid #dce8f5',
+                  }}
                 >{c}</button>
               ))}
             </div>
-            <Input placeholder="עיר אחרת..." className="bg-secondary border-0 rounded-xl mt-2 text-sm"
+            <Input placeholder="עיר אחרת..."
+              style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, marginTop: 8 }}
               value={!cities.includes(local.city) ? local.city : ''}
               onChange={e => setLocal(p => ({ ...p, city: e.target.value }))}
             />
@@ -99,8 +116,12 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
         </div>
 
         <div className="flex gap-2 pb-4">
-          <Button variant="outline" onClick={handleReset} className="flex-1 rounded-xl">איפוס</Button>
-          <Button onClick={handleApply} className="flex-1 rounded-xl bg-black hover:bg-gray-900">החל</Button>
+          <button onClick={handleReset}
+            style={{ flex: 1, height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#0f2b6b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+          >איפוס</button>
+          <button onClick={handleApply}
+            style={{ flex: 1, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}
+          >החל פילטרים</button>
         </div>
       </SheetContent>
     </Sheet>
