@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ export default function TaskApplicants({ task, onApprove }) {
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
-    refetchInterval: 8000,
+    refetchInterval: 3000,
   });
 
   const approveMutation = useMutation({
@@ -30,6 +31,16 @@ export default function TaskApplicants({ task, onApprove }) {
       onApprove?.();
     },
   });
+
+  // Real-time subscription to applications
+  useEffect(() => {
+    const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
+      if (event.data?.task_id === task.id) {
+        queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      }
+    });
+    return unsubscribe;
+  }, [task.id]);
 
   const pending = applications.filter(a => a.status === 'pending');
 

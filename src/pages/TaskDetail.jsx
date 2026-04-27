@@ -52,7 +52,7 @@ export default function TaskDetail() {
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
     select: data => data[0],
     enabled: !!me?.id,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
   });
   const isApproved = myApp?.status === 'approved';
 
@@ -68,13 +68,19 @@ export default function TaskDetail() {
     prevWorkerIdRef.current = myApp.status;
   }, [myApp?.status]);
 
-  // Real-time subscription
+  // Real-time subscriptions
   useEffect(() => {
-    const unsubscribe = base44.entities.Task.subscribe((event) => {
+    const unsubscribe1 = base44.entities.Task.subscribe((event) => {
       if (event.id === id) queryClient.invalidateQueries({ queryKey: ['task', id] });
     });
-    return unsubscribe;
-  }, [id]);
+    const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
+      if (event.data?.task_id === id) queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+    });
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
+  }, [id, me?.id]);
 
   const handleWorkerUpdate = async (data) => {
     await base44.entities.Task.update(id, data);
