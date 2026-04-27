@@ -9,8 +9,8 @@ import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 export default function Layout() {
   const location = useLocation();
   const [notifications, setNotifications] = useState([]);
-  const prevTasksRef = useRef(new Map());
-  const prevApplicationsRef = useRef(new Map());
+  const prevTasksRef = useRef({});
+  const prevApplicationsRef = useRef({});
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: workerTasks = [] } = useQuery({
@@ -39,7 +39,7 @@ export default function Layout() {
   // Watch for task status changes (someone took my task)
   useEffect(() => {
     myPublishedTasks.forEach(task => {
-      const prevTask = prevTasksRef.current.get(task.id);
+      const prevTask = prevTasksRef.current[task.id];
       if (prevTask && prevTask.status !== task.status) {
         if (task.status === 'TAKEN' && prevTask.status === 'OPEN') {
           addNotification({
@@ -49,14 +49,14 @@ export default function Layout() {
           });
         }
       }
-      prevTasksRef.current.set(task.id, task);
+      prevTasksRef.current[task.id] = task;
     });
   }, [myPublishedTasks]);
 
   // Watch for application status changes
   useEffect(() => {
     myApplications.forEach(app => {
-      const prevApp = prevApplicationsRef.current.get(app.id);
+      const prevApp = prevApplicationsRef.current[app.id];
       if (prevApp && prevApp.status !== app.status) {
         if (app.status === 'approved') {
           addNotification({
@@ -65,7 +65,7 @@ export default function Layout() {
           });
         }
       }
-      prevApplicationsRef.current.set(app.id, app);
+      prevApplicationsRef.current[app.id] = app;
     });
   }, [myApplications]);
 
