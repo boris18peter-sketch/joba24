@@ -100,16 +100,17 @@ export default function HomeFeed() {
       {/* Header */}
       <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <div className="px-4 pt-4 pb-3">
-          <div style={{ position: 'relative', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
-            {/* Spacer for menu button on left */}
-            <div style={{ width: 42 + 16, flexShrink: 0 }} />
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 12 }} />
-              <h1 className="text-3xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
-            </div>
-            <div style={{ width: 42 + 16, flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, marginRight: 58 }}>
+            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 12 }} />
+            <h1 className="text-3xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
           </div>
-          <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} ג'ובות פתוחות</p>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+            </span>
+            <p className="text-sm" style={{ color: '#1a6fd4' }}>{openTasks.length} ג'ובות פתוחות</p>
+          </div>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

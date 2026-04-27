@@ -22,6 +22,14 @@ const EXPIRY_OPTIONS = [
   { label: 'שבוע', hours: 168 },
 ];
 
+function SectionCard({ children }) {
+  return (
+    <div style={{ background: 'white', borderRadius: 20, padding: '18px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
+      {children}
+    </div>
+  );
+}
+
 export default function CreateTask() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -87,221 +95,225 @@ export default function CreateTask() {
     navigate('/');
   };
 
+  const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
+  const inactiveBtn = { background: 'white', color: '#555', border: '1px solid #dce8f5' };
+
   return (
-    <div className="min-h-screen" dir="rtl">
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-12 pb-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <h1 className="text-lg font-bold">פרסום ג'ובה חדשה</h1>
+    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)',
+        padding: '52px 16px 24px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ position: 'absolute', bottom: -20, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ArrowRight size={18} color="white" />
+          </button>
+          <div>
+            <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>פרסום ג'ובה חדשה</h1>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>מלא את הפרטים ופרסם תוך שניות</p>
+          </div>
+        </div>
       </div>
 
-      <div className="px-4 py-5 space-y-5 pb-12">
+      <div className="px-4 py-4 space-y-4 pb-12">
         {/* Info banner */}
-        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-800 leading-relaxed">
-            <strong>חשוב!</strong> ככל שהג'ובה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים. מלא את כל הפרטים.
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
+          <p style={{ fontSize: 13, color: '#1e40af', margin: 0, lineHeight: 1.6 }}>
+            <strong>חשוב!</strong> ככל שהג'ובה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים.
           </p>
         </div>
 
         {/* Category */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">קטגוריה</Label>
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map(c => (
               <button key={c.value} onClick={() => set('category', c.value)}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
-                  form.category === c.value
-                    ? 'bg-black text-white border-black shadow-md'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-                }`}
+                style={{ padding: '7px 14px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', ...(form.category === c.value ? activeBtn : inactiveBtn) }}
               >{c.label}</button>
             ))}
           </div>
-        </div>
+        </SectionCard>
 
-        {/* Title */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">מה צריך לעשות? *</Label>
+        {/* Title + Description */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
           <Input placeholder="לדוגמה: להרים מקרר לקומה שלישית"
             value={form.title} onChange={e => set('title', e.target.value)}
-            className="bg-secondary border-0 rounded-xl h-12 text-base"
+            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 48, fontSize: 15, marginBottom: 14 }}
           />
-        </div>
-
-        {/* Description */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">תיאור מפורט *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תיאור מפורט *</Label>
           <Textarea placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description} onChange={e => set('description', e.target.value)}
-            className="bg-secondary border-0 rounded-xl resize-none" rows={4}
+            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, resize: 'none' }} rows={4}
           />
-        </div>
+        </SectionCard>
 
         {/* Images */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">תמונות (עד 4)</Label>
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תמונות (עד 4)</Label>
           <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
-        </div>
+        </SectionCard>
 
         {/* Price */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">מחיר (₪) *</Label>
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
           <Input type="number" placeholder="100"
             value={form.price} onChange={e => set('price', e.target.value)}
-            className="bg-secondary border-0 rounded-xl h-12 text-base font-bold"
+            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
           />
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />
-        </div>
 
-        {/* Auto Price Bump */}
-        <div>
+          {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
-            className={`w-full flex items-center gap-3 p-4 rounded-xl text-right transition-all border ${form.auto_bump_enabled ? 'bg-amber-50 border-amber-300' : 'bg-secondary border-transparent'}`}
+            style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : '#f4f7fb', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : '#dce8f5'}` }}
           >
-            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${form.auto_bump_enabled ? 'bg-amber-500 border-amber-500' : 'border-gray-300'}`}>
-              {form.auto_bump_enabled && <span className="text-white text-xs">✓</span>}
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
-            <div className="text-right flex-1">
-              <div className="text-sm font-semibold">⚡ העלאת מחיר אוטומטית</div>
-              <div className="text-xs text-gray-500 mt-0.5">אם הג'ובה לא נלקחת, המחיר יעלה כל 5 דקות עד המקסימום</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>⚡ העלאת מחיר אוטומטית</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>המחיר יעלה כל 5 דקות עד המקסימום</div>
             </div>
           </button>
           {form.auto_bump_enabled && (
-            <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-              <Label className="text-sm font-semibold block text-amber-800">מחיר מקסימלי (₪)</Label>
+            <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 8 }}>מחיר מקסימלי (₪)</Label>
               <Input type="number" placeholder="250"
                 value={form.max_price} onChange={e => set('max_price', e.target.value)}
-                className="bg-white border-amber-200 rounded-xl h-11 text-base font-bold"
+                style={{ background: 'white', border: '1px solid #fcd34d', borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
               />
             </div>
           )}
-        </div>
+        </SectionCard>
 
         {/* Approval Mode */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">אופן אישור עובד</Label>
-          <div className="grid grid-cols-2 gap-2">
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>אופן אישור עובד</Label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <button onClick={() => set('approval_mode', 'instant')}
-              className={`p-3 rounded-xl border text-right transition-all ${form.approval_mode === 'instant' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-700'}`}
+              style={{ padding: '14px 12px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', ...(form.approval_mode === 'instant' ? activeBtn : inactiveBtn) }}
             >
-              <Zap className="w-4 h-4 mb-1" />
-              <div className="text-sm font-bold">אישור מיידי</div>
-              <div className={`text-xs mt-0.5 ${form.approval_mode === 'instant' ? 'text-white/70' : 'text-gray-400'}`}>ראשון שלוקח — זוכה</div>
+              <Zap size={16} style={{ marginBottom: 6 }} />
+              <div style={{ fontSize: 13, fontWeight: 800 }}>אישור מיידי</div>
+              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>ראשון שלוקח — זוכה</div>
             </button>
             <button onClick={() => set('approval_mode', 'manual')}
-              className={`p-3 rounded-xl border text-right transition-all ${form.approval_mode === 'manual' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-700'}`}
+              style={{ padding: '14px 12px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', ...(form.approval_mode === 'manual' ? activeBtn : inactiveBtn) }}
             >
-              <Users className="w-4 h-4 mb-1" />
-              <div className="text-sm font-bold">אני בוחר</div>
-              <div className={`text-xs mt-0.5 ${form.approval_mode === 'manual' ? 'text-white/70' : 'text-gray-400'}`}>אראה מועמדים ואבחר</div>
+              <Users size={16} style={{ marginBottom: 6 }} />
+              <div style={{ fontSize: 13, fontWeight: 800 }}>אני בוחר</div>
+              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>אראה מועמדים ואבחר</div>
             </button>
           </div>
-        </div>
+        </SectionCard>
 
         {/* Expiry */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> תוקף הג'ובה</Label>
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <Clock size={14} /> תוקף הג'ובה
+          </Label>
           <div className="flex gap-2 flex-wrap">
             {EXPIRY_OPTIONS.map(opt => (
               <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
-                  form.expiry_hours === opt.hours ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
-                }`}
+                style={{ padding: '8px 16px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.expiry_hours === opt.hours ? activeBtn : inactiveBtn) }}
               >{opt.label}</button>
             ))}
           </div>
-          {form.expiry_hours && <p className="text-xs text-gray-400 mt-1.5">המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>}
-        </div>
+          {form.expiry_hours && <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>}
+        </SectionCard>
 
         {/* Story */}
-        <div>
+        <SectionCard>
           <button type="button" onClick={() => set('is_story', !form.is_story)}
-            className={`w-full flex items-center gap-3 p-4 rounded-xl text-right transition-all border ${form.is_story ? 'bg-purple-50 border-purple-300' : 'bg-secondary border-transparent'}`}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'right' }}
           >
-            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${form.is_story ? 'bg-purple-500 border-purple-500' : 'border-gray-300'}`}>
-              {form.is_story && <span className="text-white text-xs">✓</span>}
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.is_story ? '#a855f7' : '#cbd5e1'}`, background: form.is_story ? '#a855f7' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {form.is_story && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
-            <div className="text-right flex-1">
-              <div className="text-sm font-semibold flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" /> הצג כ-Story
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={14} color="#a855f7" /> הצג כ-Story
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">הג'ובה תופיע בשורת Stories למשך 24 שעות (₪5 — יחויב בהמשך)</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>הג'ובה תופיע בשורת Stories למשך 24 שעות (₪5 — יחויב בהמשך)</div>
             </div>
           </button>
-        </div>
+        </SectionCard>
 
         {/* Location */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><MapPin className="w-4 h-4" /> מיקום</Label>
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <MapPin size={14} /> מיקום
+          </Label>
           <Input placeholder="לדוגמה: תל אביב, רחוב דיזנגוף 50"
             value={form.location_name} onChange={e => set('location_name', e.target.value)}
-            className="bg-secondary border-0 rounded-xl h-12 mb-2"
+            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 48, marginBottom: 10 }}
           />
           <Input placeholder="עיר (לדוגמה: תל אביב)"
             value={form.city} onChange={e => set('city', e.target.value)}
-            className="bg-secondary border-0 rounded-xl h-10 text-sm"
+            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 42 }}
           />
-        </div>
+        </SectionCard>
 
         {/* Time */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> זמן ביצוע משוער</Label>
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <Clock size={14} /> זמן ביצוע משוער
+          </Label>
           <div className="flex gap-2 flex-wrap">
             {timeOptions.map(t => (
               <button key={t} onClick={() => set('estimated_time', t)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
-                  form.estimated_time === t ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
-                }`}
+                style={{ padding: '8px 16px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.estimated_time === t ? activeBtn : inactiveBtn) }}
               >{t === 'custom' ? '⌨️ מותאם' : t}</button>
             ))}
           </div>
           {form.estimated_time === 'custom' && (
-            <input
-              type="text"
-              placeholder="לדוגמה: 3 שעות, יום שלם, שבוע..."
-              value={form.custom_time}
-              onChange={e => set('custom_time', e.target.value)}
-              className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary border-0 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            <input type="text" placeholder="לדוגמה: 3 שעות, יום שלם, שבוע..."
+              value={form.custom_time} onChange={e => set('custom_time', e.target.value)}
+              style={{ marginTop: 10, width: '100%', padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 14, outline: 'none' }}
             />
           )}
-        </div>
+        </SectionCard>
 
         {/* Requirements */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><CheckSquare className="w-4 h-4" /> דרישות</Label>
-          <div className="space-y-2">
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <CheckSquare size={14} /> דרישות
+          </Label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
               { key: 'vehicle', label: '🚗 דרוש רכב' },
               { key: 'two_people', label: '👥 שני אנשים' },
               { key: 'experience', label: '🛠️ ניסיון' },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setReq(key, !form.requirements[key])}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl text-right transition-all border ${form.requirements[key] ? 'bg-black/5 border-black/20' : 'bg-secondary border-transparent'}`}
+                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? '#eff6ff' : '#f4f7fb', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : '#dce8f5'}` }}
               >
-                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${form.requirements[key] ? 'bg-black border-black' : 'border-gray-300'}`}>
-                  {form.requirements[key] && <span className="text-white text-xs">✓</span>}
+                <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : '#cbd5e1'}`, background: form.requirements[key] ? '#1a6fd4' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {form.requirements[key] && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
                 </div>
-                <span className="text-sm font-medium">{label}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : '#555' }}>{label}</span>
               </button>
             ))}
-            <input
-              type="text"
-              placeholder="דרישה נוספת... (לדוגמה: ניסיון עם מוצרי חשמל)"
-              value={form.requirements.custom || ''}
-              onChange={e => setReq('custom', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-secondary border-0 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            <input type="text" placeholder="דרישה נוספת... (לדוגמה: ניסיון עם מוצרי חשמל)"
+              value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
+              style={{ padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 13, outline: 'none' }}
             />
           </div>
-        </div>
+        </SectionCard>
 
-        <Button onClick={handleSubmit} disabled={loading}
-          className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
-          style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}
+        {/* Submit */}
+        <button onClick={handleSubmit} disabled={loading}
+          style={{ width: '100%', height: 56, borderRadius: 18, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5 ml-1" />פרסם ג'ובה</>}
-        </Button>
+          {loading ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} />פרסם ג'ובה</>}
+        </button>
       </div>
     </div>
   );
