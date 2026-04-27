@@ -58,15 +58,15 @@ function WorkerActions({ task, onUpdate }) {
     <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-3">
       <h3 className="font-bold text-blue-900 text-sm">עדכון סטטוס שלך</h3>
       <div className="space-y-2">
-        {!task.worker_status && (
-          <Button
-            onClick={() => updateStatus('on_the_way')}
-            disabled={loading}
-            className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Navigation className="w-4 h-4 ml-2" />יצאתי לדרך</>}
-          </Button>
-        )}
+         {!task.worker_status && task.worker_status !== 'done' && (
+           <Button
+             onClick={() => updateStatus('on_the_way')}
+             disabled={loading}
+             className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+           >
+             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Navigation className="w-4 h-4 ml-2" />יצאתי לדרך</>}
+           </Button>
+         )}
         {task.worker_status === 'on_the_way' && (
           <Button
             onClick={() => updateStatus('arrived')}
