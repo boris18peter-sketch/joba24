@@ -49,15 +49,12 @@ export default function CompletionModal({ task, me, onClose }) {
           type: 'payment',
           status: 'completed',
         });
-        // Update worker's wallet balance directly
-        const workerUsers = await base44.entities.User.filter({ id: task.worker_id });
-        if (workerUsers?.length > 0) {
-          const worker = workerUsers[0];
-          const currentBalance = worker.wallet_balance || 0;
-          await base44.auth.updateMe({ wallet_balance: currentBalance + task.price });
-          // Since updateMe only updates current user, use asServiceRole approach via entities
-          await base44.entities.User.update(task.worker_id, { wallet_balance: currentBalance + task.price });
-        }
+        // Call backend function to release payment to worker's wallet
+        await base44.functions.invoke('releasePayment', {
+          taskId: task.id,
+          workerId: task.worker_id,
+          amount: task.price,
+        });
       }
     },
     onSuccess: () => {
