@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Navigation, CheckCircle2, PartyPopper, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,14 +12,23 @@ const STEPS = [
 
 export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) {
   const [loading, setLoading] = useState(false);
+  const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
 
   if (!task.worker_id) return null;
 
-  // Get current step index
-  const currentStepIndex = !task.worker_status ? -1 : STEPS.findIndex(s => s.key === task.worker_status);
+  // סנכרון עם task.worker_status מ-props
+  useEffect(() => {
+    setLocalStatus(task?.worker_status ?? null);
+  }, [task?.worker_status]);
+
+  // Get current step index - משתמש ב-localStatus
+  const currentStepIndex = localStatus ? STEPS.findIndex(s => s.key === localStatus) : -1;
 
   const handleStepClick = async (step) => {
     setLoading(true);
+    // Optimistic update - update locally first
+    setLocalStatus(step.key);
+    
     try {
       const update = { worker_status: step.key };
       
@@ -50,6 +59,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       await onUpdate(update);
       toast.success(`✅ ${step.label}`);
     } catch (err) {
+      // Revert on error
+      setLocalStatus(task?.worker_status ?? null);
       toast.error('שגיאה בעדכון סטטוס');
       console.error(err);
     } finally {
