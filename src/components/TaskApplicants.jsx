@@ -17,35 +17,48 @@ export default function TaskApplicants({ task, onApprove }) {
   const approveMutation = useMutation({
     mutationFn: async (app) => {
       console.log('🔄 STARTING APPROVAL:', app);
-      // Use backend function for atomic approval + data consistency
-      const response = await base44.functions.invoke('approveWorker', {
-        taskId: task.id,
-        applicationId: app.id,
-        workerId: app.worker_id,
-        workerName: app.worker_name,
+      
+      // Step 1: Update task with worker assignment
+      await base44.entities.Task.update(task.id, {
+        status: 'TAKEN',
+        worker_id: app.worker_id,
+        worker_name: app.worker_name,
       });
+      console.log('✅ Task updated with worker');
 
-      console.log('📦 BACKEND RESPONSE:', response);
+      // Step 2: Approve application
+      await base44.entities.TaskApplication.update(app.id, { 
+        status: 'approved' 
+      });
+      console.log('✅ Application approved');
 
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'אישור נכשל');
+      // Step 3: Fetch fresh task to verify
+      const freshTasks = await base44.entities.Task.filter({ id: task.id });
+      const updatedTask = freshTasks[0];
+      console.log('✅ Fresh task fetched:', updatedTask);
+
+      // Step 4: Verify data was saved
+      if (updatedTask.worker_id !== app.worker_id) {
+        throw new Error('⚠️ worker_id לא נשמר בצורה נכונה');
+      }
+      if (updatedTask.status !== 'TAKEN') {
+        throw new Error('⚠️ status לא שונה ל-TAKEN');
       }
 
       // Reject others
       const others = applications.filter(a => a.id !== app.id && a.status === 'pending');
       await Promise.all(others.map(a => base44.entities.TaskApplication.update(a.id, { status: 'rejected' })));
 
-      return response.data;
+      return { task: updatedTask };
     },
-    onSuccess: async () => {
+    onSuccess: (data) => {
       console.log('✅ APPROVAL SUCCESS - Refetching data');
       // CRITICAL: Invalidate BEFORE refetch to clear cache
-      await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      // CRITICAL: Force immediate fresh fetch
-      await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-      await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
-      toast.success(`${approveMutation.data?.task?.worker_name} אושר! ✨`);
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.refetchQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      queryClient.refetchQueries({ queryKey: ['applications', task.id] });
+      toast.success(`${data.task.worker_name} אושר! ✨`);
       onApprove?.();
     },
     onError: (error) => {
