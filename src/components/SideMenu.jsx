@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, Zap } from 'lucide-react';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'פיד משימות' },
-  { to: '/map', icon: Map, label: 'מפת משימות' },
+  { to: '/', icon: Home, label: 'פיד ג\'ובות' },
+  { to: '/map', icon: Map, label: 'מפת ג\'ובות' },
   { to: '/create-task', icon: Plus, label: 'פרסם ג\'ובה' },
   { to: '/wallet', icon: Wallet, label: 'ארנק' },
   { to: '/profile', icon: User, label: 'פרופיל' },

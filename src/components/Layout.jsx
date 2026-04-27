@@ -5,6 +5,7 @@ import SideMenu from '@/components/SideMenu';
 const navItems = [
   { to: '/', icon: Home, label: 'פיד' },
   { to: '/map', icon: Map, label: 'מפה' },
+
   { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
   { to: '/wallet', icon: Wallet, label: 'ארנק' },
   { to: '/profile', icon: User, label: 'פרופיל' },

@@ -15,11 +15,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const createPin = (color) => L.divIcon({
+const createPin = (color, price) => L.divIcon({
   className: '',
-  html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;background:${color};border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.25);transform:rotate(-45deg)"></div>`,
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
+  html: `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="background:${color};border:2.5px solid white;box-shadow:0 2px 10px rgba(0,0,0,0.28);border-radius:20px;padding:4px 8px;font-size:11px;font-weight:900;color:white;white-space:nowrap;">
+        ₪${price}
+      </div>
+      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid ${color};margin-top:-1px"></div>
+    </div>
+  `,
+  iconSize: [60, 38],
+  iconAnchor: [30, 38],
 });
 
 const pinColors = {
@@ -66,7 +73,7 @@ export default function MapView() {
       {/* Header */}
       <div className="sticky top-0 z-[1000] backdrop-blur-sm border-b px-4 pt-10 pb-3"
         style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5' }}>
-        <h1 className="text-lg font-bold mb-3" style={{ color: '#0f2b6b' }}>🗺️ מפת משימות</h1>
+        <h1 className="text-lg font-bold mb-3" style={{ color: '#0f2b6b' }}>🗺️ מפת ג'ובות</h1>
         <div className="rounded-2xl p-3 space-y-2" style={{ background: 'white', border: '1px solid #dbeafe' }}>
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium" style={{ color: '#1a6fd4' }}>רדיוס חיפוש</span>
@@ -100,7 +107,7 @@ export default function MapView() {
             <Marker
               key={task.id}
               position={[task.lat, task.lng]}
-              icon={createPin(pinColors[task.status] || pinColors.OPEN)}
+              icon={createPin(pinColors[task.status] || pinColors.OPEN, task.price)}
             >
               <Popup className="rounded-xl">
                 <div className="p-1 min-w-[180px]" dir="rtl">
@@ -130,10 +137,10 @@ export default function MapView() {
 
                   <Link
                     to={`/task/${task.id}`}
-                    className="block text-center text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors"
-                    style={{ background: '#1a6fd4' }}
+                    className="block text-center text-xs font-bold py-2 px-3 rounded-lg transition-colors"
+                    style={{ background: '#1a6fd4', color: 'white' }}
                   >
-                    צפה במשימה ←
+                    צפה בג'ובה ←
                   </Link>
                 </div>
               </Popup>
