@@ -43,16 +43,16 @@ export default function Profile() {
   const avgRating = rating > 0 ? rating.toFixed(1) : '—';
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir="rtl" style={{ textAlign: 'right' }}>
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '56px 20px 28px' }}>
-        <div className="flex items-center justify-between mb-6">
-          <h1 style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600 }}>הפרופיל שלי</h1>
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, textAlign: 'right' }}>הפרופיל שלי</h1>
         </div>
 
         {/* Avatar + Name */}
-        <div className="flex items-center gap-4 mb-5">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexDirection: 'row' }}>
           <div style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: 'white', border: '2px solid rgba(255,255,255,0.3)' }}>
             {me?.full_name?.[0]?.toUpperCase() || <User size={28} />}
           </div>
@@ -103,7 +103,7 @@ export default function Profile() {
       {me?.preferred_categories?.length > 0 && (
         <div style={{ padding: '12px 16px 0' }}>
           <div style={{ background: 'white', borderRadius: 16, padding: '14px 16px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', border: '1px solid #e8f0fe' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 8 }}>קטגוריות מועדפות</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', marginBottom: 8 }}>קטגוריות מועדפות</div>
             <div className="flex gap-2 flex-wrap">
               {me.preferred_categories.map(c => (
                 <span key={c} style={{ fontSize: 12, background: '#f1f5f9', color: '#444', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
@@ -119,7 +119,7 @@ export default function Profile() {
       {me?.certificates?.length > 0 && (
         <div style={{ padding: '12px 16px 0' }}>
           <div style={{ background: 'white', borderRadius: 16, padding: '14px 16px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', border: '1px solid #e8f0fe' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#333', marginBottom: 8 }}>תעודות ואישורים</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', marginBottom: 8 }}>תעודות ואישורים</div>
             <div className="flex gap-2 flex-wrap">
               {me.certificates.map(cert => (
                 <span key={cert} style={{ fontSize: 12, background: '#f1f5f9', color: '#444', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
@@ -158,7 +158,7 @@ export default function Profile() {
             <div style={{ width: 36, height: 36, borderRadius: 10, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Settings size={17} color="#666" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#111', flex: 1 }}>הגדרות פרופיל</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#0f2b6b', flex: 1 }}>הגדרות פרופיל</span>
             <ChevronLeft size={16} color="#ccc" />
           </Link>
           <button
