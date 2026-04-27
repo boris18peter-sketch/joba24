@@ -13,6 +13,10 @@ const CLIENT_STEPS = [
 ];
 
 function getClientStep(task) {
+  // For manual approval mode: stay on step 0 until task is TAKEN (worker approved)
+  if (task.status === 'OPEN' && task.approval_mode === 'manual') return 0;
+  
+  // For instant mode OR after approval in manual mode: show "searching" (step 0/1)
   if (task.status === 'OPEN') return 0;
   if (task.status === 'TAKEN' && !task.worker_status) return 1;
   if (task.worker_status === 'on_the_way') return 2;
@@ -184,13 +188,15 @@ function ClientTracker({ task, onConfirmDone }) {
 export default function WorkerTracker({ task, isOwner, isWorker, onUpdate, onConfirmDone }) {
   if (task.status === 'COMPLETED' || task.status === 'CANCELLED') return null;
 
-  // isWorker is true either from DB (task.worker_id matches) or just taken (taskTaken flag)
-  // Show worker actions when task is TAKEN or just taken (status may not yet be updated in cache)
-  const showWorkerActions = isWorker && (task.status === 'TAKEN' || task.status === 'OPEN') && task.worker_status !== 'done';
+  // Client (owner) can only see tracker after task is TAKEN or has approval
+  const ownerCanSeeTracker = isOwner && (task.status === 'TAKEN' || task.worker_id);
+
+  // Worker can see actions if they're the assigned worker and task is TAKEN, or just took it
+  const showWorkerActions = isWorker && task.status === 'TAKEN' && task.worker_status !== 'done';
 
   return (
     <div className="space-y-3">
-      {isOwner && !isWorker && <ClientTracker task={task} onConfirmDone={onConfirmDone} />}
+      {ownerCanSeeTracker && <ClientTracker task={task} onConfirmDone={onConfirmDone} />}
       {showWorkerActions && (
         <WorkerActions task={task} onUpdate={onUpdate} />
       )}

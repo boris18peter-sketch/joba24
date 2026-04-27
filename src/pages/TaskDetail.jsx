@@ -254,8 +254,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker Tracker — show for owner/worker on TAKEN/COMPLETED, or if my application was approved */}
-        {(isOwner || isWorker) && (task.status === 'TAKEN' || task.status === 'COMPLETED' || isApproved) && task.status !== 'EXPIRED' && (
+        {/* Worker Tracker — show for owner when task TAKEN, or for worker anytime */}
+        {(isWorker || (isOwner && task.worker_id)) && task.status !== 'EXPIRED' && task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
           <WorkerTracker
             task={task}
             isOwner={isOwner}
