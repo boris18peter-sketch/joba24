@@ -101,9 +101,9 @@ export default function HomeFeed() {
       <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <div className="px-4 pt-10 pb-3">
           <div className="flex items-center justify-between mb-0.5">
-            <div className="flex items-center gap-2">
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
-              <h1 className="text-2xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
+            <div className="flex items-center gap-3" style={{ marginRight: 58 }}>
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 12 }} />
+              <h1 className="text-3xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
             </div>
           </div>
           <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} ג'ובות פתוחות</p>
