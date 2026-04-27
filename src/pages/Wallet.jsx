@@ -89,9 +89,9 @@ export default function Wallet() {
         <div>
           <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>איך עובדים הכספים?</div>
           <div style={{ fontSize:12, color:'#666', marginTop:3, lineHeight:1.8 }}>
-            <div>📤 <strong>לקוח משלם</strong> → הכסף נעול ב-Escrow</div>
-            <div>✅ <strong>לאחר אישור ביצוע</strong> → הכסף מועבר לעובד כ"יתרה זמינה"</div>
-            <div>🏦 <strong>משיכה</strong> → מהיתרה הזמינה לחשבון בנק</div>
+            <div>📤 <strong>לקוח משלם</strong> ← הכסף נעול ב-Escrow</div>
+              <div>✅ <strong>לאחר אישור ביצוע</strong> ← הכסף מועבר לעובד כ"יתרה זמינה"</div>
+              <div>🏦 <strong>משיכה</strong> ← מהיתרה הזמינה לחשבון בנק</div>
           </div>
         </div>
         </div>

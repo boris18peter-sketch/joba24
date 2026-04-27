@@ -99,12 +99,15 @@ export default function HomeFeed() {
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
       <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
-        <div className="px-4 pt-10 pb-3">
-          <div className="flex items-center justify-center mb-0.5" style={{ position: 'relative', minHeight: 42 }}>
-            <div className="flex items-center gap-3">
+        <div className="px-4 pt-4 pb-3">
+          <div style={{ position: 'relative', height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
+            {/* Spacer for menu button on left */}
+            <div style={{ width: 42 + 16, flexShrink: 0 }} />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
               <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 12 }} />
               <h1 className="text-3xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
             </div>
+            <div style={{ width: 42 + 16, flexShrink: 0 }} />
           </div>
           <p className="text-sm mb-3" style={{ color: '#1a6fd4' }}>🔵 {openTasks.length} ג'ובות פתוחות</p>
           <div className="flex gap-2">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, Zap } from 'lucide-react';
+import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד ג\'ובות' },
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/wallet', icon: Wallet, label: 'ארנק' },
   { to: '/profile', icon: User, label: 'פרופיל' },
   { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },
+  { to: '/faq', icon: HelpCircle, label: 'שאלות ותשובות' },
 ];
 
 export default function SideMenu() {

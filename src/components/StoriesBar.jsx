@@ -162,7 +162,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
           className="w-full rounded-2xl flex items-center justify-center font-bold text-sm py-3.5 text-white"
           style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)' }}
         >
-          ⚡ קח את המשימה
+          ⚡ קח את הג'ובה
         </Link>
       </div>
     </div>
