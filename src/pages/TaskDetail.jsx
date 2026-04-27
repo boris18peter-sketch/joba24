@@ -10,10 +10,10 @@ import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
-import WorkerTracker from '@/components/WorkerTracker';
 import TaskApplicants from '@/components/TaskApplicants';
 import WorkerStatusAlert from '@/components/WorkerStatusAlert';
 import ApprovedPopup from '@/components/ApprovedPopup';
+import WorkerStatusUpdater from '@/components/WorkerStatusUpdater';
 import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
@@ -306,21 +306,16 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* If worker is assigned — show tracker; else for manual mode show applicants */}
-        {hasWorker && task.status !== 'EXPIRED' && task.status !== 'COMPLETED' && task.status !== 'CANCELLED' ? (
-          <WorkerTracker
-            task={task}
-            isOwner={isOwner}
-            isWorker={isWorker}
-            onUpdate={handleWorkerUpdate}
-            onConfirmDone={() => setShowCompletion(true)}
-          />
-        ) : (
-          isOwner && task.approval_mode === 'manual' && task.status === 'OPEN' && (
-            <TaskApplicants task={task} onApprove={() => {
-              queryClient.refetchQueries({ queryKey: ['task', id] });
-            }} />
-          )
+        {/* Status updater for worker */}
+        {isWorker && hasWorker && task.status === 'TAKEN' && (
+          <WorkerStatusUpdater task={task} isWorker={isWorker} onUpdate={handleWorkerUpdate} />
+        )}
+
+        {/* Applicants for manual approval mode */}
+        {isOwner && task.approval_mode === 'manual' && task.status === 'OPEN' && (
+          <TaskApplicants task={task} onApprove={() => {
+            queryClient.refetchQueries({ queryKey: ['task', id] });
+          }} />
         )}
 
         {/* Description */}
