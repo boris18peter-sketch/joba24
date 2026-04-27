@@ -3,17 +3,135 @@ import { Home, Map, Plus, User, Wallet } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useState, useEffect, useRef } from 'react';
+import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 
 export default function Layout() {
   const location = useLocation();
+  const [notifications, setNotifications] = useState([]);
+  const prevTasksRef = useRef(new Map());
+  const prevApplicationsRef = useRef(new Map());
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id,
-    refetchInterval: 15000,
+    refetchInterval: 10000,
   });
+
+  // Get my published tasks for real-time notifications
+  const { data: myPublishedTasks = [] } = useQuery({
+    queryKey: ['myPublishedTasks', me?.id],
+    queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    refetchInterval: 10000,
+  });
+
+  // Get my applications
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myApplicationsLayout', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    refetchInterval: 10000,
+  });
+
+  // Watch for task status changes (someone took my task)
+  useEffect(() => {
+    myPublishedTasks.forEach(task => {
+      const prevTask = prevTasksRef.current.get(task.id);
+      if (prevTask && prevTask.status !== task.status) {
+        if (task.status === 'TAKEN' && prevTask.status === 'OPEN') {
+          addNotification({
+            type: 'task_taken',
+            taskTitle: task.title,
+            workerName: task.worker_name,
+          });
+        }
+      }
+      prevTasksRef.current.set(task.id, task);
+    });
+  }, [myPublishedTasks]);
+
+  // Watch for application status changes
+  useEffect(() => {
+    myApplications.forEach(app => {
+      const prevApp = prevApplicationsRef.current.get(app.id);
+      if (prevApp && prevApp.status !== app.status) {
+        if (app.status === 'approved') {
+          addNotification({
+            type: 'application_approved',
+            taskTitle: app.task_id,
+          });
+        }
+      }
+      prevApplicationsRef.current.set(app.id, app);
+    });
+  }, [myApplications]);
+
+  // Listen for real-time task events
+  useEffect(() => {
+    const unsubscribe = base44.entities.Task.subscribe((event) => {
+      if (event.type === 'create' && event.data?.client_id !== me?.id) {
+        // Task created by someone else - not a notification
+      } else if (event.type === 'update') {
+        const task = event.data;
+        
+        // Someone took my task
+        if (task.client_id === me?.id && task.status === 'TAKEN' && task.worker_id) {
+          addNotification({
+            type: 'task_taken',
+            taskTitle: task.title,
+            workerName: task.worker_name,
+          });
+        }
+        
+        // Worker status updated
+        if (task.worker_id === me?.id && task.worker_status) {
+          // Notify about status changes
+        }
+      }
+    });
+    return unsubscribe;
+  }, [me?.id]);
+
+  // Listen for real-time application events
+  useEffect(() => {
+    const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
+      if (event.type === 'create' && event.data?.task_id) {
+        // Someone applied to my task - notify client
+        const task = myPublishedTasks.find(t => t.id === event.data.task_id);
+        if (task) {
+          addNotification({
+            type: 'application_received',
+            taskTitle: task.title,
+            workerName: event.data.worker_name,
+          });
+        }
+      } else if (event.type === 'update' && event.data?.status === 'approved') {
+        // My application was approved
+        if (event.data.worker_id === me?.id) {
+          const task = myPublishedTasks.find(t => t.id === event.data.task_id) || 
+                      workerTasks.find(t => t.id === event.data.task_id);
+          addNotification({
+            type: 'application_approved',
+            taskTitle: task?.title || 'משימה',
+          });
+        }
+      }
+    });
+    return unsubscribe;
+  }, [me?.id, myPublishedTasks, workerTasks]);
+
+  const addNotification = (notification) => {
+    const id = Date.now();
+    const notifWithId = { ...notification, id };
+    setNotifications(prev => [notifWithId, ...prev]);
+  };
+
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   // Tasks in progress = TAKEN and worker confirmed (active work)
   const inProgressCount = workerTasks.filter(t => t.status === 'TAKEN').length;
@@ -29,6 +147,19 @@ export default function Layout() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f4f7fb', overflow: 'hidden' }}>
       <SideMenu />
+      
+      {/* Live Notifications Stack */}
+      <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 9999, pointerEvents: 'none' }}>
+        {notifications.map(notif => (
+          <div key={notif.id} style={{ pointerEvents: 'auto' }}>
+            <LiveNotificationPopup 
+              notification={notif} 
+              onClose={() => removeNotification(notif.id)} 
+            />
+          </div>
+        ))}
+      </div>
+      
       <div style={{ flex: 1, overflow: 'auto', paddingBottom: 80 }}>
         <Outlet />
       </div>
