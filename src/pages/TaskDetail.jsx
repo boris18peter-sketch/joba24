@@ -387,13 +387,7 @@ export default function TaskDetail() {
             </div>
           )}
 
-          {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
-            <Button onClick={() => setShowCompletion(true)}
-              className="w-full h-14 rounded-2xl text-base font-semibold bg-green-600 hover:bg-green-700 shadow-lg"
-            >
-              <CheckCircle2 className="w-5 h-5 ml-2" />סיימתי את המשימה! 🎉
-            </Button>
-          )}
+
 
           {(isOwner || isWorker) && task.status === 'TAKEN' && (
             <Link to={`/chat/${id}`}>

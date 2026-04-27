@@ -85,7 +85,7 @@ function WorkerActions({ task, onUpdate }) {
             <Button
               onClick={() => updateStatus('done')}
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base h-12"
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base h-12"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><PartyPopper className="w-4 h-4 ml-2" />סיימתי את העבודה!</>}
             </Button>
