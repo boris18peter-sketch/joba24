@@ -186,9 +186,10 @@ export default function TaskDetail() {
   const cancelApplicationMutation = useMutation({
     mutationFn: () => base44.entities.TaskApplication.delete(myApp.id),
     onSuccess: () => {
-      prevWorkerIdRef.current = null; // Reset ref to prevent popup on cancel
+      prevWorkerIdRef.current = null;
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
       toast.success('בקשה בוטלה');
     },
   });
