@@ -25,13 +25,16 @@ export default function BackButton({ to, style }) {
         flexShrink: 0,
         cursor: 'pointer',
         boxShadow: '0 2px 8px rgba(26,111,212,0.08)',
-        transition: 'all 0.15s',
+        transition: 'transform 0.15s',
+        position: 'relative',
+        zIndex: 10,
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
         ...style,
       }}
-      onMouseDown={e => e.currentTarget.style.transform = 'scale(0.93)'}
-      onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-      onTouchStart={e => e.currentTarget.style.transform = 'scale(0.93)'}
-      onTouchEnd={e => e.currentTarget.style.transform = 'scale(1)'}
+      onPointerDown={e => { e.currentTarget.style.transform = 'scale(0.93)'; }}
+      onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+      onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
       <ArrowRight size={18} color="#1a6fd4" />
     </button>

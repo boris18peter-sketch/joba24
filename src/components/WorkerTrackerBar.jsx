@@ -111,21 +111,23 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         <div style={{ flex: 1 }}>
           <div style={{ color: 'white', fontWeight: 900, fontSize: 17, marginBottom: 2 }}>
             {currentStepIndex === 2
-              ? 'העבודה הסתיימה!'
+              ? (isOwner ? 'העובד סיים!' : 'סיימת את העבודה!')
               : currentStepIndex === 1
-              ? (isWorker ? 'הגעת למיקום' : 'העובד הגיע!')
+              ? (isWorker ? 'הגעת למיקום' : 'העובד הגיע אליך!')
               : currentStepIndex === 0
-              ? (isWorker ? 'אתה בדרך' : 'העובד בדרך אליך')
-              : (isWorker ? 'התחל את המשימה' : 'ממתין לעובד')}
+              ? (isWorker ? 'אתה בדרך' : 'העובד בדרך אליך 🛵')
+              : (isWorker ? 'התחל את המשימה' : 'ממתין שהעובד יצא לדרך')}
           </div>
           <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
             {currentStepIndex === 2
-              ? 'ממתין לאישור הלקוח ושחרור תשלום'
+              ? (isOwner ? 'אשר את סיום העבודה לשחרור התשלום' : 'ממתין לאישור הלקוח ושחרור תשלום')
               : currentStepIndex === 1
-              ? 'עדכן כשסיימת את העבודה'
+              ? (isWorker ? 'עדכן כשסיימת את העבודה' : 'עדכן תישלח לך כשיסיים')
               : currentStepIndex === 0
-              ? (timestamp ? `יצאת ${formatDistanceToNow(new Date(timestamp), { addSuffix: true })}` : 'עדכן כשתגיע למיקום')
-              : 'לחץ על הכפתור כדי להתחיל'}
+              ? (isWorker
+                  ? (timestamp ? `יצאת ${formatDistanceToNow(new Date(timestamp), { addSuffix: true })}` : 'עדכן כשתגיע למיקום')
+                  : (timestamp ? `יצא ${formatDistanceToNow(new Date(timestamp), { addSuffix: true })}` : 'בדרך אליך'))
+              : (isWorker ? 'לחץ על הכפתור כדי להתחיל' : 'תקבל הודעה כשיצא לדרך')}
           </div>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 12, padding: '6px 12px', color: 'white', fontWeight: 900, fontSize: 18 }}>
@@ -226,13 +228,29 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* Done state - Worker */}
-      {isWorker && currentStepIndex === 2 && (
-        <div style={{ margin: '0 16px 16px', background: '#f0fdf4', borderRadius: 14, padding: '12px 16px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
-          <div style={{ fontSize: 22, marginBottom: 4 }}>🎉</div>
-          <div style={{ fontWeight: 800, color: '#065f46', fontSize: 14 }}>כל הכבוד! ממתין לאישור</div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>הלקוח יאשר ותקבל ₪{task.price}</div>
-        </div>
+      {/* Done state */}
+      {currentStepIndex === 2 && (
+        isWorker ? (
+          <div style={{ margin: '0 16px 16px', background: '#f0fdf4', borderRadius: 14, padding: '12px 16px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>🎉</div>
+            <div style={{ fontWeight: 800, color: '#065f46', fontSize: 14 }}>כל הכבוד! ממתין לאישור</div>
+            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>הלקוח יאשר ותקבל ₪{task.price}</div>
+          </div>
+        ) : isOwner ? (
+          <div style={{ margin: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ background: '#f0fdf4', borderRadius: 14, padding: '12px 16px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>✅</div>
+              <div style={{ fontWeight: 800, color: '#065f46', fontSize: 14 }}>העובד דיווח על סיום</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>אשר את סיום העבודה כדי לשחרר את התשלום של ₪{task.price}</div>
+            </div>
+            <button
+              onClick={() => onUpdate({ status: 'COMPLETED', client_confirmed: true })}
+              style={{ width: '100%', height: 50, borderRadius: 16, background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
+            >
+              ✅ אשר סיום ושחרר תשלום
+            </button>
+          </div>
+        ) : null
       )}
 
       {/* Chat link */}
