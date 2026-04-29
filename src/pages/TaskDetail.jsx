@@ -212,10 +212,16 @@ export default function TaskDetail() {
       toast.success('הבקשה נשלחה לבעל הג\'ובה!');
   };
 
-  // Signal reopen (worker sending to expired task owner)
+  // Signal reopen - sends a real chat message to task owner
   const handleSignalReopen = async () => {
-    toast.success('האיתות נשלח לבעל המשימה!');
-    // In a real system this would send a notification
+    if (!me || !task?.client_id) return;
+    await base44.entities.ChatMessage.create({
+      task_id: id,
+      sender_id: me.id,
+      sender_name: me.full_name,
+      content: `👋 היי! המשימה "${task.title}" פגה תוקף אבל אני מעוניין לבצע אותה. תוכל לפתוח אותה מחדש עבורי?`,
+    });
+    toast.success('האיתות נשלח לבעל המשימה! 📣');
   };
 
   if (isLoading) {
@@ -479,7 +485,7 @@ export default function TaskDetail() {
             </button>
           )}
 
-          {isWorker && task.status === 'TAKEN' && (
+          {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
             <button onClick={() => cancelTakeMutation.mutate()} disabled={cancelTakeMutation.isPending}
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >

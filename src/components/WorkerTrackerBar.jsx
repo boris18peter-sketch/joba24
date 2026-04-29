@@ -133,7 +133,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       {/* Header */}
       <div style={{ background: gradientColor, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
         {isOwner && currentStepIndex === -1 ? <ScanningPulse /> : (
-          <div style={{ fontSize: 32 }}>
+          <div style={{ fontSize: 30 }}>
             {currentStepIndex === 2 ? '🎉' : currentStepIndex === 1 ? '📍' : currentStepIndex === 0 ? '🛵' : '⏳'}
           </div>
         )}
@@ -170,7 +170,6 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       {/* Worker action button */}
       {isWorker && currentStepIndex < 2 && (
         <div style={{ padding: '0 16px 16px' }}>
-          {/* Photo upload before marking done */}
           {currentStepIndex === 1 && (
             <WorkerCompletionPhoto photoUrl={completionPhoto} onPhotoUploaded={setCompletionPhoto} />
           )}
@@ -180,9 +179,9 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             style={{ marginTop: 10, width: '100%', height: 52, borderRadius: 16, background: loading ? '#94a3b8' : (nextStep || STEPS[0]).color, color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', transition: 'all 0.2s' }}
           >
             {loading ? <><Loader2 size={18} className="animate-spin" /> רגע...</> :
-             currentStepIndex === -1 ? '🛵 יצאתי לדרך' :
-             currentStepIndex === 0  ? '📍 הגעתי למיקום' :
-             currentStepIndex === 1  ? '✅ סיימתי את הג\'ובה' : null}
+             currentStepIndex === -1 ? 'יצאתי לדרך' :
+             currentStepIndex === 0  ? 'הגעתי למיקום' :
+             currentStepIndex === 1  ? 'סיימתי את הג\'ובה' : null}
           </button>
         </div>
       )}

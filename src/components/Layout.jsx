@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Map, Plus, User, Wallet } from 'lucide-react';
+import { Home, Map, Plus, User, MessageCircle } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -13,6 +13,7 @@ export default function Layout() {
   const prevApplicationsRef = useRef({});
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
@@ -75,6 +76,32 @@ export default function Layout() {
       prevApplicationsRef.current[app.id] = app;
     });
   }, [myApplications]);
+
+  // Real-time chat message push notifications
+  useEffect(() => {
+    if (!me?.id) return;
+    const unsub = base44.entities.ChatMessage.subscribe(event => {
+      if (event.type !== 'create' || !event.data) return;
+      const msg = event.data;
+      if (msg.sender_id === me.id) return; // my own message
+      // Find task to get context
+      const task = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === msg.task_id);
+      if (!task) return;
+      setUnreadMessages(prev => prev + 1);
+      addNotification({
+        type: 'new_message',
+        senderName: msg.sender_name,
+        preview: msg.content?.slice(0, 60),
+        taskId: msg.task_id,
+      });
+    });
+    return unsub;
+  }, [me?.id, myPublishedTasks, workerTasks]);
+
+  // Clear unread when visiting chat inbox
+  useEffect(() => {
+    if (location.pathname === '/chats') setUnreadMessages(0);
+  }, [location.pathname]);
 
   // Real-time task events for client (push-like)
   useEffect(() => {
@@ -142,7 +169,7 @@ export default function Layout() {
     { to: '/', icon: Home, label: 'פיד' },
     { to: '/map', icon: Map, label: 'מפה' },
     { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
-    { to: '/wallet', icon: Wallet, label: 'ארנק', badge: inProgressCount },
+    { to: '/chats', icon: MessageCircle, label: 'צ\'אטים', badge: unreadMessages },
     { to: '/profile', icon: User, label: 'פרופיל' },
   ];
 

@@ -52,6 +52,7 @@ import DailyGoal from '@/pages/DailyGoal';
 import Presentation from '@/pages/Presentation';
 import SimulatorPanel from '@/pages/SimulatorPanel';
 import MyTasks from '@/pages/MyTasks';
+import ChatInbox from '@/pages/ChatInbox';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
@@ -90,6 +91,7 @@ const AuthenticatedApp = () => {
         <Route path="/daily-goal" element={<DailyGoal />} />
         <Route path="/simulator" element={<SimulatorPanel />} />
         <Route path="/my-tasks" element={<MyTasks />} />
+        <Route path="/chats" element={<ChatInbox />} />
       </Route>
       <Route path="/chat/:taskId" element={<Chat />} />
       <Route path="/presentation" element={<Presentation />} />

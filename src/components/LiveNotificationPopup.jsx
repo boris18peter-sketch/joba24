@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 const TYPES = {
+  new_message: {
+    emoji: '💬',
+    bg: '#eff6ff',
+    border: '#93c5fd',
+    accent: '#1a6fd4',
+    title: (n) => `הודעה חדשה מ-${n.senderName || 'משתמש'}`,
+    body: (n) => n.preview || '...',
+    link: (n) => n.taskId ? `/chat/${n.taskId}` : null,
+  },
   task_taken: {
     emoji: '🎉',
     bg: '#f0fdf4',
@@ -63,6 +73,7 @@ const TYPES = {
 export default function LiveNotificationPopup({ notification, onClose }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(100);
+  const navigate = useNavigate();
   const DURATION = 6000;
 
   useEffect(() => {
@@ -99,6 +110,11 @@ export default function LiveNotificationPopup({ notification, onClose }) {
         overflow: 'hidden',
         boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
         animation: 'notifSlide 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        cursor: cfg.link?.(notification) ? 'pointer' : 'default',
+      }}
+      onClick={() => {
+        const link = cfg.link?.(notification);
+        if (link) { setVisible(false); onClose?.(); navigate(link); }
       }}>
         {/* Progress bar */}
         <div style={{ height: 3, background: 'rgba(0,0,0,0.06)' }}>
