@@ -57,12 +57,21 @@ export default function CreateTask() {
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
 
+  const [errors, setErrors] = useState({});
+
   const handleSubmit = async () => {
-    if (!form.title) { toast.error('חובה למלא כותרת'); return; }
-    if (!form.description) { toast.error('חובה למלא תיאור מפורט'); return; }
-    if (!form.price) { toast.error('חובה למלא מחיר'); return; }
-    if (!form.city) { toast.error('חובה למלא עיר'); return; }
-    if (!form.location_name) { toast.error('חובה למלא כתובת'); return; }
+    const newErrors = {};
+    if (!form.title) newErrors.title = true;
+    if (!form.description) newErrors.description = true;
+    if (!form.price) newErrors.price = true;
+    if (!form.city) newErrors.city = true;
+    if (!form.location_name) newErrors.location_name = true;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('חסרים פרטים לפתיחת משימה');
+      return;
+    }
+    setErrors({});
     setLoading(true);
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
@@ -149,13 +158,13 @@ export default function CreateTask() {
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
           <Input placeholder="לדוגמה: להרים מקרר לקומה שלישית"
-            value={form.title} onChange={e => set('title', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 48, fontSize: 15, marginBottom: 14 }}
+            value={form.title} onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); }}
+            style={{ background: '#f4f7fb', border: `1px solid ${errors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: 14 }}
           />
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תיאור מפורט *</Label>
           <Textarea placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
-            value={form.description} onChange={e => set('description', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, resize: 'none' }} rows={4}
+            value={form.description} onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); }}
+            style={{ background: '#f4f7fb', border: `1px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
           />
         </SectionCard>
 
@@ -169,8 +178,8 @@ export default function CreateTask() {
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
           <Input type="number" placeholder="100"
-            value={form.price} onChange={e => set('price', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
+            value={form.price} onChange={e => { set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
+            style={{ background: '#f4f7fb', border: `1px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
           />
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />
 
@@ -256,12 +265,12 @@ export default function CreateTask() {
             <MapPin size={14} /> מיקום
           </Label>
           <Input placeholder="לדוגמה: תל אביב, רחוב דיזנגוף 50"
-            value={form.location_name} onChange={e => set('location_name', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 48, marginBottom: 10 }}
+            value={form.location_name} onChange={e => { set('location_name', e.target.value); setErrors(p => ({...p, location_name: false})); }}
+            style={{ background: '#f4f7fb', border: `1px solid ${errors.location_name ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, marginBottom: 10 }}
           />
           <Input placeholder="עיר (לדוגמה: תל אביב)"
-            value={form.city} onChange={e => set('city', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, height: 42 }}
+            value={form.city} onChange={e => { set('city', e.target.value); setErrors(p => ({...p, city: false})); }}
+            style={{ background: '#f4f7fb', border: `1px solid ${errors.city ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 42 }}
           />
         </SectionCard>
 

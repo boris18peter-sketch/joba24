@@ -103,6 +103,18 @@ export default function MyTasks() {
       <div style={{ padding: '16px 16px 100px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} className="animate-spin text-primary mx-auto" /></div>
+        ) : filtered.length === 0 && activeTab === 'active' ? (
+          <div style={{ textAlign: 'center', padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ fontSize: 40 }}>📭</div>
+            <p style={{ fontWeight: 700, color: '#0f2b6b', margin: 0, fontSize: 16 }}>אין ג'ובות פעילות</p>
+            <p style={{ fontSize: 13, color: '#888', margin: 0 }}>פרסם ג'ובה חדשה וקבל עובד תוך דקות</p>
+            <Link to="/create-task" style={{ textDecoration: 'none' }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 8, height: 50, paddingInline: 28, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
+                <span style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>+</span>
+                פרסם משימה
+              </button>
+            </Link>
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>

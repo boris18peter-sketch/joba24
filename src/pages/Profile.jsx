@@ -1,14 +1,29 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Settings, Award, Briefcase, CheckCircle, CreditCard, ChevronLeft, User } from 'lucide-react';
+import { Star, LogOut, Settings, Award, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskCard from '@/components/TaskCard';
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
 
+
 export default function Profile() {
+  const queryClient = useQueryClient();
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.auth.updateMe({ profile_photo: file_url });
+    queryClient.invalidateQueries({ queryKey: ['me'] });
+    setUploadingPhoto(false);
+  };
+
   const { data: me, isLoading } = useQuery({
     queryKey: ['me'],
     queryFn: () => base44.auth.me(),
@@ -60,8 +75,22 @@ export default function Profile() {
 
         {/* Avatar + Name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexDirection: 'row' }}>
-          <div style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: 'white', border: '2px solid rgba(255,255,255,0.3)' }}>
-            {me?.full_name?.[0]?.toUpperCase() || <User size={28} />}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div
+              style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: 'white', border: '2px solid rgba(255,255,255,0.3)', overflow: 'hidden', cursor: 'pointer' }}
+              onClick={() => photoInputRef.current?.click()}
+            >
+              {me?.profile_photo
+                ? <img src={me.profile_photo} alt="פרופיל" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (me?.full_name?.[0]?.toUpperCase() || <User size={28} />)}
+            </div>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              style={{ position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'white', border: '2px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              {uploadingPhoto ? <Loader2 size={12} color="#1a6fd4" className="animate-spin" /> : <Camera size={12} color="#1a6fd4" />}
+            </button>
+            <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
           <div>
             <div style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{me?.full_name || 'משתמש'}</div>

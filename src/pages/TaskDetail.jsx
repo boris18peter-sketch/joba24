@@ -47,6 +47,7 @@ export default function TaskDetail() {
   const [taskTaken, setTaskTaken] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
+  const [signalSent, setSignalSent] = useState(false);
   const prevWorkerIdRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -214,13 +215,14 @@ export default function TaskDetail() {
 
   // Signal reopen - sends a real chat message to task owner
   const handleSignalReopen = async () => {
-    if (!me || !task?.client_id) return;
+    if (!me || !task?.client_id || signalSent) return;
     await base44.entities.ChatMessage.create({
       task_id: id,
       sender_id: me.id,
       sender_name: me.full_name,
       content: `👋 היי! המשימה "${task.title}" פגה תוקף אבל אני מעוניין לבצע אותה. תוכל לפתוח אותה מחדש עבורי?`,
     });
+    setSignalSent(true);
     toast.success('האיתות נשלח לבעל המשימה! 📣');
   };
 
@@ -273,10 +275,10 @@ export default function TaskDetail() {
               </Button>
             )}
             {!isOwner && (
-              <Button onClick={handleSignalReopen} variant="outline"
+              <Button onClick={handleSignalReopen} disabled={signalSent} variant="outline"
                 className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
               >
-                📣 שלח איתות לבעל הג'ובה
+                {signalSent ? '✅ האיתות נשלח, ממתין לבעל הג\'ובה שיפתח מחדש' : '📣 שלח איתות לבעל הג\'ובה'}
               </Button>
             )}
           </div>

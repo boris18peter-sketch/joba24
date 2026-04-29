@@ -23,18 +23,21 @@ export default function Chat() {
     select: d => d[0],
   });
 
-  // Load initial messages
+  // Load full message history
   useEffect(() => {
-    base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 100)
+    base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500)
       .then(setMessages);
   }, [taskId]);
 
-  // Real-time subscription
+  // Real-time subscription - deduplicate by id
   useEffect(() => {
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== taskId) return;
       if (event.type === 'create') {
-        setMessages(prev => [...prev, event.data]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === event.data.id)) return prev;
+          return [...prev, event.data];
+        });
       }
     });
     return unsub;

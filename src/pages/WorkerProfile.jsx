@@ -138,7 +138,7 @@ export default function WorkerProfile() {
 
         {/* Basic Info */}
          <div className="space-y-3">
-           <Label className="text-sm font-semibold">מי אני?</Label>
+           <Label className="text-sm font-semibold">{isViewingOther ? 'פרופיל' : 'מי אני?'}</Label>
            <Input placeholder="שם המקצוע (לדוגמה: אינסטלטור מוסמך)"
              value={form.profession} onChange={e => !isViewingOther && setForm(f => ({ ...f, profession: e.target.value }))}
              disabled={isViewingOther}

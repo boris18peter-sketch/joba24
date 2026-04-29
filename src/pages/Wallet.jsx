@@ -133,12 +133,26 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Escrow explanation - compact */}
+      {/* Payment flow - elegant */}
       <div style={{ padding: '12px 16px 0' }}>
-        <div style={{ background: 'white', border: '1px solid #dce8f5', borderRadius: 14, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Lock size={14} color="#1a6fd4" style={{ flexShrink: 0 }} />
-          <div style={{ fontSize: 11, color: '#666', lineHeight: 1.6 }}>
-            📤 לקוח משלם → כסף בהחזקה ← ✅ אישור → כסף אליך ← 🏦 משיכה לבנק
+        <div style={{ background: 'white', border: '1px solid #dce8f5', borderRadius: 16, padding: '14px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#0f2b6b', marginBottom: 10, letterSpacing: 0.3 }}>כיצד מגיע הכסף?</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0, direction: 'ltr' }}>
+            {[
+              { label: 'ביצוע\nמשימה' },
+              { label: 'אישור\nלקוח' },
+              { label: 'כסף\nבהחזקה' },
+              { label: 'הגיע\nלארנק' },
+            ].map((step, i, arr) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#0f2b6b', lineHeight: 1.4, whiteSpace: 'pre-line' }}>{step.label}</div>
+                </div>
+                {i < arr.length - 1 && (
+                  <div style={{ fontSize: 16, color: '#1a6fd4', fontWeight: 900, flexShrink: 0, margin: '0 2px' }}>→</div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
