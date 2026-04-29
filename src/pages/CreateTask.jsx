@@ -91,9 +91,14 @@ export default function CreateTask() {
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
     });
+    const created = await base44.entities.Task.list('-created_date', 1);
     toast.success('הג\'ובה פורסמה! ⚡');
     setLoading(false);
-    navigate('/');
+    if (created?.[0]?.id) {
+      navigate(`/task/${created[0].id}`);
+    } else {
+      navigate('/my-tasks');
+    }
   };
 
   const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };

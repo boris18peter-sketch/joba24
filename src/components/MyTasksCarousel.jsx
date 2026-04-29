@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, ChevronLeft } from 'lucide-react';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
@@ -24,6 +24,9 @@ export default function MyTasksCarousel({ myTasks }) {
           משימות שפרסמתי
           <span style={{ marginRight: 6, fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', padding: '2px 7px', borderRadius: 20 }}>{relevantTasks.length}</span>
         </h2>
+        <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>
+          כל הג'ובות <ChevronLeft size={14} />
+        </Link>
       </div>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {relevantTasks.map(task => {
