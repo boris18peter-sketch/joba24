@@ -1,97 +1,137 @@
 import { useEffect, useState } from 'react';
-import { X, Bell, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { X } from 'lucide-react';
+
+const TYPES = {
+  task_taken: {
+    emoji: '🎉',
+    bg: '#f0fdf4',
+    border: '#86efac',
+    accent: '#16a34a',
+    title: (n) => `${n.workerName || 'עובד'} לקח את המשימה!`,
+    body: (n) => `"${n.taskTitle}"`,
+  },
+  application_received: {
+    emoji: '📩',
+    bg: '#faf5ff',
+    border: '#c4b5fd',
+    accent: '#7c3aed',
+    title: (n) => 'בקשה חדשה למשימה שלך!',
+    body: (n) => `${n.workerName || 'עובד'} מעוניין לבצע את "${n.taskTitle}"`,
+  },
+  application_approved: {
+    emoji: '✅',
+    bg: '#eff6ff',
+    border: '#93c5fd',
+    accent: '#1a6fd4',
+    title: () => 'הבקשה שלך אושרה!',
+    body: (n) => `"${n.taskTitle}" מוכן לביצוע`,
+  },
+  application_rejected: {
+    emoji: '❌',
+    bg: '#fef2f2',
+    border: '#fca5a5',
+    accent: '#dc2626',
+    title: () => 'הבקשה לא התקבלה',
+    body: (n) => `"${n.taskTitle}"`,
+  },
+  worker_on_the_way: {
+    emoji: '🛵',
+    bg: '#eff6ff',
+    border: '#93c5fd',
+    accent: '#1a6fd4',
+    title: (n) => `${n.workerName || 'העובד'} יצא לדרך!`,
+    body: (n) => `בדרך למשימה "${n.taskTitle}"`,
+  },
+  worker_arrived: {
+    emoji: '📍',
+    bg: '#fefce8',
+    border: '#fde047',
+    accent: '#ca8a04',
+    title: (n) => `${n.workerName || 'העובד'} הגיע!`,
+    body: (n) => `נמצא במיקום המשימה "${n.taskTitle}"`,
+  },
+  worker_done: {
+    emoji: '🏆',
+    bg: '#f0fdf4',
+    border: '#86efac',
+    accent: '#16a34a',
+    title: (n) => 'העובד סיים את העבודה!',
+    body: (n) => `"${n.taskTitle}" — בבקשה אשר את הביצוע`,
+  },
+};
 
 export default function LiveNotificationPopup({ notification, onClose }) {
-  const [isVisible, setIsVisible] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const [progress, setProgress] = useState(100);
+  const DURATION = 6000;
 
   useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        onClose?.();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onClose]);
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      setProgress(Math.max(0, 100 - (elapsed / DURATION) * 100));
+    }, 50);
 
-  if (!isVisible) return null;
+    const timer = setTimeout(() => {
+      setVisible(false);
+      onClose?.();
+    }, DURATION);
 
-  const notificationTypes = {
-    task_taken: {
-      icon: <Zap className="w-5 h-5 text-green-500" />,
-      bg: 'bg-green-50',
-      border: 'border-green-200',
-      title: 'משימה נלקחה!',
-      message: `${notification.workerName} לקח את "${notification.taskTitle}"`,
-    },
-    task_status_updated: {
-      icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      title: 'עדכון משימה',
-      message: `${notification.message}`,
-    },
-    application_received: {
-      icon: <Bell className="w-5 h-5 text-purple-500" />,
-      bg: 'bg-purple-50',
-      border: 'border-purple-200',
-      title: 'בקשה חדשה!',
-      message: `${notification.workerName} שלח בקשה למשימה "${notification.taskTitle}"`,
-    },
-    application_approved: {
-      icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
-      bg: 'bg-green-50',
-      border: 'border-green-200',
-      title: 'בקשה אושרה!',
-      message: `בקשתך למשימה "${notification.taskTitle}" אושרה! 🎉`,
-    },
-    application_rejected: {
-      icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-      bg: 'bg-red-50',
-      border: 'border-red-200',
-      title: 'בקשה דחויה',
-      message: `בקשתך למשימה "${notification.taskTitle}" דחויה`,
-    },
-  };
+    return () => { clearTimeout(timer); clearInterval(interval); };
+  }, []);
 
-  const config = notificationTypes[notification.type] || notificationTypes.task_status_updated;
+  if (!visible) return null;
+
+  const cfg = TYPES[notification.type] || TYPES.application_received;
 
   return (
-    <div
-      className={`fixed top-0 left-0 right-0 z-50 p-4 animate-fade-in`}
-      style={{
-        animation: 'slideDown 0.3s ease-out',
-        transformOrigin: 'top',
-      }}
-    >
+    <div style={{ padding: '8px 12px' }} dir="rtl">
       <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes notifSlide {
+          from { opacity: 0; transform: translateY(-16px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
-      
-      <div
-        className={`max-w-md mx-auto rounded-2xl border-2 shadow-lg p-4 ${config.bg} ${config.border}`}
-        dir="rtl"
-      >
-        <div className="flex items-start gap-3">
-          {config.icon}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-gray-900 text-sm">{config.title}</h3>
-            <p className="text-xs text-gray-700 mt-0.5">{config.message}</p>
+      <div style={{
+        background: cfg.bg,
+        border: `1.5px solid ${cfg.border}`,
+        borderRadius: 18,
+        overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        animation: 'notifSlide 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      }}>
+        {/* Progress bar */}
+        <div style={{ height: 3, background: 'rgba(0,0,0,0.06)' }}>
+          <div style={{ height: '100%', background: cfg.accent, width: `${progress}%`, transition: 'width 0.05s linear', borderRadius: 2 }} />
+        </div>
+
+        <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          {/* Emoji icon */}
+          <div style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: 'white', border: `1px solid ${cfg.border}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20, flexShrink: 0,
+          }}>
+            {cfg.emoji}
           </div>
+
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b', marginBottom: 2 }}>
+              {cfg.title(notification)}
+            </div>
+            <div style={{ fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {cfg.body(notification)}
+            </div>
+          </div>
+
+          {/* Close */}
           <button
-            onClick={() => setIsVisible(false)}
-            className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+            onClick={() => { setVisible(false); onClose?.(); }}
+            style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(0,0,0,0.06)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
-            <X className="w-4 h-4" />
+            <X size={12} color="#94a3b8" />
           </button>
         </div>
       </div>

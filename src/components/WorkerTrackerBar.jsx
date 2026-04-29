@@ -113,10 +113,10 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             {currentStepIndex === 2
               ? 'העבודה הסתיימה!'
               : currentStepIndex === 1
-              ? 'הגעת למיקום'
+              ? (isWorker ? 'הגעת למיקום' : 'העובד הגיע!')
               : currentStepIndex === 0
-              ? 'אתה בדרך'
-              : 'התחל את המשימה'}
+              ? (isWorker ? 'אתה בדרך' : 'העובד בדרך אליך')
+              : (isWorker ? 'התחל את המשימה' : 'ממתין לעובד')}
           </div>
           <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
             {currentStepIndex === 2

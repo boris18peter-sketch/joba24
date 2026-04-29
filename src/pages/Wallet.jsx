@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, CreditCard, Lock, Briefcase, Zap, Clock, CheckCircle2 } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { format } from 'date-fns';
 import TaskCard from '@/components/TaskCard';
 
@@ -73,10 +74,9 @@ export default function Wallet() {
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {/* Back Button */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '8px 16px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center' }}>
-        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>
-          ← חזור
-        </button>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '44px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <BackButton />
+        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>הארנק שלי</span>
       </div>
 
       {/* Hero Card */}

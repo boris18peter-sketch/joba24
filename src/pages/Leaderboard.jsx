@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Trophy, Star, ArrowRight, Medal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import BackButton from '@/components/BackButton';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
@@ -63,11 +64,7 @@ export default function Leaderboard() {
       {/* Header */}
       <div className="sticky top-0 z-40 border-b px-4 pt-10 pb-4 flex items-center gap-3"
         style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
-        <button onClick={() => navigate(-1)}
-          className="flex items-center justify-center"
-          style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', cursor: 'pointer' }}>
-          <ArrowRight className="w-4 h-4" color="#1a6fd4" />
-        </button>
+        <BackButton />
         <div>
           <h1 className="text-xl font-black" style={{ color: '#0f2b6b' }}>לוח מובילים 🏆</h1>
           <p className="text-xs" style={{ color: '#1a6fd4' }}>המבצעים המובילים בפלטפורמה</p>

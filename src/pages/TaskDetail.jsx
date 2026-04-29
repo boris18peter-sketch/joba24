@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -14,6 +14,8 @@ import TaskApplicants from '@/components/TaskApplicants';
 import WorkerStatusAlert from '@/components/WorkerStatusAlert';
 import ApprovedPopup from '@/components/ApprovedPopup';
 import WorkerTrackerBar from '@/components/WorkerTrackerBar';
+import BackButton from '@/components/BackButton';
+import NavButtons from '@/components/NavButtons';
 import { getCategoryLabel } from '@/lib/categories';
 
 const statusConfig = {
@@ -230,9 +232,7 @@ export default function TaskDetail() {
 
       {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate('/')} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
-          <ArrowRight size={18} color="#1a6fd4" />
-        </button>
+        <BackButton to="/" />
         <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</h1>
         <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', flexShrink: 0 }}>{status.label}</span>
       </div>
@@ -308,8 +308,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker tracker - 3 step progress */}
-        {hasWorker && task.status === 'TAKEN' && (
+        {/* Worker tracker - only show to owner or worker when task is TAKEN */}
+        {hasWorker && task.status === 'TAKEN' && (isWorker || isOwner) && (
           <WorkerTrackerBar
             task={task}
             isWorker={isWorker}
@@ -344,38 +344,7 @@ export default function TaskDetail() {
                 <div className="text-xs text-muted-foreground">מיקום</div>
                 <div className="font-medium text-sm">{task.location_name}</div>
               </div>
-              {task.lat && task.lng && (
-                <div className="flex gap-1.5">
-                  <a
-                    href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
-                    style={{ background: '#1da462' }}
-                  >🚗 Waze</a>
-                  <a
-                    href={`https://maps.google.com/?q=${task.lat},${task.lng}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
-                    style={{ background: '#4285f4' }}
-                  >🗺️ GPS</a>
-                </div>
-              )}
-              {!task.lat && task.location_name && (
-                <div className="flex gap-1.5">
-                  <a
-                    href={`https://waze.com/ul?q=${encodeURIComponent(task.location_name)}&navigate=yes`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
-                    style={{ background: '#1da462' }}
-                  >🚗 Waze</a>
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(task.location_name)}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-lg text-white"
-                    style={{ background: '#4285f4' }}
-                  >🗺️ GPS</a>
-                </div>
-              )}
+              <NavButtons lat={task.lat} lng={task.lng} locationName={task.location_name} />
             </div>
           )}
           {task.created_date && (

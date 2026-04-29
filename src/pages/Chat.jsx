@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Send, Loader2 } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -60,9 +61,7 @@ export default function Chat() {
     <div className="flex flex-col h-screen" dir="rtl" style={{ background: '#f4f7fb' }}>
       {/* Header */}
        <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
-           <ArrowRight size={18} color="#1a6fd4" />
-         </button>
+         <BackButton />
          <div style={{ flex: 1, minWidth: 0 }}>
            <h1 style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task?.title || 'צ\'אט'}</h1>
            <p style={{ fontSize: 12, color: '#1a6fd4', margin: '2px 0 0 0', cursor: 'pointer' }} onClick={() => {

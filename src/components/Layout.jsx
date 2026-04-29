@@ -36,17 +36,24 @@ export default function Layout() {
     refetchInterval: 10000,
   });
 
-  // Watch for task status changes (someone took my task)
+  // Watch for task status changes on MY published tasks (client notifications)
   useEffect(() => {
     myPublishedTasks.forEach(task => {
       const prevTask = prevTasksRef.current[task.id];
-      if (prevTask && prevTask.status !== task.status) {
+      if (prevTask) {
+        // Someone took my task
         if (task.status === 'TAKEN' && prevTask.status === 'OPEN') {
-          addNotification({
-            type: 'task_taken',
-            taskTitle: task.title,
-            workerName: task.worker_name,
-          });
+          addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name });
+        }
+        // Worker status updates on my task
+        if (task.worker_status && task.worker_status !== prevTask.worker_status) {
+          if (task.worker_status === 'on_the_way') {
+            addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name });
+          } else if (task.worker_status === 'arrived') {
+            addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name });
+          } else if (task.worker_status === 'done') {
+            addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name });
+          }
         }
       }
       prevTasksRef.current[task.id] = task;
@@ -69,27 +76,22 @@ export default function Layout() {
     });
   }, [myApplications]);
 
-  // Listen for real-time task events
+  // Real-time task events for client (push-like)
   useEffect(() => {
     const unsubscribe = base44.entities.Task.subscribe((event) => {
-      if (event.type === 'create' && event.data?.client_id !== me?.id) {
-        // Task created by someone else - not a notification
-      } else if (event.type === 'update') {
-        const task = event.data;
-        
-        // Someone took my task
-        if (task.client_id === me?.id && task.status === 'TAKEN' && task.worker_id) {
-          addNotification({
-            type: 'task_taken',
-            taskTitle: task.title,
-            workerName: task.worker_name,
-          });
-        }
-        
-        // Worker status updated
-        if (task.worker_id === me?.id && task.worker_status) {
-          // Notify about status changes
-        }
+      if (event.type !== 'update') return;
+      const task = event.data;
+      if (!task || task.client_id !== me?.id) return;
+      const prev = prevTasksRef.current[task.id];
+      if (!prev) return;
+
+      if (task.status === 'TAKEN' && prev.status === 'OPEN') {
+        addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name });
+      }
+      if (task.worker_status && task.worker_status !== prev.worker_status) {
+        if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name });
+        else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name });
+        else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name });
       }
     });
     return unsubscribe;
