@@ -319,8 +319,10 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker tracker - only show to owner or worker when task is TAKEN */}
-        {hasWorker && task.status === 'TAKEN' && (isWorker || isOwner) && (
+        {/* Worker tracker:
+            - Owner: show from the moment task is OPEN (searching state) through TAKEN
+            - Worker: show only when TAKEN */}
+        {((isOwner && (task.status === 'OPEN' || task.status === 'TAKEN')) || (isWorker && task.status === 'TAKEN')) && (
           <WorkerTrackerBar
             task={task}
             isWorker={isWorker}

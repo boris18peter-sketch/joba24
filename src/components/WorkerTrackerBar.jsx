@@ -48,6 +48,19 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     setCompletionPhoto(task?.completion_photo || null);
   }, [task?.worker_status, task?.completion_photo]);
 
+  // Show "searching" state for owner when task is still OPEN (no worker yet)
+  if (!task.worker_id && isOwner && task.status === 'OPEN') {
+    return (
+      <div dir="rtl" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 24, padding: '20px 20px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 24px rgba(99,102,241,0.3)' }}>
+        <ScanningPulse />
+        <div style={{ flex: 1 }}>
+          <div style={{ color: 'white', fontWeight: 900, fontSize: 17, marginBottom: 3 }}>מחפש פועל...</div>
+          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>המשימה פתוחה — עובדים יכולים להגיש מועמדות</div>
+        </div>
+      </div>
+    );
+  }
+
   if (!task.worker_id) return null;
 
   const currentStepIndex = localStatus ? STEPS.findIndex(s => s.key === localStatus) : -1;
