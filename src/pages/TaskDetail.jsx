@@ -76,6 +76,7 @@ export default function TaskDetail() {
     refetchInterval: 2000,
   });
   const isApproved = myApp?.status === 'approved';
+  const hasPendingApp = myApp?.status === 'pending';
 
   // Detect when my application just got approved
   useEffect(() => {
@@ -187,9 +188,8 @@ export default function TaskDetail() {
     onSuccess: () => {
       prevWorkerIdRef.current = null; // Reset ref to prevent popup on cancel
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', id] }); // Refetch on task detail
+      queryClient.invalidateQueries({ queryKey: ['applications', id] });
       toast.success('בקשה בוטלה');
-      setHasApplied(false);
     },
   });
 
@@ -228,7 +228,7 @@ export default function TaskDetail() {
   const statusLabel = getStatusLabel(task.status, isOwner);
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !hasWorker;
-  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !hasWorker;
+  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !hasWorker && !hasPendingApp && !isApproved;
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
@@ -409,25 +409,21 @@ export default function TaskDetail() {
         )}
 
         {/* Actions */}
-        <div style={{ paddingBottom: canTakeInstant || (canApplyManual && !showApplyForm && !hasApplied) ? 100 : 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {canTakeInstant && (
-            <div /> /* placeholder — actual button is sticky below */
-          )}
+        <div style={{ paddingBottom: canTakeInstant || canApplyManual || hasPendingApp ? 100 : 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-          {hasApplied && (
+          {/* Pending application banner */}
+          {hasPendingApp && !isWorker && (
             <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ fontSize: 24 }}>⏳</div>
               <div>
-                <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14 }}>הבקשה נשלחה!</div>
-                <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>ממתין לאישור בעל הג'ובה</div>
+                <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14 }}>בקשתך התקבלה וממתינה לאישור</div>
+                <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>בעל הג'ובה יאשר אותך בקרוב</div>
               </div>
             </div>
           )}
 
-          {canApplyManual && !showApplyForm && !hasApplied && (
-            <div /> /* placeholder — actual button is sticky below */
-          )}
-          {canApplyManual && showApplyForm && !hasApplied && (
+          {/* Apply form (shown only when triggered) */}
+          {canApplyManual && showApplyForm && (
             <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל הג'ובה (לא חובה)</p>
               <Input placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
@@ -445,6 +441,15 @@ export default function TaskDetail() {
                 >ביטול</button>
               </div>
             </div>
+          )}
+
+          {/* Cancel pending application */}
+          {hasPendingApp && !isWorker && (
+            <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
+            >
+              {cancelApplicationMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '❌ בטל בקשה'}
+            </button>
           )}
 
           {(isOwner || isWorker) && task.status === 'TAKEN' && (
@@ -479,24 +484,16 @@ export default function TaskDetail() {
             </button>
           )}
 
-          {!isOwner && !isWorker && task.status === 'OPEN' && (
+          {!isOwner && !isWorker && !hasPendingApp && task.status === 'OPEN' && (
             <button style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
               <Flag size={15} />דיווח
-            </button>
-          )}
-
-          {hasApplied && myApp?.status === 'pending' && (
-            <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
-              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
-            >
-              {cancelApplicationMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '❌ בטל בקשה'}
             </button>
           )}
         </div>
       </div>
 
       {/* Sticky bottom CTA */}
-      {(canTakeInstant || (canApplyManual && !showApplyForm && !hasApplied)) && (
+      {(canTakeInstant || (canApplyManual && !showApplyForm) || hasPendingApp) && (
         <div style={{ position: 'fixed', bottom: 96, left: 16, right: 16, zIndex: 50 }}>
           {canTakeInstant && (
             <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
@@ -505,7 +502,7 @@ export default function TaskDetail() {
               {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
             </button>
           )}
-          {canApplyManual && !showApplyForm && !hasApplied && (
+          {canApplyManual && !showApplyForm && (
             <button onClick={() => setShowApplyForm(true)}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
