@@ -94,8 +94,10 @@ export default function HomeFeed() {
 
   const scored = otherTasks
     .filter(t => {
-      // Show only OPEN tasks, exclude TAKEN, COMPLETED, CANCELLED, EXPIRED
-      if (t.status !== 'OPEN') return false;
+      // Show only OPEN tasks OR tasks where I have an approved application
+      const myAppForThis = myApplications.find(a => a.task_id === t.id);
+      const isApprovedForMe = myAppForThis?.status === 'approved';
+      if (t.status !== 'OPEN' && !isApprovedForMe) return false;
       if (dismissedTasks.has(t.id)) return false;
       const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
       const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
@@ -230,11 +232,6 @@ export default function HomeFeed() {
       </React.Suspense>
 
       {/* My Published Tasks Carousel */}
-      <div style={{ padding: '12px 16px 4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b' }}>משימות שפרסמתי</span>
-        </div>
-      </div>
       <MyTasksCarousel myTasks={myTasks} />
 
       <div className="px-4 py-4 space-y-3">

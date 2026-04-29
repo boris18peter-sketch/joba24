@@ -1,42 +1,62 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Navigation, CheckCircle2, PartyPopper, Loader2, Clock } from 'lucide-react';
+import { Navigation, CheckCircle2, PartyPopper, Loader2, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 const STEPS = [
-  { key: 'on_the_way', label: 'יצאתי לדרך', icon: Navigation, color: '#3b82f6', bg: '#dbeafe' },
-  { key: 'arrived', label: 'הגעתי למיקום', icon: CheckCircle2, color: '#10b981', bg: '#dcfce7' },
-  { key: 'done', label: 'ביצעתי את העבודה', icon: PartyPopper, color: '#7c3aed', bg: '#f3e8ff' },
+  {
+    key: 'on_the_way',
+    label: 'יצאתי לדרך',
+    sublabel: 'בדרך למיקום',
+    icon: '🛵',
+    color: '#1a6fd4',
+    bg: '#dbeafe',
+    textColor: '#1e40af',
+  },
+  {
+    key: 'arrived',
+    label: 'הגעתי',
+    sublabel: 'נמצא במיקום',
+    icon: '📍',
+    color: '#f59e0b',
+    bg: '#fef3c7',
+    textColor: '#92400e',
+  },
+  {
+    key: 'done',
+    label: 'סיימתי',
+    sublabel: 'ממתין לאישור',
+    icon: '✅',
+    color: '#10b981',
+    bg: '#dcfce7',
+    textColor: '#065f46',
+  },
 ];
 
 export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) {
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
 
-  // סנכרון עם task.worker_status מ-props
   useEffect(() => {
     setLocalStatus(task?.worker_status ?? null);
   }, [task?.worker_status]);
 
   if (!task.worker_id) return null;
 
-  // Get current step index - משתמש ב-localStatus
   const currentStepIndex = localStatus ? STEPS.findIndex(s => s.key === localStatus) : -1;
+  const nextStep = STEPS[currentStepIndex + 1];
+  const currentStep = currentStepIndex >= 0 ? STEPS[currentStepIndex] : null;
 
   const handleStepClick = async (step) => {
     setLoading(true);
-    // Optimistic update - update locally first
     setLocalStatus(step.key);
-    
+
     try {
       const update = { worker_status: step.key };
-      
-      // Save timestamps
+
       if (step.key === 'on_the_way') {
         update.on_the_way_at = new Date().toISOString();
-        
-        // Capture location before updating
         if (navigator.geolocation) {
           await new Promise((resolve) => {
             navigator.geolocation.getCurrentPosition(
@@ -45,7 +65,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
                 update.worker_lng = pos.coords.longitude;
                 resolve();
               },
-              () => resolve() // Silent fail
+              () => resolve()
             );
           });
         }
@@ -55,115 +75,175 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         update.completed_at = new Date().toISOString();
       }
 
-      // Update after timestamps are set
       await onUpdate(update);
-      toast.success(`✅ ${step.label}`);
+      toast.success(`${step.icon} ${step.label}`);
     } catch (err) {
-      // Revert on error
       setLocalStatus(task?.worker_status ?? null);
       toast.error('שגיאה בעדכון סטטוס');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Unified view - shows same progress for both worker and owner
+  const timestamp =
+    currentStep?.key === 'on_the_way' ? task.on_the_way_at :
+    currentStep?.key === 'arrived' ? task.arrived_at :
+    currentStep?.key === 'done' ? task.completed_at : null;
+
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-4 shadow-sm">
-      <h3 className="font-bold text-sm text-gray-900">התקדמות המשימה</h3>
-      
-      {/* Progress timeline */}
-      <div className="space-y-3">
+    <div dir="rtl" style={{ background: 'white', borderRadius: 24, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+
+      {/* Top status bar - Wolt style */}
+      <div style={{
+        background: currentStepIndex === 2
+          ? 'linear-gradient(135deg, #059669, #10b981)'
+          : currentStepIndex === 1
+          ? 'linear-gradient(135deg, #d97706, #f59e0b)'
+          : 'linear-gradient(135deg, #1a6fd4, #3b82f6)',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+      }}>
+        <div style={{ fontSize: 32 }}>
+          {currentStepIndex === 2 ? '🎉' : currentStepIndex === 1 ? '📍' : currentStepIndex === 0 ? '🛵' : '⏳'}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ color: 'white', fontWeight: 900, fontSize: 17, marginBottom: 2 }}>
+            {currentStepIndex === 2
+              ? 'העבודה הסתיימה!'
+              : currentStepIndex === 1
+              ? 'הגעת למיקום'
+              : currentStepIndex === 0
+              ? 'אתה בדרך'
+              : 'התחל את המשימה'}
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
+            {currentStepIndex === 2
+              ? 'ממתין לאישור הלקוח ושחרור תשלום'
+              : currentStepIndex === 1
+              ? 'עדכן כשסיימת את העבודה'
+              : currentStepIndex === 0
+              ? (timestamp ? `יצאת ${formatDistanceToNow(new Date(timestamp), { addSuffix: true })}` : 'עדכן כשתגיע למיקום')
+              : 'לחץ על הכפתור כדי להתחיל'}
+          </div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 12, padding: '6px 12px', color: 'white', fontWeight: 900, fontSize: 18 }}>
+          ₪{task.price}
+        </div>
+      </div>
+
+      {/* Progress steps - Wolt style horizontal */}
+      <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 0, position: 'relative' }}>
         {STEPS.map((step, idx) => {
           const isDone = idx <= currentStepIndex;
           const isActive = idx === currentStepIndex;
-          const Icon = step.icon;
-          const timestamp = 
-            step.key === 'on_the_way' ? task.on_the_way_at :
-            step.key === 'arrived' ? task.arrived_at :
-            step.key === 'done' ? task.completed_at : null;
-          
+
           return (
-            <div key={step.key} className="flex gap-3 items-start">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all"
-                style={{
-                  background: isDone ? step.color : isActive ? step.bg : '#f3f4f6',
-                  color: isDone || isActive ? step.color : '#d1d5db',
-                }}
-              >
-                <Icon className="w-4 h-4" />
-              </div>
-              
-              <div className="flex-1 pt-0.5">
-                <div className="font-medium text-sm text-gray-900">{step.label}</div>
-                {isDone && timestamp && (
-                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {formatDistanceToNow(new Date(timestamp), { addSuffix: true })}
-                  </div>
-                )}
-                {!isDone && <div className="text-xs text-gray-400 mt-0.5">ממתין...</div>}
+            <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+              {/* Connector line */}
+              {idx < STEPS.length - 1 && (
+                <div style={{
+                  position: 'absolute',
+                  top: 16,
+                  left: '-50%',
+                  right: '-50%',
+                  height: 3,
+                  background: idx < currentStepIndex ? step.color : '#e2e8f0',
+                  zIndex: 0,
+                  transition: 'background 0.4s',
+                }} />
+              )}
+
+              {/* Step circle */}
+              <div style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: isDone ? step.color : '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 15,
+                zIndex: 1,
+                position: 'relative',
+                boxShadow: isActive ? `0 0 0 4px ${step.bg}` : 'none',
+                transition: 'all 0.3s',
+                border: isDone ? `2px solid ${step.color}` : '2px solid #e2e8f0',
+              }}>
+                {isDone ? '✓' : step.icon}
               </div>
 
-              {isDone && (
-                <div className="text-xs font-bold text-green-600 pt-0.5">✓</div>
-              )}
+              {/* Label */}
+              <div style={{
+                fontSize: 10,
+                fontWeight: isActive ? 800 : 600,
+                color: isDone ? step.textColor : '#94a3b8',
+                marginTop: 6,
+                textAlign: 'center',
+                lineHeight: 1.3,
+              }}>
+                {step.label}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Action buttons - only for worker */}
-      {isWorker && (
-        <div className="space-y-2 pt-2 border-t border-gray-100">
-          {currentStepIndex === -1 && (
-            <Button
-              onClick={() => handleStepClick(STEPS[0])}
-              disabled={loading}
-              className="w-full rounded-xl text-white font-bold h-11"
-              style={{ background: '#1a6fd4' }}
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Navigation className="w-4 h-4 ml-2" />}
-              יצאתי לדרך
-            </Button>
-          )}
-          
-          {currentStepIndex === 0 && (
-            <Button
-              onClick={() => handleStepClick(STEPS[1])}
-              disabled={loading}
-              className="w-full rounded-xl text-white font-bold h-11"
-              style={{ background: '#1a6fd4' }}
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <CheckCircle2 className="w-4 h-4 ml-2" />}
-              הגעתי למיקום
-            </Button>
-          )}
-          
-          {currentStepIndex === 1 && (
-            <Button
-              onClick={() => handleStepClick(STEPS[2])}
-              disabled={loading}
-              className="w-full rounded-xl text-white font-bold h-11"
-              style={{ background: '#1a6fd4' }}
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <PartyPopper className="w-4 h-4 ml-2" />}
-              ביצעתי את העבודה
-            </Button>
-          )}
-
-          {currentStepIndex === 2 && (
-            <div className="text-center py-2 bg-blue-50 rounded-lg">
-              <p className="text-sm font-bold text-blue-700">✅ ממתין לאישור הלקוח</p>
-              <p className="text-xs text-gray-500 mt-1">הלקוח יאשר את הביצוע וישחרר את התשלום</p>
-            </div>
-          )}
+      {/* Action button - Worker only */}
+      {isWorker && currentStepIndex < 2 && (
+        <div style={{ padding: '0 16px 16px' }}>
+          <button
+            onClick={() => handleStepClick(nextStep || STEPS[0])}
+            disabled={loading}
+            style={{
+              width: '100%',
+              height: 52,
+              borderRadius: 16,
+              background: loading ? '#94a3b8' : (nextStep || STEPS[0]).color,
+              color: 'white',
+              fontWeight: 900,
+              fontSize: 15,
+              border: 'none',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: `0 4px 16px rgba(0,0,0,0.15)`,
+              transition: 'all 0.2s',
+            }}
+          >
+            {loading
+              ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> רגע...</>
+              : currentStepIndex === -1
+              ? '🛵 יצאתי לדרך'
+              : currentStepIndex === 0
+              ? '📍 הגעתי למיקום'
+              : null
+            }
+          </button>
         </div>
       )}
+
+      {/* Done state - Worker */}
+      {isWorker && currentStepIndex === 2 && (
+        <div style={{ margin: '0 16px 16px', background: '#f0fdf4', borderRadius: 14, padding: '12px 16px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
+          <div style={{ fontSize: 22, marginBottom: 4 }}>🎉</div>
+          <div style={{ fontWeight: 800, color: '#065f46', fontSize: 14 }}>כל הכבוד! ממתין לאישור</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>הלקוח יאשר ותקבל ₪{task.price}</div>
+        </div>
+      )}
+
+      {/* Chat link */}
+      <div style={{ padding: '0 16px 16px' }}>
+        <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 14, border: '1px solid #dce8f5', background: 'white', color: '#1a6fd4', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            <MessageCircle size={16} />
+            פתח צ'אט עם {isWorker ? 'המעסיק' : 'העובד'}
+          </div>
+        </Link>
+      </div>
     </div>
   );
-
-  return null;
 }
