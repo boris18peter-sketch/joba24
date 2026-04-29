@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
-import { MessageCircle, ChevronLeft } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Plus } from 'lucide-react';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
@@ -11,11 +11,33 @@ const statusConfig = {
 };
 
 export default function MyTasksCarousel({ myTasks }) {
-  if (!myTasks || myTasks.length === 0) return null;
-
   // Only show active/relevant tasks
-  const relevantTasks = myTasks.filter(t => t.status === 'OPEN' || t.status === 'TAKEN');
-  if (relevantTasks.length === 0) return null;
+  const relevantTasks = (myTasks || []).filter(t => t.status === 'OPEN' || t.status === 'TAKEN');
+
+  // Empty state: show a "Post Task" button
+  if (relevantTasks.length === 0) {
+    return (
+      <div style={{ padding: '0 16px 12px' }}>
+        <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>משימות שפרסמתי</h2>
+        </div>
+        <Link to="/create-task" style={{ textDecoration: 'none' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            borderRadius: 16, padding: '13px 20px',
+            boxShadow: '0 4px 18px rgba(26,111,212,0.32)',
+            cursor: 'pointer',
+          }}>
+            <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Plus size={16} color="white" strokeWidth={3} />
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 900, color: 'white' }}>פרסם ג'ובה חדשה</span>
+          </div>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '0 16px 4px' }}>
