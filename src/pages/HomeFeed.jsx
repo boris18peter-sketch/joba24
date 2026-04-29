@@ -99,7 +99,13 @@ export default function HomeFeed() {
       const isApprovedForMe = myAppForThis?.status === 'approved';
       if (t.status !== 'OPEN' && !isApprovedForMe) return false;
       if (dismissedTasks.has(t.id)) return false;
-      const matchSearch = !search || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
+      const searchLower = search.toLowerCase();
+      const matchSearch = !search ||
+        t.title?.toLowerCase().includes(searchLower) ||
+        t.description?.toLowerCase().includes(searchLower) ||
+        t.city?.toLowerCase().includes(searchLower) ||
+        t.location_name?.toLowerCase().includes(searchLower) ||
+        String(t.price).includes(search.trim());
       const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
       const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
       const matchTime = !filters.time || t.estimated_time === filters.time;

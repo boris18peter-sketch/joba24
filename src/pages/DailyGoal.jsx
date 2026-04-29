@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
+import BackButton from '@/components/BackButton';
 
 function getDistance(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -133,10 +134,9 @@ ${JSON.stringify(tasksSummary, null, 2)}
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {/* Back Button */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '8px 16px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center' }}>
-        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>
-          ←
-        </button>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '44px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <BackButton />
+        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>מטרת היום</span>
       </div>
 
       {/* Header */}

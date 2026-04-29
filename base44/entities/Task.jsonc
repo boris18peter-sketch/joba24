@@ -70,8 +70,7 @@
         "instant",
         "manual"
       ],
-      "default": "instant",
-      "description": "instant = first worker takes it, manual = owner picks from applicants"
+      "default": "instant"
     },
     "worker_status": {
       "type": "string",
@@ -89,18 +88,19 @@
     },
     "on_the_way_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when worker started on the way"
+      "format": "date-time"
     },
     "arrived_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when worker arrived"
+      "format": "date-time"
     },
     "completed_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when worker completed task"
+      "format": "date-time"
+    },
+    "completion_photo": {
+      "type": "string",
+      "description": "URL of the worker's completion proof photo"
     },
     "client_id": {
       "type": "string"
@@ -135,8 +135,7 @@
             "type": "string"
           }
         }
-      },
-      "description": "List of workers who applied (for manual approval mode)"
+      }
     },
     "images": {
       "type": "array",

@@ -18,9 +18,18 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import { getCategoryLabel } from '@/lib/categories';
 
+// Labels are context-aware: isOwner sees employer language, worker sees worker language
+const getStatusLabel = (status, isOwner) => {
+  if (status === 'OPEN')      return isOwner ? 'מחפש פועל' : 'פתוח';
+  if (status === 'TAKEN')     return isOwner ? 'בביצוע' : 'לקחתי';
+  if (status === 'COMPLETED') return 'הושלם';
+  if (status === 'CANCELLED') return 'בוטל';
+  if (status === 'EXPIRED')   return 'פג תוקף';
+  return status;
+};
 const statusConfig = {
   OPEN: { label: 'פתוח', color: 'text-blue-700 bg-blue-100' },
-  TAKEN: { label: 'נלקח', color: 'text-indigo-700 bg-indigo-100' },
+  TAKEN: { label: 'בביצוע', color: 'text-indigo-700 bg-indigo-100' },
   COMPLETED: { label: 'הושלם', color: 'text-gray-700 bg-gray-100' },
   CANCELLED: { label: 'בוטל', color: 'text-red-700 bg-red-100' },
   EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' },
@@ -216,6 +225,7 @@ export default function TaskDetail() {
   const isOwner = me?.id === task.client_id;
   const hasWorker = !!task.worker_id;
   const isWorker = me?.id === task.worker_id;
+  const statusLabel = getStatusLabel(task.status, isOwner);
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !hasWorker;
   const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !hasWorker;
@@ -234,7 +244,7 @@ export default function TaskDetail() {
       <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <BackButton to="/" />
         <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</h1>
-        <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', flexShrink: 0 }}>{status.label}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', flexShrink: 0 }}>{statusLabel}</span>
       </div>
 
       <div style={{ padding: '16px 16px 0' }} className="space-y-4">

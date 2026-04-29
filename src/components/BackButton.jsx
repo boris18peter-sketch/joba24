@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
  *   to: optional explicit path (default: navigate(-1))
  *   style: optional override styles
  */
-export default function BackButton({ to, style }) {
+export default function BackButton({ to, style, iconColor }) {
   const navigate = useNavigate();
 
   return (
@@ -36,7 +36,7 @@ export default function BackButton({ to, style }) {
       onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
-      <ArrowRight size={18} color="#1a6fd4" />
+      <ArrowRight size={18} color={iconColor || '#1a6fd4'} />
     </button>
   );
 }

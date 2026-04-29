@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import ImageUploader from '@/components/ImageUploader';
@@ -110,9 +111,7 @@ export default function CreateTask() {
         <div style={{ position: 'absolute', top: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'absolute', bottom: -20, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ArrowRight size={18} color="white" />
-          </button>
+          <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
           <div>
             <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>פרסום ג'ובה חדשה</h1>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>מלא את הפרטים ופרסם תוך שניות</p>

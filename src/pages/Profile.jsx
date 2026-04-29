@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskCard from '@/components/TaskCard';
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
+import BackButton from '@/components/BackButton';
 
 export default function Profile() {
   const { data: me, isLoading } = useQuery({
@@ -46,10 +47,9 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50" dir="rtl" style={{ textAlign: 'right' }}>
 
       {/* Back Button */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '8px 16px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center' }}>
-        <button onClick={() => window.history.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18 }}>
-          ← חזור
-        </button>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '44px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <BackButton />
+        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>הפרופיל שלי</span>
       </div>
 
       {/* Header */}
@@ -77,7 +77,7 @@ export default function Profile() {
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           {[
-            { label: 'ג\'ובות בוצעו', value: completedCount, icon: CheckCircle },
+            { label: 'ג\'ובות לקחתי', value: completedCount, icon: CheckCircle },
             { label: 'דירוג ממוצע', value: avgRating + (rating > 0 ? '★' : ''), icon: Star },
             { label: 'יתרה זמינה', value: `₪${balance}`, icon: CreditCard },
           ].map(({ label, value, icon: Icon }) => (
@@ -185,7 +185,7 @@ export default function Profile() {
         <Tabs defaultValue="published">
           <TabsList className="w-full bg-white rounded-xl border border-blue-100" style={{ boxShadow: '0 1px 4px rgba(26,111,212,0.08)', direction: 'rtl' }}>
             <TabsTrigger value="published" className="flex-1 rounded-xl text-xs">פרסמתי ({myTasks.length})</TabsTrigger>
-            <TabsTrigger value="worked" className="flex-1 rounded-xl text-xs">ביצעתי ({completedCount})</TabsTrigger>
+            <TabsTrigger value="worked" className="flex-1 rounded-xl text-xs">לקחתי ({completedCount})</TabsTrigger>
             <TabsTrigger value="reviews" className="flex-1 rounded-xl text-xs">ביקורות ({reviews.length})</TabsTrigger>
           </TabsList>
 
@@ -230,7 +230,7 @@ export default function Profile() {
             {workerTasks.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
                 <div style={{ fontSize: 40, marginBottom: 10 }}>💼</div>
-                <div style={{ fontWeight: 600 }}>עדיין לא ביצעת משימות</div>
+                <div style={{ fontWeight: 600 }}>עדיין לא לקחת ג'ובות</div>
               </div>
             ) : (
               workerTasks.map(t => {
