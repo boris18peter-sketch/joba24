@@ -64,6 +64,22 @@
       ],
       "default": "OPEN"
     },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "funded",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "payment_amount": {
+      "type": "number"
+    },
+    "payment_held": {
+      "type": "boolean",
+      "default": false
+    },
     "approval_mode": {
       "type": "string",
       "enum": [

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
+import PaymentModal from '@/components/PaymentModal';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
@@ -55,6 +56,8 @@ export default function CreateTask() {
   const [searchParams] = useSearchParams();
   const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [pendingTaskId, setPendingTaskId] = useState(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const draftTimerRef = useRef(null);
 
@@ -141,7 +144,8 @@ export default function CreateTask() {
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
-    await base44.entities.Task.create({
+    // Create task as draft (not public until funded)
+    const created = await base44.entities.Task.create({
       title: form.title,
       description: form.description,
       price: Number(form.price),
@@ -160,22 +164,33 @@ export default function CreateTask() {
       images: form.images,
       requirements: form.requirements,
       status: 'OPEN',
+      payment_status: 'pending',
+      payment_held: false,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
     });
 
-    // Clear draft on success
+    setLoading(false);
     localStorage.removeItem(DRAFT_KEY);
 
-    const created = await base44.entities.Task.list('-created_date', 1);
-    toast.success('הג\'ובה פורסמה! ⚡');
-    setLoading(false);
-    if (created?.[0]?.id) {
-      navigate(`/task/${created[0].id}`);
-    } else {
-      navigate('/my-tasks');
+    // Show payment modal
+    const taskList = await base44.entities.Task.list('-created_date', 1);
+    const newTaskId = taskList?.[0]?.id;
+    setPendingTaskId(newTaskId);
+    setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (pendingTaskId) {
+      await base44.entities.Task.update(pendingTaskId, {
+        payment_status: 'funded',
+        payment_amount: Number(form.price),
+        payment_held: true,
+      });
     }
+    toast.success('הג\'ובה פורסמה! ⚡');
+    navigate(pendingTaskId ? `/task/${pendingTaskId}` : '/my-tasks');
   };
 
   const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
@@ -187,6 +202,17 @@ export default function CreateTask() {
         <VerifyModal
           onClose={() => setShowVerifyModal(false)}
           onSuccess={() => { setShowVerifyModal(false); handleSubmit(); }}
+        />
+      )}
+      {showPayment && (
+        <PaymentModal
+          taskPrice={Number(form.price)}
+          onSuccess={handlePaymentSuccess}
+          onClose={() => {
+            setShowPayment(false);
+            // Task was created as draft, navigate to it anyway
+            if (pendingTaskId) navigate(`/task/${pendingTaskId}`);
+          }}
         />
       )}
       {/* Header */}

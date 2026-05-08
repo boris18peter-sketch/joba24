@@ -138,8 +138,11 @@ export default function HomeFeed() {
   const preferredCategories = me?.preferred_categories || [];
   const preferredCities = me?.preferred_cities || [];
 
-  // Filter out my own tasks from the main feed
-  const otherTasks = tasks.filter(t => t.client_id !== me?.id);
+  // Filter out my own tasks from the main feed, and only show funded (or legacy unflagged) tasks
+  const otherTasks = tasks.filter(t =>
+    t.client_id !== me?.id &&
+    (t.payment_status === 'funded' || !t.payment_status)
+  );
 
   // Categorize applications
   const approvedApps = myApplications.filter(a => a.status === 'approved');
