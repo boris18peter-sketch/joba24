@@ -156,10 +156,9 @@ export default function HomeFeed() {
       const myAppForThis = myApplications.find(a => a.task_id === t.id);
       const isApprovedForMe = myAppForThis?.status === 'approved';
       const isPendingForMe = myAppForThis?.status === 'pending';
-      // TAKEN/COMPLETED/CANCELLED tasks: only show if I have an active application
-      if (t.status !== 'OPEN' && !isApprovedForMe && !isPendingForMe) return false;
-      // If task is TAKEN and I only have a pending app, hide it (already assigned to someone else)
-      if (t.status === 'TAKEN' && isPendingForMe && !isApprovedForMe) return false;
+      // Only show OPEN tasks in the main feed
+      // TAKEN/COMPLETED/CANCELLED/EXPIRED: hide entirely from feed
+      if (t.status !== 'OPEN') return false;
       if (dismissedTasks.has(t.id)) return false;
       const searchLower = search.toLowerCase();
       const matchSearch = !search ||
