@@ -17,6 +17,8 @@ import WorkerTrackerBar from '@/components/WorkerTrackerBar';
 import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import { getCategoryLabel } from '@/lib/categories';
+import VerifyModal from '@/components/VerifyModal';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -48,7 +50,20 @@ export default function TaskDetail() {
   const [hasApplied, setHasApplied] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'take' | 'apply' | 'show_apply_form'
   const prevWorkerIdRef = useRef(null);
+
+  // Gate: require verification before action
+  const requireVerified = (action) => {
+    if (me?.is_verified) {
+      if (action === 'take') takeMutation.mutate();
+      if (action === 'show_apply_form') setShowApplyForm(true);
+    } else {
+      setPendingAction(action);
+      setShowVerifyModal(true);
+    }
+  };
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task, isLoading } = useQuery({
@@ -243,6 +258,17 @@ export default function TaskDetail() {
   return (
     <div className="min-h-screen" dir="rtl">
       <TaskTakenConfetti trigger={confetti} />
+      {showVerifyModal && (
+        <VerifyModal
+          onClose={() => { setShowVerifyModal(false); setPendingAction(null); }}
+          onSuccess={() => {
+            setShowVerifyModal(false);
+            if (pendingAction === 'take') takeMutation.mutate();
+            if (pendingAction === 'show_apply_form') setShowApplyForm(true);
+            setPendingAction(null);
+          }}
+        />
+      )}
       {showApprovedPopup && (
         <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />
       )}
@@ -387,7 +413,7 @@ export default function TaskDetail() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">מפרסם</div>
-                <div className="font-medium text-sm">{task.client_name} · {task.client_rating?.toFixed(1) || 'חדש'}</div>
+                <div className="font-medium text-sm flex items-center gap-1.5">{task.client_name} <VerifiedBadge /> · {task.client_rating?.toFixed(1) || 'חדש'}</div>
               </div>
             </div>
           )}
@@ -507,14 +533,14 @@ export default function TaskDetail() {
       {(canTakeInstant || (canApplyManual && !showApplyForm) || hasPendingApp) && (
         <div style={{ position: 'fixed', bottom: 96, left: 16, right: 16, zIndex: 50 }}>
           {canTakeInstant && (
-            <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
+            <button onClick={() => requireVerified('take')} disabled={takeMutation.isPending}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
               {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
             </button>
           )}
           {canApplyManual && !showApplyForm && (
-            <button onClick={() => setShowApplyForm(true)}
+            <button onClick={() => requireVerified('show_apply_form')}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               📩 רוצה לבצע את הג'ובה

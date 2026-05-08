@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Settings, Award, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2 } from 'lucide-react';
+import { Star, LogOut, Settings, Award, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield } from 'lucide-react';
+import VerifyModal from '@/components/VerifyModal';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TaskCard from '@/components/TaskCard';
 import { Link } from 'react-router-dom';
@@ -12,6 +14,7 @@ import BackButton from '@/components/BackButton';
 export default function Profile() {
   const queryClient = useQueryClient();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const photoInputRef = useRef(null);
 
   const handlePhotoUpload = async (e) => {
@@ -60,6 +63,15 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl" style={{ textAlign: 'right' }}>
+      {showVerifyModal && (
+        <VerifyModal
+          onClose={() => setShowVerifyModal(false)}
+          onSuccess={() => {
+            setShowVerifyModal(false);
+            queryClient.invalidateQueries({ queryKey: ['me'] });
+          }}
+        />
+      )}
 
       {/* Back Button */}
       <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '44px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -93,7 +105,10 @@ export default function Profile() {
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
           <div>
-            <div style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{me?.full_name || 'משתמש'}</div>
+            <div style={{ color: 'white', fontSize: 20, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7 }}>
+            {me?.full_name || 'משתמש'}
+            {me?.is_verified && <VerifiedBadge size="md" />}
+          </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 2 }}>{me?.email}</div>
             {me?.profession && (
               <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4, background: 'rgba(255,255,255,0.15)', padding: '2px 10px', borderRadius: 20, display: 'inline-block' }}>
@@ -162,6 +177,39 @@ export default function Profile() {
                   ✅ {cert}
                 </span>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CTA: verify identity */}
+      {!me?.is_verified && (
+        <div style={{ padding: '12px 16px 0' }}>
+          <button onClick={() => setShowVerifyModal(true)} style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+            <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 18px rgba(26,111,212,0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Shield size={20} color="white" />
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>אמת את הזהות שלך</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>נדרש כדי לפרסם ולקחת ג'ובות</div>
+                </div>
+              </div>
+              <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
+            </div>
+          </button>
+        </div>
+      )}
+      {me?.is_verified && (
+        <div style={{ padding: '12px 16px 0' }}>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Shield size={18} color="#16a34a" />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#166534' }}>✅ המשתמש מאומת</div>
+              <div style={{ fontSize: 11, color: '#15803d', marginTop: 1 }}>הזהות שלך אומתה בהצלחה</div>
             </div>
           </div>
         </div>

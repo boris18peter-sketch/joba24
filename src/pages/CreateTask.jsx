@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import ImageUploader from '@/components/ImageUploader';
 import { CATEGORIES } from '@/lib/categories';
+import VerifyModal from '@/components/VerifyModal';
 
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 
@@ -53,6 +54,7 @@ export default function CreateTask() {
   });
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
@@ -60,6 +62,11 @@ export default function CreateTask() {
   const [errors, setErrors] = useState({});
 
   const handleSubmit = async () => {
+    // Require verification
+    if (!me?.is_verified) {
+      setShowVerifyModal(true);
+      return;
+    }
     const newErrors = {};
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
@@ -115,6 +122,12 @@ export default function CreateTask() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+      {showVerifyModal && (
+        <VerifyModal
+          onClose={() => setShowVerifyModal(false)}
+          onSuccess={() => { setShowVerifyModal(false); handleSubmit(); }}
+        />
+      )}
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)',

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { MapPin, Clock, Navigation, Zap, Users } from 'lucide-react';
 import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },

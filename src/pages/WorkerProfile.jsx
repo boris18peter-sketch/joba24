@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, Plus, X, Save, Loader2, Award, Star, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2 } from 'lucide-react';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES } from '@/lib/categories';
 import { toast } from 'sonner';
@@ -41,6 +42,19 @@ export default function WorkerProfile() {
 
   const [form, setForm] = useState(null);
   const [newCert, setNewCert] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const certDocRef = useRef(null);
+
+  const handleCertDocUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDoc(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(f => ({ ...f, certificate_files: [...(f.certificate_files || []), { name: file.name, url: file_url }] }));
+    setUploadingDoc(false);
+  };
+
+  const removeCertDoc = (url) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).filter(c => c.url !== url) }));
 
   // Initialize form when currentUser loads
   if (currentUser && !form) {
@@ -49,6 +63,7 @@ export default function WorkerProfile() {
       phone: currentUser.phone || '',
       profession: currentUser.profession || '',
       certificates: currentUser.certificates || [],
+      certificate_files: currentUser.certificate_files || [],
       preferred_categories: currentUser.preferred_categories || [],
       preferred_cities: currentUser.preferred_cities || [],
     });
@@ -103,7 +118,10 @@ export default function WorkerProfile() {
         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
           <ArrowRight size={18} color="#1a6fd4" />
         </button>
-        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>{isViewingOther ? 'פרופיל עובד' : 'פרופיל שלי'}</h1>
+        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+          {isViewingOther ? (currentUser?.full_name || 'פרופיל עובד') : 'פרופיל שלי'}
+          {currentUser?.is_verified && <VerifiedBadge size="md" />}
+        </h1>
       </div>
 
       <div className="px-4 py-5 space-y-6 pb-12">
@@ -177,6 +195,41 @@ export default function WorkerProfile() {
                />
                <Button onClick={addCert} variant="outline" className="rounded-xl shrink-0"><Plus className="w-4 h-4" /></Button>
              </div>
+           )}
+         </div>
+
+         {/* Certificate Document Uploads */}
+         <div>
+           <Label className="text-sm font-semibold mb-2 block">העלאת מסמכי תעודה</Label>
+           <input ref={certDocRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleCertDocUpload} />
+
+           {/* Uploaded docs list */}
+           {(form.certificate_files || []).length > 0 && (
+             <div className="space-y-2 mb-3">
+               {form.certificate_files.map(doc => (
+                 <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px' }}>
+                   <FileText size={18} color="#16a34a" style={{ flexShrink: 0 }} />
+                   <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                     {doc.name}
+                   </a>
+                   {!isViewingOther && (
+                     <button onClick={() => removeCertDoc(doc.url)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                       <Trash2 size={14} color="#dc2626" />
+                     </button>
+                   )}
+                 </div>
+               ))}
+             </div>
+           )}
+
+           {!isViewingOther && (
+             <button
+               onClick={() => certDocRef.current?.click()}
+               disabled={uploadingDoc}
+               style={{ width: '100%', height: 48, borderRadius: 14, border: '2px dashed #dbeafe', background: '#f8faff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}
+             >
+               {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> העלה מסמך תעודה (תמונה / PDF)</>}
+             </button>
            )}
          </div>
 
