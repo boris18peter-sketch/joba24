@@ -13,7 +13,7 @@ export function useVerifyGuard(me) {
   const [pendingAction, setPendingAction] = useState(null);
 
   const gate = (action) => {
-    if (me?.is_verified) {
+    if (false && me?.is_verified) { // TEMP: force verify flow for testing
       action();
     } else {
       setPendingAction(() => action);
