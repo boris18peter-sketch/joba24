@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -34,18 +34,20 @@ function SectionCard({ children }) {
 
 export default function CreateTask() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    price: '',
+    title: searchParams.get('title') || '',
+    description: searchParams.get('description') || '',
+    price: searchParams.get('price') || '',
     max_price: '',
     auto_bump_enabled: false,
-    location_name: '',
-    city: '',
-    estimated_time: '1h',
-    category: 'other',
-    approval_mode: 'instant',
+    location_name: searchParams.get('location_name') || '',
+    city: searchParams.get('city') || '',
+    estimated_time: searchParams.get('estimated_time') || '1h',
+    category: searchParams.get('category') || 'other',
+    approval_mode: searchParams.get('approval_mode') || 'instant',
     expiry_hours: null,
     custom_time: '',
     is_story: false,
@@ -140,8 +142,8 @@ export default function CreateTask() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
           <div>
-            <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>פרסום ג'ובה חדשה</h1>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>מלא את הפרטים ופרסם תוך שניות</p>
+            <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"}</h1>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{isRepost ? 'הפרטים מולאו מהג\'ובה הקודמת — ערוך ופרסם' : 'מלא את הפרטים ופרסם תוך שניות'}</p>
           </div>
         </div>
       </div>
@@ -194,7 +196,7 @@ export default function CreateTask() {
             value={form.price} onChange={e => { set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
             style={{ background: '#f4f7fb', border: `1px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
           />
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}

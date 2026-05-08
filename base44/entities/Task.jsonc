@@ -99,8 +99,7 @@
       "format": "date-time"
     },
     "completion_photo": {
-      "type": "string",
-      "description": "URL of the worker's completion proof photo"
+      "type": "string"
     },
     "client_id": {
       "type": "string"
@@ -115,6 +114,12 @@
       "type": "string"
     },
     "worker_name": {
+      "type": "string"
+    },
+    "signal_worker_id": {
+      "type": "string"
+    },
+    "signal_worker_name": {
       "type": "string"
     },
     "applicants": {

@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -92,7 +92,7 @@ export default function TaskDetail() {
     refetchInterval: 2000,
   });
   const isApproved = myApp?.status === 'approved';
-  const hasPendingApp = myApp?.status === 'pending';
+  const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
 
   // Detect when my application just got approved
   useEffect(() => {
@@ -200,13 +200,16 @@ export default function TaskDetail() {
   });
 
   const cancelApplicationMutation = useMutation({
-    mutationFn: () => base44.entities.TaskApplication.delete(myApp.id),
+    mutationFn: async () => {
+      // Update status to cancelled instead of deleting, so UI reflects immediately
+      await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
+    },
     onSuccess: () => {
       prevWorkerIdRef.current = null;
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
-      toast.success('בקשה בוטלה');
+      toast.success('הבקשה בוטלה בהצלחה');
     },
   });
 
@@ -228,14 +231,20 @@ export default function TaskDetail() {
       toast.success('הבקשה נשלחה לבעל הג\'ובה!');
   };
 
-  // Signal reopen - sends a real chat message to task owner
+  // Signal reopen - sends a chat message + creates a notification for task owner
   const handleSignalReopen = async () => {
     if (!me || !task?.client_id || signalSent) return;
+    // Send chat message so owner sees it in chat inbox
     await base44.entities.ChatMessage.create({
       task_id: id,
       sender_id: me.id,
       sender_name: me.full_name,
       content: `👋 היי! המשימה "${task.title}" פגה תוקף אבל אני מעוניין לבצע אותה. תוכל לפתוח אותה מחדש עבורי?`,
+    });
+    // Also create a signal record on the task so owner can see interested workers
+    await base44.entities.Task.update(id, {
+      signal_worker_id: me.id,
+      signal_worker_name: me.full_name,
     });
     setSignalSent(true);
     toast.success('האיתות נשלח לבעל המשימה! 📣');
@@ -300,12 +309,18 @@ export default function TaskDetail() {
                 {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את הג'ובה מחדש ל-24 שעות</>}
               </Button>
             )}
-            {!isOwner && (
-              <Button onClick={handleSignalReopen} disabled={signalSent} variant="outline"
+            {!isOwner && !signalSent && (
+              <Button onClick={handleSignalReopen} variant="outline"
                 className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
               >
-                {signalSent ? '✅ האיתות נשלח, ממתין לבעל הג\'ובה שיפתח מחדש' : '📣 שלח איתות לבעל הג\'ובה'}
+                👉 שלח איתות לבעל הג'ובה
               </Button>
+            )}
+            {!isOwner && signalSent && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px' }}>
+                <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>✅ האיתות נשלח!</div>
+                <div style={{ fontSize: 12, color: '#15803d', marginTop: 3 }}>מחכה לאישור פתיחת המשימה מחדש</div>
+              </div>
             )}
           </div>
         )}
@@ -510,6 +525,29 @@ export default function TaskDetail() {
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
               {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'ביטול הג\'ובה'}
+            </button>
+          )}
+
+          {/* Repost button for owner on closed tasks */}
+          {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) && (
+            <button
+              onClick={() => {
+                const params = new URLSearchParams({
+                  repost: '1',
+                  title: task.title || '',
+                  description: task.description || '',
+                  price: String(task.price || ''),
+                  city: task.city || '',
+                  location_name: task.location_name || '',
+                  category: task.category || '',
+                  estimated_time: task.estimated_time || '',
+                  approval_mode: task.approval_mode || 'instant',
+                });
+                navigate(`/create-task?${params.toString()}`);
+              }}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}
+            >
+              <RotateCcw size={16} /> פרסם שוב
             </button>
           )}
 
