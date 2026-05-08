@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ export default function HomeFeed() {
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
+  const queryClient = useQueryClient();
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -26,7 +27,6 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    refetchInterval: 15000,
   });
 
   // My applications — to show status on feed cards
@@ -34,14 +34,55 @@ export default function HomeFeed() {
     queryKey: ['myApplicationsFeed', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 100),
     enabled: !!me?.id,
-    refetchInterval: 15000,
   });
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 50),
-    refetchInterval: 15000,
   });
+
+  // ── Real-time subscriptions ──────────────────────────────────────────────
+  useEffect(() => {
+    // Live task feed: update/remove tasks instantly on any change
+    const unsubTask = base44.entities.Task.subscribe((event) => {
+      queryClient.setQueryData(['tasks'], (old = []) => {
+        if (event.type === 'create') {
+          if (old.find(t => t.id === event.id)) return old;
+          return [event.data, ...old];
+        }
+        if (event.type === 'update') {
+          // If task is no longer OPEN (taken, closed, cancelled, completed) — remove from feed
+          const updatedTask = { ...(old.find(t => t.id === event.id) || {}), ...event.data };
+          if (updatedTask.status && updatedTask.status !== 'OPEN') {
+            return old.map(t => t.id === event.id ? updatedTask : t);
+          }
+          return old.map(t => t.id === event.id ? updatedTask : t);
+        }
+        if (event.type === 'delete') {
+          return old.filter(t => t.id !== event.id);
+        }
+        return old;
+      });
+      // Also update myTasks cache
+      if (me?.id) {
+        queryClient.setQueryData(['myTasks', me.id], (old = []) => {
+          if (event.type === 'update') return old.map(t => t.id === event.id ? { ...t, ...event.data } : t);
+          if (event.type === 'delete') return old.filter(t => t.id !== event.id);
+          return old;
+        });
+      }
+    });
+
+    // Live application updates: refresh my applications cache instantly
+    const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
+      if (!me?.id) return;
+      if (event.data?.worker_id === me.id || event.type === 'delete') {
+        queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
+      }
+    });
+
+    return () => { unsubTask(); unsubApp(); };
+  }, [me?.id, queryClient]);
 
   useEffect(() => {
     if (navigator.geolocation) {

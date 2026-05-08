@@ -8,6 +8,7 @@ import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, U
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
+import RatingModal from '@/components/RatingModal';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
@@ -42,6 +43,7 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCompletion, setShowCompletion] = useState(false);
+  const [showRating, setShowRating] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
@@ -66,6 +68,14 @@ export default function TaskDetail() {
   };
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  // Check if current user already reviewed this task
+  const { data: myReview } = useQuery({
+    queryKey: ['myReview', id, me?.id],
+    queryFn: () => base44.entities.Review.filter({ task_id: id, reviewer_id: me.id }),
+    select: data => data[0],
+    enabled: !!me?.id,
+  });
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
@@ -528,6 +538,20 @@ export default function TaskDetail() {
             </button>
           )}
 
+          {/* Rating CTA for completed tasks */}
+          {task.status === 'COMPLETED' && (isOwner || isWorker) && !myReview && (
+            <button onClick={() => setShowRating(true)}
+              style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}
+            >
+              ⭐ דרג את {isOwner ? task.worker_name : task.client_name}
+            </button>
+          )}
+          {task.status === 'COMPLETED' && (isOwner || isWorker) && myReview && (
+            <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
+              ⭐ {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר
+            </div>
+          )}
+
           {/* Repost button for owner on closed tasks */}
           {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) && (
             <button
@@ -588,7 +612,10 @@ export default function TaskDetail() {
       )}
 
       {showCompletion && (
-        <CompletionModal task={task} me={me} onClose={() => setShowCompletion(false)} />
+        <CompletionModal task={task} me={me} onClose={() => { setShowCompletion(false); setShowRating(true); }} />
+      )}
+      {showRating && task && me && (
+        <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />
       )}
     </div>
   );

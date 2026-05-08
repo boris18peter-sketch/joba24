@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
@@ -62,6 +62,16 @@ export default function CreateTask() {
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
 
   const [errors, setErrors] = useState({});
+  const [showErrorBanner, setShowErrorBanner] = useState(false);
+
+  // Refs for scrolling to error fields
+  const fieldRefs = {
+    title: useRef(null),
+    description: useRef(null),
+    price: useRef(null),
+    location_name: useRef(null),
+    city: useRef(null),
+  };
 
   const handleSubmit = async () => {
     // Require verification
@@ -77,9 +87,17 @@ export default function CreateTask() {
     if (!form.location_name) newErrors.location_name = true;
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      toast.error('חסרים פרטים לפתיחת משימה');
+      setShowErrorBanner(true);
+      // Scroll to the topmost missing field
+      const order = ['title', 'description', 'price', 'location_name', 'city'];
+      const firstError = order.find(k => newErrors[k]);
+      if (firstError && fieldRefs[firstError]?.current) {
+        fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        fieldRefs[firstError].current.focus?.();
+      }
       return;
     }
+    setShowErrorBanner(false);
     setErrors({});
     setLoading(true);
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
@@ -149,6 +167,16 @@ export default function CreateTask() {
       </div>
 
       <div className="px-4 py-4 space-y-4 pb-12">
+        {/* Error banner */}
+        {showErrorBanner && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>
+              ⚠️ חסרים פרטים כדי לפרסם את המשימה — בדוק את השדות המסומנים באדום
+            </p>
+          </div>
+        )}
+
         {/* Info banner */}
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -172,15 +200,17 @@ export default function CreateTask() {
         {/* Title + Description */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
-          <Input placeholder="לדוגמה: להרים מקרר לקומה שלישית"
-            value={form.title} onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); }}
-            style={{ background: '#f4f7fb', border: `1px solid ${errors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: 14 }}
+          <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
+            value={form.title} onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: errors.title ? 4 : 14 }}
           />
+          {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תיאור מפורט *</Label>
-          <Textarea placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
+          <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description} onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); }}
-            style={{ background: '#f4f7fb', border: `1px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
           />
+          {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
         </SectionCard>
 
         {/* Images */}
@@ -192,10 +222,11 @@ export default function CreateTask() {
         {/* Price */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
-          <Input type="number" placeholder="100"
+          <Input ref={fieldRefs.price} type="number" placeholder="100"
             value={form.price} onChange={e => { set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
-            style={{ background: '#f4f7fb', border: `1px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
           />
+          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
 
           {/* Auto bump */}
@@ -279,14 +310,16 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
             <MapPin size={14} /> מיקום
           </Label>
-          <Input placeholder="לדוגמה: תל אביב, רחוב דיזנגוף 50"
+          <Input ref={fieldRefs.location_name} placeholder="לדוגמה: תל אביב, רחוב דיזנגוף 50"
             value={form.location_name} onChange={e => { set('location_name', e.target.value); setErrors(p => ({...p, location_name: false})); }}
-            style={{ background: '#f4f7fb', border: `1px solid ${errors.location_name ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, marginBottom: 10 }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.location_name ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, marginBottom: errors.location_name ? 4 : 10 }}
           />
-          <Input placeholder="עיר (לדוגמה: תל אביב)"
+          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
+          <Input ref={fieldRefs.city} placeholder="עיר (לדוגמה: תל אביב)"
             value={form.city} onChange={e => { set('city', e.target.value); setErrors(p => ({...p, city: false})); }}
-            style={{ background: '#f4f7fb', border: `1px solid ${errors.city ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 42 }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.city ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 42 }}
           />
+          {errors.city && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
         </SectionCard>
 
         {/* Time */}
