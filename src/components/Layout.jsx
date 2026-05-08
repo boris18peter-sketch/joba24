@@ -1,10 +1,12 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Map, Plus, User, Wallet, Zap } from 'lucide-react';
+import { Home, Map, Plus, User, Wallet } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useState, useEffect, useRef } from 'react';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
+import VerifyModal from '@/components/VerifyModal';
+import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 
 export default function Layout() {
   const location = useLocation();
@@ -14,6 +16,7 @@ export default function Layout() {
   const prevApplicationsRef = useRef({});
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
@@ -180,6 +183,7 @@ export default function Layout() {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f4f7fb', overflow: 'hidden' }}>
+      {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       <SideMenu />
       
       {/* Live Notifications Stack */}
@@ -239,7 +243,7 @@ export default function Layout() {
             const active = location.pathname === to;
             if (primary) {
               return (
-                <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, textDecoration: 'none' }}>
+                <button key={to} onClick={() => gate(() => navigate(to))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <div style={{
                     width: 56, height: 56, borderRadius: '50%',
                     background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
@@ -249,7 +253,7 @@ export default function Layout() {
                     <Icon size={24} color="white" />
                   </div>
                   <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
-                </Link>
+                </button>
               );
             }
             return (
