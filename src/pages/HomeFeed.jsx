@@ -10,6 +10,7 @@ import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
+import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 export default function HomeFeed() {
@@ -28,6 +29,19 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
   });
+
+  // Active task I'm working on as a worker
+  const { data: activeWorkerTask } = useQuery({
+    queryKey: ['activeWorkerTask', me?.id],
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
+    select: data => data?.[0] || null,
+    enabled: !!me?.id,
+    refetchInterval: 5000,
+    staleTime: 0,
+  });
+
+  // Active task I published that is currently TAKEN
+  const activeClientTask = myTasks.find(t => t.status === 'TAKEN') || null;
 
   // My applications — to show status on feed cards
   const { data: myApplications = [] } = useQuery({
@@ -276,6 +290,13 @@ export default function HomeFeed() {
           )}
         </div>
       </div>
+
+      {/* Active Task Banner — worker or client with in-progress task */}
+      {(activeWorkerTask || activeClientTask) && (
+        <div style={{ paddingTop: 12 }}>
+          <ActiveTaskBanner task={activeWorkerTask || activeClientTask} />
+        </div>
+      )}
 
       {/* Stories - מעוכב לטעינה */}
       <React.Suspense fallback={null}>

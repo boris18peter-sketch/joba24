@@ -1,5 +1,5 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, Map, Plus, User, Wallet } from 'lucide-react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Map, Plus, User, Wallet, Zap } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -8,6 +8,7 @@ import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
@@ -20,6 +21,9 @@ export default function Layout() {
     enabled: !!me?.id,
     refetchInterval: 10000,
   });
+
+  // Active task as worker
+  const activeWorkerTask = workerTasks.find(t => t.status === 'TAKEN') || null;
 
   // Get my published tasks for real-time notifications
   const { data: myPublishedTasks = [] } = useQuery({
@@ -193,6 +197,35 @@ export default function Layout() {
       <div style={{ flex: 1, overflow: 'auto', paddingBottom: 80 }}>
         <Outlet />
       </div>
+
+      {/* Floating Active Task Button — shown when worker has active task and is NOT on that task page */}
+      {activeWorkerTask && !location.pathname.includes(`/task/${activeWorkerTask.id}`) && !location.pathname.includes('/chat/') && (
+        <div style={{ position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 9998, pointerEvents: 'auto' }}>
+          <button
+            onClick={() => navigate(`/task/${activeWorkerTask.id}`)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+              color: 'white', fontWeight: 900, fontSize: 13,
+              padding: '10px 18px', borderRadius: 50,
+              border: 'none', cursor: 'pointer',
+              boxShadow: '0 4px 24px rgba(26,111,212,0.45)',
+              whiteSpace: 'nowrap',
+              animation: 'activeTaskPulse 3s ease-in-out infinite',
+            }}
+          >
+            <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+              <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
+            </span>
+            🔥 המשימה הפעילה שלי
+          </button>
+          <style>{`
+            @keyframes activeTaskPulse { 0%,100%{box-shadow:0 4px 24px rgba(26,111,212,0.45)} 50%{box-shadow:0 4px 32px rgba(26,111,212,0.7)} }
+            @keyframes livePing { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(2.2);opacity:0} }
+          `}</style>
+        </div>
+      )}
 
       {/* Bottom Nav */}
       <div style={{

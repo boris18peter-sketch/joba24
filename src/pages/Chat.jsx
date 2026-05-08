@@ -2,11 +2,35 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Image, X, Check, CheckCheck } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
+
+function DateSeparator({ date }) {
+  const d = new Date(date);
+  const label = isToday(d) ? 'היום' : isYesterday(d) ? 'אתמול' : format(d, 'dd/MM/yyyy');
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0' }}>
+      <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+      <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{label}</span>
+      <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+    </div>
+  );
+}
+
+function TypingIndicator() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '18px 18px 4px 18px', padding: '10px 14px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', animation: `typingBounce 1.2s ease-in-out ${i*0.2}s infinite` }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Chat() {
   const { taskId } = useParams();
@@ -14,7 +38,12 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
   const bottomRef = useRef(null);
+  const fileRef = useRef(null);
+  const typingTimerRef = useRef(null);
+  const containerRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task } = useQuery({
@@ -23,111 +52,248 @@ export default function Chat() {
     select: d => d[0],
   });
 
-  // Load full message history
+  // Load message history
   useEffect(() => {
-    base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500)
-      .then(setMessages);
+    base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500).then(msgs => {
+      setMessages(msgs);
+    });
   }, [taskId]);
 
-  // Real-time subscription - deduplicate by id
+  // Real-time subscription
   useEffect(() => {
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== taskId) return;
       if (event.type === 'create') {
-        setMessages(prev => {
-          if (prev.some(m => m.id === event.data.id)) return prev;
-          return [...prev, event.data];
-        });
+        setMessages(prev => prev.some(m => m.id === event.data.id) ? prev : [...prev, event.data]);
+        // Other person typed → clear typing indicator
+        if (event.data.sender_id !== me?.id) {
+          setOtherTyping(false);
+        }
       }
     });
     return unsub;
-  }, [taskId]);
+  }, [taskId, me?.id]);
 
+  // Auto scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, otherTyping]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || !me) return;
+  const sendMessage = async (content, imageUrl = null) => {
+    if ((!content?.trim() && !imageUrl) || !me) return;
     setSending(true);
+    const msgContent = imageUrl ? `[img]${imageUrl}` : content.trim();
     setInput('');
     await base44.entities.ChatMessage.create({
       task_id: taskId,
       sender_id: me.id,
       sender_name: me.full_name,
-      content: input.trim(),
+      content: msgContent,
     });
     setSending(false);
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await sendMessage('', file_url);
+    setUploading(false);
+    e.target.value = '';
+  };
+
+  // Group messages by date
+  const grouped = [];
+  let lastDate = null;
+  messages.forEach((msg, idx) => {
+    const msgDate = msg.created_date ? new Date(msg.created_date).toDateString() : null;
+    if (msgDate && msgDate !== lastDate) {
+      grouped.push({ type: 'date', date: msg.created_date, key: `sep-${idx}` });
+      lastDate = msgDate;
+    }
+    // Group consecutive messages from same sender
+    const prev = grouped[grouped.length - 1];
+    const isContinuation = prev?.type === 'msg' && prev.msg.sender_id === msg.sender_id;
+    grouped.push({ type: 'msg', msg, isContinuation, key: msg.id });
+  });
+
+  const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || 'הפועל') : (task?.client_name || 'המעסיק');
+
   return (
-    <div className="flex flex-col h-screen" dir="rtl" style={{ background: '#f4f7fb' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8' }} dir="rtl">
       {/* Header */}
-       <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-         <BackButton />
-         <div style={{ flex: 1, minWidth: 0 }}>
-           <h1 style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task?.title || 'צ\'אט'}</h1>
-           <p style={{ fontSize: 12, color: '#1a6fd4', margin: '2px 0 0 0', cursor: 'pointer' }} onClick={() => {
-             const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
-             if (otherPersonId) navigate(`/worker-profile?id=${otherPersonId}`);
-           }} title="לחץ לצפייה בפרופיל">
-             👤 {me?.id === task?.client_id ? task?.worker_name || 'ממתין למבצע' : task?.client_name}
-           </p>
-         </div>
-       </div>
+      <div style={{
+        background: 'white',
+        borderBottom: '1px solid #e2e8f0',
+        padding: '48px 16px 12px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
+        position: 'sticky', top: 0, zIndex: 40,
+      }}>
+        <BackButton />
+        {/* Avatar */}
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+          {otherPersonName?.[0] || '?'}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => {
+          const id = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
+          if (id) navigate(`/worker-profile?id=${id}`);
+        }}>
+          <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
+          <div style={{ fontSize: 11, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title || 'שיחה'}</div>
+        </div>
+        {/* Task price badge */}
+        {task?.price && (
+          <div style={{ background: '#eff6ff', borderRadius: 10, padding: '4px 10px', color: '#1a6fd4', fontWeight: 900, fontSize: 14, flexShrink: 0 }}>₪{task.price}</div>
+        )}
+      </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-20" style={{ background: '#f4f7fb' }}>
+      <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {messages.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-3xl mb-2">💬</div>
-            <p className="text-muted-foreground text-sm">עדיין אין הודעות</p>
+          <div style={{ textAlign: 'center', paddingTop: 60 }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
+            <div style={{ fontWeight: 700, color: '#334155', fontSize: 15 }}>התחל שיחה</div>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>שלח הודעה ל{otherPersonName}</div>
           </div>
         )}
-        {messages.map(msg => {
+
+        {grouped.map(item => {
+          if (item.type === 'date') return <DateSeparator key={item.key} date={item.date} />;
+          const { msg, isContinuation } = item;
           const isMe = msg.sender_id === me?.id;
+          const isImage = msg.content?.startsWith('[img]');
+          const imgUrl = isImage ? msg.content.replace('[img]', '') : null;
+
           return (
-            <div key={msg.id} className={`flex ${isMe ? 'justify-start' : 'justify-end'}`}>
-              <div className={`max-w-[75%] ${isMe ? 'items-start' : 'items-end'} flex flex-col gap-1`}>
-                {!isMe && (
-                  <span className="text-xs text-muted-foreground px-1">{msg.sender_name}</span>
-                )}
-                <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                  isMe
-                    ? 'bg-black text-white rounded-tr-sm'
-                    : 'bg-white border border-gray-100 text-black rounded-tl-sm shadow-sm'
-                }`}>
-                  {msg.content}
+            <div
+              key={msg.id}
+              style={{
+                display: 'flex',
+                justifyContent: isMe ? 'flex-start' : 'flex-end',
+                marginBottom: isContinuation ? 2 : 8,
+                alignItems: 'flex-end', gap: 6,
+              }}
+            >
+              {/* Avatar for other person (only on last in group) */}
+              {!isMe && !isContinuation && (
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, marginBottom: 2, color: 'white', fontWeight: 700 }}>
+                  {msg.sender_name?.[0] || '?'}
                 </div>
-                {msg.created_date && (
-                  <span className="text-xs text-muted-foreground px-1">
-                    {format(new Date(msg.created_date), 'HH:mm')}
-                  </span>
+              )}
+              {!isMe && isContinuation && <div style={{ width: 28, flexShrink: 0 }} />}
+
+              <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-start' : 'flex-end' }}>
+                {/* Sender name (first in group, not me) */}
+                {!isMe && !isContinuation && (
+                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, marginBottom: 3, paddingRight: 4 }}>{msg.sender_name}</div>
                 )}
+
+                {isImage ? (
+                  <img
+                    src={imgUrl}
+                    alt="תמונה"
+                    style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, objectFit: 'cover', cursor: 'pointer', border: isMe ? 'none' : '1px solid #e2e8f0' }}
+                    onClick={() => window.open(imgUrl, '_blank')}
+                  />
+                ) : (
+                  <div style={{
+                    padding: '9px 13px',
+                    borderRadius: isMe
+                      ? (isContinuation ? '14px 14px 14px 4px' : '18px 18px 18px 4px')
+                      : (isContinuation ? '14px 14px 4px 14px' : '18px 18px 4px 18px'),
+                    background: isMe ? '#1e293b' : 'white',
+                    color: isMe ? 'white' : '#1e293b',
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                    border: isMe ? 'none' : '1px solid #f1f5f9',
+                    wordBreak: 'break-word',
+                  }}>
+                    {msg.content}
+                  </div>
+                )}
+
+                {/* Timestamp + read */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 3, paddingRight: 4 }}>
+                  <span style={{ fontSize: 10, color: '#94a3b8' }}>
+                    {msg.created_date ? format(new Date(msg.created_date), 'HH:mm') : ''}
+                  </span>
+                  {isMe && (
+                    msg.read
+                      ? <CheckCheck size={12} color="#3b82f6" />
+                      : <Check size={12} color="#94a3b8" />
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
-        <div ref={bottomRef} />
+
+        {otherTyping && <TypingIndicator />}
+        <div ref={bottomRef} style={{ height: 1 }} />
       </div>
 
-      {/* Input */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: '1px solid #dce8f5', padding: '12px 16px', display: 'flex', gap: 8, maxWidth: '512px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <Input
-          placeholder="כתוב הודעה..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && sendMessage()}
-          style={{ flex: 1, background: '#f1f5f9', border: 'none', borderRadius: 12, fontSize: 14, padding: '10px 14px' }}
-        />
+      {/* Input bar */}
+      <div style={{
+        background: 'white',
+        borderTop: '1px solid #e2e8f0',
+        padding: '10px 12px',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+        display: 'flex', alignItems: 'flex-end', gap: 8,
+      }}>
+        {/* File upload */}
         <button
-          onClick={sendMessage}
-          disabled={sending || !input.trim()}
-          style={{ width: 40, height: 40, borderRadius: 12, background: input.trim() ? '#1a6fd4' : '#ddd', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', fontSize: 18, fontWeight: 700 }}
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : '↩️'}
+          {uploading ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" /> : <Image size={16} color="#64748b" />}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
+
+        {/* Text input */}
+        <div style={{ flex: 1, background: '#f8fafc', borderRadius: 22, border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
+          <textarea
+            placeholder="הודעה..."
+            value={input}
+            rows={1}
+            onChange={e => {
+              setInput(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
+            }}
+            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
+          />
+        </div>
+
+        {/* Send */}
+        <button
+          onClick={() => sendMessage(input)}
+          disabled={sending || (!input.trim())}
+          style={{
+            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+            background: input.trim() ? 'linear-gradient(135deg,#1a6fd4,#3b82f6)' : '#e2e8f0',
+            border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: input.trim() ? 'pointer' : 'not-allowed',
+            boxShadow: input.trim() ? '0 4px 12px rgba(26,111,212,0.3)' : 'none',
+            transition: 'all 0.2s',
+          }}
+        >
+          {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} color={input.trim() ? 'white' : '#94a3b8'} />}
         </button>
       </div>
+
+      <style>{`
+        @keyframes typingBounce {
+          0%, 100% { transform: translateY(0); opacity: 0.5; }
+          50% { transform: translateY(-4px); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
