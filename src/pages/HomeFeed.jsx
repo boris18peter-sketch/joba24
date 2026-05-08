@@ -135,10 +135,14 @@ export default function HomeFeed() {
 
   const scored = otherTasks
     .filter(t => {
-      // Show only OPEN tasks OR tasks where I have an approved application
+      // Show only OPEN tasks OR tasks where I have an approved/pending application
       const myAppForThis = myApplications.find(a => a.task_id === t.id);
       const isApprovedForMe = myAppForThis?.status === 'approved';
-      if (t.status !== 'OPEN' && !isApprovedForMe) return false;
+      const isPendingForMe = myAppForThis?.status === 'pending';
+      // TAKEN/COMPLETED/CANCELLED tasks: only show if I have an active application
+      if (t.status !== 'OPEN' && !isApprovedForMe && !isPendingForMe) return false;
+      // If task is TAKEN and I only have a pending app, hide it (already assigned to someone else)
+      if (t.status === 'TAKEN' && isPendingForMe && !isApprovedForMe) return false;
       if (dismissedTasks.has(t.id)) return false;
       const searchLower = search.toLowerCase();
       const matchSearch = !search ||

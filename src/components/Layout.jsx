@@ -37,24 +37,14 @@ export default function Layout() {
     refetchInterval: 10000,
   });
 
-  // Watch for task status changes on MY published tasks (client notifications)
+  // Watch for task status changes on MY published tasks (polling fallback — real-time subscription handles main flow)
   useEffect(() => {
+    const isInitial = Object.keys(prevTasksRef.current).length === 0;
     myPublishedTasks.forEach(task => {
       const prevTask = prevTasksRef.current[task.id];
-      if (prevTask) {
-        // Someone took my task
+      if (prevTask && !isInitial) {
         if (task.status === 'TAKEN' && prevTask.status === 'OPEN') {
           addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name });
-        }
-        // Worker status updates on my task
-        if (task.worker_status && task.worker_status !== prevTask.worker_status) {
-          if (task.worker_status === 'on_the_way') {
-            addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name });
-          } else if (task.worker_status === 'arrived') {
-            addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name });
-          } else if (task.worker_status === 'done') {
-            addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name });
-          }
         }
       }
       prevTasksRef.current[task.id] = task;
@@ -152,10 +142,21 @@ export default function Layout() {
     return unsubscribe;
   }, [me?.id, myPublishedTasks, workerTasks]);
 
+  const recentNotifKeysRef = useRef(new Set());
+
   const addNotification = (notification) => {
+    // Dedup: same type+task within 10 seconds won't fire twice
+    const dedupKey = `${notification.type}__${notification.taskTitle || ''}__${notification.taskId || ''}`;
+    if (recentNotifKeysRef.current.has(dedupKey)) return;
+    recentNotifKeysRef.current.add(dedupKey);
+    setTimeout(() => recentNotifKeysRef.current.delete(dedupKey), 10000);
+
     const id = Date.now();
-    const notifWithId = { ...notification, id };
-    setNotifications(prev => [notifWithId, ...prev]);
+    setNotifications(prev => {
+      // Max 3 notifications at once
+      const capped = prev.length >= 3 ? prev.slice(0, 2) : prev;
+      return [{ ...notification, id }, ...capped];
+    });
   };
 
   const removeNotification = (id) => {
