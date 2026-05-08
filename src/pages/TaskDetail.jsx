@@ -20,6 +20,7 @@ import NavButtons from '@/components/NavButtons';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -52,22 +53,10 @@ export default function TaskDetail() {
   const [hasApplied, setHasApplied] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); // 'take' | 'apply' | 'show_apply_form'
   const prevWorkerIdRef = useRef(null);
 
-  // Gate: require verification before action
-  const requireVerified = (action) => {
-    if (me?.is_verified) {
-      if (action === 'take') takeMutation.mutate();
-      if (action === 'show_apply_form') setShowApplyForm(true);
-    } else {
-      setPendingAction(action);
-      setShowVerifyModal(true);
-    }
-  };
-
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
   // Check if current user already reviewed this task
   const { data: myReview } = useQuery({
@@ -277,17 +266,7 @@ export default function TaskDetail() {
   return (
     <div className="min-h-screen" dir="rtl">
       <TaskTakenConfetti trigger={confetti} />
-      {showVerifyModal && (
-        <VerifyModal
-          onClose={() => { setShowVerifyModal(false); setPendingAction(null); }}
-          onSuccess={() => {
-            setShowVerifyModal(false);
-            if (pendingAction === 'take') takeMutation.mutate();
-            if (pendingAction === 'show_apply_form') setShowApplyForm(true);
-            setPendingAction(null);
-          }}
-        />
-      )}
+      {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {showApprovedPopup && (
         <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />
       )}
@@ -320,7 +299,7 @@ export default function TaskDetail() {
               </Button>
             )}
             {!isOwner && !signalSent && (
-              <Button onClick={handleSignalReopen} variant="outline"
+              <Button onClick={() => gate(handleSignalReopen)} variant="outline"
                 className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
               >
                 👉 שלח איתות לבעל הג'ובה
@@ -595,14 +574,14 @@ export default function TaskDetail() {
       {(canTakeInstant || (canApplyManual && !showApplyForm) || hasPendingApp) && (
         <div style={{ position: 'fixed', bottom: 96, left: 16, right: 16, zIndex: 50 }}>
           {canTakeInstant && (
-            <button onClick={() => requireVerified('take')} disabled={takeMutation.isPending}
+            <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
               {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
             </button>
           )}
           {canApplyManual && !showApplyForm && (
-            <button onClick={() => requireVerified('show_apply_form')}
+            <button onClick={() => gate(() => setShowApplyForm(true))}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               📩 רוצה לבצע את הג'ובה

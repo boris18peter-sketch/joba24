@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Send, Loader2, Image, Check, CheckCheck, Info, X, MapPin, Clock, Star } from 'lucide-react';
+import { Send, Loader2, Image, Check, CheckCheck, Info, X, MapPin, Clock, Star, ShieldAlert } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { format, isToday, isYesterday } from 'date-fns';
+import VerifyModal from '@/components/VerifyModal';
+import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 
 function DateSeparator({ date }) {
   const d = new Date(date);
@@ -83,6 +85,7 @@ export default function Chat() {
   const containerRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const { data: task } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => base44.entities.Task.filter({ id: taskId }),
@@ -116,6 +119,10 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, otherTyping]);
 
+  const handleSend = (content, imageUrl = null) => {
+    gate(() => sendMessage(content, imageUrl));
+  };
+
   const sendMessage = async (content, imageUrl = null) => {
     if ((!content?.trim() && !imageUrl) || !me) return;
     setSending(true);
@@ -133,11 +140,13 @@ export default function Chat() {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await sendMessage('', file_url);
-    setUploading(false);
-    e.target.value = '';
+    gate(async () => {
+      setUploading(true);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await sendMessage('', file_url);
+      setUploading(false);
+      e.target.value = '';
+    });
   };
 
   // Group messages by date
@@ -161,6 +170,7 @@ export default function Chat() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8' }} dir="rtl">
+      {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header */}
       <div style={{
         background: 'white',
@@ -310,7 +320,7 @@ export default function Chat() {
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); }
             }}
             style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
           />
@@ -318,7 +328,7 @@ export default function Chat() {
 
         {/* Send */}
         <button
-          onClick={() => sendMessage(input)}
+          onClick={() => handleSend(input)}
           disabled={sending || (!input.trim())}
           style={{
             width: 42, height: 42, borderRadius: '50%', flexShrink: 0,

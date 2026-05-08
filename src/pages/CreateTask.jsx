@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
 import PaymentModal from '@/components/PaymentModal';
+import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
@@ -85,7 +86,7 @@ export default function CreateTask() {
   });
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const [errors, setErrors] = useState({});
@@ -115,11 +116,11 @@ export default function CreateTask() {
     return () => clearTimeout(draftTimerRef.current);
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
 
-  const handleSubmit = async () => {
-    if (!me?.is_verified) {
-      setShowVerifyModal(true);
-      return;
-    }
+  const handleSubmit = () => {
+    gate(doSubmit);
+  };
+
+  const doSubmit = async () => {
     const newErrors = {};
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
@@ -198,11 +199,8 @@ export default function CreateTask() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {showVerifyModal && (
-        <VerifyModal
-          onClose={() => setShowVerifyModal(false)}
-          onSuccess={() => { setShowVerifyModal(false); handleSubmit(); }}
-        />
+      {showVerify && (
+        <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
       {showPayment && (
         <PaymentModal
