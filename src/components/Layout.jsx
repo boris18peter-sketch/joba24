@@ -218,7 +218,7 @@ export default function Layout() {
               <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
               <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
             </span>
-            🔥 המשימה הפעילה שלי
+            🔨 משימה שאתה מבצע
           </button>
           <style>{`
             @keyframes activeTaskPulse { 0%,100%{box-shadow:0 4px 24px rgba(26,111,212,0.45)} 50%{box-shadow:0 4px 32px rgba(26,111,212,0.7)} }

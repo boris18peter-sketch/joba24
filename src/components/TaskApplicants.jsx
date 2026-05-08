@@ -101,39 +101,38 @@ export default function TaskApplicants({ task, onApprove }) {
         <div key={app.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1">
-              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-lg font-bold text-gray-600 shrink-0">
+            <Link to={`/worker-profile?id=${app.worker_id}`} className="shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-lg font-bold text-white cursor-pointer">
                 {app.worker_name?.[0]?.toUpperCase() || '?'}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-gray-900 text-sm">{app.worker_name}</span>
-                  {app.worker_score > 0 && (
-                    <span className="flex items-center gap-0.5 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
-                      <Award className="w-3 h-3" />
-                      {app.worker_score.toFixed(0)} נק'
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                  {app.worker_rating > 0 && (
-                    <span className="flex items-center gap-0.5">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      {app.worker_rating.toFixed(1)} דירוג
-                    </span>
-                  )}
-                  {app.worker_tasks_count > 0 && (
-                    <span>{app.worker_tasks_count} משימות הושלמו</span>
-                  )}
-                </div>
-                {app.message && (
-                  <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2 italic">{app.message}</p>
+            </Link>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link to={`/worker-profile?id=${app.worker_id}`} className="font-bold text-gray-900 text-sm hover:text-blue-700 transition-colors">
+                  {app.worker_name}
+                </Link>
+                {app.worker_rating > 0 && (
+                  <span className="flex items-center gap-0.5 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold border border-amber-200">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    {app.worker_rating.toFixed(1)}
+                  </span>
+                )}
+                {app.worker_score > 0 && (
+                  <span className="flex items-center gap-0.5 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
+                    <Award className="w-3 h-3" />
+                    {app.worker_score.toFixed(0)} נק'
+                  </span>
                 )}
               </div>
-              <Link to={`/worker-profile?id=${app.worker_id}`} className="shrink-0">
-                <button className="text-xs font-semibold px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all">
-                  צפה בפרופיל
-                </button>
-              </Link>
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                {app.worker_tasks_count > 0 && (
+                  <span>✅ {app.worker_tasks_count} משימות הושלמו</span>
+                )}
+              </div>
+              {app.message && (
+                <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2 italic">{app.message}</p>
+              )}
+            </div>
             </div>
           </div>
           <div className="flex gap-2 mt-3">

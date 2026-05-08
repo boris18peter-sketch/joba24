@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
@@ -14,8 +14,8 @@ import ImageUploader from '@/components/ImageUploader';
 import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 
+const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
-
 const EXPIRY_OPTIONS = [
   { label: 'ללא תוקף', hours: null },
   { label: '6 שעות', hours: 6 },
@@ -32,39 +32,62 @@ function SectionCard({ children }) {
   );
 }
 
+const DEFAULT_FORM = {
+  title: '',
+  description: '',
+  price: '',
+  max_price: '',
+  auto_bump_enabled: false,
+  location_name: '',
+  city: '',
+  estimated_time: '1h',
+  category: 'other',
+  approval_mode: 'instant',
+  expiry_hours: null,
+  custom_time: '',
+  is_story: false,
+  images: [],
+  requirements: { vehicle: false, two_people: false, experience: false },
+};
+
 export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    title: searchParams.get('title') || '',
-    description: searchParams.get('description') || '',
-    price: searchParams.get('price') || '',
-    max_price: '',
-    auto_bump_enabled: false,
-    location_name: searchParams.get('location_name') || '',
-    city: searchParams.get('city') || '',
-    estimated_time: searchParams.get('estimated_time') || '1h',
-    category: searchParams.get('category') || 'other',
-    approval_mode: searchParams.get('approval_mode') || 'instant',
-    expiry_hours: null,
-    custom_time: '',
-    is_story: false,
-    images: [],
-    requirements: { vehicle: false, two_people: false, experience: false },
+  const [draftSaved, setDraftSaved] = useState(false);
+  const draftTimerRef = useRef(null);
+
+  // Initialize form: repost params > saved draft > defaults
+  const [form, setForm] = useState(() => {
+    if (isRepost) {
+      return {
+        ...DEFAULT_FORM,
+        title: searchParams.get('title') || '',
+        description: searchParams.get('description') || '',
+        price: searchParams.get('price') || '',
+        location_name: searchParams.get('location_name') || '',
+        city: searchParams.get('city') || '',
+        estimated_time: searchParams.get('estimated_time') || '1h',
+        category: searchParams.get('category') || 'other',
+        approval_mode: searchParams.get('approval_mode') || 'instant',
+      };
+    }
+    // Try to load saved draft
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return { ...DEFAULT_FORM, ...JSON.parse(saved) };
+    } catch (_) {}
+    return DEFAULT_FORM;
   });
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
-
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
 
-  // Refs for scrolling to error fields
   const fieldRefs = {
     title: useRef(null),
     description: useRef(null),
@@ -73,8 +96,23 @@ export default function CreateTask() {
     city: useRef(null),
   };
 
+  // Auto-save draft on form change (debounced 1s)
+  useEffect(() => {
+    if (isRepost) return;
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
+      // Only save if user has typed something meaningful
+      if (form.title || form.description || form.price) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
+        setDraftSaved(true);
+        setTimeout(() => setDraftSaved(false), 2000);
+      }
+    }, 1000);
+    return () => clearTimeout(draftTimerRef.current);
+  }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
+
   const handleSubmit = async () => {
-    // Require verification
     if (!me?.is_verified) {
       setShowVerifyModal(true);
       return;
@@ -88,7 +126,6 @@ export default function CreateTask() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
-      // Scroll to the topmost missing field
       const order = ['title', 'description', 'price', 'location_name', 'city'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
@@ -127,6 +164,10 @@ export default function CreateTask() {
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
     });
+
+    // Clear draft on success
+    localStorage.removeItem(DRAFT_KEY);
+
     const created = await base44.entities.Task.list('-created_date', 1);
     toast.success('הג\'ובה פורסמה! ⚡');
     setLoading(false);
@@ -149,24 +190,35 @@ export default function CreateTask() {
         />
       )}
       {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)',
-        padding: '52px 16px 24px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 24px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'absolute', bottom: -20, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
-          <div>
+          <div style={{ flex: 1 }}>
             <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"}</h1>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{isRepost ? 'הפרטים מולאו מהג\'ובה הקודמת — ערוך ופרסם' : 'מלא את הפרטים ופרסם תוך שניות'}</p>
           </div>
+          {/* Draft saved indicator */}
+          {draftSaved && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '4px 10px', fontSize: 11, color: 'white', fontWeight: 700 }}>
+              <Save size={11} /> נשמר אוטומטית
+            </div>
+          )}
         </div>
       </div>
 
       <div className="px-4 py-4 space-y-4 pb-12">
+        {/* Draft restore indicator */}
+        {!isRepost && form.title && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 700 }}>
+              <Save size={14} /> טיוטה שמורה — המשך מהיכן שעצרת
+            </div>
+            <button onClick={() => { setForm(DEFAULT_FORM); localStorage.removeItem(DRAFT_KEY); }} style={{ fontSize: 11, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>מחק</button>
+          </div>
+        )}
+
         {/* Error banner */}
         {showErrorBanner && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>

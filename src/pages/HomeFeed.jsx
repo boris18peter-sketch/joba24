@@ -232,19 +232,25 @@ export default function HomeFeed() {
           </div>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#1a6fd4' }} />
               <Input
-                placeholder="חפש משימות..."
+                placeholder="חפש לפי מיקום, קטגוריה, מחיר..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pr-9 bg-gray-100 border-0 rounded-xl h-11 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="pr-9 rounded-xl h-12 text-sm"
+                style={{
+                  background: 'white',
+                  border: '2px solid #bfdbfe',
+                  boxShadow: '0 2px 8px rgba(26,111,212,0.1)',
+                  fontWeight: search ? 600 : 400,
+                }}
               />
             </div>
             <Button
               variant="outline"
               size="icon"
-              className={`rounded-xl h-11 w-11 shrink-0`}
-              style={hasFilters ? { background: '#1a6fd4', color: 'white', borderColor: '#1a6fd4' } : { borderColor: '#dbeafe' }}
+              className={`rounded-xl h-12 w-12 shrink-0`}
+              style={hasFilters ? { background: '#1a6fd4', color: 'white', borderColor: '#1a6fd4' } : { borderColor: '#bfdbfe', background: 'white', boxShadow: '0 2px 8px rgba(26,111,212,0.1)' }}
               onClick={() => setShowFilters(true)}
             >
               <SlidersHorizontal className="w-4 h-4" />

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Send, Loader2, Image, X, Check, CheckCheck } from 'lucide-react';
+import { Send, Loader2, Image, Check, CheckCheck, Info, X, MapPin, Clock, Star } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { format, isToday, isYesterday } from 'date-fns';
 
@@ -32,6 +32,42 @@ function TypingIndicator() {
   );
 }
 
+function TaskInfoPopup({ task, onClose }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', padding: '24px 20px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 20px' }} />
+        <div style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', marginBottom: 4 }}>{task.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#1a6fd4' }}>₪{task.price}</div>
+          {task.client_rating > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#92400e', background: '#fef3c7', borderRadius: 10, padding: '4px 10px', fontWeight: 700 }}>
+              <Star size={13} fill="#fbbf24" color="#fbbf24" /> {task.client_rating.toFixed(1)} · {task.client_name}
+            </div>
+          )}
+        </div>
+        {task.description && <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.65, marginBottom: 14 }}>{task.description}</p>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {task.location_name && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
+              <MapPin size={14} color="#1a6fd4" /> {task.location_name}
+            </div>
+          )}
+          {task.estimated_time && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
+              <Clock size={14} color="#1a6fd4" /> זמן משוער: {task.estimated_time}
+            </div>
+          )}
+        </div>
+        <button onClick={() => { onClose(); window.location.href = `/task/${task.id}`; }}
+          style={{ marginTop: 20, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
+          פתח דף המשימה המלא
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Chat() {
   const { taskId } = useParams();
   const navigate = useNavigate();
@@ -40,6 +76,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
+  const [showTaskInfo, setShowTaskInfo] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -119,6 +156,8 @@ export default function Chat() {
   });
 
   const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || 'הפועל') : (task?.client_name || 'המעסיק');
+  const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
+  const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8' }} dir="rtl">
@@ -137,17 +176,23 @@ export default function Chat() {
           {otherPersonName?.[0] || '?'}
         </div>
         <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => {
-          const id = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
-          if (id) navigate(`/worker-profile?id=${id}`);
+          if (otherPersonId) navigate(`/worker-profile?id=${otherPersonId}`);
         }}>
-          <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
-          <div style={{ fontSize: 11, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title || 'שיחה'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
+            <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', borderRadius: 6, padding: '1px 6px', fontWeight: 600, flexShrink: 0 }}>{roleLabel}</span>
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title || 'שיחה'}</div>
         </div>
-        {/* Task price badge */}
-        {task?.price && (
-          <div style={{ background: '#eff6ff', borderRadius: 10, padding: '4px 10px', color: '#1a6fd4', fontWeight: 900, fontSize: 14, flexShrink: 0 }}>₪{task.price}</div>
-        )}
+        {/* Task info button */}
+        <button
+          onClick={() => setShowTaskInfo(true)}
+          style={{ background: '#eff6ff', border: 'none', borderRadius: 10, padding: '6px 10px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+        >
+          <Info size={14} /> פרטי משימה
+        </button>
       </div>
+      {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
       {/* Messages */}
       <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}>

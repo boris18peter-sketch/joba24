@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Navigation, Zap, Users } from 'lucide-react';
+import { MapPin, Clock, Navigation, Zap, Users, Star } from 'lucide-react';
 import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -76,18 +76,20 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
           <p className="text-gray-400 text-xs mb-2 line-clamp-1">{task.description}</p>
         )}
 
-        {/* Bottom row: location, time, distance */}
+        {/* Bottom row: poster rating + location + distance */}
         <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+          {/* Client rating — trust indicator */}
+          {task.client_name && (
+            <span className="flex items-center gap-1 text-amber-600 font-semibold">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              {task.client_rating > 0 ? task.client_rating.toFixed(1) : 'חדש'}
+              <span className="text-gray-400 font-normal">· {task.client_name}</span>
+            </span>
+          )}
           {task.location_name && (
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               {task.location_name}
-            </span>
-          )}
-          {task.estimated_time && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {task.estimated_time}
             </span>
           )}
           {dist != null && !isNaN(dist) && (

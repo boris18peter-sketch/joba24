@@ -56,7 +56,7 @@ export default function ActiveTaskBanner({ task }) {
             <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
           </span>
           <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5 }}>
-            {isWorker ? 'המשימה הפעילה שלך' : 'משימה בביצוע'}
+            {isWorker ? '🔨 משימה שאתה מבצע עכשיו' : '📋 משימה שלך — בביצוע ע"י עובד'}
           </span>
         </div>
 
@@ -70,8 +70,12 @@ export default function ActiveTaskBanner({ task }) {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
             <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
-              {isWorker ? `מעסיק: ${task.client_name}` : `פועל: ${task.worker_name}`}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
+              {isWorker ? (
+                <>👤 מעסיק: {task.client_name} {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>⭐ {task.client_rating.toFixed(1)}</span>}</>
+              ) : (
+                <>👷 פועל: {task.worker_name}</>
+              )}
             </div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
