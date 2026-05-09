@@ -318,10 +318,11 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {/* Active Task Banner — worker or client with in-progress task */}
+      {/* Active Task Banner — worker and/or client with in-progress task */}
       {(activeWorkerTask || activeClientTask) && (
         <div style={{ paddingTop: 12 }}>
-          <ActiveTaskBanner task={activeWorkerTask || activeClientTask} />
+          {activeWorkerTask && <ActiveTaskBanner task={activeWorkerTask} />}
+          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id && <ActiveTaskBanner task={activeClientTask} />}
         </div>
       )}
 

@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
-import { MessageCircle, ChevronLeft, Plus } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Plus, RefreshCw } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQueryClient } from '@tanstack/react-query';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
@@ -11,8 +13,18 @@ const statusConfig = {
 };
 
 export default function MyTasksCarousel({ myTasks }) {
-  // Only show active/relevant tasks
-  const relevantTasks = (myTasks || []).filter(t => t.status === 'OPEN' || t.status === 'TAKEN');
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // Show open, taken, and expired tasks
+  const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status));
+
+  const handleReopen = async (e, task) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await base44.entities.Task.update(task.id, { status: 'OPEN', expires_at: newExpiry, worker_id: null, worker_name: null, worker_status: null });
+    queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+  };
 
   // Empty state: show a "Post Task" button
   if (relevantTasks.length === 0) {
@@ -54,18 +66,19 @@ export default function MyTasksCarousel({ myTasks }) {
         {relevantTasks.map(task => {
           const status = statusConfig[task.status] || statusConfig.OPEN;
           const isTaken = task.status === 'TAKEN';
+          const isExpired = task.status === 'EXPIRED';
           return (
             <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
               <div style={{
-                minWidth: 160,
-                background: 'white',
+                minWidth: 165,
+                background: isExpired ? '#fff7ed' : 'white',
                 borderRadius: 16,
-                border: isTaken ? `1.5px solid #fbbf24` : '1px solid #dce8f5',
+                border: isTaken ? `1.5px solid #fbbf24` : isExpired ? '1.5px solid #fdba74' : '1px solid #dce8f5',
                 padding: '12px 12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 6,
-                boxShadow: isTaken ? '0 2px 12px rgba(251,191,36,0.2)' : '0 1px 4px rgba(26,111,212,0.07)',
+                boxShadow: isTaken ? '0 2px 12px rgba(251,191,36,0.2)' : isExpired ? '0 2px 10px rgba(249,115,22,0.15)' : '0 1px 4px rgba(26,111,212,0.07)',
                 position: 'relative',
               }}>
                 {/* Status dot + label */}
@@ -75,13 +88,13 @@ export default function MyTasksCarousel({ myTasks }) {
                 </div>
 
                 {/* Title */}
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 136 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: isExpired ? '#9a3412' : '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 141 }}>
                   {task.title}
                 </div>
 
-                {/* Price + chat */}
+                {/* Price + chat/reopen */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 15, fontWeight: 900, color: '#111' }}>₪{task.price}</span>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: isExpired ? '#c2410c' : '#111' }}>₪{task.price}</span>
                   {isTaken && (
                     <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()}>
                       <div style={{ width: 26, height: 26, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -94,8 +107,18 @@ export default function MyTasksCarousel({ myTasks }) {
                 {/* Worker name if taken */}
                 {isTaken && task.worker_name && (
                   <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>
-                    👷 {task.worker_name}
+                    עובד: {task.worker_name}
                   </div>
+                )}
+
+                {/* Reopen button if expired */}
+                {isExpired && (
+                  <button
+                    onClick={(e) => handleReopen(e, task)}
+                    style={{ width: '100%', height: 26, borderRadius: 8, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                  >
+                    <RefreshCw size={10} /> פתח מחדש
+                  </button>
                 )}
               </div>
             </Link>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Zap, Send, DoorOpen, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
 import RatingModal from '@/components/RatingModal';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
@@ -405,7 +405,7 @@ export default function TaskDetail() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">פורסם</div>
-                <div className="font-medium text-sm">{formatDistanceToNow(new Date(task.created_date), { addSuffix: true })}</div>
+                <div className="font-medium text-sm">{format(new Date(task.created_date), 'dd.MM.yyyy · HH:mm')}</div>
               </div>
             </div>
           )}
