@@ -10,7 +10,7 @@ export default function VerifiedBadge({ size = 'sm' }) {
     <span title="משתמש מאומת" style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       width: dim, height: dim, borderRadius: '50%',
-      background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+      background: 'linear-gradient(135deg,#16a34a,#059669)',
       flexShrink: 0,
     }}>
       <svg width={dim * 0.58} height={dim * 0.58} viewBox="0 0 10 10" fill="none">

@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Zap, Send, DoorOpen, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -302,12 +302,12 @@ export default function TaskDetail() {
               <Button onClick={() => gate(handleSignalReopen)} variant="outline"
                 className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
               >
-                👉 שלח איתות לבעל הג'ובה
+                <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> שלח איתות לבעל הג'ובה
               </Button>
             )}
             {!isOwner && signalSent && (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px' }}>
-                <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>✅ האיתות נשלח!</div>
+                <div style={{ fontWeight: 800, color: '#166534', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} color="#16a34a" /> האיתות נשלח!</div>
                 <div style={{ fontSize: 12, color: '#15803d', marginTop: 3 }}>מחכה לאישור פתיחת המשימה מחדש</div>
               </div>
             )}
@@ -417,7 +417,10 @@ export default function TaskDetail() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">מפרסם</div>
-                <div className="font-medium text-sm flex items-center gap-1.5">{task.client_name} <VerifiedBadge /> · {task.client_rating?.toFixed(1) || 'חדש'}</div>
+                <div className="font-medium text-sm flex items-center gap-1.5">
+                  <a href={`/public-profile?id=${task.client_id}`} style={{ color: '#0f2b6b', fontWeight: 700, textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.client_name}</a>
+                  <VerifiedBadge /> · {task.client_rating?.toFixed(1) || 'חדש'}
+                </div>
               </div>
             </div>
           )}
@@ -445,7 +448,7 @@ export default function TaskDetail() {
         {task.worker_name && task.status === 'TAKEN' && (
           <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>מבצע</h2>
-            <div style={{ fontWeight: 700, color: '#0f2b6b' }}>{task.worker_name}</div>
+            <a href={`/public-profile?id=${task.worker_id}`} style={{ fontWeight: 700, color: '#0f2b6b', textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.worker_name}</a>
           </div>
         )}
 
@@ -455,9 +458,9 @@ export default function TaskDetail() {
           {/* Pending application banner */}
           {hasPendingApp && !isWorker && (
             <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontSize: 24 }}>⏳</div>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} color="#d97706" /></div>
               <div>
-                <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14 }}>בקשתך התקבלה וממתינה לאישור</div>
+                <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={15} /> בקשתך התקבלה וממתינה לאישור</div>
                 <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>בעל הג'ובה יאשר אותך בקרוב</div>
               </div>
             </div>
@@ -489,17 +492,11 @@ export default function TaskDetail() {
             <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
-              {cancelApplicationMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '❌ בטל בקשה'}
+              {cancelApplicationMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><X size={16} strokeWidth={2} /> בטל בקשה</>}
             </button>
           )}
 
-          {(isOwner || isWorker) && task.status === 'TAKEN' && (
-            <Link to={`/chat/${id}`}>
-              <button style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#1a6fd4', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
-                <MessageCircle size={18} />פתח צ'אט
-              </button>
-            </Link>
-          )}
+
 
           {isOwner && task.status === 'OPEN' && (
             <Link to={`/edit-task/${id}`}>
@@ -559,7 +556,7 @@ export default function TaskDetail() {
             <button onClick={() => cancelTakeMutation.mutate()} disabled={cancelTakeMutation.isPending}
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
-              {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚪 צא מהמשימה'}
+              {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
             </button>
           )}
 
@@ -578,14 +575,14 @@ export default function TaskDetail() {
             <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : '⚡ קח את הג\'ובה'}
+              {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} strokeWidth={1.8} /> קח את הג'ובה</>}
             </button>
           )}
           {canApplyManual && !showApplyForm && (
             <button onClick={() => gate(() => setShowApplyForm(true))}
               style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              📩 רוצה לבצע את הג'ובה
+              <Send size={18} strokeWidth={1.8} /> רוצה לבצע את הג'ובה
             </button>
           )}
         </div>

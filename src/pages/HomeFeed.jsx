@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, SearchX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import TaskCard from '@/components/TaskCard';
@@ -134,9 +134,18 @@ export default function HomeFeed() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  // Smart sort: distance + price + preference
+  // Smart sort: distance + price + preference + task history
   const preferredCategories = me?.preferred_categories || [];
   const preferredCities = me?.preferred_cities || [];
+
+  // Build category affinity from completed tasks history
+  const categoryAffinity = React.useMemo(() => {
+    const map = {};
+    (myTasks || []).filter(t => t.status === 'COMPLETED').forEach(t => {
+      if (t.category) map[t.category] = (map[t.category] || 0) + 1;
+    });
+    return map;
+  }, [myTasks]);
 
   // Filter out my own tasks from the main feed, and only show funded (or legacy unflagged) tasks
   const otherTasks = tasks.filter(t =>
@@ -182,6 +191,11 @@ export default function HomeFeed() {
       // Preferred category: +3
       if (preferredCategories.includes(t.category)) relevance += 3;
       
+      // History-based affinity (categories I've worked in before): up to +2.5
+      if (categoryAffinity[t.category]) {
+        relevance += Math.min(categoryAffinity[t.category] * 0.5, 2.5);
+      }
+      
       // Preferred city: +2
       if (preferredCities.some(c => t.city?.includes(c) || t.location_name?.includes(c))) relevance += 2;
       
@@ -194,6 +208,11 @@ export default function HomeFeed() {
       // Price factor (higher pays more): up to +1.5
       if (t.price > 300) relevance += 1.5;
       else if (t.price > 150) relevance += 0.75;
+      
+      // New tasks get slight freshness boost (up to +1)
+      const ageHours = (Date.now() - new Date(t.created_date).getTime()) / 3600000;
+      if (ageHours < 1) relevance += 1;
+      else if (ageHours < 6) relevance += 0.5;
       
       return {
         ...t,
@@ -293,7 +312,7 @@ export default function HomeFeed() {
               {filters.city && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.city}</span>}
               {(filters.minPrice || filters.maxPrice) && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
               {filters.time && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.time}</span>}
-              {filters.approvalMode && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.approvalMode === 'instant' ? '⚡ מיידי' : '✋ לאישור'}</span>}
+              {filters.approvalMode && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.approvalMode === 'instant' ? 'מיידי' : 'לאישור'}</span>}
             </div>
           )}
         </div>
@@ -325,7 +344,7 @@ export default function HomeFeed() {
           ))
         ) : scored.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-4xl mb-3">🔍</div>
+            <SearchX size={40} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
             <p className="font-semibold text-gray-800">לא נמצאו משימות</p>
             <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
           </div>

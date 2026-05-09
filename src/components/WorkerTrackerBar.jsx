@@ -1,24 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Loader2, ChevronLeft, Clock, MapPin, Car, Coffee, Search, Wrench, CheckCircle } from 'lucide-react';
+import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, AlertCircle, Flag, Coffee } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 
 // ── Rich status definitions ─────────────────────────────────────────────────
 const WORKER_STATUSES = [
-  { key: 'on_the_way',     label: 'בדרך',           ownerLabel: 'בדרך אליך',       icon: '🛵', color: '#3b82f6', bg: '#dbeafe', step: 0 },
-  { key: 'delayed',        label: 'מתעכב',          ownerLabel: 'מתעכב',            icon: '⏳', color: '#f59e0b', bg: '#fef3c7', step: 0 },
-  { key: 'parking',        label: 'מחפש חניה',      ownerLabel: 'מחפש חניה',        icon: '🚗', color: '#8b5cf6', bg: '#ede9fe', step: 0 },
-  { key: 'arrived',        label: 'הגעתי',          ownerLabel: 'הגיע',             icon: '📍', color: '#f59e0b', bg: '#fef3c7', step: 1 },
-  { key: 'starting',       label: 'מתחיל עבודה',    ownerLabel: 'מתחיל עבודה',      icon: '🔧', color: '#10b981', bg: '#d1fae5', step: 1 },
-  { key: 'finishing',      label: 'מסיים עבודה',    ownerLabel: 'מסיים עבודה',      icon: '🏁', color: '#059669', bg: '#d1fae5', step: 1 },
-  { key: 'done',           label: 'סיימתי',         ownerLabel: 'סיים — ממתין לאישור', icon: '✅', color: '#10b981', bg: '#d1fae5', step: 2 },
+  { key: 'on_the_way',     label: 'בדרך',           ownerLabel: 'בדרך אליך',           Icon: Navigation,    color: '#3b82f6', bg: '#dbeafe', step: 0 },
+  { key: 'delayed',        label: 'מתעכב',          ownerLabel: 'מתעכב',               Icon: Clock,         color: '#f59e0b', bg: '#fef3c7', step: 0 },
+  { key: 'parking',        label: 'מחפש חניה',      ownerLabel: 'מחפש חניה',           Icon: MapPin,        color: '#8b5cf6', bg: '#ede9fe', step: 0 },
+  { key: 'arrived',        label: 'הגעתי',          ownerLabel: 'הגיע',                Icon: MapPin,        color: '#f59e0b', bg: '#fef3c7', step: 1 },
+  { key: 'starting',       label: 'מתחיל עבודה',    ownerLabel: 'מתחיל עבודה',         Icon: Wrench,        color: '#10b981', bg: '#d1fae5', step: 1 },
+  { key: 'finishing',      label: 'מסיים עבודה',    ownerLabel: 'מסיים עבודה',         Icon: Flag,          color: '#059669', bg: '#d1fae5', step: 1 },
+  { key: 'done',           label: 'סיימתי',         ownerLabel: 'סיים — ממתין לאישור', Icon: CheckCircle,   color: '#10b981', bg: '#d1fae5', step: 2 },
 ];
 
 const MAIN_STEPS = [
-  { key: 'on_the_way', label: 'בדרך',   icon: '🛵' },
-  { key: 'arrived',    label: 'הגיע',    icon: '📍' },
-  { key: 'done',       label: 'סיים',   icon: '✅' },
+  { key: 'on_the_way', label: 'בדרך',  Icon: Navigation },
+  { key: 'arrived',    label: 'הגיע',  Icon: MapPin },
+  { key: 'done',       label: 'סיים',  Icon: CheckCircle },
 ];
 
 function getStepIndex(status) {
@@ -45,8 +45,7 @@ function ScanningPulse() {
         position: 'absolute', inset: 8, borderRadius: '50%',
         background: 'rgba(255,255,255,0.18)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20,
-      }}>🔍</div>
+      }}><AlertCircle size={20} color="white" strokeWidth={1.5} /></div>
       <style>{`@keyframes scan-ring { 0%{transform:scale(1);opacity:.7}100%{transform:scale(2.4);opacity:0} }`}</style>
     </div>
   );
@@ -95,6 +94,7 @@ function StepProgress({ currentStatus }) {
         {MAIN_STEPS.map((step, idx) => {
           const isDone = idx <= stepIdx;
           const isActive = idx === stepIdx;
+          const StepIcon = step.Icon;
           return (
             <div key={step.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
               <div style={{
@@ -102,12 +102,11 @@ function StepProgress({ currentStatus }) {
                 background: isDone ? (isActive ? '#1a6fd4' : '#dbeafe') : 'white',
                 border: isDone ? `2.5px solid #1a6fd4` : '2.5px solid #e2e8f0',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: isDone && !isActive ? 14 : 16,
                 boxShadow: isActive ? '0 0 0 5px rgba(26,111,212,0.15)' : 'none',
                 transition: 'all 0.4s ease',
                 position: 'relative',
               }}>
-                {isDone && !isActive ? <CheckCircle size={18} color="#1a6fd4" strokeWidth={2.5} /> : step.icon}
+                <StepIcon size={16} color={isDone ? '#1a6fd4' : '#94a3b8'} strokeWidth={isActive ? 2.5 : 1.8} />
                 {isActive && (
                   <div style={{ position: 'absolute', inset: -6, borderRadius: '50%', border: '2px solid rgba(26,111,212,0.25)', animation: 'activeRing 2s ease-in-out infinite' }} />
                 )}
@@ -127,15 +126,15 @@ function SubStatusPicker({ currentStatus, onSelect, loading }) {
   const stepIdx = getStepIndex(currentStatus);
   const subOptions = stepIdx === 0
     ? [
-        { key: 'on_the_way', label: 'בדרך', icon: '🛵' },
-        { key: 'delayed', label: 'מתעכב', icon: '⏳' },
-        { key: 'parking', label: 'חניה', icon: '🚗' },
+        { key: 'on_the_way', label: 'בדרך', Icon: Navigation },
+        { key: 'delayed', label: 'מתעכב', Icon: Clock },
+        { key: 'parking', label: 'חניה', Icon: MapPin },
       ]
     : stepIdx === 1
     ? [
-        { key: 'arrived', label: 'הגעתי', icon: '📍' },
-        { key: 'starting', label: 'מתחיל', icon: '🔧' },
-        { key: 'finishing', label: 'מסיים', icon: '🏁' },
+        { key: 'arrived', label: 'הגעתי', Icon: MapPin },
+        { key: 'starting', label: 'מתחיל', Icon: Wrench },
+        { key: 'finishing', label: 'מסיים', Icon: Flag },
       ]
     : [];
 
@@ -143,23 +142,26 @@ function SubStatusPicker({ currentStatus, onSelect, loading }) {
 
   return (
     <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px', flexWrap: 'wrap' }}>
-      {subOptions.map(opt => (
-        <button
-          key={opt.key}
-          disabled={loading}
-          onClick={() => onSelect(opt.key)}
-          style={{
-            flex: 1, minWidth: 80, height: 40, borderRadius: 12,
-            background: currentStatus === opt.key ? '#1a6fd4' : '#f1f5f9',
-            color: currentStatus === opt.key ? 'white' : '#475569',
-            fontWeight: 700, fontSize: 12, border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-            transition: 'all 0.2s',
-          }}
-        >
-          {opt.icon} {opt.label}
-        </button>
-      ))}
+      {subOptions.map(opt => {
+        const OptIcon = opt.Icon;
+        return (
+          <button
+            key={opt.key}
+            disabled={loading}
+            onClick={() => onSelect(opt.key)}
+            style={{
+              flex: 1, minWidth: 80, height: 40, borderRadius: 12,
+              background: currentStatus === opt.key ? '#1a6fd4' : '#f1f5f9',
+              color: currentStatus === opt.key ? 'white' : '#475569',
+              fontWeight: 700, fontSize: 12, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              transition: 'all 0.2s',
+            }}
+          >
+            <OptIcon size={13} strokeWidth={1.8} /> {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -215,7 +217,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         if (completionPhoto) update.completion_photo = completionPhoto;
       }
       await onUpdate(update);
-      toast.success(`${getStatusInfo(statusKey).icon} ${getStatusInfo(statusKey).label}`);
+      toast.success(getStatusInfo(statusKey).label);
     } catch {
       setLocalStatus(task?.worker_status ?? null);
       toast.error('שגיאה בעדכון');
@@ -225,24 +227,25 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
   };
 
   // ── Header config ────────────────────────────────────────────────────────────
+  const StatusIcon = statusInfo?.Icon || Navigation;
   const headerConfig = (() => {
     if (stepIdx === 2) return {
-      emoji: '🏆', gradient: 'linear-gradient(135deg, #059669, #10b981)',
-      title: isOwner ? 'הפועל סיים את הג\'ובה!' : '🎉 כל הכבוד, סיימת!',
+      HeaderIcon: CheckCircle, gradient: 'linear-gradient(135deg, #059669, #10b981)',
+      title: isOwner ? 'הפועל סיים את הג\'ובה!' : 'כל הכבוד, סיימת!',
       sub: isOwner ? 'אשר סיום לשחרור תשלום' : 'ממתין לאישור המעסיק',
     };
     if (stepIdx === 1) return {
-      emoji: statusInfo?.icon || '📍', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)',
+      HeaderIcon: StatusIcon, gradient: 'linear-gradient(135deg, #d97706, #f59e0b)',
       title: isOwner ? `${statusInfo?.ownerLabel || 'הגיע'} ● ${task.worker_name}` : statusInfo?.label || 'הגעתי',
       sub: isOwner ? 'הפועל נמצא בשטח' : 'עדכן את ההתקדמות',
     };
     if (stepIdx === 0) return {
-      emoji: statusInfo?.icon || '🛵', gradient: 'linear-gradient(135deg, #1a6fd4, #3b82f6)',
+      HeaderIcon: StatusIcon, gradient: 'linear-gradient(135deg, #1a6fd4, #3b82f6)',
       title: isOwner ? `${task.worker_name} — ${statusInfo?.ownerLabel || 'בדרך'}` : statusInfo?.label || 'בדרך',
       sub: isOwner ? `מגיע אליך בקרוב` : 'עדכן כשתגיע',
     };
     return {
-      emoji: '⏳', gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+      HeaderIcon: Clock, gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
       title: isOwner ? 'ממתין שהפועל ייצא לדרך' : 'יצא לדרך?',
       sub: isOwner ? 'הפועל אמר שהוא יוצא' : 'לחץ כדי לאשר יציאה',
     };
@@ -254,10 +257,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
 
   // Main CTA for worker
   const mainCTA = (() => {
-    if (stepIdx === -1 || stepIdx === 0 && localStatus !== 'arrived') {
-      if (stepIdx <= 0) return { label: 'הגעתי למיקום 📍', nextKey: 'arrived', color: '#f59e0b' };
-    }
-    if (stepIdx === 1) return { label: 'סיימתי את הג\'ובה ✅', nextKey: 'done', color: '#10b981' };
+    if (stepIdx <= 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#f59e0b' };
+    if (stepIdx === 1) return { label: 'סיימתי את הג\'ובה', Icon: CheckCircle, nextKey: 'done', color: '#10b981' };
     return null;
   })();
 
@@ -267,7 +268,9 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       {/* ── Gradient Header ── */}
       <div style={{ background: headerConfig.gradient, padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: etaSince ? 10 : 0 }}>
-          <div style={{ fontSize: 30 }}>{headerConfig.emoji}</div>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <headerConfig.HeaderIcon size={22} color="white" strokeWidth={1.8} />
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: 'white', fontWeight: 900, fontSize: 15, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headerConfig.title}</div>
             <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>{headerConfig.sub}</div>
@@ -305,7 +308,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
               boxShadow: `0 4px 16px rgba(0,0,0,0.15)`, transition: 'all 0.2s',
             }}
           >
-            {loading ? <><Loader2 size={18} className="animate-spin" />רגע...</> : mainCTA.label}
+            {loading ? <><Loader2 size={18} className="animate-spin" />רגע...</> : <>{(() => { const I = mainCTA.Icon; return <I size={18} strokeWidth={1.8} />; })()} {mainCTA.label}</>}
           </button>
         </div>
       )}
@@ -313,7 +316,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       {/* ── Worker done state ── */}
       {isWorker && stepIdx === 2 && (
         <div style={{ margin: '0 16px 12px', background: '#f0fdf4', borderRadius: 14, padding: '14px 16px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
-          <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15 }}>🎉 כל הכבוד! ממתין לאישור</div>
+          <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}><CheckCircle size={16} color="#059669" /> כל הכבוד! ממתין לאישור</div>
           <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>המעסיק יאשר ותקבל ₪{task.price} לארנק</div>
           {completionPhoto && (
             <img src={completionPhoto} alt="proof" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 12, marginTop: 10, border: '1px solid #bbf7d0' }} />
@@ -332,9 +335,9 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
           )}
           <button
             onClick={() => onUpdate({ status: 'COMPLETED', client_confirmed: true })}
-            style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
+            style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            ✅ אשר סיום ושחרר תשלום ₪{task.price}
+            <CheckCircle size={18} strokeWidth={2} /> אשר סיום ושחרר תשלום ₪{task.price}
           </button>
         </div>
       )}

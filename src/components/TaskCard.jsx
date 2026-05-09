@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, Zap, Users, Pin } from 'lucide-react';
 import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
@@ -14,6 +14,7 @@ const statusConfig = {
 };
 
 export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTask }) {
+   const navigate = useNavigate();
    const status = statusConfig[task.status] || statusConfig.OPEN;
    const catLabel = getCategoryLabel(task.category);
    const dist = task._distKm;
@@ -83,7 +84,10 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
             <span className="flex items-center gap-1 text-amber-600 font-semibold">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               {task.client_rating > 0 ? task.client_rating.toFixed(1) : 'חדש'}
-              <span className="text-gray-400 font-normal">· {task.client_name}</span>
+              <button
+                onClick={e => { e.preventDefault(); e.stopPropagation(); navigate(`/public-profile?id=${task.client_id}`); }}
+                className="text-gray-500 font-normal hover:text-blue-600 hover:underline"
+              >· {task.client_name}</button>
             </span>
           )}
           {task.location_name && (
