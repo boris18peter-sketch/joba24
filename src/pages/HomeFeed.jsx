@@ -152,9 +152,8 @@ export default function HomeFeed() {
     return map;
   }, [myTasks]);
 
-  // Filter out my own tasks from the main feed, and only show funded (or legacy unflagged) tasks
+  // Show all funded tasks: other people's + my own (with isMyTask flag)
   const otherTasks = tasks.filter(t =>
-    t.client_id !== me?.id &&
     (t.payment_status === 'funded' || !t.payment_status)
   );
 
@@ -405,6 +404,7 @@ export default function HomeFeed() {
             {sortedTasks.map(task => {
               const myApp = myApplications.find(a => a.task_id === task.id);
               const isNew = newTaskIds.has(task.id);
+              const isMyTask = task.client_id === me?.id;
               return (
                 <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
                   {isNew && (
@@ -415,7 +415,7 @@ export default function HomeFeed() {
                   <TaskCardWithSwipe 
                     task={task} 
                     myApp={myApp}
-                    isMyTask={false}
+                    isMyTask={isMyTask}
                     onDismiss={(taskId) => {
                       setDismissedTasks(prev => new Set([...prev, taskId]));
                     }} 

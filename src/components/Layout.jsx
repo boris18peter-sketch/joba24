@@ -185,6 +185,9 @@ export default function Layout() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  // Active task I published that a worker is currently doing
+  const activeClientTask = myPublishedTasks.find(t => t.status === 'TAKEN') || null;
+
   // Tasks in progress = TAKEN and worker confirmed (active work)
   const inProgressCount = workerTasks.filter(t => t.status === 'TAKEN').length;
 
@@ -217,28 +220,51 @@ export default function Layout() {
         <Outlet />
       </div>
 
-      {/* Floating Active Task Button — shown when worker has active task and is NOT on that task page */}
-      {activeWorkerTask && !location.pathname.includes(`/task/${activeWorkerTask.id}`) && !location.pathname.includes('/chat/') && (
-        <div style={{ position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 9998, pointerEvents: 'auto' }}>
-          <button
-            onClick={() => navigate(`/task/${activeWorkerTask.id}`)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg, #059669, #10b981)',
-              color: 'white', fontWeight: 900, fontSize: 13,
-              padding: '10px 18px', borderRadius: 50,
-              border: 'none', cursor: 'pointer',
-              boxShadow: '0 4px 24px rgba(16,185,129,0.5)',
-              whiteSpace: 'nowrap',
-              animation: 'activeTaskPulse 3s ease-in-out infinite',
-            }}
-          >
-  <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
-              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-              <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
-            </span>
-            משימה שאתה מבצע
-          </button>
+      {/* Floating Active Task Buttons */}
+      {(activeWorkerTask || activeClientTask) && !location.pathname.includes('/chat/') && (
+        <div style={{ position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 9998, pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          {activeWorkerTask && !location.pathname.includes(`/task/${activeWorkerTask.id}`) && (
+            <button
+              onClick={() => navigate(`/task/${activeWorkerTask.id}`)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'linear-gradient(135deg, #059669, #10b981)',
+                color: 'white', fontWeight: 900, fontSize: 13,
+                padding: '10px 18px', borderRadius: 50,
+                border: 'none', cursor: 'pointer',
+                boxShadow: '0 4px 24px rgba(16,185,129,0.5)',
+                whiteSpace: 'nowrap',
+                animation: 'activeTaskPulse 3s ease-in-out infinite',
+              }}
+            >
+              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
+              </span>
+              משימה שאתה מבצע
+            </button>
+          )}
+          {activeClientTask && !location.pathname.includes(`/task/${activeClientTask.id}`) && activeClientTask.id !== activeWorkerTask?.id && (
+            <button
+              onClick={() => navigate(`/task/${activeClientTask.id}`)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'linear-gradient(135deg, #d97706, #f59e0b)',
+                color: 'white', fontWeight: 900, fontSize: 13,
+                padding: '10px 18px', borderRadius: 50,
+                border: 'none', cursor: 'pointer',
+                boxShadow: '0 4px 24px rgba(217,119,6,0.5)',
+                whiteSpace: 'nowrap',
+                animation: 'activeTaskPulse 3s ease-in-out infinite',
+              }}
+            >
+              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
+              </span>
+              משימה שלי בביצוע
+            </button>
+          )}
           <style>{`
             @keyframes activeTaskPulse { 0%,100%{box-shadow:0 4px 24px rgba(16,185,129,0.5)} 50%{box-shadow:0 4px 32px rgba(16,185,129,0.75)} }
             @keyframes livePing { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(2.2);opacity:0} }
