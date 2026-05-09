@@ -1,10 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, SearchX } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import TaskCard from '@/components/TaskCard';
+import { Search, SlidersHorizontal, SearchX, X } from 'lucide-react';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
@@ -15,10 +12,15 @@ import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 export default function HomeFeed() {
   const [search, setSearch] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('joba_searches') || '[]'); } catch { return []; }
+  });
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
+  const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
   const queryClient = useQueryClient();
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -62,6 +64,9 @@ export default function HomeFeed() {
       queryClient.setQueryData(['tasks'], (old = []) => {
         if (event.type === 'create') {
           if (old.find(t => t.id === event.id)) return old;
+          // Mark as new for pulse animation
+          setNewTaskIds(prev => new Set([...prev, event.id]));
+          setTimeout(() => setNewTaskIds(prev => { const n = new Set(prev); n.delete(event.id); return n; }), 4000);
           return [event.data, ...old];
         }
         if (event.type === 'update') {
@@ -234,56 +239,99 @@ export default function HomeFeed() {
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode;
 
+  const handleSearchSubmit = (val) => {
+    if (!val.trim()) return;
+    setSearch(val);
+    setSearchFocused(false);
+    setRecentSearches(prev => {
+      const updated = [val, ...prev.filter(s => s !== val)].slice(0, 5);
+      localStorage.setItem('joba_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#e8eef8', backdropFilter: 'blur(10px)' }}>
         <div className="px-4 pt-4 pb-3">
-          {/* Logo at right edge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 12 }} />
-            <h1 className="text-3xl font-black tracking-tight" style={{ color: '#0f2b6b' }}>Joba<span style={{ color: '#fbbf24' }}>24</span></h1>
-          </div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-            </span>
-            <p className="text-sm" style={{ color: '#1a6fd4' }}>{sortedTasks.length} ג'ובות פתוחות</p>
-          </div>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#1a6fd4' }} />
-              <Input
-                placeholder="חפש לפי מיקום, קטגוריה, מחיר..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pr-9 rounded-xl h-12 text-sm"
-                style={{
-                  background: 'white',
-                  border: '2px solid #bfdbfe',
-                  boxShadow: '0 2px 8px rgba(26,111,212,0.1)',
-                  fontWeight: search ? 600 : 400,
-                }}
-              />
+          {/* Logo row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
+              <span style={{ fontWeight: 900, fontSize: 22, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
             </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className={`rounded-xl h-12 w-12 shrink-0`}
-              style={hasFilters ? { background: '#1a6fd4', color: 'white', borderColor: '#1a6fd4' } : { borderColor: '#bfdbfe', background: 'white', boxShadow: '0 2px 8px rgba(26,111,212,0.1)' }}
-              onClick={() => setShowFilters(true)}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-            </Button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ position: 'relative', display: 'inline-flex', width: 7, height: 7 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
+                <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: '#3b82f6' }} />
+              </span>
+              <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{sortedTasks.length} פתוחות</span>
+              {/* Filter button — compact */}
+              <button
+                onClick={() => setShowFilters(true)}
+                style={{
+                  width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: hasFilters ? '#1a6fd4' : 'white',
+                  boxShadow: '0 1px 4px rgba(26,111,212,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginRight: 4,
+                  position: 'relative',
+                }}
+              >
+                <SlidersHorizontal size={15} color={hasFilters ? 'white' : '#64748b'} />
+                {hasFilters && <span style={{ position: 'absolute', top: 6, left: 6, width: 6, height: 6, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
+              </button>
+            </div>
           </div>
 
-          {/* Category quick filter - sorted by task count */}
-          <div className="flex gap-2 mt-2 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+          {/* Search bar */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#94a3b8', pointerEvents: 'none', zIndex: 1 }} />
+              <input
+                placeholder="חפש לפי מיקום, קטגוריה..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                onKeyDown={e => e.key === 'Enter' && handleSearchSubmit(search)}
+                style={{
+                  width: '100%', height: 42, borderRadius: 14, border: `1.5px solid ${searchFocused ? '#93c5fd' : '#e8eef8'}`,
+                  paddingRight: 38, paddingLeft: search ? 36 : 14, fontSize: 14, fontFamily: 'inherit',
+                  background: 'white', outline: 'none', color: '#1a2540',
+                  boxShadow: searchFocused ? '0 0 0 3px rgba(147,197,253,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  transition: 'all 0.15s',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 2 }}>
+                  <X size={14} color="#94a3b8" />
+                </button>
+              )}
+            </div>
+
+            {/* Search suggestions dropdown */}
+            {searchFocused && !search && recentSearches.length > 0 && (
+              <div style={{ position: 'absolute', top: 46, right: 0, left: 0, background: 'white', borderRadius: 14, border: '1px solid #e8eef8', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>חיפושים אחרונים</div>
+                {recentSearches.map((s, i) => (
+                  <button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }}
+                    style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 13, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Search size={12} color="#94a3b8" /> {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Category quick filter */}
+          <div className="flex gap-2 mt-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
             <button
               onClick={() => setFilters(f => ({ ...f, category: '' }))}
-              className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={!filters.category ? { background: '#1a6fd4', color: 'white' } : { background: '#dbeafe', color: '#1d4ed8' }}
+              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}
             >הכל</button>
             {[...CATEGORIES]
               .sort((a, b) => {
@@ -294,25 +342,28 @@ export default function HomeFeed() {
               .map(c => {
                 const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
                 if (count === 0 && !filters.category) return null;
+                const isActive = filters.category === c.value;
                 return (
                   <button key={c.value}
                     onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                    className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1"
-                    style={filters.category === c.value ? { background: '#1a6fd4', color: 'white' } : { background: '#dbeafe', color: '#1d4ed8' }}
+                    style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                      background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5',
+                      display: 'flex', alignItems: 'center', gap: 3 }}
                   >
                     {c.label}
-                    {count > 0 && <span className="opacity-70">({count})</span>}
+                    {count > 0 && <span style={{ opacity: 0.65, fontSize: 11 }}>({count})</span>}
                   </button>
                 );
               })}
           </div>
 
+          {/* Active filter chips */}
           {hasFilters && (
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {filters.city && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.city}</span>}
-              {(filters.minPrice || filters.maxPrice) && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
-              {filters.time && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.time}</span>}
-              {filters.approvalMode && <span className="text-xs bg-black text-white px-2 py-1 rounded-full">{filters.approvalMode === 'instant' ? 'מיידי' : 'לאישור'}</span>}
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {filters.city && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
+              {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
+              {filters.time && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
+              {filters.approvalMode && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.approvalMode === 'instant' ? 'מיידי' : 'לאישור'}</span>}
             </div>
           )}
         </div>
@@ -350,19 +401,26 @@ export default function HomeFeed() {
             <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {sortedTasks.map(task => {
               const myApp = myApplications.find(a => a.task_id === task.id);
+              const isNew = newTaskIds.has(task.id);
               return (
-                <TaskCardWithSwipe 
-                  key={task.id} 
-                  task={task} 
-                  myApp={myApp}
-                  isMyTask={false}
-                  onDismiss={(taskId) => {
-                    setDismissedTasks(prev => new Set([...prev, taskId]));
-                  }} 
-                />
+                <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
+                  {isNew && (
+                    <div style={{ position: 'absolute', top: -8, right: 12, zIndex: 10, background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, boxShadow: '0 2px 8px rgba(16,185,129,0.4)' }}>
+                      חדש עכשיו
+                    </div>
+                  )}
+                  <TaskCardWithSwipe 
+                    task={task} 
+                    myApp={myApp}
+                    isMyTask={false}
+                    onDismiss={(taskId) => {
+                      setDismissedTasks(prev => new Set([...prev, taskId]));
+                    }} 
+                  />
+                </div>
               );
             })}
           </div>
@@ -371,6 +429,16 @@ export default function HomeFeed() {
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
+      <style>{`
+        @keyframes slideInFresh {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes ping {
+          0%, 100% { transform: scale(1); opacity: 0.75; }
+          50% { transform: scale(2); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

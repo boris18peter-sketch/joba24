@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, ChevronLeft, Hammer, User, HardHat, CheckCircle, Clock, Send, X } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, ChevronLeft, Hammer, User, HardHat, CheckCircle, Clock } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import QuickChatDrawer from '@/components/QuickChatDrawer';
 
 const STATUS_STEPS = {
   on_the_way: { label: 'בדרך', ownerLabel: 'בדרך אליך', step: 0 },
@@ -21,57 +22,6 @@ const gradients = {
   '-1': 'linear-gradient(135deg, #0f2b6b 0%, #1a6fd4 100%)',
 };
 
-// Quick chat popup — sends a message without leaving the feed
-function QuickChatPopup({ task, me, onClose }) {
-  const [msg, setMsg] = useState('');
-  const [sending, setSending] = useState(false);
-  const navigate = useNavigate();
-
-  const send = async () => {
-    if (!msg.trim()) return;
-    setSending(true);
-    await base44.entities.ChatMessage.create({
-      task_id: task.id,
-      sender_id: me.id,
-      sender_name: me.full_name,
-      content: msg.trim(),
-    });
-    setSending(false);
-    setMsg('');
-    onClose();
-  };
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', background: 'white', borderRadius: '24px 24px 0 0', padding: '20px 16px', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }} dir="rtl">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: '#0f2b6b' }}>הודעה מהירה</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="#9ca3af" /></button>
-        </div>
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>{task.title}</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input
-            autoFocus
-            value={msg}
-            onChange={e => setMsg(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="כתוב הודעה..."
-            style={{ flex: 1, height: 44, borderRadius: 14, border: '1.5px solid #dce8f5', padding: '0 14px', fontSize: 14, fontFamily: 'inherit', outline: 'none' }}
-          />
-          <button onClick={send} disabled={!msg.trim() || sending}
-            style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: msg.trim() ? 'pointer' : 'not-allowed', opacity: msg.trim() ? 1 : 0.5 }}>
-            <Send size={16} color="white" />
-          </button>
-        </div>
-        <button onClick={() => navigate(`/chat/${task.id}`)}
-          style={{ width: '100%', height: 38, marginTop: 10, borderRadius: 12, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-          פתח צ'אט מלא
-        </button>
-      </div>
-    </div>
-  );
-}
 
 export default function ActiveTaskBanner({ task }) {
   const navigate = useNavigate();
@@ -170,7 +120,13 @@ export default function ActiveTaskBanner({ task }) {
               onClick={(e) => {
                 e.stopPropagation();
                 const dst = task.lat && task.lng ? `${task.lat},${task.lng}` : encodeURIComponent(task.location_name);
-                window.open(`https://waze.com/ul?q=${dst}&navigate=yes`, '_blank');
+                const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
+                const mapsUrl = task.lat && task.lng
+                  ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}`
+                  : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
+                // Open sheet with options
+                const choice = window.confirm('נווט עם Waze?\nלחץ ביטול לפתיחה עם Google Maps');
+                window.open(choice ? wazeUrl : mapsUrl, '_blank');
               }}
               style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <Navigation size={14} /> נווט
@@ -184,7 +140,7 @@ export default function ActiveTaskBanner({ task }) {
         </div>
       </div>
 
-      {showChat && me && <QuickChatPopup task={task} me={me} onClose={() => setShowChat(false)} />}
+      {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
 
       <style>{`
         @keyframes livePing {
