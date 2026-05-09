@@ -42,7 +42,11 @@ export default function RatingModal({ task, me, onClose }) {
     queryClient.invalidateQueries({ queryKey: ['myReview'] });
 
     setLoading(false);
-    toast.success('הביקורת נשמרה! תודה 🙏');
+    toast.success('הביקורת נשמרה! תודה');
+    // Dispatch custom event for notification
+    window.dispatchEvent(new CustomEvent('new_review', {
+      detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId }
+    }));
     onClose();
   };
 

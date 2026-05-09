@@ -68,6 +68,14 @@ const TYPES = {
     title: (n) => 'העובד סיים את העבודה!',
     body: (n) => `"${n.taskTitle}" — בבקשה אשר את הביצוע`,
   },
+  new_review: {
+    emoji: '⭐',
+    bg: '#fefce8',
+    border: '#fde047',
+    accent: '#ca8a04',
+    title: (n) => `ביקורת חדשה מ-${n.reviewerName || 'משתמש'}`,
+    body: (n) => n.preview || `דירוג: ${n.rating} כוכבים`,
+  },
 };
 
 export default function LiveNotificationPopup({ notification, onClose }) {

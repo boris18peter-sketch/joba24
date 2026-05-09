@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Navigation, Zap, Users, Star } from 'lucide-react';
+import { MapPin, Navigation, Star, Zap, Users, Pin } from 'lucide-react';
 import TaskExpiry from '@/components/TaskExpiry';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { format } from 'date-fns';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -31,14 +32,14 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
            {/* Category */}
            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">{catLabel}</span>
 
-           {/* My task badge - highest priority */}
+           {/* My task badge */}
            {isMyTask && (
-             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-               📌 משימה שלי
+             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+               <Pin className="w-2.5 h-2.5" /> משימה שלי
              </span>
            )}
 
-           {/* My application status - if pending or approved */}
+           {/* My application status */}
            {myApp && myApp.status === 'pending' && (
              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -47,22 +48,22 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
            )}
 
            {myApp && myApp.status === 'approved' && (
-             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
-               ✅ בקשה אושרה
+             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
+               <span className="w-2 h-2 rounded-full bg-green-500" /> אושרה
              </span>
            )}
 
-           {/* Approval mode - only if no my task and no pending application */}
+           {/* Approval mode */}
            {!isMyTask && (!myApp || myApp.status !== 'pending') && (
              <>
                {task.approval_mode === 'instant' && (
-                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
-                   ⚡ מיידי
+                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
+                   <Zap className="w-2.5 h-2.5" /> מיידי
                  </span>
                )}
                {task.approval_mode === 'manual' && (
-                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                   ✋ נדרש אישור
+                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                   <Users className="w-2.5 h-2.5" /> נדרש אישור
                  </span>
                )}
              </>
@@ -76,9 +77,8 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
           <p className="text-gray-400 text-xs mb-2 line-clamp-1">{task.description}</p>
         )}
 
-        {/* Bottom row: poster rating + location + distance */}
+        {/* Bottom row */}
         <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
-          {/* Client rating — trust indicator */}
           {task.client_name && (
             <span className="flex items-center gap-1 text-amber-600 font-semibold">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -96,6 +96,11 @@ export default function TaskCard({ task, workerBadge, clientBadge, myApp, isMyTa
             <span className="flex items-center gap-1 text-blue-500 font-semibold">
               <Navigation className="w-3 h-3" />
               {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+            </span>
+          )}
+          {task.created_date && (
+            <span className="flex items-center gap-1 mr-auto text-gray-300">
+              {format(new Date(task.created_date), 'dd.MM.yy · HH:mm')}
             </span>
           )}
         </div>

@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Settings, Award, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, ChevronRight } from 'lucide-react';
+import { Star, LogOut, Settings, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -42,7 +42,20 @@ export default function Profile() {
     queryKey: ['myReviews', me?.id],
     queryFn: () => base44.entities.Review.filter({ reviewee_id: me.id }, '-created_date', 10),
     enabled: !!me?.id,
+    refetchInterval: 15000,
   });
+
+  // Live subscribe to new reviews
+  useEffect(() => {
+    if (!me?.id) return;
+    const unsub = base44.entities.Review.subscribe((event) => {
+      if (event.data?.reviewee_id === me.id) {
+        queryClient.invalidateQueries({ queryKey: ['myReviews', me.id] });
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+      }
+    });
+    return unsub;
+  }, [me?.id]);
 
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasks', me?.id],

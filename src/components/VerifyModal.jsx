@@ -1,54 +1,87 @@
 import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Shield, X, CheckCircle2, Loader2, Camera, Upload, Eye, EyeOff } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import {
+  Shield, X, CheckCircle, Loader2, Camera, Eye, EyeOff,
+  Lock, Clock, ChevronDown, ChevronUp, UserCheck, Star
+} from 'lucide-react';
 import { toast } from 'sonner';
 
-/**
- * VerifyModal — פופ-אפ לאימות זהות משתמש
- * Props:
- *   onClose: () => void
- *   onSuccess: () => void  — called after successful verification
- */
+const FIELD_STYLE = (error, focused) => ({
+  width: '100%',
+  height: 48,
+  borderRadius: 12,
+  border: `1.5px solid ${error ? '#ef4444' : focused ? '#1a6fd4' : '#e5e7eb'}`,
+  background: error ? '#fff5f5' : '#fff',
+  padding: '0 14px',
+  fontSize: 15,
+  color: '#111',
+  outline: 'none',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.15s',
+  fontFamily: 'inherit',
+  boxShadow: focused && !error ? '0 0 0 3px rgba(26,111,212,0.1)' : 'none',
+});
+
+const Label = ({ children }) => (
+  <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 6, letterSpacing: 0.2 }}>
+    {children}
+  </div>
+);
+
+const ErrorMsg = ({ msg }) => (
+  <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{msg}</div>
+);
+
 export default function VerifyModal({ onClose, onSuccess }) {
   const queryClient = useQueryClient();
   const idPhotoRef = useRef(null);
 
-  const [step, setStep] = useState(1); // 1 = form, 2 = success
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [uploadingId, setUploadingId] = useState(false);
   const [idPhotoUrl, setIdPhotoUrl] = useState('');
   const [showId, setShowId] = useState(false);
+  const [focused, setFocused] = useState('');
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
-  const [form, setForm] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    id_number: '',
-  });
-
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '', id_number: '' });
   const [errors, setErrors] = useState({});
 
   const validate = () => {
     const e = {};
-    if (!form.full_name.trim()) e.full_name = true;
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = true;
-    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length < 9) e.phone = true;
-    if (!form.id_number.trim() || form.id_number.replace(/\D/g, '').length < 8) e.id_number = true;
-    if (!idPhotoUrl) e.id_photo = true;
+    if (!form.full_name.trim()) e.full_name = 'שם מלא נדרש';
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'כתובת מייל תקינה נדרשת';
+    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length < 9) e.phone = 'מספר טלפון תקין נדרש';
+    if (!form.id_number.trim() || form.id_number.replace(/\D/g, '').length < 8) e.id_number = 'מספר תעודת זהות תקין נדרש';
+    if (!idPhotoUrl) e.id_photo = 'יש להעלות צילום תעודת זהות';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleIdPhotoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadFile = async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      toast.error('יש להעלות קובץ תמונה בלבד');
+      return;
+    }
     setUploadingId(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     setIdPhotoUrl(file_url);
     setUploadingId(false);
-    setErrors(prev => ({ ...prev, id_photo: false }));
+    setErrors(prev => ({ ...prev, id_photo: null }));
+  };
+
+  const handleIdPhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) uploadFile(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadFile(file);
   };
 
   const handleSubmit = async () => {
@@ -69,178 +102,292 @@ export default function VerifyModal({ onClose, onSuccess }) {
     setStep(2);
   };
 
-  const handleSuccess = () => {
-    onSuccess?.();
-    onClose();
-  };
-
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(10,20,50,0.72)',
+      background: 'rgba(5,15,40,0.65)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      backdropFilter: 'blur(4px)',
+      backdropFilter: 'blur(6px)',
     }} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: 'white', borderRadius: '24px 24px 0 0',
+        background: '#fafbff',
+        borderRadius: '28px 28px 0 0',
         width: '100%', maxWidth: 480,
-        padding: '0 0 32px',
-        maxHeight: '92vh', overflowY: 'auto',
-        boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+        maxHeight: '94vh', overflowY: 'auto',
+        boxShadow: '0 -16px 60px rgba(0,0,0,0.2)',
       }} dir="rtl">
 
         {step === 1 ? (
           <>
             {/* Header */}
-            <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Shield size={22} color="white" />
+            <div style={{ padding: '24px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+              <div style={{ flex: 1 }}>
+                {/* Progress */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {[1, 2].map(s => (
+                      <div key={s} style={{
+                        height: 4, width: s === 1 ? 28 : 18, borderRadius: 99,
+                        background: s === 1 ? '#1a6fd4' : '#dde3ee',
+                        transition: 'all 0.3s',
+                      }} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>שלב 1 מתוך 2 · פחות מדקה</span>
+                </div>
+
+                {/* Icon + Title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                  <div style={{ width: 46, height: 46, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Shield size={22} color="white" strokeWidth={1.8} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b' }}>אימות זהות</div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>נדרש לפרסום ולקיחת ג'ובות</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: '#0f1e40', letterSpacing: -0.3 }}>אימות זהות</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 400, marginTop: 1 }}>
+                      אימות חד־פעמי לפתיחת ג'ובות ולקיחת משימות
+                    </div>
                   </div>
                 </div>
-                {/* Trust badges */}
-                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                  {['🔒 מוצפן ומאובטח', '✅ חד פעמי', '🛡️ לא נשמר ציבורית'].map(b => (
-                    <span key={b} style={{ fontSize: 10, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', padding: '3px 8px', borderRadius: 20, border: '1px solid #bfdbfe' }}>{b}</span>
+
+                {/* Trust row */}
+                <div style={{ display: 'flex', gap: 16, marginTop: 14, paddingTop: 12, borderTop: '1px solid #edf0f7' }}>
+                  {[
+                    { icon: <UserCheck size={13} strokeWidth={1.8} />, text: 'אימות חד־פעמי' },
+                    { icon: <Lock size={13} strokeWidth={1.8} />, text: 'מידע מוצפן' },
+                    { icon: <Star size={13} strokeWidth={1.8} />, text: 'קהילה מדורגת' },
+                  ].map(({ icon, text }) => (
+                    <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#6b7280', fontWeight: 500 }}>
+                      <span style={{ color: '#1a6fd4' }}>{icon}</span>
+                      {text}
+                    </div>
                   ))}
                 </div>
               </div>
-              <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                <X size={16} color="#6b7280" />
+              <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 11, background: '#f0f2f7', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                <X size={16} color="#9ca3af" />
               </button>
             </div>
 
-            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* Why verify */}
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', display: 'flex', gap: 10 }}>
-                <div style={{ fontSize: 20 }}>🛡️</div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#166534', marginBottom: 3 }}>למה נדרש אימות?</div>
-                  <div style={{ fontSize: 11, color: '#15803d', lineHeight: 1.5 }}>רק משתמשים מאומתים יכולים לפרסם, לקחת ולהגיש בקשות לג'ובות — כך אנחנו מבטיחים בטיחות וסביבה מהימנה לכולם.</div>
-                </div>
+            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Why verify — collapsible */}
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+                <button
+                  onClick={() => setWhyOpen(v => !v)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: 'white', border: 'none', cursor: 'pointer', textAlign: 'right' }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>למה נדרש אימות?</span>
+                  {whyOpen ? <ChevronUp size={16} color="#9ca3af" /> : <ChevronDown size={16} color="#9ca3af" />}
+                </button>
+                {whyOpen && (
+                  <div style={{ background: '#f8faff', padding: '10px 14px 14px', borderTop: '1px solid #f0f2f7' }}>
+                    {[
+                      'מונע חשבונות פיקטיביים ושמירה על אמינות',
+                      'מגדיל את הביטחון בין לקוחות לעובדים',
+                      'כל המשתמשים ב־Joba24 עוברים אימות זהה',
+                    ].map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
+                        <CheckCircle size={14} color="#1a6fd4" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Full name */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4, display: 'block' }}>שם מלא *</label>
-                <Input
+                <Label>שם מלא</Label>
+                <input
                   placeholder="ישראל ישראלי"
                   value={form.full_name}
-                  onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-                  style={{ borderColor: errors.full_name ? '#ef4444' : undefined, background: errors.full_name ? '#fff5f5' : undefined }}
+                  onFocus={() => setFocused('full_name')}
+                  onBlur={() => setFocused('')}
+                  onChange={e => { setForm(f => ({ ...f, full_name: e.target.value })); setErrors(p => ({ ...p, full_name: null })); }}
+                  style={FIELD_STYLE(errors.full_name, focused === 'full_name')}
                 />
-                {errors.full_name && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>שם מלא נדרש</div>}
+                {errors.full_name && <ErrorMsg msg={errors.full_name} />}
               </div>
 
               {/* Email */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4, display: 'block' }}>כתובת מייל *</label>
-                <Input
+                <Label>כתובת מייל</Label>
+                <input
                   placeholder="israel@example.com"
                   type="email"
                   value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  style={{ borderColor: errors.email ? '#ef4444' : undefined, background: errors.email ? '#fff5f5' : undefined }}
+                  onFocus={() => setFocused('email')}
+                  onBlur={() => setFocused('')}
+                  onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setErrors(p => ({ ...p, email: null })); }}
+                  style={FIELD_STYLE(errors.email, focused === 'email')}
                 />
-                {errors.email && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>מייל תקין נדרש</div>}
+                {errors.email && <ErrorMsg msg={errors.email} />}
               </div>
 
               {/* Phone */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4, display: 'block' }}>מספר טלפון *</label>
-                <Input
+                <Label>מספר טלפון</Label>
+                <input
                   placeholder="05X-XXXXXXX"
                   type="tel"
                   value={form.phone}
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                  style={{ borderColor: errors.phone ? '#ef4444' : undefined, background: errors.phone ? '#fff5f5' : undefined }}
+                  onFocus={() => setFocused('phone')}
+                  onBlur={() => setFocused('')}
+                  onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setErrors(p => ({ ...p, phone: null })); }}
+                  style={FIELD_STYLE(errors.phone, focused === 'phone')}
                 />
-                {errors.phone && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>מספר טלפון תקין נדרש</div>}
+                {errors.phone && <ErrorMsg msg={errors.phone} />}
               </div>
 
               {/* ID number */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4, display: 'block' }}>מספר תעודת זהות *</label>
+                <Label>מספר תעודת זהות</Label>
                 <div style={{ position: 'relative' }}>
-                  <Input
+                  <input
                     placeholder="XXXXXXXXX"
                     type={showId ? 'text' : 'password'}
                     value={form.id_number}
-                    onChange={e => setForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '') }))}
+                    onFocus={() => setFocused('id_number')}
+                    onBlur={() => setFocused('')}
+                    onChange={e => { setForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '') })); setErrors(p => ({ ...p, id_number: null })); }}
                     maxLength={9}
-                    style={{ borderColor: errors.id_number ? '#ef4444' : undefined, background: errors.id_number ? '#fff5f5' : undefined, paddingLeft: 36 }}
+                    style={{ ...FIELD_STYLE(errors.id_number, focused === 'id_number'), paddingLeft: 42 }}
                   />
-                  <button onClick={() => setShowId(v => !v)} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  <button onClick={() => setShowId(v => !v)} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
                     {showId ? <EyeOff size={16} color="#9ca3af" /> : <Eye size={16} color="#9ca3af" />}
                   </button>
                 </div>
-                {errors.id_number && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>תעודת זהות תקינה נדרשת</div>}
+                {errors.id_number && <ErrorMsg msg={errors.id_number} />}
               </div>
 
               {/* ID photo upload */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4, display: 'block' }}>צילום תעודת זהות *</label>
+                <Label>צילום תעודת זהות</Label>
                 <input ref={idPhotoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleIdPhotoUpload} />
+
                 {idPhotoUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px' }}>
-                    <img src={idPhotoUrl} alt="ת.ז." style={{ width: 48, height: 32, objectFit: 'cover', borderRadius: 6, border: '1px solid #d1fae5' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f0fdf9', border: '1.5px solid #6ee7b7', borderRadius: 14, padding: '12px 16px' }}>
+                    <img src={idPhotoUrl} alt="ת.ז." style={{ width: 52, height: 36, objectFit: 'cover', borderRadius: 8 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#166534' }}>✅ הצילום הועלה בהצלחה</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#065f46', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <CheckCircle size={14} color="#059669" /> הצילום הועלה
+                      </div>
+                      <div style={{ fontSize: 11, color: '#6ee7b7', marginTop: 1 }}>לחץ להחלפה</div>
                     </div>
-                    <button onClick={() => idPhotoRef.current?.click()} style={{ fontSize: 11, color: '#1a6fd4', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>החלף</button>
+                    <button onClick={() => idPhotoRef.current?.click()} style={{ fontSize: 12, color: '#1a6fd4', background: 'none', border: '1px solid #bfdbfe', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>החלף</button>
                   </div>
                 ) : (
-                  <button
+                  <div
                     onClick={() => idPhotoRef.current?.click()}
-                    disabled={uploadingId}
-                    style={{ width: '100%', height: 56, borderRadius: 14, border: `2px dashed ${errors.id_photo ? '#ef4444' : '#dbeafe'}`, background: errors.id_photo ? '#fff5f5' : '#f8faff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: errors.id_photo ? '#ef4444' : '#1a6fd4', fontWeight: 700, fontSize: 13 }}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                    style={{
+                      border: `2px dashed ${errors.id_photo ? '#ef4444' : dragOver ? '#1a6fd4' : '#d1dde8'}`,
+                      borderRadius: 14,
+                      background: dragOver ? '#eff6ff' : errors.id_photo ? '#fff5f5' : '#f8faff',
+                      padding: '24px 16px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
                   >
-                    {uploadingId ? <Loader2 size={18} className="animate-spin" /> : <><Camera size={18} /> העלה צילום ת.ז.</>}
-                  </button>
+                    {uploadingId ? (
+                      <Loader2 size={24} color="#1a6fd4" className="animate-spin" />
+                    ) : (
+                      <>
+                        <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Camera size={22} color="#1a6fd4" strokeWidth={1.8} />
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>העלאת תעודת זהות</div>
+                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>לחץ לבחירת תמונה או גרור לכאן</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
-                {errors.id_photo && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 3 }}>יש להעלות צילום תעודת זהות</div>}
+                {errors.id_photo && <ErrorMsg msg={errors.id_photo} />}
               </div>
 
-              {/* Privacy note */}
-              <div style={{ fontSize: 11, color: '#9ca3af', textAlign: 'center', lineHeight: 1.5 }}>
-                🔒 הפרטים שלך מוצפנים ולא יוצגו לאחרים. תעודת הזהות משמשת לאימות בלבד.
+              {/* Privacy */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', background: '#f8faff', borderRadius: 12 }}>
+                <Lock size={13} color="#9ca3af" strokeWidth={1.8} />
+                <span style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.5 }}>
+                  הפרטים מוצפנים ולא יוצגו לגורמים אחרים. תעודת הזהות משמשת לאימות בלבד.
+                </span>
               </div>
 
               {/* Submit */}
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                style={{ width: '100%', height: 54, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 18px rgba(26,111,212,0.3)' }}
+                style={{
+                  width: '100%', height: 52, borderRadius: 14,
+                  background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  color: 'white', fontWeight: 700, fontSize: 15,
+                  border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  letterSpacing: 0.2,
+                  boxShadow: loading ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
+                  marginBottom: 8,
+                }}
               >
-                {loading ? <Loader2 size={20} className="animate-spin" /> : <><Shield size={18} /> אמת את זהותי</>}
+                {loading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <><CheckCircle size={18} strokeWidth={2} /> השלם אימות והמשך</>
+                )}
               </button>
             </div>
           </>
         ) : (
           /* Step 2: Success */
-          <div style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#22c55e,#16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(34,197,94,0.35)', marginBottom: 8 }}>
-              <CheckCircle2 size={40} color="white" />
+          <div style={{ padding: '48px 24px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, textAlign: 'center' }}>
+            {/* Animated checkmark */}
+            <div style={{
+              width: 88, height: 88, borderRadius: '50%',
+              background: 'linear-gradient(135deg,#10b981,#059669)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 8px 32px rgba(16,185,129,0.3)',
+              marginBottom: 20,
+            }}>
+              <CheckCircle size={44} color="white" strokeWidth={2} />
             </div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b' }}>האימות הושלם! 🎉</div>
-            <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6 }}>
-              הפרופיל שלך מאומת. תראה ✅ ליד שמך בכל מקום באפליקציה.
+
+            <div style={{ fontSize: 22, fontWeight: 800, color: '#0f1e40', marginBottom: 8, letterSpacing: -0.3 }}>
+              החשבון שלך אומת בהצלחה
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {['פרסום ג\'ובות', 'לקיחת ג\'ובות', 'הגשת בקשות'].map(b => (
-                <span key={b} style={{ fontSize: 12, fontWeight: 700, background: '#f0fdf4', color: '#166534', padding: '5px 12px', borderRadius: 20, border: '1px solid #bbf7d0' }}>✅ {b}</span>
+            <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
+              הפרופיל שלך מאומת ומהימן.<br />הסמל יופיע ליד שמך בכל מקום.
+            </div>
+
+            {/* Capabilities */}
+            <div style={{ width: '100%', background: '#f8faff', border: '1px solid #e5e9f5', borderRadius: 16, padding: '16px', marginBottom: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>עכשיו אפשר</div>
+              {[
+                { icon: <Shield size={15} strokeWidth={1.8} />, text: 'לפרסם ג\'ובות' },
+                { icon: <UserCheck size={15} strokeWidth={1.8} />, text: 'לקחת ולבצע משימות' },
+                { icon: <CheckCircle size={15} strokeWidth={1.8} />, text: 'להגיש בקשות לג\'ובות' },
+              ].map(({ icon, text }) => (
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'להגיש בקשות לג\'ובות' ? '1px solid #edf0f7' : 'none' }}>
+                  <div style={{ color: '#10b981' }}>{icon}</div>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{text}</span>
+                </div>
               ))}
             </div>
+
             <button
-              onClick={handleSuccess}
-              style={{ marginTop: 8, width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#22c55e,#16a34a)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 18px rgba(34,197,94,0.3)' }}
+              onClick={() => { onSuccess?.(); onClose(); }}
+              style={{
+                width: '100%', height: 52, borderRadius: 14,
+                background: 'linear-gradient(135deg,#10b981,#059669)',
+                color: 'white', fontWeight: 700, fontSize: 15,
+                border: 'none', cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(16,185,129,0.3)',
+              }}
             >
-              מעולה, בוא נתחיל! 🚀
+              בוא נתחיל
             </button>
           </div>
         )}

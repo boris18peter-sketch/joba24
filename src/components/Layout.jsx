@@ -100,6 +100,21 @@ export default function Layout() {
     if (location.pathname === '/chats') setUnreadMessages(0);
   }, [location.pathname]);
 
+  // Listen for new review notifications
+  useEffect(() => {
+    const handleNewReview = (e) => {
+      const { reviewerName, rating, comment } = e.detail;
+      addNotification({
+        type: 'new_review',
+        reviewerName,
+        rating,
+        preview: comment,
+      });
+    };
+    window.addEventListener('new_review', handleNewReview);
+    return () => window.removeEventListener('new_review', handleNewReview);
+  }, []);
+
   // Real-time task events for client (push-like)
   useEffect(() => {
     const unsubscribe = base44.entities.Task.subscribe((event) => {
@@ -209,23 +224,23 @@ export default function Layout() {
             onClick={() => navigate(`/task/${activeWorkerTask.id}`)}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+              background: 'linear-gradient(135deg, #059669, #10b981)',
               color: 'white', fontWeight: 900, fontSize: 13,
               padding: '10px 18px', borderRadius: 50,
               border: 'none', cursor: 'pointer',
-              boxShadow: '0 4px 24px rgba(26,111,212,0.45)',
+              boxShadow: '0 4px 24px rgba(16,185,129,0.5)',
               whiteSpace: 'nowrap',
               animation: 'activeTaskPulse 3s ease-in-out infinite',
             }}
           >
-            <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+  <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
               <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
               <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
             </span>
-            🔨 משימה שאתה מבצע
+            משימה שאתה מבצע
           </button>
           <style>{`
-            @keyframes activeTaskPulse { 0%,100%{box-shadow:0 4px 24px rgba(26,111,212,0.45)} 50%{box-shadow:0 4px 32px rgba(26,111,212,0.7)} }
+            @keyframes activeTaskPulse { 0%,100%{box-shadow:0 4px 24px rgba(16,185,129,0.5)} 50%{box-shadow:0 4px 32px rgba(16,185,129,0.75)} }
             @keyframes livePing { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(2.2);opacity:0} }
           `}</style>
         </div>
