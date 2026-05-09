@@ -17,13 +17,13 @@ const STATUS_STEPS = {
 
 const gradients = {
   0: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
-  1: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+  1: 'linear-gradient(135deg, #c07c2a 0%, #d4943e 100%)',
   2: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
   '-1': 'linear-gradient(135deg, #0f2b6b 0%, #1a6fd4 100%)',
 };
 
 
-export default function ActiveTaskBanner({ task }) {
+export default function ActiveTaskBanner({ task, roleHint }) {
   const navigate = useNavigate();
   const [showChat, setShowChat] = useState(false);
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -31,8 +31,9 @@ export default function ActiveTaskBanner({ task }) {
   if (!task || !me) return null;
 
   const statusInfo = STATUS_STEPS[task.worker_status] || null;
-  const isWorker = me?.id === task.worker_id;
-  const isOwner = me?.id === task.client_id;
+  // roleHint allows forced role when both roles apply to the same user
+  const isWorker = roleHint === 'worker' || (roleHint !== 'client' && me?.id === task.worker_id);
+  const isOwner = roleHint === 'client' || (roleHint !== 'worker' && me?.id === task.client_id);
   if (!isWorker && !isOwner) return null;
 
   const stepIdx = statusInfo?.step ?? -1;

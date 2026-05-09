@@ -249,11 +249,11 @@ export default function Layout() {
               onClick={() => navigate(`/task/${activeClientTask.id}`)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: 'linear-gradient(135deg, #d97706, #f59e0b)',
+                background: 'linear-gradient(135deg, #b07020, #c8873a)',
                 color: 'white', fontWeight: 900, fontSize: 13,
                 padding: '10px 18px', borderRadius: 50,
                 border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 24px rgba(217,119,6,0.5)',
+                boxShadow: '0 4px 24px rgba(176,112,32,0.4)',
                 whiteSpace: 'nowrap',
                 animation: 'activeTaskPulse 3s ease-in-out infinite',
               }}

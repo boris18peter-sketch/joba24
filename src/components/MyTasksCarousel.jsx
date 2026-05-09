@@ -6,10 +6,10 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
-  TAKEN: { label: 'בעבודה', color: '#fef3c7', textColor: '#b45309', dot: '#f59e0b' },
+  TAKEN: { label: 'בעבודה', color: '#fef9ec', textColor: '#92700a', dot: '#d4a017' },
   COMPLETED: { label: 'הושלם', color: '#dcfce7', textColor: '#166534', dot: '#10b981' },
   CANCELLED: { label: 'בוטל', color: '#fee2e2', textColor: '#991b1b', dot: '#ef4444' },
-  EXPIRED: { label: 'פג תוקף', color: '#fef3c7', textColor: '#92400e', dot: '#f97316' },
+  EXPIRED: { label: 'פג תוקף', color: '#fef3ea', textColor: '#8a4a1a', dot: '#c2773a' },
 };
 
 export default function MyTasksCarousel({ myTasks }) {
@@ -26,19 +26,16 @@ export default function MyTasksCarousel({ myTasks }) {
     queryClient.invalidateQueries({ queryKey: ['myTasks'] });
   };
 
-  // Empty state: show a "Post Task" button
+  // Empty state: show a "Post Task" button without title
   if (relevantTasks.length === 0) {
     return (
       <div style={{ padding: '0 16px 12px' }}>
-        <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>משימות שפרסמתי</h2>
-        </div>
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
             borderRadius: 16, padding: '13px 20px',
-            boxShadow: '0 4px 18px rgba(26,111,212,0.32)',
+            boxShadow: '0 4px 18px rgba(26,111,212,0.28)',
             cursor: 'pointer',
           }}>
             <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -73,12 +70,12 @@ export default function MyTasksCarousel({ myTasks }) {
                 minWidth: 165,
                 background: isExpired ? '#fff7ed' : 'white',
                 borderRadius: 16,
-                border: isTaken ? `1.5px solid #fbbf24` : isExpired ? '1.5px solid #fdba74' : '1px solid #dce8f5',
+                border: isTaken ? `1.5px solid #c8903a` : isExpired ? '1.5px solid #c07040' : '1px solid #dce8f5',
                 padding: '12px 12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 6,
-                boxShadow: isTaken ? '0 2px 12px rgba(251,191,36,0.2)' : isExpired ? '0 2px 10px rgba(249,115,22,0.15)' : '0 1px 4px rgba(26,111,212,0.07)',
+                boxShadow: isTaken ? '0 2px 12px rgba(192,135,58,0.18)' : isExpired ? '0 2px 10px rgba(192,112,64,0.12)' : '0 1px 4px rgba(26,111,212,0.07)',
                 position: 'relative',
               }}>
                 {/* Status dot + label */}
@@ -106,7 +103,7 @@ export default function MyTasksCarousel({ myTasks }) {
 
                 {/* Worker name if taken */}
                 {isTaken && task.worker_name && (
-                  <div style={{ fontSize: 10, color: '#f59e0b', fontWeight: 700 }}>
+                  <div style={{ fontSize: 10, color: '#b07030', fontWeight: 700 }}>
                     עובד: {task.worker_name}
                   </div>
                 )}
