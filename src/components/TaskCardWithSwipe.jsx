@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import TaskCard from '@/components/TaskCard';
 import { X } from 'lucide-react';
 
-export default function TaskCardWithSwipe({ task, onDismiss, myApp, isMyTask, currentUserId }) {
+export default function TaskCardWithSwipe({ task, onDismiss, myApp, isMyTask, currentUserId, workerName }) {
   const [startX, setStartX] = useState(0);
   const [offset, setOffset] = useState(0);
   const cardRef = useRef(null);
@@ -46,7 +46,7 @@ export default function TaskCardWithSwipe({ task, onDismiss, myApp, isMyTask, cu
       <div
         style={{ transform: `translateX(-${offset}px)`, transition: offset === 0 ? 'transform 0.2s' : 'none' }}
       >
-        <TaskCard task={task} myApp={myApp} isMyTask={isMyTask} currentUserId={currentUserId} />
+        <TaskCard task={task} myApp={myApp} isMyTask={isMyTask} currentUserId={currentUserId} workerName={workerName} />
       </div>
     </div>
   );

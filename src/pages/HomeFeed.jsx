@@ -437,6 +437,7 @@ export default function HomeFeed() {
                     myApp={myApp}
                     isMyTask={false}
                     currentUserId={me?.id}
+                    workerName={me?.full_name}
                     onDismiss={(taskId) => {
                       setDismissedTasks(prev => new Set([...prev, taskId]));
                     }} 
