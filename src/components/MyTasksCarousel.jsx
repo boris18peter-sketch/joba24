@@ -5,11 +5,11 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 
 const statusConfig = {
-  OPEN: { label: 'פתוח', color: '#e8f0fc', textColor: '#1558b0', dot: '#1558b0' },
-  TAKEN: { label: 'בעבודה', color: '#fdf6e8', textColor: '#8a5c10', dot: '#b07828' },
-  COMPLETED: { label: 'הושלם', color: '#ecfdf5', textColor: '#065f46', dot: '#0d9266' },
-  CANCELLED: { label: 'בוטל', color: '#fef2f2', textColor: '#991b1b', dot: '#ef4444' },
-  EXPIRED: { label: 'פג תוקף', color: '#fff7ed', textColor: '#7c2d12', dot: '#b45309' },
+  OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
+  TAKEN: { label: 'בעבודה', color: '#fef9ec', textColor: '#92700a', dot: '#d4a017' },
+  COMPLETED: { label: 'הושלם', color: '#dcfce7', textColor: '#166534', dot: '#10b981' },
+  CANCELLED: { label: 'בוטל', color: '#fee2e2', textColor: '#991b1b', dot: '#ef4444' },
+  EXPIRED: { label: 'פג תוקף', color: '#fef3ea', textColor: '#8a4a1a', dot: '#c2773a' },
 };
 
 export default function MyTasksCarousel({ myTasks }) {
@@ -51,13 +51,13 @@ export default function MyTasksCarousel({ myTasks }) {
   return (
     <div style={{ padding: '0 16px 4px' }}>
       <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <h2 style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-        משימות שפרסמתי
-        <span style={{ fontSize: 11, fontWeight: 600, background: '#e8f0fc', color: '#1558b0', padding: '1px 7px', borderRadius: 6 }}>{relevantTasks.length}</span>
-      </h2>
-      <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 600, color: '#1558b0' }}>
-        הכל <ChevronLeft size={13} />
-      </Link>
+        <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>
+          משימות שפרסמתי
+          <span style={{ marginRight: 6, fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', padding: '2px 7px', borderRadius: 20 }}>{relevantTasks.length}</span>
+        </h2>
+        <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>
+          כל הג'ובות <ChevronLeft size={14} />
+        </Link>
       </div>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
         {relevantTasks.map(task => {
@@ -70,7 +70,7 @@ export default function MyTasksCarousel({ myTasks }) {
                 minWidth: 165,
                 background: isExpired ? '#fff7ed' : 'white',
                 borderRadius: 16,
-                border: isTaken ? `1.5px solid #b07828` : isExpired ? '1.5px solid #b45309' : '1px solid #dde5f0',
+                border: isTaken ? `1.5px solid #c8903a` : isExpired ? '1.5px solid #c07040' : '1px solid #dce8f5',
                 padding: '12px 12px 10px',
                 display: 'flex',
                 flexDirection: 'column',

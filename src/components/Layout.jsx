@@ -222,49 +222,52 @@ export default function Layout() {
 
       {/* Floating Active Task Buttons */}
       {(activeWorkerTask || activeClientTask) && !location.pathname.includes('/chat/') && (
-        <div style={{ position: 'absolute', bottom: 82, left: '50%', transform: 'translateX(-50%)', zIndex: 9998, pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+        <div style={{ position: 'absolute', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 9998, pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           {activeWorkerTask && !location.pathname.includes(`/task/${activeWorkerTask.id}`) && (
             <button
               onClick={() => navigate(`/task/${activeWorkerTask.id}`)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                background: '#0b6e4f',
-                color: 'white', fontWeight: 600, fontSize: 13,
-                padding: '9px 16px', borderRadius: 24,
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'linear-gradient(135deg, #059669, #10b981)',
+                color: 'white', fontWeight: 900, fontSize: 13,
+                padding: '10px 18px', borderRadius: 50,
                 border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 18px rgba(11,110,79,0.45)',
+                boxShadow: '0 4px 24px rgba(16,185,129,0.5)',
                 whiteSpace: 'nowrap',
+                animation: 'activeTaskPulse 3s ease-in-out infinite',
               }}
             >
-              <span style={{ position: 'relative', display: 'inline-flex', width: 7, height: 7 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.8s ease-in-out infinite' }} />
-                <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: 'white' }} />
+              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
               </span>
-              משימה בביצוע
+              משימה שאתה מבצע
             </button>
           )}
           {activeClientTask && !location.pathname.includes(`/task/${activeClientTask.id}`) && activeClientTask.id !== activeWorkerTask?.id && (
             <button
               onClick={() => navigate(`/task/${activeClientTask.id}`)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 7,
-                background: '#7a4e10',
-                color: 'white', fontWeight: 600, fontSize: 13,
-                padding: '9px 16px', borderRadius: 24,
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'linear-gradient(135deg, #b07020, #c8873a)',
+                color: 'white', fontWeight: 900, fontSize: 13,
+                padding: '10px 18px', borderRadius: 50,
                 border: 'none', cursor: 'pointer',
-                boxShadow: '0 4px 18px rgba(122,78,16,0.4)',
+                boxShadow: '0 4px 24px rgba(176,112,32,0.4)',
                 whiteSpace: 'nowrap',
+                animation: 'activeTaskPulse 3s ease-in-out infinite',
               }}
             >
-              <span style={{ position: 'relative', display: 'inline-flex', width: 7, height: 7 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.8s ease-in-out infinite' }} />
-                <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: 'white' }} />
+              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
               </span>
               משימה שלי בביצוע
             </button>
           )}
           <style>{`
-            @keyframes livePing { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(2.2);opacity:0} }
+            @keyframes activeTaskPulse { 0%,100%{box-shadow:0 4px 24px rgba(16,185,129,0.5)} 50%{box-shadow:0 4px 32px rgba(16,185,129,0.75)} }
+            @keyframes livePing { 0%,100%{transform:scale(1);opacity:.8} 50%{transform:scale(2.2);opacity:0} }
           `}</style>
         </div>
       )}
@@ -272,52 +275,44 @@ export default function Layout() {
       {/* Bottom Nav */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 9999,
-        background: 'rgba(255,255,255,0.97)',
-        borderTop: '1px solid rgba(0,0,0,0.07)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        boxShadow: '0 -1px 0 rgba(0,0,0,0.05)',
+        background: 'white', borderTop: '1px solid #dce8f5',
+        boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '10px 8px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
           {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
             const active = location.pathname === to;
             if (primary) {
               return (
-                <button key={to} onClick={() => gate(() => navigate(to))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px' }}>
+                <button key={to} onClick={() => gate(() => navigate(to))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <div style={{
-                    width: 46, height: 46, borderRadius: 14,
-                    background: 'linear-gradient(135deg, #1a6fd4, #1558b0)',
+                    width: 56, height: 56, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 3px 12px rgba(26,111,212,0.35)',
-                    transition: 'transform 0.1s ease',
+                    boxShadow: '0 4px 20px rgba(26,111,212,0.45)',
                   }}>
-                    <Icon size={22} color="white" strokeWidth={2} />
+                    <Icon size={24} color="white" />
                   </div>
-                  <span style={{ fontSize: 10, color: '#1a6fd4', fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
                 </button>
               );
             }
             return (
-              <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 10px', textDecoration: 'none', position: 'relative', minWidth: 44 }}>
-                <div style={{ position: 'relative', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon size={21} color={active ? '#1a6fd4' : '#b0bec5'} strokeWidth={active ? 2.2 : 1.8} />
-                  {active && (
-                    <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: '#1a6fd4' }} />
-                  )}
+              <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
+                <div style={{ position: 'relative' }}>
+                  <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
                   {badge > 0 && (
                     <div style={{
-                      position: 'absolute', top: -5, right: -6,
-                      background: '#ef4444', color: 'white',
-                      fontSize: 9, fontWeight: 700,
-                      minWidth: 15, height: 15, borderRadius: 8,
+                      position: 'absolute', top: -6, right: -8,
+                      background: '#dc2626', color: 'white',
+                      fontSize: 9, fontWeight: 900,
+                      width: 16, height: 16, borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '0 3px',
                       border: '1.5px solid white',
                     }}>{badge}</div>
                   )}
                 </div>
-                <span style={{ fontSize: 10, color: active ? '#1a6fd4' : '#b0bec5', fontWeight: active ? 600 : 400 }}>{label}</span>
+                <span style={{ fontSize: 10, color: active ? '#1a6fd4' : '#a0b8d8', fontWeight: active ? 700 : 500 }}>{label}</span>
               </Link>
             );
           })}

@@ -91,8 +91,8 @@ export default function Profile() {
       </div>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(160deg, #0f2346 0%, #1558b0 100%)', padding: '24px 20px 22px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+      <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -40, left: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
 
         {/* Avatar + Name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
