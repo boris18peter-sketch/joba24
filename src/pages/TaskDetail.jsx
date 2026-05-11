@@ -54,7 +54,9 @@ export default function TaskDetail() {
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
   const [showCancelWarning, setShowCancelWarning] = useState(false);
+  const [showWorkerCancelledPopup, setShowWorkerCancelledPopup] = useState(false);
   const prevWorkerIdRef = useRef(null);
+  const prevTaskStatusRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -137,6 +139,21 @@ export default function TaskDetail() {
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
     console.log('✅ WORKER UPDATE COMPLETE - Task refetched');
   };
+
+  // Detect if task was cancelled while worker was on the way — show popup to worker
+  useEffect(() => {
+    if (!task || !me) return;
+    const prevStatus = prevTaskStatusRef.current;
+    if (
+      prevStatus === 'TAKEN' &&
+      task.status === 'CANCELLED' &&
+      task.worker_id === me.id &&
+      ['on_the_way', 'delayed', 'parking'].includes(task.worker_status)
+    ) {
+      setShowWorkerCancelledPopup(true);
+    }
+    prevTaskStatusRef.current = task.status;
+  }, [task?.status]);
 
   // Check expiry
   useEffect(() => {
@@ -284,6 +301,30 @@ export default function TaskDetail() {
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {showApprovedPopup && (
         <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />
+      )}
+
+      {/* Worker: task was cancelled while on the way — big popup */}
+      {showWorkerCancelledPopup && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(8px)' }}>
+          <div dir="rtl" style={{ background: 'white', borderRadius: 28, width: '100%', maxWidth: 400, boxShadow: '0 24px 80px rgba(0,0,0,0.3)', padding: '32px 24px', textAlign: 'center' }}>
+            <div style={{ fontSize: 60, marginBottom: 16 }}>😞</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
+            <div style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 8 }}>
+              בעל המשימה ביטל לאחר שיצאת לדרך.
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '16px 20px', marginBottom: 24 }}>
+              <div style={{ fontSize: 13, color: '#166534', fontWeight: 700, marginBottom: 4 }}>💰 פיצוי מגיע לך!</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>₪{Math.round((task.price || 0) * 0.2)}</div>
+              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 4 }}>עמלת טרחה של 20% מסכום המשימה תזוכה לארנקך</div>
+            </div>
+            <button
+              onClick={() => { setShowWorkerCancelledPopup(false); navigate('/'); }}
+              style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,111,212,0.35)' }}
+            >
+              חזור לפיד
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Cancel warning popup — when worker already on the way */}
@@ -576,8 +617,9 @@ export default function TaskDetail() {
           {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
             <button
               onClick={() => {
-                // If worker is on the way — show warning popup (20% fee)
-                if (task.worker_status === 'on_the_way') {
+                // If worker is heading over — show warning popup (20% fee)
+                const workerOnTheWay = ['on_the_way', 'delayed', 'parking'].includes(task.worker_status);
+                if (task.status === 'TAKEN' && workerOnTheWay) {
                   setShowCancelWarning(true);
                 } else {
                   cancelMutation.mutate();
