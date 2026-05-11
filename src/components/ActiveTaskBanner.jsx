@@ -31,111 +31,106 @@ export default function ActiveTaskBanner({ task, roleHint }) {
   if (!task || !me) return null;
 
   const statusInfo = STATUS_STEPS[task.worker_status] || null;
-  // roleHint allows forced role when both roles apply to the same user
   const isWorker = roleHint === 'worker' || (roleHint !== 'client' && me?.id === task.worker_id);
   const isOwner = roleHint === 'client' || (roleHint !== 'worker' && me?.id === task.client_id);
   if (!isWorker && !isOwner) return null;
 
   const stepIdx = statusInfo?.step ?? -1;
-  const gradient = gradients[stepIdx] || gradients['-1'];
+
+  // Clean, professional color per step
+  const bannerColors = {
+    0:  { bg: '#1558b0', accent: '#1a6fd4' },   // on the way — blue
+    1:  { bg: '#8a5c10', accent: '#b07828' },   // arrived — warm amber
+    2:  { bg: '#0b6e4f', accent: '#0d9266' },   // done — green
+    '-1': { bg: '#0f2346', accent: '#1a6fd4' }, // waiting
+  };
+  const colors = bannerColors[stepIdx] || bannerColors['-1'];
 
   const statusText = isOwner
     ? (statusInfo?.ownerLabel || 'ממתין לעדכון מהעובד')
     : (statusInfo?.label || 'לחץ יצאתי לדרך בדף המשימה');
 
+  const StepIcon = stepIdx === 2 ? CheckCircle : stepIdx === 1 ? MapPin : stepIdx === 0 ? Navigation : Clock;
+
   return (
     <div dir="rtl" style={{ padding: '0 16px 12px' }}>
       <div
-        style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+        style={{
+          background: colors.bg,
+          borderRadius: 18,
+          padding: '14px 16px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+          cursor: 'pointer',
+          overflow: 'hidden',
+          position: 'relative',
+        }}
         onClick={() => navigate(`/task/${task.id}`)}>
 
-        {/* Live dot + badge */}
-        <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ position: 'relative', display: 'inline-flex', width: 9, height: 9 }}>
-            <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-            <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
+        {/* Subtle top-right decoration */}
+        <div style={{ position: 'absolute', top: -24, left: -24, width: 96, height: 96, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
+
+        {/* Live pill */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '3px 9px', marginBottom: 10 }}>
+          <span style={{ position: 'relative', display: 'inline-flex', width: 7, height: 7 }}>
+            <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.8s ease-in-out infinite' }} />
+            <span style={{ position: 'relative', width: 7, height: 7, borderRadius: '50%', background: 'white' }} />
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
-            {isWorker
-              ? <><Hammer size={11} /> משימה שאתה מבצע עכשיו</>
-              : <><HardHat size={11} /> משימה שלך — בביצוע ע"י עובד</>}
+          <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 600, letterSpacing: 0.3 }}>
+            {isWorker ? 'משימה בביצוע' : 'משימה שלך בביצוע'}
           </span>
         </div>
 
-        {/* Decorative circle */}
-        <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ height: 20 }} />
-
-        {/* Title + price */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
-            <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
-              {isWorker
-                ? <><User size={12} /> מעסיק: {task.client_name} {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700 }}>⭐ {task.client_rating.toFixed(1)}</span>}</>
-                : <><HardHat size={12} /> עובד: {task.worker_name}</>}
+        {/* Title row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: 16, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 3 }}>
+              {isWorker ? `מעסיק: ${task.client_name}` : `עובד: ${task.worker_name}`}
             </div>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
-            <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{task.price}</div>
+          <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '6px 10px', textAlign: 'center', flexShrink: 0 }}>
+            <div style={{ color: 'white', fontWeight: 700, fontSize: 18, lineHeight: 1 }}>₪{task.price}</div>
           </div>
         </div>
 
-        {/* Status box */}
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '10px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {stepIdx === 2 ? <CheckCircle size={18} color="white" /> : stepIdx === 1 ? <MapPin size={18} color="white" /> : stepIdx === 0 ? <Navigation size={18} color="white" /> : <Clock size={18} color="white" />}
-          </div>
+        {/* Status row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
+          <StepIcon size={16} color="rgba(255,255,255,0.9)" strokeWidth={2} />
           <div style={{ flex: 1 }}>
-            <div style={{ color: 'white', fontWeight: 800, fontSize: 13 }}>{statusText}</div>
-            {isWorker && statusInfo?.step != null && (
-              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
-                {stepIdx === 0 ? 'עדכן כשתגיע למיקום' : stepIdx === 1 ? 'עדכן כשתסיים' : 'ממתין לאישור הלקוח'}
-              </div>
-            )}
-            {isOwner && (
-              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
-                {stepIdx === 2 ? 'אשר סיום בדף המשימה לשחרור תשלום' : 'לחץ לצפייה בהתקדמות'}
-              </div>
-            )}
+            <div style={{ color: 'white', fontWeight: 600, fontSize: 13 }}>{statusText}</div>
           </div>
-          <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
+          <ChevronLeft size={16} color="rgba(255,255,255,0.5)" />
         </div>
 
-        {/* Progress steps (visual only) */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-          {['יצא לדרך', 'הגיע', 'סיים'].map((step, i) => (
-            <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i <= stepIdx ? 'white' : 'rgba(255,255,255,0.25)', transition: 'background 0.3s' }} />
+        {/* Progress bar */}
+        <div style={{ display: 'flex', gap: 3, marginBottom: 10 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{ flex: 1, height: 3, borderRadius: 3, background: i <= stepIdx ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.2)', transition: 'background 0.4s' }} />
           ))}
         </div>
 
-        {/* Quick action buttons */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 6 }}>
           <button
             onClick={(e) => { e.stopPropagation(); setShowChat(true); }}
-            style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <MessageCircle size={14} /> צ'אט
+            style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: 'none', color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            <MessageCircle size={13} /> צ'אט
           </button>
           {task.location_name && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 const dst = task.lat && task.lng ? `${task.lat},${task.lng}` : encodeURIComponent(task.location_name);
-                const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
-                const mapsUrl = task.lat && task.lng
-                  ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}`
-                  : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
-                // Open sheet with options
                 const choice = window.confirm('נווט עם Waze?\nלחץ ביטול לפתיחה עם Google Maps');
-                window.open(choice ? wazeUrl : mapsUrl, '_blank');
+                window.open(choice ? `https://waze.com/ul?q=${dst}&navigate=yes` : (task.lat && task.lng ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`), '_blank');
               }}
-              style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Navigation size={14} /> נווט
+              style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: 'none', color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              <Navigation size={13} /> נווט
             </button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-            style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: 'none', color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             פרטים
           </button>
         </div>
@@ -145,8 +140,8 @@ export default function ActiveTaskBanner({ task, roleHint }) {
 
       <style>{`
         @keyframes livePing {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(2); opacity: 0; }
+          0%, 100% { transform: scale(1); opacity: 0.7; }
+          50% { transform: scale(2.2); opacity: 0; }
         }
       `}</style>
     </div>

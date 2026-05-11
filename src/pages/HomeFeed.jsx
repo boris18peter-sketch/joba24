@@ -252,13 +252,13 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#e8eef8', backdropFilter: 'blur(10px)' }}>
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(238,243,250,0.97)', borderBottom: '1px solid rgba(0,0,0,0.07)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
         <div className="px-4 pt-4 pb-3">
           {/* Logo row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
-              <span style={{ fontWeight: 900, fontSize: 22, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 9 }} />
+              <span style={{ fontWeight: 800, fontSize: 21, color: '#0f2346', letterSpacing: -0.5 }}>Joba<span style={{ color: '#f59e0b' }}>24</span></span>
             </div>
           </div>
 
@@ -274,13 +274,13 @@ export default function HomeFeed() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit(search)}
                 style={{
-                  width: '100%', height: 44, borderRadius: 14, border: `1.5px solid ${searchFocused ? '#93c5fd' : '#e8eef8'}`,
-                  paddingRight: 38, paddingLeft: 50, fontSize: 14, fontFamily: 'inherit',
-                  background: 'white', outline: 'none', color: '#1a2540',
-                  boxShadow: searchFocused ? '0 0 0 3px rgba(147,197,253,0.2)' : '0 1px 3px rgba(0,0,0,0.04)',
-                  transition: 'all 0.15s',
-                  boxSizing: 'border-box',
-                }}
+                      width: '100%', height: 42, borderRadius: 12, border: `1.5px solid ${searchFocused ? '#93c5fd' : '#dde5f0'}`,
+                      paddingRight: 38, paddingLeft: 50, fontSize: 14, fontFamily: 'inherit',
+                      background: 'white', outline: 'none', color: '#111827',
+                      boxShadow: searchFocused ? '0 0 0 3px rgba(147,197,253,0.15)' : 'none',
+                      transition: 'all 0.15s',
+                      boxSizing: 'border-box',
+                    }}
               />
               {/* Clear button */}
               {search && (
@@ -322,19 +322,19 @@ export default function HomeFeed() {
           {/* Category quick filter + live count */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
             {/* Live count badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, background: '#eff6ff', borderRadius: 20, padding: '4px 10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, background: '#e8f0fc', borderRadius: 8, padding: '4px 9px' }}>
               <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.75 }} />
-                <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }} />
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.8s ease-in-out infinite', opacity: 0.7 }} />
+                <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#1558b0' }} />
               </span>
-              <span style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter(t => t.status === 'OPEN' && t.client_id !== me?.id).length}</span>
+              <span style={{ fontSize: 11, color: '#1558b0', fontWeight: 700 }}>{sortedTasks.filter(t => t.status === 'OPEN' && t.client_id !== me?.id).length}</span>
             </div>
             {/* Scrollable category pills */}
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, flex: 1 }}>
               <button
                 onClick={() => setFilters(f => ({ ...f, category: '' }))}
-                style={{ flexShrink: 0, padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}
+                style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: !filters.category ? '#1558b0' : '#e8eef6', color: !filters.category ? 'white' : '#4b5563' }}
               >הכל</button>
               {[...CATEGORIES]
                 .sort((a, b) => {
@@ -349,8 +349,8 @@ export default function HomeFeed() {
                   return (
                     <button key={c.value}
                       onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                      style={{ flexShrink: 0, padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                        background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5',
+                      style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                        background: isActive ? '#1558b0' : '#e8eef6', color: isActive ? 'white' : '#4b5563',
                         display: 'flex', alignItems: 'center', gap: 3 }}
                     >
                       {c.label}
