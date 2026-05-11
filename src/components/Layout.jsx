@@ -125,12 +125,12 @@ export default function Layout() {
       if (!prev) return;
 
       if (task.status === 'TAKEN' && prev.status === 'OPEN') {
-        addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name });
+        addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
       }
       if (task.worker_status && task.worker_status !== prev.worker_status) {
-        if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name });
-        else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name });
-        else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name });
+        if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+        else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+        else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
       }
     });
     return unsubscribe;
@@ -147,6 +147,7 @@ export default function Layout() {
             type: 'application_received',
             taskTitle: task.title,
             workerName: event.data.worker_name,
+            taskId: task.id,
           });
         }
       } else if (event.type === 'update' && event.data?.status === 'approved') {
@@ -157,6 +158,7 @@ export default function Layout() {
           addNotification({
             type: 'application_approved',
             taskTitle: task?.title || 'משימה',
+            taskId: event.data.task_id,
           });
         }
       }

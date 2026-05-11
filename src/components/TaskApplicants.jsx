@@ -96,6 +96,13 @@ export default function TaskApplicants({ task, onApprove }) {
 
   return (
     <div className="space-y-3">
+      {/* Warning banner */}
+      <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <span style={{ fontSize: 14, flexShrink: 0 }}>⚠️</span>
+        <p style={{ fontSize: 12, color: '#92400e', margin: 0, lineHeight: 1.55, fontWeight: 600 }}>
+          שים לב: אם תבטל את המשימה לאחר אישור בקשה ולאחר שהעובד יצא לדרך, תחויב בעמלת טרחה של 20%.
+        </p>
+      </div>
       <h3 className="font-bold text-sm text-gray-700">עובדים שמבקשים לבצע ({pending.length})</h3>
       {pending.map(app => (
         <div key={app.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">

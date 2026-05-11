@@ -328,19 +328,6 @@ export default function CreateTask() {
           )}
         </SectionCard>
 
-        {/* Approval Mode — always manual, info only */}
-        <SectionCard>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Users size={17} color="#1a6fd4" />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b' }}>אני בוחר את העובד</div>
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>תקבל בקשות מעובדים ותאשר את המתאים ביותר</div>
-            </div>
-          </div>
-        </SectionCard>
-
         {/* Expiry */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>

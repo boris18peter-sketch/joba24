@@ -53,6 +53,7 @@ export default function TaskDetail() {
   const [hasApplied, setHasApplied] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
+  const [showCancelWarning, setShowCancelWarning] = useState(false);
   const prevWorkerIdRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -269,6 +270,38 @@ export default function TaskDetail() {
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {showApprovedPopup && (
         <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />
+      )}
+
+      {/* Cancel warning popup — when worker already on the way */}
+      {showCancelWarning && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,15,40,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
+          <div dir="rtl" style={{ background: '#fafbff', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.2)', padding: '20px 20px 40px' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+                העובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> טרח והגיע במיוחד עבורך.
+                <br />אם תבטל — <strong style={{ color: '#dc2626' }}>תחויב בעמלת טרחה של 25%</strong> מסכום המשימה.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowCancelWarning(false)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
+              >
+                השאר את המשימה
+              </button>
+              <button
+                onClick={() => { setShowCancelWarning(false); cancelMutation.mutate(); }}
+                disabled={cancelMutation.isPending}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה (25% עמלה)'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {/* Worker 3-min alert */}
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
@@ -527,7 +560,16 @@ export default function TaskDetail() {
           )}
 
           {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED') && (
-            <button onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}
+            <button
+              onClick={() => {
+                // If worker is on the way — show warning popup
+                if (task.status === 'OPEN' && task.worker_status === 'on_the_way') {
+                  setShowCancelWarning(true);
+                } else {
+                  cancelMutation.mutate();
+                }
+              }}
+              disabled={cancelMutation.isPending}
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
               {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'ביטול הג\'ובה'}

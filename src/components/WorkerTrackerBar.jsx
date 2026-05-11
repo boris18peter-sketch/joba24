@@ -216,8 +216,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     };
     return {
       HeaderIcon: Clock, gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-      title: isOwner ? 'ממתין שהפועל ייצא לדרך' : 'יצא לדרך?',
-      sub: isOwner ? 'הפועל אמר שהוא יוצא' : 'לחץ כדי לאשר יציאה',
+      title: isOwner ? 'ממתין לעדכון מהעובד' : 'יצא לדרך?',
+      sub: isOwner ? 'העובד אושר — ממתין שיתחיל לעדכן' : 'לחץ כדי לאשר יציאה',
     };
   })();
 

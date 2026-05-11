@@ -19,6 +19,7 @@ const TYPES = {
     accent: '#16a34a',
     title: (n) => `${n.workerName || 'עובד'} לקח את המשימה!`,
     body: (n) => `"${n.taskTitle}"`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   application_received: {
     emoji: '📩',
@@ -27,6 +28,7 @@ const TYPES = {
     accent: '#7c3aed',
     title: (n) => 'בקשה חדשה למשימה שלך!',
     body: (n) => `${n.workerName || 'עובד'} מעוניין לבצע את "${n.taskTitle}"`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   application_approved: {
     emoji: '✅',
@@ -35,6 +37,7 @@ const TYPES = {
     accent: '#1a6fd4',
     title: () => 'הבקשה שלך אושרה!',
     body: (n) => `"${n.taskTitle}" מוכן לביצוע`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   application_rejected: {
     emoji: '❌',
@@ -43,6 +46,7 @@ const TYPES = {
     accent: '#dc2626',
     title: () => 'הבקשה לא התקבלה',
     body: (n) => `"${n.taskTitle}"`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   worker_on_the_way: {
     emoji: '🛵',
@@ -51,6 +55,7 @@ const TYPES = {
     accent: '#1a6fd4',
     title: (n) => `${n.workerName || 'העובד'} יצא לדרך!`,
     body: (n) => `בדרך למשימה "${n.taskTitle}"`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   worker_arrived: {
     emoji: '📍',
@@ -59,6 +64,7 @@ const TYPES = {
     accent: '#ca8a04',
     title: (n) => `${n.workerName || 'העובד'} הגיע!`,
     body: (n) => `נמצא במיקום המשימה "${n.taskTitle}"`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   worker_done: {
     emoji: '🏆',
@@ -67,6 +73,7 @@ const TYPES = {
     accent: '#16a34a',
     title: (n) => 'העובד סיים את העבודה!',
     body: (n) => `"${n.taskTitle}" — בבקשה אשר את הביצוע`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   new_review: {
     emoji: '⭐',
