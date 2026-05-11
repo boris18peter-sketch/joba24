@@ -67,56 +67,56 @@ export default function MyTasksCarousel({ myTasks }) {
           return (
             <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
               <div style={{
-                minWidth: 165,
+                width: 165,
+                height: 110,
                 background: isExpired ? '#fff7ed' : 'white',
                 borderRadius: 16,
                 border: isTaken ? `1.5px solid #c8903a` : isExpired ? '1.5px solid #c07040' : '1px solid #dce8f5',
                 padding: '12px 12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 6,
+                justifyContent: 'space-between',
                 boxShadow: isTaken ? '0 2px 12px rgba(192,135,58,0.18)' : isExpired ? '0 2px 10px rgba(192,112,64,0.12)' : '0 1px 4px rgba(26,111,212,0.07)',
                 position: 'relative',
+                boxSizing: 'border-box',
               }}>
-                {/* Status dot + label */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: status.dot, display: 'inline-block', ...(isTaken ? { animation: 'pulse 1.5s infinite' } : {}) }} />
-                  <span style={{ fontSize: 10, color: status.textColor, fontWeight: 700 }}>{status.label}</span>
-                </div>
-
-                {/* Title */}
-                <div style={{ fontSize: 12, fontWeight: 800, color: isExpired ? '#9a3412' : '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 141 }}>
-                  {task.title}
-                </div>
-
-                {/* Price + chat/reopen */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 15, fontWeight: 900, color: isExpired ? '#c2410c' : '#111' }}>₪{task.price}</span>
+                {/* Top row: status + chat button */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: status.dot, display: 'inline-block', flexShrink: 0, ...(isTaken ? { animation: 'pulse 1.5s infinite' } : {}) }} />
+                    <span style={{ fontSize: 10, color: status.textColor, fontWeight: 700 }}>{status.label}</span>
+                  </div>
                   {isTaken && (
                     <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()}>
-                      <div style={{ width: 26, height: 26, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <MessageCircle size={13} color="#1a6fd4" />
+                      <div style={{ width: 24, height: 24, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <MessageCircle size={12} color="#1a6fd4" />
                       </div>
                     </Link>
                   )}
                 </div>
 
-                {/* Worker name if taken */}
-                {isTaken && task.worker_name && (
-                  <div style={{ fontSize: 10, color: '#b07030', fontWeight: 700 }}>
-                    עובד: {task.worker_name}
-                  </div>
-                )}
+                {/* Title */}
+                <div style={{ fontSize: 12, fontWeight: 800, color: isExpired ? '#9a3412' : '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {task.title}
+                </div>
 
-                {/* Reopen button if expired */}
-                {isExpired && (
-                  <button
-                    onClick={(e) => handleReopen(e, task)}
-                    style={{ width: '100%', height: 26, borderRadius: 8, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-                  >
-                    <RefreshCw size={10} /> פתח מחדש
-                  </button>
-                )}
+                {/* Bottom row: price + worker/reopen */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: isExpired ? '#c2410c' : '#111' }}>₪{task.price}</span>
+                  {isTaken && task.worker_name && (
+                    <span style={{ fontSize: 9, color: '#b07030', fontWeight: 700, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {task.worker_name}
+                    </span>
+                  )}
+                  {isExpired && (
+                    <button
+                      onClick={(e) => handleReopen(e, task)}
+                      style={{ height: 22, padding: '0 8px', borderRadius: 7, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
+                    >
+                      <RefreshCw size={9} /> פתח מחדש
+                    </button>
+                  )}
+                </div>
               </div>
             </Link>
           );

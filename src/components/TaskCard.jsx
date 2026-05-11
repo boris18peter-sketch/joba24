@@ -35,7 +35,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
   return (
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
+        position: 'fixed', inset: 0, zIndex: 999999,
         background: 'rgba(5,15,40,0.55)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
