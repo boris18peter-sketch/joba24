@@ -83,6 +83,15 @@ const TYPES = {
     title: (n) => `ביקורת חדשה מ-${n.reviewerName || 'משתמש'}`,
     body: (n) => n.preview || `דירוג: ${n.rating} כוכבים`,
   },
+  task_cancelled_worker: {
+    emoji: '🚫',
+    bg: '#fef2f2',
+    border: '#fca5a5',
+    accent: '#dc2626',
+    title: () => 'המשימה שיצאת אליה בוטלה',
+    body: (n) => `זוכית ב-20% עמלה (₪${n.compensation || ''}) לארנק שלך`,
+    link: () => '/wallet',
+  },
 };
 
 export default function LiveNotificationPopup({ notification, onClose }) {

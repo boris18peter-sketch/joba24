@@ -170,7 +170,21 @@ export default function TaskDetail() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: () => base44.entities.Task.update(id, { status: 'CANCELLED' }),
+    mutationFn: async () => {
+      // Cancel all approved/pending applications so workers can re-apply if task is reopened
+      const apps = await base44.entities.TaskApplication.filter({ task_id: id });
+      await Promise.all(
+        apps
+          .filter(a => a.status === 'pending' || a.status === 'approved')
+          .map(a => base44.entities.TaskApplication.update(a.id, { status: 'cancelled' }))
+      );
+      return base44.entities.Task.update(id, {
+        status: 'CANCELLED',
+        worker_id: null,
+        worker_name: null,
+        worker_status: null,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       navigate('/');

@@ -44,19 +44,18 @@ export default function Layout() {
     refetchInterval: 10000,
   });
 
-  // Watch for task status changes on MY published tasks (polling fallback — real-time subscription handles main flow)
+  // Watch for task status changes — keep prevTasksRef up to date for all relevant tasks
   useEffect(() => {
-    const isInitial = Object.keys(prevTasksRef.current).length === 0;
     myPublishedTasks.forEach(task => {
-      const prevTask = prevTasksRef.current[task.id];
-      if (prevTask && !isInitial) {
-        if (task.status === 'TAKEN' && prevTask.status === 'OPEN') {
-          addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name });
-        }
-      }
       prevTasksRef.current[task.id] = task;
     });
   }, [myPublishedTasks]);
+
+  useEffect(() => {
+    workerTasks.forEach(task => {
+      prevTasksRef.current[task.id] = task;
+    });
+  }, [workerTasks]);
 
   // Watch for application status changes
   useEffect(() => {
@@ -115,22 +114,39 @@ export default function Layout() {
     return () => window.removeEventListener('new_review', handleNewReview);
   }, []);
 
-  // Real-time task events for client (push-like)
+  // Real-time task events for client (push-like) + worker cancellation alert
   useEffect(() => {
     const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type !== 'update') return;
       const task = event.data;
-      if (!task || task.client_id !== me?.id) return;
+      if (!task) return;
       const prev = prevTasksRef.current[task.id];
       if (!prev) return;
 
-      if (task.status === 'TAKEN' && prev.status === 'OPEN') {
-        addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+      // Client notifications
+      if (task.client_id === me?.id) {
+        if (task.status === 'TAKEN' && prev.status === 'OPEN') {
+          addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+        }
+        if (task.worker_status && task.worker_status !== prev.worker_status) {
+          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+          else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+          else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+        }
       }
-      if (task.worker_status && task.worker_status !== prev.worker_status) {
-        if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
-        else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
-        else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+
+      // Worker notification: task was cancelled while worker was on the way
+      if (
+        prev.worker_id === me?.id &&
+        prev.worker_status === 'on_the_way' &&
+        task.status === 'CANCELLED'
+      ) {
+        const compensation = Math.round((prev.price || task.price || 0) * 0.2);
+        addNotification({
+          type: 'task_cancelled_worker',
+          taskTitle: prev.title || task.title,
+          compensation,
+        });
       }
     });
     return unsubscribe;
