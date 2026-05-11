@@ -281,8 +281,8 @@ export default function TaskDetail() {
               <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                העובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> טרח והגיע במיוחד עבורך.
-                <br />אם תבטל — <strong style={{ color: '#dc2626' }}>תחויב בעמלת טרחה של 25%</strong> מסכום המשימה.
+                 העובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> טרח ויצא במיוחד עבורך.
+                 <br />אם תבטל — <strong style={{ color: '#dc2626' }}>תחויב בעמלת טרחה של 20%</strong> מסכום המשימה.
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -297,7 +297,7 @@ export default function TaskDetail() {
                 disabled={cancelMutation.isPending}
                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
-                {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה (25% עמלה)'}
+                {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה (20% עמלה)'}
               </button>
             </div>
           </div>
@@ -559,11 +559,11 @@ export default function TaskDetail() {
             </Link>
           )}
 
-          {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED') && (
+          {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
             <button
               onClick={() => {
-                // If worker is on the way — show warning popup
-                if (task.status === 'OPEN' && task.worker_status === 'on_the_way') {
+                // If worker is on the way — show warning popup (20% fee)
+                if (task.worker_status === 'on_the_way') {
                   setShowCancelWarning(true);
                 } else {
                   cancelMutation.mutate();
