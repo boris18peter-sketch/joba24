@@ -38,7 +38,7 @@ export default function MyTasks() {
   const { data: allApps = [] } = useQuery({
     queryKey: ['allMyTaskApps', tasks.length],
     queryFn: async () => {
-      const openManual = tasks.filter(t => t.status === 'OPEN' && t.approval_mode === 'manual');
+      const openManual = tasks.filter(t => t.status === 'OPEN');
       if (!openManual.length) return [];
       const results = await Promise.all(
         openManual.map(t => base44.entities.TaskApplication.filter({ task_id: t.id, status: 'pending' }))
@@ -172,7 +172,7 @@ export default function MyTasks() {
                     </Link>
                   )}
 
-                  {task.status === 'OPEN' && task.approval_mode === 'manual' && (
+                  {task.status === 'OPEN' && (
                     <Link to={`/task/${task.id}`} style={{ textDecoration: 'none' }}>
                       <button style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <Users size={14} /> מועמדים

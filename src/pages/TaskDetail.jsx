@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Zap, Send, DoorOpen, X } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -259,8 +259,8 @@ export default function TaskDetail() {
   const isWorker = me?.id === task.worker_id;
   const statusLabel = getStatusLabel(task.status, isOwner);
   const isExpired = task.status === 'EXPIRED';
-  const canTakeInstant = task.status === 'OPEN' && !isOwner && task.approval_mode === 'instant' && !hasWorker;
-  const canApplyManual = task.status === 'OPEN' && !isOwner && task.approval_mode === 'manual' && !hasWorker && !hasPendingApp && !isApproved;
+  const canTakeInstant = false; // All tasks now require application
+  const canApplyManual = task.status === 'OPEN' && !isOwner && !hasWorker && !hasPendingApp && !isApproved;
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
@@ -324,11 +324,9 @@ export default function TaskDetail() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>{getCategoryLabel(task.category)}</div>
-              {task.approval_mode === 'manual' && (
-                <div style={{ fontSize: 12, background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Users size={12} /> אישור ידני
-                </div>
-              )}
+              <div style={{ fontSize: 12, background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <Users size={12} /> בחירת עובד
+              </div>
             </div>
           </div>
           {/* Bottom row: time + expiry */}
@@ -360,7 +358,7 @@ export default function TaskDetail() {
         {/* Worker tracker:
             - Owner: show from the moment task is OPEN (searching state) through TAKEN
             - Worker: show only when TAKEN */}
-        {((isOwner && (task.status === 'OPEN' || task.status === 'TAKEN')) || (isWorker && task.status === 'TAKEN')) && (
+        {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
           <WorkerTrackerBar
             task={task}
             isWorker={isWorker}
@@ -369,8 +367,30 @@ export default function TaskDetail() {
           />
         )}
 
-        {/* Applicants for manual approval mode */}
-        {isOwner && task.approval_mode === 'manual' && task.status === 'OPEN' && (
+        {/* Approved worker banner — shown when this worker's app was approved */}
+        {isApproved && !isWorker && task.status === 'OPEN' && (
+          <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 20, padding: '18px 20px', color: 'white' }}>
+            <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>🎉 בקשתך אושרה!</div>
+            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 14 }}>אתה יכול לצאת לדרך ולהתחיל את המשימה</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => gate(() => takeMutation.mutate())}
+                disabled={takeMutation.isPending}
+                style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {takeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚀 צא עכשיו'}
+              </button>
+              <button
+                onClick={() => cancelApplicationMutation.mutate()}
+                disabled={cancelApplicationMutation.isPending}
+                style={{ height: 46, padding: '0 16px', borderRadius: 14, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >בטל</button>
+            </div>
+          </div>
+        )}
+
+        {/* Applicants for owner */}
+        {isOwner && task.status === 'OPEN' && (
           <TaskApplicants task={task} onApprove={() => {
             queryClient.refetchQueries({ queryKey: ['task', id] });
           }} />
@@ -569,22 +589,14 @@ export default function TaskDetail() {
       </div>
 
       {/* Sticky bottom CTA */}
-      {(canTakeInstant || (canApplyManual && !showApplyForm) || hasPendingApp) && (
+      {(canApplyManual && !showApplyForm) && (
         <div style={{ position: 'fixed', bottom: 96, left: 16, right: 16, zIndex: 50 }}>
-          {canTakeInstant && (
-            <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
-              style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-            >
-              {takeMutation.isPending ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} strokeWidth={1.8} /> קח את הג'ובה</>}
-            </button>
-          )}
-          {canApplyManual && !showApplyForm && (
-            <button onClick={() => gate(() => setShowApplyForm(true))}
-              style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Send size={18} strokeWidth={1.8} /> רוצה לבצע את הג'ובה
-            </button>
-          )}
+    
+          <button onClick={() => gate(() => setShowApplyForm(true))}
+            style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <Send size={18} strokeWidth={1.8} /> הגש בקשה לביצוע
+          </button>
         </div>
       )}
 

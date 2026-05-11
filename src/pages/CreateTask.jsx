@@ -44,7 +44,7 @@ const DEFAULT_FORM = {
   city: '',
   estimated_time: '1h',
   category: 'other',
-  approval_mode: 'instant',
+  approval_mode: 'manual',
   expiry_hours: null,
   custom_time: '',
   is_story: false,
@@ -328,24 +328,16 @@ export default function CreateTask() {
           )}
         </SectionCard>
 
-        {/* Approval Mode */}
+        {/* Approval Mode — always manual, info only */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>אופן אישור עובד</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <button onClick={() => set('approval_mode', 'instant')}
-              style={{ padding: '14px 12px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', ...(form.approval_mode === 'instant' ? activeBtn : inactiveBtn) }}
-            >
-              <Zap size={16} style={{ marginBottom: 6 }} />
-              <div style={{ fontSize: 13, fontWeight: 800 }}>אישור מיידי</div>
-              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>ראשון שלוקח — זוכה</div>
-            </button>
-            <button onClick={() => set('approval_mode', 'manual')}
-              style={{ padding: '14px 12px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', ...(form.approval_mode === 'manual' ? activeBtn : inactiveBtn) }}
-            >
-              <Users size={16} style={{ marginBottom: 6 }} />
-              <div style={{ fontSize: 13, fontWeight: 800 }}>אני בוחר</div>
-              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>אראה מועמדים ואבחר</div>
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Users size={17} color="#1a6fd4" />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b' }}>אני בוחר את העובד</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>תקבל בקשות מעובדים ותאשר את המתאים ביותר</div>
+            </div>
           </div>
         </SectionCard>
 

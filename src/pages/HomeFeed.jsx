@@ -367,7 +367,7 @@ export default function HomeFeed() {
               {filters.city && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
               {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
               {filters.time && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
-              {filters.approvalMode && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.approvalMode === 'instant' ? 'מיידי' : 'לאישור'}</span>}
+              {filters.approvalMode && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
             </div>
           )}
         </div>

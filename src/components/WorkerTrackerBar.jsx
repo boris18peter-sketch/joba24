@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, AlertCircle, Flag, Coffee } from 'lucide-react';
+import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
@@ -28,27 +28,6 @@ function getStepIndex(status) {
 
 function getStatusInfo(key) {
   return WORKER_STATUSES.find(s => s.key === key) || WORKER_STATUSES[0];
-}
-
-// ── Scanning pulse (searching state) ─────────────────────────────────────────
-function ScanningPulse() {
-  return (
-    <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-      {[0, 1, 2].map(i => (
-        <div key={i} style={{
-          position: 'absolute', inset: 0, borderRadius: '50%',
-          border: '2px solid rgba(255,255,255,0.35)',
-          animation: `scan-ring 2.4s ease-out ${i * 0.7}s infinite`,
-        }} />
-      ))}
-      <div style={{
-        position: 'absolute', inset: 8, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.18)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}><AlertCircle size={20} color="white" strokeWidth={1.5} /></div>
-      <style>{`@keyframes scan-ring { 0%{transform:scale(1);opacity:.7}100%{transform:scale(2.4);opacity:0} }`}</style>
-    </div>
-  );
 }
 
 // ── ETA timer ─────────────────────────────────────────────────────────────────
@@ -178,17 +157,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
   }, [task?.worker_status, task?.completion_photo]);
 
   // Searching state for owner
-  if (!task.worker_id && isOwner && task.status === 'OPEN') {
-    return (
-      <div dir="rtl" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 24, padding: '20px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 4px 24px rgba(99,102,241,0.25)' }}>
-        <ScanningPulse />
-        <div style={{ flex: 1 }}>
-          <div style={{ color: 'white', fontWeight: 900, fontSize: 17, marginBottom: 3 }}>מחפשים פועל...</div>
-          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>המשימה פתוחה — פועלים יכולים לגשת</div>
-        </div>
-      </div>
-    );
-  }
+  // Owner sees applicants panel (handled by TaskApplicants component), not tracker
+  if (!task.worker_id) return null;
 
   if (!task.worker_id) return null;
 
@@ -290,6 +260,19 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         <SubStatusPicker currentStatus={localStatus} onSelect={handleStatusUpdate} loading={loading} />
       )}
 
+      {/* ── Go back (worker only, allow backward navigation) ── */}
+      {isWorker && stepIdx > 0 && stepIdx < 2 && (
+        <div style={{ padding: '0 16px 4px' }}>
+          <button
+            onClick={() => handleStatusUpdate(stepIdx === 1 ? 'on_the_way' : 'arrived')}
+            disabled={loading}
+            style={{ width: '100%', height: 36, borderRadius: 10, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+          >
+            ← חזור לשלב הקודם
+          </button>
+        </div>
+      )}
+
       {/* ── Worker main CTA ── */}
       {isWorker && stepIdx < 2 && mainCTA && (
         <div style={{ padding: '0 16px 12px' }}>
@@ -342,15 +325,17 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── Chat link ── */}
-      <div style={{ padding: '0 16px 16px' }}>
-        <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 14, border: '1px solid #dce8f5', background: 'white', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}>
-            <MessageCircle size={16} />
-            צ'אט עם {isWorker ? 'המעסיק' : 'הפועל'}
-          </div>
-        </Link>
-      </div>
+      {/* ── Chat link (only available after task is TAKEN = approved) ── */}
+      {task.status === 'TAKEN' && (
+        <div style={{ padding: '0 16px 16px' }}>
+          <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 14, border: '1px solid #dce8f5', background: 'white', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}>
+              <MessageCircle size={16} />
+              צ'אט עם {isWorker ? 'המעסיק' : 'הפועל'}
+            </div>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
