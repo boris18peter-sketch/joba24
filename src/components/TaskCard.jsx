@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, X, Send, Loader2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
@@ -254,14 +255,15 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
         </div>
       </div>
 
-      {showApplyModal && (
+      {showApplyModal && createPortal(
         <ApplyModal
           task={task}
           currentUserId={currentUserId}
           workerName={workerName}
           onClose={() => setShowApplyModal(false)}
           onApplied={handleApplied}
-        />
+        />,
+        document.body
       )}
 
       <style>{`@keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
