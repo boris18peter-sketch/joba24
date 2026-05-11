@@ -1,20 +1,104 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, X, Clock } from 'lucide-react';
+import { MapPin, Navigation, Star, X, Clock, Send, Loader2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
-import VerifiedBadge from '@/components/VerifiedBadge';
 import { format } from 'date-fns';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-export default function TaskCard({ task, myApp, isMyTask }) {
+// ── Mini Apply Popup ──────────────────────────────────────────────────────────
+function ApplyPopup({ task, currentUserId, onClose, onApplied }) {
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    // Check existing application
+    const existing = await base44.entities.TaskApplication.filter({ task_id: task.id, worker_id: currentUserId });
+    const active = existing.find(a => a.status === 'pending' || a.status === 'approved');
+    if (active) {
+      toast.error('כבר הגשת בקשה למשימה זו');
+      onClose();
+      return;
+    }
+    await base44.entities.TaskApplication.create({
+      task_id: task.id,
+      worker_id: currentUserId,
+      worker_name: '', // will be filled by server / enriched by task owner
+      message: message.trim(),
+      status: 'pending',
+    });
+    toast.success('הבקשה נשלחה בהצלחה!');
+    onApplied();
+    onClose();
+    setLoading(false);
+  };
+
+  return (
+    <div
+      onClick={e => e.stopPropagation()}
+      style={{
+        position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 100,
+        background: 'white', borderRadius: 18, boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        border: '1px solid #e8eef8', padding: '16px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f1e40' }}>הגשת בקשה</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+          <X size={16} color="#94a3b8" />
+        </button>
+      </div>
+
+      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10, fontWeight: 600 }}>
+        {task.title} · ₪{task.price}
+      </div>
+
+      <textarea
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        placeholder="הוסף הודעה למפרסם (אופציונלי)..."
+        rows={3}
+        style={{
+          width: '100%', borderRadius: 12, border: '1.5px solid #e8eef8',
+          padding: '10px 12px', fontSize: 13, fontFamily: 'inherit', resize: 'none',
+          outline: 'none', color: '#1a2540', background: '#f8faff', boxSizing: 'border-box',
+        }}
+      />
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button
+          onClick={onClose}
+          style={{ flex: 1, height: 42, borderRadius: 12, background: '#f1f5f9', border: 'none', fontSize: 13, fontWeight: 600, color: '#64748b', cursor: 'pointer' }}
+        >
+          ביטול
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{ flex: 2, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', fontSize: 13, fontWeight: 700, color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+        >
+          {loading ? <Loader2 size={16} className="animate-spin" /> : <><Send size={14} /> שלח בקשה</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── TaskCard ──────────────────────────────────────────────────────────────────
+export default function TaskCard({ task, myApp, isMyTask, currentUserId }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
+  const [showApplyPopup, setShowApplyPopup] = useState(false);
+
   const catLabel = getCategoryLabel(task.category);
   const dist = task._distKm;
-  const appStatus = myApp?.status;
+  const appStatus = myApp?.status; // pending | approved | rejected | cancelled | undefined
+
+  // Active app: pending or approved (not cancelled/rejected)
+  const hasActiveApp = appStatus === 'pending' || appStatus === 'approved';
 
   const handleCancelApp = async (e) => {
     e.preventDefault();
@@ -26,23 +110,45 @@ export default function TaskCard({ task, myApp, isMyTask }) {
     setCancelling(false);
   };
 
+  const handleApplied = () => {
+    queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
+  };
+
+  const cardBorderColor = appStatus === 'approved' ? '#10b981' : appStatus === 'pending' ? '#fbbf24' : '#e8eef8';
+  const cardBorderWidth = hasActiveApp ? '1.5px' : '1px';
+  const cardShadow = appStatus === 'approved' ? '0 2px 12px rgba(16,185,129,0.12)' : '0 2px 12px rgba(26,111,212,0.06), 0 1px 3px rgba(0,0,0,0.04)';
+
   return (
-    <Link to={`/task/${task.id}`} className="block">
+    <div style={{ position: 'relative' }}>
+      {/* Overlay to close popup */}
+      {showApplyPopup && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+          onClick={() => setShowApplyPopup(false)}
+        />
+      )}
+
       <div
+        onClick={() => navigate(`/task/${task.id}`)}
         className="bg-white rounded-2xl active:scale-[0.982] transition-all"
         style={{
-          border: appStatus === 'approved' ? '1.5px solid #10b981' : appStatus === 'pending' ? '1.5px solid #fbbf24' : '1px solid #e8eef8',
-          boxShadow: appStatus === 'approved' ? '0 2px 12px rgba(16,185,129,0.12)' : '0 2px 12px rgba(26,111,212,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+          border: `${cardBorderWidth} solid ${cardBorderColor}`,
+          boxShadow: cardShadow,
           padding: '14px 16px',
+          cursor: 'pointer',
+          position: 'relative',
         }}
       >
         {/* Approved banner */}
         {appStatus === 'approved' && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#065f46' }}>✅ בקשתך אושרה — אתה יכול לצאת לדרך!</span>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#065f46', flex: 1 }}>✅ בקשתך אושרה!</span>
             <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/task/${task.id}`); }}
-              style={{ marginRight: 'auto', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+              onClick={() => navigate(`/task/${task.id}`)}
+              style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
             >צא עכשיו</button>
           </div>
         )}
@@ -57,21 +163,18 @@ export default function TaskCard({ task, myApp, isMyTask }) {
           </div>
         </div>
 
-        {/* Category + status badge */}
+        {/* Category + status badges */}
         <div className="flex items-center gap-1.5 mb-2.5" style={{ flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: 20, fontWeight: 500, flexShrink: 0 }}>
             {catLabel}
           </span>
-          {isMyTask && (
-            <span style={{ fontSize: 11, color: '#1a6fd4', background: '#eff6ff', padding: '2px 7px', borderRadius: 20, fontWeight: 600, flexShrink: 0 }}>
-              שלי
-            </span>
-          )}
-          {!isMyTask && appStatus === 'pending' && (
+
+          {/* Pending badge + cancel */}
+          {appStatus === 'pending' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 11, color: '#d97706', background: '#fffbeb', padding: '2px 7px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-                הגשתי בקשה
+              <span style={{ fontSize: 11, color: '#d97706', background: '#fffbeb', padding: '2px 8px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite' }} />
+                ממתין לאישור
               </span>
               <button
                 onClick={handleCancelApp}
@@ -82,9 +185,11 @@ export default function TaskCard({ task, myApp, isMyTask }) {
               </button>
             </div>
           )}
-          {!isMyTask && appStatus === 'approved' && (
-            <span style={{ fontSize: 11, color: '#065f46', background: '#f0fdf4', padding: '2px 7px', borderRadius: 20, fontWeight: 700, flexShrink: 0 }}>
-              ✓ אושרתי
+
+          {/* Approved badge */}
+          {appStatus === 'approved' && (
+            <span style={{ fontSize: 11, color: '#065f46', background: '#f0fdf4', padding: '2px 8px', borderRadius: 20, fontWeight: 700, flexShrink: 0 }}>
+              ✓ בקשה אושרה
             </span>
           )}
         </div>
@@ -124,8 +229,37 @@ export default function TaskCard({ task, myApp, isMyTask }) {
             </span>
           )}
         </div>
+
+        {/* Apply button — shown only if no active application */}
+        {!hasActiveApp && currentUserId && (
+          <button
+            onClick={e => { e.stopPropagation(); setShowApplyPopup(v => !v); }}
+            style={{
+              marginTop: 12, width: '100%', height: 40, borderRadius: 12,
+              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              border: 'none', color: 'white', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              boxShadow: '0 3px 10px rgba(26,111,212,0.25)',
+            }}
+          >
+            <Send size={14} /> הגש בקשה
+          </button>
+        )}
       </div>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
-    </Link>
+
+      {/* Apply popup — anchored above the card */}
+      {showApplyPopup && (
+        <ApplyPopup
+          task={task}
+          currentUserId={currentUserId}
+          onClose={() => setShowApplyPopup(false)}
+          onApplied={handleApplied}
+        />
+      )}
+
+      <style>{`
+        @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
+      `}</style>
+    </div>
   );
 }

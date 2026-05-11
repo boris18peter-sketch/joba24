@@ -152,9 +152,9 @@ export default function HomeFeed() {
     return map;
   }, [myTasks]);
 
-  // Show all funded tasks: other people's + my own (with isMyTask flag)
+  // Show only OTHER people's funded OPEN tasks (exclude my own published tasks)
   const otherTasks = tasks.filter(t =>
-    (t.payment_status === 'funded' || !t.payment_status)
+    (t.payment_status === 'funded' || !t.payment_status) && t.client_id !== me?.id
   );
 
   // Categorize applications
@@ -327,7 +327,7 @@ export default function HomeFeed() {
                 <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.75 }} />
                 <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }} />
               </span>
-              <span style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter(t => t.status === 'OPEN' && t.client_id !== me?.id).length}</span>
+              <span style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
             </div>
             {/* Scrollable category pills */}
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, flex: 1 }}>
@@ -425,7 +425,6 @@ export default function HomeFeed() {
             {sortedTasks.map(task => {
               const myApp = myApplications.find(a => a.task_id === task.id);
               const isNew = newTaskIds.has(task.id);
-              const isMyTask = task.client_id === me?.id;
               return (
                 <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
                   {isNew && (
@@ -436,7 +435,8 @@ export default function HomeFeed() {
                   <TaskCardWithSwipe 
                     task={task} 
                     myApp={myApp}
-                    isMyTask={isMyTask}
+                    isMyTask={false}
+                    currentUserId={me?.id}
                     onDismiss={(taskId) => {
                       setDismissedTasks(prev => new Set([...prev, taskId]));
                     }} 
