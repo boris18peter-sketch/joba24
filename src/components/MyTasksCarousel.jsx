@@ -49,17 +49,24 @@ export default function MyTasksCarousel({ myTasks }) {
   }
 
   return (
-    <div style={{ padding: '0 16px 4px' }}>
-      <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>
+    <div style={{ padding: '12px 16px 4px' }}>
+      {/* Divider header — same style as "משימות שאחרים פרסמו" */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
           משימות שפרסמתי
-          <span style={{ marginRight: 6, fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', padding: '2px 7px', borderRadius: 20 }}>{relevantTasks.length}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', padding: '2px 7px', borderRadius: 20 }}>{relevantTasks.length}</span>
         </h2>
-        <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>
-          כל הג'ובות <ChevronLeft size={14} />
+        <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
+        <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#1a6fd4', whiteSpace: 'nowrap' }}>
+          הכל <ChevronLeft size={13} />
         </Link>
       </div>
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <div className="my-tasks-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch' }}>
+        <style>{`
+          .my-tasks-scroll::-webkit-scrollbar { height: 2px; }
+          .my-tasks-scroll::-webkit-scrollbar-track { background: transparent; }
+          .my-tasks-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+        `}</style>
         {relevantTasks.map(task => {
           const status = statusConfig[task.status] || statusConfig.OPEN;
           const isTaken = task.status === 'TAKEN';
@@ -122,7 +129,9 @@ export default function MyTasksCarousel({ myTasks }) {
           );
         })}
       </div>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+      `}</style>
     </div>
   );
 }

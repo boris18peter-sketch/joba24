@@ -375,15 +375,15 @@ export default function HomeFeed() {
 
       {/* Active Task Banners — horizontal scroll when multiple */}
       {(activeWorkerTask || activeClientTask) && (
-        <div style={{ paddingTop: 12, paddingRight: 16, paddingLeft: 16 }}>
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ paddingTop: 12 }}>
+          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingRight: 16, paddingLeft: 16, paddingBottom: 2 }}>
             {activeWorkerTask && (
-              <div style={{ flexShrink: 0, width: activeClientTask && activeClientTask.id !== activeWorkerTask?.id ? 'calc(85vw)' : '100%' }}>
+              <div style={{ flexShrink: 0, width: activeClientTask && activeClientTask.id !== activeWorkerTask?.id ? 'calc(88vw)' : '100%' }}>
                 <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
               </div>
             )}
             {activeClientTask && activeClientTask.id !== activeWorkerTask?.id && (
-              <div style={{ flexShrink: 0, width: activeWorkerTask ? 'calc(85vw)' : '100%' }}>
+              <div style={{ flexShrink: 0, width: activeWorkerTask ? 'calc(88vw)' : '100%' }}>
                 <ActiveTaskBanner task={activeClientTask} roleHint="client" />
               </div>
             )}

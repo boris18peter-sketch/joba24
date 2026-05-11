@@ -44,7 +44,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
     : (statusInfo?.label || 'לחץ יצאתי לדרך בדף המשימה');
 
   return (
-    <div dir="rtl" style={{ padding: '0 16px 12px' }}>
+    <div dir="rtl" style={{ paddingBottom: 0 }}>
       <div
         style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
         onClick={() => navigate(`/task/${task.id}`)}>

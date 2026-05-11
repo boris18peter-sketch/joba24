@@ -617,9 +617,9 @@ export default function TaskDetail() {
           {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
             <button
               onClick={() => {
-                // If worker is heading over — show warning popup (20% fee)
-                const workerOnTheWay = ['on_the_way', 'delayed', 'parking'].includes(task.worker_status);
-                if (task.status === 'TAKEN' && workerOnTheWay) {
+                // Show warning for ALL active worker statuses
+                const workerIsActive = ['on_the_way', 'delayed', 'parking', 'arrived', 'starting', 'finishing', 'done'].includes(task.worker_status);
+                if (task.status === 'TAKEN' && workerIsActive) {
                   setShowCancelWarning(true);
                 } else {
                   cancelMutation.mutate();
