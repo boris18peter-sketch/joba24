@@ -185,6 +185,7 @@ export default function CreateTask() {
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
+      client_verified: me?.is_verified || false,
     });
 
     setLoading(false);

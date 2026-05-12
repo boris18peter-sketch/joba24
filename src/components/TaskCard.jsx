@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, X, Send, Loader2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { format } from 'date-fns';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -262,6 +263,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
               <span style={{ maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {task.client_rating > 0 ? `${task.client_rating.toFixed(1)} · ` : ''}{task.client_name}
               </span>
+              {task.client_verified && <VerifiedBadge size="sm" />}
             </span>
           )}
           {task.created_date && (

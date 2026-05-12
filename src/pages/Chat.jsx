@@ -7,6 +7,7 @@ import BackButton from '@/components/BackButton';
 import { format, isToday, isYesterday } from 'date-fns';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 function DateSeparator({ date }) {
   const d = new Date(date);
@@ -86,6 +87,16 @@ export default function Chat() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+
+  // Fetch other user's profile for avatar + verified status
+  const otherPersonIdCalc = me?.id === (task?.client_id) ? task?.worker_id : task?.client_id;
+  const { data: otherUserData } = useQuery({
+    queryKey: ['userProfile', otherPersonIdCalc],
+    queryFn: () => base44.entities.User.filter({ id: otherPersonIdCalc }),
+    select: d => d?.[0],
+    enabled: !!otherPersonIdCalc,
+  });
+
   const { data: task } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => base44.entities.Task.filter({ id: taskId }),
@@ -182,14 +193,17 @@ export default function Chat() {
       }}>
         <BackButton />
         {/* Avatar */}
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-          {otherPersonName?.[0] || '?'}
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+          {otherUserData?.profile_photo
+            ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ color: 'white', fontWeight: 700 }}>{otherPersonName?.[0] || '?'}</span>}
         </div>
         <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => {
           if (otherPersonId) navigate(`/worker-profile?id=${otherPersonId}`);
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
+            {otherUserData?.is_verified && <VerifiedBadge size="sm" />}
             <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', borderRadius: 6, padding: '1px 6px', fontWeight: 600, flexShrink: 0 }}>{roleLabel}</span>
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title || 'שיחה'}</div>
@@ -233,8 +247,10 @@ export default function Chat() {
             >
               {/* Avatar for other person (only on last in group) */}
               {!isMe && !isContinuation && (
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, marginBottom: 2, color: 'white', fontWeight: 700 }}>
-                  {msg.sender_name?.[0] || '?'}
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, marginBottom: 2, color: 'white', fontWeight: 700, overflow: 'hidden' }}>
+                  {otherUserData?.profile_photo
+                    ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : msg.sender_name?.[0] || '?'}
                 </div>
               )}
               {!isMe && isContinuation && <div style={{ width: 28, flexShrink: 0 }} />}

@@ -4,6 +4,7 @@ import { MessageCircle, MapPin, Navigation, ChevronLeft, Hammer, User, HardHat, 
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 const STATUS_STEPS = {
   on_the_way: { label: 'בדרך', ownerLabel: 'בדרך אליך', step: 0 },
@@ -77,7 +78,8 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12, overflow: 'hidden' }}>
               {isWorker
                 ? <><User size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {task.client_name}</span> {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.client_rating.toFixed(1)}</span>}</>
-                : <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span> {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>}</>}
+                : <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span> {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>} {task.worker_verified && <VerifiedBadge size="sm" />}</>}
+                {isWorker && task.client_verified && <VerifiedBadge size="sm" />}
             </div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>

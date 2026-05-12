@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Trophy, Star, ArrowRight, Medal } from 'lucide-react';
+import { Trophy, Star } from 'lucide-react';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 
@@ -35,6 +36,8 @@ export default function Leaderboard() {
         user_id: t.worker_id,
         name: userRecord?.full_name || t.worker_name || 'אנונימי',
         avatar: userRecord?.full_name?.[0]?.toUpperCase() || '?',
+        profile_photo: userRecord?.profile_photo || null,
+        is_verified: userRecord?.is_verified || false,
         profession: userRecord?.profession || '',
         earnings: 0,
         count: 0,
@@ -90,11 +93,14 @@ export default function Leaderboard() {
                       border: '2.5px solid rgba(255,255,255,0.35)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: isFirst ? 22 : 18, fontWeight: 900, color: 'white', marginBottom: 6,
+                      overflow: 'hidden', position: 'relative',
                     }}>
-                      {user.avatar}
+                      {user.profile_photo
+                        ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : user.avatar}
                     </div>
-                    <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', maxWidth: 72, color: 'white' }} className="truncate">
-                      {user.name}
+                    <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', maxWidth: 72, color: 'white', display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center' }} className="truncate">
+                      {user.name}{user.is_verified && <VerifiedBadge size="sm" />}
                     </div>
                     {user.profession && (
                       <div style={{ fontSize: 10, color: '#93c5fd', textAlign: 'center', marginTop: 1 }}>{user.profession}</div>
@@ -137,12 +143,16 @@ export default function Leaderboard() {
               <div className="text-lg font-black w-7 text-center" style={{ color: idx < 3 ? '#1a6fd4' : '#9ca3af' }}>
                 {idx < 3 ? medals[idx] : `${idx + 1}`}
               </div>
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-base text-white shrink-0"
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center font-black text-base text-white shrink-0 overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)' }}>
-                {user.avatar}
+                {user.profile_photo
+                  ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : user.avatar}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm truncate" style={{ color: '#0f2b6b' }}>{user.name}</div>
+                <div className="font-bold text-sm truncate flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+                  {user.name}{user.is_verified && <VerifiedBadge size="sm" />}
+                </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{user.profession}</span>}
                   <span className="text-xs text-gray-400">{user.count} משימות</span>
