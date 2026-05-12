@@ -315,32 +315,15 @@ export default function HomeFeed() {
       <MyTasksCarousel myTasks={myTasks} />
 
       <div className="px-4 py-5">
-        {isLoading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {Array(4).fill(0).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
-                <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
-                <div className="h-3 bg-gray-100 rounded w-1/2 mb-3" />
-                <div className="h-3 bg-gray-100 rounded w-1/3" />
-              </div>
-            ))}
-          </div>
-        ) : scored.length === 0 ? (
-          <div className="text-center py-20">
-            <SearchX size={40} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
-            <p className="font-semibold text-gray-800">לא נמצאו משימות</p>
-            <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* Section title */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
-              <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
-            </div>
 
-            {/* Search + Filter + Categories toolbar */}
-            <div style={{ background: 'white', borderRadius: 14, border: '1px solid #eaeff7', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {/* Section title — always visible */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
+          <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
+        </div>
+
+        {/* Search + Filter + Categories toolbar — always visible */}
+        <div style={{ background: 'white', borderRadius: 14, border: '1px solid #eaeff7', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
               {/* Search row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
@@ -433,7 +416,32 @@ export default function HomeFeed() {
                   {filters.approvalMode && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
                 </div>
               )}
-            </div>
+        </div>
+
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+            {Array(4).fill(0).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
+                <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-1/2 mb-3" />
+                <div className="h-3 bg-gray-100 rounded w-1/3" />
+              </div>
+            ))}
+          </div>
+        ) : scored.length === 0 ? (
+          <div className="text-center py-16">
+            <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
+            <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
+            <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
+            {(search || hasFilters) && (
+              <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' }); }}
+                style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                נקה חיפוש
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
             {sortedTasks.map(task => {
               const myApp = myApplications.find(a => a.task_id === task.id);
               const isNew = newTaskIds.has(task.id);
@@ -460,6 +468,7 @@ export default function HomeFeed() {
           </div>
         )}
       </div>
+
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
