@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { calculateCurrentPrice } from '@/lib/priceCalculator';
 
 // ── Apply Modal — full screen, professional ───────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
@@ -207,6 +208,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
             <h3 style={{ fontWeight: 700, color: '#1a2540', fontSize: 14, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: 4 }}>
               {task.title}
             </h3>
+            {/* Task ID (tiny, for tracking) */}
+            <div style={{ fontSize: 8, color: '#cbd5e1', fontFamily: 'monospace', marginBottom: 4 }}>ID: {task.id?.slice(-8)}</div>
             {/* Category + status badges */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', padding: '2px 7px', borderRadius: 20, fontWeight: 500 }}>{catLabel}</span>
@@ -218,7 +221,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
 
           {/* Price + Apply button stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-            <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{task.price}</div>
+            <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
             {!hasActiveApp && currentUserId && (
               <button
                 onClick={e => { e.stopPropagation(); setShowApplyModal(true); }}
@@ -245,7 +248,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
           </p>
         )}
 
-        {/* Bottom meta */}
+        {/* Bottom meta with ID */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#94a3b8', overflow: 'hidden' }}>
           {task.location_name && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -269,7 +272,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
           {task.created_date && (
             <span style={{ color: '#cbd5e1', flexShrink: 0 }}>{format(new Date(task.created_date), 'HH:mm')}</span>
           )}
-          <span style={{ color: '#e2e8f0', fontSize: 9, flexShrink: 0, marginRight: 'auto', fontFamily: 'monospace' }}>#{task.id?.slice(-6)}</span>
         </div>
       </div>
 

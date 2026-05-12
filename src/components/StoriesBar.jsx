@@ -4,32 +4,38 @@ import { base44 } from '@/api/base44Client';
 import { getCategoryLabel } from '@/lib/categories';
 import { X, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { calculateCurrentPrice } from '@/lib/priceCalculator';
 
 const STORY_DURATION = 5000; // 5 seconds per story
 
 function StoryCard({ task, onClick }) {
-  const label = getCategoryLabel(task.category);
-  const emoji = label.split(' ')[0];
-  return (
-    <button onClick={() => onClick(task)} className="flex flex-col items-center gap-1.5 shrink-0">
-      <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-md bg-gray-100">
-        {task.images?.[0] ? (
-          <img src={task.images[0]} alt={task.title} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-blue-800 to-blue-600">
-            {emoji}
-          </div>
-        )}
-        <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
-          <div className="text-white font-black text-[10px] text-center">₪{task.price}</div>
-        </div>
-      </div>
-      <span className="text-[10px] text-gray-600 font-medium text-center leading-tight max-w-[56px] truncate">
-        {task.title}
-      </span>
-    </button>
-  );
-}
+   const label = getCategoryLabel(task.category);
+   const emoji = label.split(' ')[0];
+   const currentPrice = calculateCurrentPrice(task);
+   return (
+     <button onClick={() => onClick(task)} className="flex flex-col items-center gap-1.5 shrink-0">
+       <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-md bg-gray-100">
+         {task.images?.[0] ? (
+           <img src={task.images[0]} alt={task.title} className="w-full h-full object-cover" />
+         ) : (
+           <div className="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-blue-800 to-blue-600">
+             {emoji}
+           </div>
+         )}
+         <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
+           <div className="text-white font-black text-[10px] text-center">₪{currentPrice}</div>
+         </div>
+         {/* Task ID for tracking */}
+         <div className="absolute top-1 right-1 text-white font-mono text-[7px] bg-black/40 px-1 rounded">
+           {task.id?.slice(-4)}
+         </div>
+       </div>
+       <span className="text-[10px] text-gray-600 font-medium text-center leading-tight max-w-[56px] truncate">
+         {task.title}
+       </span>
+     </button>
+   );
+ }
 
 function StoriesViewer({ stories, startIndex, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -97,6 +103,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
   if (!task) return null;
 
   const label = getCategoryLabel(task.category);
+  const currentPrice = calculateCurrentPrice(task);
 
   return (
     <div
@@ -146,8 +153,10 @@ function StoriesViewer({ stories, startIndex, onClose }) {
 
       {/* Content */}
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-20">
-        <div className="text-4xl font-black mb-1">₪{task.price}</div>
+        <div className="text-4xl font-black mb-1">₪{currentPrice}</div>
         <h2 className="text-xl font-bold leading-tight mb-2">{task.title}</h2>
+        {/* Task ID for tracking */}
+        <div className="text-xs text-white/60 font-mono mb-2">ID: {task.id?.slice(-8)}</div>
         {task.description && (
           <p className="text-sm text-white/80 mb-3 line-clamp-2">{task.description}</p>
         )}
