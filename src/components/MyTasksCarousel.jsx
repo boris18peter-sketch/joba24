@@ -187,6 +187,14 @@ export default function MyTasksCarousel({ myTasks }) {
                   </div>
                 </div>
 
+                {/* Worker/Client name + rating */}
+                {isTaken && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#6b7280', fontWeight: 600 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>⭐ {task.worker_rating?.toFixed(1) || '—'}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.worker_name}</span>
+                  </div>
+                )}
+
                 {/* Title */}
                 <div style={{ fontSize: 12, fontWeight: 800, color: isExpired ? '#9a3412' : '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {task.title}
