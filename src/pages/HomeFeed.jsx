@@ -8,7 +8,6 @@ import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
-import ActiveTasksCarousel from '@/components/ActiveTasksCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 export default function HomeFeed() {
@@ -325,9 +324,6 @@ export default function HomeFeed() {
 
       {/* My Published Tasks Carousel */}
       <MyTasksCarousel myTasks={myTasks} />
-
-      {/* Active Tasks Carousel (tasks in progress) */}
-      <ActiveTasksCarousel tasks={tasks} />
 
       <div className="px-4 py-5">
 
