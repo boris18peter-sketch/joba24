@@ -205,7 +205,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
 
           {/* Price + Apply button stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-            <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 20, lineHeight: 1 }}>₪{task.price}</div>
+            <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{task.price}</div>
             {!hasActiveApp && currentUserId && (
               <button
                 onClick={e => { e.stopPropagation(); setShowApplyModal(true); }}

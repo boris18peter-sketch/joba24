@@ -16,6 +16,7 @@ const STATUS_TABS = [
   { key: 'inprogress', label: 'פעיל', icon: '🟣' },
   { key: 'awaiting_payment', label: 'ממתין לתשלום', icon: '💰' },
   { key: 'completed', label: 'הושלם', icon: '✅' },
+  { key: 'cancelled', label: 'בוטל (פיצוי)', icon: '💸' },
 ];
 
 function TaskRow({ task, badge, onRepost }) {
@@ -24,6 +25,7 @@ function TaskRow({ task, badge, onRepost }) {
     inprogress: { label: 'בביצוע', bg: '#ede9fe', color: '#6d28d9' },
     awaiting: { label: 'ממתין לתשלום', bg: '#fef3c7', color: '#92400e' },
     paid: { label: 'שולם', bg: '#dcfce7', color: '#166534' },
+    cancelled: { label: 'בוטל — פיצוי 20%', bg: '#fef9ec', color: '#b45309' },
   };
   const b = badgeMap[badge] || badgeMap.inprogress;
   return (
@@ -77,6 +79,7 @@ export default function Wallet() {
   const inProgressTasks = workerTasks.filter(t => t.status === 'TAKEN');
   const awaitingPaymentTasks = workerTasks.filter(t => t.status === 'COMPLETED' && !t.client_confirmed);
   const completedWorkerTasks = workerTasks.filter(t => t.status === 'COMPLETED');
+  const cancelledWorkerTasks = workerTasks.filter(t => t.status === 'CANCELLED');
 
   // Client tasks that are done/cancelled/expired — can be reposted
   const repostableTasks = myClientTasks.filter(t => ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(t.status));
@@ -100,9 +103,10 @@ export default function Wallet() {
     inprogress: inProgressTasks,
     awaiting_payment: awaitingPaymentTasks,
     completed: completedWorkerTasks,
+    cancelled: cancelledWorkerTasks,
   };
 
-  const tabBadge = { inprogress: 'inprogress', awaiting_payment: 'awaiting', completed: 'paid' };
+  const tabBadge = { inprogress: 'inprogress', awaiting_payment: 'awaiting', completed: 'paid', cancelled: 'cancelled' };
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
@@ -169,8 +173,26 @@ export default function Wallet() {
           <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {tabTasks[activeTab].length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>
-                {activeTab === 'inprogress' ? '💼 אין משימות פעילות' : activeTab === 'awaiting_payment' ? '⏳ אין ממתינות לתשלום' : '🏆 אין משימות שהושלמו'}
+                {activeTab === 'inprogress' ? '💼 אין משימות פעילות' : activeTab === 'awaiting_payment' ? '⏳ אין ממתינות לתשלום' : activeTab === 'cancelled' ? '💸 אין משימות מבוטלות' : '🏆 אין משימות שהושלמו'}
               </div>
+            ) : activeTab === 'cancelled' ? (
+              tabTasks[activeTab].map(t => {
+                const compensation = Math.round((t.price || 0) * 0.2);
+                return (
+                  <div key={t.id} style={{ background: '#fffbeb', borderRadius: 14, border: '1px solid #fde68a', padding: '13px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+                      <div style={{ flexShrink: 0, textAlign: 'left' }}>
+                        <div style={{ fontSize: 11, color: '#92400e', fontWeight: 600 }}>עמלת טרחה</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#059669' }}>+₪{compensation}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#b45309', background: '#fef3c7', padding: '3px 8px', borderRadius: 20, display: 'inline-block', fontWeight: 600 }}>
+                      20% מ-₪{t.price} — בוטל על ידי המפרסם
+                    </div>
+                  </div>
+                );
+              })
             ) : (
               tabTasks[activeTab].map(t => (
                 <TaskRow key={t.id} task={t} badge={tabBadge[activeTab]} />
