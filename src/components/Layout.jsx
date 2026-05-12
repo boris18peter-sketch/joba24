@@ -135,10 +135,10 @@ export default function Layout() {
         }
       }
 
-      // Worker notification: task was cancelled while worker was on the way
+      // Worker notification: task was cancelled after being assigned
       if (
         prev.worker_id === me?.id &&
-        prev.worker_status === 'on_the_way' &&
+        prev.status === 'TAKEN' &&
         task.status === 'CANCELLED'
       ) {
         const compensation = Math.round((prev.price || task.price || 0) * 0.2);

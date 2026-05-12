@@ -281,89 +281,93 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(248,249,252,0.98)', borderColor: '#edf1f7', backdropFilter: 'blur(12px)' }}>
-        <div className="px-4 pt-3 pb-2">
-          {/* Logo row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 9 }} />
-              <span style={{ fontWeight: 900, fontSize: 20, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
-            </div>
-          </div>
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)' }}>
+        <div style={{ padding: '10px 14px 8px' }}>
 
-          {/* Search bar with embedded filter button */}
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search size={15} style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#b0bec5', pointerEvents: 'none', zIndex: 1 }} />
+          {/* Row 1: Logo + Search + Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
+              <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+            </div>
+
+            {/* Search */}
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#c4ccd8', pointerEvents: 'none', zIndex: 1 }} />
               <input
-                placeholder="חפש לפי מיקום, קטגוריה..."
+                placeholder="חיפוש..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit(search)}
                 style={{
-                  width: '100%', height: 40, borderRadius: 12, border: `1px solid ${searchFocused ? '#93c5fd' : '#e4eaf2'}`,
-                  paddingRight: 34, paddingLeft: 46, fontSize: 13, fontFamily: 'inherit',
-                  background: 'white', outline: 'none', color: '#1a2540',
-                  boxShadow: searchFocused ? '0 0 0 3px rgba(147,197,253,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
-                  transition: 'all 0.15s',
-                  boxSizing: 'border-box',
+                  width: '100%', height: 34, borderRadius: 10,
+                  border: `1px solid ${searchFocused ? '#93c5fd' : '#e4eaf2'}`,
+                  paddingRight: 30, paddingLeft: search ? 26 : 10,
+                  fontSize: 13, fontFamily: 'inherit',
+                  background: searchFocused ? 'white' : '#f1f4f9',
+                  outline: 'none', color: '#1a2540',
+                  transition: 'all 0.15s', boxSizing: 'border-box',
                 }}
               />
-              {/* Clear button */}
               {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 44, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 2, zIndex: 2 }}>
-                  <X size={13} color="#94a3b8" />
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, zIndex: 2, display: 'flex' }}>
+                  <X size={12} color="#94a3b8" />
                 </button>
               )}
-              {/* Filter button — inside search bar */}
-              <button
-                onClick={() => setShowFilters(true)}
-                style={{
-                  position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)',
-                  width: 32, height: 32, borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: hasFilters ? 'rgba(26,111,212,0.9)' : 'rgba(100,116,139,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'absolute', zIndex: 2,
-                  transition: 'background 0.15s',
-                }}
-              >
-                <SlidersHorizontal size={14} color={hasFilters ? 'white' : '#64748b'} />
-                {hasFilters && <span style={{ position: 'absolute', top: 4, right: 4, width: 5, height: 5, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
-              </button>
+              {/* Search dropdown */}
+              {searchFocused && !search && recentSearches.length > 0 && (
+                <div style={{ position: 'absolute', top: 40, right: 0, left: 0, background: 'white', borderRadius: 12, border: '1px solid #e8eef8', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
+                  <div style={{ padding: '6px 12px 2px', fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>אחרונים</div>
+                  {recentSearches.map((s, i) => (
+                    <button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }}
+                      style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 13, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Search size={11} color="#94a3b8" /> {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Search suggestions dropdown */}
-            {searchFocused && !search && recentSearches.length > 0 && (
-              <div style={{ position: 'absolute', top: 48, right: 0, left: 0, background: 'white', borderRadius: 14, border: '1px solid #e8eef8', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
-                <div style={{ padding: '8px 12px 4px', fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>חיפושים אחרונים</div>
-                {recentSearches.map((s, i) => (
-                  <button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }}
-                    style={{ width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 13, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Search size={12} color="#94a3b8" /> {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Filter button */}
+            <button
+              onClick={() => setShowFilters(true)}
+              style={{
+                flexShrink: 0, width: 34, height: 34, borderRadius: 10,
+                border: `1px solid ${hasFilters ? '#93c5fd' : '#e4eaf2'}`,
+                background: hasFilters ? '#1a6fd4' : '#f1f4f9',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', position: 'relative',
+              }}
+            >
+              <SlidersHorizontal size={14} color={hasFilters ? 'white' : '#64748b'} />
+              {hasFilters && <span style={{ position: 'absolute', top: 5, right: 5, width: 5, height: 5, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
+            </button>
           </div>
 
-          {/* Category quick filter + live count */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            {/* Live count badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, background: '#eff6ff', borderRadius: 20, padding: '4px 10px' }}>
-              <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
+          {/* Row 2: Live count + Category pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 7, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {/* Live dot + count */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, background: '#eff6ff', borderRadius: 20, padding: '3px 8px', border: '1px solid #dbeafe' }}>
+              <span style={{ position: 'relative', display: 'inline-flex', width: 5, height: 5 }}>
                 <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.75 }} />
-                <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }} />
+                <span style={{ position: 'relative', width: 5, height: 5, borderRadius: '50%', background: '#3b82f6' }} />
               </span>
               <span style={{ fontSize: 11, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
             </div>
-            {/* Scrollable category pills */}
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, flex: 1 }}>
+
+            {/* Category pills */}
+            <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', flex: 1 }}>
               <button
                 onClick={() => setFilters(f => ({ ...f, category: '' }))}
-                style={{ flexShrink: 0, padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}
+                style={{
+                  flexShrink: 0, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: !filters.category ? '#1a6fd4' : '#eef2ff',
+                  color: !filters.category ? 'white' : '#4f46e5',
+                }}
               >הכל</button>
               {[...CATEGORIES]
                 .sort((a, b) => {
@@ -378,12 +382,14 @@ export default function HomeFeed() {
                   return (
                     <button key={c.value}
                       onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                      style={{ flexShrink: 0, padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                      style={{
+                        flexShrink: 0, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                        border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                         background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5',
-                        display: 'flex', alignItems: 'center', gap: 3 }}
+                        display: 'flex', alignItems: 'center', gap: 2,
+                      }}
                     >
-                      {c.label}
-                      {count > 0 && <span style={{ opacity: 0.6, fontSize: 11 }}>({count})</span>}
+                      {c.label}{count > 0 && <span style={{ opacity: 0.55, fontSize: 10 }}>({count})</span>}
                     </button>
                   );
                 })}
@@ -392,11 +398,11 @@ export default function HomeFeed() {
 
           {/* Active filter chips */}
           {hasFilters && (
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              {filters.city && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
-              {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
-              {filters.time && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
-              {filters.approvalMode && <span style={{ fontSize: 11, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
+            <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
+              {filters.city && <span style={{ fontSize: 10, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
+              {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 10, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
+              {filters.time && <span style={{ fontSize: 10, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
+              {filters.approvalMode && <span style={{ fontSize: 10, background: '#1e293b', color: 'white', padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
             </div>
           )}
         </div>
