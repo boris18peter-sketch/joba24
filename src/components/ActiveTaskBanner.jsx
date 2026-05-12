@@ -8,12 +8,12 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 
 const STATUS_STEPS = {
   on_the_way: { label: 'בדרך', ownerLabel: 'בדרך אליך', step: 0 },
-  delayed: { label: 'מתעכב', ownerLabel: 'מתעכב קצת', step: 0 },
+  delayed: { label: 'מתעכב', ownerLabel: 'מתעכב', step: 0 },
   parking: { label: 'מחפש חניה', ownerLabel: 'מחפש חניה', step: 0 },
-  arrived: { label: 'הגעתי', ownerLabel: 'הגיע אליך', step: 1 },
-  starting: { label: 'מתחיל עבודה', ownerLabel: 'מתחיל לעבוד', step: 1 },
-  finishing: { label: 'מסיים עבודה', ownerLabel: 'מסיים עבודה', step: 1 },
-  done: { label: 'ממתין לאישור תשלום', ownerLabel: 'סיים — ממתין לאישורך', step: 2 }
+  arrived: { label: 'הגעתי', ownerLabel: 'הגיע', step: 1 },
+  starting: { label: 'מתחיל עבודה', ownerLabel: 'בעבודה', step: 1 },
+  finishing: { label: 'מסיים עבודה', ownerLabel: 'מסיים', step: 1 },
+  done: { label: 'ממתין לאישור', ownerLabel: 'ממתין לאישורך', step: 2 }
 };
 
 
@@ -74,6 +74,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
               {isWorker ?
               <><User size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {task.client_name}</span> {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.client_rating.toFixed(1)}</span>}</> :
               <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span> {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>} {task.worker_verified && <VerifiedBadge size="sm" />}</>}
+              {isOwner && task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>}
                 {isWorker && task.client_verified && <VerifiedBadge size="sm" />}
             </div>
           </div>
@@ -96,7 +97,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             }
             {isOwner &&
             <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
-                {stepIdx === 2 ? 'אשר סיום בדף המשימה לשחרור תשלום' : 'לחץ לצפייה בהתקדמות'}
+                {stepIdx === 2 ? 'אשר סיום בדף המשימה' : 'צפה בהתקדמות'}
               </div>
             }
           </div>
@@ -111,12 +112,12 @@ export default function ActiveTaskBanner({ task, roleHint }) {
         </div>
 
         {/* Quick action buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={(e) => {e.stopPropagation();setShowChat(true);}}
-            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <MessageCircle size={16} /> צ'אט
-          </button>
+         <div style={{ display: 'flex', gap: 10 }}>
+           <button
+             onClick={(e) => {e.stopPropagation();setShowChat(true);}}
+             style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+             <MessageCircle size={15} /> צ'אט
+           </button>
           {task.location_name &&
           <button
             onClick={(e) => {
@@ -135,7 +136,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
           }
           <button
             onClick={(e) => {e.stopPropagation();navigate(`/task/${task.id}`);}}
-            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             פרטים
           </button>
         </div>

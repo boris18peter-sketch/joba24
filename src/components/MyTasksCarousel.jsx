@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2, Sparkles } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
@@ -29,22 +29,13 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
     await base44.entities.Task.update(task.id, { status: 'CANCELLED' });
     queryClient.invalidateQueries({ queryKey: ['myTasks'] });
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    toast.success('המשימה בוטלה');
+    toast.success('משימה בוטלה');
   };
 
-  const handleRepost = (e) => {
+  const handleEdit = (e) => {
     e.stopPropagation();
     onClose();
-    navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
-  };
-
-  const handleStory = async (e) => {
-    e.stopPropagation();
-    onClose();
-    const storyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await base44.entities.Task.update(task.id, { is_story: true, story_expires_at: storyExpires });
-    queryClient.invalidateQueries({ queryKey: ['stories'] });
-    toast.success('המשימה הועלתה לסטורי! 🚀');
+    navigate(`/edit-task/${task.id}`);
   };
 
   return (
@@ -53,16 +44,15 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
       <div ref={ref} onClick={e => e.stopPropagation()} style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000,
         background: 'white', borderRadius: 14, border: 'none',
-        boxShadow: '0 16px 32px rgba(0,0,0,0.15)', minWidth: 180, overflow: 'hidden',
+        boxShadow: '0 16px 32px rgba(0,0,0,0.15)', minWidth: 140, overflow: 'hidden',
       }}>
         {[
-          { icon: RefreshCw, label: 'פרסם מחדש', onClick: handleRepost, color: '#059669' },
-          { icon: Sparkles, label: 'העלה לסטורי', onClick: handleStory, color: '#a855f7' },
+          { icon: Pencil, label: 'עריכה', onClick: handleEdit, color: '#1a6fd4' },
           { icon: Trash2, label: 'ביטול', onClick: handleDelete, color: '#dc2626' },
-        ].map(({ icon: Icon, label, onClick, color }) => (
+        ].map(({ icon: Icon, label, onClick }, idx) => (
           <button key={label} onClick={onClick}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color, borderBottom: label !== 'ביטול' ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
-            <Icon size={14} /> {label}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: idx === 0 ? '#1a6fd4' : '#dc2626', borderBottom: idx === 0 ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
+            <Icon size={13} /> {label}
           </button>
         ))}
       </div>

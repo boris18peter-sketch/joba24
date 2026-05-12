@@ -17,7 +17,7 @@ const TYPES = {
     bg: '#f0fdf4',
     border: '#86efac',
     accent: '#16a34a',
-    title: (n) => `${n.workerName || 'עובד'} לקח את המשימה!`,
+    title: (n) => 'עובד לקח את המשימה',
     body: (n) => `"${n.taskTitle}"`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
@@ -26,8 +26,8 @@ const TYPES = {
     bg: '#faf5ff',
     border: '#c4b5fd',
     accent: '#7c3aed',
-    title: (n) => 'בקשה חדשה למשימה שלך!',
-    body: (n) => `${n.workerName || 'עובד'} מעוניין לבצע את "${n.taskTitle}"`,
+    title: (n) => 'בקשה חדשה',
+    body: (n) => `"${n.taskTitle}"`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   application_approved: {
@@ -53,8 +53,8 @@ const TYPES = {
     bg: '#eff6ff',
     border: '#93c5fd',
     accent: '#1a6fd4',
-    title: (n) => `${n.workerName || 'העובד'} יצא לדרך!`,
-    body: (n) => `בדרך למשימה "${n.taskTitle}"`,
+    title: (n) => 'עובד בדרך',
+    body: (n) => `"${n.taskTitle}"`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   worker_arrived: {
@@ -62,17 +62,17 @@ const TYPES = {
     bg: '#fefce8',
     border: '#fde047',
     accent: '#ca8a04',
-    title: (n) => `${n.workerName || 'העובד'} הגיע!`,
-    body: (n) => `נמצא במיקום המשימה "${n.taskTitle}"`,
+    title: (n) => 'עובד הגיע',
+    body: (n) => `"${n.taskTitle}"`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   worker_done: {
-    emoji: '🏆',
+    emoji: '✅',
     bg: '#f0fdf4',
     border: '#86efac',
     accent: '#16a34a',
-    title: (n) => 'העובד סיים את העבודה!',
-    body: (n) => `"${n.taskTitle}" — בבקשה אשר את הביצוע`,
+    title: (n) => 'עובד סיים',
+    body: (n) => `"${n.taskTitle}"`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
   new_review: {
@@ -98,7 +98,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(100);
   const navigate = useNavigate();
-  const DURATION = 6000;
+  const DURATION = 7500;
 
   useEffect(() => {
     const start = Date.now();
