@@ -140,13 +140,18 @@ export default function HomeFeed() {
     }
   }, []);
 
-  // Auto price bump
+  // Auto price bump — stop bumping when there's a pending application, resume when cancelled
   useEffect(() => {
     if (!tasks.length) return;
-    tasks.forEach(task => {
+    tasks.forEach(async task => {
       if (task.status !== 'OPEN') return;
       if (!task.auto_bump_enabled || !task.max_price) return;
       if (task.price >= task.max_price) return;
+
+      // Check if there's already a pending application — if so, pause bumping
+      const pendingApps = await base44.entities.TaskApplication.filter({ task_id: task.id, status: 'pending' });
+      if (pendingApps.length > 0) return; // pause bump while someone applied
+
       const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
       if (ageMinutes < 5) return;
       const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
@@ -280,29 +285,25 @@ export default function HomeFeed() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
-      {/* Header — Logo only */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)' }}>
-        <div style={{ padding: '10px 14px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
-          <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+      {/* Header — fixed height, vertically centered, symmetric margins */}
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: '100%', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Left spacer matching menu button size */}
+          <div style={{ width: 44 }} />
+          {/* Centered logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
+            <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+          </div>
+          {/* Right spacer */}
+          <div style={{ width: 44 }} />
         </div>
       </div>
 
-      {/* Active Task Banners — horizontal scroll when multiple */}
-      {(activeWorkerTask || activeClientTask) && (
-        <div style={{ paddingTop: 14 }}>
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingRight: 16, paddingLeft: 16, paddingBottom: 2 }}>
-            {activeWorkerTask && (
-              <div style={{ flexShrink: 0, width: activeClientTask && activeClientTask.id !== activeWorkerTask?.id ? 'calc(88vw)' : '100%' }}>
-                <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
-              </div>
-            )}
-            {activeClientTask && activeClientTask.id !== activeWorkerTask?.id && (
-              <div style={{ flexShrink: 0, width: activeWorkerTask ? 'calc(88vw)' : '100%' }}>
-                <ActiveTaskBanner task={activeClientTask} roleHint="client" />
-              </div>
-            )}
-          </div>
+      {/* Active Task Banner — show only client task (task I published with active worker) */}
+      {activeClientTask && (
+        <div style={{ padding: '14px 16px 0' }}>
+          <ActiveTaskBanner task={activeClientTask} roleHint="client" />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { getCategoryLabel } from '@/lib/categories';
 import { X, MapPin } from 'lucide-react';
@@ -172,6 +172,19 @@ function StoriesViewer({ stories, startIndex, onClose }) {
 
 export default function StoriesBar() {
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const queryClient = useQueryClient();
+
+  // Real-time price updates in stories
+  useEffect(() => {
+    const unsub = base44.entities.Task.subscribe((event) => {
+      if (event.type === 'update' && event.data) {
+        queryClient.setQueryData(['stories'], (old = []) =>
+          old.map(t => t.id === event.data.id ? { ...t, price: event.data.price } : t)
+        );
+      }
+    });
+    return unsub;
+  }, [queryClient]);
 
   const { data: stories = [] } = useQuery({
     queryKey: ['stories'],
@@ -180,7 +193,9 @@ export default function StoriesBar() {
       const now = new Date();
       return tasks.filter(t => t.story_expires_at && new Date(t.story_expires_at) > now && t.status === 'OPEN');
     },
-    refetchInterval: 60000,
+    // Refresh every 30s so price updates are reflected
+    refetchInterval: 30000,
+    staleTime: 0,
   });
 
   if (stories.length === 0) return null;

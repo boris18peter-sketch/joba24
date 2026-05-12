@@ -85,6 +85,18 @@ export default function TaskApplicants({ task, onApprove }) {
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
   if (pending.length === 0) {
+    // Check if task is TAKEN (worker was already approved)
+    if (task.status === 'TAKEN') {
+      return (
+        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>⏳</div>
+          <div>
+            <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>אושר! מחכה שהעובד יצא לדרך</div>
+            <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>העובד קיבל הודעה ויצא בקרוב</div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
         <div className="text-2xl mb-2">✋</div>

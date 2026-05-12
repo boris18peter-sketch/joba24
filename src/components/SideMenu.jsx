@@ -24,14 +24,21 @@ export default function SideMenu() {
       <button
         onClick={() => setOpen(true)}
         style={{
-          position: 'fixed', top: 16, left: 16, zIndex: 10000,
+          position: 'fixed', top: 0, left: 0, zIndex: 10000,
+          width: 56, height: 56,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: 'none', cursor: 'pointer', background: 'none', padding: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        <div style={{
           width: 42, height: 42, borderRadius: 14,
           background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: 'none', cursor: 'pointer', boxShadow: '0 2px 14px rgba(26,111,212,0.4)',
-        }}
-      >
-        <Menu size={20} color="white" />
+          boxShadow: '0 2px 14px rgba(26,111,212,0.4)',
+        }}>
+          <Menu size={20} color="white" />
+        </div>
       </button>
 
       {open && (

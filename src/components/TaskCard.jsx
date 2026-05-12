@@ -255,6 +255,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
           {task.created_date && (
             <span style={{ color: '#cbd5e1', flexShrink: 0 }}>{format(new Date(task.created_date), 'HH:mm')}</span>
           )}
+          <span style={{ color: '#e2e8f0', fontSize: 9, flexShrink: 0, marginRight: 'auto', fontFamily: 'monospace' }}>#{task.id?.slice(-6)}</span>
         </div>
       </div>
 

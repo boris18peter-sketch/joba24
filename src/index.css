@@ -75,6 +75,15 @@
     -webkit-user-select: text;
     user-select: text;
   }
+  /* Mobile touch: remove hover, add active feedback */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button:active {
+    opacity: 0.8;
+    transform: scale(0.97);
+  }
 }
 
 .font-inter {
