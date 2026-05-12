@@ -17,13 +17,13 @@ const PRICE_OPTIONS = [
 ];
 
 export default function FilterSheet({ open, onClose, filters, onApply }) {
-  const [local, setLocal] = useState({ minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', ...filters });
+  const [local, setLocal] = useState({ minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', ...filters });
 
   const activePriceOption = PRICE_OPTIONS.find(o => o.min === (local.minPrice || '') && o.max === (local.maxPrice || '')) || null;
 
   const handleApply = () => { onApply(local); onClose(); };
   const handleReset = () => {
-    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '' };
+    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', category: '' };
     setLocal(reset); onApply(reset); onClose();
   };
 
@@ -86,6 +86,23 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
                     border: local.time === t ? '1px solid #1a6fd4' : '1px solid #dce8f5',
                   }}
                 >{t}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>מיון</Label>
+            <div className="flex gap-2 flex-wrap">
+              {[{ val: '', label: 'רלוונטי' }, { val: 'newest', label: '🆕 חדשות קודם' }, { val: 'price_desc', label: '💰 מחיר גבוה' }, { val: 'price_asc', label: '💸 מחיר נמוך' }].map(opt => (
+                <button key={opt.val} onClick={() => setLocal(p => ({ ...p, sortBy: opt.val }))}
+                  style={{
+                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    background: local.sortBy === opt.val ? '#1a6fd4' : 'white',
+                    color: local.sortBy === opt.val ? 'white' : '#555',
+                    border: local.sortBy === opt.val ? '1px solid #1a6fd4' : '1px solid #dce8f5',
+                  }}
+                >{opt.label}</button>
               ))}
             </div>
           </div>

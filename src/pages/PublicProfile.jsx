@@ -81,11 +81,10 @@ export default function PublicProfile() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {[
             { value: completedTasks.length, label: "ג'ובות בוצעו" },
             { value: avgRating + (rating > 0 ? '★' : ''), label: 'דירוג', sub: `${user.rating_count || 0} ביקורות` },
-            { value: user.worker_score > 0 ? user.worker_score.toFixed(0) : '—', label: 'ניקוד' },
           ].map(s => (
             <div key={s.label} style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 10px', textAlign: 'center' }}>
               <div style={{ color: 'white', fontSize: 18, fontWeight: 900 }}>{s.value}</div>

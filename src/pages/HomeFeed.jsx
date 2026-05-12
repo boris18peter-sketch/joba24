@@ -16,7 +16,7 @@ export default function HomeFeed() {
   const [recentSearches, setRecentSearches] = useState(() => {
     try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
@@ -259,7 +259,7 @@ export default function HomeFeed() {
     };
   });
 
-  // Sort by: 1) approved (accepted tasks), 2) pending (waiting for approval), 3) others by relevance
+  // Sort by: 1) approved (accepted tasks), 2) pending (waiting for approval), 3) others by sortBy/relevance
   const sortedTasks = scored.sort((a, b) => {
     const aIsApproved = approvedTaskIds.has(a.id) ? 0 : 2;
     const bIsApproved = approvedTaskIds.has(b.id) ? 0 : 2;
@@ -267,10 +267,14 @@ export default function HomeFeed() {
     const bIsPending = !approvedTaskIds.has(b.id) && pendingTaskIds.has(b.id) ? 1 : bIsApproved;
 
     if (aIsPending !== bIsPending) return aIsPending - bIsPending;
+
+    if (filters.sortBy === 'newest') return new Date(b.created_date) - new Date(a.created_date);
+    if (filters.sortBy === 'price_desc') return b.price - a.price;
+    if (filters.sortBy === 'price_asc') return a.price - b.price;
     return b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date);
   });
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode;
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy;
 
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
@@ -421,6 +425,9 @@ export default function HomeFeed() {
                   {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
                   {filters.time && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
                   {filters.approvalMode && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
+                  {filters.sortBy === 'newest' && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>🆕 חדשות קודם</span>}
+                  {filters.sortBy === 'price_desc' && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>💰 מחיר גבוה</span>}
+                  {filters.sortBy === 'price_asc' && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>💸 מחיר נמוך</span>}
                 </div>
           }
         </div>
