@@ -125,51 +125,34 @@ export default function WorkerProfile() {
       </div>
 
       <div className="px-4 py-5 space-y-6 pb-12">
-        {/* Rating + Worker Score */}
-        <div className="space-y-3">
-          {currentUser?.rating > 0 && (
-            <div className="bg-gradient-to-l from-amber-400 to-amber-500 rounded-2xl p-4 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm opacity-80">דירוג</div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-black">{currentUser.rating.toFixed(1)}</span>
-                    <span className="text-2xl">⭐</span>
-                  </div>
-                </div>
-                <div className="text-right text-sm opacity-90">על בסיס דירוגים מלקוחות</div>
+        {/* Worker Score */}
+        {workerScore > 0 && (
+          <div className="bg-gradient-to-l from-purple-600 to-purple-800 rounded-2xl p-4 text-white">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-sm opacity-80">ניקוד עובד</div>
+                <div className="text-2xl font-black">{workerScore.toFixed(0)} נק'</div>
               </div>
             </div>
-          )}
-
-          {workerScore > 0 && (
-            <div className="bg-gradient-to-l from-purple-600 to-purple-800 rounded-2xl p-4 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Award className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="text-sm opacity-80">ניקוד עובד</div>
-                  <div className="text-2xl font-black">{workerScore.toFixed(0)} נק'</div>
-                </div>
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <div className="bg-white/10 rounded-xl p-2 text-center">
+                <div className="text-sm font-bold">{me?.score_tasks || 0}</div>
+                <div className="text-[10px] opacity-75">משימות</div>
               </div>
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                <div className="bg-white/10 rounded-xl p-2 text-center">
-                  <div className="text-sm font-bold">{me?.score_tasks || 0}</div>
-                  <div className="text-[10px] opacity-75">משימות</div>
-                </div>
-                <div className="bg-white/10 rounded-xl p-2 text-center">
-                  <div className="text-sm font-bold">{me?.score_speed || 0}</div>
-                  <div className="text-[10px] opacity-75">מהירות</div>
-                </div>
-                <div className="bg-white/10 rounded-xl p-2 text-center">
-                  <div className="text-sm font-bold">{me?.score_quality || 0}</div>
-                  <div className="text-[10px] opacity-75">ביצוע</div>
-                </div>
+              <div className="bg-white/10 rounded-xl p-2 text-center">
+                <div className="text-sm font-bold">{me?.score_speed || 0}</div>
+                <div className="text-[10px] opacity-75">מהירות</div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-2 text-center">
+                <div className="text-sm font-bold">{me?.score_quality || 0}</div>
+                <div className="text-[10px] opacity-75">ביצוע</div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Basic Info */}
          <div className="space-y-3">

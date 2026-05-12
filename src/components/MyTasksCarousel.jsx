@@ -130,7 +130,7 @@ export default function MyTasksCarousel({ myTasks }) {
         </Link>
       </div>
 
-      <div className="my-tasks-scroll" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch' }}>
+      <div className="my-tasks-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch' }}>
         <style>{`
           .my-tasks-scroll::-webkit-scrollbar { height: 2px; }
           .my-tasks-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -147,87 +147,76 @@ export default function MyTasksCarousel({ myTasks }) {
           return (
             <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
               <div style={{
-                width: 280,
-                minHeight: 320,
-                background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
-                borderRadius: 24,
-                padding: '18px 16px',
+                width: 168,
+                minHeight: hasPending ? 126 : 108,
+                background: isExpired ? '#fff7ed' : hasPending ? '#fffdf5' : 'white',
+                borderRadius: 16,
+                border: hasPending ? '1.5px solid #fbbf24' : isTaken ? '1.5px solid #c8903a' : isExpired ? '1.5px solid #c07040' : '1px solid #e8eef8',
+                padding: '11px 12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                gap: 10,
-                boxShadow: '0 8px 32px rgba(26,111,212,0.3)',
+                gap: 6,
+                boxShadow: hasPending ? '0 2px 12px rgba(251,191,36,0.18)' : isTaken ? '0 2px 12px rgba(192,135,58,0.15)' : '0 2px 8px rgba(15,43,107,0.06)',
                 position: 'relative',
                 boxSizing: 'border-box',
-                color: 'white',
               }}>
-                {/* Header: Price + Status Badge */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, lineHeight: 1 }}>₪{task.price}</div>
+                {/* Top row: status + actions */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: status.dot, display: 'inline-block', flexShrink: 0, ...(isTaken ? { animation: 'pulse 1.5s infinite' } : {}) }} />
+                    <span style={{ fontSize: 10, color: status.textColor, fontWeight: 700 }}>{status.label}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'white', display: 'inline-block', flexShrink: 0 }} />
-                    {status.label}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
+                    {isTaken && (
+                      <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()}>
+                        <div style={{ width: 22, height: 22, borderRadius: 7, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <MessageCircle size={11} color="#1a6fd4" />
+                        </div>
+                      </Link>
+                    )}
+                    {isOpen && (
+                      <button onClick={e => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }}
+                        style={{ width: 22, height: 22, borderRadius: 7, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <MoreVertical size={11} color="#64748b" />
+                      </button>
+                    )}
+                    {openMenuId === task.id && (
+                      <TaskMenu task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
+                    )}
                   </div>
                 </div>
 
                 {/* Title */}
-                <div style={{ fontSize: 16, fontWeight: 900, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical' }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: isExpired ? '#9a3412' : '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {task.title}
                 </div>
 
-                {/* Worker info (if taken) */}
-                {isTaken && (
-                  <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {task.worker_name}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
-                        ⭐ {task.worker_rating?.toFixed(1) || '—'}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Pending applications badge (if open) */}
+                {/* Pending applications badge */}
                 {hasPending && (
-                  <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Users size={14} color="white" />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 7px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Users size={9} color="#d97706" />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#92400e', lineHeight: 1.2 }}>
                       {pendingCount} בקשה{pendingCount > 1 ? 'ות' : ''} ממתינות
                     </span>
                   </div>
                 )}
 
-                {/* Action buttons */}
-                <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                  {isTaken ? (
-                    <>
-                      <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()} style={{ flex: 1, textDecoration: 'none' }}>
-                        <button style={{ width: '100%', height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                          <MessageCircle size={14} /> צ'אט
-                        </button>
-                      </Link>
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/task/${task.id}`); }} style={{ flex: 1, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                        פרטים
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={e => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }} style={{ flex: 1, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        <MoreVertical size={14} /> אפשרויות
-                      </button>
-                      {openMenuId === task.id && (
-                        <TaskMenu task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
-                      )}
-                      {isExpired && (
-                        <button onClick={(e) => handleReopen(e, task)} style={{ flex: 1, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                          <RefreshCw size={14} /> פתח מחדש
-                        </button>
-                      )}
-                    </>
+                {/* Bottom row: price + worker/reopen */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: isExpired ? '#c2410c' : '#111' }}>₪{task.price}</span>
+                  {isTaken && task.worker_name && (
+                    <span style={{ fontSize: 9, color: '#b07030', fontWeight: 700, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {task.worker_name}
+                    </span>
+                  )}
+                  {isExpired && (
+                    <button
+                      onClick={(e) => handleReopen(e, task)}
+                      style={{ height: 22, padding: '0 8px', borderRadius: 7, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
+                    >
+                      <RefreshCw size={9} /> פתח מחדש
+                    </button>
                   )}
                 </div>
               </div>
