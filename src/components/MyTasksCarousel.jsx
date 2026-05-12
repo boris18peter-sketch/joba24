@@ -32,10 +32,10 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
     toast.success('המשימה בוטלה');
   };
 
-  const handleEdit = (e) => {
+  const handleRepost = (e) => {
     e.stopPropagation();
     onClose();
-    navigate(`/edit-task/${task.id}`);
+    navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
   };
 
   const handleStory = async (e) => {
@@ -48,22 +48,25 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
   };
 
   return (
-    <div ref={ref} onClick={e => e.stopPropagation()} style={{
-      position: 'absolute', top: 30, left: 0, zIndex: 100,
-      background: 'white', borderRadius: 12, border: '1px solid #e2e8f0',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 130, overflow: 'hidden',
-    }}>
-      {[
-        { icon: Pencil, label: 'עריכה', onClick: handleEdit, color: '#1a6fd4' },
-        { icon: Sparkles, label: 'העלה לסטורי', onClick: handleStory, color: '#a855f7' },
-        { icon: Trash2, label: 'ביטול', onClick: handleDelete, color: '#dc2626' },
-      ].map(({ icon: Icon, label, onClick, color }) => (
-        <button key={label} onClick={onClick}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color, borderBottom: label !== 'ביטול' ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
-          <Icon size={13} /> {label}
-        </button>
-      ))}
-    </div>
+    <>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.3)' }} onClick={onClose} />
+      <div ref={ref} onClick={e => e.stopPropagation()} style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000,
+        background: 'white', borderRadius: 14, border: 'none',
+        boxShadow: '0 16px 32px rgba(0,0,0,0.15)', minWidth: 180, overflow: 'hidden',
+      }}>
+        {[
+          { icon: RefreshCw, label: 'פרסם מחדש', onClick: handleRepost, color: '#059669' },
+          { icon: Sparkles, label: 'העלה לסטורי', onClick: handleStory, color: '#a855f7' },
+          { icon: Trash2, label: 'ביטול', onClick: handleDelete, color: '#dc2626' },
+        ].map(({ icon: Icon, label, onClick, color }) => (
+          <button key={label} onClick={onClick}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color, borderBottom: label !== 'ביטול' ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
+    </>
   );
 }
 

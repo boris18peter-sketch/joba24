@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { CATEGORIES } from '@/lib/categories';
 import ImageUploader from '@/components/ImageUploader';
 import PriceSuggestion from '@/components/PriceSuggestion';
+import PaymentModal from '@/components/PaymentModal';
 
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
@@ -24,9 +25,12 @@ const EXPIRY_OPTIONS = [
 export default function EditTask() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const isRepostMode = location.state?.repostMode;
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task } = useQuery({
@@ -66,6 +70,12 @@ export default function EditTask() {
     if (!form.price) { toast.error('חובה למלא מחיר'); return; }
     if (!form.city) { toast.error('חובה למלא עיר'); return; }
     if (me?.id !== task?.client_id) { toast.error('אין לך הרשאה לערוך משימה זו'); return; }
+
+    if (isRepostMode) {
+      setShowPayment(true);
+      return;
+    }
+
     setLoading(true);
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
@@ -93,6 +103,39 @@ export default function EditTask() {
     navigate(`/task/${id}`);
   };
 
+  const handlePaymentSuccess = async () => {
+    setShowPayment(false);
+    setLoading(true);
+    const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
+    const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+
+    await base44.entities.Task.update(id, {
+      title: form.title,
+      description: form.description,
+      price: Number(form.price),
+      max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
+      auto_bump_enabled: form.auto_bump_enabled,
+      location_name: form.location_name,
+      city: form.city,
+      estimated_time: estimatedTime,
+      category: form.category,
+      approval_mode: form.approval_mode,
+      expiry_duration_hours: form.expiry_hours,
+      expires_at: expires,
+      images: form.images,
+      requirements: form.requirements,
+      status: 'OPEN',
+      payment_status: 'funded',
+      payment_held: true,
+    });
+    queryClient.invalidateQueries({ queryKey: ['task', id] });
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+    toast.success('המשימה פורסמה מחדש! ✅');
+    setLoading(false);
+    navigate('/');
+  };
+
   if (!form) return (
     <div className="flex items-center justify-center h-screen">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -105,7 +148,7 @@ export default function EditTask() {
         <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
           <ArrowRight size={18} color="#1a6fd4" />
         </button>
-        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>עריכת משימה</h1>
+        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>{isRepostMode ? 'פרסום מחדש' : 'עריכת משימה'}</h1>
       </div>
 
       <div className="px-4 py-5 space-y-5 pb-12">
@@ -291,9 +334,11 @@ export default function EditTask() {
         <Button onClick={handleSave} disabled={loading}
           className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isRepostMode ? <>פרסם מחדש</> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}</>}
         </Button>
       </div>
+
+      {showPayment && <PaymentModal amount={Number(form.price)} onSuccess={handlePaymentSuccess} onCancel={() => setShowPayment(false)} />}
     </div>
   );
 }

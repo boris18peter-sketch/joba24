@@ -16,12 +16,7 @@ const STATUS_STEPS = {
   done: { label: 'ממתין לאישור תשלום', ownerLabel: 'סיים — ממתין לאישורך', step: 2 }
 };
 
-const gradients = {
-  0: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
-  1: 'linear-gradient(135deg, #c07c2a 0%, #d4943e 100%)',
-  2: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-  '-1': 'linear-gradient(135deg, #0f2b6b 0%, #1a6fd4 100%)'
-};
+
 
 
 export default function ActiveTaskBanner({ task, roleHint }) {
@@ -37,9 +32,9 @@ export default function ActiveTaskBanner({ task, roleHint }) {
   if (!isWorker && !isOwner) return null;
 
   const stepIdx = statusInfo?.step ?? -1;
-  // Owner (client) = green, Worker = blue
-  const gradient = isOwner ?
-  'linear-gradient(135deg, #059669 0%, #10b981 100%)' :
+  // Worker = always blue. Owner (client) = green only when done
+  const gradient = isWorker ?
+  'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)' :
   stepIdx === 2 ?
   'linear-gradient(135deg, #059669 0%, #10b981 100%)' :
   'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
