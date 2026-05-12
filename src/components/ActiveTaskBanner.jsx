@@ -110,11 +110,11 @@ export default function ActiveTaskBanner({ task, roleHint }) {
         </div>
 
         {/* Quick action buttons */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
             onClick={(e) => { e.stopPropagation(); setShowChat(true); }}
-            style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <MessageCircle size={14} /> צ'אט
+            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <MessageCircle size={16} /> צ'אט
           </button>
           {task.location_name && (
             <button
@@ -125,17 +125,16 @@ export default function ActiveTaskBanner({ task, roleHint }) {
                 const mapsUrl = task.lat && task.lng
                   ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}`
                   : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
-                // Open sheet with options
                 const choice = window.confirm('נווט עם Waze?\nלחץ ביטול לפתיחה עם Google Maps');
                 window.open(choice ? wazeUrl : mapsUrl, '_blank');
               }}
-              style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Navigation size={14} /> נווט
+              style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Navigation size={16} /> נווט
             </button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-            style={{ flex: 1, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             פרטים
           </button>
         </div>

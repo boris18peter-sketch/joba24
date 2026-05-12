@@ -167,11 +167,30 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
       >
         {/* Approved banner */}
         {appStatus === 'approved' && (
-          <div onClick={e => e.stopPropagation()} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#065f46', flex: 1 }}>✅ בקשתך אושרה!</span>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1.5px solid #86efac', borderRadius: 14, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>🎉</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#065f46' }}>הבקשה אושרה!</div>
+              <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>לחץ לצפייה בפרטים ולצאת לדרך</div>
+            </div>
             <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-              style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: 8, padding: '4px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              צא עכשיו
+              style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.35)', whiteSpace: 'nowrap' }}>
+              🚀 צא עכשיו
+            </button>
+          </div>
+        )}
+
+        {/* Pending banner */}
+        {appStatus === 'pending' && (
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: 14, padding: '10px 14px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706' }}>הבקשה ממתינה לאישור</div>
+              <div style={{ fontSize: 11, color: '#92400e', marginTop: 1 }}>תקבל הודעה ברגע שיאשרו</div>
+            </div>
+            <button onClick={handleCancelApp} disabled={cancelling}
+              style={{ background: 'none', border: '1px solid #fcd34d', borderRadius: 8, padding: '4px 10px', fontSize: 11, color: '#d97706', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+              {cancelling ? <Loader2 size={10} className="animate-spin" /> : 'בטל'}
             </button>
           </div>
         )}
@@ -185,18 +204,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
             {/* Category + status badges */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', padding: '2px 7px', borderRadius: 20, fontWeight: 500 }}>{catLabel}</span>
-              {appStatus === 'pending' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
-                  <span style={{ fontSize: 10, color: '#d97706', background: '#fffbeb', padding: '2px 7px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite' }} />
-                    ממתין לאישור
-                  </span>
-                  <button onClick={handleCancelApp} disabled={cancelling}
-                    style={{ width: 18, height: 18, borderRadius: '50%', background: '#fee2e2', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: cancelling ? 0.5 : 1 }}>
-                    {cancelling ? <Loader2 size={9} className="animate-spin" color="#dc2626" /> : <X size={10} color="#dc2626" />}
-                  </button>
-                </div>
-              )}
               {appStatus === 'approved' && (
                 <span style={{ fontSize: 10, color: '#065f46', background: '#f0fdf4', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>✓ אושרה</span>
               )}

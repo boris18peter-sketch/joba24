@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Settings, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield } from 'lucide-react';
+import { Star, LogOut, Settings, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, Bell } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -136,28 +136,43 @@ export default function Profile() {
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {/* Verification status */}
-        {!me?.is_verified ?
-        <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
-            <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Shield size={19} color="white" />
+        {!me?.is_verified ? (
+          <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
+            <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px', position: 'relative', overflow: 'hidden' }}>
+              {/* Glow */}
+              <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 13, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Shield size={22} color="white" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: 'white', marginBottom: 3 }}>אמת את הפרופיל שלך</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+                    פרופיל מאומת זוכה לחשיפה גבוהה יותר וסיכוי פי 2 ל-Match מהיר למשימות
+                  </div>
+                </div>
+                <ChevronLeft size={18} color="rgba(255,255,255,0.7)" style={{ flexShrink: 0, marginTop: 4 }} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>אמת את הזהות שלך</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>נדרש כדי לפרסם ולקחת ג'ובות</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {['✅ אימות חד-פעמי', '🔒 מידע מוצפן', '⚡ Match מהיר פי 2'].map(t => (
+                  <div key={t} style={{ flex: 1, background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 6px', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>{t}</div>
+                ))}
               </div>
-              <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
             </div>
-          </button> :
-
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Shield size={18} color="#16a34a" />
+          </button>
+        ) : (
+          <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CheckCircle size={20} color="#16a34a" />
+            </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#166534' }}>זהות מאומתת ✅</div>
-              <div style={{ fontSize: 11, color: '#15803d' }}>הפרופיל שלך מאומת ומהימן</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#166534', display: 'flex', alignItems: 'center', gap: 6 }}>
+                זהות מאומתת <span style={{ fontSize: 16 }}>✅</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#15803d', marginTop: 2 }}>הפרופיל שלך מהימן ומקבל חשיפה גבוהה יותר</div>
             </div>
           </div>
-        }
+        )}
 
         {/* Quick links */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>

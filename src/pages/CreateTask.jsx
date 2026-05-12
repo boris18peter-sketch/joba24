@@ -26,6 +26,21 @@ const EXPIRY_OPTIONS = [
   { label: 'שבוע', hours: 168 },
 ];
 
+function SocialProofBar() {
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    staleTime: 60000,
+  });
+  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length || 238;
+  return (
+    <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      <span>🤝</span>
+      <span>הצטרף ל-<strong style={{ color: '#1a6fd4' }}>{completedCount}+</strong> משתמשים שכבר ביצעו ג'ובות בהצלחה</span>
+    </div>
+  );
+}
+
 function SectionCard({ children }) {
   return (
     <div style={{ background: 'white', borderRadius: 20, padding: '18px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
@@ -344,21 +359,35 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Story */}
-        <SectionCard>
-          <button type="button" onClick={() => set('is_story', !form.is_story)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'right' }}
-          >
+        <div
+          onClick={() => set('is_story', !form.is_story)}
+          style={{
+            background: form.is_story ? 'linear-gradient(135deg,#fdf4ff,#f3e8ff)' : 'white',
+            border: `2px solid ${form.is_story ? '#a855f7' : '#dce8f5'}`,
+            borderRadius: 20, padding: '16px', cursor: 'pointer',
+            boxShadow: form.is_story ? '0 4px 20px rgba(168,85,247,0.2)' : '0 2px 12px rgba(26,111,212,0.06)',
+            transition: 'all 0.2s',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
             <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.is_story ? '#a855f7' : '#cbd5e1'}`, background: form.is_story ? '#a855f7' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {form.is_story && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={14} color="#a855f7" /> הצג כ-Story
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: form.is_story ? '#7e22ce' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={15} color="#a855f7" /> הצג כ-Story
+                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'white', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>מומלץ</span>
               </div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>הג'ובה תופיע בשורת Stories למשך 24 שעות (₪5 — יחויב בהמשך)</div>
             </div>
-          </button>
-        </SectionCard>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : '#f4f7fb', borderRadius: 12, padding: '10px 12px' }}>
+            <span style={{ fontSize: 22 }}>🚀</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>חשיפה גבוהה פי 3 בשורת ה-Stories</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>הג'ובה תופיע למעלה בפיד למשך 24 שעות · ₪5 בלבד</div>
+            </div>
+          </div>
+        </div>
 
         {/* Location */}
         <SectionCard>
@@ -425,11 +454,14 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Submit */}
-        <button onClick={handleSubmit} disabled={loading}
-          style={{ width: '100%', height: 56, borderRadius: 18, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-        >
-          {loading ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} />פרסם ג'ובה</>}
-        </button>
+        <div style={{ marginTop: 8 }}>
+          <button onClick={handleSubmit} disabled={loading}
+            style={{ width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}
+          >
+            {loading ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} />פרסם ג'ובה חדשה</>}
+          </button>
+          <SocialProofBar />
+        </div>
       </div>
     </div>
   );

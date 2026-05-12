@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Map, Plus, User, Wallet } from 'lucide-react';
+import { Home, Map, Plus, User, Wallet, Bell } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -196,6 +196,14 @@ export default function Layout() {
 
   const recentNotifKeysRef = useRef(new Set());
 
+  // Persist notifications to localStorage
+  const persistNotification = (notification) => {
+    const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
+    const newNotif = { ...notification, timestamp: new Date().toISOString(), read: false };
+    const updated = [newNotif, ...stored].slice(0, 50);
+    localStorage.setItem('joba24_notifications', JSON.stringify(updated));
+  };
+
   const addNotification = (notification) => {
     // Dedup: same type+task within 10 seconds won't fire twice
     const dedupKey = `${notification.type}__${notification.taskTitle || ''}__${notification.taskId || ''}`;
@@ -204,8 +212,8 @@ export default function Layout() {
     setTimeout(() => recentNotifKeysRef.current.delete(dedupKey), 10000);
 
     const id = Date.now();
+    persistNotification(notification);
     setNotifications(prev => {
-      // Max 3 notifications at once
       const capped = prev.length >= 3 ? prev.slice(0, 2) : prev;
       return [{ ...notification, id }, ...capped];
     });
@@ -221,11 +229,21 @@ export default function Layout() {
   // Tasks in progress = TAKEN and worker confirmed (active work)
   const inProgressCount = workerTasks.filter(t => t.status === 'TAKEN').length;
 
+  const { data: unreadNotifCount = 0 } = useQuery({
+    queryKey: ['notifUnread'],
+    queryFn: () => {
+      const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
+      return stored.filter(n => !n.read).length;
+    },
+    refetchInterval: 5000,
+    staleTime: 0,
+  });
+
   const navItems = [
     { to: '/', icon: Home, label: 'פיד' },
     { to: '/map', icon: Map, label: 'מפה' },
     { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
-    { to: '/wallet', icon: Wallet, label: 'ארנק', badge: inProgressCount },
+    { to: '/notifications', icon: Bell, label: 'התראות', badge: unreadNotifCount },
     { to: '/profile', icon: User, label: 'פרופיל' },
   ];
 

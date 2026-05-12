@@ -54,6 +54,7 @@ import SimulatorPanel from '@/pages/SimulatorPanel';
 import MyTasks from '@/pages/MyTasks';
 import ChatInbox from '@/pages/ChatInbox';
 import PublicProfile from '@/pages/PublicProfile';
+import Notifications from '@/pages/Notifications';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
         <Route path="/my-tasks" element={<MyTasks />} />
         <Route path="/chats" element={<ChatInbox />} />
         <Route path="/public-profile" element={<PublicProfile />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Route>
       <Route path="/chat/:taskId" element={<Chat />} />
       <Route path="/presentation" element={<Presentation />} />
