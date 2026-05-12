@@ -55,6 +55,7 @@ export default function TaskDetail() {
   const [signalSent, setSignalSent] = useState(false);
   const [showCancelWarning, setShowCancelWarning] = useState(false);
   const [showWorkerCancelledPopup, setShowWorkerCancelledPopup] = useState(false);
+  const [showExitWarning, setShowExitWarning] = useState(false);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
 
@@ -221,7 +222,18 @@ export default function TaskDetail() {
   });
 
   const cancelTakeMutation = useMutation({
-    mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null }),
+    mutationFn: async () => {
+      // Notify task owner via chat
+      if (task?.client_id && me) {
+        await base44.entities.ChatMessage.create({
+          task_id: id,
+          sender_id: me.id,
+          sender_name: me.full_name,
+          content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`,
+        });
+      }
+      return base44.entities.Task.update(id, { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -358,6 +370,38 @@ export default function TaskDetail() {
           </div>
         </div>
       )}
+      {/* Worker exit confirmation popup */}
+      {showExitWarning && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,15,40,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
+          <div dir="rtl" style={{ background: '#fafbff', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.2)', padding: '20px 20px 40px' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🚪</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>לצאת מהמשימה?</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+                זוהי פעולה סופית — תצא מהמשימה ובעל המשימה יקבל עדכון.<br />
+                <strong style={{ color: '#0f1e40' }}>הוא יוכל לאשר בקשות אחרות או לקבל עובדים חדשים.</strong>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowExitWarning(false)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
+              >
+                המשך במשימה
+              </button>
+              <button
+                onClick={() => { setShowExitWarning(false); cancelTakeMutation.mutate(); }}
+                disabled={cancelTakeMutation.isPending}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> כן, צא מהמשימה</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Worker 3-min alert */}
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
@@ -671,7 +715,7 @@ export default function TaskDetail() {
           )}
 
           {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
-            <button onClick={() => cancelTakeMutation.mutate()} disabled={cancelTakeMutation.isPending}
+            <button onClick={() => setShowExitWarning(true)} disabled={cancelTakeMutation.isPending}
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
               {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}

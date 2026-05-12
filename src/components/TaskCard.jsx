@@ -152,15 +152,18 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
   };
 
-  const borderColor = appStatus === 'approved' ? '#10b981' : appStatus === 'pending' ? '#fbbf24' : '#e8eef8';
+  const borderColor = appStatus === 'approved' ? '#10b981' : appStatus === 'pending' ? '#fbbf24' : '#edf1f7';
   const borderWidth = hasActiveApp ? '1.5px' : '1px';
+
+  // Count pending apps for this task (passed from parent or task.applicants)
+  const pendingAppsCount = task._pendingAppsCount || 0;
 
   return (
     <>
       <div
         onClick={() => navigate(`/task/${task.id}`)}
         className="bg-white rounded-2xl active:scale-[0.982] transition-all"
-        style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: '0 1px 6px rgba(26,111,212,0.06)', padding: '12px 14px', cursor: 'pointer' }}
+        style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: '0 2px 12px rgba(15,43,107,0.07)', padding: '13px 14px', cursor: 'pointer' }}
       >
         {/* Approved banner */}
         {appStatus === 'approved' && (

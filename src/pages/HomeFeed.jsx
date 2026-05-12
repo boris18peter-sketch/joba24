@@ -279,22 +279,22 @@ export default function HomeFeed() {
   };
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#e8eef8', backdropFilter: 'blur(10px)' }}>
-        <div className="px-4 pt-4 pb-3">
+      <div className="sticky top-0 z-40 border-b" style={{ background: 'rgba(248,249,252,0.98)', borderColor: '#edf1f7', backdropFilter: 'blur(12px)' }}>
+        <div className="px-4 pt-3 pb-2">
           {/* Logo row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
-              <span style={{ fontWeight: 900, fontSize: 22, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+              <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 9 }} />
+              <span style={{ fontWeight: 900, fontSize: 20, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
             </div>
           </div>
 
           {/* Search bar with embedded filter button */}
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search size={16} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#94a3b8', pointerEvents: 'none', zIndex: 1 }} />
+              <Search size={15} style={{ position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#b0bec5', pointerEvents: 'none', zIndex: 1 }} />
               <input
                 placeholder="חפש לפי מיקום, קטגוריה..."
                 value={search}
@@ -303,10 +303,10 @@ export default function HomeFeed() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit(search)}
                 style={{
-                  width: '100%', height: 44, borderRadius: 14, border: `1.5px solid ${searchFocused ? '#93c5fd' : '#e8eef8'}`,
-                  paddingRight: 38, paddingLeft: 50, fontSize: 14, fontFamily: 'inherit',
+                  width: '100%', height: 40, borderRadius: 12, border: `1px solid ${searchFocused ? '#93c5fd' : '#e4eaf2'}`,
+                  paddingRight: 34, paddingLeft: 46, fontSize: 13, fontFamily: 'inherit',
                   background: 'white', outline: 'none', color: '#1a2540',
-                  boxShadow: searchFocused ? '0 0 0 3px rgba(147,197,253,0.2)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  boxShadow: searchFocused ? '0 0 0 3px rgba(147,197,253,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
                   transition: 'all 0.15s',
                   boxSizing: 'border-box',
                 }}
@@ -349,7 +349,7 @@ export default function HomeFeed() {
           </div>
 
           {/* Category quick filter + live count */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
             {/* Live count badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, background: '#eff6ff', borderRadius: 20, padding: '4px 10px' }}>
               <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
@@ -404,7 +404,7 @@ export default function HomeFeed() {
 
       {/* Active Task Banners — horizontal scroll when multiple */}
       {(activeWorkerTask || activeClientTask) && (
-        <div style={{ paddingTop: 12 }}>
+        <div style={{ paddingTop: 14 }}>
           <div style={{ display: 'flex', gap: 12, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingRight: 16, paddingLeft: 16, paddingBottom: 2 }}>
             {activeWorkerTask && (
               <div style={{ flexShrink: 0, width: activeClientTask && activeClientTask.id !== activeWorkerTask?.id ? 'calc(88vw)' : '100%' }}>
@@ -428,7 +428,7 @@ export default function HomeFeed() {
       {/* My Published Tasks Carousel */}
       <MyTasksCarousel myTasks={myTasks} />
 
-      <div className="px-4 py-4">
+      <div className="px-4 py-5">
         {isLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {Array(4).fill(0).map((_, i) => (
@@ -446,7 +446,7 @@ export default function HomeFeed() {
             <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
               <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
               <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />

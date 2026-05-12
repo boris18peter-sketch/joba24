@@ -218,7 +218,7 @@ export default function Layout() {
   ];
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f4f7fb', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       <SideMenu />
       
@@ -234,7 +234,7 @@ export default function Layout() {
         ))}
       </div>
       
-      <div style={{ flex: 1, overflow: 'auto', paddingBottom: 80 }}>
+      <div style={{ flex: 1, overflow: 'auto', paddingBottom: 96 }}>
         <Outlet />
       </div>
 

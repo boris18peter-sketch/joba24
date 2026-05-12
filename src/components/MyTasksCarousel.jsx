@@ -1,8 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { getCategoryLabel } from '@/lib/categories';
-import { MessageCircle, ChevronLeft, Plus, RefreshCw } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
@@ -15,9 +14,27 @@ const statusConfig = {
 export default function MyTasksCarousel({ myTasks }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  // Show open, taken, and expired tasks
+
   // Show only active/actionable tasks — exclude COMPLETED and CANCELLED
   const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status));
+  const openTaskIds = relevantTasks.filter(t => t.status === 'OPEN').map(t => t.id);
+
+  // Fetch pending applications for open tasks to show badge
+  const { data: pendingApps = [] } = useQuery({
+    queryKey: ['carouselPendingApps', openTaskIds.join(',')],
+    queryFn: async () => {
+      if (!openTaskIds.length) return [];
+      const results = await Promise.all(
+        openTaskIds.map(id => base44.entities.TaskApplication.filter({ task_id: id, status: 'pending' }))
+      );
+      return results.flat();
+    },
+    enabled: openTaskIds.length > 0,
+    refetchInterval: 8000,
+    staleTime: 0,
+  });
+
+  const pendingCountForTask = (taskId) => pendingApps.filter(a => a.task_id === taskId).length;
 
   const handleReopen = async (e, task) => {
     e.preventDefault();
@@ -36,7 +53,7 @@ export default function MyTasksCarousel({ myTasks }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
             borderRadius: 16, padding: '13px 20px',
-            boxShadow: '0 4px 18px rgba(26,111,212,0.28)',
+            boxShadow: '0 4px 18px rgba(26,111,212,0.25)',
             cursor: 'pointer',
           }}>
             <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -50,8 +67,8 @@ export default function MyTasksCarousel({ myTasks }) {
   }
 
   return (
-    <div style={{ padding: '12px 16px 4px' }}>
-      {/* Divider header — same style as "משימות שאחרים פרסמו" */}
+    <div style={{ padding: '14px 16px 6px' }}>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
           משימות שפרסמתי
@@ -62,6 +79,7 @@ export default function MyTasksCarousel({ myTasks }) {
           הכל <ChevronLeft size={13} />
         </Link>
       </div>
+
       <div className="my-tasks-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch' }}>
         <style>{`
           .my-tasks-scroll::-webkit-scrollbar { height: 2px; }
@@ -72,19 +90,24 @@ export default function MyTasksCarousel({ myTasks }) {
           const status = statusConfig[task.status] || statusConfig.OPEN;
           const isTaken = task.status === 'TAKEN';
           const isExpired = task.status === 'EXPIRED';
+          const isOpen = task.status === 'OPEN';
+          const pendingCount = isOpen ? pendingCountForTask(task.id) : 0;
+          const hasPending = pendingCount > 0;
+
           return (
             <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
               <div style={{
-                width: 165,
-                height: 110,
-                background: isExpired ? '#fff7ed' : 'white',
+                width: 168,
+                minHeight: hasPending ? 126 : 108,
+                background: isExpired ? '#fff7ed' : hasPending ? '#fffdf5' : 'white',
                 borderRadius: 16,
-                border: isTaken ? `1.5px solid #c8903a` : isExpired ? '1.5px solid #c07040' : '1px solid #dce8f5',
-                padding: '12px 12px 10px',
+                border: hasPending ? '1.5px solid #fbbf24' : isTaken ? '1.5px solid #c8903a' : isExpired ? '1.5px solid #c07040' : '1px solid #e8eef8',
+                padding: '11px 12px 10px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                boxShadow: isTaken ? '0 2px 12px rgba(192,135,58,0.18)' : isExpired ? '0 2px 10px rgba(192,112,64,0.12)' : '0 1px 4px rgba(26,111,212,0.07)',
+                gap: 6,
+                boxShadow: hasPending ? '0 2px 12px rgba(251,191,36,0.18)' : isTaken ? '0 2px 12px rgba(192,135,58,0.15)' : '0 2px 8px rgba(15,43,107,0.06)',
                 position: 'relative',
                 boxSizing: 'border-box',
               }}>
@@ -107,6 +130,16 @@ export default function MyTasksCarousel({ myTasks }) {
                 <div style={{ fontSize: 12, fontWeight: 800, color: isExpired ? '#9a3412' : '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {task.title}
                 </div>
+
+                {/* Pending applications badge */}
+                {hasPending && (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 7px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Users size={9} color="#d97706" />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#92400e', lineHeight: 1.2 }}>
+                      {pendingCount} בקשה{pendingCount > 1 ? 'ות' : ''} ממתינות
+                    </span>
+                  </div>
+                )}
 
                 {/* Bottom row: price + worker/reopen */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

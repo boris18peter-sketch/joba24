@@ -100,6 +100,7 @@ export default function MyTasks() {
         </div>
       </div>
 
+      <style>{`@keyframes pendingPulse { 0%,100%{opacity:1}50%{opacity:0.3} }`}</style>
       <div style={{ padding: '16px 16px 100px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} className="animate-spin text-primary mx-auto" /></div>
@@ -150,9 +151,10 @@ export default function MyTasks() {
 
                 {/* Pending applicants badge */}
                 {pendingApps > 0 && task.status === 'OPEN' && (
-                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '8px 12px', marginBottom: 10, fontSize: 13, fontWeight: 700, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
-                    {pendingApps} מועמד{pendingApps > 1 ? 'ים' : ''} ממתין{pendingApps > 1 ? 'ים' : ''} לאישור
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '8px 12px', marginBottom: 10, fontSize: 12, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pendingPulse 1.5s infinite' }} />
+                    {pendingApps} בקשות ממתינות לאישורך
+                    <span style={{ marginRight: 'auto', background: '#fbbf24', color: 'white', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 900 }}>{pendingApps}</span>
                   </div>
                 )}
 
