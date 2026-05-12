@@ -36,11 +36,11 @@ export default function ActiveTaskBanner({ task, roleHint }) {
   if (!isWorker && !isOwner) return null;
 
   const stepIdx = statusInfo?.step ?? -1;
-  // Always blue/green — no brown
-  const gradient = stepIdx === 2
+  // Owner (client) = green, Worker = blue
+  const gradient = isOwner
     ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-    : stepIdx === 1
-      ? 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)'
+    : stepIdx === 2
+      ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
       : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
 
   const statusText = isOwner
@@ -77,7 +77,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12, overflow: 'hidden' }}>
               {isWorker
                 ? <><User size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {task.client_name}</span> {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.client_rating.toFixed(1)}</span>}</>
-                : <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span></>}
+                : <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span> {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>}</>}
             </div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>

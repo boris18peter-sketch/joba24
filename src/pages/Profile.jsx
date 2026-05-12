@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Settings, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, Bell } from 'lucide-react';
+import { Star, LogOut, Settings, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -24,6 +24,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const photoInputRef = useRef(null);
 
   const handlePhotoUpload = async (e) => {
@@ -40,7 +41,7 @@ export default function Profile() {
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['myReviews', me?.id],
-    queryFn: () => base44.entities.Review.filter({ reviewee_id: me.id }, '-created_date', 10),
+    queryFn: () => base44.entities.Review.filter({ reviewee_id: me.id }, '-created_date', 100),
     enabled: !!me?.id,
     refetchInterval: 15000
   });
@@ -240,12 +241,39 @@ export default function Profile() {
           </div>
         }
 
-        {/* All Reviews link */}
-        {reviews.length > 0 &&
-        <Link to="/leaderboard" style={{ textDecoration: 'none', display: 'block', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '10px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>
-          ראה את כל הביקורות שלי →
-        </Link>
+        {/* All Reviews button */}
+        {reviews.length > 3 &&
+        <button onClick={() => setShowAllReviews(true)} style={{ width: '100%', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '10px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1a6fd4', cursor: 'pointer' }}>
+          ראה את כל הביקורות שלי ({reviews.length}) →
+        </button>
         }
+
+        {/* All Reviews Modal */}
+        {showAllReviews && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowAllReviews(false)}>
+            <div style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid #f0f4fa' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b' }}>כל הביקורות שלי ({reviews.length})</span>
+                <button onClick={() => setShowAllReviews(false)} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={16} color="#64748b" />
+                </button>
+              </div>
+              <div style={{ overflowY: 'auto', padding: '12px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {reviews.map((review) => (
+                  <div key={review.id} style={{ background: '#f8faff', borderRadius: 14, padding: '12px 14px', border: '1px solid #eef2ff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star key={s} size={13} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
+                      ))}
+                      <span style={{ fontSize: 10, color: '#94a3b8', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
+                    </div>
+                    {review.comment && <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, margin: 0 }}>{review.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Logout */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden', marginBottom: 24 }}>
