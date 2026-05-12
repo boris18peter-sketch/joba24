@@ -60,11 +60,11 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(5px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-         style={{ width: '100%', maxWidth: 520, margin: '0 auto', background: 'white', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', maxHeight: '90vh', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)' }}
+         style={{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)' }}
          dir="rtl"
        >
         {/* Header */}
