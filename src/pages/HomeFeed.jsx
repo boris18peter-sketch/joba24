@@ -294,13 +294,11 @@ export default function HomeFeed() {
         <div style={{ width: '100%', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Left spacer matching menu button size */}
           <div style={{ width: 44 }} />
-          {/* Centered logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Logo on the right */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
             <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
             <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
           </div>
-          {/* Right spacer */}
-          <div style={{ width: 44 }} />
         </div>
       </div>
 

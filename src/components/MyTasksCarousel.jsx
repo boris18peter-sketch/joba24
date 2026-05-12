@@ -86,12 +86,10 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
 
   const pendingCountForTask = (taskId) => pendingApps.filter(a => a.task_id === taskId).length;
 
-  const handleReopen = async (e, task) => {
+  const handleReopen = (e, task) => {
     e.preventDefault();
     e.stopPropagation();
-    const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    await base44.entities.Task.update(task.id, { status: 'OPEN', expires_at: newExpiry, worker_id: null, worker_name: null, worker_status: null });
-    queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+    navigate(`/edit-task/${task.id}`);
   };
 
   // Empty state: show a "Post Task" button without title (unless user is currently working on a task)
@@ -219,7 +217,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                       onClick={(e) => handleReopen(e, task)}
                       style={{ height: 22, padding: '0 8px', borderRadius: 7, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
                     >
-                      <RefreshCw size={9} /> פתח מחדש
+                      <RefreshCw size={9} /> ערוך ופתח
                     </button>
                   )}
                 </div>

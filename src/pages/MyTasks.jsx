@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, X, RefreshCw, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { getCategoryLabel } from '@/lib/categories';
@@ -24,6 +24,7 @@ const TABS = [
 
 export default function MyTasks() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('active');
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -54,13 +55,9 @@ export default function MyTasks() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['myTasksPage'] }); toast.success('המשימה בוטלה'); },
   });
 
-  const reopenMutation = useMutation({
-    mutationFn: (taskId) => base44.entities.Task.update(taskId, {
-      status: 'OPEN',
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['myTasksPage'] }); toast.success('המשימה נפתחה מחדש'); },
-  });
+  const handleReopen = (taskId) => {
+    navigate(`/edit-task/${taskId}`);
+  };
 
   const tab = TABS.find(t => t.key === activeTab);
   const filtered = tasks.filter(t => tab.statuses.includes(t.status));
@@ -194,11 +191,10 @@ export default function MyTasks() {
 
                   {(task.status === 'EXPIRED' || task.status === 'CANCELLED') && (
                     <button
-                      onClick={() => reopenMutation.mutate(task.id)}
-                      disabled={reopenMutation.isPending}
+                      onClick={() => handleReopen(task.id)}
                       style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                     >
-                      <RefreshCw size={14} /> פתח מחדש
+                      <RefreshCw size={14} /> ערוך ופתח מחדש
                     </button>
                   )}
                 </div>
