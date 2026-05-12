@@ -16,6 +16,9 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
   const handleSubmit = async () => {
     if (loading) return;
     setLoading(true);
+    // Optimistic: close modal immediately so user sees feedback right away
+    onApplied();
+    onClose();
     try {
       await base44.entities.TaskApplication.create({
         task_id: task.id,
@@ -25,11 +28,8 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         status: 'pending',
       });
       toast.success('הבקשה נשלחה לבעל הג\'ובה!');
-      onApplied();
-      onClose();
     } catch {
       toast.error('שגיאה בשליחת הבקשה, נסה שוב');
-      setLoading(false);
     }
   };
 
@@ -148,6 +148,11 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
   };
 
   const handleApplied = () => {
+    // Optimistic update: immediately mark as pending so button disappears
+    queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => [
+      ...old,
+      { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `optimistic_${task.id}` },
+    ]);
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
   };

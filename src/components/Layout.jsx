@@ -125,13 +125,14 @@ export default function Layout() {
 
       // Client notifications
       if (task.client_id === me?.id) {
-        if (task.status === 'TAKEN' && prev.status === 'OPEN') {
-          addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
-        }
         if (task.worker_status && task.worker_status !== prev.worker_status) {
+          // Worker on the way: skip separate task_taken notification — this covers it
           if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
           else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
           else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
+        } else if (task.status === 'TAKEN' && prev.status === 'OPEN' && !task.worker_status) {
+          // Only fire task_taken if worker hasn't already set status (to avoid double notification)
+          addNotification({ type: 'task_taken', taskTitle: task.title, workerName: task.worker_name, taskId: task.id });
         }
       }
 

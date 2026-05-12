@@ -488,8 +488,8 @@ export default function TaskDetail() {
         )}
 
         {/* Worker tracker:
-            - Owner: show from the moment task is OPEN (searching state) through TAKEN
-            - Worker: show only when TAKEN */}
+            - Owner: show when task is TAKEN
+            - Worker: show when TAKEN */}
         {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
           <WorkerTrackerBar
             task={task}
@@ -497,6 +497,17 @@ export default function TaskDetail() {
             isOwner={isOwner}
             onUpdate={handleWorkerUpdate}
           />
+        )}
+
+        {/* Owner waiting for worker to depart — shown after approval but before worker_status is set */}
+        {isOwner && task.status === 'TAKEN' && !task.worker_status && (
+          <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>⏳</div>
+            <div>
+              <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>אושר! מחכה שהעובד יצא לדרך</div>
+              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>העובד <strong>{task.worker_name}</strong> קיבל הודעה ויצא בקרוב</div>
+            </div>
+          </div>
         )}
 
         {/* Approved worker banner — shown when this worker's app was approved */}
@@ -521,8 +532,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Applicants for owner */}
-        {isOwner && task.status === 'OPEN' && (
+        {/* Applicants for owner — only when no worker assigned yet */}
+        {isOwner && task.status === 'OPEN' && !task.worker_id && (
           <TaskApplicants task={task} onApprove={() => {
             queryClient.refetchQueries({ queryKey: ['task', id] });
           }} />

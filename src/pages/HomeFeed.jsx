@@ -300,10 +300,16 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {/* Active Task Banner — show only client task (task I published with active worker) */}
-      {activeClientTask && (
-        <div style={{ padding: '14px 16px 0' }}>
-          <ActiveTaskBanner task={activeClientTask} roleHint="client" />
+      {/* Active Task Banner — show worker task first, then client task (avoid duplicates) */}
+      {(activeWorkerTask || activeClientTask) && (
+        <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {activeWorkerTask && (
+            <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
+          )}
+          {/* Only show client task if it's a different task than the worker task */}
+          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id && (
+            <ActiveTaskBanner task={activeClientTask} roleHint="client" />
+          )}
         </div>
       )}
 
