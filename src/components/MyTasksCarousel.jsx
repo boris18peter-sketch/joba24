@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, ChevronLeft, ChevronRight, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef, useEffect } from 'react';
@@ -64,8 +64,6 @@ export default function MyTasksCarousel({ myTasks }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const scrollContainerRef = useRef(null);
 
   // Show active/actionable tasks — OPEN, EXPIRED, TAKEN
   const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'EXPIRED', 'TAKEN'].includes(t.status));
@@ -94,18 +92,6 @@ export default function MyTasksCarousel({ myTasks }) {
     const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     await base44.entities.Task.update(task.id, { status: 'OPEN', expires_at: newExpiry, worker_id: null, worker_name: null, worker_status: null });
     queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-  };
-
-  const handlePrevSlide = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -192, behavior: 'smooth' });
-    }
-  };
-
-  const handleNextSlide = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 192, behavior: 'smooth' });
-    }
   };
 
   // Empty state: show a "Post Task" button without title
@@ -144,26 +130,7 @@ export default function MyTasksCarousel({ myTasks }) {
         </Link>
       </div>
 
-      {/* Carousel with navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {/* Prev button */}
-        {relevantTasks.length > 0 && (
-          <button
-            onClick={handlePrevSlide}
-            style={{
-              width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              flexShrink: 0, color: '#1a6fd4', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => e.target.style.background = '#e5e9f5'}
-            onMouseLeave={e => e.target.style.background = '#f1f5f9'}
-          >
-            <ChevronRight size={16} />
-          </button>
-        )}
-
-        {/* Scroll container */}
-        <div className="my-tasks-scroll" ref={scrollContainerRef} style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'none', scrollBehavior: 'smooth', flex: 1, minWidth: 0 }}>
+      <div className="my-tasks-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch' }}>
         <style>{`
           .my-tasks-scroll::-webkit-scrollbar { height: 2px; }
           .my-tasks-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -256,29 +223,9 @@ export default function MyTasksCarousel({ myTasks }) {
             </Link>
           );
         })}
-        </div>
-
-        {/* Next button */}
-        {relevantTasks.length > 0 && (
-          <button
-            onClick={handleNextSlide}
-            style={{
-              width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              flexShrink: 0, color: '#1a6fd4', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => e.target.style.background = '#e5e9f5'}
-            onMouseLeave={e => e.target.style.background = '#f1f5f9'}
-          >
-            <ChevronLeft size={16} />
-          </button>
-        )}
       </div>
-
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
-        .my-tasks-scroll { scroll-behavior: smooth; }
-        .my-tasks-scroll::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );
