@@ -325,22 +325,22 @@ export default function Chat() {
         <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
 
         {/* Text input */}
-        <div style={{ flex: 1, background: '#f8fafc', borderRadius: 22, border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
-          <textarea
-            placeholder="הודעה..."
-            value={input}
-            rows={1}
-            onChange={e => {
-              setInput(e.target.value);
-              e.target.style.height = 'auto';
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-            }}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); }
-            }}
-            style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
-          />
-        </div>
+         <div style={{ flex: 1, background: '#f8fafc', borderRadius: 22, border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
+           <textarea
+             placeholder="הודעה..."
+             value={input}
+             rows={1}
+             onChange={e => {
+               setInput(e.target.value);
+               e.target.style.height = 'auto';
+               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+             }}
+             onKeyDown={e => {
+               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); }
+             }}
+             style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
+           />
+         </div>
 
         {/* Send */}
         <button

@@ -53,7 +53,7 @@ export default function EditTask() {
         estimated_time: isCustomTime ? 'custom' : (task.estimated_time || '1h'),
         custom_time: isCustomTime ? task.estimated_time : '',
         category: task.category || 'other',
-        approval_mode: task.approval_mode || 'instant',
+        approval_mode: 'manual',
         expiry_hours: task.expiry_duration_hours || null,
         images: task.images || [],
         requirements: task.requirements || { vehicle: false, two_people: false, experience: false },
@@ -90,12 +90,11 @@ export default function EditTask() {
       city: form.city,
       estimated_time: estimatedTime,
       category: form.category,
-      approval_mode: form.approval_mode,
       expiry_duration_hours: form.expiry_hours,
       expires_at: expires,
       images: form.images,
       requirements: form.requirements,
-    });
+      });
     queryClient.invalidateQueries({ queryKey: ['task', id] });
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
     toast.success('המשימה עודכנה! ✅');
@@ -119,7 +118,6 @@ export default function EditTask() {
       city: form.city,
       estimated_time: estimatedTime,
       category: form.category,
-      approval_mode: form.approval_mode,
       expiry_duration_hours: form.expiry_hours,
       expires_at: expires,
       images: form.images,
@@ -199,14 +197,16 @@ export default function EditTask() {
         </div>
 
         {/* Price */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">מחיר (₪) *</Label>
-          <Input type="number" placeholder="100"
-            value={form.price} onChange={e => set('price', e.target.value)}
-            className="bg-secondary border-0 rounded-xl h-12 text-base font-bold"
-          />
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />
-        </div>
+         <div>
+           <Label className="text-sm font-semibold mb-2 block">מחיר (₪) *</Label>
+           <Input type="number" placeholder="100"
+             value={form.price} onChange={e => task?.status !== 'OPEN' ? null : set('price', e.target.value)}
+             disabled={task?.status === 'OPEN'}
+             className={`bg-secondary border-0 rounded-xl h-12 text-base font-bold ${task?.status === 'OPEN' ? 'opacity-50 cursor-not-allowed' : ''}`}
+           />
+           {task?.status === 'OPEN' && <p className="text-xs text-red-600 mt-2">לא ניתן לשנות מחיר של משימה שכבר פורסמה</p>}
+           {task?.status !== 'OPEN' && <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />}
+         </div>
 
         {/* Auto Price Bump */}
         <div>
@@ -232,26 +232,7 @@ export default function EditTask() {
           )}
         </div>
 
-        {/* Approval Mode */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">אופן אישור עובד</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => set('approval_mode', 'instant')}
-              className={`p-3 rounded-xl border text-right transition-all ${form.approval_mode === 'instant' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-700'}`}
-            >
-              <Zap className="w-4 h-4 mb-1" />
-              <div className="text-sm font-bold">אישור מיידי</div>
-              <div className={`text-xs mt-0.5 ${form.approval_mode === 'instant' ? 'text-white/70' : 'text-gray-400'}`}>ראשון שלוקח — זוכה</div>
-            </button>
-            <button onClick={() => set('approval_mode', 'manual')}
-              className={`p-3 rounded-xl border text-right transition-all ${form.approval_mode === 'manual' ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-700'}`}
-            >
-              <Users className="w-4 h-4 mb-1" />
-              <div className="text-sm font-bold">אני בוחר</div>
-              <div className={`text-xs mt-0.5 ${form.approval_mode === 'manual' ? 'text-white/70' : 'text-gray-400'}`}>אראה מועמדים ואבחר</div>
-            </button>
-          </div>
-        </div>
+
 
         {/* Expiry */}
         <div>

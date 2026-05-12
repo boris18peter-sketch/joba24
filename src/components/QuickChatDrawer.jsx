@@ -6,11 +6,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
 export default function QuickChatDrawer({ task, me, onClose }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [msg, setMsg] = useState('');
-  const [sending, setSending] = useState(false);
-  const bottomRef = useRef(null);
+   const navigate = useNavigate();
+   const queryClient = useQueryClient();
+   const [msg, setMsg] = useState('');
+   const [sending, setSending] = useState(false);
+   const [keyboardHeight, setKeyboardHeight] = useState(0);
+   const bottomRef = useRef(null);
+   const inputRef = useRef(null);
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['quickChat', task.id],
@@ -32,6 +34,17 @@ export default function QuickChatDrawer({ task, me, onClose }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Keyboard avoid logic for mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (inputRef.current) {
+        inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const send = async () => {
     if (!msg.trim() || sending) return;
     setSending(true);
@@ -51,9 +64,9 @@ export default function QuickChatDrawer({ task, me, onClose }) {
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-        style={{ width: '100%', maxWidth: 520, margin: '0 auto', background: 'white', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', maxHeight: '80vh', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)' }}
-        dir="rtl"
-      >
+         style={{ width: '100%', maxWidth: 520, margin: '0 auto', background: 'white', borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column', maxHeight: '90vh', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)' }}
+         dir="rtl"
+       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 12px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -122,14 +135,19 @@ export default function QuickChatDrawer({ task, me, onClose }) {
         </div>
 
         {/* Input */}
-        <div style={{ padding: '10px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div style={{ padding: '10px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0 }} ref={inputRef}>
           <input
             autoFocus
             value={msg}
             onChange={e => setMsg(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+            onFocus={() => {
+              setTimeout(() => {
+                inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }, 300);
+            }}
             placeholder="כתוב הודעה..."
-            style={{ flex: 1, height: 44, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 14px', fontSize: 14, fontFamily: 'inherit', outline: 'none', background: '#f8fafc', color: '#1a2540' }}
+            style={{ flex: 1, height: 44, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 14px', fontSize: 16, fontFamily: 'inherit', outline: 'none', background: '#f8fafc', color: '#1a2540', WebkitAppearance: 'none' }}
           />
           <button
             onClick={send}
