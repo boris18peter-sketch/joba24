@@ -323,7 +323,7 @@ export default function HomeFeed() {
       </React.Suspense>
 
       {/* My Published Tasks Carousel */}
-      <MyTasksCarousel myTasks={myTasks} />
+      <MyTasksCarousel myTasks={myTasks} hideWhenWorking={!!activeWorkerTask} />
 
       <div className="px-4 py-5">
 

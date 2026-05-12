@@ -60,7 +60,7 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
   );
 }
 
-export default function MyTasksCarousel({ myTasks }) {
+export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -94,8 +94,8 @@ export default function MyTasksCarousel({ myTasks }) {
     queryClient.invalidateQueries({ queryKey: ['myTasks'] });
   };
 
-  // Empty state: show a "Post Task" button without title
-  if (relevantTasks.length === 0) {
+  // Empty state: show a "Post Task" button without title (unless user is currently working on a task)
+  if (relevantTasks.length === 0 && !hideWhenWorking) {
     return (
       <div style={{ padding: '0 16px 12px' }}>
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
@@ -114,6 +114,10 @@ export default function MyTasksCarousel({ myTasks }) {
         </Link>
       </div>
     );
+  }
+
+  if (hideWhenWorking) {
+    return null;
   }
 
   return (
