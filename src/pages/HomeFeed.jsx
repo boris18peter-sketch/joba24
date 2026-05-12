@@ -321,7 +321,9 @@ export default function HomeFeed() {
       </React.Suspense>
 
       {/* My Published Tasks Carousel */}
-      <MyTasksCarousel myTasks={myTasks} hideWhenWorking={!!activeWorkerTask} />
+      {myTasks.some(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status)) && (
+        <MyTasksCarousel myTasks={myTasks} hideWhenWorking={false} />
+      )}
 
       <div className="px-4 py-5">
 
