@@ -302,7 +302,7 @@ export default function HomeFeed() {
 
       {/* Active Task Banner — show worker task first, then client task (avoid duplicates) */}
       {(activeWorkerTask || activeClientTask) &&
-      <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }} className="bg-[#564e4e]">
+      <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {activeWorkerTask &&
         <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
         }
