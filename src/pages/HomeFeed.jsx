@@ -30,6 +30,9 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10000,
   });
 
   // Active task I'm working on as a worker
@@ -38,8 +41,9 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: data => data?.[0] || null,
     enabled: !!me?.id,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   // Active task I published that is currently TAKEN
@@ -59,42 +63,67 @@ export default function HomeFeed() {
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
   useEffect(() => {
-    // Live task feed: update/remove tasks instantly on any change
+    if (!me?.id) return;
+
     const unsubTask = base44.entities.Task.subscribe((event) => {
+      const updatedTask = event.data || {};
+
+      // 1. Update global tasks feed
       queryClient.setQueryData(['tasks'], (old = []) => {
         if (event.type === 'create') {
           if (old.find(t => t.id === event.id)) return old;
-          // Mark as new for pulse animation
           setNewTaskIds(prev => new Set([...prev, event.id]));
           setTimeout(() => setNewTaskIds(prev => { const n = new Set(prev); n.delete(event.id); return n; }), 4000);
-          return [event.data, ...old];
+          return [updatedTask, ...old];
         }
         if (event.type === 'update') {
-          // If task is no longer OPEN (taken, closed, cancelled, completed) — remove from feed
-          const updatedTask = { ...(old.find(t => t.id === event.id) || {}), ...event.data };
-          if (updatedTask.status && updatedTask.status !== 'OPEN') {
-            return old.map(t => t.id === event.id ? updatedTask : t);
-          }
-          return old.map(t => t.id === event.id ? updatedTask : t);
+          return old.map(t => t.id === event.id ? { ...t, ...updatedTask } : t);
         }
         if (event.type === 'delete') {
           return old.filter(t => t.id !== event.id);
         }
         return old;
       });
-      // Also update myTasks cache
-      if (me?.id) {
-        queryClient.setQueryData(['myTasks', me.id], (old = []) => {
-          if (event.type === 'update') return old.map(t => t.id === event.id ? { ...t, ...event.data } : t);
-          if (event.type === 'delete') return old.filter(t => t.id !== event.id);
+
+      // 2. Update myTasks cache — update status live, remove CANCELLED/COMPLETED
+      queryClient.setQueryData(['myTasks', me.id], (old = []) => {
+        if (event.type === 'create') {
+          // Add new task if I'm the client
+          if (updatedTask.client_id === me.id && !old.find(t => t.id === event.id)) {
+            return [updatedTask, ...old];
+          }
           return old;
-        });
-      }
+        }
+        if (event.type === 'update') {
+          const merged = { ...updatedTask };
+          // Keep CANCELLED and COMPLETED visible for repost, but update status
+          return old.map(t => t.id === event.id ? { ...t, ...merged } : t);
+        }
+        if (event.type === 'delete') {
+          return old.filter(t => t.id !== event.id);
+        }
+        return old;
+      });
+
+      // 3. Update activeWorkerTask cache live
+      queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+        if (event.type === 'update' && old?.id === event.id) {
+          const merged = { ...old, ...updatedTask };
+          // If task is no longer TAKEN, clear the banner
+          if (merged.status !== 'TAKEN') return null;
+          return merged;
+        }
+        if (event.type === 'delete' && old?.id === event.id) return null;
+        // If a new TAKEN task assigned to me appears
+        if (event.type === 'update' && updatedTask.worker_id === me.id && updatedTask.status === 'TAKEN') {
+          return updatedTask;
+        }
+        return old;
+      });
     });
 
-    // Live application updates: refresh my applications cache instantly
+    // Live application updates
     const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
-      if (!me?.id) return;
       if (event.data?.worker_id === me.id || event.type === 'delete') {
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
       }

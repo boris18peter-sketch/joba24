@@ -16,6 +16,7 @@ export default function MyTasksCarousel({ myTasks }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   // Show open, taken, and expired tasks
+  // Show only active/actionable tasks — exclude COMPLETED and CANCELLED
   const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status));
 
   const handleReopen = async (e, task) => {
