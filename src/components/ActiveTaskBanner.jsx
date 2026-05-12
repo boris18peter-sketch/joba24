@@ -60,7 +60,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
             <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }} className="text-left">
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }} className="text-sm text-\u05E8">
             {isWorker ?
             <><Hammer size={11} /> משימה שאתה מבצע עכשיו</> :
             <><HardHat size={11} /> משימה שלך — בביצוע ע"י עובד</>}
