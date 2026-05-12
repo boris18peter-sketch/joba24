@@ -31,13 +31,17 @@ export default function ActiveTaskBanner({ task, roleHint }) {
   if (!task || !me) return null;
 
   const statusInfo = STATUS_STEPS[task.worker_status] || null;
-  // roleHint allows forced role when both roles apply to the same user
   const isWorker = roleHint === 'worker' || (roleHint !== 'client' && me?.id === task.worker_id);
   const isOwner = roleHint === 'client' || (roleHint !== 'worker' && me?.id === task.client_id);
   if (!isWorker && !isOwner) return null;
 
   const stepIdx = statusInfo?.step ?? -1;
-  const gradient = gradients[stepIdx] || gradients['-1'];
+  // Always blue/green — no brown
+  const gradient = stepIdx === 2
+    ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+    : stepIdx === 1
+      ? 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)'
+      : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
 
   const statusText = isOwner
     ? (statusInfo?.ownerLabel || 'ממתין לעדכון מהעובד')

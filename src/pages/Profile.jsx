@@ -126,10 +126,9 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <StatBox value={completedCount} label="ג'ובות בוצעו" />
           <StatBox value={avgRating + (rating > 0 ? '★' : '')} label="דירוג" sub={`${me?.rating_count || 0} ביקורות`} />
-          <StatBox value={workerScore > 0 ? workerScore.toFixed(0) : '—'} label="ניקוד עובד" />
         </div>
       </div>
 
@@ -241,23 +240,11 @@ export default function Profile() {
           </div>
         }
 
-        {/* Worker Score detail */}
-        {workerScore > 0 &&
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <SectionTitle>ניקוד עובד</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              {[
-            { label: 'משימות', value: me?.score_tasks || 0 },
-            { label: 'מהירות', value: me?.score_speed || 0 },
-            { label: 'ביצוע', value: me?.score_quality || 0 }].
-            map((s) =>
-            <div key={s.label} style={{ background: '#fef9c3', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: '#92400e' }}>{s.value}</div>
-                  <div style={{ fontSize: 10, color: '#b45309', marginTop: 2 }}>{s.label}</div>
-                </div>
-            )}
-            </div>
-          </div>
+        {/* All Reviews link */}
+        {reviews.length > 0 &&
+        <Link to="/leaderboard" style={{ textDecoration: 'none', display: 'block', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '10px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>
+          ראה את כל הביקורות שלי →
+        </Link>
         }
 
         {/* Logout */}

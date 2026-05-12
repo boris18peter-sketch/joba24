@@ -1,7 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users } from 'lucide-react';
+import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
@@ -11,9 +13,64 @@ const statusConfig = {
   EXPIRED: { label: 'פג תוקף', color: '#fef3ea', textColor: '#8a4a1a', dot: '#c2773a' },
 };
 
+function TaskMenu({ task, onClose, queryClient, navigate }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+  }, [onClose]);
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    onClose();
+    await base44.entities.Task.update(task.id, { status: 'CANCELLED' });
+    queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    toast.success('המשימה בוטלה');
+  };
+
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    onClose();
+    navigate(`/edit-task/${task.id}`);
+  };
+
+  const handleStory = async (e) => {
+    e.stopPropagation();
+    onClose();
+    const storyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await base44.entities.Task.update(task.id, { is_story: true, story_expires_at: storyExpires });
+    queryClient.invalidateQueries({ queryKey: ['stories'] });
+    toast.success('המשימה הועלתה לסטורי! 🚀');
+  };
+
+  return (
+    <div ref={ref} onClick={e => e.stopPropagation()} style={{
+      position: 'absolute', top: 30, left: 0, zIndex: 100,
+      background: 'white', borderRadius: 12, border: '1px solid #e2e8f0',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: 130, overflow: 'hidden',
+    }}>
+      {[
+        { icon: Pencil, label: 'עריכה', onClick: handleEdit, color: '#1a6fd4' },
+        { icon: Sparkles, label: 'העלה לסטורי', onClick: handleStory, color: '#a855f7' },
+        { icon: Trash2, label: 'ביטול', onClick: handleDelete, color: '#dc2626' },
+      ].map(({ icon: Icon, label, onClick, color }) => (
+        <button key={label} onClick={onClick}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color, borderBottom: label !== 'ביטול' ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
+          <Icon size={13} /> {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function MyTasksCarousel({ myTasks }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   // Show only active/actionable tasks — exclude COMPLETED, CANCELLED, and TAKEN (shown in ActiveTaskBanner)
   const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'EXPIRED'].includes(t.status));
@@ -111,19 +168,30 @@ export default function MyTasksCarousel({ myTasks }) {
                 position: 'relative',
                 boxSizing: 'border-box',
               }}>
-                {/* Top row: status + chat button */}
+                {/* Top row: status + actions */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: status.dot, display: 'inline-block', flexShrink: 0, ...(isTaken ? { animation: 'pulse 1.5s infinite' } : {}) }} />
                     <span style={{ fontSize: 10, color: status.textColor, fontWeight: 700 }}>{status.label}</span>
                   </div>
-                  {isTaken && (
-                    <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()}>
-                      <div style={{ width: 24, height: 24, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <MessageCircle size={12} color="#1a6fd4" />
-                      </div>
-                    </Link>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
+                    {isTaken && (
+                      <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()}>
+                        <div style={{ width: 22, height: 22, borderRadius: 7, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <MessageCircle size={11} color="#1a6fd4" />
+                        </div>
+                      </Link>
+                    )}
+                    {isOpen && (
+                      <button onClick={e => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }}
+                        style={{ width: 22, height: 22, borderRadius: 7, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <MoreVertical size={11} color="#64748b" />
+                      </button>
+                    )}
+                    {openMenuId === task.id && (
+                      <TaskMenu task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
+                    )}
+                  </div>
                 </div>
 
                 {/* Title */}

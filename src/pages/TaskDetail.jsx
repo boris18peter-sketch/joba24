@@ -706,6 +706,7 @@ export default function TaskDetail() {
           {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) && (
             <button
               onClick={() => {
+                // Navigate to CreateTask with pre-filled data — user must go through payment flow
                 const params = new URLSearchParams({
                   repost: '1',
                   title: task.title || '',
@@ -715,7 +716,7 @@ export default function TaskDetail() {
                   location_name: task.location_name || '',
                   category: task.category || '',
                   estimated_time: task.estimated_time || '',
-                  approval_mode: task.approval_mode || 'instant',
+                  approval_mode: task.approval_mode || 'manual',
                 });
                 navigate(`/create-task?${params.toString()}`);
               }}
