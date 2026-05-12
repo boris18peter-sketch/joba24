@@ -14,7 +14,7 @@ export default function HomeFeed() {
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('joba_searches') || '[]'); } catch { return []; }
+    try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });
   const [showFilters, setShowFilters] = useState(false);
@@ -32,33 +32,33 @@ export default function HomeFeed() {
     enabled: !!me?.id,
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: 10000,
+    refetchInterval: 10000
   });
 
   // Active task I'm working on as a worker
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
-    select: data => data?.[0] || null,
+    select: (data) => data?.[0] || null,
     enabled: !!me?.id,
     refetchInterval: 3000,
     staleTime: 0,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: true
   });
 
   // Active task I published that is currently TAKEN
-  const activeClientTask = myTasks.find(t => t.status === 'TAKEN') || null;
+  const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
 
   // My applications — to show status on feed cards
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myApplicationsFeed', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 100),
-    enabled: !!me?.id,
+    enabled: !!me?.id
   });
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 50),
+    queryFn: () => base44.entities.Task.list('-created_date', 50)
   });
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
@@ -71,16 +71,16 @@ export default function HomeFeed() {
       // 1. Update global tasks feed
       queryClient.setQueryData(['tasks'], (old = []) => {
         if (event.type === 'create') {
-          if (old.find(t => t.id === event.id)) return old;
-          setNewTaskIds(prev => new Set([...prev, event.id]));
-          setTimeout(() => setNewTaskIds(prev => { const n = new Set(prev); n.delete(event.id); return n; }), 4000);
+          if (old.find((t) => t.id === event.id)) return old;
+          setNewTaskIds((prev) => new Set([...prev, event.id]));
+          setTimeout(() => setNewTaskIds((prev) => {const n = new Set(prev);n.delete(event.id);return n;}), 4000);
           return [updatedTask, ...old];
         }
         if (event.type === 'update') {
-          return old.map(t => t.id === event.id ? { ...t, ...updatedTask } : t);
+          return old.map((t) => t.id === event.id ? { ...t, ...updatedTask } : t);
         }
         if (event.type === 'delete') {
-          return old.filter(t => t.id !== event.id);
+          return old.filter((t) => t.id !== event.id);
         }
         return old;
       });
@@ -89,7 +89,7 @@ export default function HomeFeed() {
       queryClient.setQueryData(['myTasks', me.id], (old = []) => {
         if (event.type === 'create') {
           // Add new task if I'm the client
-          if (updatedTask.client_id === me.id && !old.find(t => t.id === event.id)) {
+          if (updatedTask.client_id === me.id && !old.find((t) => t.id === event.id)) {
             return [updatedTask, ...old];
           }
           return old;
@@ -97,10 +97,10 @@ export default function HomeFeed() {
         if (event.type === 'update') {
           const merged = { ...updatedTask };
           // Keep CANCELLED and COMPLETED visible for repost, but update status
-          return old.map(t => t.id === event.id ? { ...t, ...merged } : t);
+          return old.map((t) => t.id === event.id ? { ...t, ...merged } : t);
         }
         if (event.type === 'delete') {
-          return old.filter(t => t.id !== event.id);
+          return old.filter((t) => t.id !== event.id);
         }
         return old;
       });
@@ -129,12 +129,12 @@ export default function HomeFeed() {
       }
     });
 
-    return () => { unsubTask(); unsubApp(); };
+    return () => {unsubTask();unsubApp();};
   }, [me?.id, queryClient]);
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
+      navigator.geolocation.getCurrentPosition((pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       });
     }
@@ -143,7 +143,7 @@ export default function HomeFeed() {
   // Auto price bump — stop bumping when there's a pending application, resume when cancelled
   useEffect(() => {
     if (!tasks.length) return;
-    tasks.forEach(async task => {
+    tasks.forEach(async (task) => {
       if (task.status !== 'OPEN') return;
       if (!task.auto_bump_enabled || !task.max_price) return;
       if (task.price >= task.max_price) return;
@@ -167,8 +167,8 @@ export default function HomeFeed() {
   function getDistance(lat1, lng1, lat2, lng2) {
     if (!lat1 || !lng1 || !lat2 || !lng2) return null;
     const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lng2 - lng1) * Math.PI) / 180;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lng2 - lng1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
@@ -180,84 +180,84 @@ export default function HomeFeed() {
   // Build category affinity from completed tasks history
   const categoryAffinity = React.useMemo(() => {
     const map = {};
-    (myTasks || []).filter(t => t.status === 'COMPLETED').forEach(t => {
+    (myTasks || []).filter((t) => t.status === 'COMPLETED').forEach((t) => {
       if (t.category) map[t.category] = (map[t.category] || 0) + 1;
     });
     return map;
   }, [myTasks]);
 
   // Show only OTHER people's funded OPEN tasks (exclude my own published tasks)
-  const otherTasks = tasks.filter(t =>
-    (t.payment_status === 'funded' || !t.payment_status) && t.client_id !== me?.id
+  const otherTasks = tasks.filter((t) =>
+  (t.payment_status === 'funded' || !t.payment_status) && t.client_id !== me?.id
   );
 
   // Categorize applications
-  const approvedApps = myApplications.filter(a => a.status === 'approved');
-  const pendingApps = myApplications.filter(a => a.status === 'pending');
-  const approvedTaskIds = new Set(approvedApps.map(a => a.task_id));
-  const pendingTaskIds = new Set(pendingApps.map(a => a.task_id));
+  const approvedApps = myApplications.filter((a) => a.status === 'approved');
+  const pendingApps = myApplications.filter((a) => a.status === 'pending');
+  const approvedTaskIds = new Set(approvedApps.map((a) => a.task_id));
+  const pendingTaskIds = new Set(pendingApps.map((a) => a.task_id));
 
-  const scored = otherTasks
-    .filter(t => {
-      // Show only OPEN tasks OR tasks where I have an approved/pending application
-      const myAppForThis = myApplications.find(a => a.task_id === t.id);
-      const isApprovedForMe = myAppForThis?.status === 'approved';
-      const isPendingForMe = myAppForThis?.status === 'pending';
-      // Only show OPEN tasks in the main feed
-      // TAKEN/COMPLETED/CANCELLED/EXPIRED: hide entirely from feed
-      if (t.status !== 'OPEN') return false;
-      if (dismissedTasks.has(t.id)) return false;
-      const searchLower = search.toLowerCase();
-      const matchSearch = !search ||
-        t.title?.toLowerCase().includes(searchLower) ||
-        t.description?.toLowerCase().includes(searchLower) ||
-        t.city?.toLowerCase().includes(searchLower) ||
-        t.location_name?.toLowerCase().includes(searchLower) ||
-        String(t.price).includes(search.trim());
-      const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
-      const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
-      const matchTime = !filters.time || t.estimated_time === filters.time;
-      const matchCity = !filters.city || t.city?.includes(filters.city) || t.location_name?.includes(filters.city);
-      const matchCat = !filters.category || t.category === filters.category;
-      const matchApproval = !filters.approvalMode || t.approval_mode === filters.approvalMode;
-      return matchSearch && matchMinPrice && matchPrice && matchTime && matchCity && matchCat && matchApproval;
-    })
-    .map(t => {
-      const distKm = userLocation ? getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng) : null;
-      let relevance = 0;
-      
-      // Preferred category: +3
-      if (preferredCategories.includes(t.category)) relevance += 3;
-      
-      // History-based affinity (categories I've worked in before): up to +2.5
-      if (categoryAffinity[t.category]) {
-        relevance += Math.min(categoryAffinity[t.category] * 0.5, 2.5);
-      }
-      
-      // Preferred city: +2
-      if (preferredCities.some(c => t.city?.includes(c) || t.location_name?.includes(c))) relevance += 2;
-      
-      // Distance factor (closer is better): up to +2
-      if (distKm != null && !isNaN(distKm)) {
-        if (distKm < 2) relevance += 2;
-        else if (distKm < 5) relevance += 1;
-      }
-      
-      // Price factor (higher pays more): up to +1.5
-      if (t.price > 300) relevance += 1.5;
-      else if (t.price > 150) relevance += 0.75;
-      
-      // New tasks get slight freshness boost (up to +1)
-      const ageHours = (Date.now() - new Date(t.created_date).getTime()) / 3600000;
-      if (ageHours < 1) relevance += 1;
-      else if (ageHours < 6) relevance += 0.5;
-      
-      return {
-        ...t,
-        _distKm: distKm,
-        _relevance: relevance,
-      };
-    });
+  const scored = otherTasks.
+  filter((t) => {
+    // Show only OPEN tasks OR tasks where I have an approved/pending application
+    const myAppForThis = myApplications.find((a) => a.task_id === t.id);
+    const isApprovedForMe = myAppForThis?.status === 'approved';
+    const isPendingForMe = myAppForThis?.status === 'pending';
+    // Only show OPEN tasks in the main feed
+    // TAKEN/COMPLETED/CANCELLED/EXPIRED: hide entirely from feed
+    if (t.status !== 'OPEN') return false;
+    if (dismissedTasks.has(t.id)) return false;
+    const searchLower = search.toLowerCase();
+    const matchSearch = !search ||
+    t.title?.toLowerCase().includes(searchLower) ||
+    t.description?.toLowerCase().includes(searchLower) ||
+    t.city?.toLowerCase().includes(searchLower) ||
+    t.location_name?.toLowerCase().includes(searchLower) ||
+    String(t.price).includes(search.trim());
+    const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
+    const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
+    const matchTime = !filters.time || t.estimated_time === filters.time;
+    const matchCity = !filters.city || t.city?.includes(filters.city) || t.location_name?.includes(filters.city);
+    const matchCat = !filters.category || t.category === filters.category;
+    const matchApproval = !filters.approvalMode || t.approval_mode === filters.approvalMode;
+    return matchSearch && matchMinPrice && matchPrice && matchTime && matchCity && matchCat && matchApproval;
+  }).
+  map((t) => {
+    const distKm = userLocation ? getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng) : null;
+    let relevance = 0;
+
+    // Preferred category: +3
+    if (preferredCategories.includes(t.category)) relevance += 3;
+
+    // History-based affinity (categories I've worked in before): up to +2.5
+    if (categoryAffinity[t.category]) {
+      relevance += Math.min(categoryAffinity[t.category] * 0.5, 2.5);
+    }
+
+    // Preferred city: +2
+    if (preferredCities.some((c) => t.city?.includes(c) || t.location_name?.includes(c))) relevance += 2;
+
+    // Distance factor (closer is better): up to +2
+    if (distKm != null && !isNaN(distKm)) {
+      if (distKm < 2) relevance += 2;else
+      if (distKm < 5) relevance += 1;
+    }
+
+    // Price factor (higher pays more): up to +1.5
+    if (t.price > 300) relevance += 1.5;else
+    if (t.price > 150) relevance += 0.75;
+
+    // New tasks get slight freshness boost (up to +1)
+    const ageHours = (Date.now() - new Date(t.created_date).getTime()) / 3600000;
+    if (ageHours < 1) relevance += 1;else
+    if (ageHours < 6) relevance += 0.5;
+
+    return {
+      ...t,
+      _distKm: distKm,
+      _relevance: relevance
+    };
+  });
 
   // Sort by: 1) approved (accepted tasks), 2) pending (waiting for approval), 3) others by relevance
   const sortedTasks = scored.sort((a, b) => {
@@ -265,7 +265,7 @@ export default function HomeFeed() {
     const bIsApproved = approvedTaskIds.has(b.id) ? 0 : 2;
     const aIsPending = !approvedTaskIds.has(a.id) && pendingTaskIds.has(a.id) ? 1 : aIsApproved;
     const bIsPending = !approvedTaskIds.has(b.id) && pendingTaskIds.has(b.id) ? 1 : bIsApproved;
-    
+
     if (aIsPending !== bIsPending) return aIsPending - bIsPending;
     return b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date);
   });
@@ -276,8 +276,8 @@ export default function HomeFeed() {
     if (!val.trim()) return;
     setSearch(val);
     setSearchFocused(false);
-    setRecentSearches(prev => {
-      const updated = [val, ...prev.filter(s => s !== val)].slice(0, 5);
+    setRecentSearches((prev) => {
+      const updated = [val, ...prev.filter((s) => s !== val)].slice(0, 5);
       localStorage.setItem('joba_searches', JSON.stringify(updated));
       return updated;
     });
@@ -301,17 +301,17 @@ export default function HomeFeed() {
       </div>
 
       {/* Active Task Banner — show worker task first, then client task (avoid duplicates) */}
-      {(activeWorkerTask || activeClientTask) && (
-        <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {activeWorkerTask && (
-            <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
-          )}
+      {(activeWorkerTask || activeClientTask) &&
+      <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }} className="bg-[#1b52c0]">
+          {activeWorkerTask &&
+        <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
+        }
           {/* Only show client task if it's a different task than the worker task */}
-          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id && (
-            <ActiveTaskBanner task={activeClientTask} roleHint="client" />
-          )}
+          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id &&
+        <ActiveTaskBanner task={activeClientTask} roleHint="client" />
+        }
         </div>
-      )}
+      }
 
       {/* Stories - מעוכב לטעינה */}
       <React.Suspense fallback={null}>
@@ -336,48 +336,48 @@ export default function HomeFeed() {
                 <div style={{ flex: 1, position: 'relative' }}>
                   <Search size={12} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#c4ccd8', pointerEvents: 'none' }} />
                   <input
-                    placeholder="חיפוש משימות..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-                    onKeyDown={e => e.key === 'Enter' && handleSearchSubmit(search)}
-                    style={{
-                      width: '100%', height: 30, borderRadius: 8,
-                      border: `1px solid ${searchFocused ? '#93c5fd' : '#e8eef7'}`,
-                      paddingRight: 26, paddingLeft: search ? 22 : 8,
-                      fontSize: 12, fontFamily: 'inherit',
-                      background: '#f7f9fc', outline: 'none', color: '#1a2540',
-                      transition: 'all 0.15s', boxSizing: 'border-box',
-                    }}
-                  />
-                  {search && (
-                    <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
+                placeholder="חיפוש משימות..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+                style={{
+                  width: '100%', height: 30, borderRadius: 8,
+                  border: `1px solid ${searchFocused ? '#93c5fd' : '#e8eef7'}`,
+                  paddingRight: 26, paddingLeft: search ? 22 : 8,
+                  fontSize: 12, fontFamily: 'inherit',
+                  background: '#f7f9fc', outline: 'none', color: '#1a2540',
+                  transition: 'all 0.15s', boxSizing: 'border-box'
+                }} />
+              
+                  {search &&
+              <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
                       <X size={11} color="#94a3b8" />
                     </button>
-                  )}
-                  {searchFocused && !search && recentSearches.length > 0 && (
-                    <div style={{ position: 'absolute', top: 36, right: 0, left: 0, background: 'white', borderRadius: 10, border: '1px solid #e8eef8', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
-                      {recentSearches.map((s, i) => (
-                        <button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }}
-                          style={{ width: '100%', padding: '7px 12px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              }
+                  {searchFocused && !search && recentSearches.length > 0 &&
+              <div style={{ position: 'absolute', top: 36, right: 0, left: 0, background: 'white', borderRadius: 10, border: '1px solid #e8eef8', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
+                      {recentSearches.map((s, i) =>
+                <button key={i} onClick={() => {setSearch(s);setSearchFocused(false);}}
+                style={{ width: '100%', padding: '7px 12px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                           <Search size={10} color="#94a3b8" /> {s}
                         </button>
-                      ))}
+                )}
                     </div>
-                  )}
+              }
                 </div>
                 {/* Filter button */}
                 <button
-                  onClick={() => setShowFilters(true)}
-                  style={{
-                    flexShrink: 0, width: 30, height: 30, borderRadius: 8,
-                    border: `1px solid ${hasFilters ? '#93c5fd' : '#e8eef7'}`,
-                    background: hasFilters ? '#1a6fd4' : '#f7f9fc',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', position: 'relative',
-                  }}
-                >
+              onClick={() => setShowFilters(true)}
+              style={{
+                flexShrink: 0, width: 30, height: 30, borderRadius: 8,
+                border: `1px solid ${hasFilters ? '#93c5fd' : '#e8eef7'}`,
+                background: hasFilters ? '#1a6fd4' : '#f7f9fc',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', position: 'relative'
+              }}>
+              
                   <SlidersHorizontal size={12} color={hasFilters ? 'white' : '#64748b'} />
                   {hasFilters && <span style={{ position: 'absolute', top: 4, right: 4, width: 4, height: 4, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
                 </button>
@@ -387,93 +387,93 @@ export default function HomeFeed() {
                     <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.75 }} />
                     <span style={{ position: 'relative', width: 5, height: 5, borderRadius: '50%', background: '#3b82f6' }} />
                   </span>
-                  <span style={{ fontSize: 10, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
+                  <span style={{ fontSize: 10, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter((t) => t.status === 'OPEN').length}</span>
                 </div>
               </div>
 
               {/* Category pills */}
               <div style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                 <button
-                  onClick={() => setFilters(f => ({ ...f, category: '' }))}
-                  style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}
-                >הכל</button>
-                {[...CATEGORIES]
-                  .sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN').length - tasks.filter(t => t.category === a.value && t.status === 'OPEN').length)
-                  .map(c => {
-                    const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
-                    if (count === 0 && !filters.category) return null;
-                    const isActive = filters.category === c.value;
-                    return (
-                      <button key={c.value}
-                        onClick={() => setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                        style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 2 }}
-                      >
+              onClick={() => setFilters((f) => ({ ...f, category: '' }))}
+              style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}>
+              הכל</button>
+                {[...CATEGORIES].
+            sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN').length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN').length).
+            map((c) => {
+              const count = tasks.filter((t) => t.category === c.value && t.status === 'OPEN').length;
+              if (count === 0 && !filters.category) return null;
+              const isActive = filters.category === c.value;
+              return (
+                <button key={c.value}
+                onClick={() => setFilters((f) => ({ ...f, category: f.category === c.value ? '' : c.value }))}
+                style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 2 }}>
+                  
                         {c.label}{count > 0 && <span style={{ opacity: 0.5, fontSize: 9 }}>({count})</span>}
-                      </button>
-                    );
-                  })}
+                      </button>);
+
+            })}
               </div>
 
               {/* Active filter chips */}
-              {hasFilters && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {hasFilters &&
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {filters.city && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
                   {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
                   {filters.time && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
                   {filters.approvalMode && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
                 </div>
-              )}
+          }
         </div>
 
-        {isLoading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-            {Array(4).fill(0).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
+        {isLoading ?
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+            {Array(4).fill(0).map((_, i) =>
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
                 <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
                 <div className="h-3 bg-gray-100 rounded w-1/2 mb-3" />
                 <div className="h-3 bg-gray-100 rounded w-1/3" />
               </div>
-            ))}
-          </div>
-        ) : scored.length === 0 ? (
-          <div className="text-center py-16">
+          )}
+          </div> :
+        scored.length === 0 ?
+        <div className="text-center py-16">
             <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
             <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
             <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-            {(search || hasFilters) && (
-              <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' }); }}
-                style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            {(search || hasFilters) &&
+          <button onClick={() => {setSearch('');setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });}}
+          style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 נקה חיפוש
               </button>
-            )}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
-            {sortedTasks.map(task => {
-              const myApp = myApplications.find(a => a.task_id === task.id);
-              const isNew = newTaskIds.has(task.id);
-              return (
-                <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
-                  {isNew && (
-                    <div style={{ position: 'absolute', top: -8, right: 12, zIndex: 10, background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}>
+          }
+          </div> :
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+            {sortedTasks.map((task) => {
+            const myApp = myApplications.find((a) => a.task_id === task.id);
+            const isNew = newTaskIds.has(task.id);
+            return (
+              <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
+                  {isNew &&
+                <div style={{ position: 'absolute', top: -8, right: 12, zIndex: 10, background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}>
                       חדש עכשיו
                     </div>
-                  )}
-                  <TaskCardWithSwipe 
-                    task={task} 
-                    myApp={myApp}
-                    isMyTask={false}
-                    currentUserId={me?.id}
-                    workerName={me?.full_name}
-                    onDismiss={(taskId) => {
-                      setDismissedTasks(prev => new Set([...prev, taskId]));
-                    }} 
-                  />
-                </div>
-              );
-            })}
+                }
+                  <TaskCardWithSwipe
+                  task={task}
+                  myApp={myApp}
+                  isMyTask={false}
+                  currentUserId={me?.id}
+                  workerName={me?.full_name}
+                  onDismiss={(taskId) => {
+                    setDismissedTasks((prev) => new Set([...prev, taskId]));
+                  }} />
+                
+                </div>);
+
+          })}
           </div>
-        )}
+        }
       </div>
 
 
@@ -489,6 +489,6 @@ export default function HomeFeed() {
           50% { transform: scale(2); opacity: 0; }
         }
       `}</style>
-    </div>
-  );
+    </div>);
+
 }
