@@ -65,8 +65,8 @@ export default function MyTasksCarousel({ myTasks }) {
   const queryClient = useQueryClient();
   const [openMenuId, setOpenMenuId] = useState(null);
 
-  // Show active/actionable tasks — OPEN, TAKEN (hide button if user is actively working on task)
-  const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'TAKEN'].includes(t.status));
+  // Show active/actionable tasks — OPEN, EXPIRED, TAKEN
+  const relevantTasks = (myTasks || []).filter(t => ['OPEN', 'EXPIRED', 'TAKEN'].includes(t.status));
   const openTaskIds = relevantTasks.filter(t => t.status === 'OPEN').map(t => t.id);
 
   // Fetch pending applications for open tasks to show badge
