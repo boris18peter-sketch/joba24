@@ -88,6 +88,12 @@ export default function Chat() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
+  const { data: task } = useQuery({
+    queryKey: ['task', taskId],
+    queryFn: () => base44.entities.Task.filter({ id: taskId }),
+    select: d => d[0],
+  });
+
   // Fetch other user's profile for avatar + verified status
   const otherPersonIdCalc = me?.id === (task?.client_id) ? task?.worker_id : task?.client_id;
   const { data: otherUserData } = useQuery({
@@ -95,12 +101,6 @@ export default function Chat() {
     queryFn: () => base44.entities.User.filter({ id: otherPersonIdCalc }),
     select: d => d?.[0],
     enabled: !!otherPersonIdCalc,
-  });
-
-  const { data: task } = useQuery({
-    queryKey: ['task', taskId],
-    queryFn: () => base44.entities.Task.filter({ id: taskId }),
-    select: d => d[0],
   });
 
   // Load message history

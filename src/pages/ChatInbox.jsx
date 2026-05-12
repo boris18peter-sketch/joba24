@@ -37,15 +37,19 @@ export default function ChatInbox() {
 
   useEffect(() => {
     if (!allTasks.length || !me?.id) return;
-    allTasks.forEach(async (task) => {
-      const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 1);
-      if (msgs[0]) setLastMessages(prev => ({ ...prev, [task.id]: msgs[0] }));
-      // Count unread (not sent by me)
-      const all = await base44.entities.ChatMessage.filter({ task_id: task.id }, 'created_date', 100);
-      const unread = all.filter(m => m.sender_id !== me.id && !m.read).length;
-      setUnreadCounts(prev => ({ ...prev, [task.id]: unread }));
-    });
-  }, [allTasks.length, me?.id]);
+    (async () => {
+      const newLastMessages = {};
+      const newUnreadCounts = {};
+      for (const task of allTasks.slice(0, 10)) {
+        const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 1);
+        if (msgs[0]) newLastMessages[task.id] = msgs[0];
+        const all = await base44.entities.ChatMessage.filter({ task_id: task.id }, 'created_date', 100);
+        newUnreadCounts[task.id] = all.filter(m => m.sender_id !== me.id && !m.read).length;
+      }
+      setLastMessages(newLastMessages);
+      setUnreadCounts(newUnreadCounts);
+    })();
+  }, [allTasks, me?.id]);
 
   // Real-time updates
   useEffect(() => {
