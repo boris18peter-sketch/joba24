@@ -64,7 +64,7 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
   }
 
   return (
-    <div style={overlay} onClick={e => closeOnBackdropClick && e.target === e.currentTarget && (onCancel?.() || onClose?.())}>
+    <div style={overlay} onClick={e => closeOnBackdropClick === false ? null : (e.target === e.currentTarget && (onCancel?.() || onClose?.()))}>
       <div style={{ ...sheet, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
@@ -175,9 +175,9 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
 }
 
 const overlay = {
-  position: 'fixed', inset: 0, zIndex: 200,
-  background: 'rgba(10,20,50,0.55)', backdropFilter: 'blur(4px)',
-  display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+   position: 'fixed', inset: 0, zIndex: 9999,
+   background: 'rgba(10,20,50,0.55)', backdropFilter: 'blur(4px)',
+   display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
 };
 const sheet = {
    background: 'white', borderRadius: '24px 24px 0 0',

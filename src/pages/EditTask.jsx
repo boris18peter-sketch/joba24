@@ -133,6 +133,7 @@ export default function EditTask() {
      queryClient.invalidateQueries({ queryKey: ['task', id] });
      queryClient.invalidateQueries({ queryKey: ['tasks'] });
      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+     queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
      toast.success('המשימה פורסמה מחדש! ✅');
      setLoading(false);
      setShowPayment(false);

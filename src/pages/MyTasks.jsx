@@ -56,7 +56,7 @@ export default function MyTasks() {
   });
 
   const handleReopen = (taskId) => {
-    navigate(`/edit-task/${taskId}`);
+    navigate(`/edit-task/${taskId}`, { state: { repostMode: true } });
   };
 
   const tab = TABS.find(t => t.key === activeTab);

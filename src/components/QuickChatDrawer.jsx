@@ -60,11 +60,11 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-         style={{ width: '100%', height: '70vh', maxHeight: '90vh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)', borderRadius: '20px 20px 0 0' }}
+         style={{ width: '100%', height: '75vh', maxHeight: '90vh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)', borderRadius: '20px 20px 0 0', position: 'relative' }}
          dir="rtl"
        >
         {/* Header */}
@@ -135,7 +135,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
         </div>
 
         {/* Input */}
-        <div style={{ padding: '10px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0 }} ref={inputRef}>
+         <div style={{ padding: '10px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0, position: 'sticky', bottom: 0, background: 'white', zIndex: 10 }} ref={inputRef}>
           <input
             autoFocus
             value={msg}
