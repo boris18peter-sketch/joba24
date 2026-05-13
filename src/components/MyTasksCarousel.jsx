@@ -80,7 +80,6 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
       return results.flat();
     },
     enabled: openTaskIds.length > 0,
-    refetchInterval: 8000,
     staleTime: 0,
   });
 
