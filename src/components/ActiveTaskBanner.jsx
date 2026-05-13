@@ -19,13 +19,17 @@ const STATUS_STEPS = {
 
 
 
-export default function ActiveTaskBanner({ task, roleHint }) {
+export default function ActiveTaskBanner({ tasks, roleHint }) {
   const navigate = useNavigate();
+  const [activeIdx, setActiveIdx] = useState(0);
   const [showChat, setShowChat] = useState(false);
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  if (!task || !me) return null;
+  // Normalize to array
+  const taskList = Array.isArray(tasks) ? tasks : [tasks];
+  if (!taskList.length || !me) return null;
 
+  const task = taskList[activeIdx];
   const statusInfo = STATUS_STEPS[task.worker_status] || null;
   const isWorker = roleHint === 'worker' || roleHint !== 'client' && me?.id === task.worker_id;
   const isOwner = roleHint === 'client' || roleHint !== 'worker' && me?.id === task.client_id;
@@ -45,104 +49,124 @@ export default function ActiveTaskBanner({ task, roleHint }) {
 
   return (
     <div dir="rtl" style={{ paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
+        {taskList.map((t, idx) => {
+          const tStatusInfo = STATUS_STEPS[t.worker_status] || null;
+          const tIsWorker = roleHint === 'worker' || roleHint !== 'client' && me?.id === t.worker_id;
+          const tIsOwner = roleHint === 'client' || roleHint !== 'worker' && me?.id === t.client_id;
+          const tStepIdx = tStatusInfo?.step ?? -1;
+          const tGradient = tIsWorker ?
+          'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)' :
+          tStepIdx === 2 ?
+          'linear-gradient(135deg, #059669 0%, #10b981 100%)' :
+          'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
+          const tStatusText = tIsOwner ?
+          tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד' :
+          tStatusInfo?.label || 'לחץ יצאתי לדרך בדף המשימה';
+
+          return (
       <div
-        style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-        onClick={() => navigate(`/task/${task.id}`)}>
+        key={t.id}
+        style={{ flex: '0 0 calc(100% - 32px)', background: tGradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+        onClick={() => navigate(`/task/${t.id}`)}>
 
-        {/* Live dot + badge */}
-        <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ position: 'relative', display: 'inline-flex', width: 9, height: 9 }}>
-            <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-            <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
-          </span>
-          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }} className="text-sm text-ר">
-            {isWorker ?
-            <><Hammer size={11} /> משימה שאתה מבצע עכשיו</> :
-            <><HardHat size={11} /> משימה שלך — בביצוע ע"י עובד</>}
-          </span>
-        </div>
+          {/* Live dot + badge */}
+          <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ position: 'relative', display: 'inline-flex', width: 9, height: 9 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+              <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }} className="text-sm text-ר">
+              {tIsWorker ?
+              <><Hammer size={11} /> משימה שאתה מבצע עכשיו</> :
+              <><HardHat size={11} /> משימה שלך — בביצוע ע"י עובד</>}
+            </span>
+          </div>
 
-        {/* Decorative circle */}
-        <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-        <div style={{ height: 20 }} />
+          {/* Decorative circle */}
+          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ height: 20 }} />
 
-        {/* Title + price */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
-            <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12, overflow: 'hidden' }}>
-              {isWorker ?
-              <><User size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {task.client_name}</span> {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.client_rating.toFixed(1)}</span>}</> :
-              <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span> {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>} {task.worker_verified && <VerifiedBadge size="sm" />}</>}
-              {isOwner && task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>}
-                {isWorker && task.client_verified && <VerifiedBadge size="sm" />}
+          {/* Title + price */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
+              <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12, overflow: 'hidden' }}>
+                {tIsWorker ?
+                <><User size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {t.client_name}</span> {t.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.client_rating.toFixed(1)}</span>}</> :
+                <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {t.worker_name}</span> {t.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.worker_rating.toFixed(1)}</span>} {t.worker_verified && <VerifiedBadge size="sm" />}</>}
+                {tIsOwner && t.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.worker_rating.toFixed(1)}</span>}
+                  {tIsWorker && t.client_verified && <VerifiedBadge size="sm" />}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
+              <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{t.price}</div>
             </div>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
-            <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{task.price}</div>
-          </div>
-        </div>
 
-        {/* Status box */}
-        <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '10px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {stepIdx === 2 ? <CheckCircle size={18} color="white" /> : stepIdx === 1 ? <MapPin size={18} color="white" /> : stepIdx === 0 ? <Navigation size={18} color="white" /> : <Clock size={18} color="white" />}
+          {/* Status box */}
+          <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '10px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {tStepIdx === 2 ? <CheckCircle size={18} color="white" /> : tStepIdx === 1 ? <MapPin size={18} color="white" /> : tStepIdx === 0 ? <Navigation size={18} color="white" /> : <Clock size={18} color="white" />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: 'white', fontWeight: 800, fontSize: 13 }}>{tStatusText}</div>
+              {tIsWorker && tStatusInfo?.step != null &&
+              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
+                  {tStepIdx === 0 ? 'עדכן כשתגיע למיקום' : tStepIdx === 1 ? 'עדכן כשתסיים' : 'ממתין לאישור הלקוח'}
+                </div>
+              }
+              {tIsOwner &&
+              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
+                  {tStepIdx === 2 ? 'אשר סיום בדף המשימה' : 'צפה בהתקדמות'}
+                </div>
+              }
+            </div>
+            <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ color: 'white', fontWeight: 800, fontSize: 13 }}>{statusText}</div>
-            {isWorker && statusInfo?.step != null &&
-            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
-                {stepIdx === 0 ? 'עדכן כשתגיע למיקום' : stepIdx === 1 ? 'עדכן כשתסיים' : 'ממתין לאישור הלקוח'}
-              </div>
+
+          {/* Progress steps (visual only) */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+            {['יצא לדרך', 'הגיע', 'סיים'].map((step, i) =>
+            <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i <= tStepIdx ? 'white' : 'rgba(255,255,255,0.25)', transition: 'background 0.3s' }} />
+            )}
+          </div>
+
+          {/* Quick action buttons */}
+           <div style={{ display: 'flex', gap: 10 }}>
+             <button
+               onClick={(e) => {e.stopPropagation();setShowChat(true);}}
+               style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+               <MessageCircle size={15} /> צ'אט
+             </button>
+            {t.location_name &&
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const dst = t.lat && t.lng ? `${t.lat},${t.lng}` : encodeURIComponent(t.location_name);
+                const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
+                const mapsUrl = t.lat && t.lng ?
+                `https://maps.google.com/maps?daddr=${t.lat},${t.lng}` :
+                `https://maps.google.com/maps?q=${encodeURIComponent(t.location_name)}`;
+                const choice = window.confirm('נווט עם Waze?\nלחץ ביטול לפתיחה עם Google Maps');
+                window.open(choice ? wazeUrl : mapsUrl, '_blank');
+              }}
+              style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Navigation size={16} /> נווט
+              </button>
             }
-            {isOwner &&
-            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, marginTop: 1 }}>
-                {stepIdx === 2 ? 'אשר סיום בדף המשימה' : 'צפה בהתקדמות'}
-              </div>
-            }
-          </div>
-          <ChevronLeft size={18} color="rgba(255,255,255,0.7)" />
-        </div>
-
-        {/* Progress steps (visual only) */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-          {['יצא לדרך', 'הגיע', 'סיים'].map((step, i) =>
-          <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: i <= stepIdx ? 'white' : 'rgba(255,255,255,0.25)', transition: 'background 0.3s' }} />
-          )}
-        </div>
-
-        {/* Quick action buttons */}
-         <div style={{ display: 'flex', gap: 10 }}>
-           <button
-             onClick={(e) => {e.stopPropagation();setShowChat(true);}}
-             style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-             <MessageCircle size={15} /> צ'אט
-           </button>
-          {task.location_name &&
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const dst = task.lat && task.lng ? `${task.lat},${task.lng}` : encodeURIComponent(task.location_name);
-              const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
-              const mapsUrl = task.lat && task.lng ?
-              `https://maps.google.com/maps?daddr=${task.lat},${task.lng}` :
-              `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
-              const choice = window.confirm('נווט עם Waze?\nלחץ ביטול לפתיחה עם Google Maps');
-              window.open(choice ? wazeUrl : mapsUrl, '_blank');
-            }}
-            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Navigation size={16} /> נווט
+            <button
+              onClick={(e) => {e.stopPropagation();navigate(`/task/${t.id}`);}}
+              style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              פרטים
             </button>
-          }
-          <button
-            onClick={(e) => {e.stopPropagation();navigate(`/task/${task.id}`);}}
-            style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            פרטים
-          </button>
+          </div>
         </div>
+          );
+        })}
       </div>
 
-      {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
+      {showChat && me && <QuickChatDrawer task={taskList[activeIdx]} me={me} onClose={() => setShowChat(false)} />}
 
       <style>{`
         @keyframes livePing {

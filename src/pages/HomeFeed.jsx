@@ -298,20 +298,16 @@ export default function HomeFeed() {
       </div>
 
       {/* Active Task Banners Carousel */}
-      {(activeWorkerTask || activeClientTask) &&
-      <div style={{ padding: '14px 16px 0', overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', display: 'flex', gap: 10 }}>
-          {activeWorkerTask &&
-        <div style={{ flex: '0 0 calc(100% - 32px)' }}>
-          <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
-        </div>
-        }
-          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id &&
-        <div style={{ flex: '0 0 calc(100% - 32px)' }}>
-          <ActiveTaskBanner task={activeClientTask} roleHint="client" />
-        </div>
-        }
-      </div>
-      }
+      {(activeWorkerTask || activeClientTask) && (() => {
+        const activeTasks = [];
+        if (activeWorkerTask) activeTasks.push({ ...activeWorkerTask, _roleHint: 'worker' });
+        if (activeClientTask && activeClientTask.id !== activeWorkerTask?.id) activeTasks.push({ ...activeClientTask, _roleHint: 'client' });
+        return activeTasks.length > 0 && (
+          <div style={{ padding: '14px 16px 0' }}>
+            <ActiveTaskBanner tasks={activeTasks} roleHint={activeTasks[0]._roleHint} />
+          </div>
+        );
+      })()}
 
       {/* Stories - מעוכב לטעינה */}
       <React.Suspense fallback={null}>
