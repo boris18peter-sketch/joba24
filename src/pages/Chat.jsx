@@ -84,6 +84,7 @@ export default function Chat() {
   const fileRef = useRef(null);
   const typingTimerRef = useRef(null);
   const containerRef = useRef(null);
+  const inputRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -129,6 +130,11 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, otherTyping]);
+
+  // Auto-focus input on mount
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 300);
+  }, []);
 
   const handleSend = (content, imageUrl = null) => {
     gate(() => sendMessage(content, imageUrl));
@@ -180,7 +186,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8', zIndex: 9999, position: 'relative' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header */}
       <div style={{
@@ -327,7 +333,8 @@ export default function Chat() {
         {/* Text input */}
          <div style={{ flex: 1, background: '#f8fafc', borderRadius: 22, border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
            <textarea
-             placeholder="הודעה..."
+             ref={inputRef}
+             placeholder="הקלד הודעה..."
              value={input}
              rows={1}
              onChange={e => {
