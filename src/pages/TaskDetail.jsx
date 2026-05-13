@@ -534,38 +534,25 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Approved worker banner — shown when worker was approved or took the task */}
-        {(isApproved || (isWorker && task.status === 'TAKEN')) && !isOwner && (task.status === 'OPEN' || task.status === 'TAKEN') && (
+        {/* Approved worker banner — shown when worker was approved but not yet taken the task */}
+        {isApproved && !isWorker && task.status === 'OPEN' && (
           <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 20, padding: '18px 20px', color: 'white' }}>
-            <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>{isWorker ? '✅ אתה בוצע את המשימה' : '🎉 בקשתך אושרה!'}</div>
-            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 14 }}>{isWorker ? 'אתה יכול לעדכן את סטטוסך או לצאת מהמשימה' : 'אתה יכול לצאת לדרך ולהתחיל את המשימה'}</div>
+            <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>🎉 בקשתך אושרה!</div>
+            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 14 }}>אתה יכול לצאת לדרך ולהתחיל את המשימה</div>
             <div style={{ display: 'flex', gap: 8 }}>
-               {!isWorker && (
-                 <button
-                   onClick={() => gate(() => takeMutation.mutate())}
-                   disabled={takeMutation.isPending}
-                   style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                 >
-                   {takeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚀 צא עכשיו'}
-                 </button>
-               )}
-               {!isWorker && (
-                 <button
-                   onClick={() => gate(() => cancelApplicationMutation.mutate())}
-                   disabled={cancelApplicationMutation.isPending}
-                   style={{ height: 46, padding: '0 16px', borderRadius: 14, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-                 >בטל</button>
-               )}
-               {isWorker && (
-                 <button
-                   onClick={() => setShowExitWarning(true)}
-                   disabled={cancelTakeMutation.isPending}
-                   style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                 >
-                   {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚪 צא מהמשימה'}
-                 </button>
-               )}
-             </div>
+              <button
+                onClick={() => gate(() => takeMutation.mutate())}
+                disabled={takeMutation.isPending}
+                style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {takeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚀 צא עכשיו'}
+              </button>
+              <button
+                onClick={() => gate(() => cancelApplicationMutation.mutate())}
+                disabled={cancelApplicationMutation.isPending}
+                style={{ height: 46, padding: '0 16px', borderRadius: 14, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >בטל</button>
+            </div>
           </div>
         )}
 
