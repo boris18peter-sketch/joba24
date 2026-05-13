@@ -30,7 +30,7 @@ export default function EditTask() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
-  const isRepostMode = location.state?.repostMode || location.state?.isRepost;
+  const isRepostMode = location.state?.repostMode;
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: task } = useQuery({
@@ -155,7 +155,7 @@ export default function EditTask() {
         <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>{isRepostMode ? 'פרסום מחדש' : 'עריכת משימה'}</h1>
       </div>
 
-      <div className="px-4 py-3 space-y-3 pb-28">
+      <div className="px-4 py-5 space-y-5 pb-12">
         {/* Info */}
         <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4">
           <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
@@ -165,89 +165,74 @@ export default function EditTask() {
         </div>
 
         {/* Category */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>קטגוריה</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+        <div>
+          <Label className="text-sm font-semibold mb-2 block">קטגוריה</Label>
+          <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map(c => (
               <button key={c.value} onClick={() => set('category', c.value)}
-                style={{
-                  padding: '10px 6px',
-                  borderRadius: 12,
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  textAlign: 'center',
-                  height: '48px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: form.category === c.value ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : 'white',
-                  color: form.category === c.value ? 'white' : '#555',
-                  border: `1px solid ${form.category === c.value ? '#1a6fd4' : '#dce8f5'}`
-                }}
+                className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  form.category === c.value ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
+                }`}
               >{c.label}</button>
             ))}
           </div>
         </div>
 
         {/* Title */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>מה צריך לעשות? *</Label>
+        <div>
+          <Label className="text-sm font-semibold mb-2 block">מה צריך לעשות? *</Label>
           <Input placeholder="לדוגמה: להרים מקרר לקומה שלישית"
             value={form.title} onChange={e => set('title', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 10, height: 42, fontSize: 14 }}
+            className="bg-secondary border-0 rounded-xl h-12 text-base"
           />
         </div>
 
         {/* Description */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>תיאור מפורט *</Label>
+        <div>
+          <Label className="text-sm font-semibold mb-2 block">תיאור מפורט *</Label>
           <Textarea placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description} onChange={e => set('description', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 10, resize: 'none', padding: '10px 12px' }}
-            rows={3}
+            className="bg-secondary border-0 rounded-xl resize-none" rows={4}
           />
         </div>
 
         {/* Images */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>תמונות (עד 4)</Label>
+        <div>
+          <Label className="text-sm font-semibold mb-2 block">תמונות (עד 4)</Label>
           <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
         </div>
 
         {/* Price */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>מחיר (₪) *</Label>
+         <div>
+           <Label className="text-sm font-semibold mb-2 block">מחיר (₪) *</Label>
            <Input type="number" placeholder="100"
              value={form.price} onChange={e => task?.status !== 'OPEN' ? null : set('price', e.target.value)}
              disabled={task?.status === 'OPEN'}
-             style={{ background: '#f4f7fb', border: `1.5px solid ${task?.status === 'OPEN' ? '#dce8f5' : '#dce8f5'}`, borderRadius: 10, height: 42, fontSize: 15, fontWeight: 800 }}
+             className={`bg-secondary border-0 rounded-xl h-12 text-base font-bold ${task?.status === 'OPEN' ? 'opacity-50 cursor-not-allowed' : ''}`}
            />
-           {task?.status === 'OPEN' && <p style={{ fontSize: 10, color: '#ef4444', marginTop: 6 }}>לא ניתן לשנות מחיר של משימה שכבר פורסמה</p>}
+           {task?.status === 'OPEN' && <p className="text-xs text-red-600 mt-2">לא ניתן לשנות מחיר של משימה שכבר פורסמה</p>}
            {task?.status !== 'OPEN' && <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />}
          </div>
 
         {/* Auto Price Bump */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
+        <div>
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 8px', borderRadius: 10, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : '#f4f7fb', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : '#dce8f5'}`, transition: 'all 0.15s' }}
+            className={`w-full flex items-center gap-3 p-4 rounded-xl text-right transition-all border ${form.auto_bump_enabled ? 'bg-amber-50 border-amber-300' : 'bg-secondary border-transparent'}`}
           >
-            <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 10 }}>✓</span>}
+            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${form.auto_bump_enabled ? 'bg-amber-500 border-amber-500' : 'border-gray-300'}`}>
+              {form.auto_bump_enabled && <span className="text-white text-xs">✓</span>}
             </div>
-            <div style={{ textAlign: 'right', flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#111' }}>⚡ העלאת מחיר אוטומטית</div>
-              <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>אם המשימה לא נלקחת, המחיר יעלה כל 5 דקות</div>
+            <div className="text-right flex-1">
+              <div className="text-sm font-semibold">⚡ העלאת מחיר אוטומטית</div>
+              <div className="text-xs text-gray-500 mt-0.5">אם המשימה לא נלקחת, המחיר יעלה כל 5 דקות</div>
             </div>
           </button>
           {form.auto_bump_enabled && (
-            <div style={{ marginTop: 8, padding: '10px 8px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10 }}>
-              <Label className="text-sm font-bold block" style={{ color: '#92400e', marginBottom: 6, fontSize: '11px' }}>מחיר מקסימלי (₪)</Label>
+            <div className="mt-2 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <Label className="text-sm font-semibold block text-amber-800 mb-2">מחיר מקסימלי (₪)</Label>
               <Input type="number" placeholder="250"
                 value={form.max_price} onChange={e => set('max_price', e.target.value)}
-                style={{ background: 'white', border: '1px solid #fcd34d', borderRadius: 8, height: 38, fontSize: 14, fontWeight: 700 }}
+                className="bg-white border-amber-200 rounded-xl h-11 text-base font-bold"
               />
             </div>
           )}
@@ -256,57 +241,41 @@ export default function EditTask() {
 
 
         {/* Expiry */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}><Clock size={13} /> תוקף המשימה</Label>
-          <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <div>
+          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> תוקף המשימה</Label>
+          <div className="flex gap-2 flex-wrap">
             {EXPIRY_OPTIONS.map(opt => (
               <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: 10,
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: `1px solid ${form.expiry_hours === opt.hours ? '#1a6fd4' : '#dce8f5'}`,
-                  background: form.expiry_hours === opt.hours ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : 'white',
-                  color: form.expiry_hours === opt.hours ? 'white' : '#555',
-                  transition: 'all 0.15s'
-                }}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                  form.expiry_hours === opt.hours ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
+                }`}
               >{opt.label}</button>
             ))}
           </div>
         </div>
 
         {/* Location */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}><MapPin size={13} /> מיקום</Label>
+        <div>
+          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><MapPin className="w-4 h-4" /> מיקום</Label>
           <Input placeholder="כתובת (לדוגמה: רחוב דיזנגוף 50)"
             value={form.location_name} onChange={e => set('location_name', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 10, height: 42, marginBottom: 8, fontSize: 14 }}
+            className="bg-secondary border-0 rounded-xl h-12 mb-2"
           />
           <Input placeholder="עיר *"
             value={form.city} onChange={e => set('city', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 10, height: 42, fontSize: 14 }}
+            className="bg-secondary border-0 rounded-xl h-10 text-sm"
           />
         </div>
 
         {/* Time */}
-        <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}><Clock size={13} /> זמן ביצוע משוער</Label>
-          <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        <div>
+          <Label className="text-sm font-semibold mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> זמן ביצוע משוער</Label>
+          <div className="flex gap-2 flex-wrap">
             {timeOptions.map(t => (
               <button key={t} onClick={() => set('estimated_time', t)}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: 10,
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: `1px solid ${form.estimated_time === t ? '#1a6fd4' : '#dce8f5'}`,
-                  background: form.estimated_time === t ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : 'white',
-                  color: form.estimated_time === t ? 'white' : '#555',
-                  transition: 'all 0.15s'
-                }}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                  form.estimated_time === t ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200'
+                }`}
               >{t === 'custom' ? '⌨️ מותאם' : t}</button>
             ))}
           </div>
@@ -316,7 +285,7 @@ export default function EditTask() {
               placeholder="לדוגמה: 3 שעות, יום שלם, שבוע..."
               value={form.custom_time || ''}
               onChange={e => set('custom_time', e.target.value)}
-              style={{ marginTop: 8, width: '100%', padding: '10px 12px', borderRadius: 10, background: '#f4f7fb', border: '1.5px solid #dce8f5', fontSize: 13, outline: 'none' }}
+              className="mt-2 w-full px-4 py-3 rounded-xl bg-secondary border-0 text-sm outline-none focus:ring-2 focus:ring-primary/30"
             />
           )}
         </div>
@@ -349,43 +318,14 @@ export default function EditTask() {
           </div>
         </div>
 
-        {/* Sticky Save Button */}
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'white',
-          borderTop: '1px solid #e8eef7',
-          padding: '12px 16px 20px',
-          zIndex: 50,
-        }}>
-          <button onClick={handleSave} disabled={loading}
-            style={{
-              width: '100%',
-              height: 54,
-              borderRadius: 16,
-              fontSize: 15,
-              fontWeight: 900,
-              color: 'white',
-              border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              background: loading ? 'linear-gradient(135deg, #cbd5e1, #94a3b8)' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-              boxShadow: loading ? 'none' : '0 6px 20px rgba(26,111,212,0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              transition: 'all 0.2s',
-              opacity: loading ? 0.8 : 1,
-            }}
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : isRepostMode ? <>פרסם ג'ובה<Zap size={18} /></> : <><Save size={18} />שמור</>}
-          </button>
-        </div>
+        <Button onClick={handleSave} disabled={loading}
+           className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
+         >
+           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : isRepostMode ? <>פרסם ג'ובה חדשה</> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}
+         </Button>
       </div>
 
-      {showPayment && <PaymentModal taskPrice={Number(form.price)} onSuccess={handlePaymentSuccess} onClose={() => { setShowPayment(false); }} />}
+      {showPayment && <PaymentModal amount={Number(form.price)} onSuccess={handlePaymentSuccess} onCancel={() => { setShowPayment(false); }} closeOnBackdropClick={false} />}
     </div>
   );
 }

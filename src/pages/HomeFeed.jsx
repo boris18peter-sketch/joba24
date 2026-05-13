@@ -369,15 +369,15 @@ export default function HomeFeed() {
                 <button
               onClick={() => setShowFilters(true)}
               style={{
-                flexShrink: 0, width: 28, height: 28, borderRadius: 7,
+                flexShrink: 0, width: 30, height: 30, borderRadius: 8,
                 border: `1px solid ${hasFilters ? '#93c5fd' : '#e8eef7'}`,
                 background: hasFilters ? '#1a6fd4' : '#f7f9fc',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', position: 'relative'
               }}>
               
-                  <SlidersHorizontal size={10} color={hasFilters ? 'white' : '#64748b'} />
-                  {hasFilters && <span style={{ position: 'absolute', top: 3, right: 3, width: 3, height: 3, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
+                  <SlidersHorizontal size={11} color={hasFilters ? 'white' : '#64748b'} />
+                  {hasFilters && <span style={{ position: 'absolute', top: 4, right: 4, width: 4, height: 4, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
                 </button>
                 {/* Live count */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, background: '#eff6ff', borderRadius: 20, padding: '3px 7px', border: '1px solid #dbeafe' }}>
@@ -390,10 +390,10 @@ export default function HomeFeed() {
               </div>
 
               {/* Category pills */}
-              <div style={{ display: 'flex', gap: 3, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                 <button
               onClick={() => setFilters((f) => ({ ...f, category: '' }))}
-              style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 16, fontSize: '9px', fontWeight: 600, border: 'none', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5', height: 28 }}>
+              style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}>
               הכל</button>
                 {[...CATEGORIES].
             sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN').length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN').length).
@@ -404,9 +404,9 @@ export default function HomeFeed() {
               return (
                 <button key={c.value}
                 onClick={() => setFilters((f) => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 16, fontSize: '9px', fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 1, height: 28 }}>
+                style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 2 }}>
                   
-                        {c.label}{count > 0 && <span style={{ opacity: 0.5, fontSize: '8px' }}>({count})</span>}
+                        {c.label}{count > 0 && <span style={{ opacity: 0.5, fontSize: 9 }}>({count})</span>}
                       </button>);
 
             })}

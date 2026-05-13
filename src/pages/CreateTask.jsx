@@ -43,7 +43,7 @@ function SocialProofBar() {
 
 function SectionCard({ children }) {
   return (
-    <div style={{ background: 'white', borderRadius: 16, padding: '14px 12px', border: '1px solid #e8eef7', boxShadow: '0 1px 8px rgba(26,111,212,0.04)' }}>
+    <div style={{ background: 'white', borderRadius: 20, padding: '18px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
       {children}
     </div>
   );
@@ -248,7 +248,7 @@ export default function CreateTask() {
         </div>
       </div>
 
-      <div className="px-4 py-3 space-y-3 pb-28">
+      <div className="px-4 py-4 space-y-4 pb-12">
         {/* Draft restore indicator */}
         {!isRepost && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -279,25 +279,11 @@ export default function CreateTask() {
 
         {/* Category */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '13px' }}>קטגוריה</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
+          <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map(c => (
               <button key={c.value} onClick={() => set('category', c.value)}
-                style={{
-                  padding: '10px 6px',
-                  borderRadius: 12,
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  textAlign: 'center',
-                  height: '48px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...(form.category === c.value ? activeBtn : inactiveBtn)
-                }}
+                style={{ padding: '7px 14px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', ...(form.category === c.value ? activeBtn : inactiveBtn) }}
               >{c.label}</button>
             ))}
           </div>
@@ -305,29 +291,29 @@ export default function CreateTask() {
 
         {/* Title + Description */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-1 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>מה צריך לעשות? *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
           <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
             value={form.title} onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 10, height: 42, fontSize: 14, marginBottom: errors.title ? 3 : 10 }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: errors.title ? 4 : 14 }}
           />
-          {errors.title && <p style={{ fontSize: 10, color: '#ef4444', marginBottom: 8 }}>⚠️ שדה חובה</p>}
-          <Label className="text-sm font-bold mb-1 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>תיאור מפורט *</Label>
+          {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תיאור מפורט *</Label>
           <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description} onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 10, resize: 'none', padding: '10px 12px' }} rows={3}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
           />
-          {errors.description && <p style={{ fontSize: 10, color: '#ef4444', marginTop: 3 }}>⚠️ שדה חובה</p>}
+          {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
         </SectionCard>
 
         {/* Images */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>תמונות (עד 4)</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תמונות (עד 4)</Label>
           <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
         </SectionCard>
 
         {/* Price */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b', fontSize: '12px' }}>מחיר (₪) *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
           <Input ref={fieldRefs.price} type="number" placeholder="100"
             value={form.price} onChange={e => { set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
             style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
@@ -360,8 +346,8 @@ export default function CreateTask() {
 
         {/* Expiry */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}>
-            <Clock size={13} /> תוקף הג'ובה
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <Clock size={14} /> תוקף הג'ובה
           </Label>
           <div className="flex gap-2 flex-wrap">
             {EXPIRY_OPTIONS.map(opt => (
@@ -406,8 +392,8 @@ export default function CreateTask() {
 
         {/* Location */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}>
-            <MapPin size={13} /> מיקום
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <MapPin size={14} /> מיקום
           </Label>
           <Input ref={fieldRefs.location_name} placeholder="לדוגמה: תל אביב, רחוב דיזנגוף 50"
             value={form.location_name} onChange={e => { set('location_name', e.target.value); setErrors(p => ({...p, location_name: false})); }}
@@ -423,8 +409,8 @@ export default function CreateTask() {
 
         {/* Time */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}>
-            <Clock size={13} /> זמן ביצוע משוער
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <Clock size={14} /> זמן ביצוע משוער
           </Label>
           <div className="flex gap-2 flex-wrap">
             {timeOptions.map(t => (
@@ -443,8 +429,8 @@ export default function CreateTask() {
 
         {/* Requirements */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b', fontSize: '12px' }}>
-            <CheckSquare size={13} /> דרישות
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <CheckSquare size={14} /> דרישות
           </Label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
@@ -468,42 +454,12 @@ export default function CreateTask() {
           </div>
         </SectionCard>
 
-        {/* Submit - Sticky */}
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'white',
-          borderTop: '1px solid #e8eef7',
-          padding: '12px 16px 20px',
-          zIndex: 50,
-        }}>
+        {/* Submit */}
+        <div style={{ marginTop: 8 }}>
           <button onClick={handleSubmit} disabled={loading}
-            style={{
-              width: '100%',
-              height: 54,
-              borderRadius: 16,
-              fontSize: 15,
-              fontWeight: 900,
-              color: 'white',
-              border: 'none',
-              cursor: loading || !form.title || !form.description || !form.price || !form.city || !form.location_name ? 'not-allowed' : 'pointer',
-              background: !form.title || !form.description || !form.price || !form.city || !form.location_name
-                ? 'linear-gradient(135deg, #cbd5e1, #94a3b8)'
-                : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-              boxShadow: !form.title || !form.description || !form.price || !form.city || !form.location_name
-                ? 'none'
-                : '0 6px 20px rgba(26,111,212,0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              transition: 'all 0.2s',
-              opacity: loading ? 0.8 : 1,
-            }}
+            style={{ width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <><Zap size={18} />פרסם ג'ובה</>}
+            {loading ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} />פרסם ג'ובה חדשה</>}
           </button>
           <SocialProofBar />
         </div>

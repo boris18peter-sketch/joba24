@@ -35,7 +35,7 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
   const handleEdit = (e) => {
     e.stopPropagation();
     onClose();
-    navigate(`/edit-task/${task.id}`, { state: { isRepost: false } });
+    navigate(`/edit-task/${task.id}`);
   };
 
   return (
