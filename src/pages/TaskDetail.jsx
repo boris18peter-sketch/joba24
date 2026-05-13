@@ -535,7 +535,7 @@ export default function TaskDetail() {
         )}
 
         {/* Approved worker banner — shown when this worker's app was approved */}
-        {isApproved && !isWorker && task.status === 'OPEN' && (
+        {isApproved && !isWorker && (task.status === 'OPEN' || task.status === 'TAKEN') && (
           <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 20, padding: '18px 20px', color: 'white' }}>
             <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>🎉 בקשתך אושרה!</div>
             <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 14 }}>אתה יכול לצאת לדרך ולהתחיל את המשימה</div>
@@ -548,10 +548,10 @@ export default function TaskDetail() {
                 {takeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚀 צא עכשיו'}
               </button>
               <button
-                onClick={() => cancelApplicationMutation.mutate()}
+                onClick={() => gate(() => cancelApplicationMutation.mutate())}
                 disabled={cancelApplicationMutation.isPending}
                 style={{ height: 46, padding: '0 16px', borderRadius: 14, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >בטל</button>
+               >בטל</button>
             </div>
           </div>
         )}
