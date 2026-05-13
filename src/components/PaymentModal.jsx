@@ -13,11 +13,16 @@ function formatExpiry(val) {
 }
 
 export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, onCancel, closeOnBackdropClick = true }) {
-  const finalAmount = amount || taskPrice;
-  const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '' });
-   const [loading, setLoading] = useState(false);
-   const [done, setDone] = useState(false);
-   const [error, setError] = useState('');
+   const finalAmount = amount || taskPrice;
+   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '' });
+    const [loading, setLoading] = useState(false);
+    const [done, setDone] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleClose = () => {
+      if (closeOnBackdropClick === false) return;
+      onCancel?.() || onClose?.();
+    };
 
    const fee = Math.round(finalAmount * 0.03);
 
@@ -49,8 +54,15 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
 
   if (done) {
     return (
-      <div style={overlay}>
-        <div style={sheet}>
+      <div style={overlay} onClick={handleClose}>
+        <div style={sheet} onClick={e => e.stopPropagation()}>
+          {/* Close button */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+            <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, marginBottom: 12, marginTop: 6 }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: 8 }}>
+              <button onClick={handleClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20, padding: 0, width: 28, height: 28 }}>✕</button>
+            </div>
+          </div>
           <div style={{ textAlign: 'center', padding: '32px 24px' }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <CheckCircle2 size={36} color="#16a34a" />
@@ -64,21 +76,26 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
   }
 
   return (
-    <div style={overlay} onClick={e => closeOnBackdropClick === false ? null : (e.target === e.currentTarget && (onCancel?.() || onClose?.()))}>
-      <div style={{ ...sheet, display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Lock size={18} color="#1a6fd4" />
-            </div>
-            <div>
-              <h2 style={{ fontSize: 16, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>תשלום מאובטח</h2>
-              <p style={{ fontSize: 11, color: '#888', margin: 0 }}>הכסף יוחזק עד לאישור</p>
-            </div>
-          </div>
-          <button onClick={handleCancel} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 24, padding: 0, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
-        </div>
+     <div style={overlay} onClick={e => e.target === e.currentTarget && handleClose()}>
+       <div style={{ ...sheet, display: 'flex', flexDirection: 'column' }}>
+         {/* Drag handle + Close button */}
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+           <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, marginBottom: 12, marginTop: 6 }} />
+           <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: 8 }}>
+             <button onClick={handleClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20, padding: 0, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+           </div>
+         </div>
+
+         {/* Header */}
+         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexShrink: 0, paddingRight: 8 }}>
+           <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+             <Lock size={18} color="#1a6fd4" />
+           </div>
+           <div>
+             <h2 style={{ fontSize: 16, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>תשלום מאובטח</h2>
+             <p style={{ fontSize: 11, color: '#888', margin: 0 }}>הכסף יוחזק עד לאישור</p>
+           </div>
+         </div>
 
         {/* Amount summary */}
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 14, padding: '12px 16px', marginBottom: 16, color: 'white', flexShrink: 0 }}>

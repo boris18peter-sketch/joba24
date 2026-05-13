@@ -59,40 +59,41 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   };
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div
-         style={{ width: '100%', height: '75vh', maxHeight: '90vh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)', borderRadius: '20px 20px 0 0', position: 'relative' }}
-         dir="rtl"
-       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 12px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#1a2540', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              צ'אט · {task.title}
-            </div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
-              {task.worker_name || task.client_name || ''}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <button
-              onClick={() => { onClose(); navigate(`/chat/${task.id}`); }}
-              style={{ width: 34, height: 34, borderRadius: 10, background: '#eff6ff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-              title="פתח צ'אט מלא"
-            >
-              <ExternalLink size={15} color="#1a6fd4" />
-            </button>
-            <button
-              onClick={onClose}
-              style={{ width: 34, height: 34, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <X size={15} color="#64748b" />
-            </button>
-          </div>
-        </div>
+     <div
+       style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(10,20,50,0.55)', backdropFilter: 'blur(4px)' }}
+       onClick={e => e.target === e.currentTarget && onClose()}
+     >
+       <div
+          style={{ width: '100%', height: '75vh', maxHeight: '90vh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -12px 48px rgba(0,0,0,0.25)', borderRadius: '24px 24px 0 0', position: 'relative', maxWidth: 480 }}
+          dir="rtl"
+          onClick={e => e.stopPropagation()}
+        >
+         {/* Drag handle + Close button */}
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+           <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, marginBottom: 12, marginTop: 6 }} />
+           <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: 8 }}>
+             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20, padding: 0, width: 28, height: 28 }}>✕</button>
+           </div>
+         </div>
+
+         {/* Header */}
+         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+           <div style={{ flex: 1, minWidth: 0 }}>
+             <div style={{ fontWeight: 700, fontSize: 15, color: '#1a2540', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+               צ'אט · {task.title}
+             </div>
+             <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+               {task.worker_name || task.client_name || ''}
+             </div>
+           </div>
+           <button
+             onClick={() => { onClose(); navigate(`/chat/${task.id}`); }}
+             style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+             title="פתח צ'אט מלא"
+           >
+             <ExternalLink size={16} color="#1a6fd4" />
+           </button>
+         </div>
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
