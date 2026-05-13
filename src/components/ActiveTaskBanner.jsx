@@ -43,11 +43,10 @@ export default function ActiveTaskBanner({ task, roleHint }) {
   statusInfo?.ownerLabel || 'ממתין לעדכון מהעובד' :
   statusInfo?.label || 'לחץ יצאתי לדרך בדף המשימה';
 
-  return (
-    <div dir="rtl" style={{ paddingBottom: 0 }}>
-      <div
-        style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-        onClick={() => navigate(`/task/${task.id}`)}>
+  const CardContent = () => (
+    <div
+      style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer', width: '100%', minWidth: '100%', boxSizing: 'border-box' }}
+      onClick={() => navigate(`/task/${task.id}`)}>
 
         {/* Live dot + badge */}
         <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -140,16 +139,21 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             פרטים
           </button>
         </div>
-      </div>
+        </div>
+        </div>
+        );
 
+      return (
+      <div dir="rtl" style={{ paddingBottom: 0 }}>
+      <CardContent />
       {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
 
       <style>{`
-        @keyframes livePing {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(2); opacity: 0; }
-        }
+       @keyframes livePing {
+         0%, 100% { transform: scale(1); opacity: 0.8; }
+         50% { transform: scale(2); opacity: 0; }
+       }
       `}</style>
-    </div>);
+      </div>);
 
 }

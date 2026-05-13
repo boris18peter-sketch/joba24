@@ -132,7 +132,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
         </Link>
       </div>
 
-      <div className="my-tasks-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch' }}>
+      <div className="my-tasks-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent', WebkitOverflowScrolling: 'touch', marginBottom: 0 }}>
         <style>{`
           .my-tasks-scroll::-webkit-scrollbar { height: 2px; }
           .my-tasks-scroll::-webkit-scrollbar-track { background: transparent; }

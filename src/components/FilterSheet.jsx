@@ -29,7 +29,7 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="rounded-t-2xl" style={{ maxHeight: '80vh', overflow: 'hidden', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column' }} dir="rtl">
+      <SheetContent side="bottom" className="rounded-t-2xl" style={{ maxHeight: '80vh', overflow: 'hidden', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column', zIndex: 10000 }} dir="rtl">
         <SheetHeader style={{ flexShrink: 0, marginBottom: 16 }}>
           <SheetTitle style={{ color: '#0f2b6b', fontWeight: 800 }}>פילטרים</SheetTitle>
         </SheetHeader>
