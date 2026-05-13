@@ -43,10 +43,11 @@ export default function ActiveTaskBanner({ task, roleHint }) {
   statusInfo?.ownerLabel || 'ממתין לעדכון מהעובד' :
   statusInfo?.label || 'לחץ יצאתי לדרך בדף המשימה';
 
-  const CardContent = () => (
-    <div
-      style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer', width: '100%', minWidth: '100%', boxSizing: 'border-box' }}
-      onClick={() => navigate(`/task/${task.id}`)}>
+  return (
+    <div dir="rtl" style={{ paddingBottom: 0 }}>
+      <div
+        style={{ background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+        onClick={() => navigate(`/task/${task.id}`)}>
 
         {/* Live dot + badge */}
         <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -54,7 +55,7 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
             <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }} className="text-sm text-\u05E8">
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }} className="text-sm text-ר">
             {isWorker ?
             <><Hammer size={11} /> משימה שאתה מבצע עכשיו</> :
             <><HardHat size={11} /> משימה שלך — בביצוע ע"י עובד</>}
@@ -139,21 +140,16 @@ export default function ActiveTaskBanner({ task, roleHint }) {
             פרטים
           </button>
         </div>
-        </div>
-        </div>
-        );
+      </div>
 
-      return (
-      <div dir="rtl" style={{ paddingBottom: 0 }}>
-      <CardContent />
       {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
 
       <style>{`
-       @keyframes livePing {
-         0%, 100% { transform: scale(1); opacity: 0.8; }
-         50% { transform: scale(2); opacity: 0; }
-       }
+        @keyframes livePing {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(2); opacity: 0; }
+        }
       `}</style>
-      </div>);
-
+    </div>
+  );
 }
