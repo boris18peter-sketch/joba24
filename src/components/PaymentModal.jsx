@@ -12,13 +12,14 @@ function formatExpiry(val) {
   return digits;
 }
 
-export default function PaymentModal({ taskPrice, onSuccess, onClose }) {
+export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, onCancel, closeOnBackdropClick = true }) {
+  const finalAmount = amount || taskPrice;
   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '' });
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
+   const [loading, setLoading] = useState(false);
+   const [done, setDone] = useState(false);
+   const [error, setError] = useState('');
 
-  const fee = Math.round(taskPrice * 0.03);
+   const fee = Math.round(finalAmount * 0.03);
 
   const validate = () => {
     const digits = card.number.replace(/\s/g, '');
@@ -39,7 +40,11 @@ export default function PaymentModal({ taskPrice, onSuccess, onClose }) {
     await new Promise(r => setTimeout(r, 1800));
     setLoading(false);
     setDone(true);
-    setTimeout(() => onSuccess(), 1800);
+    setTimeout(() => onSuccess?.(), 1800);
+  };
+
+  const handleCancel = () => {
+    onCancel?.() || onClose?.();
   };
 
   if (done) {
@@ -59,32 +64,35 @@ export default function PaymentModal({ taskPrice, onSuccess, onClose }) {
   }
 
   return (
-    <div style={overlay} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={sheet}>
+    <div style={overlay} onClick={e => closeOnBackdropClick && e.target === e.currentTarget && (onCancel?.() || onClose?.())}>
+      <div style={{ ...sheet, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Lock size={18} color="#1a6fd4" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Lock size={18} color="#1a6fd4" />
+            </div>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>תשלום מאובטח</h2>
+              <p style={{ fontSize: 11, color: '#888', margin: 0 }}>הכסף יוחזק עד לאישור</p>
+            </div>
           </div>
-          <div>
-            <h2 style={{ fontSize: 17, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>תשלום מאובטח</h2>
-            <p style={{ fontSize: 12, color: '#888', margin: 0 }}>הכסף יוחזק עד לאישור השלמת המשימה</p>
-          </div>
+          <button onClick={handleCancel} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 24, padding: 0, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
         </div>
 
         {/* Amount summary */}
-        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 18px', marginBottom: 20, color: 'white' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, opacity: 0.75 }}>תשלום עבור המשימה</span>
-            <span style={{ fontSize: 24, fontWeight: 900 }}>₪{taskPrice}</span>
+        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 14, padding: '12px 16px', marginBottom: 16, color: 'white', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <span style={{ fontSize: 12, opacity: 0.75 }}>תשלום עבור המשימה</span>
+            <span style={{ fontSize: 22, fontWeight: 900 }}>₪{finalAmount}</span>
           </div>
-          <div style={{ fontSize: 11, opacity: 0.6, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 8 }}>
-            עמלת ביטול: ₪{fee} (3%) · הכסף משוחרר רק לאחר אישורך
+          <div style={{ fontSize: 10, opacity: 0.6, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 6 }}>
+            עמלת ביטול: ₪{fee} (3%)
           </div>
         </div>
 
         {/* Card form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
           <div>
             <label style={labelStyle}>מספר כרטיס</label>
             <div style={{ position: 'relative' }}>
@@ -146,10 +154,10 @@ export default function PaymentModal({ taskPrice, onSuccess, onClose }) {
         )}
 
         {/* Trust text */}
-        <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'flex-start', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px' }}>
-          <ShieldCheck size={15} color="#16a34a" style={{ flexShrink: 0, marginTop: 1 }} />
-          <p style={{ fontSize: 11.5, color: '#15803d', margin: 0, lineHeight: 1.6 }}>
-            🔒 התשלום מוחזק בצורה מאובטחת וישוחרר רק לאחר שתאשר את השלמת המשימה. במידה ותבטל את המשימה הסכום המלא יוחזר לחשבונך לאחר עמלה של 3%.
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'flex-start', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 10px', fontSize: 10, color: '#15803d', lineHeight: 1.5, flexShrink: 0 }}>
+          <ShieldCheck size={13} color="#16a34a" style={{ flexShrink: 0, marginTop: 1 }} />
+          <p style={{ margin: 0 }}>
+            התשלום מוחזק בצורה מאובטחת ויישוחרר רק לאחר אישור
           </p>
         </div>
 
@@ -157,13 +165,9 @@ export default function PaymentModal({ taskPrice, onSuccess, onClose }) {
         <button
           onClick={handlePay}
           disabled={loading}
-          style={{ marginTop: 18, width: '100%', height: 54, borderRadius: 16, fontSize: 16, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', boxShadow: '0 6px 20px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          style={{ marginTop: 12, width: '100%', height: 50, borderRadius: 14, fontSize: 15, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: loading ? '#93c5fd' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexShrink: 0 }}
         >
-          {loading ? <><Loader2 size={20} className="animate-spin" /> מעבד תשלום...</> : <><Lock size={16} /> שלם ₪{taskPrice} ופרסם</>}
-        </button>
-
-        <button onClick={onClose} style={{ marginTop: 10, width: '100%', background: 'none', border: 'none', color: '#999', fontSize: 13, cursor: 'pointer', padding: 8 }}>
-          ביטול
+          {loading ? <><Loader2 size={18} className="animate-spin" /> מעבד...</> : <><Lock size={14} /> שלם ₪{finalAmount}</>}
         </button>
       </div>
     </div>
@@ -176,13 +180,13 @@ const overlay = {
   display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
 };
 const sheet = {
-  background: 'white', borderRadius: '24px 24px 0 0',
-  padding: '24px 20px 40px', width: '100%', maxWidth: 480,
-  maxHeight: '95vh', overflowY: 'auto',
+   background: 'white', borderRadius: '24px 24px 0 0',
+   padding: '16px 16px 24px', width: '100%', maxWidth: 480,
+   height: '80vh', maxHeight: '85vh',
 };
 const labelStyle = { fontSize: 12, fontWeight: 700, color: '#0f2b6b', display: 'block', marginBottom: 6 };
 const inputStyle = {
-  width: '100%', height: 48, borderRadius: 12, border: '1.5px solid #dce8f5',
-  background: '#f4f7fb', padding: '0 14px', fontSize: 15, outline: 'none',
-  fontFamily: 'inherit', boxSizing: 'border-box',
+   width: '100%', height: 48, borderRadius: 12, border: '1.5px solid #dce8f5',
+   background: '#f4f7fb', padding: '0 14px', fontSize: 16, outline: 'none',
+   fontFamily: 'inherit', boxSizing: 'border-box',
 };

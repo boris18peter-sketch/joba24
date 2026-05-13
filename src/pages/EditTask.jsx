@@ -65,74 +65,79 @@ export default function EditTask() {
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
 
   const handleSave = async () => {
-    if (!form.title) { toast.error('חובה למלא כותרת'); return; }
-    if (!form.description) { toast.error('חובה למלא תיאור מפורט'); return; }
-    if (!form.price) { toast.error('חובה למלא מחיר'); return; }
-    if (!form.city) { toast.error('חובה למלא עיר'); return; }
-    if (me?.id !== task?.client_id) { toast.error('אין לך הרשאה לערוך משימה זו'); return; }
+     if (!form.title) { toast.error('חובה למלא כותרת'); return; }
+     if (!form.description) { toast.error('חובה למלא תיאור מפורט'); return; }
+     if (!form.price) { toast.error('חובה למלא מחיר'); return; }
+     if (!form.city) { toast.error('חובה למלא עיר'); return; }
+     if (me?.id !== task?.client_id) { toast.error('אין לך הרשאה לערוך משימה זו'); return; }
 
-    if (isRepostMode) {
-      setShowPayment(true);
-      return;
-    }
+     if (isRepostMode) {
+       setShowPayment(true);
+       return;
+     }
 
-    setLoading(true);
-    const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
-    const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+     setLoading(true);
+     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
+     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
 
-    await base44.entities.Task.update(id, {
-      title: form.title,
-      description: form.description,
-      price: Number(form.price),
-      max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
-      auto_bump_enabled: form.auto_bump_enabled,
-      location_name: form.location_name,
-      city: form.city,
-      estimated_time: estimatedTime,
-      category: form.category,
-      expiry_duration_hours: form.expiry_hours,
-      expires_at: expires,
-      images: form.images,
-      requirements: form.requirements,
-      });
-    queryClient.invalidateQueries({ queryKey: ['task', id] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    toast.success('המשימה עודכנה! ✅');
-    setLoading(false);
-    navigate(`/task/${id}`);
-  };
+     await base44.entities.Task.update(id, {
+       title: form.title,
+       description: form.description,
+       price: Number(form.price),
+       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
+       auto_bump_enabled: form.auto_bump_enabled,
+       location_name: form.location_name,
+       city: form.city,
+       estimated_time: estimatedTime,
+       category: form.category,
+       expiry_duration_hours: form.expiry_hours,
+       expires_at: expires,
+       images: form.images,
+       requirements: form.requirements,
+       status: isRepostMode ? 'OPEN' : undefined,
+       });
+     queryClient.invalidateQueries({ queryKey: ['task', id] });
+     queryClient.invalidateQueries({ queryKey: ['tasks'] });
+     if (!isRepostMode) {
+       toast.success('המשימה עודכנה! ✅');
+       setLoading(false);
+       navigate(`/task/${id}`);
+     } else {
+       setLoading(false);
+     }
+   };
 
   const handlePaymentSuccess = async () => {
-    setShowPayment(false);
-    setLoading(true);
-    const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
-    const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+     setLoading(true);
+     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
+     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
 
-    await base44.entities.Task.update(id, {
-      title: form.title,
-      description: form.description,
-      price: Number(form.price),
-      max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
-      auto_bump_enabled: form.auto_bump_enabled,
-      location_name: form.location_name,
-      city: form.city,
-      estimated_time: estimatedTime,
-      category: form.category,
-      expiry_duration_hours: form.expiry_hours,
-      expires_at: expires,
-      images: form.images,
-      requirements: form.requirements,
-      status: 'OPEN',
-      payment_status: 'funded',
-      payment_held: true,
-    });
-    queryClient.invalidateQueries({ queryKey: ['task', id] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-    toast.success('המשימה פורסמה מחדש! ✅');
-    setLoading(false);
-    navigate('/');
-  };
+     await base44.entities.Task.update(id, {
+       title: form.title,
+       description: form.description,
+       price: Number(form.price),
+       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
+       auto_bump_enabled: form.auto_bump_enabled,
+       location_name: form.location_name,
+       city: form.city,
+       estimated_time: estimatedTime,
+       category: form.category,
+       expiry_duration_hours: form.expiry_hours,
+       expires_at: expires,
+       images: form.images,
+       requirements: form.requirements,
+       status: 'OPEN',
+       payment_status: 'funded',
+       payment_held: true,
+     });
+     queryClient.invalidateQueries({ queryKey: ['task', id] });
+     queryClient.invalidateQueries({ queryKey: ['tasks'] });
+     queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+     toast.success('המשימה פורסמה מחדש! ✅');
+     setLoading(false);
+     setShowPayment(false);
+     navigate('/');
+   };
 
   if (!form) return (
     <div className="flex items-center justify-center h-screen">
@@ -313,13 +318,13 @@ export default function EditTask() {
         </div>
 
         <Button onClick={handleSave} disabled={loading}
-          className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isRepostMode ? <>פרסם מחדש</> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}</>}
-        </Button>
+           className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
+         >
+           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : isRepostMode ? <>פרסם ג'ובה חדשה</> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}
+         </Button>
       </div>
 
-      {showPayment && <PaymentModal amount={Number(form.price)} onSuccess={handlePaymentSuccess} onCancel={() => setShowPayment(false)} />}
+      {showPayment && <PaymentModal amount={Number(form.price)} onSuccess={handlePaymentSuccess} onCancel={() => { setShowPayment(false); }} closeOnBackdropClick={false} />}
     </div>
   );
 }

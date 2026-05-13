@@ -29,14 +29,15 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="rounded-t-2xl overflow-y-auto" style={{ maxHeight: '90vh', paddingBottom: 'env(safe-area-inset-bottom, 24px)' }} dir="rtl">
-        <SheetHeader>
+      <SheetContent side="bottom" className="rounded-t-2xl" style={{ maxHeight: '100vh', overflow: 'auto', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column' }} dir="rtl">
+        <SheetHeader style={{ flexShrink: 0, marginBottom: 16 }}>
           <SheetTitle style={{ color: '#0f2b6b', fontWeight: 800 }}>פילטרים</SheetTitle>
         </SheetHeader>
-        <div className="space-y-5 py-4">
+        
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, paddingRight: 0 }}>
 
           {/* Price */}
-          <div>
+          <div style={{ paddingRight: 16 }}>
             <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>מחיר</Label>
             <div className="flex gap-2 flex-wrap">
               {PRICE_OPTIONS.map(opt => {
@@ -45,7 +46,7 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
                   <button key={opt.label}
                     onClick={() => setLocal(p => ({ ...p, minPrice: opt.min, maxPrice: opt.max }))}
                     style={{
-                      padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                      padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                       background: isActive ? '#1a6fd4' : 'white',
                       color: isActive ? 'white' : '#555',
                       border: isActive ? '1px solid #1a6fd4' : '1px solid #dce8f5',
@@ -56,31 +57,14 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
             </div>
           </div>
 
-          {/* Approval mode */}
-          <div>
-            <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>סוג ביצוע</Label>
-            <div className="flex gap-2 flex-wrap">
-              {[{ val: '', label: 'הכל' }, { val: 'instant', label: '⚡ מיידי' }, { val: 'manual', label: '✋ ממתין לאישור' }].map(opt => (
-                <button key={opt.val} onClick={() => setLocal(p => ({ ...p, approvalMode: opt.val }))}
-                  style={{
-                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                    background: local.approvalMode === opt.val ? '#1a6fd4' : 'white',
-                    color: local.approvalMode === opt.val ? 'white' : '#555',
-                    border: local.approvalMode === opt.val ? '1px solid #1a6fd4' : '1px solid #dce8f5',
-                  }}
-                >{opt.label}</button>
-              ))}
-            </div>
-          </div>
-
           {/* Time */}
-          <div>
+          <div style={{ paddingRight: 16 }}>
             <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>זמן ביצוע</Label>
             <div className="flex gap-2 flex-wrap">
               {timeOptions.map(t => (
                 <button key={t} onClick={() => setLocal(p => ({ ...p, time: p.time === t ? '' : t }))}
                   style={{
-                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     background: local.time === t ? '#1a6fd4' : 'white',
                     color: local.time === t ? 'white' : '#555',
                     border: local.time === t ? '1px solid #1a6fd4' : '1px solid #dce8f5',
@@ -91,13 +75,13 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
           </div>
 
           {/* Sort */}
-          <div>
+          <div style={{ paddingRight: 16 }}>
             <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'block' }}>מיון</Label>
             <div className="flex gap-2 flex-wrap">
               {[{ val: '', label: 'רלוונטי' }, { val: 'newest', label: '🆕 חדשות קודם' }, { val: 'price_desc', label: '💰 מחיר גבוה' }, { val: 'price_asc', label: '💸 מחיר נמוך' }].map(opt => (
                 <button key={opt.val} onClick={() => setLocal(p => ({ ...p, sortBy: opt.val }))}
                   style={{
-                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     background: local.sortBy === opt.val ? '#1a6fd4' : 'white',
                     color: local.sortBy === opt.val ? 'white' : '#555',
                     border: local.sortBy === opt.val ? '1px solid #1a6fd4' : '1px solid #dce8f5',
@@ -108,7 +92,7 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
           </div>
 
           {/* City */}
-          <div>
+          <div style={{ paddingRight: 16 }}>
             <Label style={{ color: '#0f2b6b', fontWeight: 700, fontSize: 13, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
               <MapPin size={14} /> עיר
             </Label>
@@ -116,7 +100,7 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
               {cities.map(c => (
                 <button key={c} onClick={() => setLocal(p => ({ ...p, city: p.city === c ? '' : c }))}
                   style={{
-                    padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                    padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
                     background: local.city === c ? '#1a6fd4' : 'white',
                     color: local.city === c ? 'white' : '#555',
                     border: local.city === c ? '1px solid #1a6fd4' : '1px solid #dce8f5',
@@ -125,20 +109,20 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
               ))}
             </div>
             <Input placeholder="עיר אחרת..."
-              style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, marginTop: 8 }}
+              style={{ background: '#f4f7fb', border: '1px solid #dce8f5', borderRadius: 12, marginTop: 8, fontSize: 16 }}
               value={!cities.includes(local.city) ? local.city : ''}
               onChange={e => setLocal(p => ({ ...p, city: e.target.value }))}
             />
           </div>
         </div>
 
-        <div className="flex gap-2 pb-4">
+        <div className="flex gap-2" style={{ flexShrink: 0, paddingRight: 16, paddingTop: 16, borderTop: '1px solid #f0f4fb' }}>
           <button onClick={handleReset}
             style={{ flex: 1, height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#0f2b6b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
           >איפוס</button>
           <button onClick={handleApply}
             style={{ flex: 1, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}
-          >החל פילטרים</button>
+          >החל</button>
         </div>
       </SheetContent>
     </Sheet>

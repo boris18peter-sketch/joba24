@@ -60,11 +60,11 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
-         style={{ width: '100%', height: '100%', maxWidth: '100%', maxHeight: '100%', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)' }}
+         style={{ width: '100%', height: '70vh', maxHeight: '90vh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -8px 48px rgba(0,0,0,0.2)', borderRadius: '20px 20px 0 0' }}
          dir="rtl"
        >
         {/* Header */}
@@ -147,7 +147,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
               }, 300);
             }}
             placeholder="כתוב הודעה..."
-            style={{ flex: 1, height: 44, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 14px', fontSize: 16, fontFamily: 'inherit', outline: 'none', background: '#f8fafc', color: '#1a2540', WebkitAppearance: 'none' }}
+            style={{ flex: 1, height: 44, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 14px', fontSize: 16, fontFamily: 'inherit', outline: 'none', background: '#f8fafc', color: '#1a2540', WebkitAppearance: 'none', minHeight: 44 }}
           />
           <button
             onClick={send}

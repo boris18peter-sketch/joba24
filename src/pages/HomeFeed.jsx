@@ -289,30 +289,28 @@ export default function HomeFeed() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
-      {/* Header — fixed height, vertically centered, symmetric margins */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center' }}>
-        <div style={{ width: '100%', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Left spacer matching menu button size */}
-          <div style={{ width: 44 }} />
-          {/* Logo on the right */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
-            <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
-          </div>
+      {/* Header — fixed height, vertically centered, logo pinned right */}
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
+          <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
         </div>
       </div>
 
-      {/* Active Task Banner — show worker task first, then client task (avoid duplicates) */}
+      {/* Active Task Banners Carousel */}
       {(activeWorkerTask || activeClientTask) &&
-      <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ padding: '14px 16px 0', overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', display: 'flex', gap: 10 }}>
           {activeWorkerTask &&
-        <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
-        }
-          {/* Only show client task if it's a different task than the worker task */}
-          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id &&
-        <ActiveTaskBanner task={activeClientTask} roleHint="client" />
-        }
+        <div style={{ flex: '0 0 calc(100% - 32px)' }}>
+          <ActiveTaskBanner task={activeWorkerTask} roleHint="worker" />
         </div>
+        }
+          {activeClientTask && activeClientTask.id !== activeWorkerTask?.id &&
+        <div style={{ flex: '0 0 calc(100% - 32px)' }}>
+          <ActiveTaskBanner task={activeClientTask} roleHint="client" />
+        </div>
+        }
+      </div>
       }
 
       {/* Stories - מעוכב לטעינה */}
