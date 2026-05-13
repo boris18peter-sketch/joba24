@@ -73,10 +73,7 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: data => data[0],
-    refetchInterval: 1000,
     staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
   });
 
   // DEBUG: Log task data every render
@@ -88,11 +85,10 @@ export default function TaskDetail() {
 
   // Check if MY application was approved for this task
   const { data: myApp } = useQuery({
-    queryKey: ['myApp', id, me?.id],
+    queryKey: ['myApplications', me?.id, id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
     select: data => data[0],
     enabled: !!me?.id,
-    refetchInterval: 2000,
   });
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
@@ -109,27 +105,7 @@ export default function TaskDetail() {
     prevWorkerIdRef.current = myApp.status;
   }, [myApp?.status]);
 
-  // Real-time subscriptions
-  useEffect(() => {
-    const unsubscribe1 = base44.entities.Task.subscribe((event) => {
-      if (event.id === id) {
-        queryClient.invalidateQueries({ queryKey: ['task', id] });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      }
-    });
-    const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === id) {
-        // When approval happens, refetch both myApp AND the task immediately
-        queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-        queryClient.invalidateQueries({ queryKey: ['task', id] });
-        queryClient.invalidateQueries({ queryKey: ['applications', id] });
-      }
-    });
-    return () => {
-      unsubscribe1();
-      unsubscribe2();
-    };
-  }, [id, me?.id]);
+  // Subscriptions handled globally by Layout.jsx for efficiency
 
   const handleWorkerUpdate = async (data) => {
     await base44.entities.Task.update(id, data);
@@ -167,23 +143,52 @@ export default function TaskDetail() {
   }, [task]);
 
   const takeMutation = useMutation({
-    mutationFn: () => base44.entities.Task.update(id, {
-      status: 'TAKEN',
-      worker_id: me?.id,
-      worker_name: me?.full_name,
-      worker_status: 'on_the_way',
-    }),
-    onSuccess: async () => {
+    mutationFn: (newStatusData) => base44.entities.Task.update(id, newStatusData),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['task', id] });
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      await queryClient.cancelQueries({ queryKey: ['myApplications', me?.id, id] });
+
+      const previousTask = queryClient.getQueryData(['task', id]);
+      const previousMyApp = queryClient.getQueryData(['myApplications', me?.id, id]);
+
+      queryClient.setQueryData(['task', id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          status: 'TAKEN',
+          worker_id: me?.id,
+          worker_name: me?.full_name,
+          worker_status: 'on_the_way',
+        };
+      });
+
+      queryClient.setQueryData(['myApplications', me?.id, id], (old) => {
+        if (!old) return old;
+        return { ...old, status: 'approved' };
+      });
+
+      queryClient.setQueryData(['tasks'], (old) => {
+        if (!old) return old;
+        return old.map(t => t.id === id ? { ...t, status: 'TAKEN', worker_id: me?.id, worker_name: me?.full_name, worker_status: 'on_the_way' } : t);
+      });
+      
       setTaskTaken(true);
-      // CRITICAL: Invalidate BEFORE refetch to clear stale cache
-      await queryClient.invalidateQueries({ queryKey: ['task', id] });
-      // CRITICAL: Force immediate fresh fetch
-      await queryClient.refetchQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
-      console.log('✅ TAKE TASK MUTATION COMPLETE - Task refetched');
       toast.success('קחת את הג\'ובה! 🎉');
+
+      return { previousTask, previousMyApp };
+    },
+    onError: (err, newStatusData, context) => {
+      queryClient.setQueryData(['task', id], context.previousTask);
+      queryClient.setQueryData(['myApplications', me?.id, id], context.previousMyApp);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.error("אופס! משהו השתבש בלקיחת המשימה. נסה שוב.");
+      setTaskTaken(false);
+    },
+    onSuccess: () => {
+      console.log('✅ TAKE TASK MUTATION COMPLETE - Relying on global subscription');
     },
   });
 
@@ -244,15 +249,34 @@ export default function TaskDetail() {
 
   const cancelApplicationMutation = useMutation({
     mutationFn: async () => {
-      // Update status to cancelled instead of deleting, so UI reflects immediately
-      await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
+      return base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['myApplications', me?.id, id] });
+      await queryClient.cancelQueries({ queryKey: ['applications', id] });
+
+      const previousMyApp = queryClient.getQueryData(['myApplications', me?.id, id]);
+      const previousTaskApplications = queryClient.getQueryData(['applications', id]);
+
+      queryClient.setQueryData(['myApplications', me?.id, id], (old) => {
+        if (!old) return old;
+        return { ...old, status: 'cancelled' };
+      });
+      queryClient.setQueryData(['applications', id], (old) => {
+        if (!old) return old;
+        return old.map(app => app.id === myApp.id ? { ...app, status: 'cancelled' } : app);
+      });
+      
+      toast.success('הבקשה בוטלה בהצלחה');
+      return { previousMyApp, previousTaskApplications };
+    },
+    onError: (err, newTodo, context) => {
+      queryClient.setQueryData(['myApplications', me?.id, id], context.previousMyApp);
+      queryClient.setQueryData(['applications', id], context.previousTaskApplications);
+      toast.error("אופס! משהו השתבש בביטול הבקשה. נסה שוב.");
     },
     onSuccess: () => {
       prevWorkerIdRef.current = null;
-      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', id] });
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
-      toast.success('הבקשה בוטלה בהצלחה');
     },
   });
 
