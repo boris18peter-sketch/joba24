@@ -60,7 +60,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
   return (
      <div
-       style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(10,20,50,0.55)', backdropFilter: 'blur(4px)' }}
+       style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'rgba(10,20,50,0.55)', backdropFilter: 'blur(4px)' }}
        onClick={e => e.target === e.currentTarget && onClose()}
      >
        <div

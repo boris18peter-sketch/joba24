@@ -192,7 +192,7 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
 }
 
 const overlay = {
-   position: 'fixed', inset: 0, zIndex: 9999,
+   position: 'fixed', inset: 0, zIndex: 99999,
    background: 'rgba(10,20,50,0.55)', backdropFilter: 'blur(4px)',
    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
 };
