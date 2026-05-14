@@ -52,8 +52,10 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
         {taskList.map((t, idx) => {
           const tStatusInfo = STATUS_STEPS[t.worker_status] || null;
-          const tIsWorker = roleHint === 'worker' || roleHint !== 'client' && me?.id === t.worker_id;
-          const tIsOwner = roleHint === 'client' || roleHint !== 'worker' && me?.id === t.client_id;
+          // Use per-task _roleHint first, then fall back to prop, then detect by user id
+          const tRole = t._roleHint || roleHint;
+          const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === t.worker_id);
+          const tIsOwner = tRole === 'client' || (tRole !== 'worker' && me?.id === t.client_id);
           const tStepIdx = tStatusInfo?.step ?? -1;
           const tGradient = tIsWorker ?
           'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)' :
