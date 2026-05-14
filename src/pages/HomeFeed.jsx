@@ -380,11 +380,11 @@ export default function HomeFeed() {
         </div>
 
         {/* Search + Filter + Categories toolbar — always visible */}
-        <div style={{ background: 'white', borderRadius: 14, border: '1px solid #eaeff7', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ background: 'white', borderRadius: 12, border: '1px solid #eaeff7', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
               {/* Search row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                  <Search size={12} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#c4ccd8', pointerEvents: 'none' }} />
+                  <Search size={11} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#cbd5e1', pointerEvents: 'none' }} />
                   <input
                 placeholder="חיפוש משימות..."
                 value={search}
@@ -393,25 +393,25 @@ export default function HomeFeed() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
                 style={{
-                  width: '100%', height: 30, borderRadius: 8,
-                  border: `1px solid ${searchFocused ? '#93c5fd' : '#e8eef7'}`,
-                  paddingRight: 26, paddingLeft: search ? 22 : 8,
-                  fontSize: 12, fontFamily: 'inherit',
-                  background: '#f7f9fc', outline: 'none', color: '#1a2540',
+                  width: '100%', height: 28, borderRadius: 7,
+                  border: `0.5px solid ${searchFocused ? '#93c5fd' : '#e2e8f0'}`,
+                  paddingRight: 24, paddingLeft: search ? 20 : 6,
+                  fontSize: 11, fontFamily: 'inherit',
+                  background: '#f8fafc', outline: 'none', color: '#1a2540',
                   transition: 'all 0.15s', boxSizing: 'border-box'
                 }} />
               
                   {search &&
               <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                      <X size={11} color="#94a3b8" />
+                      <X size={10} color="#94a3b8" />
                     </button>
               }
                   {searchFocused && !search && recentSearches.length > 0 &&
-              <div style={{ position: 'absolute', top: 36, right: 0, left: 0, background: 'white', borderRadius: 10, border: '1px solid #e8eef8', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 32, right: 0, left: 0, background: 'white', borderRadius: 8, border: '1px solid #e8eef8', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
                       {recentSearches.map((s, i) =>
                 <button key={i} onClick={() => {setSearch(s);setSearchFocused(false);}}
-                style={{ width: '100%', padding: '7px 12px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#374151', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Search size={10} color="#94a3b8" /> {s}
+                style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Search size={9} color="#94a3b8" /> {s}
                         </button>
                 )}
                     </div>
@@ -421,31 +421,31 @@ export default function HomeFeed() {
                 <button
               onClick={() => setShowFilters(true)}
               style={{
-                flexShrink: 0, width: 30, height: 30, borderRadius: 8,
-                border: `1px solid ${hasFilters ? '#93c5fd' : '#e8eef7'}`,
-                background: hasFilters ? '#1a6fd4' : '#f7f9fc',
+                flexShrink: 0, width: 28, height: 28, borderRadius: 6,
+                border: `0.5px solid ${hasFilters ? '#60a5fa' : '#e2e8f0'}`,
+                background: hasFilters ? '#1a6fd4' : '#f8fafc',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', position: 'relative'
+                cursor: 'pointer', position: 'relative', transition: 'all 0.15s'
               }}>
               
-                  <SlidersHorizontal size={11} color={hasFilters ? 'white' : '#64748b'} />
-                  {hasFilters && <span style={{ position: 'absolute', top: 4, right: 4, width: 4, height: 4, borderRadius: '50%', background: '#fbbf24', border: '1px solid white' }} />}
+                  <SlidersHorizontal size={10} color={hasFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                  {hasFilters && <span style={{ position: 'absolute', top: 3, right: 3, width: 3, height: 3, borderRadius: '50%', background: '#fbbf24', border: '0.5px solid white' }} />}
                 </button>
                 {/* Live count */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, background: '#eff6ff', borderRadius: 20, padding: '3px 7px', border: '1px solid #dbeafe' }}>
-                  <span style={{ position: 'relative', display: 'inline-flex', width: 5, height: 5 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.75 }} />
-                    <span style={{ position: 'relative', width: 5, height: 5, borderRadius: '50%', background: '#3b82f6' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe' }}>
+                  <span style={{ position: 'relative', display: 'inline-flex', width: 4, height: 4 }}>
+                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
+                    <span style={{ position: 'relative', width: 4, height: 4, borderRadius: '50%', background: '#3b82f6' }} />
                   </span>
-                  <span style={{ fontSize: 10, color: '#1d4ed8', fontWeight: 700 }}>{sortedTasks.filter((t) => t.status === 'OPEN').length}</span>
+                  <span style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 600 }}>{sortedTasks.filter((t) => t.status === 'OPEN').length}</span>
                 </div>
               </div>
 
               {/* Category pills */}
-              <div style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ display: 'flex', gap: 3, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                 <button
               onClick={() => setFilters((f) => ({ ...f, category: '' }))}
-              style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5' }}>
+              style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 16, fontSize: 9, fontWeight: 500, border: '0.5px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5', transition: 'all 0.15s' }}>
               הכל</button>
                 {[...CATEGORIES].
             sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN').length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN').length).
@@ -456,9 +456,9 @@ export default function HomeFeed() {
               return (
                 <button key={c.value}
                 onClick={() => setFilters((f) => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                style={{ flexShrink: 0, padding: '2px 9px', borderRadius: 20, fontSize: 10, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 2 }}>
+                style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 16, fontSize: 9, fontWeight: 500, border: '0.5px solid transparent', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 2, transition: 'all 0.15s' }}>
                   
-                        {c.label}{count > 0 && <span style={{ opacity: 0.5, fontSize: 9 }}>({count})</span>}
+                        {c.label}{count > 0 && <span style={{ opacity: 0.6, fontSize: 8 }}>({count})</span>}
                       </button>);
 
             })}
