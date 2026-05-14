@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, SearchX, X } from 'lucide-react';
+import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock } from 'lucide-react';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
@@ -9,6 +9,7 @@ import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { rankFeedTasks, buildSmartSections } from '@/lib/feedRanker';
 
 export default function HomeFeed() {
   const [search, setSearch] = useState('');
@@ -17,6 +18,7 @@ export default function HomeFeed() {
     try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '' });
+  const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
@@ -212,115 +214,86 @@ export default function HomeFeed() {
     });
   }, [tasks]);
 
-  function getDistance(lat1, lng1, lat2, lng2) {
-    if (!lat1 || !lng1 || !lat2 || !lng2) return null;
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  // Smart sort: distance + price + preference + task history
-  const preferredCategories = me?.preferred_categories || [];
-  const preferredCities = me?.preferred_cities || [];
-
-  // Build category affinity from completed tasks history
-  const categoryAffinity = React.useMemo(() => {
-    const map = {};
-    (myTasks || []).filter((t) => t.status === 'COMPLETED').forEach((t) => {
-      if (t.category) map[t.category] = (map[t.category] || 0) + 1;
+  // ── Smart Ranking Engine ──────────────────────────────────────────────────
+  // Build worker profile for category matching
+  const workerProfile = useMemo(() => {
+    const categoryHistory = {};
+    (myTasks || []).filter(t => t.status === 'COMPLETED').forEach(t => {
+      if (t.category) categoryHistory[t.category] = (categoryHistory[t.category] || 0) + 1;
     });
-    return map;
-  }, [myTasks]);
+    return {
+      preferredCategories: me?.preferred_categories || [],
+      preferredCities: me?.preferred_cities || [],
+      categoryHistory,
+    };
+  }, [myTasks, me?.preferred_categories, me?.preferred_cities]);
 
-  // Show only OTHER people's funded OPEN tasks (exclude my own published tasks)
-  const otherTasks = tasks.filter((t) =>
-  (t.payment_status === 'funded' || !t.payment_status) && t.client_id !== me?.id
+  // Categorize my applications
+  const approvedApps = myApplications.filter(a => a.status === 'approved');
+  const pendingApps  = myApplications.filter(a => a.status === 'pending');
+  const approvedTaskIds = new Set(approvedApps.map(a => a.task_id));
+  const pendingTaskIds  = new Set(pendingApps.map(a => a.task_id));
+
+  // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
+  const candidateTasks = tasks.filter(t => {
+    if (t.status !== 'OPEN') return false;
+    if (t.client_id === me?.id) return false;
+    if (dismissedTasks.has(t.id)) return false;
+    const q = search.toLowerCase();
+    if (search && !(
+      t.title?.toLowerCase().includes(q) ||
+      t.description?.toLowerCase().includes(q) ||
+      t.city?.toLowerCase().includes(q) ||
+      t.location_name?.toLowerCase().includes(q) ||
+      String(t.price).includes(search.trim())
+    )) return false;
+    if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
+    if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
+    if (filters.time && t.estimated_time !== filters.time) return false;
+    if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
+    if (filters.category && t.category !== filters.category) return false;
+    if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
+    return true;
+  });
+
+  // Run smart ranking
+  const rankedTasks = useMemo(() =>
+    rankFeedTasks(candidateTasks, userLocation, workerProfile),
+    [candidateTasks.length, userLocation?.lat, userLocation?.lng, workerProfile]
   );
 
-  // Categorize applications
-  const approvedApps = myApplications.filter((a) => a.status === 'approved');
-  const pendingApps = myApplications.filter((a) => a.status === 'pending');
-  const approvedTaskIds = new Set(approvedApps.map((a) => a.task_id));
-  const pendingTaskIds = new Set(pendingApps.map((a) => a.task_id));
+  // Override sort if user manually picks one
+  const sortedByFilter = useMemo(() => {
+    if (filters.sortBy === 'newest') return [...rankedTasks].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
+    if (filters.sortBy === 'price_desc') return [...rankedTasks].sort((a,b) => b.price - a.price);
+    if (filters.sortBy === 'price_asc') return [...rankedTasks].sort((a,b) => a.price - b.price);
+    return rankedTasks;
+  }, [rankedTasks, filters.sortBy]);
 
-  const scored = otherTasks.
-  filter((t) => {
-    // Show only OPEN tasks OR tasks where I have an approved/pending application
-    const myAppForThis = myApplications.find((a) => a.task_id === t.id);
-    const isApprovedForMe = myAppForThis?.status === 'approved';
-    const isPendingForMe = myAppForThis?.status === 'pending';
-    // Only show OPEN tasks in the main feed
-    // TAKEN/COMPLETED/CANCELLED/EXPIRED: hide entirely from feed
-    if (t.status !== 'OPEN') return false;
-    if (dismissedTasks.has(t.id)) return false;
-    const searchLower = search.toLowerCase();
-    const matchSearch = !search ||
-    t.title?.toLowerCase().includes(searchLower) ||
-    t.description?.toLowerCase().includes(searchLower) ||
-    t.city?.toLowerCase().includes(searchLower) ||
-    t.location_name?.toLowerCase().includes(searchLower) ||
-    String(t.price).includes(search.trim());
-    const matchMinPrice = !filters.minPrice || t.price >= Number(filters.minPrice);
-    const matchPrice = !filters.maxPrice || t.price <= Number(filters.maxPrice);
-    const matchTime = !filters.time || t.estimated_time === filters.time;
-    const matchCity = !filters.city || t.city?.includes(filters.city) || t.location_name?.includes(filters.city);
-    const matchCat = !filters.category || t.category === filters.category;
-    const matchApproval = !filters.approvalMode || t.approval_mode === filters.approvalMode;
-    return matchSearch && matchMinPrice && matchPrice && matchTime && matchCity && matchCat && matchApproval;
-  }).
-  map((t) => {
-    const distKm = userLocation ? getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng) : null;
-    let relevance = 0;
+  // Pin approved/pending tasks to top
+  const sortedTasks = useMemo(() => {
+    return [...sortedByFilter].sort((a, b) => {
+      const rankA = approvedTaskIds.has(a.id) ? 0 : pendingTaskIds.has(a.id) ? 1 : 2;
+      const rankB = approvedTaskIds.has(b.id) ? 0 : pendingTaskIds.has(b.id) ? 1 : 2;
+      return rankA - rankB;
+    });
+  }, [sortedByFilter, approvedTaskIds, pendingTaskIds]);
 
-    // Preferred category: +3
-    if (preferredCategories.includes(t.category)) relevance += 3;
+  // Smart sections (only when not filtering/searching)
+  const smartSections = useMemo(() =>
+    (!search && !filters.category && !filters.sortBy) ? buildSmartSections(rankedTasks) : null,
+    [rankedTasks, search, filters.category, filters.sortBy]
+  );
 
-    // History-based affinity (categories I've worked in before): up to +2.5
-    if (categoryAffinity[t.category]) {
-      relevance += Math.min(categoryAffinity[t.category] * 0.5, 2.5);
-    }
-
-    // Preferred city: +2
-    if (preferredCities.some((c) => t.city?.includes(c) || t.location_name?.includes(c))) relevance += 2;
-
-    // Distance factor (closer is better): up to +2
-    if (distKm != null && !isNaN(distKm)) {
-      if (distKm < 2) relevance += 2;else
-      if (distKm < 5) relevance += 1;
-    }
-
-    // Price factor (higher pays more): up to +1.5
-    if (t.price > 300) relevance += 1.5;else
-    if (t.price > 150) relevance += 0.75;
-
-    // New tasks get slight freshness boost (up to +1)
-    const ageHours = (Date.now() - new Date(t.created_date).getTime()) / 3600000;
-    if (ageHours < 1) relevance += 1;else
-    if (ageHours < 6) relevance += 0.5;
-
-    return {
-      ...t,
-      _distKm: distKm,
-      _relevance: relevance
-    };
-  });
-
-  // Sort by: 1) approved (accepted tasks), 2) pending (waiting for approval), 3) others by sortBy/relevance
-  const sortedTasks = scored.sort((a, b) => {
-    const aIsApproved = approvedTaskIds.has(a.id) ? 0 : 2;
-    const bIsApproved = approvedTaskIds.has(b.id) ? 0 : 2;
-    const aIsPending = !approvedTaskIds.has(a.id) && pendingTaskIds.has(a.id) ? 1 : aIsApproved;
-    const bIsPending = !approvedTaskIds.has(b.id) && pendingTaskIds.has(b.id) ? 1 : bIsApproved;
-
-    if (aIsPending !== bIsPending) return aIsPending - bIsPending;
-
-    if (filters.sortBy === 'newest') return new Date(b.created_date) - new Date(a.created_date);
-    if (filters.sortBy === 'price_desc') return b.price - a.price;
-    if (filters.sortBy === 'price_asc') return a.price - b.price;
-    return b._relevance - a._relevance || new Date(b.created_date) - new Date(a.created_date);
-  });
+  // Which tasks to show in the feed based on active section tab
+  const displayedTasks = useMemo(() => {
+    if (!smartSections || activeSection === 'all') return sortedTasks;
+    if (activeSection === 'nearby')  return smartSections.nearby.length  ? smartSections.nearby  : sortedTasks;
+    if (activeSection === 'highpay') return smartSections.highPaying.length ? smartSections.highPaying : sortedTasks;
+    if (activeSection === 'urgent')  return smartSections.urgent.length  ? smartSections.urgent  : sortedTasks;
+    if (activeSection === 'new')     return smartSections.newTasks.length ? smartSections.newTasks : sortedTasks;
+    return sortedTasks;
+  }, [sortedTasks, smartSections, activeSection]);
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy;
 
@@ -369,10 +342,41 @@ export default function HomeFeed() {
 
       <div className="px-4 py-5">
 
-        {/* Section title — always visible */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
-          <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
+        {/* Section title + smart section tabs */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
+            <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
+          </div>
+          {/* Smart section selector — only show when not filtering */}
+          {smartSections && (
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
+              {[
+                { id: 'all',     icon: <Sparkles size={11} />, label: 'מומלץ', count: sortedTasks.length },
+                { id: 'nearby',  icon: <MapPin size={11} />,    label: 'קרוב אליך', count: smartSections.nearby.length },
+                { id: 'highpay', icon: <Banknote size={11} />,  label: 'שכר גבוה', count: smartSections.highPaying.length },
+                { id: 'urgent',  icon: <Flame size={11} />,     label: 'דחוף', count: smartSections.urgent.length },
+                { id: 'new',     icon: <Clock size={11} />,     label: 'חדש',  count: smartSections.newTasks.length },
+              ].filter(s => s.id === 'all' || s.count > 0).map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id)}
+                  style={{
+                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                    border: 'none', cursor: 'pointer',
+                    background: activeSection === s.id ? '#1a6fd4' : 'white',
+                    color: activeSection === s.id ? 'white' : '#475569',
+                    boxShadow: activeSection === s.id ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 4px rgba(0,0,0,0.06)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {s.icon} {s.label}
+                  {s.id !== 'all' && <span style={{ fontSize: 9, opacity: 0.7, marginRight: 1 }}>({s.count})</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Search + Filter + Categories toolbar — always visible */}
@@ -484,7 +488,7 @@ export default function HomeFeed() {
               </div>
           )}
           </div> :
-        scored.length === 0 ?
+        displayedTasks.length === 0 ?
         <div className="text-center py-16">
             <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
             <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
@@ -498,28 +502,22 @@ export default function HomeFeed() {
           </div> :
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
-            {sortedTasks.map((task) => {
+            {displayedTasks.map((task) => {
             const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
             const isNew = newTaskIds.has(task.id);
             return (
               <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
-                  {isNew &&
-                <div style={{ position: 'absolute', top: -8, right: 12, zIndex: 10, background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}>
-                      חדש עכשיו
-                    </div>
-                }
                   <TaskCardWithSwipe
                   task={task}
                   myApp={myApp}
                   isMyTask={false}
                   currentUserId={me?.id}
                   workerName={me?.full_name}
+                  badges={task._badges}
                   onDismiss={(taskId) => {
                     setDismissedTasks((prev) => new Set([...prev, taskId]));
                   }} />
-                
                 </div>);
-
           })}
           </div>
         }

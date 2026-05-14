@@ -9,6 +9,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
+import TaskBadges from '@/components/TaskBadges';
 
 // ── Apply Modal — full screen, professional ───────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
@@ -139,7 +140,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
 }
 
 // ── TaskCard ──────────────────────────────────────────────────────────────────
-export default function TaskCard({ task, myApp, currentUserId, workerName }) {
+export default function TaskCard({ task, myApp, currentUserId, workerName, badges }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
@@ -235,6 +236,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
             </button>
           </div>
         )}
+
+        {/* Smart feed badges */}
+        {badges && !hasActiveApp && <TaskBadges badges={badges} />}
 
         {/* Top row: title + price + apply btn */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
