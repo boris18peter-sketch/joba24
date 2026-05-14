@@ -57,9 +57,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           const tStepIdx = tStatusInfo?.step ?? -1;
           const tGradient = tIsWorker ?
           'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)' :
-          tStepIdx === 2 ?
-          'linear-gradient(135deg, #059669 0%, #10b981 100%)' :
-          'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
+          'linear-gradient(135deg, #059669 0%, #10b981 100%)';
           const tStatusText = tIsOwner ?
           tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד' :
           tStatusInfo?.label || 'לחץ יצאתי לדרך בדף המשימה';

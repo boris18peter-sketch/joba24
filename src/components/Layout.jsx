@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
+import ChatPushNotification from '@/components/ChatPushNotification';
 
 export default function Layout() {
   const location = useLocation();
@@ -250,6 +251,7 @@ export default function Layout() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
+      <ChatPushNotification />
       <SideMenu />
       
       {/* Live Notifications Stack */}
