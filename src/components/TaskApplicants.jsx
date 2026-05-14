@@ -12,7 +12,7 @@ export default function TaskApplicants({ task, onApprove }) {
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
-    refetchInterval: 3000,
+    refetchInterval: 15000,
   });
 
   const approveMutation = useMutation({
@@ -98,8 +98,12 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.refetchQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       toast.success('האישור בוטל — תוכל לאשר עובד אחר');
       onApprove?.();
+    },
+    onError: (err) => {
+      toast.error('שגיאה בביטול: ' + err.message);
     },
   });
 
