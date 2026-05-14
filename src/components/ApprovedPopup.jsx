@@ -57,7 +57,7 @@ export default function ApprovedPopup({ task, onClose }) {
   return (
     <>
       <TaskTakenConfetti trigger={true} />
-      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 16 }} dir="rtl">
+      <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 16 }} dir="rtl">
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
 
         <div style={{

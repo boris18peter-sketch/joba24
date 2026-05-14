@@ -275,7 +275,7 @@ export default function Layout() {
 
       {/* Bottom Nav */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 9999,
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
         background: 'white', borderTop: '1px solid #dce8f5',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',

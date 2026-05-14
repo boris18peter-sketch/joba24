@@ -352,7 +352,7 @@ export default function TaskDetail() {
 
       {/* Worker: task was cancelled while on the way — big popup */}
       {showWorkerCancelledPopup && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
           <div dir="rtl" style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 60, marginBottom: 16 }}>😞</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
@@ -376,7 +376,7 @@ export default function TaskDetail() {
 
       {/* Cancel warning popup — when worker already on the way */}
       {showCancelWarning && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,15,40,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
+        <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -407,7 +407,7 @@ export default function TaskDetail() {
       )}
       {/* Worker exit confirmation popup */}
       {showExitWarning && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,15,40,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
+        <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
