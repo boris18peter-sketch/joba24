@@ -580,8 +580,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Applicants for owner — only when no worker assigned yet */}
-        {isOwner && task.status === 'OPEN' && !task.worker_id && (
+        {/* Applicants for owner — OPEN (no worker) OR TAKEN but worker hasn't departed yet */}
+        {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) && (
           <TaskApplicants task={task} onApprove={() => {
             queryClient.refetchQueries({ queryKey: ['task', id] });
           }} />
