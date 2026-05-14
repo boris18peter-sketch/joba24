@@ -269,20 +269,34 @@ export default function TaskDetail() {
 
   const handleApply = async () => {
     setApplyLoading(true);
-    await base44.entities.TaskApplication.create({
-      task_id: id,
-      worker_id: me?.id,
-      worker_name: me?.full_name,
-      worker_score: me?.worker_score || 0,
-      worker_rating: me?.rating || 0,
-      worker_tasks_count: me?.score_tasks || 0,
-      message: applyMessage,
-      status: 'pending',
+    // Optimistic: immediately reflect pending state everywhere
+    const optimisticApp = { task_id: id, worker_id: me?.id, status: 'pending', id: `optimistic_${id}` };
+    queryClient.setQueryData(['myApp', id, me?.id], optimisticApp);
+    queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
+      if (old.find(a => a.task_id === id && (a.status === 'pending' || a.status === 'approved'))) return old;
+      return [...old, optimisticApp];
     });
-    setApplyLoading(false);
-    setShowApplyForm(false);
-    setHasApplied(true);
+    try {
+      await base44.entities.TaskApplication.create({
+        task_id: id,
+        worker_id: me?.id,
+        worker_name: me?.full_name,
+        worker_score: me?.worker_score || 0,
+        worker_rating: me?.rating || 0,
+        worker_tasks_count: me?.score_tasks || 0,
+        message: applyMessage,
+        status: 'pending',
+      });
       toast.success('הבקשה נשלחה לבעל הג\'ובה!');
+    } finally {
+      setApplyLoading(false);
+      setShowApplyForm(false);
+      setHasApplied(true);
+      // Hard sync everywhere
+      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', id] });
+    }
   };
 
   // Signal reopen - sends a chat message + creates a notification for task owner

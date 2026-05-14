@@ -122,16 +122,37 @@ export default function HomeFeed() {
       });
     });
 
-    // Live application updates — sync immediately on any status change
+    // Live application updates — sync immediately on create/update/delete
     const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.worker_id === me.id || event.type === 'delete') {
-        // Optimistic update in cache first, then invalidate for fresh data
+      const isMyApp = event.data?.worker_id === me.id || event.type === 'delete';
+      const isForMyTask = event.data?.task_id && myTasks.some(t => t.id === event.data.task_id);
+
+      if (isMyApp) {
         if (event.type === 'update' && event.data) {
+          // Instant cache update
           queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
             old.map(a => a.id === event.id ? { ...a, ...event.data } : a)
           );
+          // Also sync the per-task myApp cache
+          queryClient.setQueryData(['myApp', event.data.task_id, me.id], (old) =>
+            old?.id === event.id ? { ...old, ...event.data } : old
+          );
+        }
+        if (event.type === 'create' && event.data) {
+          queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) => {
+            if (old.find(a => a.id === event.id)) return old;
+            // Replace optimistic entry if exists
+            const filtered = old.filter(a => a.id !== `optimistic_${event.data.task_id}`);
+            return [...filtered, event.data];
+          });
+          queryClient.setQueryData(['myApp', event.data.task_id, me.id], event.data);
         }
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
+      }
+
+      // If it's an application for one of MY published tasks — sync the applicants panel
+      if (isForMyTask) {
+        queryClient.invalidateQueries({ queryKey: ['applications', event.data.task_id] });
       }
     });
 

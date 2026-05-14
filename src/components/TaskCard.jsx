@@ -161,13 +161,19 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
   };
 
   const handleApplied = () => {
-    // Optimistic update: immediately mark as pending so button disappears
-    queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => [
-      ...old,
-      { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `optimistic_${task.id}` },
-    ]);
+    // Optimistic: immediately show "pending" state everywhere
+    const optimisticApp = { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `optimistic_${task.id}` };
+    queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => {
+      // Avoid duplicate
+      if (old.find(a => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'))) return old;
+      return [...old, optimisticApp];
+    });
+    // Sync task detail page too
+    queryClient.setQueryData(['myApp', task.id, currentUserId], optimisticApp);
+    // Then hard-refresh to replace optimistic with real data
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
-    queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
+    queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
+    queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
   };
 
   const borderColor = appStatus === 'approved' ? '#10b981' : appStatus === 'pending' ? '#fbbf24' : '#edf1f7';
