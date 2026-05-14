@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, CheckCircle, Shield } from 'lucide-react';
+import { Star, CheckCircle, Shield, Award, FileText, MapPin, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import { getCategoryLabel } from '@/lib/categories';
+import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
+
+const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
 
 export default function PublicProfile() {
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ export default function PublicProfile() {
 
   const { data: completedTasks = [] } = useQuery({
     queryKey: ['publicTasks', userId],
-    queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 5),
+    queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 10),
     enabled: !!userId,
   });
 
@@ -56,6 +58,7 @@ export default function PublicProfile() {
 
   const rating = user.rating || 0;
   const avgRating = rating > 0 ? rating.toFixed(1) : '—';
+  const workerScore = user.worker_score || 0;
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
@@ -68,18 +71,18 @@ export default function PublicProfile() {
       {/* Hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <div style={{ width: 68, height: 68, borderRadius: 20, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: 'white', border: '2px solid rgba(255,255,255,0.25)', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 900, color: 'white', border: '2px solid rgba(255,255,255,0.25)', overflow: 'hidden', flexShrink: 0 }}>
             {user.profile_photo
               ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : (user.full_name?.[0]?.toUpperCase() || '?')}
           </div>
-          <div>
-            <div style={{ color: 'white', fontSize: 19, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: 'white', fontSize: 20, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7 }}>
               {user.full_name}
               {user.is_verified && <VerifiedBadge size="md" />}
             </div>
             {user.profession && (
-              <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 6, background: 'rgba(255,255,255,0.15)', padding: '2px 10px', borderRadius: 20, display: 'inline-block' }}>
+              <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 5, background: 'rgba(255,255,255,0.15)', padding: '3px 12px', borderRadius: 20, display: 'inline-block' }}>
                 {user.profession}
               </div>
             )}
@@ -102,8 +105,9 @@ export default function PublicProfile() {
         </div>
       </div>
 
-      <div style={{ padding: '16px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Verified status */}
+      <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Verified badge */}
         {user.is_verified && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <Shield size={18} color="#16a34a" />
@@ -114,14 +118,96 @@ export default function PublicProfile() {
           </div>
         )}
 
-        {/* Categories */}
+        {/* Worker score */}
+        {workerScore > 0 && (
+          <div style={{ background: 'linear-gradient(135deg, #6d28d9, #7c3aed)', borderRadius: 16, padding: '14px 16px', color: 'white' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+              <div style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Award size={20} color="white" />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, opacity: 0.8 }}>ניקוד עובד</div>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>{workerScore.toFixed(0)} נק'</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+              {[
+                { val: user.score_tasks || 0, label: 'משימות' },
+                { val: user.score_speed || 0, label: 'מהירות' },
+                { val: user.score_quality || 0, label: 'ביצוע' },
+              ].map(s => (
+                <div key={s.label} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
+                  <div style={{ fontWeight: 800, fontSize: 14 }}>{s.val}</div>
+                  <div style={{ fontSize: 9, opacity: 0.75 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bio */}
+        {user.bio && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>אודות</div>
+            <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, margin: 0 }}>{user.bio}</p>
+          </div>
+        )}
+
+        {/* Certificates (text) */}
+        {user.certificates?.length > 0 && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>תעודות מקצוע</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {user.certificates.map(cert => (
+                <span key={cert} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                  ✅ {cert}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Certificate files */}
+        {user.certificate_files?.length > 0 && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>מסמכי תעודה</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {user.certificate_files.map(doc => (
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  <span style={{ fontSize: 10, color: '#86efac' }}>לצפייה ›</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Work categories */}
         {user.preferred_categories?.length > 0 && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>תחומי עיסוק</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1a6fd4', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
+                <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
                   {getCategoryLabel(c)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Preferred cities */}
+        {user.preferred_cities?.length > 0 && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <MapPin size={12} /> אזורי פעילות
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {user.preferred_cities.map(c => (
+                <span key={c} style={{ fontSize: 12, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
+                  📍 {c}
                 </span>
               ))}
             </div>
@@ -150,9 +236,9 @@ export default function PublicProfile() {
         {/* Reviews */}
         {reviews.length > 0 && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ביקורות</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ביקורות ({reviews.length})</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {reviews.slice(0, 5).map(review => (
+              {reviews.slice(0, 8).map(review => (
                 <div key={review.id} style={{ borderBottom: '1px solid #f0f4fa', paddingBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
                     {[1,2,3,4,5].map(s => (
@@ -164,6 +250,14 @@ export default function PublicProfile() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && reviews.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94a3b8' }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🔍</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>המשתמש טרם מילא פרטי פרופיל</div>
           </div>
         )}
       </div>
