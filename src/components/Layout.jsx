@@ -137,6 +137,21 @@ export default function Layout() {
         }
       }
 
+      // Client notification: worker voluntarily left the task (TAKEN → OPEN, worker_id cleared)
+      if (
+        task.client_id === me?.id &&
+        prev.status === 'TAKEN' &&
+        task.status === 'OPEN' &&
+        prev.worker_id && !task.worker_id
+      ) {
+        addNotification({
+          type: 'worker_left_task',
+          taskTitle: task.title,
+          taskId: task.id,
+          workerName: prev.worker_name,
+        });
+      }
+
       // Worker notification: task was cancelled after being assigned
       if (
         prev.worker_id === me?.id &&

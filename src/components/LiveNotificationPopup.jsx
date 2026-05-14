@@ -92,6 +92,15 @@ const TYPES = {
     body: (n) => `זוכית ב-20% עמלה (₪${n.compensation || ''}) לארנק שלך`,
     link: () => '/wallet',
   },
+  worker_left_task: {
+    emoji: '🚪',
+    bg: '#fff7ed',
+    border: '#fdba74',
+    accent: '#ea580c',
+    title: (n) => `${n.workerName || 'העובד'} יצא מהמשימה`,
+    body: (n) => `"${n.taskTitle}" — תוכל לאשר מועמד אחר`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
+  },
 };
 
 export default function LiveNotificationPopup({ notification, onClose }) {
