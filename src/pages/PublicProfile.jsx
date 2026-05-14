@@ -13,13 +13,15 @@ export default function PublicProfile() {
   const urlParams = new URLSearchParams(window.location.search);
   const userId = urlParams.get('id');
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery({
     queryKey: ['publicUser', userId],
-    queryFn: () => base44.entities.User.list(),
-    select: data => data.filter(u => u.id === userId),
+    queryFn: async () => {
+      if (!userId) return null;
+      const users = await base44.entities.User.list();
+      return users.find(u => u.id === userId) || null;
+    },
     enabled: !!userId,
   });
-  const user = users[0];
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['publicReviews', userId],
@@ -29,15 +31,29 @@ export default function PublicProfile() {
 
   const { data: completedTasks = [] } = useQuery({
     queryKey: ['publicTasks', userId],
-    queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 10),
+    queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 20),
     enabled: !!userId,
   });
 
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['publicPostedTasks', userId],
-    queryFn: () => base44.entities.Task.filter({ client_id: userId }, '-created_date', 5),
+    queryFn: () => base44.entities.Task.filter({ client_id: userId, status: 'COMPLETED' }, '-created_date', 20),
     enabled: !!userId,
   });
+
+  const { data: allReviews = [] } = useQuery({
+    queryKey: ['publicAllReviews', userId],
+    queryFn: () => base44.entities.Review.filter({ reviewee_id: userId }, '-created_date', 20),
+    enabled: !!userId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -56,8 +72,10 @@ export default function PublicProfile() {
     );
   }
 
-  const rating = user.rating || 0;
-  const avgRating = rating > 0 ? rating.toFixed(1) : '—';
+  // Calculate rating from reviews
+  const avgRating = allReviews.length > 0 
+    ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
+    : '—';
   const workerScore = user.worker_score || 0;
 
   return (
@@ -94,7 +112,7 @@ export default function PublicProfile() {
           {[
             { value: completedTasks.length, label: "ג'ובות בוצעו" },
             { value: postedTasks.length, label: "ג'ובות פורסמו" },
-            { value: avgRating + (rating > 0 ? '★' : ''), label: 'דירוג', sub: `${user.rating_count || 0} ביקורות` },
+            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: 'דירוג', sub: `${allReviews.length} ביקורות` },
           ].map(s => (
             <div key={s.label} style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 6px', textAlign: 'center' }}>
               <div style={{ color: 'white', fontSize: 18, fontWeight: 900 }}>{s.value}</div>
@@ -234,11 +252,11 @@ export default function PublicProfile() {
         )}
 
         {/* Reviews */}
-        {reviews.length > 0 && (
+        {allReviews.length > 0 && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ביקורות ({reviews.length})</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ביקורות ({allReviews.length})</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {reviews.slice(0, 8).map(review => (
+              {allReviews.slice(0, 10).map(review => (
                 <div key={review.id} style={{ borderBottom: '1px solid #f0f4fa', paddingBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
                     {[1,2,3,4,5].map(s => (
@@ -254,7 +272,7 @@ export default function PublicProfile() {
         )}
 
         {/* Empty state */}
-        {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && reviews.length === 0 && (
+        {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && allReviews.length === 0 && (
           <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94a3b8' }}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>🔍</div>
             <div style={{ fontSize: 14, fontWeight: 600 }}>המשתמש טרם מילא פרטי פרופיל</div>
