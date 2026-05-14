@@ -23,7 +23,7 @@ export default function Layout() {
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id,
-    refetchInterval: 10000,
+    staleTime: 60000,
   });
 
   // Active task as worker
@@ -34,7 +34,7 @@ export default function Layout() {
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id,
-    refetchInterval: 10000,
+    staleTime: 60000,
   });
 
   // Get my applications
@@ -42,7 +42,7 @@ export default function Layout() {
     queryKey: ['myApplicationsLayout', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id,
-    refetchInterval: 10000,
+    staleTime: 60000,
   });
 
   // Watch for task status changes — keep prevTasksRef up to date for all relevant tasks
@@ -257,8 +257,7 @@ export default function Layout() {
       const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
       return stored.filter(n => !n.read).length;
     },
-    refetchInterval: 5000,
-    staleTime: 0,
+    staleTime: 30000,
   });
 
   const navItems = [

@@ -81,8 +81,9 @@ export default function TaskApplicants({ task, onApprove }) {
 
   const revokeApprovalMutation = useMutation({
     mutationFn: async () => {
-      // Find the approved application and cancel it
-      const approvedApp = applications.find(a => a.status === 'approved' && a.worker_id === task.worker_id);
+      // Fetch fresh applications from server to avoid stale cache
+      const freshApps = await base44.entities.TaskApplication.filter({ task_id: task.id });
+      const approvedApp = freshApps.find(a => a.status === 'approved');
       if (approvedApp) {
         await base44.entities.TaskApplication.update(approvedApp.id, { status: 'cancelled' });
       }
@@ -96,9 +97,8 @@ export default function TaskApplicants({ task, onApprove }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.refetchQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      queryClient.refetchQueries({ queryKey: ['applications', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApp'] });
       toast.success('האישור בוטל — תוכל לאשר עובד אחר');
       onApprove?.();
     },
@@ -111,8 +111,8 @@ export default function TaskApplicants({ task, onApprove }) {
   const approvedApp = applications.find(a => a.status === 'approved');
   // Pending apps (not yet decided)
   const pending = applications.filter(a => a.status === 'pending');
-  // Worker has started moving (can't revoke without penalty)
-  const workerStarted = !!task.worker_status;
+  // Worker has started moving — check both task prop and actual worker_status field
+  const workerStarted = !!(task.worker_status) || task.status === 'TAKEN' && !!task.on_the_way_at;
 
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
