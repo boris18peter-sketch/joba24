@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2 } from 'lucide-react';
@@ -9,20 +9,44 @@ import { formatDistanceToNow } from 'date-fns';
 export default function ChatInbox() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
+  const queryClient = useQueryClient();
+
   // Get all tasks where I'm involved (as worker or client) and are TAKEN
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['chatInboxWorker', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-updated_date', 50),
     enabled: !!me?.id,
-    refetchInterval: 10000,
+    staleTime: 0,
   });
 
   const { data: clientTasks = [] } = useQuery({
     queryKey: ['chatInboxClient', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-updated_date', 50),
     enabled: !!me?.id,
-    refetchInterval: 10000,
+    staleTime: 0,
   });
+
+  // Real-time task status sync for inbox
+  useEffect(() => {
+    if (!me?.id) return;
+    const unsub = base44.entities.Task.subscribe((event) => {
+      const t = event.data || {};
+      const updateInbox = (key, matchFn) => {
+        queryClient.setQueryData([key, me.id], (old = []) => {
+          if (event.type === 'update') {
+            if (t.status !== 'TAKEN') return old.filter(x => x.id !== event.id);
+            if (matchFn(t) && !old.find(x => x.id === event.id)) return [t, ...old];
+            return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+          }
+          if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+          return old;
+        });
+      };
+      updateInbox('chatInboxWorker', t => t.worker_id === me.id);
+      updateInbox('chatInboxClient', t => t.client_id === me.id);
+    });
+    return unsub;
+  }, [me?.id, queryClient]);
 
   // Merge and deduplicate
   const allTasks = useMemo(() => {

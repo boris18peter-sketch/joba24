@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
@@ -33,8 +33,31 @@ export default function MyTasks() {
     queryKey: ['myTasksPage', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 100),
     enabled: !!me?.id,
-    refetchInterval: 8000,
+    staleTime: 0,
   });
+
+  // Real-time task sync
+  useEffect(() => {
+    if (!me?.id) return;
+    const unsub = base44.entities.Task.subscribe((event) => {
+      const t = event.data || {};
+      queryClient.setQueryData(['myTasksPage', me.id], (old = []) => {
+        if (event.type === 'create') {
+          if (t.client_id !== me.id) return old;
+          if (old.find(x => x.id === event.id)) return old;
+          return [t, ...old];
+        }
+        if (event.type === 'update') {
+          return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+        }
+        if (event.type === 'delete') {
+          return old.filter(x => x.id !== event.id);
+        }
+        return old;
+      });
+    });
+    return unsub;
+  }, [me?.id, queryClient]);
 
   const { data: allApps = [] } = useQuery({
     queryKey: ['allMyTaskApps', tasks.length],
@@ -52,7 +75,18 @@ export default function MyTasks() {
 
   const cancelMutation = useMutation({
     mutationFn: (taskId) => base44.entities.Task.update(taskId, { status: 'CANCELLED' }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['myTasksPage'] }); toast.success('המשימה בוטלה'); },
+    onMutate: (taskId) => {
+      // Optimistic update
+      queryClient.setQueryData(['myTasksPage', me?.id], (old = []) =>
+        old.map(t => t.id === taskId ? { ...t, status: 'CANCELLED' } : t)
+      );
+    },
+    onSuccess: (_, taskId) => {
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('המשימה בוטלה');
+    },
   });
 
   const handleReopen = (taskId) => {

@@ -73,18 +73,10 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: data => data[0],
-    refetchInterval: 1000,
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
-
-  // DEBUG: Log task data every render
-  useEffect(() => {
-    if (task) {
-      console.log('TASK DATA:', task);
-    }
-  }, [task]);
 
   // Check if MY application was approved for this task
   const { data: myApp } = useQuery({
@@ -92,7 +84,6 @@ export default function TaskDetail() {
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
     select: data => data[0],
     enabled: !!me?.id,
-    refetchInterval: 2000,
   });
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
@@ -205,6 +196,8 @@ export default function TaskDetail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       navigate('/');
       toast.success('הג\'ובה בוטלה');
     },

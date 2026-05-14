@@ -85,7 +85,20 @@ export default function HomeFeed() {
         return old;
       });
 
-      // 2. Update myTasks cache — update status live, remove CANCELLED/COMPLETED
+      // 2a. Keep myTasksPage in sync (MyTasks page cache)
+      queryClient.setQueryData(['myTasksPage', me.id], (old = []) => {
+        if (!old) return old;
+        if (event.type === 'create') {
+          if (updatedTask.client_id !== me.id) return old;
+          if (old.find((t) => t.id === event.id)) return old;
+          return [updatedTask, ...old];
+        }
+        if (event.type === 'update') return old.map((t) => t.id === event.id ? { ...t, ...updatedTask } : t);
+        if (event.type === 'delete') return old.filter((t) => t.id !== event.id);
+        return old;
+      });
+
+      // 2b. Update myTasks cache — update status live, remove CANCELLED/COMPLETED
       queryClient.setQueryData(['myTasks', me.id], (old = []) => {
         if (event.type === 'create') {
           // Add new task if I'm the client
