@@ -217,7 +217,14 @@ export default function TaskDetail() {
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
-      // Notify task owner via chat
+      // 1. Cancel the worker's approved application — full reset
+      const workerApps = await base44.entities.TaskApplication.filter({ task_id: id, worker_id: me?.id });
+      await Promise.all(
+        workerApps
+          .filter(a => a.status === 'approved' || a.status === 'pending')
+          .map(a => base44.entities.TaskApplication.update(a.id, { status: 'cancelled' }))
+      );
+      // 2. Notify task owner via chat
       if (task?.client_id && me) {
         await base44.entities.ChatMessage.create({
           task_id: id,
@@ -226,9 +233,15 @@ export default function TaskDetail() {
           content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`,
         });
       }
+      // 3. Reset task back to OPEN
       return base44.entities.Task.update(id, { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null });
     },
     onSuccess: () => {
+      // Clear application cache so the worker sees the task as fresh
+      queryClient.setQueryData(['myApp', id, me?.id], null);
+      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', id] });
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('יצאת מהמשימה');
