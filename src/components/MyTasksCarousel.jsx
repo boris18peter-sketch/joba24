@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 const statusConfig = {
@@ -13,18 +14,8 @@ const statusConfig = {
   EXPIRED: { label: 'פג תוקף', color: '#fef3ea', textColor: '#8a4a1a', dot: '#c2773a' },
 };
 
-function TaskMenu({ task, onClose, queryClient, navigate }) {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
-  }, [onClose]);
-
-  const handleDelete = async (e) => {
-    e.stopPropagation();
+function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
+  const handleDelete = async () => {
     onClose();
     await base44.entities.Task.delete(task.id);
     queryClient.setQueryData(['myTasks', undefined], (old = []) => old.filter(t => t.id !== task.id));
@@ -34,31 +25,47 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
     toast.success('המשימה נמחקה');
   };
 
-  const handleEdit = (e) => {
-    e.stopPropagation();
+  const handleEdit = () => {
     onClose();
     navigate(`/edit-task/${task.id}`);
   };
 
-  return (
-    <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.3)' }} onClick={onClose} />
-      <div ref={ref} onClick={e => e.stopPropagation()} style={{
-        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000,
-        background: 'white', borderRadius: 14, border: 'none',
-        boxShadow: '0 16px 32px rgba(0,0,0,0.15)', minWidth: 140, overflow: 'hidden',
-      }}>
-        {[
-          { icon: Pencil, label: 'עריכה', onClick: handleEdit, color: '#1a6fd4' },
-          { icon: Trash2, label: 'מחק משימה', onClick: handleDelete, color: '#dc2626' },
-        ].map(({ icon: Icon, label, onClick }, idx) => (
-          <button key={label} onClick={onClick}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: idx === 0 ? '#1a6fd4' : '#dc2626', borderBottom: idx === 0 ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
-            <Icon size={13} /> {label}
+  return createPortal(
+    <div className="mobile-sheet-overlay" onClick={onClose} dir="rtl">
+      <div className="mobile-sheet" style={{ width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        {/* Handle */}
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '12px auto 16px' }} />
+        {/* Task name */}
+        <div style={{ padding: '0 20px 14px', borderBottom: '1px solid #f0f4fa' }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b' }}>{task.title}</div>
+          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>₪{task.price}</div>
+        </div>
+        {/* Actions */}
+        <div style={{ padding: '8px 12px 8px' }}>
+          <button onClick={handleEdit}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#1a6fd4' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Pencil size={16} color="#1a6fd4" />
+            </div>
+            ערוך משימה
           </button>
-        ))}
+          <button onClick={handleDelete}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#dc2626' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Trash2 size={16} color="#dc2626" />
+            </div>
+            מחק משימה
+          </button>
+        </div>
+        <div style={{ padding: '0 12px 8px' }}>
+          <button onClick={onClose}
+            style={{ width: '100%', height: 48, borderRadius: 14, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: '#64748b' }}>
+            ביטול
+          </button>
+        </div>
       </div>
-    </>
+    </div>,
+    document.body
   );
 }
 
@@ -186,7 +193,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                       </button>
                     )}
                     {openMenuId === task.id && (
-                      <TaskMenu task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
+                      <TaskMenuSheet task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
                     )}
                   </div>
                 </div>
