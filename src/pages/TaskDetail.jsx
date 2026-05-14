@@ -244,14 +244,25 @@ export default function TaskDetail() {
 
   const cancelApplicationMutation = useMutation({
     mutationFn: async () => {
-      // Update status to cancelled instead of deleting, so UI reflects immediately
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
     },
-    onSuccess: () => {
+    onMutate: () => {
+      // Optimistic: immediately remove from myApp cache
       prevWorkerIdRef.current = null;
+      queryClient.setQueryData(['myApp', id, me?.id], null);
+      // Also update the feed applications cache immediately
+      queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) =>
+        old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
+      );
+    },
+    onSuccess: () => {
+      // Hard sync everything after server confirms
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
       toast.success('הבקשה בוטלה בהצלחה');
     },
   });

@@ -138,12 +138,23 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
     e.stopPropagation();
     if (cancelling) return;
     setCancelling(true);
+    // Optimistic: immediately hide the pending banner
+    queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) =>
+      old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
+    );
     try {
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
-      queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) =>
-        old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
-      );
+      // Hard sync everything after server confirms
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('הבקשה בוטלה');
+    } catch {
+      // Revert optimistic update on failure
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
+      toast.error('שגיאה בביטול, נסה שוב');
     } finally {
       setCancelling(false);
     }

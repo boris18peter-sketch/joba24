@@ -122,9 +122,15 @@ export default function HomeFeed() {
       });
     });
 
-    // Live application updates
+    // Live application updates — sync immediately on any status change
     const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
       if (event.data?.worker_id === me.id || event.type === 'delete') {
+        // Optimistic update in cache first, then invalidate for fresh data
+        if (event.type === 'update' && event.data) {
+          queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
+            old.map(a => a.id === event.id ? { ...a, ...event.data } : a)
+          );
+        }
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
       }
     });
