@@ -205,7 +205,7 @@ export default function Chat() {
             : <span style={{ color: 'white', fontWeight: 700 }}>{otherPersonName?.[0] || '?'}</span>}
         </div>
         <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => {
-          if (otherPersonId) navigate(`/worker-profile?id=${otherPersonId}`);
+          if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`);
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>

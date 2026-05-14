@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, Briefcase, CheckCircle, Shield, ArrowRight } from 'lucide-react';
+import { Star, CheckCircle, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { getCategoryLabel } from '@/lib/categories';
@@ -28,6 +28,12 @@ export default function PublicProfile() {
   const { data: completedTasks = [] } = useQuery({
     queryKey: ['publicTasks', userId],
     queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 5),
+    enabled: !!userId,
+  });
+
+  const { data: postedTasks = [] } = useQuery({
+    queryKey: ['publicPostedTasks', userId],
+    queryFn: () => base44.entities.Task.filter({ client_id: userId }, '-created_date', 5),
     enabled: !!userId,
   });
 
@@ -81,12 +87,13 @@ export default function PublicProfile() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {[
             { value: completedTasks.length, label: "ג'ובות בוצעו" },
+            { value: postedTasks.length, label: "ג'ובות פורסמו" },
             { value: avgRating + (rating > 0 ? '★' : ''), label: 'דירוג', sub: `${user.rating_count || 0} ביקורות` },
           ].map(s => (
-            <div key={s.label} style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 10px', textAlign: 'center' }}>
+            <div key={s.label} style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 6px', textAlign: 'center' }}>
               <div style={{ color: 'white', fontSize: 18, fontWeight: 900 }}>{s.value}</div>
               <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{s.label}</div>
               {s.sub && <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9 }}>{s.sub}</div>}
@@ -116,6 +123,25 @@ export default function PublicProfile() {
                 <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1a6fd4', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
                   {getCategoryLabel(c)}
                 </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Completed tasks as worker */}
+        {completedTasks.length > 0 && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ג'ובות שביצע</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {completedTasks.map(t => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#f8faff', borderRadius: 10 }}>
+                  <CheckCircle size={14} color="#16a34a" style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2540', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+                    {t.city && <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.city}</div>}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1a6fd4', flexShrink: 0 }}>₪{t.price}</div>
+                </div>
               ))}
             </div>
           </div>

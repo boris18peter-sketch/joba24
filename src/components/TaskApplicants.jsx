@@ -120,14 +120,14 @@ export default function TaskApplicants({ task, onApprove }) {
         <div key={app.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1">
-            <Link to={`/worker-profile?id=${app.worker_id}`} className="shrink-0">
+            <Link to={`/public-profile?id=${app.worker_id}`} className="shrink-0">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-lg font-bold text-white cursor-pointer">
                 {app.worker_name?.[0]?.toUpperCase() || '?'}
               </div>
             </Link>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <Link to={`/worker-profile?id=${app.worker_id}`} className="font-bold text-gray-900 text-sm hover:text-blue-700 transition-colors">
+                <Link to={`/public-profile?id=${app.worker_id}`} className="font-bold text-gray-900 text-sm hover:text-blue-700 transition-colors">
                   {app.worker_name}
                 </Link>
                 {app.worker_rating > 0 && (

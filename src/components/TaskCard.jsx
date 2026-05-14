@@ -278,9 +278,11 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
             </span>
           )}
           {task.client_name && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 2, marginRight: 'auto', flexShrink: 0 }}>
+            <span
+              onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 2, marginRight: 'auto', flexShrink: 0, cursor: 'pointer' }}>
               <Star size={10} style={{ fill: '#fbbf24', color: '#fbbf24' }} />
-              <span style={{ maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textDecorationColor: '#cbd5e1' }}>
                 {task.client_rating > 0 ? `${task.client_rating.toFixed(1)} · ` : ''}{task.client_name}
               </span>
               {task.client_verified && <VerifiedBadge size="sm" />}

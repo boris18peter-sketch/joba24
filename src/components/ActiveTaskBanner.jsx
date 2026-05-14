@@ -93,10 +93,14 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
               <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12, overflow: 'hidden' }}>
                 {tIsWorker ?
-                <><User size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {t.client_name}</span> {t.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.client_rating.toFixed(1)}</span>}</> :
-                <><HardHat size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {t.worker_name}</span> {t.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.worker_rating.toFixed(1)}</span>} {t.worker_verified && <VerifiedBadge size="sm" />}</>}
-                {tIsOwner && t.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.worker_rating.toFixed(1)}</span>}
-                  {tIsWorker && t.client_verified && <VerifiedBadge size="sm" />}
+                <><User size={12} style={{ flexShrink: 0 }} />
+                  <span onClick={(e) => { e.stopPropagation(); if (t.client_id) navigate(`/public-profile?id=${t.client_id}`); }} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)' }}>מעסיק: {t.client_name}</span>
+                  {t.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.client_rating.toFixed(1)}</span>}
+                  {tIsWorker && t.client_verified && <VerifiedBadge size="sm" />}</> :
+                <><HardHat size={12} style={{ flexShrink: 0 }} />
+                  <span onClick={(e) => { e.stopPropagation(); if (t.worker_id) navigate(`/public-profile?id=${t.worker_id}`); }} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)' }}>עובד: {t.worker_name}</span>
+                  {t.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.worker_rating.toFixed(1)}</span>}
+                  {t.worker_verified && <VerifiedBadge size="sm" />}</>}
               </div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
