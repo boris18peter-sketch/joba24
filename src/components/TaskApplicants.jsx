@@ -12,7 +12,7 @@ export default function TaskApplicants({ task, onApprove }) {
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
-    refetchInterval: 15000,
+    staleTime: 30000,
   });
 
   const approveMutation = useMutation({
@@ -95,10 +95,15 @@ export default function TaskApplicants({ task, onApprove }) {
         worker_status: null,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+    onSuccess: async () => {
+      console.log('🔄 REVOKE SUCCESS - Invalidating and refetching');
+      // CRITICAL: Invalidate BEFORE refetch to clear cache
+      await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      await queryClient.refetchQueries({ queryKey: ['task', task.id] });
+      await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
+      console.log('✅ REVOKE COMPLETE - UI should update');
       toast.success('האישור בוטל — תוכל לאשר עובד אחר');
       onApprove?.();
     },
