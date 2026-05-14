@@ -155,12 +155,16 @@ export default function CreateTask() {
     }
     setShowErrorBanner(false);
     setErrors({});
+    // Show payment modal first — task created only after successful payment
+    setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = async () => {
     setLoading(true);
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
-    // Create task as draft (not public until funded)
     const created = await base44.entities.Task.create({
       title: form.title,
       description: form.description,
@@ -180,8 +184,9 @@ export default function CreateTask() {
       images: form.images,
       requirements: form.requirements,
       status: 'OPEN',
-      payment_status: 'pending',
-      payment_held: false,
+      payment_status: 'funded',
+      payment_amount: Number(form.price),
+      payment_held: true,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
@@ -190,24 +195,13 @@ export default function CreateTask() {
 
     setLoading(false);
     localStorage.removeItem(DRAFT_KEY);
-
-    // Show payment modal
-    const taskList = await base44.entities.Task.list('-created_date', 1);
-    const newTaskId = taskList?.[0]?.id;
-    setPendingTaskId(newTaskId);
-    setShowPayment(true);
+    toast.success('הג\'ובה פורסמה! ⚡');
+    navigate(created?.id ? `/task/${created.id}` : '/my-tasks');
   };
 
-  const handlePaymentSuccess = async () => {
-    if (pendingTaskId) {
-      await base44.entities.Task.update(pendingTaskId, {
-        payment_status: 'funded',
-        payment_amount: Number(form.price),
-        payment_held: true,
-      });
-    }
-    toast.success('הג\'ובה פורסמה! ⚡');
-    navigate(pendingTaskId ? `/task/${pendingTaskId}` : '/my-tasks');
+  const handlePaymentCancel = () => {
+    // Close modal, stay on edit page with all form data intact
+    setShowPayment(false);
   };
 
   const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
@@ -222,11 +216,8 @@ export default function CreateTask() {
         <PaymentModal
           taskPrice={Number(form.price)}
           onSuccess={handlePaymentSuccess}
-          onClose={() => {
-            setShowPayment(false);
-            // Task was created as draft, navigate to it anyway
-            if (pendingTaskId) navigate(`/task/${pendingTaskId}`);
-          }}
+          onCancel={handlePaymentCancel}
+          closeOnBackdropClick={false}
         />
       )}
       {/* Header */}

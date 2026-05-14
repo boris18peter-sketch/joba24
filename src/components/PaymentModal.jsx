@@ -20,8 +20,12 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
     const [error, setError] = useState('');
 
     const handleClose = () => {
-      if (closeOnBackdropClick === false) return;
       onCancel?.() || onClose?.();
+    };
+
+    const handleBackdropClick = () => {
+      if (closeOnBackdropClick === false) return;
+      handleClose();
     };
 
    const fee = Math.round(finalAmount * 0.03);
@@ -54,7 +58,7 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
 
   if (done) {
     return (
-      <div style={overlay} onClick={handleClose}>
+      <div style={overlay} onClick={handleBackdropClick}>
         <div style={sheet} onClick={e => e.stopPropagation()}>
           {/* Close button */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
@@ -76,7 +80,7 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
   }
 
   return (
-     <div style={overlay} onClick={e => e.target === e.currentTarget && handleClose()}>
+     <div style={overlay} onClick={e => e.target === e.currentTarget && handleBackdropClick()}>
        <div style={{ ...sheet, display: 'flex', flexDirection: 'column' }}>
          {/* Drag handle + Close button */}
          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
