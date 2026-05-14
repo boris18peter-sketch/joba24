@@ -276,9 +276,6 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       {/* ── Worker main CTA ── */}
       {isWorker && stepIdx < 2 && mainCTA && (
         <div style={{ padding: '0 16px 12px' }}>
-          {stepIdx === 1 && (
-            <WorkerCompletionPhoto photoUrl={completionPhoto} onPhotoUploaded={setCompletionPhoto} />
-          )}
           <button
             onClick={() => handleStatusUpdate(mainCTA.nextKey)}
             disabled={loading}
@@ -296,14 +293,14 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── Worker done state ── */}
+      {/* ── Worker done state — photo upload + status ── */}
       {isWorker && stepIdx === 2 && (
-        <div style={{ margin: '0 16px 12px', background: '#f0fdf4', borderRadius: 14, padding: '14px 16px', textAlign: 'center', border: '1px solid #bbf7d0' }}>
-          <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}><CheckCircle size={16} color="#059669" /> כל הכבוד! ממתין לאישור</div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>המעסיק יאשר ותקבל ₪{task.price} לארנק</div>
-          {completionPhoto && (
-            <img src={completionPhoto} alt="proof" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 12, marginTop: 10, border: '1px solid #bbf7d0' }} />
-          )}
+        <div style={{ margin: '0 16px 12px' }}>
+          <WorkerCompletionPhoto photoUrl={completionPhoto} onPhotoUploaded={setCompletionPhoto} />
+          <div style={{ background: '#f0fdf4', borderRadius: 14, padding: '14px 16px', textAlign: 'center', border: '1px solid #bbf7d0', marginTop: 10 }}>
+            <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}><CheckCircle size={16} color="#059669" /> כל הכבוד! ממתין לאישור</div>
+            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>המעסיק יאשר ותקבל ₪{task.price} לארנק</div>
+          </div>
         </div>
       )}
 
