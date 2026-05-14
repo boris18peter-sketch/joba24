@@ -78,12 +78,13 @@ export default function TaskDetail() {
     refetchOnWindowFocus: true,
   });
 
-  // Check if MY application was approved for this task
+  // Check if MY application was approved for this task — only active ones
   const { data: myApp } = useQuery({
     queryKey: ['myApp', id, me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
-    select: data => data[0],
+    select: data => data.find(a => a.status === 'pending' || a.status === 'approved') || null,
     enabled: !!me?.id,
+    staleTime: 0,
   });
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
@@ -261,16 +262,24 @@ export default function TaskDetail() {
   });
 
   const handleApply = async () => {
+    if (applyLoading) return;
     setApplyLoading(true);
-    // Optimistic: immediately reflect pending state everywhere
-    const optimisticApp = { task_id: id, worker_id: me?.id, status: 'pending', id: `optimistic_${id}` };
-    queryClient.setQueryData(['myApp', id, me?.id], optimisticApp);
-    queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
-      if (old.find(a => a.task_id === id && (a.status === 'pending' || a.status === 'approved'))) return old;
-      return [...old, optimisticApp];
-    });
     try {
-      await base44.entities.TaskApplication.create({
+      // Server-side duplicate check before creating
+      const existing = await base44.entities.TaskApplication.filter({ task_id: id, worker_id: me?.id });
+      const alreadyActive = existing.find(a => a.status === 'pending' || a.status === 'approved');
+      if (alreadyActive) {
+        // Already applied — sync caches and show existing state
+        queryClient.setQueryData(['myApp', id, me?.id], alreadyActive);
+        queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
+          const without = old.filter(a => !(a.task_id === id && a.worker_id === me?.id));
+          return [...without, alreadyActive];
+        });
+        setShowApplyForm(false);
+        toast('כבר שלחת בקשה למשימה זו');
+        return;
+      }
+      const newApp = await base44.entities.TaskApplication.create({
         task_id: id,
         worker_id: me?.id,
         worker_name: me?.full_name,
@@ -280,15 +289,23 @@ export default function TaskDetail() {
         message: applyMessage,
         status: 'pending',
       });
-      toast.success('הבקשה נשלחה לבעל הג\'ובה!');
-    } finally {
-      setApplyLoading(false);
+      // Sync real record immediately into all caches
+      queryClient.setQueryData(['myApp', id, me?.id], newApp);
+      queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
+        const without = old.filter(a => !(a.task_id === id && a.worker_id === me?.id));
+        return [...without, newApp];
+      });
       setShowApplyForm(false);
       setHasApplied(true);
-      // Hard sync everywhere
+      toast.success('הבקשה נשלחה לבעל הג\'ובה!');
+      // Hard sync to confirm
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
+    } catch {
+      toast.error('שגיאה בשליחת הבקשה, נסה שוב');
+    } finally {
+      setApplyLoading(false);
     }
   };
 

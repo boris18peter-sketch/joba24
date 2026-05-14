@@ -53,7 +53,9 @@ export default function HomeFeed() {
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myApplicationsFeed', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 100),
-    enabled: !!me?.id
+    enabled: !!me?.id,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { data: tasks = [], isLoading } = useQuery({
@@ -137,35 +139,41 @@ export default function HomeFeed() {
 
     // Live application updates — sync immediately on create/update/delete
     const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
-      const isMyApp = event.data?.worker_id === me.id || event.type === 'delete';
-      const isForMyTask = event.data?.task_id && myTasks.some(t => t.id === event.data.task_id);
+      const appData = event.data || {};
+      const isMyApp = appData.worker_id === me.id;
+      const isForMyTask = appData.task_id && myTasks.some(t => t.id === appData.task_id);
 
       if (isMyApp) {
-        if (event.type === 'update' && event.data) {
-          // Instant cache update
-          queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
-            old.map(a => a.id === event.id ? { ...a, ...event.data } : a)
-          );
-          // Also sync the per-task myApp cache
-          queryClient.setQueryData(['myApp', event.data.task_id, me.id], (old) =>
-            old?.id === event.id ? { ...old, ...event.data } : old
-          );
-        }
-        if (event.type === 'create' && event.data) {
+        if (event.type === 'create') {
           queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) => {
-            if (old.find(a => a.id === event.id)) return old;
-            // Replace optimistic entry if exists
-            const filtered = old.filter(a => a.id !== `optimistic_${event.data.task_id}`);
-            return [...filtered, event.data];
+            // Remove any optimistic/duplicate entry for this task, then add real record
+            const filtered = old.filter(a =>
+              !(a.task_id === appData.task_id && a.worker_id === me.id)
+            );
+            return [...filtered, appData];
           });
-          queryClient.setQueryData(['myApp', event.data.task_id, me.id], event.data);
+          queryClient.setQueryData(['myApp', appData.task_id, me.id], appData);
         }
+        if (event.type === 'update') {
+          queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
+            old.map(a => a.id === event.id ? { ...a, ...appData } : a)
+          );
+          queryClient.setQueryData(['myApp', appData.task_id, me.id], (old) =>
+            old?.id === event.id ? { ...old, ...appData } : old
+          );
+        }
+        if (event.type === 'delete') {
+          queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
+            old.filter(a => a.id !== event.id)
+          );
+        }
+        // Hard sync to confirm
         queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
       }
 
       // If it's an application for one of MY published tasks — sync the applicants panel
       if (isForMyTask) {
-        queryClient.invalidateQueries({ queryKey: ['applications', event.data.task_id] });
+        queryClient.invalidateQueries({ queryKey: ['applications', appData.task_id] });
       }
     });
 
@@ -491,7 +499,7 @@ export default function HomeFeed() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
             {sortedTasks.map((task) => {
-            const myApp = myApplications.find((a) => a.task_id === task.id);
+            const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
             const isNew = newTaskIds.has(task.id);
             return (
               <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : undefined }}>
