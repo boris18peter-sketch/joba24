@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import BackButton from '@/components/BackButton';
-import { clusterTasks } from '@/components/MapCluster';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -80,7 +79,6 @@ function ZoomTracker({ onZoomChange }) {
 }
 
 export default function MapView() {
-  const [zoom, setZoom] = useState(13);
   const [userLocation, setUserLocation] = useState(null);
 
   const { data: tasks = [] } = useQuery({
@@ -107,7 +105,6 @@ export default function MapView() {
     }));
 
   const displayTasks = [...openTasksWithCoords, ...mockOpenTasks];
-  const clusters = clusterTasks(displayTasks, zoom);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }} dir="rtl">
@@ -130,8 +127,6 @@ export default function MapView() {
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           />
           <AutoZoom userLocation={userLocation} />
-          <ZoomTracker onZoomChange={setZoom} />
-
           {/* User location pin */}
           {userLocation && (
             <Marker position={[userLocation.lat, userLocation.lng]} icon={createUserPin()}>
@@ -141,60 +136,36 @@ export default function MapView() {
             </Marker>
           )}
 
-          {/* Task clusters */}
-          {clusters.map((cluster, idx) => {
-            const isSingle = cluster.tasks.length === 1;
-            const task = cluster.tasks[0];
-            const avgPrice = Math.round(cluster.tasks.reduce((s, t) => s + t.price, 0) / cluster.tasks.length);
-
-            return (
-              <Marker
-                key={idx}
-                position={[cluster.lat, cluster.lng]}
-                icon={isSingle ? createPin(task.price) : createClusterPin(cluster.tasks.length, avgPrice)}
-              >
-                <Popup className="rounded-xl">
-                  <div style={{ padding: 4, minWidth: 200 }} dir="rtl">
-                    {isSingle ? (
-                      <>
-                        <div style={{ fontWeight: 800, fontSize: 14, color: '#0f2b6b', marginBottom: 4 }}>{task.title}</div>
-                        <div style={{ fontWeight: 900, fontSize: 20, color: '#1a6fd4', marginBottom: 4 }}>₪{task.price}</div>
-                        {task.location_name && <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>📍 {task.location_name}</div>}
-                        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                          <button onClick={() => openWaze(task.lat, task.lng)}
-                            style={{ flex: 1, background: '#1da462', color: 'white', border: 'none', borderRadius: 8, padding: '6px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                            Waze
-                          </button>
-                          <button onClick={() => openMaps(task.lat, task.lng)}
-                            style={{ flex: 1, background: '#4285f4', color: 'white', border: 'none', borderRadius: 8, padding: '6px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                            מפות
-                          </button>
-                        </div>
-                        <Link to={`/task/${task.id}`}
-                          style={{ display: 'block', textAlign: 'center', background: '#1a6fd4', color: 'white', borderRadius: 8, padding: '8px', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
-                          צפה בג'ובה ←
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontWeight: 800, fontSize: 14, color: '#0f2b6b', marginBottom: 6 }}>{cluster.tasks.length} ג'ובות קרובות</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 180, overflowY: 'auto' }}>
-                          {cluster.tasks.map(t => (
-                            <Link key={t.id} to={`/task/${t.id}`}
-                              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8faff', borderRadius: 8, padding: '6px 10px', textDecoration: 'none' }}>
-                              <span style={{ fontSize: 12, color: '#0f2b6b', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4', flexShrink: 0, marginRight: 8 }}>₪{t.price}</span>
-                            </Link>
-                          ))}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6, textAlign: 'center' }}>זום פנימה לצפייה נפרדת</div>
-                      </>
-                    )}
+          {/* Individual task pins — no clustering */}
+          {displayTasks.map((task) => (
+            <Marker
+              key={task.id}
+              position={[task.lat, task.lng]}
+              icon={createPin(task.price)}
+            >
+              <Popup className="rounded-xl">
+                <div style={{ padding: 4, minWidth: 200 }} dir="rtl">
+                  <div style={{ fontWeight: 800, fontSize: 14, color: '#0f2b6b', marginBottom: 4 }}>{task.title}</div>
+                  <div style={{ fontWeight: 900, fontSize: 20, color: '#1a6fd4', marginBottom: 4 }}>₪{task.price}</div>
+                  {task.location_name && <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>📍 {task.location_name}</div>}
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                    <button onClick={() => openWaze(task.lat, task.lng)}
+                      style={{ flex: 1, background: '#1da462', color: 'white', border: 'none', borderRadius: 8, padding: '6px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      Waze
+                    </button>
+                    <button onClick={() => openMaps(task.lat, task.lng)}
+                      style={{ flex: 1, background: '#4285f4', color: 'white', border: 'none', borderRadius: 8, padding: '6px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      מפות
+                    </button>
                   </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+                  <Link to={`/task/${task.id}`}
+                    style={{ display: 'block', textAlign: 'center', background: '#1a6fd4', color: 'white', borderRadius: 8, padding: '8px', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                    צפה בג'ובה ←
+                  </Link>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
       </div>
     </div>

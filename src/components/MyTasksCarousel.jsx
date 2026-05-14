@@ -26,10 +26,12 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
   const handleDelete = async (e) => {
     e.stopPropagation();
     onClose();
-    await base44.entities.Task.update(task.id, { status: 'CANCELLED' });
+    await base44.entities.Task.delete(task.id);
+    queryClient.setQueryData(['myTasks', undefined], (old = []) => old.filter(t => t.id !== task.id));
+    queryClient.setQueryData(['tasks'], (old = []) => old ? old.filter(t => t.id !== task.id) : old);
     queryClient.invalidateQueries({ queryKey: ['myTasks'] });
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    toast.success('משימה בוטלה');
+    toast.success('המשימה נמחקה');
   };
 
   const handleEdit = (e) => {
@@ -48,7 +50,7 @@ function TaskMenu({ task, onClose, queryClient, navigate }) {
       }}>
         {[
           { icon: Pencil, label: 'עריכה', onClick: handleEdit, color: '#1a6fd4' },
-          { icon: Trash2, label: 'ביטול', onClick: handleDelete, color: '#dc2626' },
+          { icon: Trash2, label: 'מחק משימה', onClick: handleDelete, color: '#dc2626' },
         ].map(({ icon: Icon, label, onClick }, idx) => (
           <button key={label} onClick={onClick}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: idx === 0 ? '#1a6fd4' : '#dc2626', borderBottom: idx === 0 ? '1px solid #f1f5f9' : 'none', textAlign: 'right' }}>
