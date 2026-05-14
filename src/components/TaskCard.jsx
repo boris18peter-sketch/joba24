@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, X, Send, Loader2 } from 'lucide-react';
@@ -14,23 +14,40 @@ import { calculateCurrentPrice } from '@/lib/priceCalculator';
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const submittedRef = useRef(false);
 
   const handleSubmit = async () => {
-    if (loading) return;
+    // Hard lock: ignore if already submitted or loading
+    if (loading || submittedRef.current) return;
+    submittedRef.current = true;
     setLoading(true);
-    // Optimistic: close modal immediately so user sees feedback right away
-    onApplied();
-    onClose();
     try {
-      await base44.entities.TaskApplication.create({
+      // Server-side: check if application already exists before creating
+      const existing = await base44.entities.TaskApplication.filter({
+        task_id: task.id,
+        worker_id: currentUserId,
+      });
+      const alreadyActive = existing.find(a => a.status === 'pending' || a.status === 'approved');
+      if (alreadyActive) {
+        // Already applied — just reflect existing state without creating duplicate
+        onApplied(alreadyActive);
+        onClose();
+        toast('כבר שלחת בקשה למשימה זו');
+        return;
+      }
+      const newApp = await base44.entities.TaskApplication.create({
         task_id: task.id,
         worker_id: currentUserId,
         worker_name: workerName || '',
         message: message.trim(),
         status: 'pending',
       });
+      onApplied(newApp);
+      onClose();
       toast.success('הבקשה נשלחה לבעל הג\'ובה!');
     } catch {
+      submittedRef.current = false; // allow retry on error
+      setLoading(false);
       toast.error('שגיאה בשליחת הבקשה, נסה שוב');
     }
   };
@@ -127,6 +144,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyLocked, setApplyLocked] = useState(false); // prevents double-tap opening modal
 
   const catLabel = getCategoryLabel(task.category);
   const dist = task._distKm;
@@ -136,16 +154,15 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
   const handleCancelApp = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (cancelling) return;
+    if (cancelling || !myApp?.id) return;
     setCancelling(true);
-    // Optimistic: immediately hide the pending banner
+    // Optimistic: immediately remove from all caches
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) =>
       old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
     );
+    queryClient.setQueryData(['myApp', task.id, currentUserId], null);
     try {
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
-      // Hard sync everything after server confirms
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
@@ -154,23 +171,23 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
     } catch {
       // Revert optimistic update on failure
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
+      queryClient.setQueryData(['myApp', task.id, currentUserId], myApp);
       toast.error('שגיאה בביטול, נסה שוב');
     } finally {
       setCancelling(false);
     }
   };
 
-  const handleApplied = () => {
-    // Optimistic: immediately show "pending" state everywhere
-    const optimisticApp = { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `optimistic_${task.id}` };
+  const handleApplied = (realApp) => {
+    // Use the real server app record (or a safe fallback)
+    const appRecord = realApp || { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `opt_${task.id}` };
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => {
-      // Avoid duplicate
-      if (old.find(a => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'))) return old;
-      return [...old, optimisticApp];
+      // Replace any existing record for this task, or append
+      const without = old.filter(a => !(a.task_id === task.id && a.worker_id === currentUserId));
+      return [...without, appRecord];
     });
-    // Sync task detail page too
-    queryClient.setQueryData(['myApp', task.id, currentUserId], optimisticApp);
-    // Then hard-refresh to replace optimistic with real data
+    queryClient.setQueryData(['myApp', task.id, currentUserId], appRecord);
+    // Hard sync from server to confirm
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
@@ -241,18 +258,28 @@ export default function TaskCard({ task, myApp, currentUserId, workerName }) {
             <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
             {!hasActiveApp && currentUserId && (
               <button
-                onClick={e => { e.stopPropagation(); setShowApplyModal(true); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (applyLocked) return;
+                  setApplyLocked(true);
+                  setShowApplyModal(true);
+                  // Reset lock after modal opens (150ms safety debounce)
+                  setTimeout(() => setApplyLocked(false), 600);
+                }}
+                disabled={applyLocked}
                 style={{
                   height: 32, padding: '0 14px', borderRadius: 10,
-                  background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  background: applyLocked ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
                   border: 'none', color: 'white', fontSize: 12, fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                  boxShadow: '0 2px 8px rgba(26,111,212,0.3)',
+                  cursor: applyLocked ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  boxShadow: applyLocked ? 'none' : '0 2px 8px rgba(26,111,212,0.3)',
                   whiteSpace: 'nowrap',
                   WebkitTapHighlightColor: 'transparent',
+                  transition: 'background 0.15s',
                 }}
               >
-                <Send size={12} strokeWidth={2} /> הגש בקשה
+                {applyLocked ? <Loader2 size={12} className="animate-spin" /> : <><Send size={12} strokeWidth={2} /> הגש בקשה</>}
               </button>
             )}
           </div>
