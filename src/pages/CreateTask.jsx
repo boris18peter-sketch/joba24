@@ -455,7 +455,7 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Submit */}
-        <div style={{ marginTop: 8 }}>
+        <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
           <button onClick={handleSubmit} disabled={loading}
             style={{ width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}
           >

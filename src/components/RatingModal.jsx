@@ -55,7 +55,8 @@ export default function RatingModal({ task, me, onClose }) {
       <div
         dir="rtl"
         onClick={e => e.stopPropagation()}
-        style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '24px 20px 40px' }}
+        className="mobile-sheet"
+        style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }}
       >
         {/* Handle */}
         <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 99, margin: '0 auto 20px' }} />

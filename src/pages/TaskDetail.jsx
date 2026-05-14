@@ -352,8 +352,8 @@ export default function TaskDetail() {
 
       {/* Worker: task was cancelled while on the way — big popup */}
       {showWorkerCancelledPopup && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(8px)' }}>
-          <div dir="rtl" style={{ background: 'white', borderRadius: 28, width: '100%', maxWidth: 400, boxShadow: '0 24px 80px rgba(0,0,0,0.3)', padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
+          <div dir="rtl" style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 60, marginBottom: 16 }}>😞</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
             <div style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 8 }}>
@@ -377,7 +377,7 @@ export default function TaskDetail() {
       {/* Cancel warning popup — when worker already on the way */}
       {showCancelWarning && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,15,40,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
-          <div dir="rtl" style={{ background: '#fafbff', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.2)', padding: '20px 20px 40px' }}>
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
@@ -408,7 +408,7 @@ export default function TaskDetail() {
       {/* Worker exit confirmation popup */}
       {showExitWarning && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,15,40,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}>
-          <div dir="rtl" style={{ background: '#fafbff', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.2)', padding: '20px 20px 40px' }}>
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚪</div>
@@ -668,18 +668,21 @@ export default function TaskDetail() {
           {canApplyManual && showApplyForm && (
             <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל הג'ובה (לא חובה)</p>
-              <Input placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
-                value={applyMessage} onChange={e => setApplyMessage(e.target.value)}
-                style={{ background: 'white', border: '1px solid #bfdbfe', borderRadius: 12 }}
+              <textarea
+                placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
+                value={applyMessage}
+                onChange={e => setApplyMessage(e.target.value)}
+                rows={3}
+                style={{ background: 'white', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 14px', fontSize: 16, fontFamily: 'inherit', resize: 'none', outline: 'none', width: '100%', boxSizing: 'border-box' }}
               />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={handleApply} disabled={applyLoading}
-                  style={{ flex: 1, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ flex: 1, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}
                 >
                   {applyLoading ? <Loader2 size={18} className="animate-spin" /> : 'שלח בקשה'}
                 </button>
                 <button onClick={() => setShowApplyForm(false)}
-                  style={{ height: 44, padding: '0 16px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#666', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#666', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}
                 >ביטול</button>
               </div>
             </div>
@@ -779,7 +782,7 @@ export default function TaskDetail() {
 
       {/* Sticky bottom CTA */}
       {(canApplyManual && !showApplyForm) && (
-        <div style={{ position: 'fixed', bottom: 96, left: 16, right: 16, zIndex: 50 }}>
+        <div style={{ position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', left: 16, right: 16, zIndex: 50 }}>
     
           <button onClick={() => gate(() => setShowApplyForm(true))}
             style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}

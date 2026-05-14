@@ -69,7 +69,7 @@ export default function CompletionModal({ task, me, onClose }) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="mx-4 rounded-2xl" dir="rtl">
+      <DialogContent className="mx-4 rounded-2xl max-h-[88dvh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-center text-xl">
             {isWorker ? '💪 סיימת עבודה מעולה!' : '💸 אשר ושחרר תשלום'}
