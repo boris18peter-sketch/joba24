@@ -137,19 +137,25 @@ export default function Layout() {
         }
       }
 
-      // Client notification: worker voluntarily left the task (TAKEN → OPEN, worker_id cleared)
-      if (
-        task.client_id === me?.id &&
-        prev.status === 'TAKEN' &&
-        task.status === 'OPEN' &&
-        prev.worker_id && !task.worker_id
-      ) {
-        addNotification({
-          type: 'worker_left_task',
-          taskTitle: task.title,
-          taskId: task.id,
-          workerName: prev.worker_name,
-        });
+      // TAKEN → OPEN: worker_id cleared
+      if (prev.status === 'TAKEN' && task.status === 'OPEN' && prev.worker_id && !task.worker_id) {
+        // Client: worker left voluntarily
+        if (task.client_id === me?.id) {
+          addNotification({
+            type: 'worker_left_task',
+            taskTitle: task.title,
+            taskId: task.id,
+            workerName: prev.worker_name,
+          });
+        }
+        // Worker: publisher revoked the approval (worker_status was null = hadn't started yet)
+        if (prev.worker_id === me?.id && !prev.worker_status) {
+          addNotification({
+            type: 'approval_revoked',
+            taskTitle: task.title,
+            taskId: task.id,
+          });
+        }
       }
 
       // Worker notification: task was cancelled after being assigned

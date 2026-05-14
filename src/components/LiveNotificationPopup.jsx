@@ -92,6 +92,15 @@ const TYPES = {
     body: (n) => `זוכית ב-20% עמלה (₪${n.compensation || ''}) לארנק שלך`,
     link: () => '/wallet',
   },
+  approval_revoked: {
+    emoji: '↩️',
+    bg: '#fef2f2',
+    border: '#fca5a5',
+    accent: '#dc2626',
+    title: () => 'האישור שלך בוטל על ידי המפרסם',
+    body: (n) => `"${n.taskTitle}" — המשימה חזרה לפתוחה`,
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
+  },
   worker_left_task: {
     emoji: '🚪',
     bg: '#fff7ed',

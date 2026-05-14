@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Star, CheckCircle2, XCircle, Loader2, Zap, Award } from 'lucide-react';
+import { Star, CheckCircle2, XCircle, Loader2, Zap, Award, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TaskApplicants({ task, onApprove }) {
@@ -79,6 +79,30 @@ export default function TaskApplicants({ task, onApprove }) {
     return unsubscribe;
   }, [task.id]);
 
+  const revokeApprovalMutation = useMutation({
+    mutationFn: async () => {
+      // Find the approved application and cancel it
+      const approvedApp = applications.find(a => a.status === 'approved' && a.worker_id === task.worker_id);
+      if (approvedApp) {
+        await base44.entities.TaskApplication.update(approvedApp.id, { status: 'cancelled' });
+      }
+      // Reset task back to OPEN
+      await base44.entities.Task.update(task.id, {
+        status: 'OPEN',
+        worker_id: null,
+        worker_name: null,
+        worker_status: null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.refetchQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      toast.success('האישור בוטל — תוכל לאשר עובד אחר');
+      onApprove?.();
+    },
+  });
+
   // Only show pending (not rejected/approved)
   const pending = applications.filter(a => a.status === 'pending');
 
@@ -87,13 +111,31 @@ export default function TaskApplicants({ task, onApprove }) {
   if (pending.length === 0) {
     // Check if task is TAKEN (worker was already approved)
     if (task.status === 'TAKEN') {
+      const workerStarted = !!task.worker_status; // true once worker pressed "on the way"
       return (
-        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>⏳</div>
-          <div>
-            <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>אושר! מחכה שהעובד יצא לדרך</div>
-            <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>העובד קיבל הודעה ויצא בקרוב</div>
+        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>
+              {workerStarted ? '🛵' : '⏳'}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>
+                {workerStarted ? `${task.worker_name} בדרך אליך` : 'אושר! מחכה שהעובד יצא לדרך'}
+              </div>
+              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>
+                {workerStarted ? 'העובד כבר יצא — לא ניתן לבטל ללא קנס' : `${task.worker_name} קיבל הודעה ויצא בקרוב`}
+              </div>
+            </div>
           </div>
+          {!workerStarted && (
+            <button
+              onClick={() => revokeApprovalMutation.mutate()}
+              disabled={revokeApprovalMutation.isPending}
+              style={{ marginTop: 12, width: '100%', height: 40, borderRadius: 12, background: 'white', border: '1.5px solid #fca5a5', color: '#dc2626', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              {revokeApprovalMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><RotateCcw size={14} /> בטל אישור ובחר עובד אחר</>}
+            </button>
+          )}
         </div>
       );
     }
