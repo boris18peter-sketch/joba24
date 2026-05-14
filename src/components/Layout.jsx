@@ -11,7 +11,6 @@ import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState([]);
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
@@ -19,20 +18,23 @@ export default function Layout() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
-
-  // Global query for all tasks
-  const { data: allTasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.filter({}, '-created_date', 100),
+  const { data: workerTasks = [] } = useQuery({
+    queryKey: ['workerTasksLayout', me?.id],
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id,
+    refetchInterval: 10000,
   });
-
-  // Filter tasks based on context
-  const workerTasks = allTasks.filter(t => t.worker_id === me?.id);
-  const myPublishedTasks = allTasks.filter(t => t.client_id === me?.id);
 
   // Active task as worker
   const activeWorkerTask = workerTasks.find(t => t.status === 'TAKEN') || null;
+
+  // Get my published tasks for real-time notifications
+  const { data: myPublishedTasks = [] } = useQuery({
+    queryKey: ['myPublishedTasks', me?.id],
+    queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    refetchInterval: 10000,
+  });
 
   // Get my applications
   const { data: myApplications = [] } = useQuery({
@@ -112,18 +114,9 @@ export default function Layout() {
     return () => window.removeEventListener('new_review', handleNewReview);
   }, []);
 
-  // Real-time task events: global sync + notifications
+  // Real-time task events for client (push-like) + worker cancellation alert
   useEffect(() => {
-    // Global subscription to invalidate task queries
-    const unsubTasks = base44.entities.Task.subscribe((event) => {
-      if (event.type === 'update') {
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['task', event.id] });
-      }
-    });
-
-    // Notification and side-effect handling
-    const unsubNotifications = base44.entities.Task.subscribe((event) => {
+    const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type !== 'update') return;
       const task = event.data;
       if (!task) return;
@@ -133,10 +126,12 @@ export default function Layout() {
       // Client notifications
       if (task.client_id === me?.id) {
         if (task.worker_status && task.worker_status !== prev.worker_status) {
-          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
-          else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
-          else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
+          // Worker on the way: skip separate task_taken notification — this covers it
+               if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
+               else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
+               else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
         } else if (task.status === 'TAKEN' && prev.status === 'OPEN' && !task.worker_status) {
+          // Only fire task_taken if worker hasn't already set status (to avoid double notification)
           addNotification({ type: 'task_taken', taskTitle: task.title, taskId: task.id });
         }
       }
@@ -148,6 +143,7 @@ export default function Layout() {
         task.status === 'CANCELLED'
       ) {
         const compensation = Math.round((prev.price || task.price || 0) * 0.2);
+        // Automatically credit the worker's wallet
         base44.entities.Transaction.create({
           user_id: me.id,
           task_id: task.id,
@@ -166,12 +162,8 @@ export default function Layout() {
         });
       }
     });
-
-    return () => {
-      unsubTasks();
-      unsubNotifications();
-    };
-  }, [me?.id, queryClient]);
+    return unsubscribe;
+  }, [me?.id]);
 
   // Listen for real-time application events
   useEffect(() => {

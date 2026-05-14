@@ -80,6 +80,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
       return results.flat();
     },
     enabled: openTaskIds.length > 0,
+    refetchInterval: 8000,
     staleTime: 0,
   });
 
@@ -146,10 +147,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
           const hasPending = pendingCount > 0;
 
           return (
-            <div
-              key={task.id}
-              onClick={() => navigate(`/task/${task.id}`)}
-              style={{ flexShrink: 0, cursor: 'pointer' }}>
+            <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
               <div style={{
                 width: 168,
                 minHeight: hasPending ? 126 : 108,
@@ -180,7 +178,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                       </Link>
                     )}
                     {isOpen && (
-                      <button onClick={e => { e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }}
+                      <button onClick={e => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }}
                         style={{ width: 22, height: 22, borderRadius: 7, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <MoreVertical size={11} color="#64748b" />
                       </button>
@@ -224,7 +222,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                   )}
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
