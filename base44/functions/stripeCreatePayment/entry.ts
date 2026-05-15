@@ -54,15 +54,14 @@ Deno.serve(async (req) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountAgorot,
       currency: 'ils',
+      capture_method: 'automatic',
       metadata: {
         task_id: existingTaskId || '',
         client_id: user.id,
         worker_id: workerId || '',
         platform_fee: platformFeeAgorot,
-        // Store task data for webhook to create task after payment
         ...(taskData ? { pending_task_data: JSON.stringify({ ...taskData, client_id: user.id, client_name: user.full_name }) } : {}),
       },
-      ...(transferData ? { transfer_data: transferData } : {}),
       automatic_payment_methods: { enabled: true },
     });
 
