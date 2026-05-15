@@ -384,6 +384,39 @@ export default function TaskDetail() {
         document.body
       )}
 
+      {/* Cancel warning popup — when owner wants to cancel with active worker */}
+      {showCancelWarning && createPortal(
+        <div className="mobile-sheet-overlay">
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
+            <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+               העובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> טרח ויצא במיוחד עבורך.
+               <br />בביטול הכסף יוחזר אליך במלואו.
+            </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowCancelWarning(false)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
+              >
+                השאר את המשימה
+              </button>
+              <button
+                 onClick={() => { setShowCancelWarning(false); cancelMutation.mutate(); }}
+                 disabled={cancelMutation.isPending}
+                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+               >
+                 {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה'}
+               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
 
 
 
