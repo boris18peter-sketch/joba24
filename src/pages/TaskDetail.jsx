@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -373,14 +374,15 @@ export default function TaskDetail() {
   return (
     <div className="min-h-screen" dir="rtl">
       <TaskTakenConfetti trigger={confetti} />
-      {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
-      {showApprovedPopup && (
-        <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />
+      {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
+      {showApprovedPopup && createPortal(
+        <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />,
+        document.body
       )}
 
       {/* Worker: task was cancelled while on the way — big popup */}
-      {showWorkerCancelledPopup && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
+      {showWorkerCancelledPopup && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
           <div dir="rtl" style={{ padding: '32px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 60, marginBottom: 16 }}>😞</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
@@ -398,11 +400,12 @@ export default function TaskDetail() {
               חזור לפיד
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Cancel warning popup — when worker already on the way */}
-      {showCancelWarning && (
+      {showCancelWarning && createPortal(
         <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
@@ -430,10 +433,11 @@ export default function TaskDetail() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Worker exit confirmation popup */}
-      {showExitWarning && (
+      {showExitWarning && createPortal(
         <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
@@ -461,7 +465,8 @@ export default function TaskDetail() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Worker 3-min alert */}
@@ -834,14 +839,15 @@ export default function TaskDetail() {
         </div>
       )}
 
-      {showStripeGate && (
+      {showStripeGate && createPortal(
         <StripeOnboardingGate
           onClose={() => setShowStripeGate(false)}
           onReady={() => { setShowStripeGate(false); setShowApplyForm(true); }}
-        />
+        />,
+        document.body
       )}
 
-      {showPayment && (
+      {showPayment && createPortal(
         <StripePaymentSheet
           task={task}
           onClose={() => setShowPayment(false)}
@@ -849,14 +855,17 @@ export default function TaskDetail() {
             queryClient.invalidateQueries({ queryKey: ['task', id] });
             queryClient.refetchQueries({ queryKey: ['task', id] });
           }}
-        />
+        />,
+        document.body
       )}
 
-      {showCompletion && (
-        <CompletionModal task={task} me={me} onClose={() => { setShowCompletion(false); setShowRating(true); }} />
+      {showCompletion && createPortal(
+        <CompletionModal task={task} me={me} onClose={() => { setShowCompletion(false); setShowRating(true); }} />,
+        document.body
       )}
-      {showRating && task && me && (
-        <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />
+      {showRating && task && me && createPortal(
+        <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />,
+        document.body
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
@@ -259,22 +260,33 @@ export default function Layout() {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
-      {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
-      {revokedTask && <ApprovalRevokedPopup task={revokedTask} onClose={() => setRevokedTask(null)} />}
       <ChatPushNotification />
       <SideMenu />
-      
+
+      {/* Portals — rendered directly to body to escape stacking context */}
+      {showVerify && createPortal(
+        <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />,
+        document.body
+      )}
+      {revokedTask && createPortal(
+        <ApprovalRevokedPopup task={revokedTask} onClose={() => setRevokedTask(null)} />,
+        document.body
+      )}
+
       {/* Live Notifications Stack */}
-      <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 11000, pointerEvents: 'none' }}>
-        {notifications.map(notif => (
-          <div key={notif.id} style={{ pointerEvents: 'auto' }}>
-            <LiveNotificationPopup 
-              notification={notif} 
-              onClose={() => removeNotification(notif.id)} 
-            />
-          </div>
-        ))}
-      </div>
+      {createPortal(
+        <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 99999, pointerEvents: 'none' }}>
+          {notifications.map(notif => (
+            <div key={notif.id} style={{ pointerEvents: 'auto' }}>
+              <LiveNotificationPopup 
+                notification={notif} 
+                onClose={() => removeNotification(notif.id)} 
+              />
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
       
       {/* Scrollable content area — paddingBottom leaves space for bottom nav */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
