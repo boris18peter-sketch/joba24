@@ -205,7 +205,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
-      toast.success('הג\'ובה בוטלה והכסף יוחזר לחשבונך');
       setShowCancelConfirm(false);
     } catch {
       toast.error('שגיאה בביטול, נסה שוב');
