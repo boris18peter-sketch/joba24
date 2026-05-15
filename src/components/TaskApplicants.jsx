@@ -96,14 +96,16 @@ export default function TaskApplicants({ task, onApprove }) {
       });
     },
     onSuccess: async () => {
-      console.log('🔄 REVOKE SUCCESS - Invalidating and refetching');
       // CRITICAL: Invalidate BEFORE refetch to clear cache
       await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
       await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
-      console.log('✅ REVOKE COMPLETE - UI should update');
+      // Dispatch event so Layout shows the ApprovalRevokedPopup to the worker
+      window.dispatchEvent(new CustomEvent('approval_revoked_by_client', {
+        detail: { task }
+      }));
       toast.success('האישור בוטל — תוכל לאשר עובד אחר');
       onApprove?.();
     },
@@ -140,15 +142,7 @@ export default function TaskApplicants({ task, onApprove }) {
 
   return (
     <div className="space-y-3">
-      {/* Warning banner — show only after someone approved */}
-      {approvedApp && (
-        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <span style={{ fontSize: 14, flexShrink: 0 }}>⚠️</span>
-          <p style={{ fontSize: 12, color: '#92400e', margin: 0, lineHeight: 1.55, fontWeight: 600 }}>
-            שים לב: אם תבטל את המשימה לאחר שהעובד יצא לדרך, תחויב בעמלת טרחה של 20%.
-          </p>
-        </div>
-      )}
+
 
       <h3 className="font-bold text-sm text-gray-700">עובדים שמבקשים לבצע ({visibleApps.length})</h3>
 

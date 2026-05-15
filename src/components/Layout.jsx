@@ -118,6 +118,22 @@ export default function Layout() {
     return () => window.removeEventListener('new_review', handleNewReview);
   }, []);
 
+  // Listen for approval revoked by client — show popup + notification to worker
+  useEffect(() => {
+    const handleRevoked = (e) => {
+      const { task } = e.detail;
+      // Show popup to the worker (the current user who was approved)
+      setRevokedTask(task);
+      addNotification({
+        type: 'approval_revoked',
+        taskTitle: task?.title || 'משימה',
+        taskId: task?.id,
+      });
+    };
+    window.addEventListener('approval_revoked_by_client', handleRevoked);
+    return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
+  }, []);
+
   // Real-time task events for client (push-like) + worker cancellation alert
   useEffect(() => {
     const unsubscribe = base44.entities.Task.subscribe((event) => {
