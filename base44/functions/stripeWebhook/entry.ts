@@ -57,6 +57,37 @@ Deno.serve(async (req) => {
             });
           }
         }
+      } else if (pi.metadata?.pending_task_data) {
+        // New task — create it now after successful payment
+        let pendingData;
+        try {
+          pendingData = JSON.parse(pi.metadata.pending_task_data);
+        } catch (e) {
+          console.error('Failed to parse pending_task_data:', e.message);
+        }
+
+        if (pendingData) {
+          const expiryHours = pendingData.expiry_duration_hours || 24;
+          const expiresAt = new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString();
+
+          const newTask = await base44.asServiceRole.entities.Task.create({
+            ...pendingData,
+            payment_status: 'funded',
+            payment_held: true,
+            payment_amount: totalAgorot / 100,
+            status: 'OPEN',
+            expires_at: expiresAt,
+          });
+
+          await base44.asServiceRole.entities.Transaction.create({
+            user_id: pendingData.client_id,
+            task_id: newTask.id,
+            task_title: newTask.title,
+            amount: totalAgorot / 100,
+            type: 'payment',
+            status: 'completed',
+          });
+        }
       }
     }
 
