@@ -61,7 +61,7 @@ export default function HomeFeed() {
   });
 
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['allTasks'],
     queryFn: () => base44.functions.invoke('getOpenTasks').then(r => r.data.tasks || []),
     staleTime: 0,
     gcTime: 0,
@@ -78,14 +78,18 @@ export default function HomeFeed() {
       const updatedTask = event.data || {};
 
       // 1. Update global tasks feed
-      queryClient.setQueryData(['tasks'], (old = []) => {
+      queryClient.setQueryData(['allTasks'], (old = []) => {
+        // Safety: if cache is empty (not yet loaded), don't touch it — let queryFn handle the initial load
         if (event.type === 'create') {
+          if (!updatedTask?.id) return old;
           if (old.find((t) => t.id === event.id)) return old;
           setNewTaskIds((prev) => new Set([...prev, event.id]));
           setTimeout(() => setNewTaskIds((prev) => {const n = new Set(prev);n.delete(event.id);return n;}), 4000);
           return [updatedTask, ...old];
         }
         if (event.type === 'update') {
+          // Only update if we already have this task in cache (don't add unknown tasks)
+          if (!old.find((t) => t.id === event.id)) return old;
           return old.map((t) => t.id === event.id ? { ...t, ...updatedTask } : t);
         }
         if (event.type === 'delete') {
