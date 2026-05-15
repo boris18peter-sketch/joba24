@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowDownLeft, ArrowUpRight, TrendingUp, Trophy, CreditCard, Lock, Briefcase, Clock, CheckCircle2, Zap, RotateCcw } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { format } from 'date-fns';
+import StripeConnectOnboarding from '@/components/StripeConnectOnboarding';
 
 const typeConfig = {
   earning: { label: 'הכנסה', color: '#16a34a', bg: '#f0fdf4', icon: ArrowDownLeft, sign: '+' },
@@ -149,6 +150,9 @@ export default function Wallet() {
       </div>
 
       <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Stripe Connect Onboarding */}
+        <StripeConnectOnboarding />
 
         {/* My worker tasks */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
