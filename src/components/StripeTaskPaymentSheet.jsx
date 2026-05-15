@@ -84,9 +84,7 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
 }
 
 export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess }) {
-  const [clientSecret, setClientSecret] = useState(null);
-  const [stripePromise, setStripePromise] = useState(null);
-  const [info, setInfo] = useState(null);
+  const [paymentData, setPaymentData] = useState(null); // { clientSecret, stripePromise, info }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -94,14 +92,19 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
     base44.functions.invoke('stripeCreatePayment', { taskData })
       .then(res => {
         const data = res.data;
-        setClientSecret(data.clientSecret);
-        setInfo(data);
-        if (data.publishableKey) {
-          if (!stripeCache[data.publishableKey]) {
-            stripeCache[data.publishableKey] = loadStripe(data.publishableKey);
-          }
-          setStripePromise(stripeCache[data.publishableKey]);
+        if (!data.publishableKey || !data.clientSecret) {
+          setError('שגיאה בטעינת פרטי התשלום');
+          return;
         }
+        if (!stripeCache[data.publishableKey]) {
+          stripeCache[data.publishableKey] = loadStripe(data.publishableKey);
+        }
+        // Set everything atomically in one state update to avoid re-renders that break Elements
+        setPaymentData({
+          clientSecret: data.clientSecret,
+          stripePromise: stripeCache[data.publishableKey],
+          info: data,
+        });
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -127,17 +130,17 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
         {/* Task + price summary */}
         <div style={{ margin: '0 20px 14px', background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '12px 14px' }}>
           <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 14, marginBottom: 6 }}>{taskData.title}</div>
-          {info ? (
+          {paymentData?.info ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                <span>מחיר הג'ובה</span><span style={{ fontWeight: 700 }}>₪{info.amount}</span>
+                <span>מחיר הג'ובה</span><span style={{ fontWeight: 700 }}>₪{paymentData.info.amount}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                <span>עמלת שירות ({info.feePercent}%)</span><span style={{ fontWeight: 700 }}>₪{info.platformFee?.toFixed(2)}</span>
+                <span>עמלת שירות ({paymentData.info.feePercent}%)</span><span style={{ fontWeight: 700 }}>₪{paymentData.info.platformFee?.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#1a6fd4', borderTop: '1px solid #bfdbfe', paddingTop: 6, marginTop: 2 }}>
                 <span style={{ fontWeight: 700 }}>סה"כ לתשלום</span>
-                <span style={{ fontWeight: 900 }}>₪{info.amount}</span>
+                <span style={{ fontWeight: 900 }}>₪{paymentData.info.amount}</span>
               </div>
             </div>
           ) : (
@@ -158,18 +161,18 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
             שגיאה: {error}
           </div>
         )}
-        {clientSecret && stripePromise && (
+        {paymentData && (
           <Elements
-            stripe={stripePromise}
+            stripe={paymentData.stripePromise}
             options={{
-              clientSecret,
+              clientSecret: paymentData.clientSecret,
               appearance: {
                 theme: 'stripe',
                 variables: { colorPrimary: '#1a6fd4', borderRadius: '12px', fontFamily: 'Inter, sans-serif' }
               }
             }}
           >
-            <CheckoutForm taskData={taskData} info={info} onSuccess={onSuccess} onClose={onClose} />
+            <CheckoutForm taskData={taskData} info={paymentData.info} onSuccess={onSuccess} onClose={onClose} />
           </Elements>
         )}
       </div>
