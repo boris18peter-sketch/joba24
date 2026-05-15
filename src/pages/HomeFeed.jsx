@@ -62,7 +62,10 @@ export default function HomeFeed() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 50)
+    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15000,
   });
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
