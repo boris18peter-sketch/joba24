@@ -136,12 +136,14 @@ export default function CreateTask() {
   };
 
   const doSubmit = async () => {
+    console.log('[CreateTask] doSubmit called, form:', form.title, form.price, form.city, form.location_name);
     const newErrors = {};
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
     if (!form.city) newErrors.city = true;
     if (!form.location_name) newErrors.location_name = true;
+    console.log('[CreateTask] errors:', newErrors);
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
@@ -155,6 +157,7 @@ export default function CreateTask() {
     }
     setShowErrorBanner(false);
     setErrors({});
+    console.log('[CreateTask] opening payment sheet');
     // Show payment modal first — task created only after successful payment
     setShowPayment(true);
   };
