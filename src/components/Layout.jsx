@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Map, Plus, User, Wallet, Bell } from 'lucide-react';
+import { Home, Map, Plus, User, Wallet, Bell, Loader2 } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -26,6 +26,8 @@ export default function Layout() {
   const [revokedTask, setRevokedTask] = useState(null);
   const [cancelledTask, setCancelledTask] = useState(null);
   const [cancelSuccessTask, setCancelSuccessTask] = useState(null);
+  const [cancelWarningTask, setCancelWarningTask] = useState(null);
+  const [cancelWarningLoading, setCancelWarningLoading] = useState(false);
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
@@ -136,6 +138,16 @@ export default function Layout() {
     };
     window.addEventListener('approval_revoked_by_client', handleRevoked);
     return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
+  }, []);
+
+  // Listen for cancel warning request from TaskDetail — owner wants to cancel task with active worker
+  useEffect(() => {
+    const handleShowCancelWarning = (e) => {
+      const { task } = e.detail;
+      setCancelWarningTask(task);
+    };
+    window.addEventListener('show_cancel_warning', handleShowCancelWarning);
+    return () => window.removeEventListener('show_cancel_warning', handleShowCancelWarning);
   }, []);
 
   // Real-time task events for client (push-like) + worker cancellation alert
@@ -309,6 +321,46 @@ export default function Layout() {
       )}
       {cancelSuccessTask && createPortal(
         <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
+        document.body
+      )}
+      {cancelWarningTask && createPortal(
+        <div className="mobile-sheet-overlay">
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+                העובד <strong style={{ color: '#0f1e40' }}>{cancelWarningTask.worker_name}</strong> טרח ויצא במיוחד עבורך.
+                <br />בביטול הכסף יוחזר אליך במלואו.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setCancelWarningTask(null)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
+              >
+                השאר את המשימה
+              </button>
+              <button
+                onClick={async () => {
+                  setCancelWarningLoading(true);
+                  try {
+                    await base44.functions.invoke('cancelTaskPayment', { taskId: cancelWarningTask.id });
+                  } catch (err) {
+                    console.error('Cancel failed:', err);
+                  }
+                  setCancelWarningTask(null);
+                  setCancelWarningLoading(false);
+                }}
+                disabled={cancelWarningLoading}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {cancelWarningLoading ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה'}
+              </button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
 
