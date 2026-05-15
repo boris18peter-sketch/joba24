@@ -300,7 +300,7 @@ export default function HomeFeed() {
     return sortedTasks;
   }, [sortedTasks, smartSections, activeSection]);
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy;
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category;
 
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
@@ -472,6 +472,7 @@ export default function HomeFeed() {
               {/* Active filter chips */}
               {hasFilters &&
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {filters.category && <span onClick={() => setFilters(f => ({...f, category: ''}))} style={{ fontSize: 9, background: '#1a6fd4', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>{getCategoryLabel(filters.category)} ✕</span>}
                   {filters.city && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
                   {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
                   {filters.time && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
