@@ -13,14 +13,7 @@ import { base44 } from '@/api/base44Client';
 import { Loader2, CreditCard, Lock, X, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-let stripePromise = null;
-function getStripePromise() {
-  if (!stripePromise) {
-    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    if (key) stripePromise = loadStripe(key);
-  }
-  return stripePromise;
-}
+const stripeCache = {};
 
 function CheckoutForm({ taskData, info, onSuccess, onClose }) {
   const stripe = useStripe();
@@ -91,6 +84,7 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
 
 export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess }) {
   const [clientSecret, setClientSecret] = useState(null);
+  const [stripePromise, setStripePromise] = useState(null);
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,8 +92,15 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
   useEffect(() => {
     base44.functions.invoke('stripeCreatePayment', { taskData })
       .then(res => {
-        setClientSecret(res.data.clientSecret);
-        setInfo(res.data);
+        const data = res.data;
+        setClientSecret(data.clientSecret);
+        setInfo(data);
+        if (data.publishableKey) {
+          if (!stripeCache[data.publishableKey]) {
+            stripeCache[data.publishableKey] = loadStripe(data.publishableKey);
+          }
+          setStripePromise(stripeCache[data.publishableKey]);
+        }
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -156,9 +157,9 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
             שגיאה: {error}
           </div>
         )}
-        {clientSecret && (
+        {clientSecret && stripePromise && (
           <Elements
-            stripe={getStripePromise()}
+            stripe={stripePromise}
             options={{
               clientSecret,
               appearance: {

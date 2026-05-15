@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
     return Response.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      publishableKey: Deno.env.get('STRIPE_PUBLISHABLE_KEY') || Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY'),
       amount: price,
       platformFee: platformFeeAgorot / 100,
       workerReceives: (amountAgorot - platformFeeAgorot) / 100,

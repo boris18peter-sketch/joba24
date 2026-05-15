@@ -5,14 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { Loader2, CreditCard, Lock, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-let stripePromise = null;
-function getStripePromise() {
-  if (!stripePromise) {
-    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    if (key) stripePromise = loadStripe(key);
-  }
-  return stripePromise;
-}
+const stripeCache = {};
 
 function CheckoutForm({ task, onSuccess, onClose }) {
   const stripe = useStripe();
@@ -73,6 +66,7 @@ function CheckoutForm({ task, onSuccess, onClose }) {
 
 export default function StripePaymentSheet({ task, onClose, onSuccess }) {
   const [clientSecret, setClientSecret] = useState(null);
+  const [stripePromise, setStripePromise] = useState(null);
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,8 +74,15 @@ export default function StripePaymentSheet({ task, onClose, onSuccess }) {
   useEffect(() => {
     base44.functions.invoke('stripeCreatePayment', { taskId: task.id })
       .then(res => {
-        setClientSecret(res.data.clientSecret);
-        setInfo(res.data);
+        const data = res.data;
+        setClientSecret(data.clientSecret);
+        setInfo(data);
+        if (data.publishableKey) {
+          if (!stripeCache[data.publishableKey]) {
+            stripeCache[data.publishableKey] = loadStripe(data.publishableKey);
+          }
+          setStripePromise(stripeCache[data.publishableKey]);
+        }
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -133,8 +134,8 @@ export default function StripePaymentSheet({ task, onClose, onSuccess }) {
             שגיאה: {error}
           </div>
         )}
-        {clientSecret && (
-          <Elements stripe={getStripePromise()} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#1a6fd4', borderRadius: '12px', fontFamily: 'Inter, sans-serif' } } }}>
+        {clientSecret && stripePromise && (
+          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#1a6fd4', borderRadius: '12px', fontFamily: 'Inter, sans-serif' } } }}>
             <CheckoutForm task={task} onSuccess={onSuccess} onClose={onClose} />
           </Elements>
         )}
