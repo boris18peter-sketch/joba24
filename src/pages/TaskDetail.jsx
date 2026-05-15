@@ -22,8 +22,10 @@ import { getCategoryLabel } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
+import { useAuth } from '@/lib/AuthContext';
 import StripePaymentSheet from '@/components/StripePaymentSheet';
 import StripeOnboardingGate from '@/components/StripeOnboardingGate';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -46,6 +48,7 @@ export default function TaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isAuthenticated, login } = useAuth();
   const [showCompletion, setShowCompletion] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
@@ -61,6 +64,7 @@ export default function TaskDetail() {
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showStripeGate, setShowStripeGate] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
@@ -375,6 +379,17 @@ export default function TaskDetail() {
     <div className="min-h-screen" dir="rtl">
       <TaskTakenConfetti trigger={confetti} />
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
+      {showLoginPrompt && createPortal(
+        <LoginPromptModal
+          onLogin={() => {
+            setShowLoginPrompt(false);
+            login();
+          }}
+          onClose={() => setShowLoginPrompt(false)}
+          type="apply"
+        />,
+        document.body
+      )}
       {showApprovedPopup && createPortal(
         <ApprovedPopup task={task} onClose={() => setShowApprovedPopup(false)} />,
         document.body
@@ -831,7 +846,13 @@ export default function TaskDetail() {
       {(canApplyManual && !showApplyForm) && (
         <div style={{ position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', left: 16, right: 16, zIndex: 50 }}>
     
-          <button onClick={() => gate(() => setShowStripeGate(true))}
+          <button onClick={() => {
+            if (!isAuthenticated) {
+              setShowLoginPrompt(true);
+              return;
+            }
+            gate(() => setShowStripeGate(true));
+          }}
             style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
             <Send size={18} strokeWidth={1.8} /> הגש בקשה לביצוע

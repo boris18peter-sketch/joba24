@@ -9,12 +9,14 @@ import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
 import StripeTaskPaymentSheet from '@/components/StripeTaskPaymentSheet';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
+import { useAuth } from '@/lib/AuthContext';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import ImageUploader from '@/components/ImageUploader';
 import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -70,9 +72,11 @@ const DEFAULT_FORM = {
 export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { isAuthenticated, login } = useAuth();
   const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [pendingTaskId, setPendingTaskId] = useState(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const draftTimerRef = useRef(null);
@@ -132,6 +136,10 @@ export default function CreateTask() {
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
 
   const handleSubmit = () => {
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+      return;
+    }
     doSubmit();
   };
 
@@ -214,6 +222,16 @@ export default function CreateTask() {
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {showVerify && (
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
+      )}
+      {showLoginPrompt && (
+        <LoginPromptModal
+          onLogin={() => {
+            setShowLoginPrompt(false);
+            login();
+          }}
+          onClose={() => setShowLoginPrompt(false)}
+          type="publish"
+        />
       )}
       {showPayment && (
         <StripeTaskPaymentSheet

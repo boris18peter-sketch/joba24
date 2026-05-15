@@ -46,7 +46,6 @@ import Wallet from '@/pages/Wallet';
 import EditTask from '@/pages/EditTask';
 import Leaderboard from '@/pages/Leaderboard';
 import WorkerProfile from '@/pages/WorkerProfile';
-import Welcome from '@/pages/Welcome';
 import FAQ from '@/pages/FAQ';
 import DailyGoal from '@/pages/DailyGoal';
 import Presentation from '@/pages/Presentation';
@@ -69,11 +68,6 @@ const AuthenticatedApp = () => {
 
   if (authError?.type === 'user_not_registered') {
     return <UserNotRegisteredError />;
-  }
-
-  // Show Welcome screen if user is not authenticated
-  if (!isAuthenticated) {
-    return <Welcome />;
   }
 
   return (

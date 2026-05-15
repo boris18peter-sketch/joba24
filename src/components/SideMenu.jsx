@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell } from 'lucide-react';
+import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, LogIn } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד ג\'ובות' },
@@ -19,6 +20,7 @@ const navItems = [
 export default function SideMenu() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, login } = useAuth();
 
   return (
     <>
@@ -106,6 +108,30 @@ export default function SideMenu() {
           })}
         </nav>
 
+        {!isAuthenticated && (
+          <button
+            onClick={() => { login(); setOpen(false); }}
+            style={{
+              width: 'calc(100% - 40px)',
+              margin: '0 20px 20px',
+              padding: '14px 16px',
+              background: '#fbbf24',
+              color: '#0a1f5c',
+              border: 'none',
+              borderRadius: 14,
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <LogIn size={16} /> התחברות
+          </button>
+        )}
+        
         <div style={{ padding: '16px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ fontSize: 11, color: '#93c5fd', textAlign: 'center', opacity: 0.7 }}>
             🐣 Joba24 — פרסם, מצא, הרוויח
