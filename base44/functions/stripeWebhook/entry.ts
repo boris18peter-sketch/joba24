@@ -28,12 +28,12 @@ Deno.serve(async (req) => {
       const workerAmount = (totalAgorot - platformFee) / 100;
 
       if (taskId) {
+        // Existing task — mark as funded
         await base44.asServiceRole.entities.Task.update(taskId, {
           payment_status: 'funded',
           payment_held: true,
         });
 
-        // Record transaction for client (payment)
         const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
         const task = tasks[0];
         if (task) {
@@ -46,7 +46,6 @@ Deno.serve(async (req) => {
             status: 'completed',
           });
 
-          // If worker already assigned, record earning transaction
           if (workerId) {
             await base44.asServiceRole.entities.Transaction.create({
               user_id: workerId,
@@ -54,7 +53,7 @@ Deno.serve(async (req) => {
               task_title: task.title,
               amount: workerAmount,
               type: 'earning',
-              status: 'pending', // pending until task complete
+              status: 'pending',
             });
           }
         }

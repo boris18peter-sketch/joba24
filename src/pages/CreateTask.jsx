@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
-import PaymentModal from '@/components/PaymentModal';
+import StripeTaskPaymentSheet from '@/components/StripeTaskPaymentSheet';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
@@ -213,11 +213,13 @@ export default function CreateTask() {
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
       {showPayment && (
-        <PaymentModal
-          taskPrice={Number(form.price)}
+        <StripeTaskPaymentSheet
+          taskData={{
+            title: form.title,
+            price: Number(form.price),
+          }}
           onSuccess={handlePaymentSuccess}
-          onCancel={handlePaymentCancel}
-          closeOnBackdropClick={false}
+          onClose={handlePaymentCancel}
         />
       )}
       {/* Header */}
