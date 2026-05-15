@@ -62,6 +62,7 @@ export default function TaskDetail() {
   const [showStripeGate, setShowStripeGate] = useState(false);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
+  const autoRatingShownRef = useRef(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -149,8 +150,29 @@ export default function TaskDetail() {
     ) {
       setShowWorkerCancelledPopup(true);
     }
+    // Auto-open rating popup when task just became COMPLETED (for both sides)
+    if (prevStatus === 'TAKEN' && task.status === 'COMPLETED') {
+      const isParticipant = me.id === task.client_id || me.id === task.worker_id;
+      if (isParticipant && !autoRatingShownRef.current) {
+        autoRatingShownRef.current = true;
+        setTimeout(() => setShowRating(true), 1200);
+      }
+    }
     prevTaskStatusRef.current = task.status;
   }, [task?.status]);
+
+  // Auto-open rating on page load if task is already COMPLETED and user hasn't rated yet
+  useEffect(() => {
+    if (!task || !me || autoRatingShownRef.current) return;
+    if (task.status !== 'COMPLETED') return;
+    const isParticipant = me.id === task.client_id || me.id === task.worker_id;
+    if (!isParticipant) return;
+    // Only open if myReview is loaded and is empty
+    if (myReview !== undefined && !myReview) {
+      autoRatingShownRef.current = true;
+      setTimeout(() => setShowRating(true), 800);
+    }
+  }, [task?.status, me?.id, myReview]);
 
   // Check expiry
   useEffect(() => {
