@@ -22,7 +22,7 @@ import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import StripePaymentSheet from '@/components/StripePaymentSheet';
-import StripeOnboardingGate from '@/components/StripeOnboardingGate';
+import BankDetailsGate from '@/components/BankDetailsGate';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -825,7 +825,7 @@ export default function TaskDetail() {
       )}
 
       {showStripeGate && (
-        <StripeOnboardingGate
+        <BankDetailsGate
           onClose={() => setShowStripeGate(false)}
           onReady={() => { setShowStripeGate(false); setShowApplyForm(true); }}
         />
