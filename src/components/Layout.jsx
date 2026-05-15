@@ -275,7 +275,7 @@ export default function Layout() {
       <SideMenu />
       
       {/* Live Notifications Stack */}
-      <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 9999, pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 11000, pointerEvents: 'none' }}>
         {notifications.map(notif => (
           <div key={notif.id} style={{ pointerEvents: 'auto' }}>
             <LiveNotificationPopup 
@@ -295,7 +295,7 @@ export default function Layout() {
 
       {/* Bottom Nav */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
         background: 'white', borderTop: '1px solid #dce8f5',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',

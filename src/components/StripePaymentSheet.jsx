@@ -89,8 +89,8 @@ export default function StripePaymentSheet({ task, onClose, onSuccess }) {
   }, [task.id]);
 
   return (
-    <div className="mobile-sheet-overlay">
-      <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480 }}>
+    <div dir="rtl" className="mobile-sheet-overlay">
+      <div className="mobile-sheet" style={{ width: '100%', maxWidth: 480 }}>
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '12px auto 0' }} />
 
