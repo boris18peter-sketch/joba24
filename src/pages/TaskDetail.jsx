@@ -384,8 +384,8 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {/* Cancel warning popup — when owner wants to cancel with active worker */}
-      {showCancelWarning && createPortal(
+      {/* Cancel warning popup — owner perspective, when owner wants to cancel with active worker */}
+      {showCancelWarning && isOwner && createPortal(
         <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
