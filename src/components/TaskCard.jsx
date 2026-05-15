@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, X, Send, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { format } from 'date-fns';
@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import TaskBadges from '@/components/TaskBadges';
+import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 
 // ── Apply Modal — full screen, professional ───────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
@@ -146,6 +147,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [cancelling, setCancelling] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyLocked, setApplyLocked] = useState(false); // prevents double-tap opening modal
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancellingTask, setCancellingTask] = useState(false);
 
   const catLabel = getCategoryLabel(task.category);
   const dist = task._distKm;
@@ -192,6 +195,23 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+  };
+
+  const handleCancelTask = async () => {
+    setCancellingTask(true);
+    try {
+      const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
+      if (!res.data?.success) throw new Error('שגיאה בביטול');
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      toast.success('הג\'ובה בוטלה והכסף יוחזר לחשבונך');
+      setShowCancelConfirm(false);
+    } catch {
+      toast.error('שגיאה בביטול, נסה שוב');
+    } finally {
+      setCancellingTask(false);
+    }
   };
 
   const borderColor = appStatus === 'approved' ? '#10b981' : appStatus === 'pending' ? '#fbbf24' : '#edf1f7';
@@ -241,11 +261,36 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         {badges && !hasActiveApp && <TaskBadges badges={badges} />}
 
         {/* Top row: title + price + apply btn */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h3 style={{ fontWeight: 700, color: '#1a2540', fontSize: 14, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: 4 }}>
-              {task.title}
-            </h3>
+         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
+           <div style={{ flex: 1, minWidth: 0 }}>
+             <h3 style={{ fontWeight: 700, color: '#1a2540', fontSize: 14, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: 4 }}>
+               {task.title}
+             </h3>
+
+             {/* Owner menu - 3 dots */}
+             {task.created_by === currentUserId && (
+               <button
+                 onClick={e => {
+                   e.stopPropagation();
+                   setShowCancelConfirm(true);
+                 }}
+                 style={{
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   width: 24,
+                   height: 24,
+                   borderRadius: 6,
+                   background: '#f1f5f9',
+                   border: 'none',
+                   cursor: 'pointer',
+                   color: '#94a3b8',
+                   marginBottom: 6,
+                 }}
+               >
+                 <MoreVertical size={14} />
+               </button>
+             )}
             {/* Task ID (tiny, for tracking) */}
             <div style={{ fontSize: 8, color: '#cbd5e1', fontFamily: 'monospace', marginBottom: 4 }}>ID: {task.id?.slice(-8)}</div>
             {/* Category + status badges */}
@@ -336,7 +381,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         document.body
       )}
 
+      {showCancelConfirm && (
+        <CancelTaskConfirmModal
+          task={task}
+          isLoading={cancellingTask}
+          onConfirm={handleCancelTask}
+          onClose={() => setShowCancelConfirm(false)}
+        />
+      )}
+
       <style>{`@keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
-    </>
-  );
-}
+      </>
+      );
+      }
