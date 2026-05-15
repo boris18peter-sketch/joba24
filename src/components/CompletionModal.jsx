@@ -29,32 +29,9 @@ export default function CompletionModal({ task, me, onClose }) {
         role: isWorker ? 'worker' : 'client',
       });
 
-      // רק כשהלקוח (פותח המשימה) מאשר — מעביר כסף לארנק העובד
+      // רק כשהלקוח (פותח המשימה) מאשר — מעביר כסף לעובד דרך Stripe
       if (!isWorker) {
-        // Create earning transaction for worker
-        await base44.entities.Transaction.create({
-          user_id: task.worker_id,
-          task_id: task.id,
-          task_title: task.title,
-          amount: task.price,
-          type: 'earning',
-          status: 'completed',
-        });
-        // Create payment transaction for client
-        await base44.entities.Transaction.create({
-          user_id: task.client_id,
-          task_id: task.id,
-          task_title: task.title,
-          amount: task.price,
-          type: 'payment',
-          status: 'completed',
-        });
-        // Call backend function to release payment to worker's wallet
-        await base44.functions.invoke('releasePayment', {
-          taskId: task.id,
-          workerId: task.worker_id,
-          amount: task.price,
-        });
+        await base44.functions.invoke('releasePayment', { taskId: task.id });
       }
     },
     onSuccess: () => {
