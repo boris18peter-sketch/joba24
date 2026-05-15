@@ -13,7 +13,14 @@ import { base44 } from '@/api/base44Client';
 import { Loader2, CreditCard, Lock, X, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+let stripePromise = null;
+function getStripePromise() {
+  if (!stripePromise) {
+    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (key) stripePromise = loadStripe(key);
+  }
+  return stripePromise;
+}
 
 function CheckoutForm({ taskData, info, onSuccess, onClose }) {
   const stripe = useStripe();
@@ -151,7 +158,7 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
         )}
         {clientSecret && (
           <Elements
-            stripe={stripePromise}
+            stripe={getStripePromise()}
             options={{
               clientSecret,
               appearance: {

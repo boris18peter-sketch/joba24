@@ -5,8 +5,14 @@ import { base44 } from '@/api/base44Client';
 import { Loader2, CreditCard, Lock, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Load Stripe — replace with your publishable key or put in env
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+let stripePromise = null;
+function getStripePromise() {
+  if (!stripePromise) {
+    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (key) stripePromise = loadStripe(key);
+  }
+  return stripePromise;
+}
 
 function CheckoutForm({ task, onSuccess, onClose }) {
   const stripe = useStripe();
@@ -128,7 +134,7 @@ export default function StripePaymentSheet({ task, onClose, onSuccess }) {
           </div>
         )}
         {clientSecret && (
-          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#1a6fd4', borderRadius: '12px', fontFamily: 'Inter, sans-serif' } } }}>
+          <Elements stripe={getStripePromise()} options={{ clientSecret, appearance: { theme: 'stripe', variables: { colorPrimary: '#1a6fd4', borderRadius: '12px', fontFamily: 'Inter, sans-serif' } } }}>
             <CheckoutForm task={task} onSuccess={onSuccess} onClose={onClose} />
           </Elements>
         )}
