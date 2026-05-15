@@ -132,7 +132,7 @@ export default function CreateTask() {
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
 
   const handleSubmit = () => {
-    gate(doSubmit);
+    doSubmit();
   };
 
   const doSubmit = async () => {
