@@ -62,7 +62,7 @@ export default function HomeFeed() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    queryFn: () => base44.functions.invoke('getOpenTasks').then(r => r.data.tasks || []),
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
