@@ -10,6 +10,8 @@ import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
+import CancelSuccessPopup from '@/components/CancelSuccessPopup';
+import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 
 export default function Layout() {
   const location = useLocation();
@@ -22,6 +24,8 @@ export default function Layout() {
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [revokedTask, setRevokedTask] = useState(null);
+  const [cancelledTask, setCancelledTask] = useState(null);
+  const [cancelSuccessTask, setCancelSuccessTask] = useState(null);
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
@@ -188,6 +192,17 @@ export default function Layout() {
           type: 'task_cancelled_worker',
           taskTitle: prev.title || task.title,
         });
+        // Show popup to worker
+        setCancelledTask(task);
+      }
+
+      // Client notification: task was cancelled
+      if (
+        task.client_id === me?.id &&
+        prev.status === 'TAKEN' &&
+        task.status === 'CANCELLED'
+      ) {
+        setCancelSuccessTask(task);
       }
     });
     return unsubscribe;
@@ -286,6 +301,14 @@ export default function Layout() {
       )}
       {revokedTask && createPortal(
         <ApprovalRevokedPopup task={revokedTask} onClose={() => setRevokedTask(null)} />,
+        document.body
+      )}
+      {cancelledTask && createPortal(
+        <WorkerCancelledPopup task={cancelledTask} onClose={() => setCancelledTask(null)} />,
+        document.body
+      )}
+      {cancelSuccessTask && createPortal(
+        <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
         document.body
       )}
 

@@ -60,12 +60,11 @@ export default function TaskDetail() {
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
   const [showCancelWarning, setShowCancelWarning] = useState(false);
-  const [showWorkerCancelledPopup, setShowWorkerCancelledPopup] = useState(false);
+
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showStripeGate, setShowStripeGate] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [showCancelSuccess, setShowCancelSuccess] = useState(false);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
@@ -144,19 +143,10 @@ export default function TaskDetail() {
     console.log('✅ WORKER UPDATE COMPLETE - Task refetched');
   };
 
-  // Detect if task was cancelled while worker was on the way — show popup to worker
+  // Auto-open rating popup when task just became COMPLETED (for both sides)
   useEffect(() => {
     if (!task || !me) return;
     const prevStatus = prevTaskStatusRef.current;
-    if (
-      prevStatus === 'TAKEN' &&
-      task.status === 'CANCELLED' &&
-      task.worker_id === me.id &&
-      ['on_the_way', 'delayed', 'parking'].includes(task.worker_status)
-    ) {
-      setShowWorkerCancelledPopup(true);
-    }
-    // Auto-open rating popup when task just became COMPLETED (for both sides)
     if (prevStatus === 'TAKEN' && task.status === 'COMPLETED') {
       const isParticipant = me.id === task.client_id || me.id === task.worker_id;
       if (isParticipant && !autoRatingShownRef.current) {
@@ -220,9 +210,6 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
-      setShowCancelSuccess(true);
-      // Navigate after popup is shown
-      setTimeout(() => navigate('/'), 2500);
     },
   });
 
@@ -397,54 +384,9 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {/* Cancel success popup */}
-      {showCancelSuccess && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
-          <div dir="rtl" style={{ padding: '40px 28px', textAlign: 'center' }}>
-            <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 12 }}>המשימה בוטלה</div>
-            <div style={{ fontSize: 15, color: '#64748b', lineHeight: 1.8, marginBottom: 20 }}>
-              הכסף בסך ₪<strong>{task.price}</strong> יוחזר לחשבונך תוך 1-3 ימי עסקים
-            </div>
-            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '16px', marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 4 }}>✓ המשימה בוטלה בהצלחה</div>
-              <div style={{ fontSize: 12, color: '#16a34a' }}>הכסף חוזר לחשבון הבנק שלך</div>
-            </div>
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px', marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: '#1a6fd4', lineHeight: 1.6 }}>
-                <strong>איך זה עובד:</strong><br/>
-                הכסף שלך לא יצא מהחשבון שלך — הוא תמיד היה מוחזק בנאמנות על ידי Joba24
-              </div>
-            </div>
-            <p style={{ fontSize: 12, color: '#999', margin: 0 }}>מחזיר לפיד בעוד שניות...</p>
-          </div>
-        </div>,
-        document.body
-      )}
 
-      {/* Worker: task was cancelled while on the way — big popup */}
-      {showWorkerCancelledPopup && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(8px)' }} className="mobile-modal-center">
-          <div dir="rtl" style={{ padding: '32px 24px', textAlign: 'center' }}>
-            <div style={{ fontSize: 60, marginBottom: 16 }}>😞</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
-            <div style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 8 }}>
-              בעל המשימה ביטל לאחר שיצאת לדרך.
-            </div>
-            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '16px 20px', marginBottom: 24 }}>
-              <div style={{ fontSize: 14, color: '#166534', fontWeight: 700 }}>המשימה בוטלה על ידי המפרסם.</div>
-              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 4 }}>תוכל למצוא משימות אחרות בפיד</div>
-            </div>
-            <button
-              onClick={() => { setShowWorkerCancelledPopup(false); navigate('/'); }}
-              style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,111,212,0.35)' }}
-            >
-              חזור לפיד
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
+
+
 
       {/* Cancel warning popup — when worker already on the way */}
       {showCancelWarning && createPortal(
