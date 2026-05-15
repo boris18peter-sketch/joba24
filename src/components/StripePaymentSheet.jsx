@@ -55,7 +55,7 @@ function CheckoutForm({ task, onSuccess, onClose }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
         }}
       >
-        {loading ? <Loader2 size={18} className="animate-spin" /> : <><Lock size={16} /> שלם ₪{task.price}</>}
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <><Lock size={16} /> הפקד ₪{task.price}</>}
       </button>
       <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: '#999', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Lock size={11} /> מאובטח על ידי Stripe
@@ -95,34 +95,48 @@ export default function StripePaymentSheet({ task, onClose, onSuccess }) {
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '12px auto 0' }} />
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CreditCard size={18} color="#1a6fd4" />
-            <span style={{ fontWeight: 900, fontSize: 16, color: '#0f2b6b' }}>תשלום עבור הג'ובה</span>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-            <X size={20} color="#888" />
-          </button>
-        </div>
+         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 12px' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+             <CreditCard size={18} color="#1a6fd4" />
+             <span style={{ fontWeight: 900, fontSize: 16, color: '#0f2b6b' }}>הפקדת כסף למשימה</span>
+           </div>
+           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+             <X size={20} color="#888" />
+           </button>
+         </div>
 
         {/* Task summary */}
-        <div style={{ margin: '0 20px 16px', background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '12px 14px' }}>
-          <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 14, marginBottom: 6 }}>{task.title}</div>
-          {info && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                <span>סכום לתשלום</span><span style={{ fontWeight: 700 }}>₪{info.amount}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                <span>עמלת שירות</span><span style={{ fontWeight: 700 }}>₪{info.platformFee?.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#16a34a', borderTop: '1px solid #bfdbfe', paddingTop: 6, marginTop: 2 }}>
-                <span style={{ fontWeight: 700 }}>העובד מקבל</span>
-                <span style={{ fontWeight: 900 }}>₪{info.workerReceives?.toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-        </div>
+         <div style={{ margin: '0 20px 16px', background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '12px 14px' }}>
+           <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 14, marginBottom: 6 }}>{task.title}</div>
+           {info && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
+                 <span>סכום להפקדה</span><span style={{ fontWeight: 700 }}>₪{info.amount}</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
+                 <span>עמלת שירות</span><span style={{ fontWeight: 700 }}>₪{info.platformFee?.toFixed(2)}</span>
+               </div>
+               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#16a34a', borderTop: '1px solid #bfdbfe', paddingTop: 6, marginTop: 2 }}>
+                 <span style={{ fontWeight: 700 }}>העובד מקבל</span>
+                 <span style={{ fontWeight: 900 }}>₪{info.workerReceives?.toFixed(2)}</span>
+               </div>
+             </div>
+           )}
+         </div>
+
+         {/* Explanation */}
+         <div style={{ margin: '0 20px 16px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 14, padding: '12px 14px' }}>
+           <div style={{ fontWeight: 700, color: '#166534', fontSize: 12, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+             <span>💡 איך זה עובד</span>
+           </div>
+           <div style={{ fontSize: 11, color: '#15803d', lineHeight: 1.6 }}>
+             <div style={{ marginBottom: 6 }}>✓ אתה מפקיד כסף — לא משלם</div>
+             <div style={{ marginBottom: 6 }}>✓ הכסף מוחזק בנאמנות עד שתאשר את סיום המשימה</div>
+             <div style={{ marginBottom: 6 }}>✓ אם העובד מבצע כראוי, הכסף עובר אליו</div>
+             <div style={{ marginBottom: 6 }}>✓ אתה יכול לבטל את המשימה בכל רגע — הכסף חוזר לחשבונך</div>
+             <div>✓ דרך זו, שניכם מוגנים</div>
+           </div>
+         </div>
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>

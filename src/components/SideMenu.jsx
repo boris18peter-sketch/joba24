@@ -24,25 +24,50 @@ export default function SideMenu() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: 'fixed', top: 0, left: 0, zIndex: 10000,
-          width: 56, height: 56,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: 'none', cursor: 'pointer', background: 'none', padding: 0,
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        <div style={{
-          width: 42, height: 42, borderRadius: 14,
-          background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 14px rgba(26,111,212,0.4)',
-        }}>
-          <Menu size={20} color="white" />
-        </div>
-      </button>
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px' }}>
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            width: 56, height: 56,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: 'none', cursor: 'pointer', background: 'none', padding: 0,
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <div style={{
+            width: 42, height: 42, borderRadius: 14,
+            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 14px rgba(26,111,212,0.4)',
+          }}>
+            <Menu size={20} color="white" />
+          </div>
+        </button>
+
+        {!isAuthenticated && (
+          <button
+            onClick={() => login()}
+            style={{
+              padding: '10px 14px',
+              background: '#fbbf24',
+              color: '#0a1f5c',
+              border: 'none',
+              borderRadius: 10,
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <LogIn size={14} /> התחברות
+          </button>
+        )}
+      </div>
 
       {open && (
         <div onClick={() => setOpen(false)}
@@ -109,28 +134,28 @@ export default function SideMenu() {
         </nav>
 
         {!isAuthenticated && (
-          <button
-            onClick={() => { login(); setOpen(false); }}
-            style={{
-              width: 'calc(100% - 40px)',
-              margin: '0 20px 20px',
-              padding: '14px 16px',
-              background: '#fbbf24',
-              color: '#0a1f5c',
-              border: 'none',
-              borderRadius: 14,
-              fontWeight: 800,
-              fontSize: 14,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <LogIn size={16} /> התחברות
-          </button>
-        )}
+           <button
+             onClick={() => { login(); setOpen(false); }}
+             style={{
+               width: 'calc(100% - 40px)',
+               margin: '0 20px 20px',
+               padding: '14px 16px',
+               background: '#fbbf24',
+               color: '#0a1f5c',
+               border: 'none',
+               borderRadius: 14,
+               fontWeight: 800,
+               fontSize: 14,
+               cursor: 'pointer',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               gap: 8,
+             }}
+           >
+             התחברות בתוך תפריט
+           </button>
+         )}
         
         <div style={{ padding: '16px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ fontSize: 11, color: '#93c5fd', textAlign: 'center', opacity: 0.7 }}>
