@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical } from 'lucide-react';
+import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { format } from 'date-fns';
@@ -266,29 +266,77 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                {task.title}
              </h3>
 
-             {/* Owner menu - 3 dots */}
+             {/* Owner menu - 3 dots with dropdown */}
              {task.created_by === currentUserId && (
-               <button
-                 onClick={e => {
-                   e.stopPropagation();
-                   setShowCancelConfirm(true);
-                 }}
-                 style={{
-                   display: 'flex',
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   width: 24,
-                   height: 24,
-                   borderRadius: 6,
-                   background: '#f1f5f9',
-                   border: 'none',
-                   cursor: 'pointer',
-                   color: '#94a3b8',
-                   marginBottom: 6,
-                 }}
-               >
-                 <MoreVertical size={14} />
-               </button>
+               <div style={{ position: 'relative' }}>
+                 <button
+                   onClick={e => {
+                     e.stopPropagation();
+                     const menu = e.currentTarget.nextElementSibling;
+                     if (menu) {
+                       menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                     }
+                   }}
+                   style={{
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center',
+                     width: 24,
+                     height: 24,
+                     borderRadius: 6,
+                     background: '#f1f5f9',
+                     border: 'none',
+                     cursor: 'pointer',
+                     color: '#94a3b8',
+                     marginBottom: 6,
+                   }}
+                 >
+                   <MoreVertical size={14} />
+                 </button>
+                 <div
+                   onClick={e => e.stopPropagation()}
+                   style={{
+                     display: 'none',
+                     position: 'absolute',
+                     top: 30,
+                     right: 0,
+                     background: 'white',
+                     border: '1px solid #e5e7eb',
+                     borderRadius: 10,
+                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                     zIndex: 1000,
+                     minWidth: 140,
+                   }}
+                 >
+                   <button
+                     onClick={e => {
+                       e.stopPropagation();
+                       setShowCancelConfirm(true);
+                       e.currentTarget.parentElement.style.display = 'none';
+                     }}
+                     style={{
+                       width: '100%',
+                       textAlign: 'right',
+                       padding: '10px 14px',
+                       background: 'none',
+                       border: 'none',
+                       cursor: 'pointer',
+                       fontSize: 13,
+                       fontWeight: 600,
+                       color: '#dc2626',
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: 8,
+                       transition: 'background 0.2s',
+                     }}
+                     onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                   >
+                     <Trash2 size={14} />
+                     מחק משימה
+                   </button>
+                 </div>
+               </div>
              )}
             {/* Task ID (tiny, for tracking) */}
             <div style={{ fontSize: 8, color: '#cbd5e1', fontFamily: 'monospace', marginBottom: 4 }}>ID: {task.id?.slice(-8)}</div>
