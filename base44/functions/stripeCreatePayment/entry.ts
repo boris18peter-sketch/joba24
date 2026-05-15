@@ -27,17 +27,20 @@ Deno.serve(async (req) => {
     } else if (taskData) {
       // New task publication — payment before task is created
       if (!taskData.price || taskData.price <= 0) return Response.json({ error: 'Invalid price' }, { status: 400 });
-      const storyFee = taskData.is_story ? 5 : 0;
-      price = parseFloat(taskData.price) + storyFee;
+      price = parseFloat(taskData.price); // base price only; story fee handled separately below
       workerId = null;
       existingTaskId = null;
     } else {
       return Response.json({ error: 'Must provide taskId or taskData' }, { status: 400 });
     }
 
-    const amountAgorot = Math.round(price * 100);
+    const storyFeeAgorot = (taskData?.is_story && !taskId) ? 500 : 0; // ₪5 story fee only for new tasks
+    const taskPriceAgorot = Math.round((taskId ? price : parseFloat(taskData?.price || 0)) * 100);
+    const amountAgorot = taskPriceAgorot + storyFeeAgorot;
     const feePercent = parseFloat(Deno.env.get('STRIPE_PLATFORM_FEE_PERCENT') || '15');
-    const platformFeeAgorot = Math.round(amountAgorot * feePercent / 100);
+    // Platform fee applies only to task price; story fee is 100% platform revenue
+    const taskFeeAgorot = Math.round(taskPriceAgorot * feePercent / 100);
+    const platformFeeAgorot = taskFeeAgorot + storyFeeAgorot;
 
     // Check if worker has a connected Stripe account
     let transferData = undefined;
@@ -47,7 +50,7 @@ Deno.serve(async (req) => {
       if (workerAccount) {
         transferData = {
           destination: workerAccount.stripe_account_id,
-          amount: amountAgorot - platformFeeAgorot,
+          amount: taskPriceAgorot - taskFeeAgorot, // worker gets task price minus task fee only
         };
       }
     }
@@ -78,9 +81,10 @@ Deno.serve(async (req) => {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       publishableKey: (Deno.env.get('STRIPE_PUBLISHABLE_KEY') || Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY') || '').trim(),
-      amount: price,
+      amount: amountAgorot / 100,
       platformFee: platformFeeAgorot / 100,
-      workerReceives: (amountAgorot - platformFeeAgorot) / 100,
+      storyFee: storyFeeAgorot / 100,
+      workerReceives: (taskPriceAgorot - taskFeeAgorot) / 100,
       feePercent,
     });
   } catch (error) {
