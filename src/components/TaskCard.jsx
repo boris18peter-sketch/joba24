@@ -380,13 +380,14 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         document.body
       )}
 
-      {showCancelConfirm && (
+      {showCancelConfirm && createPortal(
         <CancelTaskConfirmModal
           task={task}
           isLoading={cancellingTask}
           onConfirm={handleCancelTask}
           onClose={() => setShowCancelConfirm(false)}
-        />
+        />,
+        document.body
       )}
 
       <style>{`@keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
