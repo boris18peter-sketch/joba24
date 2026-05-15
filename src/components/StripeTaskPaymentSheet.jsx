@@ -19,11 +19,12 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
   const [done, setDone] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !ready) return;
     setLoading(true);
     const { error } = await stripe.confirmPayment({
       elements,
@@ -51,7 +52,7 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ padding: '0 20px 20px' }}>
-      <PaymentElement />
+      <PaymentElement onReady={() => setReady(true)} />
 
       {/* Trust banner */}
       <div style={{ marginTop: 14, display: 'flex', gap: 8, alignItems: 'flex-start', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 10px', fontSize: 11, color: '#15803d', lineHeight: 1.5 }}>
@@ -61,7 +62,7 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
 
       <button
         type="submit"
-        disabled={!stripe || loading}
+        disabled={!stripe || !ready || loading}
         style={{
           marginTop: 14, width: '100%', height: 54, borderRadius: 16,
           background: loading ? '#93c5fd' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
