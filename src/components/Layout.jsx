@@ -8,6 +8,7 @@ import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
+import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 
 export default function Layout() {
   const location = useLocation();
@@ -19,6 +20,7 @@ export default function Layout() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [revokedTask, setRevokedTask] = useState(null);
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
@@ -155,6 +157,7 @@ export default function Layout() {
             taskTitle: task.title,
             taskId: task.id,
           });
+          setRevokedTask(task);
         }
       }
 
@@ -271,6 +274,7 @@ export default function Layout() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
+      {revokedTask && <ApprovalRevokedPopup task={revokedTask} onClose={() => setRevokedTask(null)} />}
       <ChatPushNotification />
       <SideMenu />
       
