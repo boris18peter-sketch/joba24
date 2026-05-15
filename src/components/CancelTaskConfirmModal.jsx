@@ -1,4 +1,3 @@
-import { createPortal } from 'react-dom';
 import { Loader2, X } from 'lucide-react';
 
 export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoading }) {
@@ -6,7 +5,7 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
     await onConfirm();
   };
 
-  return createPortal(
+  return (
     <div
       style={{
         position: 'fixed',
@@ -54,13 +53,14 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
             justifyContent: 'center',
             cursor: 'pointer',
             flexShrink: 0,
+            zIndex: 10,
           }}
         >
           <X size={16} color="#9ca3af" />
         </button>
 
         {/* Icon + Title */}
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ textAlign: 'center', marginBottom: 20, marginTop: 10 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
           <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>בטל משימה?</div>
           <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
@@ -123,7 +123,6 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
         @keyframes fadeInBackdrop { from{opacity:0} to{opacity:1} }
         @keyframes slideUpModal { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
       `}</style>
-    </div>,
-    document.body
+    </div>
   );
 }
