@@ -196,15 +196,17 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
 }
 
 const overlay = {
-   position: 'fixed', inset: 0, zIndex: 10000,
-   backgroundColor: 'rgba(10,20,50,0.55)', 
-   backdropFilter: 'blur(4px)',
+   position: 'fixed', inset: 0, zIndex: 9999,
+   backgroundColor: 'rgba(5,15,40,0.55)', 
+   backdropFilter: 'blur(6px)',
    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
 };
 const sheet = {
-   background: 'white', borderRadius: '24px 24px 0 0',
-   padding: '16px 16px 24px', width: '100%', maxWidth: 480,
-   height: '80vh', maxHeight: '85vh',
+   background: 'white', borderRadius: '28px 28px 0 0',
+   padding: '16px 16px 0', width: '100%', maxWidth: 480,
+   maxHeight: '90dvh', overflowY: 'auto', overscrollBehavior: 'contain',
+   boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
+   paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
 };
 const labelStyle = { fontSize: 12, fontWeight: 700, color: '#0f2b6b', display: 'block', marginBottom: 6 };
 const inputStyle = {
