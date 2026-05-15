@@ -125,16 +125,27 @@ export default function StripePaymentSheet({ task, onClose, onSuccess }) {
          </div>
 
          {/* Explanation */}
-         <div style={{ margin: '0 20px 16px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 14, padding: '12px 14px' }}>
-           <div style={{ fontWeight: 700, color: '#166534', fontSize: 12, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-             <span>💡 איך זה עובד</span>
+         <div style={{ margin: '0 20px 16px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 14, padding: '14px 16px' }}>
+           <div style={{ fontWeight: 800, color: '#166534', fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+             <span>🛡️ מודל נאמנות מוגן</span>
            </div>
-           <div style={{ fontSize: 11, color: '#15803d', lineHeight: 1.6 }}>
-             <div style={{ marginBottom: 6 }}>✓ אתה מפקיד כסף — לא משלם</div>
-             <div style={{ marginBottom: 6 }}>✓ הכסף מוחזק בנאמנות עד שתאשר את סיום המשימה</div>
-             <div style={{ marginBottom: 6 }}>✓ אם העובד מבצע כראוי, הכסף עובר אליו</div>
-             <div style={{ marginBottom: 6 }}>✓ אתה יכול לבטל את המשימה בכל רגע — הכסף חוזר לחשבונך</div>
-             <div>✓ דרך זו, שניכם מוגנים</div>
+           <div style={{ fontSize: 12, color: '#15803d', lineHeight: 1.8 }}>
+             <div style={{ marginBottom: 8, display: 'flex', gap: 8 }}>
+               <span style={{ fontWeight: 700, minWidth: 20 }}>1️⃣</span>
+               <span><strong>הפקדה בנאמנות:</strong> הכסף לא משתחרר לעובד כרגע — הוא מוחזק בנאמנות על ידי Joba24</span>
+             </div>
+             <div style={{ marginBottom: 8, display: 'flex', gap: 8 }}>
+               <span style={{ fontWeight: 700, minWidth: 20 }}>2️⃣</span>
+               <span><strong>תוקף מלא לבטול:</strong> אתה יכול לבטל את המשימה בכל רגע — בעוד שניה, בשעה, ביום — הכסף חוזר לחשבונך מיד</span>
+             </div>
+             <div style={{ marginBottom: 8, display: 'flex', gap: 8 }}>
+               <span style={{ fontWeight: 700, minWidth: 20 }}>3️⃣</span>
+               <span><strong>משחרור בעדיפותך:</strong> רק כשתאשר שהעובד סיים כראוי, הכסף משתחרר אליו</span>
+             </div>
+             <div style={{ display: 'flex', gap: 8, background: 'rgba(22,163,52,0.08)', padding: '8px 10px', borderRadius: 10 }}>
+               <span style={{ fontWeight: 700 }}>✓</span>
+               <span><strong>ובקיצור:</strong> אתה בשליטה מלאה. הכסף שלך בטוח עד שאתה מוכן לשחרר אותו</span>
+             </div>
            </div>
          </div>
 
