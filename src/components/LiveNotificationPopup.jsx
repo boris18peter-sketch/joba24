@@ -89,8 +89,8 @@ const TYPES = {
     border: '#fca5a5',
     accent: '#dc2626',
     title: () => 'המשימה שיצאת אליה בוטלה',
-    body: (n) => `זוכית ב-20% עמלה (₪${n.compensation || ''}) לארנק שלך`,
-    link: () => '/wallet',
+    body: (n) => `"${n.taskTitle || ''}" — בוטלה על ידי המפרסם`,
+    link: () => null,
   },
   approval_revoked: {
     emoji: '↩️',

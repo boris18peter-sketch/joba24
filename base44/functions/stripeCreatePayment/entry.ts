@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     } else if (taskData) {
       // New task publication — payment before task is created
       if (!taskData.price || taskData.price <= 0) return Response.json({ error: 'Invalid price' }, { status: 400 });
-      price = taskData.price;
+      const storyFee = taskData.is_story ? 5 : 0;
+      price = parseFloat(taskData.price) + storyFee;
       workerId = null;
       existingTaskId = null;
     } else {

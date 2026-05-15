@@ -74,7 +74,8 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
       >
         {loading
           ? <Loader2 size={18} className="animate-spin" />
-          : <><Lock size={16} /> שלם ₪{taskData.price} ופרסם</>}
+          : <><Lock size={16} /><span> שלם ₪{taskData.is_story ? (parseFloat(taskData.price) + 5).toFixed(0) : taskData.price} ופרסם</span></>}
+}
       </button>
       <div style={{ textAlign: 'center', marginTop: 8, fontSize: 11, color: '#aaa', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Lock size={10} /> מאובטח על ידי Stripe
@@ -132,12 +133,15 @@ export default function StripeTaskPaymentSheet({ taskData, onClose, onSuccess })
           <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 14, marginBottom: 6 }}>{taskData.title}</div>
           {paymentData?.info ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2 }}>פרסום</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                <span>מחיר הג'ובה</span><span style={{ fontWeight: 700 }}>₪{paymentData.info.amount}</span>
+                <span>מחיר הג'ובה</span><span style={{ fontWeight: 700 }}>₪{taskData.price}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-                <span>עמלת שירות ({paymentData.info.feePercent}%)</span><span style={{ fontWeight: 700 }}>₪{paymentData.info.platformFee?.toFixed(2)}</span>
-              </div>
+              {taskData.is_story && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
+                  <span>📖 פרסום בסטורי</span><span style={{ fontWeight: 700 }}>₪5</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#1a6fd4', borderTop: '1px solid #bfdbfe', paddingTop: 6, marginTop: 2 }}>
                 <span style={{ fontWeight: 700 }}>סה"כ לתשלום</span>
                 <span style={{ fontWeight: 900 }}>₪{paymentData.info.amount}</span>

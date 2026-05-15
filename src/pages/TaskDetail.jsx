@@ -207,26 +207,15 @@ export default function TaskDetail() {
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      // Cancel all approved/pending applications so workers can re-apply if task is reopened
-      const apps = await base44.entities.TaskApplication.filter({ task_id: id });
-      await Promise.all(
-        apps
-          .filter(a => a.status === 'pending' || a.status === 'approved')
-          .map(a => base44.entities.TaskApplication.update(a.id, { status: 'cancelled' }))
-      );
-      return base44.entities.Task.update(id, {
-        status: 'CANCELLED',
-        worker_id: null,
-        worker_name: null,
-        worker_status: null,
-      });
+      const res = await base44.functions.invoke('cancelTaskPayment', { taskId: id });
+      if (!res.data?.success) throw new Error('שגיאה בביטול');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       navigate('/');
-      toast.success('הג\'ובה בוטלה');
+      toast.success('הג\'ובה בוטלה והכסף יוחזר לחשבונך');
     },
   });
 
@@ -399,9 +388,8 @@ export default function TaskDetail() {
               בעל המשימה ביטל לאחר שיצאת לדרך.
             </div>
             <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '16px 20px', marginBottom: 24 }}>
-              <div style={{ fontSize: 13, color: '#166534', fontWeight: 700, marginBottom: 4 }}>💰 פיצוי מגיע לך!</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#059669' }}>₪{Math.round((task.price || 0) * 0.2)}</div>
-              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 4 }}>עמלת טרחה של 20% מסכום המשימה תזוכה לארנקך</div>
+              <div style={{ fontSize: 14, color: '#166534', fontWeight: 700 }}>המשימה בוטלה על ידי המפרסם.</div>
+              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 4 }}>תוכל למצוא משימות אחרות בפיד</div>
             </div>
             <button
               onClick={() => { setShowWorkerCancelledPopup(false); navigate('/'); }}
@@ -419,12 +407,12 @@ export default function TaskDetail() {
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                 העובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> טרח ויצא במיוחד עבורך.
-                 <br />אם תבטל — <strong style={{ color: '#dc2626' }}>תחויב בעמלת טרחה של 20%</strong> מסכום המשימה.
-              </div>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
+            <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+               העובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> טרח ויצא במיוחד עבורך.
+               <br />בביטול הכסף יוחזר אליך במלואו.
+            </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
@@ -438,7 +426,7 @@ export default function TaskDetail() {
                 disabled={cancelMutation.isPending}
                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
-                {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה (20% עמלה)'}
+                {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה'}
               </button>
             </div>
           </div>

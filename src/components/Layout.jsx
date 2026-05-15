@@ -167,23 +167,9 @@ export default function Layout() {
         prev.status === 'TAKEN' &&
         task.status === 'CANCELLED'
       ) {
-        const compensation = Math.round((prev.price || task.price || 0) * 0.2);
-        // Automatically credit the worker's wallet
-        base44.entities.Transaction.create({
-          user_id: me.id,
-          task_id: task.id,
-          task_title: prev.title || task.title,
-          amount: compensation,
-          type: 'earning',
-          status: 'completed',
-        }).then(() => {
-          const newBalance = (me?.wallet_balance || 0) + compensation;
-          base44.auth.updateMe({ wallet_balance: newBalance });
-        });
         addNotification({
           type: 'task_cancelled_worker',
           taskTitle: prev.title || task.title,
-          compensation,
         });
       }
     });
