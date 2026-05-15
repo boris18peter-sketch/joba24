@@ -107,9 +107,7 @@ export default function PaymentModal({ taskPrice, amount, onSuccess, onClose, on
             <span style={{ fontSize: 12, opacity: 0.75 }}>תשלום עבור המשימה</span>
             <span style={{ fontSize: 22, fontWeight: 900 }}>₪{finalAmount}</span>
           </div>
-          <div style={{ fontSize: 10, opacity: 0.6, borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: 6 }}>
-            עמלת ביטול: ₪{fee} (3%)
-          </div>
+
         </div>
 
         {/* Card form */}
