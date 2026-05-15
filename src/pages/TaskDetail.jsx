@@ -641,7 +641,7 @@ export default function TaskDetail() {
         <div style={{ paddingBottom: canTakeInstant || canApplyManual || hasPendingApp ? 100 : 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {/* Pending application banner */}
-          {hasPendingApp && !isWorker && (
+          {hasPendingApp && isWorker && (
             <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} color="#d97706" /></div>
               <div>
