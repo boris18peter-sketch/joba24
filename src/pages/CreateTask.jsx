@@ -220,6 +220,7 @@ export default function CreateTask() {
           taskData={{
             title: form.title,
             price: Number(form.price),
+            is_story: form.is_story,
           }}
           onSuccess={handlePaymentSuccess}
           onClose={handlePaymentCancel}

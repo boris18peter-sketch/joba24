@@ -74,8 +74,8 @@ function CheckoutForm({ taskData, info, onSuccess, onClose }) {
       >
         {loading
           ? <Loader2 size={18} className="animate-spin" />
-          : <><Lock size={16} /><span> שלם ₪{taskData.is_story ? (parseFloat(taskData.price) + 5).toFixed(0) : taskData.price} ופרסם</span></>}
-}
+          : <><Lock size={16} /><span> שלם ₪{taskData.is_story ? (parseFloat(taskData.price) + 5).toFixed(0) : taskData.price} ופרסם</span></>
+        }
       </button>
       <div style={{ textAlign: 'center', marginTop: 8, fontSize: 11, color: '#aaa', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Lock size={10} /> מאובטח על ידי Stripe

@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         client_id: user.id,
         worker_id: workerId || '',
         platform_fee: platformFeeAgorot,
-        ...(taskData ? { pending_task_data: JSON.stringify({ ...taskData, client_id: user.id, client_name: user.full_name }) } : {}),
+        ...(taskData ? { pending_task_data: JSON.stringify({ ...taskData, price: parseFloat(taskData.price), payment_amount: price, client_id: user.id, client_name: user.full_name }) } : {}),
       },
       automatic_payment_methods: { enabled: true },
     });
