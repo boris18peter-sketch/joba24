@@ -89,20 +89,20 @@ export default function MyTasks() {
     },
   });
 
-  const handleReopen = (task) => {
-    const params = new URLSearchParams({
-      repost: '1',
-      title: task.title || '',
-      description: task.description || '',
-      price: String(task.price || ''),
-      city: task.city || '',
-      location_name: task.location_name || '',
-      category: task.category || '',
-      estimated_time: task.estimated_time || '',
-      approval_mode: task.approval_mode || 'manual',
-    });
-    navigate(`/create-task?${params.toString()}`);
-  };
+  const reopenMutation = useMutation({
+    mutationFn: (task) => base44.entities.Task.update(task.id, {
+      status: 'OPEN',
+      expires_at: null,
+      worker_id: null,
+      worker_name: null,
+      worker_status: null,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('הג\'ובה נפתחה מחדש!');
+    },
+  });
 
   const tab = TABS.find(t => t.key === activeTab);
   const filtered = tasks.filter(t => tab.statuses.includes(t.status));
@@ -236,10 +236,11 @@ export default function MyTasks() {
 
                   {(task.status === 'EXPIRED' || task.status === 'CANCELLED') && (
                     <button
-                      onClick={() => handleReopen(task)}
+                      onClick={() => reopenMutation.mutate(task)}
+                      disabled={reopenMutation.isPending}
                       style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                     >
-                      <RefreshCw size={14} /> ערוך ופתח מחדש
+                      <RefreshCw size={14} /> פתח מחדש
                     </button>
                   )}
                 </div>

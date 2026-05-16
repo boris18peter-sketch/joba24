@@ -214,13 +214,10 @@ export default function TaskDetail() {
   });
 
   const reopenMutation = useMutation({
-    mutationFn: () => {
-      const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      return base44.entities.Task.update(id, { status: 'OPEN', expires_at: newExpiry, worker_id: null, worker_name: null, worker_status: null });
-    },
+    mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('הג\'ובה נפתחה מחדש ל-24 שעות!');
+      toast.success('הג\'ובה נפתחה מחדש!');
     },
   });
 
@@ -449,7 +446,7 @@ export default function TaskDetail() {
               <Button onClick={() => reopenMutation.mutate()} disabled={reopenMutation.isPending}
                 className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11"
               >
-                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את הג'ובה מחדש ל-24 שעות</>}
+                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את הג'ובה מחדש</>}
               </Button>
             )}
             {!isOwner && !signalSent && (
