@@ -71,11 +71,6 @@ export default function EditTask() {
      if (!form.city) { toast.error('חובה למלא עיר'); return; }
      if (me?.id !== task?.client_id) { toast.error('אין לך הרשאה לערוך משימה זו'); return; }
 
-     if (isRepostMode) {
-       setShowPayment(true);
-       return;
-     }
-
      setLoading(true);
      const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
      const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
@@ -94,16 +89,18 @@ export default function EditTask() {
        expires_at: expires,
        images: form.images,
        requirements: form.requirements,
-       status: isRepostMode ? 'OPEN' : undefined,
-       });
+       ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null } : {}),
+     });
      queryClient.invalidateQueries({ queryKey: ['task', id] });
      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-     if (!isRepostMode) {
-       toast.success('המשימה עודכנה! ✅');
-       setLoading(false);
-       navigate(`/task/${id}`);
+     queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+     setLoading(false);
+     if (isRepostMode) {
+       toast.success('הג\'ובה פורסמה מחדש! ✅');
+       navigate('/my-tasks');
      } else {
-       setLoading(false);
+       toast.success('המשימה עודכנה! ✅');
+       navigate(`/task/${id}`);
      }
    };
 
@@ -321,7 +318,7 @@ export default function EditTask() {
         <Button onClick={handleSave} disabled={loading}
            className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900 text-white shadow-xl"
          >
-           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : isRepostMode ? <>פרסם ג'ובה חדשה</> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}
+           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : isRepostMode ? <><Save className="w-5 h-5 ml-1" />שמור ופרסם</> : <><Save className="w-5 h-5 ml-1" />שמור שינויים</>}
          </Button>
       </div>
 

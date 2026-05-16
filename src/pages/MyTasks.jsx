@@ -89,20 +89,9 @@ export default function MyTasks() {
     },
   });
 
-  const reopenMutation = useMutation({
-    mutationFn: (task) => base44.entities.Task.update(task.id, {
-      status: 'OPEN',
-      expires_at: null,
-      worker_id: null,
-      worker_name: null,
-      worker_status: null,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('הג\'ובה נפתחה מחדש!');
-    },
-  });
+  const handleReopen = (task) => {
+    navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
+  };
 
   const tab = TABS.find(t => t.key === activeTab);
   const filtered = tasks.filter(t => tab.statuses.includes(t.status));
@@ -236,11 +225,10 @@ export default function MyTasks() {
 
                   {(task.status === 'EXPIRED' || task.status === 'CANCELLED') && (
                     <button
-                      onClick={() => reopenMutation.mutate(task)}
-                      disabled={reopenMutation.isPending}
+                      onClick={() => handleReopen(task)}
                       style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                     >
-                      <RefreshCw size={14} /> פתח מחדש
+                      <RefreshCw size={14} /> ערוך ופתח
                     </button>
                   )}
                 </div>
