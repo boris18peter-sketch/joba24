@@ -124,11 +124,12 @@ export default function Layout() {
     return () => window.removeEventListener('new_review', handleNewReview);
   }, []);
 
-  // Listen for approval revoked by client — show popup + notification to worker
+  // Listen for approval revoked by client — show popup + notification to worker ONLY
   useEffect(() => {
     const handleRevoked = (e) => {
       const { task } = e.detail;
-      // Show popup to the worker (the current user who was approved)
+      // Only show to the worker (not to the task owner/client)
+      if (!me?.id || me?.id === task?.client_id) return;
       setRevokedTask(task);
       addNotification({
         type: 'approval_revoked',
@@ -138,7 +139,7 @@ export default function Layout() {
     };
     window.addEventListener('approval_revoked_by_client', handleRevoked);
     return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
-  }, []);
+  }, [me?.id]);
 
   // Listen for cancel warning request from TaskDetail — owner wants to cancel task with active worker
   useEffect(() => {
@@ -174,8 +175,8 @@ export default function Layout() {
 
       // TAKEN → OPEN: worker_id cleared
       if (prev.status === 'TAKEN' && task.status === 'OPEN' && prev.worker_id && !task.worker_id) {
-        // Client: worker left voluntarily
-        if (task.client_id === me?.id) {
+        // Client: worker left voluntarily — only notify client, never the worker
+        if (task.client_id === me?.id && me?.id !== prev.worker_id) {
           addNotification({
             type: 'worker_left_task',
             taskTitle: task.title,
@@ -183,8 +184,8 @@ export default function Layout() {
             workerName: prev.worker_name,
           });
         }
-        // Worker: publisher revoked the approval (worker_status was null = hadn't started yet)
-        if (prev.worker_id === me?.id && !prev.worker_status) {
+        // Worker: publisher revoked the approval — only show to the worker, never to the client
+        if (prev.worker_id === me?.id && me?.id !== task.client_id && !prev.worker_status) {
           addNotification({
             type: 'approval_revoked',
             taskTitle: task.title,
