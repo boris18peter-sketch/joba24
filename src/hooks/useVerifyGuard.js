@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { base44 } from '@/api/base44Client';
 
 /**
  * useVerifyGuard — centralized KYC gate hook.
  *
  * Usage:
  *   const { gate, VerifyGate } = useVerifyGuard(me);
- *   gate(() => doSomething());  // shows VerifyModal if not verified, else runs callback
+ *   gate(() => doSomething());  // redirects to login if not authenticated, shows VerifyModal if not verified, else runs callback
  *   // Render <VerifyGate /> anywhere in JSX
  */
 export function useVerifyGuard(me) {
@@ -13,6 +14,11 @@ export function useVerifyGuard(me) {
   const [pendingAction, setPendingAction] = useState(null);
 
   const gate = (action) => {
+    // Not logged in → redirect to login
+    if (!me) {
+      base44.auth.redirectToLogin(window.location.href);
+      return;
+    }
     if (me?.is_verified) {
       action();
     } else {
