@@ -194,9 +194,10 @@ export default function Layout() {
         }
       }
 
-      // Worker notification: task was cancelled after being assigned
+      // Worker notification: task was cancelled after being assigned (only show to the worker, not the client)
       if (
         prev.worker_id === me?.id &&
+        me?.id !== task.client_id &&
         prev.status === 'TAKEN' &&
         task.status === 'CANCELLED'
       ) {
@@ -204,13 +205,14 @@ export default function Layout() {
           type: 'task_cancelled_worker',
           taskTitle: prev.title || task.title,
         });
-        // Show popup to worker
+        // Show popup to worker only
         setCancelledTask(task);
       }
 
-      // Client notification: task was cancelled
+      // Client notification: task was cancelled (only show to the client, not the worker)
       if (
         task.client_id === me?.id &&
+        me?.id !== prev.worker_id &&
         prev.status === 'TAKEN' &&
         task.status === 'CANCELLED'
       ) {

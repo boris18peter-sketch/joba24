@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2 } from 'lucide-react';
@@ -151,6 +151,14 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [cancellingTask, setCancellingTask] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = () => setShowMenu(false);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [showMenu]);
+
   const catLabel = getCategoryLabel(task.category);
   const dist = task._distKm;
   const appStatus = myApp?.status;
@@ -273,6 +281,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                  <button
                    onClick={e => {
                      e.stopPropagation();
+                     e.nativeEvent?.stopImmediatePropagation?.();
                      setShowMenu(v => !v);
                    }}
                    style={{
@@ -293,7 +302,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                  </button>
                  {showMenu && (
                    <div
-                     onClick={e => e.stopPropagation()}
+                     onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }}
                      style={{
                        position: 'absolute',
                        top: 30,
