@@ -90,18 +90,7 @@ export default function MyTasks() {
   });
 
   const handleReopen = (task) => {
-    const params = new URLSearchParams({
-      repost: '1',
-      title: task.title || '',
-      description: task.description || '',
-      price: String(task.price || ''),
-      city: task.city || '',
-      location_name: task.location_name || '',
-      category: task.category || '',
-      estimated_time: task.estimated_time || '',
-      approval_mode: task.approval_mode || 'manual',
-    });
-    navigate(`/create-task?${params.toString()}`);
+    navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
   };
 
   const tab = TABS.find(t => t.key === activeTab);
