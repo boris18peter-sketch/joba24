@@ -67,6 +67,19 @@ export default function Layout() {
     });
   }, [workerTasks]);
 
+  // Also seed prevTasksRef on first load for active worker tasks
+  // so cancellation detection works even if task isn't in workerTasks yet
+  useEffect(() => {
+    if (!me?.id) return;
+    base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }).then(tasks => {
+      tasks.forEach(task => {
+        if (!prevTasksRef.current[task.id]) {
+          prevTasksRef.current[task.id] = task;
+        }
+      });
+    });
+  }, [me?.id]);
+
   // Watch for application status changes
   useEffect(() => {
     myApplications.forEach(app => {
@@ -197,17 +210,17 @@ export default function Layout() {
 
       // Worker notification: task was cancelled after being assigned (only show to the worker, not the client)
       if (
-        prev.worker_id === me?.id &&
+        task.status === 'CANCELLED' &&
         me?.id !== task.client_id &&
-        prev.status === 'TAKEN' &&
-        task.status === 'CANCELLED'
+        (prev.worker_id === me?.id || task.worker_id === me?.id) &&
+        (prev.status === 'TAKEN' || (!prev.status && task.worker_id === me?.id))
       ) {
         addNotification({
           type: 'task_cancelled_worker',
           taskTitle: prev.title || task.title,
         });
         // Show popup to worker only
-        setCancelledTask(task);
+        setCancelledTask(prev.status ? task : { ...task, worker_id: me?.id });
       }
 
       // Client notification: task was cancelled (only show to the client, not the worker)

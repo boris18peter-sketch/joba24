@@ -40,19 +40,10 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
         <div style={{ padding: '20px 24px 24px' }}>
           {task && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: 16, marginBottom: 20 }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: '#7f1d1d', marginBottom: 8 }}>{task.title}</div>
-              <div style={{ display: 'flex', gap: 16 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#dc2626' }}>₪{task.price}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>תשלום</div>
-                </div>
-                {task.location_name && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>📍 {task.location_name}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>מיקום</div>
-                  </div>
-                )}
-              </div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#7f1d1d' }}>{task.title}</div>
+              {task.location_name && (
+                <div style={{ fontSize: 13, color: '#374151', marginTop: 6 }}>📍 {task.location_name}</div>
+              )}
             </div>
           )}
 
