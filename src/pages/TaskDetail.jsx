@@ -443,7 +443,15 @@ export default function TaskDetail() {
               </div>
             </div>
             {isOwner && (
-              <Button onClick={() => reopenMutation.mutate()} disabled={reopenMutation.isPending}
+              <Button
+                onClick={() => {
+                  if (task.payment_status === 'funded') {
+                    navigate(`/edit-task/${id}`, { state: { repostMode: true } });
+                  } else {
+                    reopenMutation.mutate();
+                  }
+                }}
+                disabled={reopenMutation.isPending}
                 className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11"
               >
                 {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את הג'ובה מחדש</>}
@@ -744,7 +752,12 @@ export default function TaskDetail() {
           {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) && (
             <button
               onClick={() => {
-                // Navigate to CreateTask with pre-filled data — user must go through payment flow
+                // EXPIRED + already paid → go directly to EditTask (no new payment needed)
+                if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
+                  navigate(`/edit-task/${id}`, { state: { repostMode: true } });
+                  return;
+                }
+                // All other cases → go to CreateTask (new payment required)
                 const params = new URLSearchParams({
                   repost: '1',
                   title: task.title || '',
