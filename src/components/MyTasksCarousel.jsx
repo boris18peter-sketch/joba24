@@ -98,7 +98,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   const handleReopen = (e, task) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
+    navigate(`/edit-task/${task.id}`);
   };
 
   // Empty state: show a "Post Task" button without title (unless user is currently working on a task)
