@@ -32,9 +32,9 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 0,
+    staleTime: 30000,
     refetchOnWindowFocus: true,
-    refetchInterval: 10000
+    refetchInterval: 60000
   });
 
   // Active task I'm working on as a worker
@@ -43,7 +43,7 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    refetchInterval: 3000,
+    refetchInterval: 30000,
     staleTime: 0,
     refetchOnWindowFocus: true
   });
@@ -178,8 +178,10 @@ export default function HomeFeed() {
             old.filter(a => a.id !== event.id)
           );
         }
-        // Hard sync to confirm
-        queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
+        // Hard sync only on update (not every create)
+        if (event.type === 'update') {
+          queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
+        }
       }
 
       // If it's an application for one of MY published tasks — sync the applicants panel
@@ -199,29 +201,35 @@ export default function HomeFeed() {
     }
   }, []);
 
-  // Auto price bump — stop bumping when there's a pending application, resume when cancelled
+  // Auto price bump — only run on MY tasks, only every 5 minutes via interval
   useEffect(() => {
-    if (!tasks.length) return;
-    tasks.forEach(async (task) => {
-      if (task.status !== 'OPEN') return;
-      if (!task.auto_bump_enabled || !task.max_price) return;
-      if (task.price >= task.max_price) return;
+    const bumpableTasks = myTasks.filter(t =>
+      t.status === 'OPEN' && t.auto_bump_enabled && t.max_price && t.price < t.max_price
+    );
+    if (!bumpableTasks.length) return;
 
-      // Check if there's already a pending application — if so, pause bumping
-      const pendingApps = await base44.entities.TaskApplication.filter({ task_id: task.id, status: 'pending' });
-      if (pendingApps.length > 0) return; // pause bump while someone applied
-
-      const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
-      if (ageMinutes < 5) return;
-      const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
-      const base = task.base_price || task.price;
-      const step = (task.max_price - base) / 12;
-      const expectedPrice = Math.min(Math.round(base + step * intervals), task.max_price);
-      if (expectedPrice > task.price) {
-        base44.entities.Task.update(task.id, { price: expectedPrice });
+    const runBump = async () => {
+      for (const task of bumpableTasks) {
+        const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
+        if (ageMinutes < 5) continue;
+        const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
+        const base = task.base_price || task.price;
+        const step = (task.max_price - base) / 12;
+        const expectedPrice = Math.min(Math.round(base + step * intervals), task.max_price);
+        if (expectedPrice > task.price) {
+          // Check pending apps before bumping
+          const pendingApps = await base44.entities.TaskApplication.filter({ task_id: task.id, status: 'pending' });
+          if (pendingApps.length === 0) {
+            base44.entities.Task.update(task.id, { price: expectedPrice });
+          }
+        }
       }
-    });
-  }, [tasks]);
+    };
+
+    runBump();
+    const interval = setInterval(runBump, 5 * 60 * 1000); // every 5 minutes
+    return () => clearInterval(interval);
+  }, [myTasks]);
 
   // ── Smart Ranking Engine ──────────────────────────────────────────────────
   // Build worker profile for category matching
