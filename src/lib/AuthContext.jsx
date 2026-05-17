@@ -68,8 +68,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = () => {
-    base44.auth.redirectToLogin(window.location.href);
+  const login = (nextPath) => {
+    const nextUrl = nextPath
+      ? `${window.location.origin}${nextPath}`
+      : window.location.href;
+    base44.auth.redirectToLogin(nextUrl);
   };
 
   const logout = (shouldRedirect = true) => {

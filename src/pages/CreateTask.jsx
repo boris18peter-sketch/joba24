@@ -134,6 +134,9 @@ export default function CreateTask() {
 
   const handleSubmit = () => {
     if (!isAuthenticated) {
+      // Save current form to draft before showing login
+      const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, auto_bump_enabled: form.auto_bump_enabled, max_price: form.max_price, is_story: form.is_story };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
       setShowLoginPrompt(true);
       return;
     }
@@ -208,7 +211,7 @@ export default function CreateTask() {
         <LoginPromptModal
           onLogin={() => {
             setShowLoginPrompt(false);
-            login();
+            login('/create-task');
           }}
           onClose={() => setShowLoginPrompt(false)}
           type="publish"
