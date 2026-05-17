@@ -12,15 +12,14 @@ import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
-import LoginPromptModal from '@/components/LoginPromptModal';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
 
@@ -343,18 +342,6 @@ export default function Layout() {
         <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
         document.body
       )}
-      {showLoginPrompt && createPortal(
-        <LoginPromptModal
-          onLogin={() => {
-            login('/create-task');
-            setShowLoginPrompt(false);
-          }}
-          onClose={() => setShowLoginPrompt(false)}
-          type="publish"
-        />,
-        document.body
-      )}
-
       {cancelWarningTask && createPortal(
         <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
@@ -432,7 +419,7 @@ export default function Layout() {
               return (
                 <button key={to} onClick={() => {
                   if (!isAuthenticated) {
-                    setShowLoginPrompt(true);
+                    navigate(to);
                     return;
                   }
                   gate(() => navigate(to));
