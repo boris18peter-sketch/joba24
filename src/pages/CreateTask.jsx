@@ -62,6 +62,10 @@ const DEFAULT_FORM = {
   city: '',
   lat: null,
   lng: null,
+  address_building: '',
+  address_floor: '',
+  address_apartment: '',
+  address_notes: '',
   estimated_time: '1h',
   category: 'other',
   approval_mode: 'manual',
@@ -185,6 +189,10 @@ export default function CreateTask() {
       city: form.city,
       lat: form.lat || undefined,
       lng: form.lng || undefined,
+      address_building: form.address_building || undefined,
+      address_floor: form.address_floor || undefined,
+      address_apartment: form.address_apartment || undefined,
+      address_notes: form.address_notes || undefined,
       estimated_time: estimatedTime,
       category: form.category,
       approval_mode: form.approval_mode,
@@ -418,6 +426,42 @@ export default function CreateTask() {
                 }
               }}
             />
+          </div>
+          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ יש לבחור כתובת מהרשימה</p>}
+          {/* Extra address details */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+            <div>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>בניין / מספר בית</p>
+              <Input placeholder="לדוגמה: 12"
+                value={form.address_building || ''}
+                onChange={e => set('address_building', e.target.value)}
+                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>קומה</p>
+              <Input placeholder="לדוגמה: 3"
+                value={form.address_floor || ''}
+                onChange={e => set('address_floor', e.target.value)}
+                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>דירה</p>
+              <Input placeholder="לדוגמה: 5"
+                value={form.address_apartment || ''}
+                onChange={e => set('address_apartment', e.target.value)}
+                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>הערות ניווט</p>
+              <Input placeholder="לדוגמה: כניסה אחורית"
+                value={form.address_notes || ''}
+                onChange={e => set('address_notes', e.target.value)}
+                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+              />
+            </div>
           </div>
         </SectionCard>
 

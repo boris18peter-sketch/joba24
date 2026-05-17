@@ -30,6 +30,18 @@
     "city": {
       "type": "string"
     },
+    "address_building": {
+      "type": "string"
+    },
+    "address_floor": {
+      "type": "string"
+    },
+    "address_apartment": {
+      "type": "string"
+    },
+    "address_notes": {
+      "type": "string"
+    },
     "lat": {
       "type": "number"
     },
