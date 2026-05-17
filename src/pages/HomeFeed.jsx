@@ -336,6 +336,41 @@ export default function HomeFeed() {
         </div>
       </div>
 
+      {/* Login Banner — show only when not authenticated */}
+      {!isAuthenticated && (
+        <div style={{ background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)', padding: '24px 20px', textAlign: 'center', color: 'white' }}>
+          <div style={{ marginBottom: 12 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 900, margin: '0 0 8px', letterSpacing: -0.5 }}>
+              צריך שמישהו יעשה לך <span style={{ color: '#fbbf24' }}>עבודה?</span>
+            </h2>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.9)' }}>
+              <div>כל משימה משימה — גם קטנה או הכי מדורה</div>
+              <div>פשוט תפרסם - וימשהו ייצא לביצוע וזריז וכמו</div>
+              <div>דקות!</div>
+            </div>
+          </div>
+          <button
+            onClick={() => { base44.auth.redirectToLogin(); }}
+            style={{
+              background: 'white',
+              color: '#1a6fd4',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: 14,
+              fontWeight: 900,
+              fontSize: 15,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+              transition: 'transform 0.15s',
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            התחברות
+          </button>
+        </div>
+      )}
+
       {/* Active Task Banners Carousel */}
       {(activeWorkerTask || activeClientTask) && (() => {
         const activeTasks = [];
