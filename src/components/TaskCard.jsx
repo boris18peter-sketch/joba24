@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2 } from 'lucide-react';
+import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2, LogIn } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { format } from 'date-fns';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import TaskBadges from '@/components/TaskBadges';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 // ── Apply Modal — full screen, professional ───────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
@@ -146,6 +147,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [applyLocked, setApplyLocked] = useState(false); // prevents double-tap opening modal
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancellingTask, setCancellingTask] = useState(false);
@@ -231,7 +233,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   return (
     <>
       <div
-        onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
+        onClick={() => { if (showMenu) { setShowMenu(false); return; } if (!currentUserId) { setShowLoginPrompt(true); return; } navigate(`/task/${task.id}`); }}
         className="bg-white rounded-2xl active:scale-[0.982] transition-all"
         style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: '0 2px 12px rgba(15,43,107,0.07)', padding: '13px 14px', cursor: 'pointer' }}
       >
@@ -358,14 +360,17 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           {/* Price + Apply button stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
             <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
-            {!hasActiveApp && currentUserId && (
+            {!hasActiveApp && task.created_by !== currentUserId && (
               <button
                 onClick={e => {
                   e.stopPropagation();
+                  if (!currentUserId) {
+                    setShowLoginPrompt(true);
+                    return;
+                  }
                   if (applyLocked) return;
                   setApplyLocked(true);
                   setShowApplyModal(true);
-                  // Reset lock after modal opens (150ms safety debounce)
                   setTimeout(() => setApplyLocked(false), 600);
                 }}
                 disabled={applyLocked}
@@ -440,6 +445,15 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           isLoading={cancellingTask}
           onConfirm={handleCancelTask}
           onClose={() => setShowCancelConfirm(false)}
+        />,
+        document.body
+      )}
+
+      {showLoginPrompt && createPortal(
+        <LoginPromptModal
+          onLogin={() => { setShowLoginPrompt(false); base44.auth.redirectToLogin(window.location.href); }}
+          onClose={() => setShowLoginPrompt(false)}
+          type="apply"
         />,
         document.body
       )}

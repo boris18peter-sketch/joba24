@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock } from 'lucide-react';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
@@ -25,7 +26,7 @@ export default function HomeFeed() {
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
   const queryClient = useQueryClient();
 
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { user: me, isAuthenticated } = useAuth();
 
   // My published tasks
   const { data: myTasks = [] } = useQuery({
@@ -254,7 +255,7 @@ export default function HomeFeed() {
   // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
   const candidateTasks = tasks.filter(t => {
     if (t.status !== 'OPEN') return false;
-    if (t.client_id === me?.id) return false;
+    if (me?.id && t.client_id === me.id) return false; // hide own tasks only when logged in
     if (dismissedTasks.has(t.id)) return false;
     const q = search.toLowerCase();
     if (search && !(
@@ -529,7 +530,7 @@ export default function HomeFeed() {
                   task={task}
                   myApp={myApp}
                   isMyTask={false}
-                  currentUserId={me?.id}
+                  currentUserId={isAuthenticated ? me?.id : null}
                   workerName={me?.full_name}
                   badges={task._badges}
                   onDismiss={(taskId) => {
