@@ -12,11 +12,15 @@ import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
+import LoginPromptModal from '@/components/LoginPromptModal';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, login } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
 
@@ -339,6 +343,18 @@ export default function Layout() {
         <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
         document.body
       )}
+      {showLoginPrompt && createPortal(
+        <LoginPromptModal
+          onLogin={() => {
+            setShowLoginPrompt(false);
+            login('/create-task');
+          }}
+          onClose={() => setShowLoginPrompt(false)}
+          type="publish"
+        />,
+        document.body
+      )}
+
       {cancelWarningTask && createPortal(
         <div className="mobile-sheet-overlay">
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
@@ -414,7 +430,13 @@ export default function Layout() {
             const active = location.pathname === to;
             if (primary) {
               return (
-                <button key={to} onClick={() => gate(() => navigate(to))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <button key={to} onClick={() => {
+                  if (!isAuthenticated) {
+                    setShowLoginPrompt(true);
+                    return;
+                  }
+                  gate(() => navigate(to));
+                }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <div style={{
                     width: 56, height: 56, borderRadius: '50%',
                     background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
