@@ -70,15 +70,13 @@ export default function Layout() {
     });
   }, [workerTasks]);
 
-  // Also seed prevTasksRef on first load for active worker tasks
-  // so cancellation detection works even if task isn't in workerTasks yet
+  // Seed prevTasksRef with ALL tasks I'm a worker on (not just TAKEN)
+  // so cancellation detection works reliably
   useEffect(() => {
     if (!me?.id) return;
-    base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }).then(tasks => {
+    base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50).then(tasks => {
       tasks.forEach(task => {
-        if (!prevTasksRef.current[task.id]) {
-          prevTasksRef.current[task.id] = task;
-        }
+        prevTasksRef.current[task.id] = task;
       });
     });
   }, [me?.id]);
@@ -213,18 +211,19 @@ export default function Layout() {
       }
 
       // Worker notification: task was cancelled after being assigned (only show to the worker, not the client)
+      // Use prev.worker_id as the source of truth — worker_id may be cleared during cancellation
       if (
         task.status === 'CANCELLED' &&
-        me?.id !== task.client_id &&
-        (prev.worker_id === me?.id || task.worker_id === me?.id) &&
-        (prev.status === 'TAKEN' || (!prev.status && task.worker_id === me?.id))
+        prev.status === 'TAKEN' &&
+        prev.worker_id === me?.id &&
+        me?.id !== task.client_id
       ) {
         addNotification({
           type: 'task_cancelled_worker',
           taskTitle: prev.title || task.title,
         });
-        // Show popup to worker only
-        setCancelledTask(prev.status ? task : { ...task, worker_id: me?.id });
+        // Show popup to worker — use prev data since task.worker_id may already be cleared
+        setCancelledTask({ ...task, worker_id: prev.worker_id, title: prev.title || task.title });
       }
 
       // Client notification: task was cancelled (only show to the client, not the worker)
