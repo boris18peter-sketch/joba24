@@ -78,12 +78,14 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    
+
+    // Clear all personal cached data from localStorage
+    localStorage.removeItem('joba24_notifications');
+    localStorage.removeItem('joba24_draft_task');
+
     if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
       base44.auth.logout(window.location.href);
     } else {
-      // Just remove the token without redirect
       base44.auth.logout();
     }
   };

@@ -34,6 +34,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 // Add page imports here
 import Landing from '@/pages/Landing';
 import HomeFeed from '@/pages/HomeFeed';
@@ -74,24 +75,31 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/lp" element={<Landing />} />
       <Route element={<Layout />}>
+        {/* Public routes */}
         <Route path="/" element={<HomeFeed />} />
         <Route path="/map" element={<MapView />} />
-        <Route path="/create-task" element={<CreateTask />} />
-        <Route path="/wallet" element={<Wallet />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/task/:id" element={<TaskDetail />} />
-        <Route path="/edit-task/:id" element={<EditTask />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/worker-profile" element={<WorkerProfile />} />
         <Route path="/faq" element={<FAQ />} />
-        <Route path="/daily-goal" element={<DailyGoal />} />
-        <Route path="/simulator" element={<SimulatorPanel />} />
-        <Route path="/my-tasks" element={<MyTasks />} />
-        <Route path="/chats" element={<ChatInbox />} />
-        <Route path="/public-profile" element={<PublicProfile />} />
-        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/create-task" element={<CreateTask />} />
+
+        {/* Protected routes — require login */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/edit-task/:id" element={<EditTask />} />
+          <Route path="/worker-profile" element={<WorkerProfile />} />
+          <Route path="/daily-goal" element={<DailyGoal />} />
+          <Route path="/simulator" element={<SimulatorPanel />} />
+          <Route path="/my-tasks" element={<MyTasks />} />
+          <Route path="/chats" element={<ChatInbox />} />
+          <Route path="/public-profile" element={<PublicProfile />} />
+          <Route path="/notifications" element={<Notifications />} />
+        </Route>
       </Route>
-      <Route path="/chat/:taskId" element={<Chat />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/chat/:taskId" element={<Chat />} />
+      </Route>
       <Route path="/presentation" element={<Presentation />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -23,7 +23,7 @@ export default function Layout() {
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
 
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [revokedTask, setRevokedTask] = useState(null);
@@ -34,7 +34,7 @@ export default function Layout() {
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
-    enabled: !!me?.id,
+    enabled: !!me?.id && isAuthenticated,
     staleTime: 60000,
   });
 
@@ -45,7 +45,7 @@ export default function Layout() {
   const { data: myPublishedTasks = [] } = useQuery({
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
-    enabled: !!me?.id,
+    enabled: !!me?.id && isAuthenticated,
     staleTime: 60000,
   });
 
@@ -53,7 +53,7 @@ export default function Layout() {
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myApplicationsLayout', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
-    enabled: !!me?.id,
+    enabled: !!me?.id && isAuthenticated,
     staleTime: 60000,
   });
 
@@ -101,7 +101,7 @@ export default function Layout() {
 
   // Real-time chat message push notifications
   useEffect(() => {
-    if (!me?.id) return;
+    if (!me?.id || !isAuthenticated) return;
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.type !== 'create' || !event.data) return;
       const msg = event.data;
@@ -169,6 +169,7 @@ export default function Layout() {
 
   // Real-time task events for client (push-like) + worker cancellation alert
   useEffect(() => {
+    if (!isAuthenticated || !me?.id) return;
     const unsubscribe = base44.entities.Task.subscribe((event) => {
       if (event.type !== 'update') return;
       const task = event.data;
@@ -241,6 +242,7 @@ export default function Layout() {
 
   // Listen for real-time application events
   useEffect(() => {
+    if (!isAuthenticated || !me?.id) return;
     const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
       if (event.type === 'create' && event.data?.task_id) {
         // Someone applied to my task - notify client
@@ -306,9 +308,11 @@ export default function Layout() {
   const { data: unreadNotifCount = 0 } = useQuery({
     queryKey: ['notifUnread'],
     queryFn: () => {
+      if (!isAuthenticated) return 0;
       const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
       return stored.filter(n => !n.read).length;
     },
+    enabled: isAuthenticated,
     staleTime: 30000,
   });
 
