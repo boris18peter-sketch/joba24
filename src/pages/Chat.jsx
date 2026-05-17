@@ -9,7 +9,7 @@ import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import VerifiedBadge from '@/components/VerifiedBadge';
 
-// Online status: ping every 30s, check < 90s = online
+// Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
   const [isOnline, setIsOnline] = useState(false);
   useEffect(() => {
@@ -21,12 +21,21 @@ function useOnlineStatus(userId) {
         if (p?.last_seen) {
           const diff = Date.now() - new Date(p.last_seen).getTime();
           setIsOnline(diff < 90000);
+        } else {
+          setIsOnline(false);
         }
-      } catch {}
+      } catch { setIsOnline(false); }
     };
     check();
-    const interval = setInterval(check, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(check, 20000);
+    // Also subscribe to real-time presence updates
+    const unsub = base44.entities.UserPresence.subscribe(event => {
+      if (event.data?.user_id === userId && event.data?.last_seen) {
+        const diff = Date.now() - new Date(event.data.last_seen).getTime();
+        setIsOnline(diff < 90000);
+      }
+    });
+    return () => { clearInterval(interval); unsub(); };
   }, [userId]);
   return isOnline;
 }
@@ -308,7 +317,7 @@ export default function Chat() {
               key={msg.id}
               style={{
                 display: 'flex',
-                justifyContent: isMe ? 'flex-start' : 'flex-end',
+                justifyContent: isMe ? 'flex-end' : 'flex-start',
                 marginBottom: isContinuation ? 2 : 8,
                 alignItems: 'flex-end', gap: 6,
               }}
@@ -323,7 +332,7 @@ export default function Chat() {
               )}
               {!isMe && isContinuation && <div style={{ width: 28, flexShrink: 0 }} />}
 
-              <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-start' : 'flex-end' }}>
+              <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                 {/* Sender name (first in group, not me) */}
                 {!isMe && !isContinuation && (
                   <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, marginBottom: 3, paddingRight: 4 }}>{msg.sender_name}</div>

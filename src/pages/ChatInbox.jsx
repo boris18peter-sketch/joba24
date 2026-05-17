@@ -11,17 +11,17 @@ export default function ChatInbox() {
 
   const queryClient = useQueryClient();
 
-  // Get all tasks where I'm involved (as worker or client) and are TAKEN
+  // Get all tasks where I'm involved (as worker or client) — all statuses with messages
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['chatInboxWorker', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-updated_date', 50),
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-updated_date', 50),
     enabled: !!me?.id,
     staleTime: 0,
   });
 
   const { data: clientTasks = [] } = useQuery({
     queryKey: ['chatInboxClient', me?.id],
-    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-updated_date', 50),
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-updated_date', 50),
     enabled: !!me?.id,
     staleTime: 0,
   });
@@ -34,7 +34,6 @@ export default function ChatInbox() {
       const updateInbox = (key, matchFn) => {
         queryClient.setQueryData([key, me.id], (old = []) => {
           if (event.type === 'update') {
-            if (t.status !== 'TAKEN') return old.filter(x => x.id !== event.id);
             if (matchFn(t) && !old.find(x => x.id === event.id)) return [t, ...old];
             return old.map(x => x.id === event.id ? { ...x, ...t } : x);
           }
@@ -48,30 +47,41 @@ export default function ChatInbox() {
     return unsub;
   }, [me?.id, queryClient]);
 
-  // Merge and deduplicate
+  // Merge and deduplicate — filter out tasks where I'm both client and worker (edge case)
   const allTasks = useMemo(() => {
     const map = {};
     [...workerTasks, ...clientTasks].forEach(t => { map[t.id] = t; });
     return Object.values(map).sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
   }, [workerTasks, clientTasks]);
 
-  // Fetch last message per task
+  // Only tasks with actual messages
+  const visibleTasks = useMemo(() => {
+    if (tasksWithMessages.size === 0 && allTasks.length > 0) return []; // still loading
+    return allTasks.filter(t => tasksWithMessages.has(t.id));
+  }, [allTasks, tasksWithMessages]);
+
+  // Fetch last message per task — only show tasks that have messages
   const [lastMessages, setLastMessages] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [tasksWithMessages, setTasksWithMessages] = useState(new Set());
 
   useEffect(() => {
     if (!allTasks.length || !me?.id) return;
     (async () => {
       const newLastMessages = {};
       const newUnreadCounts = {};
-      for (const task of allTasks.slice(0, 10)) {
-        const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 1);
-        if (msgs[0]) newLastMessages[task.id] = msgs[0];
-        const all = await base44.entities.ChatMessage.filter({ task_id: task.id }, 'created_date', 100);
-        newUnreadCounts[task.id] = all.filter(m => m.sender_id !== me.id && !m.read).length;
-      }
+      const withMsgs = new Set();
+      await Promise.all(allTasks.slice(0, 30).map(async (task) => {
+        const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 50);
+        if (msgs.length > 0) {
+          withMsgs.add(task.id);
+          newLastMessages[task.id] = msgs[0];
+          newUnreadCounts[task.id] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+        }
+      }));
       setLastMessages(newLastMessages);
       setUnreadCounts(newUnreadCounts);
+      setTasksWithMessages(withMsgs);
     })();
   }, [allTasks, me?.id]);
 
@@ -99,14 +109,14 @@ export default function ChatInbox() {
         <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
         <div>
           <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>הודעות</h1>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{allTasks.length} שיחות פעילות</p>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{visibleTasks.length} שיחות פעילות</p>
         </div>
       </div>
 
       <div style={{ padding: '16px 16px 100px' }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} className="animate-spin text-primary mx-auto" /></div>
-        ) : allTasks.length === 0 ? (
+        ) : visibleTasks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
             <p style={{ fontWeight: 700, color: '#0f2b6b', margin: 0, fontSize: 16 }}>אין שיחות פעילות</p>
@@ -114,7 +124,7 @@ export default function ChatInbox() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {allTasks.map(task => {
+            {visibleTasks.map(task => {
               const isMyTask = task.client_id === me?.id;
               const otherName = isMyTask ? (task.worker_name || 'פועל') : (task.client_name || 'מעסיק');
               const lastMsg = lastMessages[task.id];
