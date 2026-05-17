@@ -346,8 +346,8 @@ export default function Layout() {
       {showLoginPrompt && createPortal(
         <LoginPromptModal
           onLogin={() => {
-            setShowLoginPrompt(false);
             login('/create-task');
+            setShowLoginPrompt(false);
           }}
           onClose={() => setShowLoginPrompt(false)}
           type="publish"
