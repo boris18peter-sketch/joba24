@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star, Loader2, X } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RatingModal({ task, me, onClose }) {
@@ -20,34 +20,34 @@ export default function RatingModal({ task, me, onClose }) {
     if (!rating) { toast.error('בחר דירוג'); return; }
     setLoading(true);
 
-    // Save review
-    await base44.entities.Review.create({
-      task_id: task.id,
-      reviewer_id: me.id,
-      reviewee_id: revieweeId,
-      rating,
-      comment,
-      role,
-    });
-
-    // Update the reviewee's average rating on their User record
-    const allReviews = await base44.entities.Review.filter({ reviewee_id: revieweeId });
-    const avg = allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length;
-    // Update via User entity (works for any user, not just current user)
-    await base44.entities.User.update(revieweeId, { rating: avg, rating_count: allReviews.length });
-
-    // Invalidate queries
-    queryClient.invalidateQueries({ queryKey: ['myReviews', revieweeId] });
-    queryClient.invalidateQueries({ queryKey: ['me'] });
-    queryClient.invalidateQueries({ queryKey: ['myReview'] });
-
-    setLoading(false);
-    toast.success('הביקורת נשמרה! תודה');
-    // Dispatch custom event for notification
+    // Close immediately for snappy UX — save in background
+    toast.success('הביקורת נשמרה! תודה ⭐');
     window.dispatchEvent(new CustomEvent('new_review', {
       detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId }
     }));
     onClose();
+
+    // Background: create review + update user rating
+    try {
+      await base44.entities.Review.create({
+        task_id: task.id,
+        reviewer_id: me.id,
+        reviewee_id: revieweeId,
+        rating,
+        comment,
+        role,
+      });
+
+      const allReviews = await base44.entities.Review.filter({ reviewee_id: revieweeId });
+      const avg = allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length;
+      await base44.entities.User.update(revieweeId, { rating: avg, rating_count: allReviews.length });
+
+      queryClient.invalidateQueries({ queryKey: ['myReviews', revieweeId] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['myReview'] });
+    } catch (e) {
+      console.error('Review save failed:', e);
+    }
   };
 
   return (
@@ -110,7 +110,7 @@ export default function RatingModal({ task, me, onClose }) {
         <button onClick={handleSubmit} disabled={loading || !rating}
           style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: rating ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : '#e2e8f0', color: rating ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: rating ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
-          {loading ? <Loader2 size={20} className="animate-spin" /> : '⭐ שלח ביקורת'}
+          ⭐ שלח ביקורת
         </button>
       </div>
     </div>
