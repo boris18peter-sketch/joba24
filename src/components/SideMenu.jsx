@@ -24,7 +24,30 @@ export default function SideMenu() {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', pointerEvents: 'none', flexDirection: 'row-reverse' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '7px 8px', pointerEvents: 'none', gap: 6 }}>
+        {!isAuthenticated && (
+          <button
+            onClick={() => login()}
+            style={{
+              padding: '10px 14px',
+              background: '#fbbf24',
+              color: '#0a1f5c',
+              border: 'none',
+              borderRadius: 10,
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'auto',
+            }}
+          >
+            התחבר עכשיו
+          </button>
+        )}
         <button
           onClick={() => setOpen(true)}
           style={{
@@ -44,31 +67,6 @@ export default function SideMenu() {
             <Menu size={20} color="white" />
           </div>
         </button>
-
-        {!isAuthenticated && (
-          <button
-            onClick={() => login()}
-            style={{
-              padding: '10px 14px',
-              background: '#fbbf24',
-              color: '#0a1f5c',
-              border: 'none',
-              borderRadius: 10,
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
-              whiteSpace: 'nowrap',
-              marginRight: 8,
-              pointerEvents: 'auto',
-            }}
-          >
-            התחבר עכשיו
-          </button>
-        )}
       </div>
 
       {open && (
