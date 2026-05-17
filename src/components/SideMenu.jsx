@@ -24,7 +24,7 @@ export default function SideMenu() {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', justifyContent: 'space-between' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', pointerEvents: 'none' }}>
         <button
           onClick={() => setOpen(true)}
           style={{
@@ -32,6 +32,7 @@ export default function SideMenu() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: 'none', cursor: 'pointer', background: 'none', padding: 0,
             WebkitTapHighlightColor: 'transparent',
+            pointerEvents: 'auto',
           }}
         >
           <div style={{
@@ -62,6 +63,7 @@ export default function SideMenu() {
               boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
               whiteSpace: 'nowrap',
               marginRight: 8,
+              pointerEvents: 'auto',
             }}
           >
             התחבר עכשיו
