@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 
 const statusConfig = {
   OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
@@ -15,14 +16,24 @@ const statusConfig = {
 };
 
 function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
-  const handleDelete = async () => {
-    onClose();
-    await base44.entities.Task.delete(task.id);
-    queryClient.setQueryData(['myTasks', undefined], (old = []) => old.filter(t => t.id !== task.id));
-    queryClient.setQueryData(['tasks'], (old = []) => old ? old.filter(t => t.id !== task.id) : old);
-    queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    toast.success('המשימה נמחקה');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelTask = async () => {
+    setCancelling(true);
+    try {
+      const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
+      if (!res.data?.success) throw new Error('שגיאה בביטול');
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      setShowCancelConfirm(false);
+      onClose();
+    } catch {
+      toast.error('שגיאה בביטול, נסה שוב');
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const handleEdit = () => {
@@ -31,40 +42,50 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
   };
 
   return createPortal(
-    <div className="mobile-sheet-overlay" onClick={onClose} dir="rtl">
-      <div className="mobile-sheet" style={{ width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-        {/* Handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '12px auto 16px' }} />
-        {/* Task name */}
-        <div style={{ padding: '0 20px 14px', borderBottom: '1px solid #f0f4fa' }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b' }}>{task.title}</div>
-          <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>₪{task.price}</div>
-        </div>
-        {/* Actions */}
-        <div style={{ padding: '8px 12px 8px' }}>
-          <button onClick={handleEdit}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#1a6fd4' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Pencil size={16} color="#1a6fd4" />
-            </div>
-            ערוך משימה
-          </button>
-          <button onClick={handleDelete}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#dc2626' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Trash2 size={16} color="#dc2626" />
-            </div>
-            מחק משימה
-          </button>
-        </div>
-        <div style={{ padding: '0 12px 8px' }}>
-          <button onClick={onClose}
-            style={{ width: '100%', height: 48, borderRadius: 14, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: '#64748b' }}>
-            ביטול
-          </button>
+    <>
+      <div className="mobile-sheet-overlay" onClick={onClose} dir="rtl">
+        <div className="mobile-sheet" style={{ width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+          {/* Handle */}
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '12px auto 16px' }} />
+          {/* Task name */}
+          <div style={{ padding: '0 20px 14px', borderBottom: '1px solid #f0f4fa' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b' }}>{task.title}</div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>₪{task.price}</div>
+          </div>
+          {/* Actions */}
+          <div style={{ padding: '8px 12px 8px' }}>
+            <button onClick={handleEdit}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#1a6fd4' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Pencil size={16} color="#1a6fd4" />
+              </div>
+              ערוך משימה
+            </button>
+            <button onClick={() => setShowCancelConfirm(true)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#dc2626' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={16} color="#dc2626" />
+              </div>
+              בטל משימה
+            </button>
+          </div>
+          <div style={{ padding: '0 12px 8px' }}>
+            <button onClick={onClose}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: '#64748b' }}>
+              ביטול
+            </button>
+          </div>
         </div>
       </div>
-    </div>,
+      {showCancelConfirm && (
+        <CancelTaskConfirmModal
+          task={task}
+          isLoading={cancelling}
+          onConfirm={handleCancelTask}
+          onClose={() => setShowCancelConfirm(false)}
+        />
+      )}
+    </>,
     document.body
   );
 }
