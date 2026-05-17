@@ -9,6 +9,7 @@ import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
+import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { rankFeedTasks, buildSmartSections } from '@/lib/feedRanker';
 
@@ -336,48 +337,8 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {/* Login Banner — show only when not authenticated */}
-      {!isAuthenticated && (
-        <div style={{ background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)', padding: '40px 24px', textAlign: 'center', color: 'white', position: 'relative', overflow: 'hidden' }}>
-          {/* Decorative elements */}
-          <div style={{ position: 'absolute', top: -40, left: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-          <div style={{ position: 'absolute', bottom: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-          
-          {/* Content */}
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontSize: 32, fontWeight: 900, margin: '0 0 12px', letterSpacing: -0.8, lineHeight: 1.2 }}>
-                צריך שמישהו יעזור לך עכשיו?
-              </h2>
-              <div style={{ fontSize: 15, lineHeight: 1.8, color: 'rgba(255,255,255,0.92)', fontWeight: 500 }}>
-                <div>כל משימה - גם הכי קטנה או הכי מוזרה</div>
-                <div style={{ marginTop: 8 }}>פשוט תפרסם - ומישהו יגיע לבצע אותה תוך <span style={{ color: '#fbbf24', fontWeight: 900 }}>כמה דקות!</span></div>
-              </div>
-            </div>
-            <button
-              onClick={() => { base44.auth.redirectToLogin(); }}
-              style={{
-                background: '#fbbf24',
-                color: '#1a6fd4',
-                border: 'none',
-                padding: '14px 32px',
-                borderRadius: 16,
-                fontWeight: 900,
-                fontSize: 16,
-                cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(251,191,36,0.4)',
-                transition: 'all 0.15s',
-                letterSpacing: 0.3,
-              }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.95)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(251,191,36,0.3)'; }}
-              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(251,191,36,0.4)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(251,191,36,0.4)'; }}
-            >
-              התחברות עכשיו
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Login Banner Carousel — show only when not authenticated */}
+      {!isAuthenticated && <LoginBannerCarousel />}
 
       {/* Active Task Banners Carousel */}
       {(activeWorkerTask || activeClientTask) && (() => {
