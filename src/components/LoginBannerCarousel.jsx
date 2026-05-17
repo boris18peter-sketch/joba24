@@ -67,7 +67,7 @@ export default function LoginBannerCarousel() {
     <div 
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', cursor: 'grab', userSelect: 'none' }}>
+      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', cursor: 'grab', userSelect: 'none', minHeight: 220 }}>
       {/* Decorative circles */}
       <div style={{ position: 'absolute', top: -30, left: -30, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -20, right: -20, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />

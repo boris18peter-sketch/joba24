@@ -865,7 +865,13 @@ export default function TaskDetail() {
 
           {!isOwner && (
             <button
-              onClick={() => setShowReport(true)}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  setShowLoginPrompt(true);
+                  return;
+                }
+                setShowReport(true);
+              }}
               style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
               <Flag size={15} />דיווח על המשימה
             </button>
