@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -24,6 +24,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import MediaLightbox from '@/components/MediaLightbox';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -61,6 +62,8 @@ export default function TaskDetail() {
 
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
@@ -507,18 +510,85 @@ export default function TaskDetail() {
             {task.images?.length > 0 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {task.images.map((img, i) => (
-                  <img key={i} src={img} alt="" className="w-32 h-24 rounded-2xl object-cover shrink-0 border border-gray-100" />
+                  <button
+                    key={i}
+                    onClick={() => {
+                      const allItems = [
+                        ...task.images.map(url => ({ type: 'image', url })),
+                        ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+                      ];
+                      setLightboxIndex(allItems.findIndex(it => it.url === img));
+                      setLightboxOpen(true);
+                    }}
+                    style={{
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      background: 'none',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      flex: '0 0 auto',
+                      position: 'relative',
+                      display: 'block',
+                    }}
+                  >
+                    <img src={img} alt="" className="w-32 h-24 rounded-2xl object-cover border border-gray-100 hover:opacity-80 transition-opacity" />
+                  </button>
                 ))}
               </div>
             )}
             {task.video_url && (
-              <div style={{ borderRadius: 16, overflow: 'hidden', background: '#000', border: '1px solid #dce8f5' }}>
+              <button
+                onClick={() => {
+                  const allItems = [
+                    ...task.images.map(url => ({ type: 'image', url })),
+                    { type: 'video', url: task.video_url }
+                  ];
+                  setLightboxIndex(allItems.length - 1);
+                  setLightboxOpen(true);
+                }}
+                style={{
+                  border: 'none',
+                  padding: 0,
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  background: '#000',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  display: 'block',
+                }}
+              >
                 <video
                   src={task.video_url}
-                  controls
-                  style={{ width: '100%', maxHeight: 220, display: 'block', objectFit: 'cover' }}
+                  style={{ width: '100%', maxHeight: 220, display: 'block', objectFit: 'cover', opacity: 0.9 }}
                 />
-              </div>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    borderRadius: 16,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 255, 0.8)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Play size={20} color="#000" fill="#000" />
+                  </div>
+                </div>
+              </button>
             )}
           </div>
         )}
@@ -814,6 +884,19 @@ export default function TaskDetail() {
       {showRating && task && me && createPortal(
         <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />,
         document.body
+      )}
+
+      {/* Lightbox */}
+      {task && (
+        <MediaLightbox
+          isOpen={lightboxOpen}
+          items={[
+            ...task.images.map(url => ({ type: 'image', url })),
+            ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+          ]}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </div>
   );
