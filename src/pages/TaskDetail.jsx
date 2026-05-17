@@ -25,6 +25,7 @@ import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import MediaLightbox from '@/components/MediaLightbox';
+import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -64,6 +65,7 @@ export default function TaskDetail() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
@@ -781,13 +783,11 @@ export default function TaskDetail() {
           {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
             <button
               onClick={() => {
-                // Show warning for ALL active worker statuses
                 const workerIsActive = ['on_the_way', 'delayed', 'parking', 'arrived', 'starting', 'finishing', 'done'].includes(task.worker_status);
                 if (task.status === 'TAKEN' && workerIsActive) {
-                  // Dispatch event to show warning popup in Layout
                   window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
                 } else {
-                  cancelMutation.mutate();
+                  setShowCancelConfirm(true);
                 }
               }}
               disabled={cancelMutation.isPending}
@@ -883,6 +883,16 @@ export default function TaskDetail() {
       )}
       {showRating && task && me && createPortal(
         <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />,
+        document.body
+      )}
+
+      {showCancelConfirm && task && createPortal(
+        <CancelTaskConfirmModal
+          task={task}
+          isLoading={cancelMutation.isPending}
+          onConfirm={() => cancelMutation.mutate()}
+          onClose={() => setShowCancelConfirm(false)}
+        />,
         document.body
       )}
 

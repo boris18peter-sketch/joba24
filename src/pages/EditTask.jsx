@@ -10,6 +10,7 @@ import { ArrowRight, MapPin, Clock, Loader2, Save, Zap, Users, CheckSquare, Info
 import { toast } from 'sonner';
 import { CATEGORIES } from '@/lib/categories';
 import ImageUploader from '@/components/ImageUploader';
+import VideoUploader from '@/components/VideoUploader';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import PaymentModal from '@/components/PaymentModal';
 
@@ -56,6 +57,7 @@ export default function EditTask() {
         approval_mode: 'manual',
         expiry_hours: task.expiry_duration_hours || null,
         images: task.images || [],
+        video_url: task.video_url || '',
         requirements: task.requirements || { vehicle: false, two_people: false, experience: false },
       });
     }
@@ -88,6 +90,7 @@ export default function EditTask() {
        expiry_duration_hours: form.expiry_hours,
        expires_at: expires,
        images: form.images,
+       video_url: form.video_url || undefined,
        requirements: form.requirements,
        ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null } : {}),
      });
@@ -122,6 +125,7 @@ export default function EditTask() {
        expiry_duration_hours: form.expiry_hours,
        expires_at: expires,
        images: form.images,
+       video_url: form.video_url || undefined,
        requirements: form.requirements,
        status: 'OPEN',
        payment_status: 'funded',
@@ -193,10 +197,14 @@ export default function EditTask() {
           />
         </div>
 
-        {/* Images */}
+        {/* Images + Video */}
         <div>
           <Label className="text-sm font-semibold mb-2 block">תמונות (עד 4)</Label>
           <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
+        </div>
+        <div>
+          <Label className="text-sm font-semibold mb-2 block">סרטון (אופציונלי)</Label>
+          <VideoUploader videoUrl={form.video_url} onChange={url => set('video_url', url)} />
         </div>
 
         {/* Price */}

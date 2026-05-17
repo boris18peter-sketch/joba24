@@ -7,6 +7,8 @@ import BackButton from '@/components/BackButton';
 import { getCategoryLabel } from '@/lib/categories';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { createPortal } from 'react-dom';
+import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 
 const STATUS = {
   OPEN:      { label: 'פתוח',     bg: '#dbeafe', color: '#1d4ed8', dot: '#3b82f6' },
@@ -26,6 +28,7 @@ export default function MyTasks() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('active');
+  const [cancelTask, setCancelTask] = useState(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -74,18 +77,24 @@ export default function MyTasks() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (taskId) => base44.entities.Task.update(taskId, { status: 'CANCELLED' }),
+    mutationFn: (taskId) => base44.functions.invoke('cancelTaskPayment', { taskId }).then(r => { if (!r.data?.success) throw new Error(); }),
     onMutate: (taskId) => {
       // Optimistic update
       queryClient.setQueryData(['myTasksPage', me?.id], (old = []) =>
         old.map(t => t.id === taskId ? { ...t, status: 'CANCELLED' } : t)
       );
     },
-    onSuccess: (_, taskId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myTasks', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('המשימה בוטלה');
+      setCancelTask(null);
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
+      toast.error('שגיאה בביטול, נסה שוב');
+      setCancelTask(null);
     },
   });
 
@@ -232,8 +241,7 @@ export default function MyTasks() {
 
                   {task.status === 'OPEN' && (
                     <button
-                      onClick={() => { if (window.confirm('לבטל את הג\'ובה?')) cancelMutation.mutate(task.id); }}
-                      disabled={cancelMutation.isPending}
+                      onClick={() => setCancelTask(task)}
                       style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#fff1f1', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                     >
                       <X size={14} /> בטל
@@ -254,6 +262,15 @@ export default function MyTasks() {
           })
         )}
       </div>
+      {cancelTask && createPortal(
+        <CancelTaskConfirmModal
+          task={cancelTask}
+          isLoading={cancelMutation.isPending}
+          onConfirm={() => cancelMutation.mutate(cancelTask.id)}
+          onClose={() => setCancelTask(null)}
+        />,
+        document.body
+      )}
     </div>
   );
 }
