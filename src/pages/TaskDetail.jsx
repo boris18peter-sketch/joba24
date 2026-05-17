@@ -23,7 +23,6 @@ import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
-import StripePaymentSheet from '@/components/StripePaymentSheet';
 import StripeOnboardingGate from '@/components/StripeOnboardingGate';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
@@ -62,7 +61,6 @@ export default function TaskDetail() {
 
 
   const [showExitWarning, setShowExitWarning] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
   const [showStripeGate, setShowStripeGate] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const prevWorkerIdRef = useRef(null);
@@ -718,20 +716,7 @@ export default function TaskDetail() {
             </button>
           )}
 
-          {/* Payment CTA for owner — task TAKEN, not yet funded */}
-          {isOwner && task.status === 'TAKEN' && task.payment_status !== 'funded' && (
-            <button
-              onClick={() => setShowPayment(true)}
-              style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(5,150,105,0.3)' }}
-            >
-              💳 שלם עבור המשימה — ₪{task.price}
-            </button>
-          )}
-          {isOwner && task.payment_status === 'funded' && (
-            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 700 }}>
-              ✅ התשלום בוצע ומוחזק בנאמנות
-            </div>
-          )}
+
 
           {/* Rating CTA for completed tasks */}
           {task.status === 'COMPLETED' && (isOwner || isWorker) && !myReview && (
@@ -815,18 +800,6 @@ export default function TaskDetail() {
         <StripeOnboardingGate
           onClose={() => setShowStripeGate(false)}
           onReady={() => { setShowStripeGate(false); setShowApplyForm(true); }}
-        />,
-        document.body
-      )}
-
-      {showPayment && createPortal(
-        <StripePaymentSheet
-          task={task}
-          onClose={() => setShowPayment(false)}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['task', id] });
-            queryClient.refetchQueries({ queryKey: ['task', id] });
-          }}
         />,
         document.body
       )}

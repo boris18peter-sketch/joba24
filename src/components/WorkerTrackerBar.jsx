@@ -202,7 +202,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     if (stepIdx === 2) return {
       HeaderIcon: CheckCircle, gradient: 'linear-gradient(135deg, #059669, #10b981)',
       title: isOwner ? 'הפועל סיים את הג\'ובה!' : 'כל הכבוד, סיימת!',
-      sub: isOwner ? 'אשר סיום לשחרור תשלום' : 'ממתין לאישור המעסיק',
+      sub: isOwner ? 'אשר ביצוע העבודה' : 'ממתין לאישור המעסיק',
     };
     if (stepIdx === 1) return {
       HeaderIcon: StatusIcon, gradient: 'linear-gradient(135deg, #d97706, #f59e0b)',
@@ -299,7 +299,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
           <WorkerCompletionPhoto photoUrl={completionPhoto} onPhotoUploaded={setCompletionPhoto} />
           <div style={{ background: '#f0fdf4', borderRadius: 14, padding: '14px 16px', textAlign: 'center', border: '1px solid #bbf7d0', marginTop: 10 }}>
             <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}><CheckCircle size={16} color="#059669" /> כל הכבוד! ממתין לאישור</div>
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>המעסיק יאשר ותקבל ₪{task.price} לארנק</div>
+            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>המעסיק יאשר את ביצוע העבודה</div>
           </div>
         </div>
       )}
@@ -317,7 +317,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             onClick={() => onUpdate({ status: 'COMPLETED', client_confirmed: true })}
             style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            <CheckCircle size={18} strokeWidth={2} /> אשר סיום ושחרר תשלום ₪{task.price}
+            <CheckCircle size={18} strokeWidth={2} /> אשר ביצוע עבודה
           </button>
         </div>
       )}

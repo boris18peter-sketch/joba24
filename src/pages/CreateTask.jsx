@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
-import StripeTaskPaymentSheet from '@/components/StripeTaskPaymentSheet';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import BackButton from '@/components/BackButton';
@@ -75,9 +74,7 @@ export default function CreateTask() {
   const { isAuthenticated, login } = useAuth();
   const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [pendingTaskId, setPendingTaskId] = useState(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const draftTimerRef = useRef(null);
 
@@ -144,14 +141,12 @@ export default function CreateTask() {
   };
 
   const doSubmit = async () => {
-    console.log('[CreateTask] doSubmit called, form:', form.title, form.price, form.city, form.location_name);
     const newErrors = {};
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
     if (!form.city) newErrors.city = true;
     if (!form.location_name) newErrors.location_name = true;
-    console.log('[CreateTask] errors:', newErrors);
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
@@ -165,12 +160,6 @@ export default function CreateTask() {
     }
     setShowErrorBanner(false);
     setErrors({});
-    console.log('[CreateTask] opening payment sheet');
-    // Show payment modal first — task created only after successful payment
-    setShowPayment(true);
-  };
-
-  const handlePaymentSuccess = async () => {
     setLoading(true);
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
@@ -195,9 +184,6 @@ export default function CreateTask() {
       images: form.images,
       requirements: form.requirements,
       status: 'OPEN',
-      payment_status: 'funded',
-      payment_amount: Number(form.price),
-      payment_held: true,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
@@ -207,12 +193,7 @@ export default function CreateTask() {
     setLoading(false);
     localStorage.removeItem(DRAFT_KEY);
     toast.success('הג\'ובה פורסמה! ⚡');
-    navigate(created?.id ? `/task/${created.id}` : '/my-tasks');
-  };
-
-  const handlePaymentCancel = () => {
-    // Close modal, stay on edit page with all form data intact
-    setShowPayment(false);
+    navigate(created?.id ? `/task/${created.id}` : '/');
   };
 
   const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
@@ -231,17 +212,6 @@ export default function CreateTask() {
           }}
           onClose={() => setShowLoginPrompt(false)}
           type="publish"
-        />
-      )}
-      {showPayment && (
-        <StripeTaskPaymentSheet
-          taskData={{
-            title: form.title,
-            price: Number(form.price),
-            is_story: form.is_story,
-          }}
-          onSuccess={handlePaymentSuccess}
-          onClose={handlePaymentCancel}
         />
       )}
       {/* Header */}
