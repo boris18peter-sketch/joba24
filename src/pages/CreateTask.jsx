@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import BackButton from '@/components/BackButton';
@@ -59,6 +60,8 @@ const DEFAULT_FORM = {
   auto_bump_enabled: false,
   location_name: '',
   city: '',
+  lat: null,
+  lng: null,
   estimated_time: '1h',
   category: 'other',
   approval_mode: 'manual',
@@ -109,6 +112,8 @@ export default function CreateTask() {
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
+  // Track whether address was selected from autocomplete (not free text)
+  const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng));
 
   const fieldRefs = {
     title: useRef(null),
@@ -150,12 +155,11 @@ export default function CreateTask() {
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
-    if (!form.city) newErrors.city = true;
-    if (!form.location_name) newErrors.location_name = true;
+    if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
-      const order = ['title', 'description', 'price', 'location_name', 'city'];
+      const order = ['title', 'description', 'price', 'location_name'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
         fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -179,6 +183,8 @@ export default function CreateTask() {
       auto_bump_enabled: form.auto_bump_enabled,
       location_name: form.location_name,
       city: form.city,
+      lat: form.lat || undefined,
+      lng: form.lng || undefined,
       estimated_time: estimatedTime,
       category: form.category,
       approval_mode: form.approval_mode,
@@ -388,18 +394,31 @@ export default function CreateTask() {
         {/* Location */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
-            <MapPin size={14} /> מיקום
+            <MapPin size={14} /> מיקום *
           </Label>
-          <Input ref={fieldRefs.location_name} placeholder="לדוגמה: תל אביב, רחוב דיזנגוף 50"
-            value={form.location_name} onChange={e => { set('location_name', e.target.value); setErrors(p => ({...p, location_name: false})); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.location_name ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, marginBottom: errors.location_name ? 4 : 10 }}
-          />
-          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
-          <Input ref={fieldRefs.city} placeholder="עיר (לדוגמה: תל אביב)"
-            value={form.city} onChange={e => { set('city', e.target.value); setErrors(p => ({...p, city: false})); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.city ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 42 }}
-          />
-          {errors.city && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
+          <div ref={fieldRefs.location_name}>
+            <AddressAutocomplete
+              value={form.location_name}
+              error={!!errors.location_name}
+              onBlur={() => {
+                if (form.location_name && !addressConfirmed) {
+                  setErrors(p => ({ ...p, location_name: true }));
+                }
+              }}
+              onSelect={({ location_name, city, lat, lng }) => {
+                if (location_name) {
+                  set('location_name', location_name);
+                  set('city', city);
+                  set('lat', lat);
+                  set('lng', lng);
+                  setAddressConfirmed(true);
+                  setErrors(p => ({ ...p, location_name: false }));
+                } else {
+                  setAddressConfirmed(false);
+                }
+              }}
+            />
+          </div>
         </SectionCard>
 
         {/* Time */}
