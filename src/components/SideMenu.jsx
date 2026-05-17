@@ -24,7 +24,7 @@ export default function SideMenu() {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px' }}>
         <button
           onClick={() => setOpen(true)}
           style={{

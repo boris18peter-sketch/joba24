@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 const banners = [
   {
@@ -7,7 +8,7 @@ const banners = [
     title: 'צריך שמישהו יעזור לך עכשיו?',
     lines: [
       'כל משימה - גם הכי קטנה או הכי מוזרה',
-      { text: 'פשוט תפרסם - ומישהו יגיע לבצע אותה תוך ', highlight: 'כמה דקות!' },
+      { text: 'פשוט תפרסם, קבל בקשות לביצוע, תאשר בקשה ומישהו יגיע לבצע אותה תוך ', highlight: 'כמה דקות!' },
     ],
     btn: 'התחבר עכשיו',
     btnBg: '#fbbf24',
@@ -15,10 +16,10 @@ const banners = [
   },
   {
     bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    title: 'רוצה לעשות כסף קל עכשיו?',
+    title: 'רוצה להרוויח עכשיו?',
     lines: [
-      "כל ג'וב – גם הכי פשוט, הכי מהיר או הכי מוזר",
-      { text: 'פשוט תציע את עצמך – ותתחיל להרוויח תוך ', highlight: 'כמה דקות!' },
+      'בכל יום משימות חדשות מחכות לך.',
+      { text: 'הגש בקשות למשימות באזור שלך, בצע אותן ', highlight: 'ותרוויח.' },
     ],
     btn: 'התחבר עכשיו',
     btnBg: '#fbbf24',
@@ -28,6 +29,7 @@ const banners = [
 
 export default function LoginBannerCarousel() {
   const [active, setActive] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const timerRef = useRef(null);
   const touchStartRef = useRef(0);
 
@@ -61,6 +63,7 @@ export default function LoginBannerCarousel() {
   const b = banners[active];
 
   return (
+    <>
     <div 
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -70,10 +73,10 @@ export default function LoginBannerCarousel() {
       <div style={{ position: 'absolute', bottom: -20, right: -20, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
       <div style={{ position: 'relative', zIndex: 2 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 6px', letterSpacing: -0.5, lineHeight: 1.25 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 900, margin: '0 0 8px', letterSpacing: -0.5, lineHeight: 1.3 }}>
           {b.title}
         </h2>
-        <div style={{ fontSize: 12, lineHeight: 1.6, color: 'rgba(255,255,255,0.92)', fontWeight: 500, marginBottom: 12 }}>
+        <div style={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,0.92)', fontWeight: 500, marginBottom: 14 }}>
           {b.lines.map((line, i) =>
             typeof line === 'string'
               ? <div key={i}>{line}</div>
@@ -82,11 +85,11 @@ export default function LoginBannerCarousel() {
         </div>
 
         <button
-          onClick={() => base44.auth.redirectToLogin()}
+          onClick={() => setShowLoginModal(true)}
           style={{
             background: b.btnBg, color: b.btnColor, border: 'none',
-            padding: '10px 24px', borderRadius: 12, fontWeight: 900,
-            fontSize: 14, cursor: 'pointer',
+            padding: '11px 28px', borderRadius: 12, fontWeight: 900,
+            fontSize: 15, cursor: 'pointer',
             boxShadow: '0 4px 14px rgba(251,191,36,0.4)',
             transition: 'all 0.15s', letterSpacing: 0.1,
           }}
@@ -98,7 +101,7 @@ export default function LoginBannerCarousel() {
         </button>
 
         {/* Trust badges */}
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 10, fontWeight: 600, letterSpacing: 0.3 }}>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 10, fontWeight: 600, letterSpacing: 0.4 }}>
           משתמשים מאומתים • דירוגים • חוויה בטוחה
         </div>
 
@@ -119,5 +122,14 @@ export default function LoginBannerCarousel() {
         </div>
       </div>
     </div>
+
+    {showLoginModal && (
+      <LoginPromptModal
+        type="apply"
+        onLogin={() => { setShowLoginModal(false); base44.auth.redirectToLogin(); }}
+        onClose={() => setShowLoginModal(false)}
+      />
+    )}
+    </>
   );
 }
