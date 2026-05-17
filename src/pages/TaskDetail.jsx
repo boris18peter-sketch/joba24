@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/AuthContext';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import MediaLightbox from '@/components/MediaLightbox';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
+import ReportModal from '@/components/ReportModal';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -66,6 +67,7 @@ export default function TaskDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
@@ -726,6 +728,16 @@ export default function TaskDetail() {
         {/* Actions */}
         <div style={{ paddingBottom: canTakeInstant || canApplyManual || hasPendingApp ? 100 : 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
+          {/* Chat button for applicant — can message the task owner */}
+          {(hasPendingApp || isApproved) && !isOwner && (
+            <button
+              onClick={() => navigate(`/chat/${id}`)}
+              style={{ width: '100%', height: 44, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <MessageCircle size={16} strokeWidth={1.8} /> שלח הודעה למפרסם
+            </button>
+          )}
+
           {/* Pending application banner */}
           {hasPendingApp && isWorker && (
             <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -851,9 +863,11 @@ export default function TaskDetail() {
             </button>
           )}
 
-          {!isOwner && !isWorker && !hasPendingApp && task.status === 'OPEN' && (
-            <button style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
-              <Flag size={15} />דיווח
+          {!isOwner && (
+            <button
+              onClick={() => setShowReport(true)}
+              style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
+              <Flag size={15} />דיווח על המשימה
             </button>
           )}
         </div>
@@ -883,6 +897,11 @@ export default function TaskDetail() {
       )}
       {showRating && task && me && createPortal(
         <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />,
+        document.body
+      )}
+
+      {showReport && task && createPortal(
+        <ReportModal task={task} me={me} onClose={() => setShowReport(false)} />,
         document.body
       )}
 

@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { Star, CheckCircle2, XCircle, Loader2, Zap, Award, RotateCcw } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Star, CheckCircle2, XCircle, Loader2, Zap, Award, RotateCcw, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
@@ -106,6 +107,10 @@ export default function TaskApplicants({ task, onApprove }) {
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', {
         detail: { task }
       }));
+      // Also save to localStorage notifications so worker sees it in Notifications page
+      const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
+      const newNotif = { type: 'task_cancelled_worker', taskTitle: task.title, taskId: task.id, timestamp: new Date().toISOString(), read: false };
+      localStorage.setItem('joba24_notifications', JSON.stringify([newNotif, ...stored].slice(0, 50)));
       toast.success('האישור בוטל — תוכל לאשר עובד אחר');
       onApprove?.();
     },
@@ -181,6 +186,16 @@ export default function TaskApplicants({ task, onApprove }) {
                   <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2 italic">{app.message}</p>
                 )}
               </div>
+            </div>
+
+            {/* Chat button */}
+            <div className="mt-2">
+              <button
+                onClick={() => navigate(`/chat/${task.id}`)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '6px 12px', fontSize: 12, fontWeight: 700, color: '#1a6fd4', cursor: 'pointer' }}
+              >
+                <MessageCircle size={13} /> שלח הודעה ל{app.worker_name?.split(' ')[0]}
+              </button>
             </div>
 
             {/* Action row */}

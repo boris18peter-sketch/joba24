@@ -9,6 +9,48 @@ import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import VerifiedBadge from '@/components/VerifiedBadge';
 
+// Online status: ping every 30s, check < 90s = online
+function useOnlineStatus(userId) {
+  const [isOnline, setIsOnline] = useState(false);
+  useEffect(() => {
+    if (!userId) return;
+    const check = async () => {
+      try {
+        const results = await base44.entities.UserPresence.filter({ user_id: userId });
+        const p = results[0];
+        if (p?.last_seen) {
+          const diff = Date.now() - new Date(p.last_seen).getTime();
+          setIsOnline(diff < 90000);
+        }
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
+  return isOnline;
+}
+
+// Ping my own presence every 30s
+function usePingPresence(userId) {
+  useEffect(() => {
+    if (!userId) return;
+    const ping = async () => {
+      try {
+        const existing = await base44.entities.UserPresence.filter({ user_id: userId });
+        if (existing[0]) {
+          await base44.entities.UserPresence.update(existing[0].id, { last_seen: new Date().toISOString(), is_online: true });
+        } else {
+          await base44.entities.UserPresence.create({ user_id: userId, last_seen: new Date().toISOString(), is_online: true });
+        }
+      } catch {}
+    };
+    ping();
+    const interval = setInterval(ping, 30000);
+    return () => clearInterval(interval);
+  }, [userId]);
+}
+
 function DateSeparator({ date }) {
   const d = new Date(date);
   const label = isToday(d) ? 'היום' : isYesterday(d) ? 'אתמול' : format(d, 'dd/MM/yyyy');
@@ -88,6 +130,7 @@ export default function Chat() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+  usePingPresence(me?.id);
 
   const { data: task } = useQuery({
     queryKey: ['task', taskId],
@@ -97,6 +140,7 @@ export default function Chat() {
 
   // Fetch other user's profile for avatar + verified status
   const otherPersonIdCalc = me?.id === (task?.client_id) ? task?.worker_id : task?.client_id;
+  const otherIsOnline = useOnlineStatus(otherPersonIdCalc);
   const { data: otherUserData } = useQuery({
     queryKey: ['userProfile', otherPersonIdCalc],
     queryFn: () => base44.entities.User.filter({ id: otherPersonIdCalc }),
@@ -111,16 +155,30 @@ export default function Chat() {
     });
   }, [taskId]);
 
+  // Mark incoming messages as read
+  useEffect(() => {
+    if (!me?.id || !messages.length) return;
+    const unread = messages.filter(m => m.sender_id !== me.id && !m.read);
+    unread.forEach(m => {
+      base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {});
+    });
+  }, [messages, me?.id]);
+
   // Real-time subscription
   useEffect(() => {
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== taskId) return;
       if (event.type === 'create') {
         setMessages(prev => prev.some(m => m.id === event.data.id) ? prev : [...prev, event.data]);
-        // Other person typed → clear typing indicator
-        if (event.data.sender_id !== me?.id) {
-          setOtherTyping(false);
+        // Mark as read immediately if it's from the other person
+        if (event.data.sender_id !== me?.id && event.data.id) {
+          base44.entities.ChatMessage.update(event.data.id, { read: true }).catch(() => {});
         }
+        if (event.data.sender_id !== me?.id) setOtherTyping(false);
+      }
+      // Update read status in real-time for my messages
+      if (event.type === 'update' && event.data?.read) {
+        setMessages(prev => prev.map(m => m.id === event.data.id ? { ...m, read: true } : m));
       }
     });
     return unsub;
@@ -212,7 +270,11 @@ export default function Chat() {
             {otherUserData?.is_verified && <VerifiedBadge size="sm" />}
             <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', borderRadius: 6, padding: '1px 6px', fontWeight: 600, flexShrink: 0 }}>{roleLabel}</span>
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task?.title || 'שיחה'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: otherIsOnline ? '#22c55e' : '#d1d5db', display: 'inline-block', flexShrink: 0 }} />
+            <span>{otherIsOnline ? 'מחובר עכשיו' : 'לא מחובר'}</span>
+            {task?.title && <span>· {task.title}</span>}
+          </div>
         </div>
         {/* Task info button */}
         <button

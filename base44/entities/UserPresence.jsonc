@@ -1,0 +1,20 @@
+{
+  "name": "UserPresence",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

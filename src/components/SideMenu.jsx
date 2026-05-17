@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, LogIn } from 'lucide-react';
+import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -111,7 +111,7 @@ export default function SideMenu() {
           </button>
         </div>
 
-        <nav style={{ flex: 1, padding: '12px 0' }}>
+        <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
             return (
@@ -131,6 +131,22 @@ export default function SideMenu() {
               </Link>
             );
           })}
+          {/* Admin link — shown only to admins */}
+          {isAuthenticated && (
+            <Link to="/admin" onClick={() => setOpen(false)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+                background: location.pathname === '/admin' ? 'rgba(251,191,36,0.15)' : 'transparent',
+                color: location.pathname === '/admin' ? '#fbbf24' : '#fbbf24',
+                fontWeight: 700, fontSize: 15, textDecoration: 'none',
+                borderLeft: location.pathname === '/admin' ? '3px solid #fbbf24' : '3px solid transparent',
+                opacity: 0.85,
+              }}
+            >
+              <ShieldCheck size={18} />
+              דשבורד מנהל
+            </Link>
+          )}
         </nav>
 
         {!isAuthenticated && (
