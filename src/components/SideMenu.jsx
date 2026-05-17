@@ -24,7 +24,7 @@ export default function SideMenu() {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
         <button
           onClick={() => setOpen(true)}
           style={{
@@ -59,12 +59,11 @@ export default function SideMenu() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
               boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
               whiteSpace: 'nowrap',
             }}
           >
-            <LogIn size={14} /> התחברות
+            התחבר עכשיו
           </button>
         )}
       </div>
@@ -151,26 +150,25 @@ export default function SideMenu() {
 
         {!isAuthenticated && (
            <button
-             onClick={() => { login(); setOpen(false); }}
-             style={{
-               width: 'calc(100% - 40px)',
-               margin: '0 20px 20px',
-               padding: '14px 16px',
-               background: '#fbbf24',
-               color: '#0a1f5c',
-               border: 'none',
-               borderRadius: 14,
-               fontWeight: 800,
-               fontSize: 14,
-               cursor: 'pointer',
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'center',
-               gap: 8,
-             }}
-           >
-             התחברות בתוך תפריט
-           </button>
+              onClick={() => { login(); setOpen(false); }}
+              style={{
+                width: 'calc(100% - 40px)',
+                margin: '0 20px 20px',
+                padding: '14px 16px',
+                background: '#fbbf24',
+                color: '#0a1f5c',
+                border: 'none',
+                borderRadius: 14,
+                fontWeight: 800,
+                fontSize: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              התחבר עכשיו
+            </button>
          )}
         
         <div style={{ padding: '16px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>

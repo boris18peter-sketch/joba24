@@ -9,10 +9,9 @@ const banners = [
       'כל משימה - גם הכי קטנה או הכי מוזרה',
       { text: 'פשוט תפרסם - ומישהו יגיע לבצע אותה תוך ', highlight: 'כמה דקות!' },
     ],
-    btn: 'התחברות עכשיו',
+    btn: 'התחבר עכשיו',
     btnBg: '#fbbf24',
     btnColor: '#1a6fd4',
-    dot: '#fbbf24',
   },
   {
     bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
@@ -21,41 +20,60 @@ const banners = [
       "כל ג'וב – גם הכי פשוט, הכי מהיר או הכי מוזר",
       { text: 'פשוט תציע את עצמך – ותתחיל להרוויח תוך ', highlight: 'כמה דקות!' },
     ],
-    btn: 'התחברות עכשיו',
+    btn: 'התחבר עכשיו',
     btnBg: '#fbbf24',
     btnColor: '#047857',
-    dot: '#fbbf24',
   },
 ];
 
 export default function LoginBannerCarousel() {
   const [active, setActive] = useState(0);
   const timerRef = useRef(null);
+  const touchStartRef = useRef(0);
+
+  const resetTimer = () => {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setActive(v => (v + 1) % banners.length), 7000);
+  };
 
   const go = (idx) => {
     setActive(idx);
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setActive(v => (v + 1) % banners.length), 4000);
+    resetTimer();
   };
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setActive(v => (v + 1) % banners.length), 4000);
+    resetTimer();
     return () => clearInterval(timerRef.current);
   }, []);
+
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    const diff = touchStartRef.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      const newIdx = diff > 0 ? (active + 1) % banners.length : (active - 1 + banners.length) % banners.length;
+      go(newIdx);
+    }
+  };
 
   const b = banners[active];
 
   return (
-    <div style={{ background: b.bg, padding: '22px 20px 18px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden' }}>
+    <div 
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', cursor: 'grab', userSelect: 'none' }}>
       {/* Decorative circles */}
       <div style={{ position: 'absolute', top: -30, left: -30, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -20, right: -20, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
       <div style={{ position: 'relative', zIndex: 2 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 900, margin: '0 0 8px', letterSpacing: -0.5, lineHeight: 1.25 }}>
+        <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 6px', letterSpacing: -0.5, lineHeight: 1.25 }}>
           {b.title}
         </h2>
-        <div style={{ fontSize: 13, lineHeight: 1.7, color: 'rgba(255,255,255,0.92)', fontWeight: 500, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: 'rgba(255,255,255,0.92)', fontWeight: 500, marginBottom: 12 }}>
           {b.lines.map((line, i) =>
             typeof line === 'string'
               ? <div key={i}>{line}</div>
@@ -67,10 +85,10 @@ export default function LoginBannerCarousel() {
           onClick={() => base44.auth.redirectToLogin()}
           style={{
             background: b.btnBg, color: b.btnColor, border: 'none',
-            padding: '11px 28px', borderRadius: 14, fontWeight: 900,
-            fontSize: 15, cursor: 'pointer',
+            padding: '10px 24px', borderRadius: 12, fontWeight: 900,
+            fontSize: 14, cursor: 'pointer',
             boxShadow: '0 4px 14px rgba(251,191,36,0.4)',
-            transition: 'all 0.15s', letterSpacing: 0.2,
+            transition: 'all 0.15s', letterSpacing: 0.1,
           }}
           onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
           onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -79,15 +97,20 @@ export default function LoginBannerCarousel() {
           {b.btn}
         </button>
 
+        {/* Trust badges */}
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: 10, fontWeight: 600, letterSpacing: 0.3 }}>
+          משתמשים מאומתים • דירוגים • חוויה בטוחה
+        </div>
+
         {/* Dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 10 }}>
           {banners.map((_, i) => (
             <button
               key={i}
               onClick={() => go(i)}
               style={{
-                width: i === active ? 20 : 6, height: 6, borderRadius: 99,
-                background: i === active ? 'white' : 'rgba(255,255,255,0.4)',
+                width: i === active ? 18 : 5, height: 5, borderRadius: 99,
+                background: i === active ? 'white' : 'rgba(255,255,255,0.35)',
                 border: 'none', cursor: 'pointer', padding: 0,
                 transition: 'all 0.3s',
               }}
