@@ -70,21 +70,12 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
             <Trash2 size={32} color="#dc2626" strokeWidth={1.5} />
           </div>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>בטל משימה?</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 12 }}>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>
             אתה מבטל את המשימה <strong style={{ color: '#1f2937' }}>"{task.title}"</strong>
-          </div>
-          <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-            הכסף בסך <strong style={{ color: '#0f1e40', fontSize: 15 }}>₪{task.price}</strong> יוחזר לחשבונך תוך 1-3 ימי עסקים
           </div>
         </div>
 
-        {/* Info box - Safety */}
-        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '14px 16px', marginBottom: 28 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#16a34a', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>✓</span> פעולה בטוחה
-          </div>
-          <div style={{ fontSize: 12, color: '#15803d' }}>הכסף לא יצא מחשבונך — הוא היה מוחזק בנאמנות מלחלוחין</div>
-        </div>
+
 
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
