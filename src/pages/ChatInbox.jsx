@@ -54,16 +54,16 @@ export default function ChatInbox() {
     return Object.values(map).sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
   }, [workerTasks, clientTasks]);
 
+  // Fetch last message per task — only show tasks that have messages
+  const [lastMessages, setLastMessages] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [tasksWithMessages, setTasksWithMessages] = useState(new Set());
+
   // Only tasks with actual messages
   const visibleTasks = useMemo(() => {
     if (tasksWithMessages.size === 0 && allTasks.length > 0) return []; // still loading
     return allTasks.filter(t => tasksWithMessages.has(t.id));
   }, [allTasks, tasksWithMessages]);
-
-  // Fetch last message per task — only show tasks that have messages
-  const [lastMessages, setLastMessages] = useState({});
-  const [unreadCounts, setUnreadCounts] = useState({});
-  const [tasksWithMessages, setTasksWithMessages] = useState(new Set());
 
   useEffect(() => {
     if (!allTasks.length || !me?.id) return;
