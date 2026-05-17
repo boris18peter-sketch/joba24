@@ -51,6 +51,10 @@ export default function EditTask() {
         auto_bump_enabled: task.auto_bump_enabled || false,
         location_name: task.location_name || '',
         city: task.city || '',
+        address_building: task.address_building || '',
+        address_floor: task.address_floor || '',
+        address_apartment: task.address_apartment || '',
+        address_notes: task.address_notes || '',
         estimated_time: isCustomTime ? 'custom' : (task.estimated_time || '1h'),
         custom_time: isCustomTime ? task.estimated_time : '',
         category: task.category || 'other',
@@ -85,6 +89,10 @@ export default function EditTask() {
        auto_bump_enabled: form.auto_bump_enabled,
        location_name: form.location_name,
        city: form.city,
+       address_building: form.address_building || undefined,
+       address_floor: form.address_floor || undefined,
+       address_apartment: form.address_apartment || undefined,
+       address_notes: form.address_notes || undefined,
        estimated_time: estimatedTime,
        category: form.category,
        expiry_duration_hours: form.expiry_hours,
@@ -120,6 +128,10 @@ export default function EditTask() {
        auto_bump_enabled: form.auto_bump_enabled,
        location_name: form.location_name,
        city: form.city,
+       address_building: form.address_building || undefined,
+       address_floor: form.address_floor || undefined,
+       address_apartment: form.address_apartment || undefined,
+       address_notes: form.address_notes || undefined,
        estimated_time: estimatedTime,
        category: form.category,
        expiry_duration_hours: form.expiry_hours,
@@ -268,8 +280,28 @@ export default function EditTask() {
           />
           <Input placeholder="עיר *"
             value={form.city} onChange={e => set('city', e.target.value)}
-            className="bg-secondary border-0 rounded-xl h-10 text-sm"
+            className="bg-secondary border-0 rounded-xl h-10 text-sm mb-2"
           />
+          <div className="grid grid-cols-2 gap-2">
+            <Input placeholder="בניין / מספר בית"
+              value={form.address_building || ''} onChange={e => set('address_building', e.target.value)}
+              className="bg-secondary border-0 rounded-xl h-10 text-sm"
+            />
+            <Input placeholder="קומה"
+              value={form.address_floor || ''} onChange={e => set('address_floor', e.target.value)}
+              className="bg-secondary border-0 rounded-xl h-10 text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <Input placeholder="דירה"
+              value={form.address_apartment || ''} onChange={e => set('address_apartment', e.target.value)}
+              className="bg-secondary border-0 rounded-xl h-10 text-sm"
+            />
+            <Input placeholder="הערות ניווט"
+              value={form.address_notes || ''} onChange={e => set('address_notes', e.target.value)}
+              className="bg-secondary border-0 rounded-xl h-10 text-sm"
+            />
+          </div>
         </div>
 
         {/* Time */}
