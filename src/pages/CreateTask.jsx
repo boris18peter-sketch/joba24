@@ -13,6 +13,7 @@ import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import ImageUploader from '@/components/ImageUploader';
+import VideoUploader from '@/components/VideoUploader';
 import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -65,6 +66,7 @@ const DEFAULT_FORM = {
   custom_time: '',
   is_story: false,
   images: [],
+  video_url: '',
   requirements: { vehicle: false, two_people: false, experience: false },
 };
 
@@ -185,6 +187,7 @@ export default function CreateTask() {
       is_story: form.is_story,
       story_expires_at: storyExpires,
       images: form.images,
+      video_url: form.video_url || undefined,
       requirements: form.requirements,
       status: 'OPEN',
       client_id: me?.id,
@@ -293,10 +296,14 @@ export default function CreateTask() {
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
         </SectionCard>
 
-        {/* Images */}
+        {/* Images + Video */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תמונות (עד 4)</Label>
           <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
+          <div style={{ marginTop: 14 }}>
+            <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>סרטון (אופציונלי)</Label>
+            <VideoUploader videoUrl={form.video_url} onChange={url => set('video_url', url)} />
+          </div>
         </SectionCard>
 
         {/* Price */}

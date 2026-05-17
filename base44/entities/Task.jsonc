@@ -175,6 +175,9 @@
         "type": "string"
       }
     },
+    "video_url": {
+      "type": "string"
+    },
     "is_story": {
       "type": "boolean",
       "default": false

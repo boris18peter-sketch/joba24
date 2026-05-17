@@ -82,6 +82,8 @@ const AuthenticatedApp = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/create-task" element={<CreateTask />} />
+        <Route path="/daily-goal" element={<DailyGoal />} />
+        <Route path="/public-profile" element={<PublicProfile />} />
 
         {/* Protected routes — require login */}
         <Route element={<ProtectedRoute />}>
@@ -89,11 +91,9 @@ const AuthenticatedApp = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-task/:id" element={<EditTask />} />
           <Route path="/worker-profile" element={<WorkerProfile />} />
-          <Route path="/daily-goal" element={<DailyGoal />} />
           <Route path="/simulator" element={<SimulatorPanel />} />
           <Route path="/my-tasks" element={<MyTasks />} />
           <Route path="/chats" element={<ChatInbox />} />
-          <Route path="/public-profile" element={<PublicProfile />} />
           <Route path="/notifications" element={<Notifications />} />
         </Route>
       </Route>

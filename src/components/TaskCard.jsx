@@ -233,7 +233,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   return (
     <>
       <div
-        onClick={() => { if (showMenu) { setShowMenu(false); return; } if (!currentUserId) { setShowLoginPrompt(true); return; } navigate(`/task/${task.id}`); }}
+        onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
         className="bg-white rounded-2xl active:scale-[0.982] transition-all"
         style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: '0 2px 12px rgba(15,43,107,0.07)', padding: '13px 14px', cursor: 'pointer' }}
       >
@@ -357,9 +357,17 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             </div>
           </div>
 
-          {/* Price + Apply button stacked */}
+          {/* Price + distance + Apply button stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-            <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {dist != null && !isNaN(dist) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontWeight: 700, color: '#3b82f6', fontSize: 14 }}>
+                  <Navigation size={13} strokeWidth={2} />
+                  <span>{dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}</span>
+                </div>
+              )}
+              <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
+            </div>
             {!hasActiveApp && task.created_by !== currentUserId && (
               <button
                 onClick={e => {
@@ -402,13 +410,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         {/* Bottom meta with ID */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#94a3b8', overflow: 'hidden' }}>
           {task.location_name && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <MapPin size={10} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span>
-            </span>
-          )}
-          {dist != null && !isNaN(dist) && (
-            <span style={{ color: '#60a5fa', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-              <Navigation size={10} />{dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
             </span>
           )}
           {task.client_name && (

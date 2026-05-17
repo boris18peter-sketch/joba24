@@ -65,7 +65,7 @@ export default function TaskDetail() {
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
 
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
   // Check if current user already reviewed this task
@@ -501,12 +501,25 @@ export default function TaskDetail() {
           </div>
         </div>
 
-        {/* Images */}
-        {task.images?.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {task.images.map((img, i) => (
-              <img key={i} src={img} alt="" className="w-32 h-24 rounded-2xl object-cover shrink-0 border border-gray-100" />
-            ))}
+        {/* Images + Video */}
+        {(task.images?.length > 0 || task.video_url) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {task.images?.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {task.images.map((img, i) => (
+                  <img key={i} src={img} alt="" className="w-32 h-24 rounded-2xl object-cover shrink-0 border border-gray-100" />
+                ))}
+              </div>
+            )}
+            {task.video_url && (
+              <div style={{ borderRadius: 16, overflow: 'hidden', background: '#000', border: '1px solid #dce8f5' }}>
+                <video
+                  src={task.video_url}
+                  controls
+                  style={{ width: '100%', maxHeight: 220, display: 'block', objectFit: 'cover' }}
+                />
+              </div>
+            )}
           </div>
         )}
 
