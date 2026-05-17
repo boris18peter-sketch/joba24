@@ -24,7 +24,7 @@ export default function SideMenu() {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', justifyContent: 'space-between' }}>
         <button
           onClick={() => setOpen(true)}
           style={{
@@ -61,6 +61,7 @@ export default function SideMenu() {
               justifyContent: 'center',
               boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
               whiteSpace: 'nowrap',
+              marginRight: 8,
             }}
           >
             התחבר עכשיו

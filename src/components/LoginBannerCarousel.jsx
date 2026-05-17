@@ -32,20 +32,25 @@ export default function LoginBannerCarousel() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const timerRef = useRef(null);
   const touchStartRef = useRef(0);
-
-  const resetTimer = () => {
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setActive(v => (v + 1) % banners.length), 7000);
-  };
+  const autoPlayedRef = useRef(false);
 
   const go = (idx) => {
     setActive(idx);
-    resetTimer();
+    // Stop auto-play once user manually swipes or clicks dots
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   };
 
   useEffect(() => {
-    resetTimer();
-    return () => clearInterval(timerRef.current);
+    // Auto-play only once on first load
+    if (!autoPlayedRef.current) {
+      autoPlayedRef.current = true;
+      const timer = setInterval(() => setActive(v => (v + 1) % banners.length), 7000);
+      timerRef.current = timer;
+      return () => clearInterval(timer);
+    }
   }, []);
 
   const handleTouchStart = (e) => {
