@@ -67,22 +67,36 @@ export default function ChatInbox() {
 
   useEffect(() => {
     if (!allTasks.length || !me?.id) return;
-    (async () => {
+    let cancelled = false;
+    const run = async () => {
       const newLastMessages = {};
       const newUnreadCounts = {};
       const withMsgs = new Set();
-      await Promise.all(allTasks.slice(0, 30).map(async (task) => {
-        const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 50);
-        if (msgs.length > 0) {
-          withMsgs.add(task.id);
-          newLastMessages[task.id] = msgs[0];
-          newUnreadCounts[task.id] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-        }
-      }));
-      setLastMessages(newLastMessages);
-      setUnreadCounts(newUnreadCounts);
-      setTasksWithMessages(withMsgs);
-    })();
+      // Process in batches of 5 to avoid rate limiting
+      const tasks = allTasks.slice(0, 20);
+      for (let i = 0; i < tasks.length; i += 5) {
+        if (cancelled) return;
+        const batch = tasks.slice(i, i + 5);
+        await Promise.all(batch.map(async (task) => {
+          try {
+            const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 20);
+            if (msgs.length > 0) {
+              withMsgs.add(task.id);
+              newLastMessages[task.id] = msgs[0];
+              newUnreadCounts[task.id] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+            }
+          } catch {}
+        }));
+        if (i + 5 < tasks.length) await new Promise(r => setTimeout(r, 300));
+      }
+      if (!cancelled) {
+        setLastMessages(newLastMessages);
+        setUnreadCounts(newUnreadCounts);
+        setTasksWithMessages(withMsgs);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
   }, [allTasks, me?.id]);
 
   // Real-time updates
