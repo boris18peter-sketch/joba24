@@ -52,6 +52,11 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+
+      // Grant signup bonus if first time (no credits yet)
+      if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
+        base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
+      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);

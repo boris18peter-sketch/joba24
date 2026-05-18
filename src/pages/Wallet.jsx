@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Trophy, Briefcase, CheckCircle2, RotateCcw } from 'lucide-react';
+import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, ShieldCheck } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 
 const STATUS_TABS = [
@@ -49,6 +49,11 @@ export default function Wallet() {
     enabled: !!me?.id,
     staleTime: 30000,
   });
+  const { data: creditTxns = [] } = useQuery({
+    queryKey: ['creditTxns', me?.id],
+    queryFn: () => base44.entities.CreditTransaction.filter({ user_id: me.id }, '-created_date', 30),
+    enabled: !!me?.id,
+  });
 
   const completedCount = workerTasks.filter((t) => t.status === 'COMPLETED').length;
 
@@ -72,10 +77,11 @@ export default function Wallet() {
 
       {/* Stats hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {[
             { icon: Trophy, label: "ג'ובות שהושלמו", value: completedCount },
             { icon: TrendingUp, label: 'פעיל כרגע', value: inProgressTasks.length },
+            { icon: Coins, label: 'קרדיטים', value: me?.worker_credits ?? 100 },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
               <Icon size={13} color="rgba(255,255,255,0.6)" style={{ marginBottom: 4 }} />
@@ -87,6 +93,45 @@ export default function Wallet() {
       </div>
 
       <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Credits History */}
+        {creditTxns.length > 0 && (
+          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f4fa', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Coins size={15} color="#1a6fd4" />
+              <span style={{ fontWeight: 800, fontSize: 14, color: '#0f2b6b' }}>היסטוריית קרדיטים</span>
+            </div>
+            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {creditTxns.map((txn) => {
+                const typeLabels = {
+                  Signup_Bonus: 'בונוס הצטרפות',
+                  Application_Fee: 'עלות הגשת בקשה',
+                  Refund_Rejection: 'החזר — בקשה נדחתה',
+                  Refund_Expiration: 'החזר — משימה פגה',
+                  Loyalty_Reward: 'פרס נאמנות',
+                  Purchase: 'רכישת קרדיטים',
+                };
+                const isPositive = txn.amount > 0;
+                return (
+                  <div key={txn.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 4px', borderBottom: '1px solid #f8faff' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f2b6b' }}>{typeLabels[txn.type] || txn.type}</div>
+                      {txn.task_title && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{txn.task_title}</div>}
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: isPositive ? '#16a34a' : '#dc2626' }}>
+                        {isPositive ? '+' : ''}{txn.amount} 🪙
+                      </div>
+                      {txn.balance_after !== undefined && (
+                        <div style={{ fontSize: 10, color: '#aaa', textAlign: 'left' }}>יתרה: {txn.balance_after}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* My worker tasks */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f4fa', display: 'flex', alignItems: 'center', gap: 8 }}>

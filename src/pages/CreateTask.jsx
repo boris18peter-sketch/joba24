@@ -75,7 +75,14 @@ const DEFAULT_FORM = {
   images: [],
   video_url: '',
   requirements: { vehicle: false, two_people: false, experience: false },
+  payment_method: '',
 };
+
+const PAYMENT_METHODS = [
+  { value: 'Cash', label: '💵 מזומן' },
+  { value: 'Bit', label: '📱 Bit' },
+  { value: 'PayBox', label: '📲 PayBox' },
+];
 
 export default function CreateTask() {
   const navigate = useNavigate();
@@ -160,6 +167,7 @@ export default function CreateTask() {
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
     if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
+    if (!form.payment_method) newErrors.payment_method = true;
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
@@ -179,6 +187,7 @@ export default function CreateTask() {
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
     const created = await base44.entities.Task.create({
+      payment_method: form.payment_method,
       title: form.title,
       description: form.description,
       price: Number(form.price),
@@ -510,6 +519,21 @@ export default function CreateTask() {
               style={{ padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 13, outline: 'none' }}
             />
           </div>
+        </SectionCard>
+
+        {/* Payment Method */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>
+            💳 אמצעי תשלום *
+          </Label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {PAYMENT_METHODS.map(pm => (
+              <button key={pm.value} onClick={() => { set('payment_method', pm.value); setErrors(p => ({...p, payment_method: false})); }}
+                style={{ flex: 1, padding: '12px 8px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, border: errors.payment_method ? '1.5px solid #ef4444' : '1px solid #dce8f5' }) }}
+              >{pm.label}</button>
+            ))}
+          </div>
+          {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>⚠️ יש לבחור אמצעי תשלום</p>}
         </SectionCard>
 
         {/* Submit */}

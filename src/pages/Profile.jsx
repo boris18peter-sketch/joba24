@@ -127,9 +127,10 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           <StatBox value={completedCount} label="ג'ובות בוצעו" />
           <StatBox value={avgRating + (rating > 0 ? '★' : '')} label="דירוג" sub={`${me?.rating_count || 0} ביקורות`} />
+          <StatBox value={me?.worker_credits ?? 100} label="קרדיטים" sub="ג'ובות" />
         </div>
       </div>
 
@@ -173,6 +174,21 @@ export default function Profile() {
             </div>
           </div>
         )}
+
+        {/* Credits & Trust Score card */}
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>קרדיטים ואמינות</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ background: '#eff6ff', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#1a6fd4' }}>{me?.worker_credits ?? 100}</div>
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, fontWeight: 600 }}>🪙 ג'ובות (קרדיטים)</div>
+            </div>
+            <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#16a34a' }}>{Math.round((me?.trust_score ?? 1) * 100)}%</div>
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, fontWeight: 600 }}>⭐ מדד אמינות</div>
+            </div>
+          </div>
+        </div>
 
         {/* Quick links */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
