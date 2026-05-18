@@ -25,31 +25,26 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
     submittedRef.current = true;
     setLoading(true);
     try {
-      // Server-side: check if application already exists before creating
-      const existing = await base44.entities.TaskApplication.filter({
-        task_id: task.id,
-        worker_id: currentUserId,
+      const res = await base44.functions.invoke('applyForTask', {
+        taskId: task.id,
+        message: message.trim(),
       });
-      const alreadyActive = existing.find(a => a.status === 'pending' || a.status === 'approved');
-      if (alreadyActive) {
-        // Already applied — just reflect existing state without creating duplicate
-        onApplied(alreadyActive);
-        onClose();
+      if (res.data?.error === 'already_applied') {
         toast('כבר שלחת בקשה למשימה זו');
+        onClose();
         return;
       }
-      const newApp = await base44.entities.TaskApplication.create({
-        task_id: task.id,
-        worker_id: currentUserId,
-        worker_name: workerName || '',
-        message: message.trim(),
-        status: 'pending',
-      });
-      onApplied(newApp);
+      if (res.data?.error === 'insufficient_credits') {
+        toast.error(`אין מספיק קרדיטים. נדרש: ${res.data.credits_required}, יתרה: ${res.data.credits_available}`);
+        submittedRef.current = false;
+        setLoading(false);
+        return;
+      }
+      onApplied(res.data?.application);
       onClose();
-      toast.success('הבקשה נשלחה לבעל הג\'ובה!');
+      toast.success(`הבקשה נשלחה! נוכו ${res.data?.credits_charged} קרדיטים 🪙`);
     } catch {
-      submittedRef.current = false; // allow retry on error
+      submittedRef.current = false;
       setLoading(false);
       toast.error('שגיאה בשליחת הבקשה, נסה שוב');
     }
@@ -171,20 +166,37 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     e.stopPropagation();
     if (cancelling || !myApp?.id) return;
     setCancelling(true);
-    // Optimistic: immediately remove from all caches
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) =>
       old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
     );
     queryClient.setQueryData(['myApp', task.id, currentUserId], null);
     try {
+      // Refund credits
+      const creditsToRefund = myApp?.credits_charged || 0;
+      if (creditsToRefund > 0) {
+        const freshUsers = await base44.entities.User.filter({ id: currentUserId });
+        const freshMe = freshUsers[0];
+        const currentCredits = freshMe?.worker_credits ?? 0;
+        const newBalance = currentCredits + creditsToRefund;
+        await base44.auth.updateMe({ worker_credits: newBalance });
+        await base44.entities.CreditTransaction.create({
+          user_id: currentUserId,
+          amount: creditsToRefund,
+          type: 'Refund_Rejection',
+          task_id: task.id,
+          balance_after: newBalance,
+          note: `החזר קרדיטים - ביטול בקשה`,
+        });
+      }
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('הבקשה בוטלה');
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['creditTxns', currentUserId] });
+      toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
     } catch {
-      // Revert optimistic update on failure
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       queryClient.setQueryData(['myApp', task.id, currentUserId], myApp);
       toast.error('שגיאה בביטול, נסה שוב');
