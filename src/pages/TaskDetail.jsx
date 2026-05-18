@@ -27,6 +27,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import MediaLightbox from '@/components/MediaLightbox';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import ReportModal from '@/components/ReportModal';
+import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -68,6 +69,8 @@ export default function TaskDetail() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showBuyCredits, setShowBuyCredits] = useState(false);
+  const [creditsNeeded, setCreditsNeeded] = useState(null);
   const prevWorkerIdRef = useRef(null);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
@@ -287,45 +290,44 @@ export default function TaskDetail() {
     if (applyLoading) return;
     setApplyLoading(true);
     try {
-      // Server-side duplicate check before creating
-      const existing = await base44.entities.TaskApplication.filter({ task_id: id, worker_id: me?.id });
-      const alreadyActive = existing.find(a => a.status === 'pending' || a.status === 'approved');
-      if (alreadyActive) {
-        // Already applied — sync caches and show existing state
-        queryClient.setQueryData(['myApp', id, me?.id], alreadyActive);
-        queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
-          const without = old.filter(a => !(a.task_id === id && a.worker_id === me?.id));
-          return [...without, alreadyActive];
-        });
+      const res = await base44.functions.invoke('applyForTask', { taskId: id, message: applyMessage });
+      const data = res.data;
+
+      if (data?.error === 'already_applied') {
         setShowApplyForm(false);
         toast('כבר שלחת בקשה למשימה זו');
         return;
       }
-      const newApp = await base44.entities.TaskApplication.create({
-        task_id: id,
-        worker_id: me?.id,
-        worker_name: me?.full_name,
-        worker_score: me?.worker_score || 0,
-        worker_rating: me?.rating || 0,
-        worker_tasks_count: me?.score_tasks || 0,
-        message: applyMessage,
-        status: 'pending',
-      });
-      // Sync real record immediately into all caches
+
+      const newApp = data?.application;
+      if (!newApp) throw new Error('שגיאה בשליחת הבקשה');
+
+      // Sync caches
       queryClient.setQueryData(['myApp', id, me?.id], newApp);
       queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
         const without = old.filter(a => !(a.task_id === id && a.worker_id === me?.id));
         return [...without, newApp];
       });
+      // Refresh me to reflect updated credits
+      queryClient.invalidateQueries({ queryKey: ['me'] });
       setShowApplyForm(false);
       setHasApplied(true);
-      toast.success('הבקשה נשלחה לבעל הג\'ובה!');
-      // Hard sync to confirm
+      toast.success(`הבקשה נשלחה! נוכו ${data.credits_charged} קרדיטים 🪙`);
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
-    } catch {
-      toast.error('שגיאה בשליחת הבקשה, נסה שוב');
+    } catch (err) {
+      // 403 = insufficient credits
+      const status = err?.response?.status || err?.status;
+      const errData = err?.response?.data || err?.data;
+      if (status === 403 || errData?.error === 'insufficient_credits') {
+        const needed = errData?.credits_required;
+        setCreditsNeeded(needed || null);
+        setShowApplyForm(false);
+        setShowBuyCredits(true);
+      } else {
+        toast.error('שגיאה בשליחת הבקשה, נסה שוב');
+      }
     } finally {
       setApplyLoading(false);
     }
@@ -882,7 +884,6 @@ export default function TaskDetail() {
       {/* Sticky bottom CTA */}
       {(canApplyManual && !showApplyForm) && (
         <div style={{ position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', left: 16, right: 16, zIndex: 50 }}>
-    
           <button onClick={() => {
             if (!isAuthenticated) {
               setShowLoginPrompt(true);
@@ -890,9 +891,14 @@ export default function TaskDetail() {
             }
             gate(() => setShowApplyForm(true));
           }}
-            style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}
           >
-            <Send size={18} strokeWidth={1.8} /> הגש בקשה לביצוע
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Send size={18} strokeWidth={1.8} /> הגש בקשה לביצוע
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.8 }}>
+              עלות: {Math.max(1, Math.round((task.price || 0) * 0.05))} קרדיטים 🪙
+            </div>
           </button>
         </div>
       )}
@@ -909,6 +915,13 @@ export default function TaskDetail() {
       {showReport && task && createPortal(
         <ReportModal task={task} me={me} onClose={() => setShowReport(false)} />,
         document.body
+      )}
+
+      {showBuyCredits && (
+        <BuyCreditsModal
+          creditsNeeded={creditsNeeded}
+          onClose={() => setShowBuyCredits(false)}
+        />
       )}
 
       {showCancelConfirm && task && createPortal(
