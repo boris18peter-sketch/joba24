@@ -263,6 +263,23 @@ export default function TaskDetail() {
 
   const cancelApplicationMutation = useMutation({
     mutationFn: async () => {
+      // Refund credits before cancelling
+      const creditsToRefund = myApp?.credits_charged || 0;
+      if (creditsToRefund > 0) {
+        const freshUsers = await base44.entities.User.filter({ id: me.id });
+        const freshMe = freshUsers[0];
+        const currentCredits = freshMe?.worker_credits ?? 0;
+        const newBalance = currentCredits + creditsToRefund;
+        await base44.auth.updateMe({ worker_credits: newBalance });
+        await base44.entities.CreditTransaction.create({
+          user_id: me.id,
+          amount: creditsToRefund,
+          type: 'Refund_Rejection',
+          task_id: id,
+          balance_after: newBalance,
+          note: `החזר קרדיטים - ביטול בקשה`,
+        });
+      }
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
     },
     onMutate: () => {
@@ -282,7 +299,9 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('הבקשה בוטלה בהצלחה');
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
+      toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
     },
   });
 
