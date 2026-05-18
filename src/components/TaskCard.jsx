@@ -401,18 +401,25 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 }}
                 disabled={applyLocked}
                 style={{
-                  height: 32, padding: '0 14px', borderRadius: 10,
+                  height: 32, padding: '0 12px', borderRadius: 10,
                   background: applyLocked ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
                   border: 'none', color: 'white', fontSize: 12, fontWeight: 700,
                   cursor: applyLocked ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 5,
+                  display: 'flex', alignItems: 'center', gap: 4,
                   boxShadow: applyLocked ? 'none' : '0 2px 8px rgba(26,111,212,0.3)',
                   whiteSpace: 'nowrap',
                   WebkitTapHighlightColor: 'transparent',
                   transition: 'background 0.15s',
                 }}
               >
-                {applyLocked ? <Loader2 size={12} className="animate-spin" /> : <><Send size={12} strokeWidth={2} /> הגש בקשה</>}
+                {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
+                  <>
+                    <Send size={12} strokeWidth={2} /> הגש בקשה
+                    <span style={{ fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 2, marginLeft: 3, paddingLeft: 3, borderLeft: '1px solid rgba(255,255,255,0.3)' }}>
+                      {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={11} />
+                    </span>
+                  </>
+                )}
               </button>
             )}
           </div>
