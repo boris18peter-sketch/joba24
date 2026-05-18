@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import { Plus } from 'lucide-react';
 
 const banners = [
   {
@@ -27,7 +28,7 @@ const banners = [
   },
 ];
 
-export default function LoginBannerCarousel() {
+export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCredits }) {
   const [active, setActive] = useState(0);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const timerRef = useRef(null);
@@ -89,21 +90,41 @@ export default function LoginBannerCarousel() {
           )}
         </div>
 
-        <button
-          onClick={() => setShowLoginModal(true)}
-          style={{
-            background: b.btnBg, color: b.btnColor, border: 'none',
-            padding: '11px 28px', borderRadius: 12, fontWeight: 900,
-            fontSize: 15, cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(251,191,36,0.4)',
-            transition: 'all 0.15s', letterSpacing: 0.1,
-          }}
-          onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
-          onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          {b.btn}
-        </button>
+        {isAuthenticated ? (
+          <button
+            onClick={onOpenBuyCredits}
+            style={{
+              background: b.btnBg, color: b.btnColor, border: 'none',
+              padding: '11px 24px', borderRadius: 12, fontWeight: 900,
+              fontSize: 15, cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(251,191,36,0.4)',
+              transition: 'all 0.15s', letterSpacing: 0.1,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <span>{user?.worker_credits ?? 0} קרדיטים</span>
+            <Plus size={16} strokeWidth={2.5} />
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowLoginModal(true)}
+            style={{
+              background: b.btnBg, color: b.btnColor, border: 'none',
+              padding: '11px 28px', borderRadius: 12, fontWeight: 900,
+              fontSize: 15, cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(251,191,36,0.4)',
+              transition: 'all 0.15s', letterSpacing: 0.1,
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            {b.btn}
+          </button>
+        )}
 
         {/* Trust badges */}
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 10, fontWeight: 600, letterSpacing: 0.4 }}>

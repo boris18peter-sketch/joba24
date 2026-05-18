@@ -107,7 +107,8 @@ function StoriesViewer({ stories, startIndex, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+      className="fixed inset-0 bg-black flex items-center justify-center"
+      style={{ zIndex: 100000 }}
       onClick={handleTap}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -152,7 +153,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
       </div>
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-white z-20">
+      <div className="absolute bottom-0 left-0 right-0 text-white z-20" style={{ padding: '0 24px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
         <div className="text-4xl font-black mb-1">₪{currentPrice}</div>
         <h2 className="text-xl font-bold leading-tight mb-2">{task.title}</h2>
         {/* Task ID for tracking */}

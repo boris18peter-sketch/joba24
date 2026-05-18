@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock } from 'lucide-react';
+import BuyCreditsModal from '@/components/BuyCreditsModal';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
@@ -22,6 +23,7 @@ export default function HomeFeed() {
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '' });
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
+  const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
@@ -337,8 +339,12 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {/* Login Banner Carousel — show only when not authenticated */}
-      {!isAuthenticated && <LoginBannerCarousel />}
+      {/* Login Banner Carousel — always show, dynamic content based on auth */}
+      <LoginBannerCarousel
+        isAuthenticated={isAuthenticated}
+        user={me}
+        onOpenBuyCredits={() => setShowBuyCredits(true)}
+      />
 
       {/* Active Task Banners Carousel */}
       {(activeWorkerTask || activeClientTask) && (() => {
@@ -548,6 +554,7 @@ export default function HomeFeed() {
 
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
+      {showBuyCredits && <BuyCreditsModal onClose={() => setShowBuyCredits(false)} onSelect={() => setShowBuyCredits(false)} />}
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
       <style>{`
         @keyframes slideInFresh {
