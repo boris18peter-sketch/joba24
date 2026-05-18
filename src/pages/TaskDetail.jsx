@@ -117,6 +117,17 @@ export default function TaskDetail() {
     prevWorkerIdRef.current = myApp.status;
   }, [myApp?.status]);
 
+  // Listen for no-show task reset event from WorkerTrackerBar
+  useEffect(() => {
+    const handleReset = () => {
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.refetchQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+    };
+    window.addEventListener('task_reset_to_open', handleReset);
+    return () => window.removeEventListener('task_reset_to_open', handleReset);
+  }, [id, me?.id]);
+
   // Real-time subscriptions
   useEffect(() => {
     const unsubscribe1 = base44.entities.Task.subscribe((event) => {

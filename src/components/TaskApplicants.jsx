@@ -19,41 +19,15 @@ export default function TaskApplicants({ task, onApprove }) {
 
   const approveMutation = useMutation({
     mutationFn: async (app) => {
-      console.log('🔄 STARTING APPROVAL:', app);
-      
-      // Step 1: Update task with worker assignment
-      await base44.entities.Task.update(task.id, {
-        status: 'TAKEN',
-        worker_id: app.worker_id,
-        worker_name: app.worker_name,
-        worker_status: null,
+      // Use backend function — it handles approval, rejection, and credit refunds atomically
+      const res = await base44.functions.invoke('approveWorker', {
+        taskId: task.id,
+        applicationId: app.id,
+        workerId: app.worker_id,
+        workerName: app.worker_name,
       });
-      console.log('✅ Task updated with worker');
-
-      // Step 2: Approve application
-      await base44.entities.TaskApplication.update(app.id, { 
-        status: 'approved' 
-      });
-      console.log('✅ Application approved');
-
-      // Step 3: Fetch fresh task to verify
-      const freshTasks = await base44.entities.Task.filter({ id: task.id });
-      const updatedTask = freshTasks[0];
-      console.log('✅ Fresh task fetched:', updatedTask);
-
-      // Step 4: Verify data was saved
-      if (updatedTask.worker_id !== app.worker_id) {
-        throw new Error('⚠️ worker_id לא נשמר בצורה נכונה');
-      }
-      if (updatedTask.status !== 'TAKEN') {
-        throw new Error('⚠️ status לא שונה ל-TAKEN');
-      }
-
-      // Reject others
-      const others = applications.filter(a => a.id !== app.id && a.status === 'pending');
-      await Promise.all(others.map(a => base44.entities.TaskApplication.update(a.id, { status: 'rejected' })));
-
-      return { task: updatedTask };
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה באישור');
+      return { task: res.data.task };
     },
     onSuccess: (data) => {
       console.log('✅ APPROVAL SUCCESS - Refetching data');
@@ -94,10 +68,10 @@ export default function TaskApplicants({ task, onApprove }) {
       await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
-      // Notify worker via event + localStorage
+      // Notify worker via event (approval_revoked is the correct type for this scenario)
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
       const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
-      const newNotif = { type: 'task_cancelled_worker', taskTitle: task.title, taskId: task.id, timestamp: new Date().toISOString(), read: false };
+      const newNotif = { type: 'approval_revoked', taskTitle: task.title, taskId: task.id, timestamp: new Date().toISOString(), read: false };
       localStorage.setItem('joba24_notifications', JSON.stringify([newNotif, ...stored].slice(0, 50)));
       toast.success('העובד בוטל והקרדיטים הוחזרו אליו 🪙');
       onApprove?.();

@@ -44,7 +44,7 @@ export default function ScoringBar({ score }) {
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 7, background: '#fff1f2', border: '1px solid #fecaca', borderRadius: 10, padding: '7px 10px' }}>
           <span style={{ fontSize: 14 }}>⚠️</span>
           <span style={{ fontSize: 11, color: '#dc2626', fontWeight: 700 }}>
-            משתמש זה נטה לבטל ברגע האחרון
+            מדד האמינות שלך נמוך — שפר אותו על ידי עמידה בהתחייבויות
           </span>
         </div>
       )}
