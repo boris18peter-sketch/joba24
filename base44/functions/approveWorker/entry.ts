@@ -25,17 +25,14 @@ Deno.serve(async (req) => {
     });
     console.log('✅ TASK UPDATED:', updateTaskResult);
 
-    // STEP 2: Approve the application
-    await base44.entities.TaskApplication.update(applicationId, { 
-      status: 'approved' 
-    });
+    // STEP 2: Approve chosen application + reject all other pending ones (no refund — they stay in pending state until rejected)
+    await base44.entities.TaskApplication.update(applicationId, { status: 'approved' });
     console.log('✅ APPLICATION APPROVED');
 
-    // STEP 2b: Reject + refund credits for all other pending applicants
-    const allApps = await base44.entities.TaskApplication.filter({ task_id: taskId });
-    const pendingOthers = allApps.filter(a => a.id !== applicationId && a.status === 'pending');
-    await Promise.all(pendingOthers.map(async (a) => {
-      await base44.entities.TaskApplication.update(a.id, { status: 'rejected' });
+    // Reject other pending applicants + refund their credits
+    const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
+    const othersToReject = allApps.filter(a => a.id !== applicationId && a.status === 'pending');
+    await Promise.all(othersToReject.map(async (a) => {
       const creditsToRefund = a.credits_charged || 0;
       if (creditsToRefund > 0) {
         const workerUsers = await base44.asServiceRole.entities.User.filter({ id: a.worker_id });
@@ -48,14 +45,14 @@ Deno.serve(async (req) => {
             amount: creditsToRefund,
             type: 'Refund_Rejection',
             task_id: taskId,
-            task_title: '',
             balance_after: newBalance,
-            note: 'החזר קרדיטים - בקשה לא נבחרה',
+            note: 'החזר קרדיטים - נבחר עובד אחר',
           });
         }
       }
+      await base44.asServiceRole.entities.TaskApplication.update(a.id, { status: 'rejected' });
     }));
-    console.log(`✅ Rejected and refunded ${pendingOthers.length} other applicants`);
+    console.log(`✅ ${othersToReject.length} other applicants rejected + refunded`);
 
     // STEP 3: Fetch FRESH task data from backend (no cache)
     const freshTaskData = await base44.entities.Task.filter({ id: taskId });

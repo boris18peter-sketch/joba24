@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, CheckCircle, Shield, Award, FileText, MapPin, Phone } from 'lucide-react';
+import { Star, CheckCircle, Shield, Award, FileText, MapPin } from 'lucide-react';
+import ScoringBar from '@/components/ScoringBar';
 import { useNavigate } from 'react-router-dom';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
@@ -17,8 +18,8 @@ export default function PublicProfile() {
     queryKey: ['publicUser', userId],
     queryFn: async () => {
       if (!userId) return null;
-      const users = await base44.entities.User.list();
-      return users.find(u => u.id === userId) || null;
+      const users = await base44.entities.User.filter({ id: userId });
+      return users[0] || null;
     },
     enabled: !!userId,
   });
@@ -46,14 +47,6 @@ export default function PublicProfile() {
     queryFn: () => base44.entities.Review.filter({ reviewee_id: userId }, '-created_date', 20),
     enabled: !!userId,
   });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -134,6 +127,11 @@ export default function PublicProfile() {
               <div style={{ fontSize: 11, color: '#15803d' }}>הפרופיל מאומת ומהימן</div>
             </div>
           </div>
+        )}
+
+        {/* Trust score (ScoringBar) */}
+        {user.trust_score !== undefined && user.trust_score !== null && (
+          <ScoringBar score={user.trust_score} />
         )}
 
         {/* Worker score */}
