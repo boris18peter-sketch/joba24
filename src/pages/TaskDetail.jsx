@@ -406,7 +406,7 @@ export default function TaskDetail() {
 
   const isOwner = me?.id === task.client_id;
   const hasWorker = !!task.worker_id;
-  const isWorker = me?.id === task.worker_id;
+  const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
   const statusLabel = getStatusLabel(task.status, isOwner);
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = false; // All tasks now require application

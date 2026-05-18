@@ -193,10 +193,6 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     }
   };
 
-  // Searching state for owner
-  // Owner sees applicants panel (handled by TaskApplicants component), not tracker
-  if (!task.worker_id) return null;
-
   if (!task.worker_id) return null;
 
   const stepIdx = getStepIndex(localStatus);

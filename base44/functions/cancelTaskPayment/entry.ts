@@ -59,13 +59,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cancel all active applications
+    // Cancel all active applications + refund credits to workers
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    await Promise.all(
-      apps
-        .filter(a => a.status === 'pending' || a.status === 'approved')
-        .map(a => base44.asServiceRole.entities.TaskApplication.update(a.id, { status: 'cancelled' }))
-    );
+    const activeApps = apps.filter(a => a.status === 'pending' || a.status === 'approved');
+    await Promise.all(activeApps.map(async (a) => {
+      const creditsToRefund = a.credits_charged || 0;
+      if (creditsToRefund > 0) {
+        const workerUsers = await base44.asServiceRole.entities.User.filter({ id: a.worker_id });
+        const worker = workerUsers[0];
+        if (worker) {
+          const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
+          await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
+          await base44.asServiceRole.entities.CreditTransaction.create({
+            user_id: worker.id,
+            amount: creditsToRefund,
+            type: 'Refund_Rejection',
+            task_id: taskId,
+            task_title: task.title,
+            balance_after: newBalance,
+            note: 'החזר קרדיטים - המשימה בוטלה על ידי המפרסם',
+          });
+        }
+      }
+      await base44.asServiceRole.entities.TaskApplication.update(a.id, { status: 'cancelled' });
+    }));
 
     // If owner cancels AFTER worker started moving → reduce client trust_score by 5%
     const workerHasStarted = task.worker_status && task.worker_status !== null;
