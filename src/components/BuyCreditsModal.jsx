@@ -1,21 +1,21 @@
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Zap, Star } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const PACKAGES = [
-  { id: 'starter',    credits: 15,   bonus: 0,   price: 9.90,   popular: false, bestOffer: false },
-  { id: 'basic',      credits: 40,   bonus: 0,   price: 24.90,  popular: false, bestOffer: false },
-  { id: 'popular',    credits: 100,  bonus: 15,  price: 49.90,  popular: true,  bestOffer: false },
-  { id: 'contractor', credits: 250,  bonus: 50,  price: 99.90,  popular: false, bestOffer: false },
-  { id: 'pro',        credits: 600,  bonus: 150, price: 199.90, popular: false, bestOffer: false },
-  { id: 'boss',       credits: 1600, bonus: 400, price: 449.90, popular: false, bestOffer: true  },
+  { id: 'starter',    label: 'התנסות',  credits: 15,   bonus: 0,   price: 9.90,   popular: false },
+  { id: 'basic',      label: 'בסיסית',  credits: 40,   bonus: 0,   price: 24.90,  popular: false },
+  { id: 'popular',    label: 'פופולרית',credits: 100,  bonus: 15,  price: 49.90,  popular: true  },
+  { id: 'contractor', label: 'קבלנים',  credits: 250,  bonus: 50,  price: 99.90,  popular: false },
+  { id: 'pro',        label: 'פרו',     credits: 600,  bonus: 150, price: 199.90, popular: false },
+  { id: 'boss',       label: 'Boss',    credits: 1600, bonus: 400, price: 449.90, popular: false },
 ];
 
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
 
   const handleSelect = (pkg) => {
-    alert(`בקרוב: רכישת ${pkg.credits + pkg.bonus} קרדיטים ב-₪${pkg.price}`);
+    alert(`בקרוב: רכישת חבילת ${pkg.label} — ${pkg.credits + pkg.bonus} קרדיטים ב-₪${pkg.price}`);
   };
 
   return createPortal(
@@ -31,48 +31,55 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
       <div
         dir="rtl"
         style={{
-          background: '#f0e8d8',
+          background: '#f4f7fb',
           borderRadius: '28px 28px 0 0',
           width: '100%',
           maxWidth: 480,
           maxHeight: '92vh',
           overflowY: 'auto',
-          boxShadow: '0 -16px 60px rgba(0,0,0,0.3)',
-          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
+          paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
         }}
       >
-        {/* Drag handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'rgba(0,0,0,0.15)', margin: '14px auto 0' }} />
-
         {/* Header */}
-        <div style={{ padding: '14px 18px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#3d2000', letterSpacing: -0.3 }}>
-              🪙 חנות קרדיטים
+        <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+                🪙
+              </div>
+              <div>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>רכישת קרדיטים</div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>
+                  יתרה נוכחית: <span style={{ fontWeight: 700, color: '#b45309' }}>{me?.worker_credits ?? 0} קרדיטים</span>
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: '#7c5533', marginTop: 2, fontWeight: 600 }}>
-              יתרה נוכחית: <span style={{ color: '#b45309', fontWeight: 900 }}>{me?.worker_credits ?? 0} קרדיטים</span>
-            </div>
+
+            {creditsNeeded && (
+              <div style={{ marginTop: 12, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Zap size={14} color="#f97316" />
+                <span style={{ fontSize: 13, color: '#c2410c', fontWeight: 600 }}>
+                  נדרשים <strong>{creditsNeeded} קרדיטים</strong> להגשת הבקשה הזו
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
-            style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(0,0,0,0.12)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{ width: 34, height: 34, borderRadius: 11, background: '#f0f2f7', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, marginTop: 24 }}
           >
-            <X size={15} color="#7c5533" />
+            <X size={16} color="#9ca3af" />
           </button>
         </div>
 
-        {creditsNeeded && (
-          <div style={{ margin: '10px 18px 0', background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#c2410c', fontWeight: 600 }}>
-            ⚡ נדרשים <strong>{creditsNeeded} קרדיטים</strong> להגשת הבקשה
-          </div>
-        )}
-
         {/* Packages grid */}
-        <div style={{ padding: '12px 14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ padding: '14px 14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {PACKAGES.map((pkg) => {
             const totalCredits = pkg.credits + pkg.bonus;
-            const bonusPct = pkg.bonus > 0 ? Math.round((pkg.bonus / pkg.credits) * 100) : 0;
+            const pricePerCredit = (pkg.price / totalCredits).toFixed(2);
 
             return (
               <button
@@ -80,68 +87,59 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 onClick={() => handleSelect(pkg)}
                 style={{
                   background: pkg.popular
-                    ? 'linear-gradient(160deg, #8b5cf6, #6d28d9)'
-                    : pkg.bestOffer
-                    ? 'linear-gradient(160deg, #dc2626, #991b1b)'
-                    : 'linear-gradient(160deg, #a16207, #78350f)',
-                  border: 'none',
+                    ? 'linear-gradient(135deg, #0f2b6b, #1a6fd4)'
+                    : 'white',
+                  border: pkg.popular ? 'none' : '1.5px solid #e5e9f5',
                   borderRadius: 16,
-                  padding: '10px 8px',
-                  textAlign: 'center',
+                  padding: '12px 12px',
+                  textAlign: 'right',
                   cursor: 'pointer',
                   position: 'relative',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.15)',
+                  boxShadow: pkg.popular ? '0 8px 28px rgba(26,111,212,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
                   transition: 'transform 0.15s',
-                  overflow: 'visible',
                 }}
-                onPointerDown={e => e.currentTarget.style.transform = 'scale(0.95)'}
+                onPointerDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
                 onPointerUp={e => e.currentTarget.style.transform = 'scale(1)'}
                 onPointerLeave={e => e.currentTarget.style.transform = 'scale(1)'}
               >
-                {/* Popular / Best Offer ribbon */}
-                {(pkg.popular || pkg.bestOffer) && (
+                {pkg.popular && (
                   <div style={{
-                    position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)',
-                    background: pkg.popular ? 'linear-gradient(90deg,#ec4899,#db2777)' : 'linear-gradient(90deg,#f59e0b,#d97706)',
-                    color: 'white', fontWeight: 900, fontSize: 9,
-                    padding: '3px 10px', borderRadius: 99,
-                    whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                    zIndex: 2,
+                    position: 'absolute', top: -10, right: '50%', transform: 'translateX(50%)',
+                    background: 'linear-gradient(90deg,#f59e0b,#fbbf24)',
+                    color: '#7c2d00', fontWeight: 900, fontSize: 10,
+                    padding: '3px 12px', borderRadius: 99,
+                    whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
+                    display: 'flex', alignItems: 'center', gap: 4,
                   }}>
-                    {pkg.popular ? '⭐ פופולרי' : '🏆 הכי משתלם'}
+                    <Star size={9} fill="currentColor" /> הכי פופולרית
                   </div>
                 )}
 
-                {/* Credits count — big game-style number */}
-                <div style={{
-                  fontSize: totalCredits >= 1000 ? 22 : 26,
-                  fontWeight: 900,
-                  color: '#fde68a',
-                  textShadow: '0 2px 8px rgba(0,0,0,0.4)',
-                  lineHeight: 1.1,
-                  letterSpacing: -1,
-                  marginTop: pkg.popular || pkg.bestOffer ? 8 : 4,
-                }}>
-                  {totalCredits.toLocaleString()}
+                <div style={{ fontSize: 13, fontWeight: 800, color: pkg.popular ? 'white' : '#0f1e40', marginBottom: 2 }}>
+                  {pkg.label}
                 </div>
-                <div style={{ fontSize: 9, color: 'rgba(255,220,100,0.8)', fontWeight: 700, marginBottom: 6 }}>קרדיטים</div>
 
-                {/* Bonus badge */}
-                {bonusPct > 0 && (
-                  <div style={{ fontSize: 9, color: '#86efac', fontWeight: 800, marginBottom: 4 }}>
-                    +{bonusPct}% בונוס
+                <div style={{ fontSize: 22, fontWeight: 900, color: pkg.popular ? 'white' : '#0f1e40', letterSpacing: -0.5, lineHeight: 1.2 }}>
+                  {totalCredits}
+                  <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginRight: 2 }}>קרדיטים</span>
+                </div>
+
+                {pkg.bonus > 0 && (
+                  <div style={{ fontSize: 10, color: pkg.popular ? 'rgba(255,255,255,0.75)' : '#16a34a', fontWeight: 700, marginTop: 2 }}>
+                    +{pkg.bonus} מתנה 🎁
                   </div>
                 )}
 
-                {/* Price bar */}
                 <div style={{
-                  background: '#4ade80',
-                  borderRadius: 8,
-                  padding: '5px 6px',
-                  marginTop: 4,
+                  marginTop: 8,
+                  background: pkg.popular ? 'rgba(255,255,255,0.15)' : '#f4f7fb',
+                  borderRadius: 10, padding: '6px 8px',
                 }}>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: '#14532d' }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: pkg.popular ? 'white' : '#0f2b6b' }}>
                     ₪{pkg.price.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: 10, color: pkg.popular ? 'rgba(255,255,255,0.6)' : '#9ca3af', marginTop: 1 }}>
+                    ₪{pricePerCredit} לקרדיט
                   </div>
                 </div>
               </button>
@@ -149,8 +147,8 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           })}
         </div>
 
-        <div style={{ padding: '12px 18px', textAlign: 'center', color: '#92400e', fontSize: 12, fontWeight: 700 }}>
-          🪙 קרדיטים = עבודה = רווחים
+        <div style={{ padding: '14px 20px', textAlign: 'center', color: '#bbb', fontSize: 11 }}>
+          🔒 קרדיטים = עבודה = רווחים
         </div>
       </div>
     </div>,
