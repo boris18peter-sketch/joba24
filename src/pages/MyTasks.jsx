@@ -62,18 +62,20 @@ export default function MyTasks() {
     return unsub;
   }, [me?.id, queryClient]);
 
+  const openTaskIds = tasks.filter(t => t.status === 'OPEN').map(t => t.id);
+
   const { data: allApps = [] } = useQuery({
-    queryKey: ['allMyTaskApps', tasks.length],
+    queryKey: ['allMyTaskApps', openTaskIds.join(',')],
     queryFn: async () => {
-      const openManual = tasks.filter(t => t.status === 'OPEN');
-      if (!openManual.length) return [];
+      if (!openTaskIds.length) return [];
       const results = await Promise.all(
-        openManual.map(t => base44.entities.TaskApplication.filter({ task_id: t.id, status: 'pending' }))
+        openTaskIds.map(id => base44.entities.TaskApplication.filter({ task_id: id, status: 'pending' }))
       );
       return results.flat();
     },
-    enabled: !!tasks.length,
+    enabled: openTaskIds.length > 0,
     refetchInterval: 8000,
+    staleTime: 0,
   });
 
   const cancelMutation = useMutation({
@@ -120,7 +122,7 @@ export default function MyTasks() {
   };
 
   const tab = TABS.find(t => t.key === activeTab);
-  const filtered = tasks.filter(t => tab.statuses.includes(t.status));
+  const filtered = tasks.filter(t => tab?.statuses.includes(t.status));
   const pendingCountForTask = (taskId) => allApps.filter(a => a.task_id === taskId).length;
 
   return (
