@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, ShieldCheck } from 'lucide-react';
+import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 
 const STATUS_TABS = [
-{ key: 'inprogress', label: 'משימות פעילות', icon: '🟣' },
-{ key: 'completed', label: 'הושלמו', icon: '✅' }];
+{ key: 'inprogress', label: 'פעילות', icon: '🟣' },
+{ key: 'completed', label: 'הושלמו', icon: '✅' },
+{ key: 'applications', label: 'בקשות', icon: '📋' },
+];
 
 
 function TaskRow({ task, badge, onRepost }) {
@@ -55,6 +57,12 @@ export default function Wallet() {
     enabled: !!me?.id,
   });
 
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myApplications', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
+    enabled: !!me?.id,
+  });
+
   const completedCount = workerTasks.filter((t) => t.status === 'COMPLETED').length;
 
   const inProgressTasks = workerTasks.filter((t) => t.status === 'TAKEN');
@@ -66,6 +74,13 @@ export default function Wallet() {
   };
 
   const tabBadge = { inprogress: 'inprogress', completed: 'paid' };
+
+  const appStatusConfig = {
+    pending:  { label: 'ממתין', bg: '#fef3c7', color: '#92400e', icon: Clock },
+    approved: { label: 'אושר ✅', bg: '#dcfce7', color: '#166534', icon: CheckCircle2 },
+    rejected: { label: 'נדחה', bg: '#fee2e2', color: '#991b1b', icon: XCircle },
+    cancelled:{ label: 'בוטל', bg: '#f3f4f6', color: '#6b7280', icon: Ban },
+  };
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
@@ -153,7 +168,35 @@ export default function Wallet() {
           </div>
 
           <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {tabTasks[activeTab].length === 0 ? (
+            {activeTab === 'applications' ? (
+              myApplications.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>📋 לא הגשת בקשות עדיין</div>
+              ) : (
+                myApplications.map((app) => {
+                  const cfg = appStatusConfig[app.status] || appStatusConfig.pending;
+                  const StatusIcon = cfg.icon;
+                  return (
+                    <div key={app.id} onClick={() => navigate(`/task/${app.task_id}`)}
+                      style={{ background: 'white', borderRadius: 14, border: '1px solid #dce8f5', padding: '12px 14px', cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {app.task_id}
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: cfg.bg, color: cfg.color, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                          <StatusIcon size={11} /> {cfg.label}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#9ca3af' }}>
+                        <span>🪙 {app.credits_charged} קרדיטים</span>
+                        {(app.status === 'rejected' || app.status === 'cancelled') && app.credits_charged > 0 && (
+                          <span style={{ color: '#16a34a', fontWeight: 700 }}>← הוחזרו</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )
+            ) : tabTasks[activeTab].length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>
                 {activeTab === 'inprogress' ? '💼 אין משימות פעילות' : '🏆 אין משימות שהושלמו'}
               </div>

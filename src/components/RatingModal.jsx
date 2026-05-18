@@ -42,6 +42,15 @@ export default function RatingModal({ task, me, onClose }) {
       const avg = allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length;
       await base44.entities.User.update(revieweeId, { rating: avg, rating_count: allReviews.length });
 
+      // 3.3 Loyalty Reward: if client rated worker 5 stars → grant bonus
+      if (isOwner && rating === 5 && task.worker_id) {
+        base44.functions.invoke('grantLoyaltyReward', {
+          taskId: task.id,
+          workerId: task.worker_id,
+          rating,
+        }).catch(e => console.error('Loyalty reward failed:', e));
+      }
+
       queryClient.invalidateQueries({ queryKey: ['myReviews', revieweeId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['myReview'] });

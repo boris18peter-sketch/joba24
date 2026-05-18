@@ -17,17 +17,11 @@ Deno.serve(async (req) => {
 
     console.log('🔄 APPROVAL MUTATION START:', { taskId, workerId });
 
-    // Fetch worker's profile for rating + verified status
-    const workerUsers = await base44.asServiceRole.entities.User.filter({ id: workerId });
-    const workerUser = workerUsers?.[0];
-
     // STEP 1: Update task with worker assignment (ATOMIC)
     const updateTaskResult = await base44.entities.Task.update(taskId, {
       status: 'TAKEN',
       worker_id: workerId,
       worker_name: workerName,
-      worker_rating: workerUser?.rating || 0,
-      worker_verified: workerUser?.is_verified || false,
     });
     console.log('✅ TASK UPDATED:', updateTaskResult);
 
@@ -36,6 +30,36 @@ Deno.serve(async (req) => {
       status: 'approved' 
     });
     console.log('✅ APPLICATION APPROVED');
+
+    // STEP 2.5: Reject all OTHER pending applications and refund their credits
+    const allApps = await base44.entities.TaskApplication.filter({ task_id: taskId });
+    const otherPending = allApps.filter(a => a.id !== applicationId && a.status === 'pending');
+    console.log(`🔄 Rejecting and refunding ${otherPending.length} other applicants`);
+
+    for (const otherApp of otherPending) {
+      // Mark as rejected
+      await base44.entities.TaskApplication.update(otherApp.id, { status: 'rejected' });
+
+      // Refund credits
+      const creditsToRefund = otherApp.credits_charged || 0;
+      if (creditsToRefund > 0) {
+        const workerUsers = await base44.asServiceRole.entities.User.filter({ id: otherApp.worker_id });
+        const workerUser = workerUsers[0];
+        if (workerUser) {
+          const newBalance = (workerUser.worker_credits ?? 0) + creditsToRefund;
+          await base44.asServiceRole.entities.User.update(workerUser.id, { worker_credits: newBalance });
+          await base44.entities.CreditTransaction.create({
+            user_id: otherApp.worker_id,
+            amount: creditsToRefund,
+            type: 'Refund_Rejection',
+            task_id: taskId,
+            balance_after: newBalance,
+            note: `החזר קרדיטים - בקשה לא נבחרה למשימה`,
+          });
+          console.log(`✅ Refunded ${creditsToRefund} credits to rejected worker ${otherApp.worker_id}`);
+        }
+      }
+    }
 
     // STEP 3: Fetch FRESH task data from backend (no cache)
     const freshTaskData = await base44.entities.Task.filter({ id: taskId });
