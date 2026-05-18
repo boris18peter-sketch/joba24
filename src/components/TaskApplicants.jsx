@@ -1,14 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, XCircle, Loader2, Zap, Award, RotateCcw, MessageCircle } from 'lucide-react';
+import { Star, CheckCircle2, XCircle, Loader2, Zap, Award, RotateCcw, MessageCircle, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
@@ -80,38 +81,25 @@ export default function TaskApplicants({ task, onApprove }) {
     return unsubscribe;
   }, [task.id]);
 
-  const revokeApprovalMutation = useMutation({
+  const cancelWorkerMutation = useMutation({
     mutationFn: async () => {
-      // Fetch fresh applications from server to avoid stale cache
-      const freshApps = await base44.entities.TaskApplication.filter({ task_id: task.id });
-      const approvedApp = freshApps.find(a => a.status === 'approved');
-      if (approvedApp) {
-        await base44.entities.TaskApplication.update(approvedApp.id, { status: 'cancelled' });
-      }
-      // Reset task back to OPEN
-      await base44.entities.Task.update(task.id, {
-        status: 'OPEN',
-        worker_id: null,
-        worker_name: null,
-        worker_status: null,
-      });
+      const res = await base44.functions.invoke('cancelApprovedWorker', { taskId: task.id });
+      if (!res.data?.success) throw new Error('שגיאה בביטול');
+      return res.data;
     },
-    onSuccess: async () => {
-      // CRITICAL: Invalidate BEFORE refetch to clear cache
+    onSuccess: async (data) => {
+      setShowCancelWorkerConfirm(false);
       await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
       await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
-      // Dispatch event so Layout shows the ApprovalRevokedPopup to the worker
-      window.dispatchEvent(new CustomEvent('approval_revoked_by_client', {
-        detail: { task }
-      }));
-      // Also save to localStorage notifications so worker sees it in Notifications page
+      // Notify worker via event + localStorage
+      window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
       const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
       const newNotif = { type: 'task_cancelled_worker', taskTitle: task.title, taskId: task.id, timestamp: new Date().toISOString(), read: false };
       localStorage.setItem('joba24_notifications', JSON.stringify([newNotif, ...stored].slice(0, 50)));
-      toast.success('האישור בוטל — תוכל לאשר עובד אחר');
+      toast.success('העובד בוטל והקרדיטים הוחזרו אליו 🪙');
       onApprove?.();
     },
     onError: (err) => {
@@ -123,8 +111,8 @@ export default function TaskApplicants({ task, onApprove }) {
   const approvedApp = applications.find(a => a.status === 'approved');
   // Pending apps (not yet decided)
   const pending = applications.filter(a => a.status === 'pending');
-  // Worker has started moving — check both task prop and actual worker_status field
-  const workerStarted = !!(task.worker_status) || task.status === 'TAKEN' && !!task.on_the_way_at;
+  // Worker has started moving (on_the_way or beyond)
+  const workerStarted = !!(task.worker_status);
 
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
@@ -148,6 +136,37 @@ export default function TaskApplicants({ task, onApprove }) {
   return (
     <div className="space-y-3">
 
+      {/* Cancel Worker Confirmation Modal */}
+      {showCancelWorkerConfirm && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowCancelWorkerConfirm(false)}>
+          <div dir="rtl" style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🚫</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>לבטל את העובד?</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+                העובד <strong style={{ color: '#0f1e40' }}>{approvedApp?.worker_name}</strong> יקבל החזר קרדיטים מלא.<br />
+                המשימה תחזור לסטטוס פתוח ותוכל לאשר עובד אחר.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowCancelWorkerConfirm(false)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer' }}
+              >
+                השאר את העובד
+              </button>
+              <button
+                onClick={() => cancelWorkerMutation.mutate()}
+                disabled={cancelWorkerMutation.isPending}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {cancelWorkerMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><UserX size={16} /> כן, בטל עובד</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <h3 className="font-bold text-sm text-gray-700">עובדים שמבקשים לבצע ({visibleApps.length})</h3>
 
@@ -206,16 +225,13 @@ export default function TaskApplicants({ task, onApprove }) {
                   <div style={{ flex: 1, height: 36, borderRadius: 10, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#166534' }}>
                     <CheckCircle2 size={14} /> {workerStarted ? 'יצא לדרך ✓' : 'אישרתי — מחכה שיצא'}
                   </div>
-                  {/* Revoke button — only before worker starts */}
+                  {/* Cancel Worker button — only before worker starts moving */}
                   {!workerStarted && (
                     <button
-                      onClick={() => revokeApprovalMutation.mutate()}
-                      disabled={revokeApprovalMutation.isPending}
+                      onClick={() => setShowCancelWorkerConfirm(true)}
                       style={{ flex: 1, height: 36, borderRadius: 10, background: 'white', border: '1.5px solid #fca5a5', color: '#dc2626', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                     >
-                      {revokeApprovalMutation.isPending
-                        ? <Loader2 size={13} className="animate-spin" />
-                        : <><RotateCcw size={13} /> ביטול עובד</>}
+                      <UserX size={13} /> ביטול עובד
                     </button>
                   )}
                 </>

@@ -7,6 +7,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
+import ScoringBar from '@/components/ScoringBar';
 
 const StatBox = ({ value, label, sub }) =>
 <div style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 10px', textAlign: 'center' }}>
@@ -175,20 +176,8 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Credits & Trust Score card */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>קרדיטים ואמינות</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ background: '#eff6ff', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#1a6fd4' }}>{me?.worker_credits ?? 100}</div>
-              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, fontWeight: 600 }}>🪙 ג'ובות (קרדיטים)</div>
-            </div>
-            <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#16a34a' }}>{Math.round((me?.trust_score ?? 1) * 100)}%</div>
-              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2, fontWeight: 600 }}>⭐ מדד אמינות</div>
-            </div>
-          </div>
-        </div>
+        {/* Scoring Bar */}
+        <ScoringBar score={me?.trust_score ?? 1} />
 
         {/* Quick links */}
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>

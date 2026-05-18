@@ -67,6 +67,19 @@ Deno.serve(async (req) => {
         .map(a => base44.asServiceRole.entities.TaskApplication.update(a.id, { status: 'cancelled' }))
     );
 
+    // If owner cancels AFTER worker started moving → reduce client trust_score by 5%
+    const workerHasStarted = task.worker_status && task.worker_status !== null;
+    if (isClient && workerHasStarted) {
+      const clientUsers = await base44.asServiceRole.entities.User.filter({ id: task.client_id });
+      const client = clientUsers[0];
+      if (client) {
+        const currentScore = client.trust_score ?? 1;
+        const newScore = Math.max(0, Math.round((currentScore - 0.05) * 100) / 100);
+        await base44.asServiceRole.entities.User.update(client.id, { trust_score: newScore });
+        console.log(`⚠️ Client trust_score reduced: ${currentScore} → ${newScore}`);
+      }
+    }
+
     // Cancel the task
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'CANCELLED',

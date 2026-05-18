@@ -110,6 +110,15 @@ const TYPES = {
     body: (n) => `"${n.taskTitle}" — תוכל לאשר מועמד אחר`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
+  no_show_reported: {
+    emoji: '⚠️',
+    bg: '#fef2f2',
+    border: '#fca5a5',
+    accent: '#dc2626',
+    title: () => 'דווחת על אי-הופעה',
+    body: (n) => `מפרסם "${n.taskTitle}" דיווח. מדד האמינות שלך עודכן.`,
+    link: () => null,
+  },
 };
 
 export default function LiveNotificationPopup({ notification, onClose }) {

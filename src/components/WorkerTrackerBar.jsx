@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag } from 'lucide-react';
+import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag, AlertOctagon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
+import { base44 } from '@/api/base44Client';
 
 // ── Rich status definitions ─────────────────────────────────────────────────
 const WORKER_STATUSES = [
@@ -150,11 +151,47 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
   const [completionPhoto, setCompletionPhoto] = useState(task?.completion_photo || null);
+  const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
+  const [noShowLoading, setNoShowLoading] = useState(false);
+  const [minutesOnTheWay, setMinutesOnTheWay] = useState(0);
 
   useEffect(() => {
     setLocalStatus(task?.worker_status ?? null);
     setCompletionPhoto(task?.completion_photo || null);
   }, [task?.worker_status, task?.completion_photo]);
+
+  // Track how many minutes worker has been "on the way"
+  useEffect(() => {
+    if (!task?.on_the_way_at) return;
+    const update = () => {
+      const mins = Math.floor((Date.now() - new Date(task.on_the_way_at).getTime()) / 60000);
+      setMinutesOnTheWay(mins);
+    };
+    update();
+    const t = setInterval(update, 60000);
+    return () => clearInterval(t);
+  }, [task?.on_the_way_at]);
+
+  const handleNoShowReport = async () => {
+    setNoShowLoading(true);
+    try {
+      const res = await base44.functions.invoke('reportNoShow', { taskId: task.id });
+      if (!res.data?.success) throw new Error('שגיאה');
+      // Notify worker via custom event + localStorage
+      window.dispatchEvent(new CustomEvent('worker_no_show_reported', { detail: { task } }));
+      const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
+      const newNotif = { type: 'no_show_reported', taskTitle: task.title, taskId: task.id, timestamp: new Date().toISOString(), read: false };
+      localStorage.setItem('joba24_notifications', JSON.stringify([newNotif, ...stored].slice(0, 50)));
+      toast.success('הדיווח התקבל. המשימה חזרה לסטטוס פתוח.');
+      setShowNoShowConfirm(false);
+      // Refresh task
+      window.dispatchEvent(new Event('task_reset_to_open'));
+    } catch {
+      toast.error('שגיאה בדיווח, נסה שוב');
+    } finally {
+      setNoShowLoading(false);
+    }
+  };
 
   // Searching state for owner
   // Owner sees applicants panel (handled by TaskApplicants component), not tracker
@@ -331,6 +368,50 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
               צ'אט עם {isWorker ? 'המעסיק' : 'הפועל'}
             </div>
           </Link>
+        </div>
+      )}
+
+      {/* ── No-Show report button (owner only, after 60 min on_the_way) ── */}
+      {isOwner && task.worker_status === 'on_the_way' && minutesOnTheWay >= 60 && (
+        <div style={{ padding: '0 16px 16px' }}>
+          <button
+            onClick={() => setShowNoShowConfirm(true)}
+            style={{ width: '100%', height: 42, borderRadius: 14, background: '#fff1f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+          >
+            <AlertOctagon size={15} strokeWidth={1.8} /> דיווח על אי-הופעה
+          </button>
+        </div>
+      )}
+
+      {/* ── No-Show Confirmation Modal ── */}
+      {showNoShowConfirm && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowNoShowConfirm(false)}>
+          <div dir="rtl" style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>דיווח על אי-הופעה</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+                האם אתה בטוח שהעובד <strong style={{ color: '#0f1e40' }}>{task.worker_name}</strong> לא הגיע?<br />
+                <strong style={{ color: '#dc2626' }}>פעולה זו סופית</strong> ותפגע במדד האמינות שלו.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => setShowNoShowConfirm(false)}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer' }}
+              >
+                לא, ממתין עוד
+              </button>
+              <button
+                onClick={handleNoShowReport}
+                disabled={noShowLoading}
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {noShowLoading ? <Loader2 size={18} className="animate-spin" /> : <><AlertOctagon size={16} /> כן, דווח</>}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

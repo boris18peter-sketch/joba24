@@ -155,6 +155,22 @@ export default function Layout() {
     return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
   }, [me?.id]);
 
+  // Listen for no-show report — notify worker
+  useEffect(() => {
+    const handleNoShow = (e) => {
+      const { task } = e.detail;
+      if (!me?.id || me?.id === task?.client_id) return;
+      addNotification({
+        type: 'no_show_reported',
+        taskTitle: task?.title || 'משימה',
+        taskId: task?.id,
+      });
+      setCancelledTask({ ...task, title: task.title });
+    };
+    window.addEventListener('worker_no_show_reported', handleNoShow);
+    return () => window.removeEventListener('worker_no_show_reported', handleNoShow);
+  }, [me?.id]);
+
   // Listen for cancel warning request from TaskDetail — owner wants to cancel task with active worker
   useEffect(() => {
     const handleShowCancelWarning = (e) => {
