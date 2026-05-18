@@ -332,19 +332,44 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
       {/* Header — fixed height, vertically centered, logo pinned right */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16 }}>
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
           <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
           <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
         </div>
+        {/* Dynamic action button — left side of header */}
+        <div style={{ marginRight: 'auto' }}>
+          {isAuthenticated ? (
+            <button
+              onClick={() => setShowBuyCredits(true)}
+              style={{
+                background: '#fbbf24', color: '#1a3a6b', border: 'none',
+                padding: '8px 16px', borderRadius: 12, fontWeight: 900,
+                fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
+              }}
+            >
+              <span>{me?.worker_credits ?? 0} קרדיטים</span>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => base44.auth.redirectToLogin()}
+              style={{
+                background: '#fbbf24', color: '#1a3a6b', border: 'none',
+                padding: '8px 16px', borderRadius: 12, fontWeight: 900,
+                fontSize: 14, cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
+              }}
+            >
+              התחבר עכשיו
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Login Banner Carousel — always show, dynamic content based on auth */}
-      <LoginBannerCarousel
-        isAuthenticated={isAuthenticated}
-        user={me}
-        onOpenBuyCredits={() => setShowBuyCredits(true)}
-      />
+      {/* Login Banner Carousel — show only when not authenticated */}
+      {!isAuthenticated && <LoginBannerCarousel />}
 
       {/* Active Task Banners Carousel */}
       {(activeWorkerTask || activeClientTask) && (() => {
