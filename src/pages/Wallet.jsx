@@ -59,7 +59,17 @@ export default function Wallet() {
 
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myApplications', me?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
+    queryFn: async () => {
+      const apps = await base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50);
+      // Enrich with task titles
+      const taskIds = [...new Set(apps.map(a => a.task_id))];
+      const taskMap = {};
+      await Promise.all(taskIds.map(async (tid) => {
+        const res = await base44.entities.Task.filter({ id: tid });
+        if (res[0]) taskMap[tid] = res[0].title;
+      }));
+      return apps.map(a => ({ ...a, task_title: taskMap[a.task_id] || a.task_id }));
+    },
     enabled: !!me?.id,
   });
 
@@ -180,7 +190,7 @@ export default function Wallet() {
                       style={{ background: 'white', borderRadius: 14, border: '1px solid #dce8f5', padding: '12px 14px', cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {app.task_id}
+                          {app.task_title || app.task_id}
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: cfg.bg, color: cfg.color, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                           <StatusIcon size={11} /> {cfg.label}

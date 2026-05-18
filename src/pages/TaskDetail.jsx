@@ -229,13 +229,28 @@ export default function TaskDetail() {
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
-      // 1. Cancel the worker's approved application — full reset
+      // 1. Cancel the worker's approved application + refund credits
       const workerApps = await base44.entities.TaskApplication.filter({ task_id: id, worker_id: me?.id });
-      await Promise.all(
-        workerApps
-          .filter(a => a.status === 'approved' || a.status === 'pending')
-          .map(a => base44.entities.TaskApplication.update(a.id, { status: 'cancelled' }))
-      );
+      const activeApps = workerApps.filter(a => a.status === 'approved' || a.status === 'pending');
+      for (const app of activeApps) {
+        const creditsToRefund = app.credits_charged || 0;
+        if (creditsToRefund > 0) {
+          const freshUsers = await base44.entities.User.filter({ id: me.id });
+          const freshMe = freshUsers[0];
+          const currentCredits = freshMe?.worker_credits ?? 0;
+          const newBalance = currentCredits + creditsToRefund;
+          await base44.auth.updateMe({ worker_credits: newBalance });
+          await base44.entities.CreditTransaction.create({
+            user_id: me.id,
+            amount: creditsToRefund,
+            type: 'Refund_Rejection',
+            task_id: id,
+            balance_after: newBalance,
+            note: `החזר קרדיטים - יציאה מהמשימה`,
+          });
+        }
+        await base44.entities.TaskApplication.update(app.id, { status: 'cancelled' });
+      }
       // 2. Notify task owner via chat
       if (task?.client_id && me) {
         await base44.entities.ChatMessage.create({
@@ -256,7 +271,9 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('יצאת מהמשימה');
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
+      toast.success('יצאת מהמשימה והקרדיטים הוחזרו 🪙');
       navigate('/');
     },
   });

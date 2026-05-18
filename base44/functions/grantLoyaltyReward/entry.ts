@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, bonus: 0, note: 'No credits were charged' });
     }
 
-    const bonus = creditsCharged * 0.1;
+    const bonus = Math.max(1, Math.round(creditsCharged * 0.1));
 
     // Fetch worker's current balance
     const users = await base44.asServiceRole.entities.User.filter({ id: workerId });
