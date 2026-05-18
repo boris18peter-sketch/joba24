@@ -129,10 +129,8 @@ export default function PublicProfile() {
           </div>
         )}
 
-        {/* Trust score (ScoringBar) */}
-        {user.trust_score !== undefined && user.trust_score !== null && (
-          <ScoringBar score={user.trust_score} />
-        )}
+        {/* Trust score (ScoringBar) — always show, defaults to 1 (100%) for new users */}
+        <ScoringBar score={user.trust_score ?? 1} />
 
         {/* Worker score */}
         {workerScore > 0 && (
