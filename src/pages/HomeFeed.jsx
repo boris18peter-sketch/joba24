@@ -333,7 +333,7 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 10, paddingLeft: 10, justifyContent: 'space-between' }}>
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 10, paddingLeft: 66, justifyContent: 'space-between' }}>
         
         {/* Right side: Logo + Text */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -341,8 +341,8 @@ export default function HomeFeed() {
           <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
         </div>
 
-        {/* Left side: Credits/Login button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {/* Credits/Login button */}
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           {isAuthenticated ? (
             <button
               onClick={() => setShowBuyCredits(true)}
