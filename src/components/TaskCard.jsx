@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import TaskBadges from '@/components/TaskBadges';
+import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
@@ -35,14 +36,14 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         return;
       }
       if (res.data?.error === 'insufficient_credits') {
-        toast.error(`אין מספיק קרדיטים. נדרש: ${res.data.credits_required}, יתרה: ${res.data.credits_available}`);
+        toast.error(`אין מספיק קרדיטים. כניסה למשימה: ${res.data.credits_required}`);
         submittedRef.current = false;
         setLoading(false);
         return;
       }
       onApplied(res.data?.application);
       onClose();
-      toast.success(`הבקשה נשלחה! נוכו ${res.data?.credits_charged} קרדיטים 🪙`);
+      toast.success(`הגשת בקשה למשימה: ${res.data?.credits_charged} קרדיטים נוכו`);
     } catch {
       submittedRef.current = false;
       setLoading(false);
@@ -78,7 +79,12 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
 
         {/* Task summary */}
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 18, padding: '16px 18px', marginBottom: 18, color: 'white' }}>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>מגיש בקשה למשימה</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
+            <span>הגשת בקשה למשימה:</span>
+            <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
+              {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={12} />
+            </span>
+          </div>
           <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
           <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1 }}>₪{task.price}</div>
         </div>

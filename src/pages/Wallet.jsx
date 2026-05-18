@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
+import CreditIcon from '@/components/CreditIcon';
 import BackButton from '@/components/BackButton';
 
 const STATUS_TABS = [
@@ -143,8 +144,8 @@ export default function Wallet() {
                       {txn.task_title && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{txn.task_title}</div>}
                     </div>
                     <div style={{ textAlign: 'left' }}>
-                      <div style={{ fontSize: 15, fontWeight: 900, color: isPositive ? '#16a34a' : '#dc2626' }}>
-                        {isPositive ? '+' : ''}{txn.amount} 🪙
+                      <div style={{ fontSize: 15, fontWeight: 900, color: isPositive ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {isPositive ? '+' : ''}{txn.amount} <CreditIcon size={15} />
                       </div>
                       {txn.balance_after !== undefined && (
                         <div style={{ fontSize: 10, color: '#aaa', textAlign: 'left' }}>יתרה: {txn.balance_after}</div>
@@ -197,7 +198,7 @@ export default function Wallet() {
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#9ca3af' }}>
-                        <span>🪙 {app.credits_charged} קרדיטים</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CreditIcon size={13} /> {app.credits_charged}</span>
                         {(app.status === 'rejected' || app.status === 'cancelled') && app.credits_charged > 0 && (
                           <span style={{ color: '#16a34a', fontWeight: 700 }}>← הוחזרו</span>
                         )}

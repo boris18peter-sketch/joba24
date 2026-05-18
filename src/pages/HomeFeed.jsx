@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock } from 'lucide-react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
+import CreditIcon from '@/components/CreditIcon';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
@@ -352,7 +353,8 @@ export default function HomeFeed() {
                 boxShadow: '0 2px 8px rgba(251,191,36,0.35)', whiteSpace: 'nowrap',
               }}
             >
-              <span>{me?.worker_credits ?? 0} קרדיטים</span>
+              <CreditIcon size={16} />
+              <span>{me?.worker_credits ?? 0}</span>
               <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
             </button>
           ) : (

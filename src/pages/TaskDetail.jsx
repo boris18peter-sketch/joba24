@@ -18,6 +18,7 @@ import ApprovedPopup from '@/components/ApprovedPopup';
 import WorkerTrackerBar from '@/components/WorkerTrackerBar';
 import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
+import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -359,7 +360,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       setShowApplyForm(false);
       setHasApplied(true);
-      toast.success(`הבקשה נשלחה! נוכו ${data.credits_charged} קרדיטים 🪙`);
+      toast.success(`הגשת בקשה למשימה: ${data.credits_charged} קרדיטים נוכו`);
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
@@ -943,8 +944,8 @@ export default function TaskDetail() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Send size={18} strokeWidth={1.8} /> הגש בקשה לביצוע
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.8 }}>
-              עלות: {Math.max(1, Math.round((task.price || 0) * 0.05))} קרדיטים 🪙
+            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 4 }}>
+              כניסה למשימה {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={13} />
             </div>
           </button>
         </div>

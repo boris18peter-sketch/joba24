@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { X, Zap, Star } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import CreditIcon from '@/components/CreditIcon';
 
 const PACKAGES = [
   { id: 'starter',    label: 'התנסות',  credits: 15,   bonus: 0,   price: 9.90,   popular: false },
@@ -47,22 +48,22 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-                🪙
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CreditIcon size={26} />
+            </div>
+            <div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>רכישת קרדיטים</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+                יתרה נוכחית: <span style={{ fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 3 }}>{me?.worker_credits ?? 0} <CreditIcon size={13} /></span>
               </div>
-              <div>
-                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>רכישת קרדיטים</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>
-                  יתרה נוכחית: <span style={{ fontWeight: 700, color: '#b45309' }}>{me?.worker_credits ?? 0} קרדיטים</span>
-                </div>
-              </div>
+            </div>
             </div>
 
             {creditsNeeded && (
               <div style={{ marginTop: 12, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Zap size={14} color="#f97316" />
-                <span style={{ fontSize: 13, color: '#c2410c', fontWeight: 600 }}>
-                  נדרשים <strong>{creditsNeeded} קרדיטים</strong> להגשת הבקשה הזו
+                <span style={{ fontSize: 13, color: '#c2410c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  כניסה למשימה <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={14} /></strong>
                 </span>
               </div>
             )}
@@ -119,9 +120,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   {pkg.label}
                 </div>
 
-                <div style={{ fontSize: 22, fontWeight: 900, color: pkg.popular ? 'white' : '#0f1e40', letterSpacing: -0.5, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: pkg.popular ? 'white' : '#0f1e40', letterSpacing: -0.5, lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: 5 }}>
                   {totalCredits}
-                  <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, marginRight: 2 }}>קרדיטים</span>
+                  <CreditIcon size={18} />
                 </div>
 
                 {pkg.bonus > 0 && (
