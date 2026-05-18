@@ -331,22 +331,25 @@ export default function HomeFeed() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
-      {/* Header — fixed height, vertically centered, logo pinned right */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 8 }} />
+      {/* Header */}
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 10, paddingLeft: 10, gap: 8 }}>
+        
+        {/* Right side: Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginRight: 'auto' }}>
           <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
         </div>
-        {/* Dynamic action button — left side of header */}
-        <div style={{ marginRight: 'auto' }}>
+
+        {/* Left side: Credits/Login button + Menu button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
           {isAuthenticated ? (
             <button
               onClick={() => setShowBuyCredits(true)}
               style={{
                 background: '#fbbf24', color: '#1a3a6b', border: 'none',
-                padding: '8px 16px', borderRadius: 12, fontWeight: 900,
+                height: 36, padding: '0 14px', borderRadius: 12, fontWeight: 900,
                 fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
+                boxShadow: '0 2px 8px rgba(251,191,36,0.35)', whiteSpace: 'nowrap',
               }}
             >
               <span>{me?.worker_credits ?? 0} קרדיטים</span>
@@ -357,8 +360,8 @@ export default function HomeFeed() {
               onClick={() => base44.auth.redirectToLogin()}
               style={{
                 background: '#fbbf24', color: '#1a3a6b', border: 'none',
-                padding: '8px 16px', borderRadius: 12, fontWeight: 900,
-                fontSize: 14, cursor: 'pointer',
+                height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
+                fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
                 boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
               }}
             >
@@ -383,11 +386,6 @@ export default function HomeFeed() {
         );
       })()}
 
-      {/* Stories - מעוכב לטעינה */}
-      <React.Suspense fallback={null}>
-      <StoriesBar />
-      </React.Suspense>
-
       {/* My Published Tasks Carousel */}
       {myTasks.some(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status)) && (
         <MyTasksCarousel myTasks={myTasks} hideWhenWorking={false} />
@@ -395,25 +393,30 @@ export default function HomeFeed() {
 
       <div className="px-4 py-5">
 
-        {/* Section title + smart section tabs */}
+        {/* Section title */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
             <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
           </div>
+
+          {/* Stories — מתחת לכותרת, מעל ה-search */}
+          <React.Suspense fallback={null}>
+            <StoriesBar />
+          </React.Suspense>
+
           {/* Smart section selector — only show when not filtering */}
           {smartSections && (
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, marginTop: 8 }}>
               {[
-                { id: 'all',     icon: <Sparkles size={11} />, label: 'מומלץ', count: sortedTasks.length },
                 { id: 'nearby',  icon: <MapPin size={11} />,    label: 'קרוב אליך', count: smartSections.nearby.length },
                 { id: 'highpay', icon: <Banknote size={11} />,  label: 'שכר גבוה', count: smartSections.highPaying.length },
                 { id: 'urgent',  icon: <Flame size={11} />,     label: 'דחוף', count: smartSections.urgent.length },
                 { id: 'new',     icon: <Clock size={11} />,     label: 'חדש',  count: smartSections.newTasks.length },
-              ].filter(s => s.id === 'all' || s.count > 0).map(s => (
+              ].filter(s => s.count > 0).map(s => (
                 <button
                   key={s.id}
-                  onClick={() => setActiveSection(s.id)}
+                  onClick={() => setActiveSection(activeSection === s.id ? 'all' : s.id)}
                   style={{
                     flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4,
                     padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
@@ -425,7 +428,7 @@ export default function HomeFeed() {
                   }}
                 >
                   {s.icon} {s.label}
-                  {s.id !== 'all' && <span style={{ fontSize: 9, opacity: 0.7, marginRight: 1 }}>({s.count})</span>}
+                  <span style={{ fontSize: 9, opacity: 0.7, marginRight: 1 }}>({s.count})</span>
                 </button>
               ))}
             </div>
