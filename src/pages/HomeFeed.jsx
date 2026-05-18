@@ -341,8 +341,8 @@ export default function HomeFeed() {
           <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
         </div>
 
-        {/* Left side: Credits/Login button + Menu button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {/* Left side: Credits/Login button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {isAuthenticated ? (
             <button
               onClick={() => setShowBuyCredits(true)}
