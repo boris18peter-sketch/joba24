@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2, LogIn } from 'lucide-react';
+import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2, CheckCircle2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import { format } from 'date-fns';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -14,14 +13,14 @@ import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
-// ── Apply Modal — full screen, professional ───────────────────────────────────
+// ── Apply Modal — mobile optimized ──────────────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const submittedRef = useRef(false);
 
   const handleSubmit = async () => {
-    // Hard lock: ignore if already submitted or loading
     if (loading || submittedRef.current) return;
     submittedRef.current = true;
     setLoading(true);
@@ -41,14 +40,23 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         setLoading(false);
         return;
       }
+      // Micro-animation: show success state briefly
+      setSuccess(true);
       onApplied(res.data?.application);
-      onClose();
-      toast.success(`הגשת בקשה למשימה: ${res.data?.credits_charged} קרדיטים נוכו`);
+      setTimeout(() => {
+        onClose();
+        toast.success(`הגשת בקשה! ${res.data?.credits_charged} קרדיטים נוכו`);
+      }, 700);
     } catch {
       submittedRef.current = false;
       setLoading(false);
       toast.error('שגיאה בשליחת הבקשה, נסה שוב');
     }
+  };
+
+  // Close on backdrop touch — also handles keyboard dismiss on mobile
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) onClose();
   };
 
   return (
@@ -58,85 +66,112 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         background: 'rgba(5,15,40,0.55)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
-        animation: 'fadeInBackdrop 0.2s ease',
+        animation: 'fadeInBackdrop 0.18s ease',
+        touchAction: 'none',
       }}
-      onClick={onClose}
+      onClick={handleBackdropClick}
     >
       <div
         dir="rtl"
         onClick={e => e.stopPropagation()}
         style={{
           background: '#fafbff',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: '24px 24px 0 0',
           width: '100%', maxWidth: 480,
           boxShadow: '0 -16px 60px rgba(0,0,0,0.2)',
-          padding: '12px 20px 40px',
-          animation: 'slideUpModal 0.28s cubic-bezier(0.34,1.4,0.64,1)',
+          padding: '12px 20px',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+          animation: 'slideUpModal 0.26s cubic-bezier(0.34,1.3,0.64,1)',
+          maxHeight: '90dvh',
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
         }}
       >
         {/* Handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
+
+        {/* Success state overlay */}
+        {success && (
+          <div style={{
+            position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.96)',
+            borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 10,
+            animation: 'fadeInBackdrop 0.2s ease',
+          }}>
+            <div style={{
+              width: 64, height: 64, borderRadius: '50%', background: '#dcfce7',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              animation: 'successPop 0.35s cubic-bezier(0.34,1.6,0.64,1)',
+            }}>
+              <CheckCircle2 size={32} color="#16a34a" />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40' }}>הבקשה נשלחה!</div>
+            <div style={{ fontSize: 13, color: '#64748b' }}>ממתין לאישור בעל הג'ובה</div>
+          </div>
+        )}
 
         {/* Task summary */}
-        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 18, padding: '16px 18px', marginBottom: 18, color: 'white' }}>
+        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
-            <span>הגשת בקשה למשימה:</span>
+            <span>עלות הגשה:</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
               {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={12} />
             </span>
           </div>
-          <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
-          <div style={{ fontSize: 24, fontWeight: 900, letterSpacing: -1 }}>₪{task.price}</div>
+          <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{task.price}</div>
         </div>
 
-        {/* Message area — same style as TaskDetail */}
-        <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', marginBottom: 16 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 10px' }}>
-            הוסף הודעה לבעל הג'ובה (לא חובה)
+        {/* Message area */}
+        <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>
+            הוסף הודעה (לא חובה)
           </p>
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
-            placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום, אני זמין להגיע מיד..."
-            rows={4}
+            placeholder="לדוגמה: יש לי ניסיון, אני זמין להגיע מיד..."
+            rows={3}
             style={{
-              width: '100%', borderRadius: 12, border: '1px solid #bfdbfe',
-              padding: '12px 14px', fontSize: 14, fontFamily: 'inherit', resize: 'none',
+              width: '100%', borderRadius: 10, border: '1px solid #bfdbfe',
+              padding: '10px 12px', fontSize: 16, fontFamily: 'inherit', resize: 'none',
               outline: 'none', color: '#1a2540', background: 'white', boxSizing: 'border-box',
               lineHeight: 1.5,
             }}
-            onFocus={e => e.target.style.borderColor = '#93c5fd'}
-            onBlur={e => e.target.style.borderColor = '#bfdbfe'}
-            autoFocus
           />
         </div>
 
-        {/* Buttons — same layout as TaskDetail apply form */}
+        {/* Buttons */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={onClose}
-            style={{ height: 52, padding: '0 20px', borderRadius: 16, background: 'white', border: '1px solid #dce8f5', color: '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0 }}
+            style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
           >ביטול</button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || success}
             style={{
-              flex: 1, height: 52, borderRadius: 16,
-              background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              flex: 1, height: 52, borderRadius: 14,
+              background: success ? '#16a34a' : loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
               border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: (loading || success) ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : '0 6px 20px rgba(26,111,212,0.4)',
+              boxShadow: (loading || success) ? 'none' : '0 6px 20px rgba(26,111,212,0.35)',
+              transition: 'background 0.2s, transform 0.1s',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
+            {loading ? <Loader2 size={20} className="animate-spin" /> :
+             success ? <><CheckCircle2 size={18} /> נשלח!</> :
+             <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
           </button>
         </div>
       </div>
 
       <style>{`
         @keyframes fadeInBackdrop { from{opacity:0} to{opacity:1} }
-        @keyframes slideUpModal { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes slideUpModal { from{transform:translateY(50px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes successPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
       `}</style>
     </div>
   );
@@ -149,7 +184,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [cancelling, setCancelling] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [applyLocked, setApplyLocked] = useState(false); // prevents double-tap opening modal
+  const [applyLocked, setApplyLocked] = useState(false);
+  const [applyPressed, setApplyPressed] = useState(false); // micro feedback
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancellingTask, setCancellingTask] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -261,13 +297,21 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       >
         {/* Approved banner */}
         {isApproved && (
-          <div onClick={e => e.stopPropagation()} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10,
+            padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'cardFadeIn 0.3s ease',
+          }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CheckCircle2 size={16} color="#16a34a" />
+            </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>הבקשה אושרה</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>הבקשה אושרה! ✅</div>
               <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>לחץ לפרטים ולצאת לדרך</div>
             </div>
             <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-              style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              className="btn-tap"
+              style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent' }}>
               צא עכשיו
             </button>
           </div>
@@ -367,6 +411,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             {/* CTA — apply button */}
             {!hasActiveApp && task.created_by !== currentUserId && (
               <button
+                onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
+                onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}
+                onPointerLeave={() => setApplyPressed(false)}
                 onClick={e => {
                   e.stopPropagation();
                   if (!currentUserId) { setShowLoginPrompt(true); return; }
@@ -377,7 +424,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 }}
                 disabled={applyLocked}
                 style={{
-                  height: 34, padding: '0 14px', borderRadius: 9,
+                  height: 36, padding: '0 14px', borderRadius: 10,
                   background: '#1a6fd4',
                   border: 'none', color: 'white', fontSize: 12, fontWeight: 700,
                   cursor: applyLocked ? 'not-allowed' : 'pointer',
@@ -385,6 +432,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                   opacity: applyLocked ? 0.6 : 1,
                   whiteSpace: 'nowrap',
                   WebkitTapHighlightColor: 'transparent',
+                  transform: applyPressed ? 'scale(0.93)' : 'scale(1)',
+                  transition: 'transform 0.1s ease, opacity 0.15s',
+                  boxShadow: applyPressed ? 'none' : '0 3px 10px rgba(26,111,212,0.3)',
                 }}
               >
                 {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
@@ -439,7 +489,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         document.body
       )}
 
-      <style>{`@keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }`}</style>
+      <style>{`
+        @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
+        @keyframes cardFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
       </>
       );
       }

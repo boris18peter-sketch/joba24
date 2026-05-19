@@ -38,10 +38,12 @@ export default function CancelSuccessPopup({ task, onClose }) {
           width: '100%',
           maxWidth: 480,
           boxShadow: '0 -20px 80px rgba(0,0,0,0.3)',
-          padding: '24px 20px 40px',
+          padding: '24px 20px 16px',
           animation: 'slideUpModal 0.3s cubic-bezier(0.34,1.4,0.64,1)',
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
         }}
       >
         {/* Handle */}
@@ -72,7 +74,11 @@ export default function CancelSuccessPopup({ task, onClose }) {
 
         {/* Icon + Title + Description */}
         <div style={{ textAlign: 'center', marginBottom: 28, marginTop: 8 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+            animation: 'successPop 0.4s cubic-bezier(0.34,1.6,0.64,1)',
+          }}>
             <span style={{ fontSize: 32 }}>✅</span>
           </div>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
@@ -103,9 +109,10 @@ export default function CancelSuccessPopup({ task, onClose }) {
         {/* Button */}
         <button
           onClick={onClose}
+          className="btn-tap"
           style={{
             width: '100%',
-            height: 54,
+            height: 52,
             borderRadius: 14,
             background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
             border: 'none',
@@ -117,8 +124,8 @@ export default function CancelSuccessPopup({ task, onClose }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 10,
-            boxShadow: '0 4px 16px rgba(26, 111, 212, 0.4)',
-            transition: 'all 0.2s',
+            boxShadow: '0 4px 16px rgba(26, 111, 212, 0.35)',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
           חזור לפיד
@@ -131,7 +138,8 @@ export default function CancelSuccessPopup({ task, onClose }) {
 
       <style>{`
         @keyframes fadeInBackdrop { from{opacity:0} to{opacity:1} }
-        @keyframes slideUpModal { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes slideUpModal { from{transform:translateY(50px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes successPop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
       `}</style>
     </div>
   );

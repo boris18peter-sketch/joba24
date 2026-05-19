@@ -8,16 +8,17 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
         position: 'relative',
         background: 'white',
         borderRadius: 28,
-        width: '100%',
+        width: 'calc(100% - 32px)',
         maxWidth: 400,
-        margin: '0 16px 16px',
+        margin: '0 auto',
+        marginBottom: 'max(16px, env(safe-area-inset-bottom))',
         overflow: 'hidden',
         boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
-        animation: 'slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        animation: 'slideUp 0.35s cubic-bezier(0.34, 1.4, 0.64, 1)',
       }}>
         <style>{`
           @keyframes slideUp {
-            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            from { opacity: 0; transform: translateY(50px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
           }
         `}</style>
@@ -49,17 +50,19 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
 
           <button
             onClick={onClose}
+            className="btn-tap"
             style={{
               width: '100%',
-              height: 54,
-              borderRadius: 18,
+              height: 52,
+              borderRadius: 16,
               background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
               color: 'white',
               fontWeight: 900,
               fontSize: 16,
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 8px 28px rgba(220,38,38,0.35)',
+              boxShadow: '0 6px 20px rgba(220,38,38,0.3)',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             הבנתי

@@ -25,10 +25,12 @@ export default function WorkerCancelledPopup({ task, onClose }) {
           width: '100%',
           maxWidth: 480,
           boxShadow: '0 -20px 80px rgba(0,0,0,0.3)',
-          padding: '24px 20px 40px',
+          padding: '24px 20px 16px',
           animation: 'slideUpModal 0.3s cubic-bezier(0.34,1.4,0.64,1)',
-          maxHeight: '90vh',
+          maxHeight: '90dvh',
           overflowY: 'auto',
+          overscrollBehavior: 'contain',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
         }}
       >
         {/* Handle */}
@@ -82,9 +84,10 @@ export default function WorkerCancelledPopup({ task, onClose }) {
         {/* Button */}
         <button
           onClick={onClose}
+          className="btn-tap"
           style={{
             width: '100%',
-            height: 54,
+            height: 52,
             borderRadius: 14,
             background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
             border: 'none',
@@ -96,8 +99,8 @@ export default function WorkerCancelledPopup({ task, onClose }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 10,
-            boxShadow: '0 4px 16px rgba(26, 111, 212, 0.4)',
-            transition: 'all 0.2s',
+            boxShadow: '0 4px 16px rgba(26, 111, 212, 0.35)',
+            WebkitTapHighlightColor: 'transparent',
           }}
         >
           חזור לפיד
