@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Capture worker_id before clearing (for response — so client can signal worker)
+    const cancelledWorkerId = task.worker_id;
+
     // Cancel the task
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'CANCELLED',
@@ -105,7 +108,7 @@ Deno.serve(async (req) => {
       worker_status: null,
     });
 
-    return Response.json({ success: true, refunded });
+    return Response.json({ success: true, refunded, cancelledWorkerId, taskTitle: task.title, taskId });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

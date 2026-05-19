@@ -22,6 +22,9 @@ export default function Layout() {
 
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
+  // Dedicated map: taskId → worker_id for tasks I'm working on as a TAKEN worker
+  // This is never cleared, so cancellation detection always has the worker_id
+  const takenWorkerRef = useRef({});
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -35,7 +38,9 @@ export default function Layout() {
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 60000,
+    staleTime: 30000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Active task as worker
@@ -46,7 +51,8 @@ export default function Layout() {
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 60000,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   // Get my applications
@@ -66,20 +72,25 @@ export default function Layout() {
 
   useEffect(() => {
     workerTasks.forEach(task => {
-      // Only seed if not already tracked (don't overwrite newer data)
-      if (!prevTasksRef.current[task.id]) {
+      if (task.status === 'TAKEN') {
+        prevTasksRef.current[task.id] = task;
+        takenWorkerRef.current[task.id] = task.worker_id; // always me.id for TAKEN tasks
+      } else if (!prevTasksRef.current[task.id]) {
         prevTasksRef.current[task.id] = task;
       }
     });
   }, [workerTasks]);
 
-  // Seed prevTasksRef with ALL tasks I'm a worker on (not just TAKEN)
-  // so cancellation detection works reliably
+  // Seed prevTasksRef + takenWorkerRef with TAKEN tasks I'm a worker on
+  // fetch once on mount so cancellation detection works reliably
   useEffect(() => {
     if (!me?.id) return;
     base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50).then(tasks => {
       tasks.forEach(task => {
-        prevTasksRef.current[task.id] = task;
+        if (task.status === 'TAKEN') {
+          prevTasksRef.current[task.id] = task;
+          takenWorkerRef.current[task.id] = task.worker_id; // = me.id
+        }
       });
     });
   }, [me?.id]);
@@ -208,6 +219,12 @@ export default function Layout() {
         return;
       }
 
+      // When task becomes TAKEN, snapshot the worker_id immediately so cancellation detection works later
+      if (task.status === 'TAKEN' && task.worker_id) {
+        prevTasksRef.current[task.id] = { ...prev, ...task };
+        takenWorkerRef.current[task.id] = task.worker_id;
+      }
+
       // Client notifications
       if (task.client_id === me?.id) {
         if (task.worker_status && task.worker_status !== prev.worker_status) {
@@ -221,10 +238,11 @@ export default function Layout() {
         }
       }
 
-      // TAKEN → OPEN: worker_id cleared
-      if (prev.status === 'TAKEN' && task.status === 'OPEN' && prev.worker_id && !task.worker_id) {
+      // TAKEN → OPEN: worker_id cleared (worker left voluntarily or approval revoked)
+      const prevWorkerId = prev.worker_id || takenWorkerRef.current[task.id];
+      if (prev.status === 'TAKEN' && task.status === 'OPEN' && prevWorkerId && !task.worker_id) {
         // Client: worker left voluntarily — only notify client, never the worker
-        if (task.client_id === me?.id && me?.id !== prev.worker_id) {
+        if (task.client_id === me?.id && me?.id !== prevWorkerId) {
           addNotification({
             type: 'worker_left_task',
             taskTitle: task.title,
@@ -233,7 +251,7 @@ export default function Layout() {
           });
         }
         // Worker: publisher revoked the approval — only show to the worker, never to the client
-        if (prev.worker_id === me?.id && me?.id !== task.client_id && !prev.worker_status) {
+        if (prevWorkerId === me?.id && me?.id !== task.client_id && !prev.worker_status) {
           addNotification({
             type: 'approval_revoked',
             taskTitle: task.title,
@@ -244,25 +262,27 @@ export default function Layout() {
       }
 
       // Worker notification: task was cancelled after being assigned (only show to the worker, not the client)
-      // Use prev.worker_id as the source of truth — worker_id may be cleared during cancellation
+      // Use takenWorkerRef as the most reliable source — never cleared, even if worker_id was nulled
+      const workerIdForTask = takenWorkerRef.current[task.id] || prev.worker_id;
       if (
         task.status === 'CANCELLED' &&
         prev.status === 'TAKEN' &&
-        prev.worker_id === me?.id &&
+        workerIdForTask === me?.id &&
         me?.id !== task.client_id
       ) {
         addNotification({
           type: 'task_cancelled_worker',
           taskTitle: prev.title || task.title,
         });
-        // Show popup to worker — use prev data since task.worker_id may already be cleared
-        setCancelledTask({ ...task, worker_id: prev.worker_id, title: prev.title || task.title });
+        // Show popup to worker
+        setCancelledTask({ ...task, worker_id: workerIdForTask, title: prev.title || task.title });
       }
 
       // Client notification: task was cancelled (only show to the client, not the worker)
+      // Note: prev.worker_id holds the worker before cancellation since task.worker_id is now null
       if (
         task.client_id === me?.id &&
-        me?.id !== prev.worker_id &&
+        me?.id !== prev.worker_id &&   // don't show to the worker even if they're also a client
         prev.status === 'TAKEN' &&
         task.status === 'CANCELLED'
       ) {
@@ -408,6 +428,8 @@ export default function Layout() {
                     await base44.functions.invoke('cancelTaskPayment', { taskId: taskToCancel.id });
                     setCancelWarningTask(null);
                     setCancelSuccessTask(taskToCancel);
+                    // Invalidate queries so the feed updates
+                    // (worker popup comes via subscription in the worker's Layout instance)
                   } catch (err) {
                     console.error('Cancel failed:', err);
                     setCancelWarningTask(null);
