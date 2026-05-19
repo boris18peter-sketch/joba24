@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star, X } from 'lucide-react';
+import { Star, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RatingModal({ task, me, onClose }) {
@@ -10,15 +10,29 @@ export default function RatingModal({ task, me, onClose }) {
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   const isOwner = me?.id === task.client_id;
   const revieweeId = isOwner ? task.worker_id : task.client_id;
   const revieweeName = isOwner ? task.worker_name : task.client_name;
   const role = isOwner ? 'client' : 'worker';
 
+  const needsPaymentConfirm = task.status === 'COMPLETED' && !task.client_confirmed && !task.worker_confirmed;
+  const canSubmit = rating > 0 && (!needsPaymentConfirm || paymentConfirmed);
+
   const handleSubmit = async () => {
     if (!rating) { toast.error('בחר דירוג'); return; }
+    if (needsPaymentConfirm && !paymentConfirmed) {
+      toast.error(isOwner ? 'יש לאשר ששילמת לעובד' : 'יש לאשר שקיבלת תשלום');
+      return;
+    }
     setLoading(true);
+
+    // Save payment confirmation on task
+    if (paymentConfirmed) {
+      const update = isOwner ? { client_confirmed: true } : { worker_confirmed: true };
+      base44.entities.Task.update(task.id, update).catch(() => {});
+    }
 
     // Close immediately for snappy UX — save in background
     toast.success('הביקורת נשמרה! תודה ⭐');
@@ -107,6 +121,39 @@ export default function RatingModal({ task, me, onClose }) {
           </div>
         )}
 
+        {/* Payment confirmation */}
+        {needsPaymentConfirm && (
+          <button
+            onClick={() => setPaymentConfirmed(v => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              padding: '14px 16px', borderRadius: 16, marginBottom: 16, cursor: 'pointer',
+              border: paymentConfirmed ? '2px solid #10b981' : '2px solid #e2e8f0',
+              background: paymentConfirmed ? '#f0fdf4' : '#f8fafc',
+              textAlign: 'right', transition: 'all 0.2s',
+            }}
+          >
+            <div style={{
+              width: 24, height: 24, borderRadius: 8, flexShrink: 0,
+              background: paymentConfirmed ? '#10b981' : 'white',
+              border: paymentConfirmed ? '2px solid #10b981' : '2px solid #d1d5db',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
+            }}>
+              {paymentConfirmed && <CheckCircle2 size={15} color="white" strokeWidth={2.5} />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? '#065f46' : '#1e293b' }}>
+                {isOwner ? '✅ שילמתי לעובד עבור המשימה' : '✅ קיבלתי תשלום מהלקוח עבור המשימה'}
+              </div>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                {isOwner
+                  ? `אישור ששולם ₪${task.price} ל${revieweeName}`
+                  : `אישור שהתקבל תשלום של ₪${task.price} מ${revieweeName}`}
+              </div>
+            </div>
+          </button>
+        )}
+
         {/* Comment */}
         <textarea
           placeholder="הוסף ביקורת מילולית (לא חובה)..."
@@ -116,8 +163,8 @@ export default function RatingModal({ task, me, onClose }) {
           style={{ width: '100%', padding: '12px 14px', borderRadius: 14, border: '1px solid #dce8f5', background: '#f4f7fb', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
         />
 
-        <button onClick={handleSubmit} disabled={loading || !rating}
-          style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: rating ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : '#e2e8f0', color: rating ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: rating ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        <button onClick={handleSubmit} disabled={loading || !canSubmit}
+          style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: canSubmit ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : '#e2e8f0', color: canSubmit ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
           ⭐ שלח ביקורת
         </button>
