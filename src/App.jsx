@@ -5,27 +5,14 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import { useEffect } from 'react';
 import React from 'react';
 
-function ScrollRestoration() {
+function ScrollToTop() {
   const { pathname } = useLocation();
-  const scrollPositions = React.useRef({});
 
   useEffect(() => {
-    // שמור scroll position לפני עזיבת העמוד
-    const handleBeforeUnload = () => {
-      scrollPositions.current[pathname] = window.scrollY;
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [pathname]);
-
-  useEffect(() => {
-    // שחזר scroll position או עלה לראש
-    const timer = setTimeout(() => {
-      const saved = scrollPositions.current[pathname];
-      window.scrollTo(0, saved || 0);
-    }, 0);
-    return () => clearTimeout(timer);
+    // Reset the actual scroll container (Layout's inner div) and window
+    const scrollContainer = document.getElementById('main-scroll');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+    window.scrollTo(0, 0);
   }, [pathname]);
 
   return null;
@@ -124,7 +111,7 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <ScrollRestoration />
+          <ScrollToTop />
           <AuthenticatedApp />
         </Router>
         <Toaster />

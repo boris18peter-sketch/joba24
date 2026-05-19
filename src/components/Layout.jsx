@@ -477,7 +477,7 @@ export default function Layout() {
       )}
       
       {/* Scrollable content area — paddingBottom leaves space for bottom nav */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+      <div id="main-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
         <Outlet />
       </div>
 
