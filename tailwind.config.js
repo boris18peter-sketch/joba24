@@ -27,7 +27,6 @@ module.exports = {
         ring: 'hsl(var(--ring))',
         success: 'hsl(var(--success))',
         warning: 'hsl(var(--warning))',
-        cta: 'hsl(var(--cta))',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',

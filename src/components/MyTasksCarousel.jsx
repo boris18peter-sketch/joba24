@@ -129,9 +129,9 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: '#1a6fd4',
+            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
             borderRadius: 16, padding: '13px 20px',
-            boxShadow: 'none',
+            boxShadow: '0 4px 18px rgba(26,111,212,0.25)',
             cursor: 'pointer',
           }}>
             <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -149,7 +149,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   }
 
   return (
-    <div style={{ padding: '16px 16px 8px' }}>
+    <div style={{ padding: '14px 16px 6px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -189,7 +189,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 6,
-                boxShadow: 'none',
+                boxShadow: hasPending ? '0 2px 12px rgba(251,191,36,0.18)' : isTaken ? '0 2px 12px rgba(192,135,58,0.15)' : '0 2px 8px rgba(15,43,107,0.06)',
                 position: 'relative',
                 boxSizing: 'border-box',
               }}>

@@ -56,7 +56,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
           <button
             onClick={onConfirm}
             disabled={loading}
-            style={{ width: '100%', height: 52, borderRadius: 16, background: action.color, border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: 'none' }}
+            style={{ width: '100%', height: 52, borderRadius: 16, background: action.color, border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : action.label}
           </button>
@@ -131,13 +131,13 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
 
           const gradient = tIsWorker
             ? tStepIdx === 1
-              ? '#d97706'
+              ? 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
               : tStepIdx === 2
-              ? '#10b981'
-              : '#1a6fd4'
+              ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+              : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)'
             : tStepIdx === 2
-            ? '#10b981'
-            : '#1a6fd4';
+            ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+            : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
 
           const statusText = tIsOwner
             ? tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד'
@@ -150,7 +150,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           return (
             <div
               key={t.id}
-              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '18px 18px 16px', boxShadow: 'none', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
               onClick={() => navigate(`/task/${t.id}`)}
             >
               {/* Live dot + badge */}
@@ -222,7 +222,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                         boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.2)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={14} color={done ? (gradient === '#d97706' ? '#d97706' : gradient === '#10b981' ? '#10b981' : '#1a6fd4') : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={14} color={done ? gradient.includes('#d97706') ? '#d97706' : gradient.includes('#059669') ? '#059669' : '#1a6fd4' : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
                       <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.5)', marginTop: 4 }}>{label}</div>
                     </div>
@@ -236,7 +236,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 {tIsWorker && quickAction && (
                   <button
                     onClick={() => setPendingAction({ task: t, action: { ...quickAction, color: quickAction.color } })}
-                    style={{ flex: 2, height: 46, borderRadius: 14, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: 'none' }}
+                    style={{ flex: 2, height: 46, borderRadius: 14, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}
                   >
                     {quickAction.nextKey === 'arrived' ? <MapPin size={15} /> : quickAction.nextKey === 'done' ? <CheckCircle size={15} /> : <Navigation size={15} />}
                     {quickAction.label}

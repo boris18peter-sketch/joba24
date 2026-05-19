@@ -45,7 +45,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         }}
       >
         {/* Header */}
-        <div style={{ padding: '24px 22px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
@@ -79,7 +79,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         </div>
 
         {/* Packages grid */}
-        <div style={{ padding: '16px 16px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ padding: '14px 14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {PACKAGES.map((pkg) => {
             const totalCredits = pkg.credits + pkg.bonus;
             const pricePerCredit = (pkg.price / totalCredits).toFixed(2);
@@ -90,7 +90,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 onClick={() => handleSelect(pkg)}
                 style={{
                   background: pkg.popular
-                    ? '#1a6fd4'
+                    ? 'linear-gradient(135deg, #0f2b6b, #1a6fd4)'
                     : 'white',
                   border: pkg.popular ? 'none' : '1.5px solid #e5e9f5',
                   borderRadius: 16,
@@ -98,7 +98,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   textAlign: 'right',
                   cursor: 'pointer',
                   position: 'relative',
-                  boxShadow: pkg.popular ? '0 4px 12px rgba(0,0,0,0.1)' : '0 1px 4px rgba(0,0,0,0.06)',
+                  boxShadow: pkg.popular ? '0 8px 28px rgba(26,111,212,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
                   transition: 'transform 0.15s',
                 }}
                 onPointerDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
@@ -150,7 +150,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           })}
         </div>
 
-        <div style={{ padding: '18px 22px', textAlign: 'center', color: '#bbb', fontSize: 12 }}>
+        <div style={{ padding: '14px 20px', textAlign: 'center', color: '#bbb', fontSize: 11 }}>
           🔒 קרדיטים = עבודה = רווחים
         </div>
       </div>

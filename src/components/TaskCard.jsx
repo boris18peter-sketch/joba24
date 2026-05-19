@@ -78,7 +78,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
 
         {/* Task summary */}
-        <div style={{ background: '#1a6fd4', borderRadius: 18, padding: '16px 18px', marginBottom: 18, color: 'white' }}>
+        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 18, padding: '16px 18px', marginBottom: 18, color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
             <span>הגשת בקשה למשימה:</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -122,11 +122,11 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
             disabled={loading}
             style={{
               flex: 1, height: 52, borderRadius: 16,
-              background: loading ? '#93b4d8' : '#1a6fd4',
+              background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
               border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: 'none',
+              boxShadow: loading ? 'none' : '0 6px 20px rgba(26,111,212,0.4)',
             }}
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
@@ -253,18 +253,18 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       <div
         onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
         className="bg-white rounded-2xl active:scale-[0.982] transition-all"
-        style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: 'none', padding: '16px', cursor: 'pointer' }}
+        style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: '0 2px 12px rgba(15,43,107,0.07)', padding: '13px 14px', cursor: 'pointer' }}
       >
         {/* Approved banner */}
         {appStatus === 'approved' && (
-          <div onClick={e => e.stopPropagation()} style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1.5px solid #86efac', borderRadius: 14, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 18 }}>🎉</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#065f46' }}>הבקשה אושרה!</div>
               <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>לחץ לצפייה בפרטים ולצאת לדרך</div>
             </div>
             <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-              style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: 'none', whiteSpace: 'nowrap' }}>
+              style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.35)', whiteSpace: 'nowrap' }}>
               🚀 צא עכשיו
             </button>
           </div>
@@ -289,7 +289,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         {badges && !hasActiveApp && <TaskBadges badges={badges} />}
 
         {/* Top row: title + price + apply btn */}
-         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
            <div style={{ flex: 1, minWidth: 0 }}>
              <h3 style={{ fontWeight: 700, color: '#1a2540', fontSize: 14, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: 4 }}>
                {task.title}
@@ -402,11 +402,11 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 disabled={applyLocked}
                 style={{
                   height: 32, padding: '0 12px', borderRadius: 10,
-                  background: applyLocked ? '#93b4d8' : '#fbbf24',
-                  border: 'none', color: '#1a3a6b', fontSize: 12, fontWeight: 700,
+                  background: applyLocked ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  border: 'none', color: 'white', fontSize: 12, fontWeight: 700,
                   cursor: applyLocked ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', gap: 4,
-                  boxShadow: 'none',
+                  boxShadow: applyLocked ? 'none' : '0 2px 8px rgba(26,111,212,0.3)',
                   whiteSpace: 'nowrap',
                   WebkitTapHighlightColor: 'transparent',
                   transition: 'background 0.15s',
@@ -427,13 +427,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
         {/* Description */}
         {task.description && (
-        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 10, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-          {task.description}
-        </p>
+          <p style={{ color: '#94a3b8', fontSize: 11, marginBottom: 7, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+            {task.description}
+          </p>
         )}
 
-        {/* Bottom meta */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#94a3b8', overflow: 'hidden' }}>
+        {/* Bottom meta with ID */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#94a3b8', overflow: 'hidden' }}>
           {task.location_name && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               <MapPin size={10} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span>
