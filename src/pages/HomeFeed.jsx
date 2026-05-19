@@ -39,9 +39,9 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 30000,
-    refetchOnWindowFocus: true,
-    refetchInterval: 60000
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 120000
   });
 
   // Active task I'm working on as a worker
@@ -50,10 +50,10 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    refetchInterval: 10000,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnWindowFocus: true
+    refetchInterval: 60000,
+    staleTime: 30000,
+    gcTime: 60000,
+    refetchOnWindowFocus: false
   });
 
   // Active task I published that is currently TAKEN
@@ -71,11 +71,11 @@ export default function HomeFeed() {
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['allTasks'],
     queryFn: () => base44.functions.invoke('getOpenTasks').then(r => r.data.tasks || []),
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30000,
+    gcTime: 60000,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 15000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 60000,
   });
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
