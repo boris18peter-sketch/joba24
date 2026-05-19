@@ -398,13 +398,13 @@ export default function HomeFeed() {
         <MyTasksCarousel myTasks={myTasks} hideWhenWorking={false} />
       )}
 
-      <div className="px-4 py-5">
+      <div className="px-4" style={{ paddingTop: 16, paddingBottom: 8 }}>
 
         {/* Section title */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0 }}>משימות שאחרים פרסמו</h2>
-            <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <h2 style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', margin: 0, letterSpacing: 0.3, textTransform: 'uppercase' }}>משימות זמינות</h2>
+            <div style={{ flex: 1, height: 1, background: '#eaeff7' }} />
           </div>
 
           {/* Stories — מתחת לכותרת, מעל ה-search */}
@@ -443,11 +443,11 @@ export default function HomeFeed() {
         </div>
 
         {/* Search + Filter + Categories toolbar — always visible */}
-        <div style={{ background: 'white', borderRadius: 12, border: '1px solid #eaeff7', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ background: 'white', borderRadius: 14, border: '1px solid #e8edf5', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {/* Search row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                  <Search size={11} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#cbd5e1', pointerEvents: 'none' }} />
+                  <Search size={12} style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#b0bec5', pointerEvents: 'none' }} />
                   <input
                 placeholder="חיפוש משימות..."
                 value={search}
@@ -456,12 +456,12 @@ export default function HomeFeed() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
                 style={{
-                  width: '100%', height: 28, borderRadius: 7,
-                  border: `0.5px solid ${searchFocused ? '#93c5fd' : '#e2e8f0'}`,
-                  paddingRight: 24, paddingLeft: search ? 20 : 6,
-                  fontSize: 11, fontFamily: 'inherit',
+                  width: '100%', height: 32, borderRadius: 9,
+                  border: `1px solid ${searchFocused ? '#93c5fd' : '#e2e8f0'}`,
+                  paddingRight: 28, paddingLeft: search ? 24 : 8,
+                  fontSize: 13, fontFamily: 'inherit',
                   background: '#f8fafc', outline: 'none', color: '#1a2540',
-                  transition: 'all 0.15s', boxSizing: 'border-box'
+                  transition: 'border-color 0.15s', boxSizing: 'border-box'
                 }} />
               
                   {search &&
@@ -505,10 +505,10 @@ export default function HomeFeed() {
               </div>
 
               {/* Category pills */}
-              <div style={{ display: 'flex', gap: 3, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                 <button
               onClick={() => setFilters((f) => ({ ...f, category: '' }))}
-              style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 16, fontSize: 9, fontWeight: 500, border: '0.5px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#eef2ff', color: !filters.category ? 'white' : '#4f46e5', transition: 'all 0.15s' }}>
+              style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#f1f5f9', color: !filters.category ? 'white' : '#475569', transition: 'all 0.15s' }}>
               הכל</button>
                 {[...CATEGORIES].
             sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN').length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN').length).
@@ -519,11 +519,9 @@ export default function HomeFeed() {
               return (
                 <button key={c.value}
                 onClick={() => setFilters((f) => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                style={{ flexShrink: 0, padding: '3px 10px', borderRadius: 16, fontSize: 9, fontWeight: 500, border: '0.5px solid transparent', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#eef2ff', color: isActive ? 'white' : '#4f46e5', display: 'flex', alignItems: 'center', gap: 2, transition: 'all 0.15s' }}>
-                  
-                        {c.label}{count > 0 && <span style={{ opacity: 0.6, fontSize: 8 }}>({count})</span>}
-                      </button>);
-
+                style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#f1f5f9', color: isActive ? 'white' : '#475569', display: 'flex', alignItems: 'center', gap: 3, transition: 'all 0.15s' }}>
+                  {c.label}{count > 0 && <span style={{ opacity: 0.55, fontSize: 10 }}>({count})</span>}
+                </button>);
             })}
               </div>
 
@@ -543,12 +541,20 @@ export default function HomeFeed() {
         </div>
 
         {isLoading ?
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
             {Array(4).fill(0).map((_, i) =>
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
-                <div className="h-4 bg-gray-100 rounded w-2/3 mb-2" />
-                <div className="h-3 bg-gray-100 rounded w-1/2 mb-3" />
-                <div className="h-3 bg-gray-100 rounded w-1/3" />
+          <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf5', padding: '16px' }} className="animate-pulse">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div className="h-4 bg-gray-100 rounded-lg w-3/4 mb-3" />
+                    <div className="h-3 bg-gray-100 rounded-lg w-1/3 mb-4" />
+                    <div className="h-3 bg-gray-100 rounded-lg w-1/2" />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                    <div className="h-6 bg-gray-100 rounded-lg w-16" />
+                    <div className="h-8 bg-gray-100 rounded-lg w-16" />
+                  </div>
+                </div>
               </div>
           )}
           </div> :
@@ -565,7 +571,7 @@ export default function HomeFeed() {
           }
           </div> :
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
             {displayedTasks.map((task) => {
             const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
             const isNew = newTaskIds.has(task.id);

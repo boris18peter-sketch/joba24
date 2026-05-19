@@ -242,158 +242,134 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     }
   };
 
-  const borderColor = appStatus === 'approved' ? '#10b981' : appStatus === 'pending' ? '#fbbf24' : '#edf1f7';
-  const borderWidth = hasActiveApp ? '1.5px' : '1px';
-
-  // Count pending apps for this task (passed from parent or task.applicants)
-  const pendingAppsCount = task._pendingAppsCount || 0;
+  const isApproved  = appStatus === 'approved';
+  const isPending   = appStatus === 'pending';
+  const currentPrice = calculateCurrentPrice(task);
 
   return (
     <>
       <div
         onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
-        className="bg-white rounded-2xl active:scale-[0.982] transition-all"
-        style={{ border: `${borderWidth} solid ${borderColor}`, boxShadow: '0 2px 12px rgba(15,43,107,0.07)', padding: '13px 14px', cursor: 'pointer' }}
+        className="bg-white active:scale-[0.982] transition-all"
+        style={{
+          borderRadius: 16,
+          border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : '1px solid #e8edf5',
+          boxShadow: '0 1px 6px rgba(15,43,107,0.06)',
+          padding: '16px',
+          cursor: 'pointer',
+        }}
       >
         {/* Approved banner */}
-        {appStatus === 'approved' && (
-          <div onClick={e => e.stopPropagation()} style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1.5px solid #86efac', borderRadius: 14, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>🎉</span>
+        {isApproved && (
+          <div onClick={e => e.stopPropagation()} style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#065f46' }}>הבקשה אושרה!</div>
-              <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>לחץ לצפייה בפרטים ולצאת לדרך</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>הבקשה אושרה</div>
+              <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>לחץ לפרטים ולצאת לדרך</div>
             </div>
             <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-              style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 13, fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.35)', whiteSpace: 'nowrap' }}>
-              🚀 צא עכשיו
+              style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              צא עכשיו
             </button>
           </div>
         )}
 
         {/* Pending banner */}
-        {appStatus === 'pending' && (
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: 14, padding: '10px 14px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706' }}>הבקשה ממתינה לאישור</div>
-              <div style={{ fontSize: 11, color: '#92400e', marginTop: 1 }}>תקבל הודעה ברגע שיאשרו</div>
-            </div>
+        {isPending && (
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#d97706', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+            <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#b45309' }}>ממתינה לאישור</div>
             <button onClick={handleCancelApp} disabled={cancelling}
-              style={{ background: 'none', border: '1px solid #fcd34d', borderRadius: 8, padding: '4px 10px', fontSize: 11, color: '#d97706', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+              style={{ background: 'none', border: '1px solid #fde68a', borderRadius: 7, padding: '4px 10px', fontSize: 11, color: '#b45309', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
               {cancelling ? <Loader2 size={10} className="animate-spin" /> : 'בטל'}
             </button>
           </div>
         )}
 
-        {/* Smart feed badges */}
+        {/* Smart badges */}
         {badges && !hasActiveApp && <TaskBadges badges={badges} />}
 
-        {/* Top row: title + price + apply btn */}
-         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 5 }}>
-           <div style={{ flex: 1, minWidth: 0 }}>
-             <h3 style={{ fontWeight: 700, color: '#1a2540', fontSize: 14, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: 4 }}>
-               {task.title}
-             </h3>
+        {/* Main content row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
 
-             {/* Owner menu - 3 dots with dropdown */}
-             {task.created_by === currentUserId && (
-               <div style={{ position: 'relative' }}>
-                 <button
-                   onClick={e => {
-                     e.stopPropagation();
-                     e.nativeEvent?.stopImmediatePropagation?.();
-                     setShowMenu(v => !v);
-                   }}
-                   style={{
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     width: 24,
-                     height: 24,
-                     borderRadius: 6,
-                     background: showMenu ? '#e0e7ef' : '#f1f5f9',
-                     border: 'none',
-                     cursor: 'pointer',
-                     color: '#94a3b8',
-                     marginBottom: 6,
-                   }}
-                 >
-                   <MoreVertical size={14} />
-                 </button>
-                 {showMenu && (
-                   <div
-                     onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }}
-                     style={{
-                       position: 'absolute',
-                       top: 30,
-                       right: 0,
-                       background: 'white',
-                       border: '1px solid #e5e7eb',
-                       borderRadius: 10,
-                       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                       zIndex: 1000,
-                       minWidth: 140,
-                       overflow: 'hidden',
-                     }}
-                   >
-                     <button
-                       onClick={e => {
-                         e.stopPropagation();
-                         setShowMenu(false);
-                         setShowCancelConfirm(true);
-                       }}
-                       style={{
-                         width: '100%',
-                         textAlign: 'right',
-                         padding: '10px 14px',
-                         background: 'none',
-                         border: 'none',
-                         cursor: 'pointer',
-                         fontSize: 13,
-                         fontWeight: 600,
-                         color: '#dc2626',
-                         display: 'flex',
-                         alignItems: 'center',
-                         gap: 8,
-                       }}
-                     >
-                       <Trash2 size={14} />
-                       מחק משימה
-                     </button>
-                   </div>
-                 )}
-               </div>
-             )}
-            {/* Task ID (tiny, for tracking) */}
-            <div style={{ fontSize: 8, color: '#cbd5e1', fontFamily: 'monospace', marginBottom: 4 }}>ID: {task.id?.slice(-8)}</div>
-            {/* Category + status badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', padding: '2px 7px', borderRadius: 20, fontWeight: 500 }}>{catLabel}</span>
-              {appStatus === 'approved' && (
-                <span style={{ fontSize: 10, color: '#065f46', background: '#f0fdf4', padding: '2px 7px', borderRadius: 20, fontWeight: 700 }}>✓ אושרה</span>
+          {/* Left: title + meta */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+
+            {/* Title */}
+            <h3 style={{ fontWeight: 700, color: '#0f1e40', fontSize: 15, lineHeight: 1.35, margin: '0 0 6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              {task.title}
+            </h3>
+
+            {/* Category chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>{catLabel}</span>
+            </div>
+
+            {/* Bottom meta: location + rating */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {task.location_name && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#94a3b8' }}>
+                  <MapPin size={11} strokeWidth={1.8} />
+                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span>
+                </span>
+              )}
+              {task.client_name && (
+                <span
+                  onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#94a3b8', cursor: 'pointer' }}>
+                  <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
+                  <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {task.client_rating > 0 ? `${task.client_rating.toFixed(1)} · ` : ''}{task.client_name}
+                  </span>
+                  {task.client_verified && <VerifiedBadge size="sm" />}
+                </span>
               )}
             </div>
           </div>
 
-          {/* Price + distance + Apply button stacked */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Right: price + distance + CTA */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+
+            {/* Price — prominent */}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 800, color: '#0f1e40', fontSize: 22, lineHeight: 1, letterSpacing: -0.5 }}>
+                ₪{currentPrice}
+              </div>
               {dist != null && !isNaN(dist) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontWeight: 700, color: '#3b82f6', fontSize: 14 }}>
-                  <Navigation size={13} strokeWidth={2} />
-                  <span>{dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}</span>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginTop: 3, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>
+                  <Navigation size={10} strokeWidth={2} color="#1a6fd4" />
+                  {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
                 </div>
               )}
-              <div style={{ fontWeight: 800, color: '#1a6fd4', fontSize: 16, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
             </div>
+
+            {/* Owner menu */}
+            {task.created_by === currentUserId && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }}
+                  style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <MoreVertical size={14} />
+                </button>
+                {showMenu && (
+                  <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }}
+                    style={{ position: 'absolute', top: 32, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }}
+                      style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Trash2 size={14} /> מחק משימה
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CTA — apply button */}
             {!hasActiveApp && task.created_by !== currentUserId && (
               <button
                 onClick={e => {
                   e.stopPropagation();
-                  if (!currentUserId) {
-                    setShowLoginPrompt(true);
-                    return;
-                  }
+                  if (!currentUserId) { setShowLoginPrompt(true); return; }
                   if (applyLocked) return;
                   setApplyLocked(true);
                   setShowApplyModal(true);
@@ -401,22 +377,22 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 }}
                 disabled={applyLocked}
                 style={{
-                  height: 32, padding: '0 12px', borderRadius: 10,
-                  background: applyLocked ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  height: 34, padding: '0 14px', borderRadius: 9,
+                  background: '#1a6fd4',
                   border: 'none', color: 'white', fontSize: 12, fontWeight: 700,
                   cursor: applyLocked ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  boxShadow: applyLocked ? 'none' : '0 2px 8px rgba(26,111,212,0.3)',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  opacity: applyLocked ? 0.6 : 1,
                   whiteSpace: 'nowrap',
                   WebkitTapHighlightColor: 'transparent',
-                  transition: 'background 0.15s',
                 }}
               >
                 {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
                   <>
-                    <Send size={12} strokeWidth={2} /> הגש בקשה
-                    <span style={{ fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 2, marginLeft: 3, paddingLeft: 3, borderLeft: '1px solid rgba(255,255,255,0.3)' }}>
-                      {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={11} />
+                    <Send size={11} strokeWidth={2} />
+                    הגש
+                    <span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>
+                      {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={10} />
                     </span>
                   </>
                 )}
@@ -425,35 +401,12 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Description */}
+        {/* Description — single line, subtle */}
         {task.description && (
-          <p style={{ color: '#94a3b8', fontSize: 11, marginBottom: 7, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+          <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 10, marginBottom: 0, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
             {task.description}
           </p>
         )}
-
-        {/* Bottom meta with ID */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#94a3b8', overflow: 'hidden' }}>
-          {task.location_name && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <MapPin size={10} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span>
-            </span>
-          )}
-          {task.client_name && (
-            <span
-              onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 2, marginRight: 'auto', flexShrink: 0, cursor: 'pointer' }}>
-              <Star size={10} style={{ fill: '#fbbf24', color: '#fbbf24' }} />
-              <span style={{ maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textDecorationColor: '#cbd5e1' }}>
-                {task.client_rating > 0 ? `${task.client_rating.toFixed(1)} · ` : ''}{task.client_name}
-              </span>
-              {task.client_verified && <VerifiedBadge size="sm" />}
-            </span>
-          )}
-          {task.created_date && (
-            <span style={{ color: '#cbd5e1', flexShrink: 0 }}>{format(new Date(task.created_date), 'HH:mm')}</span>
-          )}
-        </div>
       </div>
 
       {showApplyModal && createPortal(
