@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock } from 'lucide-react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import CreditIcon from '@/components/CreditIcon';
+import CreditBalancePill from '@/components/CreditBalancePill';
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
@@ -33,6 +34,7 @@ export default function HomeFeed() {
 
   const { user: me, isAuthenticated } = useAuth();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
+  const creditPillRef = useRef(null);
 
   // My published tasks
   const { data: myTasks = [] } = useQuery({
@@ -356,19 +358,11 @@ export default function HomeFeed() {
         {/* Credits/Login button */}
         <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           {isAuthenticated ? (
-            <button
+            <CreditBalancePill
+              credits={me?.worker_credits ?? 0}
               onClick={() => setShowBuyCredits(true)}
-              style={{
-                background: '#fbbf24', color: '#1a3a6b', border: 'none',
-                height: 36, padding: '0 14px', borderRadius: 12, fontWeight: 900,
-                fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                boxShadow: '0 2px 8px rgba(251,191,36,0.35)', whiteSpace: 'nowrap',
-              }}
-            >
-              <CreditIcon size={16} />
-              <span>{animatedCredits}</span>
-              <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-            </button>
+              pillRef={creditPillRef}
+            />
           ) : (
             <button
               onClick={() => base44.auth.redirectToLogin()}

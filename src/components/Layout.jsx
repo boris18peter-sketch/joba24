@@ -9,6 +9,7 @@ import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
+import CoinEarnedToast from '@/components/CoinEarnedToast';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
@@ -22,11 +23,23 @@ export default function Layout() {
 
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
+  const prevCreditsRef = useRef(null);
   // Dedicated map: taskId → worker_id for tasks I'm working on as a TAKEN worker
   // This is never cleared, so cancellation detection always has the worker_id
   const takenWorkerRef = useRef({});
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
+
+  // Fire coin_earned event when worker_credits increases
+  useEffect(() => {
+    if (!me?.worker_credits) return;
+    const prev = prevCreditsRef.current;
+    if (prev !== null && me.worker_credits > prev) {
+      const gained = me.worker_credits - prev;
+      window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: gained, label: 'קרדיטים' } }));
+    }
+    prevCreditsRef.current = me.worker_credits;
+  }, [me?.worker_credits]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [revokedTask, setRevokedTask] = useState(null);
@@ -382,6 +395,7 @@ export default function Layout() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
       <ChatPushNotification />
+      <CoinEarnedToast />
       <SideMenu />
 
       {/* Portals — rendered directly to body to escape stacking context */}

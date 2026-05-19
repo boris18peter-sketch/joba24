@@ -12,12 +12,16 @@ import TaskBadges from '@/components/TaskBadges';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 
 // ── Apply Modal — mobile optimized ──────────────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [coinFly, setCoinFly] = useState(false);
+  const [creditsCharged, setCreditsCharged] = useState(null);
+  const submitBtnRef = useRef(null);
   const submittedRef = useRef(false);
 
   const handleSubmit = async () => {
@@ -40,13 +44,18 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         setLoading(false);
         return;
       }
-      // Micro-animation: show success state briefly
-      setSuccess(true);
+      // Coin fly + success animation
+      const charged = res.data?.credits_charged || 0;
+      setCreditsCharged(charged);
+      setCoinFly(true);
       onApplied(res.data?.application);
       setTimeout(() => {
-        onClose();
-        toast.success(`הגשת בקשה! ${res.data?.credits_charged} קרדיטים נוכו`);
-      }, 700);
+        setSuccess(true);
+        setTimeout(() => {
+          onClose();
+          toast.success(`הגשת בקשה! ${charged} קרדיטים נוכו`);
+        }, 700);
+      }, 400);
     } catch {
       submittedRef.current = false;
       setLoading(false);
@@ -93,22 +102,31 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         {/* Success state overlay */}
         {success && (
           <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.96)',
+            position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.97)',
             borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 12, zIndex: 10,
+            alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 10,
             animation: 'fadeInBackdrop 0.2s ease',
           }}>
             <div style={{
-              width: 64, height: 64, borderRadius: '50%', background: '#dcfce7',
+              width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#dcfce7,#bbf7d0)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              animation: 'successPop 0.35s cubic-bezier(0.34,1.6,0.64,1)',
+              animation: 'successPop 0.4s cubic-bezier(0.34,1.6,0.64,1)',
+              boxShadow: '0 0 0 10px rgba(22,163,74,0.08)',
             }}>
-              <CheckCircle2 size={32} color="#16a34a" />
+              <CheckCircle2 size={34} color="#16a34a" />
             </div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40' }}>הבקשה נשלחה!</div>
-            <div style={{ fontSize: 13, color: '#64748b' }}>ממתין לאישור בעל הג'ובה</div>
+            <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40' }}>הבקשה נשלחה!</div>
+            {creditsCharged > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#b45309', fontWeight: 700, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '4px 12px', animation: 'coinBadgePop 0.4s 0.15s cubic-bezier(0.34,1.6,0.64,1) both' }}>
+                <span>-{creditsCharged}</span>
+                <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
+                <span>קרדיטים</span>
+              </div>
+            )}
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>ממתין לאישור בעל הג'ובה</div>
           </div>
         )}
+        <CoinFlyAnimation trigger={coinFly} count={Math.min(5, Math.max(1, creditsCharged || 2))} fromEl={submitBtnRef} onDone={() => setCoinFly(false)} />
 
         {/* Task summary */}
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
@@ -148,6 +166,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
             style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
           >ביטול</button>
           <button
+            ref={submitBtnRef}
             onClick={handleSubmit}
             disabled={loading || success}
             style={{
@@ -492,6 +511,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       <style>{`
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
         @keyframes cardFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes coinBadgePop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
       `}</style>
       </>
       );
