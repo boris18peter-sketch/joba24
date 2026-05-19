@@ -401,7 +401,39 @@ export default function TaskDetail() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return (
+      <div dir="rtl" style={{ background: '#f4f7fb', minHeight: '100dvh' }}>
+        {/* Sticky header skeleton */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />
+          <div style={{ flex: 1, height: 18, borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
+          <div style={{ width: 60, height: 26, borderRadius: 20, background: '#e8edf5' }} className="animate-pulse" />
+        </div>
+        <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Price hero skeleton */}
+          <div style={{ borderRadius: 20, background: '#dce8f5', height: 110 }} className="animate-pulse" />
+          {/* Description skeleton */}
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ height: 14, width: '40%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
+            <div style={{ height: 13, width: '95%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
+            <div style={{ height: 13, width: '80%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
+            <div style={{ height: 13, width: '60%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
+          </div>
+          {/* Details skeleton */}
+          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {[1,2,3].map(i => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5', flexShrink: 0 }} className="animate-pulse" />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ height: 11, width: '30%', borderRadius: 6, background: '#e8edf5' }} className="animate-pulse" />
+                  <div style={{ height: 14, width: '55%', borderRadius: 6, background: '#e8edf5' }} className="animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
   if (!task) return <div className="p-8 text-center text-muted-foreground">ג'ובה לא נמצאה</div>;
 

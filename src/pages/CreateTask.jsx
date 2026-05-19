@@ -244,7 +244,7 @@ export default function CreateTask() {
         />
       )}
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 24px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 20px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'absolute', bottom: -20, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -253,13 +253,28 @@ export default function CreateTask() {
             <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"}</h1>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{isRepost ? 'הפרטים מולאו מהג\'ובה הקודמת — ערוך ופרסם' : 'מלא את הפרטים ופרסם תוך שניות'}</p>
           </div>
-          {/* Draft saved indicator */}
           {draftSaved && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '4px 10px', fontSize: 11, color: 'white', fontWeight: 700 }}>
-              <Save size={11} /> נשמר אוטומטית
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '4px 10px', fontSize: 11, color: 'white', fontWeight: 700, animation: 'fadeIn 0.25s ease' }}>
+              <Save size={11} /> נשמר
             </div>
           )}
         </div>
+        {/* Completion progress bar */}
+        {(() => {
+          const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
+          const pct = Math.round((filled / 5) * 100);
+          return (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>השלמת הטופס</span>
+                <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ מוכן לפרסום!' : ''}</span>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="px-4 py-4 space-y-4 pb-12">
@@ -537,14 +552,40 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Submit */}
-        <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
-          <button onClick={handleSubmit} disabled={loading}
-            style={{ width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}
-          >
-            {loading ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} />פרסם ג'ובה חדשה</>}
-          </button>
-          <SocialProofBar />
-        </div>
+        {(() => {
+          const isReady = !!(form.title && form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
+          return (
+            <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="btn-tap"
+                style={{
+                  width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
+                  color: 'white', border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  background: isReady
+                    ? 'linear-gradient(135deg, #059669, #047857)'
+                    : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                  boxShadow: isReady
+                    ? '0 8px 28px rgba(5,150,105,0.4)'
+                    : '0 8px 28px rgba(26,111,212,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  marginBottom: 10, transition: 'background 0.35s ease, box-shadow 0.35s ease',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {loading
+                  ? <><Loader2 size={22} className="animate-spin" /> מפרסם...</>
+                  : isReady
+                    ? <><Zap size={20} />פרסם ג'ובה עכשיו ✓</>
+                    : <><Zap size={20} />פרסם ג'ובה חדשה</>
+                }
+              </button>
+              <SocialProofBar />
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -66,7 +66,35 @@ export default function Profile() {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen"><div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" /></div>;
+    return (
+      <div dir="rtl" style={{ background: '#f4f7fb', minHeight: '100dvh' }}>
+        {/* Header skeleton */}
+        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', backdropFilter: 'blur(8px)', padding: '44px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />
+          <div style={{ flex: 1, height: 18, borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
+          <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />
+        </div>
+        {/* Hero skeleton */}
+        <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
+            <div style={{ width: 68, height: 68, borderRadius: 20, background: 'rgba(255,255,255,0.18)' }} className="animate-pulse" />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ height: 18, width: '50%', borderRadius: 8, background: 'rgba(255,255,255,0.18)' }} className="animate-pulse" />
+              <div style={{ height: 12, width: '70%', borderRadius: 6, background: 'rgba(255,255,255,0.12)' }} className="animate-pulse" />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            {[1,2,3].map(i => <div key={i} style={{ height: 64, borderRadius: 16, background: 'rgba(255,255,255,0.13)' }} className="animate-pulse" />)}
+          </div>
+        </div>
+        {/* Body skeleton */}
+        <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ height: 100, borderRadius: 18, background: 'white', border: '1px solid #dce8f5' }} className="animate-pulse" />
+          <div style={{ height: 80, borderRadius: 16, background: 'white', border: '1px solid #dce8f5' }} className="animate-pulse" />
+          <div style={{ height: 110, borderRadius: 16, background: 'white', border: '1px solid #dce8f5' }} className="animate-pulse" />
+        </div>
+      </div>
+    );
   }
 
   const completedCount = workerTasks.filter((t) => t.status === 'COMPLETED').length;

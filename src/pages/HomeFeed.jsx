@@ -344,6 +344,13 @@ export default function HomeFeed() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
           <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '2px 7px', fontSize: 10, color: '#15803d', fontWeight: 700 }}>
+            <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
+              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.6 }} />
+              <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
+            </span>
+            LIVE
+          </span>
         </div>
 
         {/* Credits/Login button */}
