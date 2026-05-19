@@ -2,7 +2,10 @@ import { AlertCircle } from 'lucide-react';
 
 export default function ApprovalRevokedPopup({ task, onClose }) {
   return (
-    <div className="mobile-sheet-overlay" dir="rtl">
+    <div className="mobile-sheet-overlay" dir="rtl"
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       <div style={{ position: 'absolute', inset: 0 }} onClick={onClose} />
       <div style={{
         position: 'relative',

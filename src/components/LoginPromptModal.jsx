@@ -9,7 +9,12 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       background: 'rgba(5,15,40,0.72)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(8px)',
-    }} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      touchAction: 'none',
+    }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       <div style={{
         background: 'white',
         borderRadius: '32px 32px 0 0',

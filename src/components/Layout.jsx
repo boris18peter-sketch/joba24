@@ -416,8 +416,12 @@ export default function Layout() {
         document.body
       )}
       {cancelWarningTask && createPortal(
-        <div className="mobile-sheet-overlay">
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
+        <div className="mobile-sheet-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setCancelWarningTask(null); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
+          <div dir="rtl" className="mobile-sheet" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>

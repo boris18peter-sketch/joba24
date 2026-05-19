@@ -63,11 +63,6 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
     }
   };
 
-  // Close on backdrop touch — also handles keyboard dismiss on mobile
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   return (
     <div
       style={{
@@ -78,7 +73,9 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         animation: 'fadeInBackdrop 0.18s ease',
         touchAction: 'none',
       }}
-      onClick={handleBackdropClick}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div
         dir="rtl"

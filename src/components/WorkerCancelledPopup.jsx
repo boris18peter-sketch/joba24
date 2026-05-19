@@ -13,8 +13,11 @@ export default function WorkerCancelledPopup({ task, onClose }) {
         justifyContent: 'center',
         backdropFilter: 'blur(6px)',
         animation: 'fadeInBackdrop 0.2s ease',
+        touchAction: 'none',
       }}
-      onClick={onClose}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div
         dir="rtl"
