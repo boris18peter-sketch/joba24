@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom';
+import useCountUp from '@/hooks/useCountUp';
 import { X, Zap, Star } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import CreditIcon from '@/components/CreditIcon';
@@ -14,6 +15,7 @@ const PACKAGES = [
 
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
+  const animatedCredits = useCountUp(me?.worker_credits ?? 0);
 
   const handleSelect = (pkg) => {
     alert(`בקרוב: רכישת חבילת ${pkg.label} — ${pkg.credits + pkg.bonus} קרדיטים ב-₪${pkg.price}`);
@@ -54,7 +56,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             <div>
               <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>רכישת קרדיטים</div>
               <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-                יתרה נוכחית: <span style={{ fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 3 }}>{me?.worker_credits ?? 0} <CreditIcon size={13} /></span>
+                יתרה נוכחית: <span style={{ fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 3 }}>{animatedCredits} <CreditIcon size={13} /></span>
               </div>
             </div>
             </div>

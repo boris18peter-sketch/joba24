@@ -13,6 +13,7 @@ import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import useCountUp from '@/hooks/useCountUp';
 import { rankFeedTasks, buildSmartSections } from '@/lib/feedRanker';
 
 export default function HomeFeed() {
@@ -31,6 +32,7 @@ export default function HomeFeed() {
   const queryClient = useQueryClient();
 
   const { user: me, isAuthenticated } = useAuth();
+  const animatedCredits = useCountUp(me?.worker_credits ?? 0);
 
   // My published tasks
   const { data: myTasks = [] } = useQuery({
@@ -357,7 +359,7 @@ export default function HomeFeed() {
               }}
             >
               <CreditIcon size={16} />
-              <span>{me?.worker_credits ?? 0}</span>
+              <span>{animatedCredits}</span>
               <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
             </button>
           ) : (
