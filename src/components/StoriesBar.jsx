@@ -18,7 +18,7 @@ function StoryCard({ task, onClick }) {
          {task.images?.[0] ? (
            <img src={task.images[0]} alt={task.title} className="w-full h-full object-cover" />
          ) : (
-           <div className="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-blue-800 to-blue-600">
+           <div className="w-full h-full flex items-center justify-center text-2xl" style={{ background: '#1a6fd4' }}>
              {emoji}
            </div>
          )}
@@ -142,7 +142,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
         {task.images?.[0] ? (
           <img src={task.images[0]} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-900 to-gray-900" />
+          <div className="absolute inset-0" style={{ background: '#0f2b6b' }} />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
       </div>
@@ -170,8 +170,9 @@ function StoriesViewer({ stories, startIndex, onClose }) {
         <Link
           to={`/task/${task.id}`}
           onClick={(e) => e.stopPropagation()}
-          className="w-full rounded-2xl flex items-center justify-center font-bold text-base py-4 text-white"
-          style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)' }}
+          className="w-full rounded-2xl flex items-center justify-center font-bold text-base py-4"
+          style={{ color: '#1a3a6b' }}
+          style={{ background: '#fbbf24', color: '#1a3a6b', boxShadow: 'none' }}
         >
           🔍 בדוק את הג'ובה
         </Link>

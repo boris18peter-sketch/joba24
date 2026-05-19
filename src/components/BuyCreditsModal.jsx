@@ -90,7 +90,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 onClick={() => handleSelect(pkg)}
                 style={{
                   background: pkg.popular
-                    ? 'linear-gradient(135deg, #0f2b6b, #1a6fd4)'
+                    ? '#1a6fd4'
                     : 'white',
                   border: pkg.popular ? 'none' : '1.5px solid #e5e9f5',
                   borderRadius: 16,
@@ -98,7 +98,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   textAlign: 'right',
                   cursor: 'pointer',
                   position: 'relative',
-                  boxShadow: pkg.popular ? '0 8px 28px rgba(26,111,212,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+                  boxShadow: pkg.popular ? '0 4px 12px rgba(0,0,0,0.1)' : '0 1px 4px rgba(0,0,0,0.06)',
                   transition: 'transform 0.15s',
                 }}
                 onPointerDown={e => e.currentTarget.style.transform = 'scale(0.96)'}

@@ -131,13 +131,13 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
 
           const gradient = tIsWorker
             ? tStepIdx === 1
-              ? 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
+              ? '#d97706'
               : tStepIdx === 2
-              ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-              : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)'
+              ? '#10b981'
+              : '#1a6fd4'
             : tStepIdx === 2
-            ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-            : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
+            ? '#10b981'
+            : '#1a6fd4';
 
           const statusText = tIsOwner
             ? tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד'
@@ -150,7 +150,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           return (
             <div
               key={t.id}
-              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
               onClick={() => navigate(`/task/${t.id}`)}
             >
               {/* Live dot + badge */}
@@ -222,7 +222,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                         boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.2)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={14} color={done ? gradient.includes('#d97706') ? '#d97706' : gradient.includes('#059669') ? '#059669' : '#1a6fd4' : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={14} color={done ? (gradient === '#d97706' ? '#d97706' : gradient === '#10b981' ? '#10b981' : '#1a6fd4') : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
                       <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.5)', marginTop: 4 }}>{label}</div>
                     </div>

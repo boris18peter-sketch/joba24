@@ -416,7 +416,7 @@ export default function Layout() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setCancelWarningTask(null)}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: '#1a6fd4', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: 'none' }}
               >
                 השאר את המשימה
               </button>
@@ -490,11 +490,11 @@ export default function Layout() {
                 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <div style={{
                     width: 56, height: 56, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                    background: '#fbbf24',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 20px rgba(26,111,212,0.45)',
+                    boxShadow: 'none',
                   }}>
-                    <Icon size={24} color="white" />
+                    <Icon size={24} color="#1a3a6b" />
                   </div>
                   <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
                 </button>

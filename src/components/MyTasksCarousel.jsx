@@ -129,9 +129,9 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            background: '#1a6fd4',
             borderRadius: 16, padding: '13px 20px',
-            boxShadow: '0 4px 18px rgba(26,111,212,0.25)',
+            boxShadow: 'none',
             cursor: 'pointer',
           }}>
             <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

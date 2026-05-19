@@ -355,7 +355,7 @@ export default function HomeFeed() {
                 background: '#fbbf24', color: '#1a3a6b', border: 'none',
                 height: 36, padding: '0 14px', borderRadius: 12, fontWeight: 900,
                 fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                boxShadow: '0 2px 8px rgba(251,191,36,0.35)', whiteSpace: 'nowrap',
+                boxShadow: 'none', whiteSpace: 'nowrap',
               }}
             >
               <CreditIcon size={16} />
@@ -369,7 +369,7 @@ export default function HomeFeed() {
                 background: '#fbbf24', color: '#1a3a6b', border: 'none',
                 height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
                 fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
-                boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
+                boxShadow: 'none',
               }}
             >
               התחבר עכשיו
@@ -430,7 +430,7 @@ export default function HomeFeed() {
                     border: 'none', cursor: 'pointer',
                     background: activeSection === s.id ? '#1a6fd4' : 'white',
                     color: activeSection === s.id ? 'white' : '#475569',
-                    boxShadow: activeSection === s.id ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 4px rgba(0,0,0,0.06)',
+                    boxShadow: activeSection === s.id ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
                     transition: 'all 0.15s',
                   }}
                 >
