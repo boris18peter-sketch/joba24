@@ -46,7 +46,7 @@ function SocialProofBar() {
 
 function SectionCard({ children }) {
   return (
-    <div style={{ background: 'white', borderRadius: 20, padding: '18px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
+    <div style={{ background: 'white', borderRadius: 20, padding: '20px 18px', border: '1px solid #dce8f5' }}>
       {children}
     </div>
   );
@@ -225,7 +225,7 @@ export default function CreateTask() {
     navigate(created?.id ? `/task/${created.id}` : '/');
   };
 
-  const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
+  const activeBtn = { background: '#1a6fd4', color: 'white', border: '1px solid #1a6fd4' };
   const inactiveBtn = { background: 'white', color: '#555', border: '1px solid #dce8f5' };
 
   return (
@@ -244,7 +244,7 @@ export default function CreateTask() {
         />
       )}
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 24px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ background: '#1a6fd4', padding: '52px 20px 28px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ position: 'absolute', bottom: -20, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -262,7 +262,7 @@ export default function CreateTask() {
         </div>
       </div>
 
-      <div className="px-4 py-4 space-y-4 pb-12">
+      <div className="px-4 pb-12" style={{ paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Draft restore indicator */}
         {!isRepost && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -539,7 +539,7 @@ export default function CreateTask() {
         {/* Submit */}
         <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
           <button onClick={handleSubmit} disabled={loading}
-            style={{ width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}
+            style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', background: '#1a6fd4', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}
           >
             {loading ? <Loader2 size={22} className="animate-spin" /> : <><Zap size={20} />פרסם ג'ובה חדשה</>}
           </button>

@@ -25,7 +25,7 @@ export default function WorkerCancelledPopup({ task, onClose }) {
           width: '100%',
           maxWidth: 480,
           boxShadow: '0 -20px 80px rgba(0,0,0,0.3)',
-          padding: '24px 20px 40px',
+          padding: '24px 24px 44px',
           animation: 'slideUpModal 0.3s cubic-bezier(0.34,1.4,0.64,1)',
           maxHeight: '90vh',
           overflowY: 'auto',
@@ -58,7 +58,7 @@ export default function WorkerCancelledPopup({ task, onClose }) {
         </button>
 
         {/* Icon + Title + Description */}
-        <div style={{ textAlign: 'center', marginBottom: 28, marginTop: 8 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 8 }}>
           <div style={{ width: 64, height: 64, borderRadius: 16, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <span style={{ fontSize: 32 }}>😞</span>
           </div>

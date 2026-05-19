@@ -476,7 +476,7 @@ export default function Layout() {
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
       }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '10px 16px 14px' }}>
           {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
             const active = location.pathname === to;
             if (primary) {

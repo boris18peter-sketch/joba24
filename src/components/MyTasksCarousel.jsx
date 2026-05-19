@@ -149,7 +149,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   }
 
   return (
-    <div style={{ padding: '14px 16px 6px' }}>
+    <div style={{ padding: '16px 16px 8px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>

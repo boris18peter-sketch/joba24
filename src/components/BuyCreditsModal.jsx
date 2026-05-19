@@ -45,7 +45,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         }}
       >
         {/* Header */}
-        <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ padding: '24px 22px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
@@ -79,7 +79,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         </div>
 
         {/* Packages grid */}
-        <div style={{ padding: '14px 14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ padding: '16px 16px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {PACKAGES.map((pkg) => {
             const totalCredits = pkg.credits + pkg.bonus;
             const pricePerCredit = (pkg.price / totalCredits).toFixed(2);
@@ -150,7 +150,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           })}
         </div>
 
-        <div style={{ padding: '14px 20px', textAlign: 'center', color: '#bbb', fontSize: 11 }}>
+        <div style={{ padding: '18px 22px', textAlign: 'center', color: '#bbb', fontSize: 12 }}>
           🔒 קרדיטים = עבודה = רווחים
         </div>
       </div>

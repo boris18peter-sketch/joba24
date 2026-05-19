@@ -150,7 +150,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           return (
             <div
               key={t.id}
-              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '16px', boxShadow: 'none', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '18px 18px 16px', boxShadow: 'none', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
               onClick={() => navigate(`/task/${t.id}`)}
             >
               {/* Live dot + badge */}
