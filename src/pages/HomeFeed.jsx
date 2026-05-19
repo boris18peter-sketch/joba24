@@ -48,8 +48,9 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    refetchInterval: 30000,
+    refetchInterval: 10000,
     staleTime: 0,
+    gcTime: 0,
     refetchOnWindowFocus: true
   });
 
@@ -88,6 +89,8 @@ export default function HomeFeed() {
         if (event.type === 'create') {
           if (!updatedTask?.id) return old;
           if (old.find((t) => t.id === event.id)) return old;
+          // Only show OPEN tasks in feed
+          if (updatedTask.status && updatedTask.status !== 'OPEN') return old;
           setNewTaskIds((prev) => new Set([...prev, event.id]));
           setTimeout(() => setNewTaskIds((prev) => {const n = new Set(prev);n.delete(event.id);return n;}), 4000);
           return [updatedTask, ...old];

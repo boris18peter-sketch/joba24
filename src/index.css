@@ -102,7 +102,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 99999;
+    z-index: 100001;
     background: white;
     border-radius: 28px 28px 0 0;
     max-height: 90dvh;
@@ -116,7 +116,7 @@
   .mobile-sheet-overlay {
     position: fixed;
     inset: 0;
-    z-index: 99998;
+    z-index: 100000;
     background: rgba(5,15,40,0.55);
     backdrop-filter: blur(6px);
     display: flex;
@@ -127,7 +127,7 @@
   .mobile-modal-center {
     position: fixed;
     inset: 0;
-    z-index: 99998;
+    z-index: 100000;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -40,6 +40,14 @@ export default function EditTask() {
     select: d => d[0],
   });
 
+  const { data: taskApplications = [] } = useQuery({
+    queryKey: ['applications', id],
+    queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
+    enabled: !!id,
+  });
+
+  const hasActiveApplications = taskApplications.some(a => a.status === 'pending' || a.status === 'approved');
+
   useEffect(() => {
     if (task && !form) {
       const isCustomTime = task.estimated_time && !['15m', '30m', '1h', '2h'].includes(task.estimated_time);
@@ -223,12 +231,12 @@ export default function EditTask() {
          <div>
            <Label className="text-sm font-semibold mb-2 block">מחיר (₪) *</Label>
            <Input type="number" placeholder="100"
-             value={form.price} onChange={e => task?.status !== 'OPEN' ? null : set('price', e.target.value)}
-             disabled={task?.status === 'OPEN'}
-             className={`bg-secondary border-0 rounded-xl h-12 text-base font-bold ${task?.status === 'OPEN' ? 'opacity-50 cursor-not-allowed' : ''}`}
+             value={form.price} onChange={e => hasActiveApplications ? null : set('price', e.target.value)}
+             disabled={hasActiveApplications}
+             className={`bg-secondary border-0 rounded-xl h-12 text-base font-bold ${hasActiveApplications ? 'opacity-50 cursor-not-allowed' : ''}`}
            />
-           {task?.status === 'OPEN' && <p className="text-xs text-red-600 mt-2">לא ניתן לשנות מחיר של משימה שכבר פורסמה</p>}
-           {task?.status !== 'OPEN' && <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />}
+           {hasActiveApplications && <p className="text-xs text-red-600 mt-2">⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות למשימה זו</p>}
+           {!hasActiveApplications && task?.status !== 'OPEN' && <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />}
          </div>
 
         {/* Auto Price Bump */}

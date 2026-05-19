@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Circle } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -18,15 +18,25 @@ L.Icon.Default.mergeOptions({
 
 const CENTER = [32.0853, 34.7818];
 
-const createPin = (price, selected = false) => L.divIcon({
-  className: '',
-  html: `<div style="display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;transform:${selected ? 'scale(1.25)' : 'scale(1)'};transition:transform 0.2s;filter:${selected ? 'drop-shadow(0 4px 12px rgba(26,111,212,0.6))' : 'none'}">
-    <div style="background:${selected ? 'linear-gradient(135deg,#0a52b0,#1a6fd4)' : '#1a6fd4'};border:${selected ? '3px solid white' : '2px solid white'};box-shadow:${selected ? '0 4px 16px rgba(26,111,212,0.5)' : '0 2px 10px rgba(26,111,212,0.35)'};border-radius:20px;padding:5px 10px;font-size:${selected ? '13px' : '12px'};font-weight:900;color:white;white-space:nowrap;">₪${price}</div>
-    <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #1a6fd4;margin-top:-1px;"></div>
-  </div>`,
-  iconSize: [64, 40],
-  iconAnchor: [32, 40]
-});
+const createPin = (price, selected = false, isMyTask = false) => {
+  const bg = isMyTask
+    ? (selected ? 'linear-gradient(135deg,#d97706,#f59e0b)' : '#f59e0b')
+    : (selected ? 'linear-gradient(135deg,#0a52b0,#1a6fd4)' : '#1a6fd4');
+  const shadow = isMyTask
+    ? (selected ? '0 4px 16px rgba(245,158,11,0.6)' : '0 2px 10px rgba(245,158,11,0.4)')
+    : (selected ? '0 4px 16px rgba(26,111,212,0.5)' : '0 2px 10px rgba(26,111,212,0.35)');
+  const arrowColor = isMyTask ? '#f59e0b' : '#1a6fd4';
+
+  return L.divIcon({
+    className: '',
+    html: `<div style="display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;transform:${selected ? 'scale(1.25)' : 'scale(1)'};transition:transform 0.2s;filter:${selected ? `drop-shadow(0 4px 12px ${isMyTask ? 'rgba(245,158,11,0.6)' : 'rgba(26,111,212,0.6)'})` : 'none'}">
+      <div style="background:${bg};border:${selected ? '3px solid white' : '2px solid white'};box-shadow:${shadow};border-radius:20px;padding:5px 10px;font-size:${selected ? '13px' : '12px'};font-weight:900;color:white;white-space:nowrap;">${isMyTask ? '⭐ ' : ''}₪${price}</div>
+      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid ${arrowColor};margin-top:-1px;"></div>
+    </div>`,
+    iconSize: [64, 40],
+    iconAnchor: [32, 40]
+  });
+};
 
 const createUserPin = () => L.divIcon({
   className: '',
@@ -104,6 +114,7 @@ export default function MapView() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [styleIdx, setStyleIdx] = useState(0);
   const [showStylePicker, setShowStylePicker] = useState(false);
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
@@ -210,7 +221,7 @@ export default function MapView() {
             <Marker
               key={task.id}
               position={[task.lat, task.lng]}
-              icon={createPin(task.price, selectedTask?.id === task.id)}
+              icon={createPin(task.price, selectedTask?.id === task.id, task.client_id === me?.id)}
               eventHandlers={{
                 click: () => setSelectedTask(prev => prev?.id === task.id ? null : task),
               }}
@@ -218,6 +229,20 @@ export default function MapView() {
             </Marker>
           ))}
         </MapContainer>
+
+        {/* Legend */}
+        <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 1000, background: 'white', borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 10px rgba(0,0,0,0.12)', border: '1px solid #e5e9f5', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
+            <div style={{ width: 12, height: 12, borderRadius: 3, background: '#1a6fd4' }} />
+            <span>משימות זמינות</span>
+          </div>
+          {me && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b' }} />
+              <span>המשימות שלי</span>
+            </div>
+          )}
+        </div>
 
         {/* Floating task card when selected */}
         {selectedTask && (

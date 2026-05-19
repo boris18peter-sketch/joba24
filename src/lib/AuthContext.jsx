@@ -43,6 +43,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Refresh user data (credits etc.) from server
+  const refreshUser = async () => {
+    try {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      return currentUser;
+    } catch {
+      return null;
+    }
+  };
+
   const checkUserAuth = async () => {
     try {
       // Now check if the user is authenticated
@@ -57,6 +68,13 @@ export const AuthProvider = ({ children }) => {
       if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
       }
+
+      // Subscribe to User entity changes to keep credits up to date in real-time
+      base44.entities.User.subscribe((event) => {
+        if (event.data?.id === currentUser?.id || event.id === currentUser?.id) {
+          setUser(prev => prev ? { ...prev, ...event.data } : event.data);
+        }
+      });
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
@@ -113,7 +131,8 @@ export const AuthProvider = ({ children }) => {
       login,
       navigateToLogin,
       checkUserAuth,
-      checkAppState
+      checkAppState,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>
