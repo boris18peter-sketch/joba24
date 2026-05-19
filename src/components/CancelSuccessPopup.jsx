@@ -107,7 +107,7 @@ export default function CancelSuccessPopup({ task, onClose }) {
             width: '100%',
             height: 54,
             borderRadius: 14,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            background: '#1a6fd4',
             border: 'none',
             color: 'white',
             fontWeight: 900,
@@ -117,7 +117,7 @@ export default function CancelSuccessPopup({ task, onClose }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 10,
-            boxShadow: '0 4px 16px rgba(26, 111, 212, 0.4)',
+            boxShadow: 'none',
             transition: 'all 0.2s',
           }}
         >

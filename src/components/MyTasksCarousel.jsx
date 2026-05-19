@@ -189,7 +189,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 6,
-                boxShadow: hasPending ? '0 2px 12px rgba(251,191,36,0.18)' : isTaken ? '0 2px 12px rgba(192,135,58,0.15)' : '0 2px 8px rgba(15,43,107,0.06)',
+                boxShadow: 'none',
                 position: 'relative',
                 boxSizing: 'border-box',
               }}>

@@ -14,7 +14,7 @@ function StoryCard({ task, onClick }) {
    const currentPrice = calculateCurrentPrice(task);
    return (
      <button onClick={() => onClick(task)} className="flex flex-col items-center gap-1.5 shrink-0">
-       <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-md bg-gray-100">
+       <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-blue-500 bg-gray-100">
          {task.images?.[0] ? (
            <img src={task.images[0]} alt={task.title} className="w-full h-full object-cover" />
          ) : (

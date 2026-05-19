@@ -23,7 +23,7 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
         `}</style>
 
         {/* Top color band — red */}
-        <div style={{ background: 'linear-gradient(135deg, #7f1d1d, #dc2626)', padding: '32px 24px 28px', textAlign: 'center' }}>
+        <div style={{ background: '#dc2626', padding: '32px 24px 28px', textAlign: 'center' }}>
           <div style={{
             width: 72, height: 72, borderRadius: '50%',
             background: 'rgba(255,255,255,0.15)',
@@ -53,13 +53,13 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
               width: '100%',
               height: 54,
               borderRadius: 18,
-              background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
+              background: '#dc2626',
               color: 'white',
               fontWeight: 900,
               fontSize: 16,
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 8px 28px rgba(220,38,38,0.35)',
+              boxShadow: 'none',
             }}
           >
             הבנתי
