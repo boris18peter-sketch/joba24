@@ -91,6 +91,16 @@ export const AuthProvider = ({ children }) => {
           setUser(prev => prev ? { ...prev, ...event.data } : event.data);
         }
       });
+
+      // Also subscribe to CreditTransaction — refresh immediately on any credit change
+      base44.entities.CreditTransaction.subscribe(async (event) => {
+        if (event.data?.user_id === currentUser?.id) {
+          try {
+            const fresh = await base44.auth.me();
+            setUser(prev => prev ? { ...prev, worker_credits: fresh.worker_credits } : fresh);
+          } catch {}
+        }
+      });
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
