@@ -66,7 +66,10 @@ export default function Layout() {
 
   useEffect(() => {
     workerTasks.forEach(task => {
-      prevTasksRef.current[task.id] = task;
+      // Only seed if not already tracked (don't overwrite newer data)
+      if (!prevTasksRef.current[task.id]) {
+        prevTasksRef.current[task.id] = task;
+      }
     });
   }, [workerTasks]);
 
@@ -189,7 +192,21 @@ export default function Layout() {
       const task = event.data;
       if (!task) return;
       const prev = prevTasksRef.current[task.id];
-      if (!prev) return;
+
+      // Always update prevTasksRef AFTER reading prev, so next event has fresh data
+      // But only if this task is relevant to me (I'm client or worker)
+      if (task.client_id === me?.id || task.worker_id === me?.id || prev?.worker_id === me?.id) {
+        // Store a snapshot BEFORE updating — we already have prev above
+        // Update after processing (at end of handler)
+      }
+
+      if (!prev) {
+        // If no prev but task is relevant, seed it now for future events
+        if (task.client_id === me?.id || task.worker_id === me?.id) {
+          prevTasksRef.current[task.id] = task;
+        }
+        return;
+      }
 
       // Client notifications
       if (task.client_id === me?.id) {
@@ -251,6 +268,9 @@ export default function Layout() {
       ) {
         setCancelSuccessTask(task);
       }
+
+      // Update prevTasksRef with latest data for future comparisons
+      prevTasksRef.current[task.id] = { ...prev, ...task };
     });
     return unsubscribe;
   }, [me?.id]);
@@ -383,12 +403,15 @@ export default function Layout() {
               <button
                 onClick={async () => {
                   setCancelWarningLoading(true);
+                  const taskToCancel = cancelWarningTask;
                   try {
-                    await base44.functions.invoke('cancelTaskPayment', { taskId: cancelWarningTask.id });
+                    await base44.functions.invoke('cancelTaskPayment', { taskId: taskToCancel.id });
+                    setCancelWarningTask(null);
+                    setCancelSuccessTask(taskToCancel);
                   } catch (err) {
                     console.error('Cancel failed:', err);
+                    setCancelWarningTask(null);
                   }
-                  setCancelWarningTask(null);
                   setCancelWarningLoading(false);
                 }}
                 disabled={cancelWarningLoading}
