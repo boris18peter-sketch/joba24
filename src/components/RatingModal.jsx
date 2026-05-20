@@ -17,7 +17,8 @@ export default function RatingModal({ task, me, onClose }) {
   const revieweeName = isOwner ? task.worker_name : task.client_name;
   const role = isOwner ? 'client' : 'worker';
 
-  const needsPaymentConfirm = task.status === 'COMPLETED' && !task.client_confirmed && !task.worker_confirmed;
+  // Each side confirms independently based on their own status
+  const needsPaymentConfirm = task.status === 'COMPLETED' && (isOwner ? !task.client_confirmed : !task.worker_confirmed);
   const canSubmit = rating > 0 && (!needsPaymentConfirm || paymentConfirmed);
 
   const handleSubmit = async () => {
@@ -143,12 +144,10 @@ export default function RatingModal({ task, me, onClose }) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? '#065f46' : '#1e293b' }}>
-                {isOwner ? '✅ שילמתי לעובד עבור המשימה' : '✅ קיבלתי תשלום מהלקוח עבור המשימה'}
+                {isOwner ? `✅ אישור שהמשימה הושלמה ושולם ₪${task.price} ל${revieweeName}` : `✅ אישור שהמשימה הושלמה וקיבלתי ₪${task.price} מ${revieweeName}`}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                {isOwner
-                  ? `אישור ששולם ₪${task.price} ל${revieweeName}`
-                  : `אישור שהתקבל תשלום של ₪${task.price} מ${revieweeName}`}
+                {isOwner ? 'סמן לאחר שהעברת את הסכום המוסכם' : 'סמן לאחר שקיבלת את הסכום המוסכם'}
               </div>
             </div>
           </button>

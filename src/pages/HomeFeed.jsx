@@ -37,9 +37,9 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-    refetchInterval: 120000
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000
   });
 
   // Active task I'm working on as a worker
@@ -48,13 +48,13 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    refetchInterval: 60000,
-    staleTime: 30000,
+    refetchInterval: 15000,
+    staleTime: 0,
     gcTime: 60000,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: true
   });
 
-  // Active task I published that is currently TAKEN
+  // Active task I published that is currently TAKEN — also check APPROVED_PENDING_DEPARTURE etc.
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
 
   // My applications — to show status on feed cards
@@ -67,7 +67,7 @@ export default function HomeFeed() {
   });
 
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['allTasks', isAuthenticated],
+    queryKey: ['allTasks'],
     queryFn: () => base44.entities.Task.filter({ status: 'OPEN' }, '-created_date', 200),
     staleTime: 0,
     gcTime: 60000,
@@ -76,6 +76,11 @@ export default function HomeFeed() {
     refetchInterval: 60000,
     retry: 2,
   });
+
+  // Force refetch when auth state changes (e.g. user logs in)
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+  }, [isAuthenticated]);
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
   useEffect(() => {
