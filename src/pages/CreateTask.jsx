@@ -189,7 +189,16 @@ export default function CreateTask() {
         setShowNoCreditsModal(true);
         return;
       }
-      await base44.auth.updateMe({ worker_credits: currentCredits - 10 });
+      const newBalance = currentCredits - 10;
+      await base44.auth.updateMe({ worker_credits: newBalance });
+      // Record the transaction
+      await base44.entities.CreditTransaction.create({
+        user_id: me.id,
+        amount: -10,
+        type: 'Application_Fee',
+        note: `פרסום Story: ${form.title || 'ג\'ובה'}`,
+        balance_after: newBalance,
+      });
     }
 
     setLoading(true);
