@@ -404,7 +404,7 @@ export default function TaskDetail() {
     return (
       <div dir="rtl" style={{ background: '#f4f7fb', minHeight: '100dvh' }}>
         {/* Sticky header skeleton */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '14px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />
           <div style={{ flex: 1, height: 18, borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
           <div style={{ width: 60, height: 26, borderRadius: 20, background: '#e8edf5' }} className="animate-pulse" />
@@ -510,7 +510,7 @@ export default function TaskDetail() {
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
       {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '14px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <BackButton to="/" />
         <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</h1>
         <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', flexShrink: 0 }}>{statusLabel}</span>

@@ -229,7 +229,7 @@ export default function AdminDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7fb' }} dir="rtl">
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '44px 16px 20px', position: 'sticky', top: 0, zIndex: 40 }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '14px 16px 20px', position: 'sticky', top: 0, zIndex: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <BackButton iconColor="white" style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)' }} />
           <div>

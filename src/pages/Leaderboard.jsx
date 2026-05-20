@@ -65,7 +65,7 @@ export default function Leaderboard() {
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b px-4 pt-10 pb-4 flex items-center gap-3"
+      <div className="sticky top-0 z-40 border-b px-4 pt-2 pb-4 flex items-center gap-3"
         style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
         <BackButton />
         <div>

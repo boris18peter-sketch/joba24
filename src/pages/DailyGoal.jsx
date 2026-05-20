@@ -134,7 +134,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {/* Back Button */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '44px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
         <BackButton />
         <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>מטרת היום</span>
       </div>
