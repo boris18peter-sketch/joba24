@@ -54,7 +54,7 @@ export default function HomeFeed() {
     refetchOnWindowFocus: true
   });
 
-  // Active task I published that is currently TAKEN — also check APPROVED_PENDING_DEPARTURE etc.
+  // Active task I published that is currently TAKEN
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
 
   // My applications — to show status on feed cards

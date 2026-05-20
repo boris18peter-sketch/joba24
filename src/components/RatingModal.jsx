@@ -24,7 +24,7 @@ export default function RatingModal({ task, me, onClose }) {
   const handleSubmit = async () => {
     if (!rating) { toast.error('בחר דירוג'); return; }
     if (needsPaymentConfirm && !paymentConfirmed) {
-      toast.error(isOwner ? 'יש לאשר ששילמת לעובד' : 'יש לאשר שקיבלת תשלום');
+      toast.error(isOwner ? 'יש לאשר שהעבודה הושלמה כראוי' : 'יש לאשר שסיימת את הג״ובה');
       return;
     }
     setLoading(true);
@@ -144,10 +144,10 @@ export default function RatingModal({ task, me, onClose }) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? '#065f46' : '#1e293b' }}>
-                {isOwner ? `✅ אישור שהמשימה הושלמה ושולם ₪${task.price} ל${revieweeName}` : `✅ אישור שהמשימה הושלמה וקיבלתי ₪${task.price} מ${revieweeName}`}
+                {isOwner ? '✅ העבודה בוצעה לשביעות רצוני' : '✅ ביצעתי את העבודה בהצלחה'}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                {isOwner ? 'סמן לאחר שהעברת את הסכום המוסכם' : 'סמן לאחר שקיבלת את הסכום המוסכם'}
+                {isOwner ? 'אשר שהעבודה הושלמה כנדרש' : 'אשר שסיימת את ביצוע הג\'ובה'}
               </div>
             </div>
           </button>

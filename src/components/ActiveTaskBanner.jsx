@@ -48,7 +48,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
           </div>
           <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
             {action.nextKey === 'arrived' ? 'ברגע שתאשר, המעסיק יקבל עדכון שהגעת' :
-             action.nextKey === 'done' ? 'ברגע שתאשר, המעסיק יתבקש לאשר את סיום הג\'ובה' :
+             action.nextKey === 'done' ? 'ברגע שתאשר, המעסיק יקבל עדכון שסיימת את העבודה' :
              'בוא נעדכן שיצאת לדרך!'}
           </div>
         </div>
@@ -109,8 +109,6 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
       toast.success(action.label + ' ✓');
       setPendingAction(null);
     } catch {
