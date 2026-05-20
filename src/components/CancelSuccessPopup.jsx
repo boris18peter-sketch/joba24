@@ -86,10 +86,7 @@ export default function CancelSuccessPopup({ task, onClose }) {
           </div>
           <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
           <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 12 }}>
-            הכסף בסך <strong style={{ color: '#1f2937', fontSize: 16 }}>₪{task.price}</strong> יוחזר לחשבונך
-          </div>
-          <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-            תוך 1-3 ימי עסקים
+            המשימה בוטלה בהצלחה
           </div>
         </div>
 
@@ -98,14 +95,14 @@ export default function CancelSuccessPopup({ task, onClose }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#16a34a', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span>✓</span> המשימה בוטלה בהצלחה
           </div>
-          <div style={{ fontSize: 12, color: '#15803d' }}>הכסף חוזר לחשבון הבנק שלך</div>
+          <div style={{ fontSize: 12, color: '#15803d' }}>תוכל לחפש משימות נוספות בפיד</div>
         </div>
 
         {/* Info box - Explanation */}
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 14px', marginBottom: 28 }}>
           <div style={{ fontSize: 12, color: '#1a6fd4', lineHeight: 1.6 }}>
-            <strong>איך זה עובד:</strong><br/>
-            הכסף שלך לא יצא מהחשבון שלך — הוא תמיד היה מוחזק בנאמנות על ידי Joba24
+            <strong>בחזרה לחיפוש:</strong><br/>
+            גלה עוד משימות מעניינות בפיד ובחר את הבאה שלך
           </div>
         </div>
 
