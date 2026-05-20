@@ -164,7 +164,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
 }
 
 // ── TaskCard ──────────────────────────────────────────────────────────────────
-export default function TaskCard({ task, myApp, currentUserId, workerName, badges }) {
+export default function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
@@ -473,7 +473,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             )}
 
             {/* CTA — apply button */}
-            {!hasActiveApp && task.created_by !== currentUserId && (
+            {!viewOnly && !hasActiveApp && task.created_by !== currentUserId && (
               <button
                 onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
                 onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}

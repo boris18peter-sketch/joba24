@@ -276,7 +276,7 @@ export default function WorkerProfile() {
               היסטוריית עבודות ({workerTasks.filter(t => t.status === 'COMPLETED').length} הושלמו)
             </Label>
             <div className="space-y-3">
-              {workerTasks.map(t => <TaskCard key={t.id} task={t} />)}
+              {workerTasks.map(t => <TaskCard key={t.id} task={t} viewOnly />)}
             </div>
           </div>
         )}
