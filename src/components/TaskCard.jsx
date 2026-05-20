@@ -139,7 +139,8 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
+            {loading ? <Loader2 size={20} className="animate-spin" /> :
+             <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
           </button>
         </div>
       </div>
