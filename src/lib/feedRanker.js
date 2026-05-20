@@ -179,7 +179,6 @@ export function rankFeedTasks(tasks, userLocation, workerProfile = {}) {
   const totalWeight = Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
 
   return tasks
-    .filter(t => !isSpamLikely(t))
     .map(task => {
       const distKm = userLocation
         ? haversineKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
