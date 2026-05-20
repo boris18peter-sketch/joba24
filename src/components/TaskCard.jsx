@@ -169,7 +169,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showCardSuccess, setShowCardSuccess] = useState(false);
   const [cardSuccessCredits, setCardSuccessCredits] = useState(0);
   const [coinFlyActive, setCoinFlyActive] = useState(false);
+  const [coinFlyDir, setCoinFlyDir] = useState('debit');
   const [applyBtnPos, setApplyBtnPos] = useState(null);
+  const cardRef = useRef(null);
 
   // Close menu on outside click
   useEffect(() => {
@@ -218,6 +220,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['creditTxns', currentUserId] });
+      // Coins fly FROM card TO pill (credit: credits return to wallet)
+      if (cardRef.current) {
+        const r = cardRef.current.getBoundingClientRect();
+        setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      }
+      setCoinFlyDir('credit');
+      setCoinFlyActive(true);
       toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
     } catch {
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
@@ -232,7 +241,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     setShowCardSuccess(true);
     setCardSuccessCredits(creditsCharged);
     setTimeout(() => setShowCardSuccess(false), 4000);
-    // Fire coin fly from apply button toward header
+    // Coins fly FROM pill TO apply button (debit: credits leave wallet)
+    setCoinFlyDir('debit');
     setCoinFlyActive(true);
     // Use the real server app record (or a safe fallback)
     const appRecord = realApp || { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `opt_${task.id}` };
@@ -271,6 +281,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   return (
     <>
       <div
+        ref={cardRef}
         onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
         className="bg-white active:scale-[0.982] transition-all"
         style={{
@@ -513,7 +524,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       <CoinFlyAnimation
         trigger={coinFlyActive}
         count={8}
-        fromPos={applyBtnPos}
+        direction={coinFlyDir}
+        toPos={coinFlyDir === 'debit' ? applyBtnPos : undefined}
+        fromPos={coinFlyDir === 'credit' ? applyBtnPos : undefined}
         onDone={() => setCoinFlyActive(false)}
       />
 

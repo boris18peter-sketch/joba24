@@ -50,6 +50,7 @@ export default function CreditBalancePill({ credits, onClick, pillRef }) {
   return (
     <button
       ref={pillRef}
+      data-credit-pill="true"
       onClick={onClick}
       style={{
         background: glowing
