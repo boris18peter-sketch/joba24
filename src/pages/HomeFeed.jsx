@@ -264,7 +264,6 @@ export default function HomeFeed() {
   // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
   const candidateTasks = tasks.filter(t => {
     if (t.status !== 'OPEN') return false;
-    if (me?.id && (t.created_by === me.id || t.client_id === me.id)) return false; // hide own tasks only when logged in
     if (dismissedTasks.has(t.id)) return false;
     const q = search.toLowerCase();
     if (search && !(
