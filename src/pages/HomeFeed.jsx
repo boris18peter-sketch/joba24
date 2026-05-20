@@ -214,6 +214,7 @@ export default function HomeFeed() {
   }, []);
 
   // Auto price bump — only run on MY tasks, only every 5 minutes via interval
+  // Stops bumping once ANY application (pending or approved) exists
   useEffect(() => {
     const bumpableTasks = myTasks.filter(t =>
       t.status === 'OPEN' && t.auto_bump_enabled && t.max_price && t.price < t.max_price
@@ -222,6 +223,11 @@ export default function HomeFeed() {
 
     const runBump = async () => {
       for (const task of bumpableTasks) {
+        // Stop if there's already at least one application
+        const existingApps = await base44.entities.TaskApplication.filter({ task_id: task.id });
+        const hasApp = existingApps.some(a => a.status === 'pending' || a.status === 'approved');
+        if (hasApp) continue;
+
         const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
         if (ageMinutes < 5) continue;
         const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
@@ -229,11 +235,7 @@ export default function HomeFeed() {
         const step = (task.max_price - base) / 12;
         const expectedPrice = Math.min(Math.round(base + step * intervals), task.max_price);
         if (expectedPrice > task.price) {
-          // Check pending apps before bumping
-          const pendingApps = await base44.entities.TaskApplication.filter({ task_id: task.id, status: 'pending' });
-          if (pendingApps.length === 0) {
-            base44.entities.Task.update(task.id, { price: expectedPrice });
-          }
+          base44.entities.Task.update(task.id, { price: expectedPrice });
         }
       }
     };
@@ -266,7 +268,7 @@ export default function HomeFeed() {
   // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
   const candidateTasks = tasks.filter(t => {
     if (t.status !== 'OPEN') return false;
-    if (me?.id && t.client_id === me.id) return false; // hide own tasks only when logged in
+    if (me?.id && t.created_by === me.id) return false; // hide own tasks only when logged in
     if (dismissedTasks.has(t.id)) return false;
     const q = search.toLowerCase();
     if (search && !(
@@ -325,6 +327,7 @@ export default function HomeFeed() {
   }, [sortedTasks, smartSections, activeSection]);
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category;
+  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy);
 
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
@@ -486,14 +489,13 @@ export default function HomeFeed() {
               onClick={() => setShowFilters(true)}
               style={{
                 flexShrink: 0, width: 28, height: 28, borderRadius: 6,
-                border: `0.5px solid ${hasFilters ? '#60a5fa' : '#e2e8f0'}`,
-                background: hasFilters ? '#1a6fd4' : '#f8fafc',
+                border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : '#e2e8f0'}`,
+                background: hasSheetFilters ? '#1a6fd4' : '#f8fafc',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', position: 'relative', transition: 'all 0.15s'
               }}>
-              
-                  <SlidersHorizontal size={10} color={hasFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
-                  {hasFilters && <span style={{ position: 'absolute', top: 3, right: 3, width: 3, height: 3, borderRadius: '50%', background: '#fbbf24', border: '0.5px solid white' }} />}
+                  <SlidersHorizontal size={10} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                  {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
                 </button>
                 {/* Live count */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe' }}>
@@ -526,19 +528,6 @@ export default function HomeFeed() {
             })}
               </div>
 
-              {/* Active filter chips */}
-              {hasFilters &&
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {filters.category && <span onClick={() => setFilters(f => ({...f, category: ''}))} style={{ fontSize: 9, background: '#1a6fd4', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>{getCategoryLabel(filters.category)} ✕</span>}
-                  {filters.city && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.city}</span>}
-                  {(filters.minPrice || filters.maxPrice) && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>₪{filters.minPrice || 0}–{filters.maxPrice || '∞'}</span>}
-                  {filters.time && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>{filters.time}</span>}
-                  {filters.approvalMode && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>לאישור</span>}
-                  {filters.sortBy === 'newest' && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>🆕 חדשות קודם</span>}
-                  {filters.sortBy === 'price_desc' && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>💰 מחיר גבוה</span>}
-                  {filters.sortBy === 'price_asc' && <span style={{ fontSize: 9, background: '#1e293b', color: 'white', padding: '1px 7px', borderRadius: 20, fontWeight: 500 }}>💸 מחיר נמוך</span>}
-                </div>
-          }
         </div>
 
         {isLoading ?
