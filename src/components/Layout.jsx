@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
-import { Home, Map, Plus, User, Wallet, Bell, Loader2 } from 'lucide-react';
+import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -390,7 +390,7 @@ export default function Layout() {
     { to: '/', icon: Home, label: 'פיד' },
     { to: '/map', icon: Map, label: 'מפה' },
     { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
-    { to: '/notifications', icon: Bell, label: 'התראות', badge: unreadNotifCount },
+    { to: '/chats', icon: MessageCircle, label: 'צ\'אט', badge: unreadMessages },
     { to: '/profile', icon: User, label: 'פרופיל' },
   ];
 

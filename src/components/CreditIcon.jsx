@@ -1,6 +1,6 @@
 // ג'יטון קרדיט צהוב + כחול עם J כחול
 export default function CreditIcon({ size = 36, style = {} }) {
-  const s = size;
+  const s = Math.round(size * 1.3);
   return (
     <span
       style={{

@@ -196,7 +196,8 @@ export default function CreateTask() {
         user_id: me.id,
         amount: -10,
         type: 'Application_Fee',
-        note: `פרסום Story: ${form.title || 'ג\'ובה'}`,
+        note: `עלות סטורי פרסום: ${form.title || 'ג\'ובה'}`,
+        task_title: form.title || 'ג\'ובה',
         balance_after: newBalance,
       });
     }
