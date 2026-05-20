@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, LogIn, ShieldCheck } from 'lucide-react';
+import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -24,28 +24,13 @@ export default function SideMenu() {
 
   return (
     <>
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', padding: '7px 8px', pointerEvents: 'none' }}>
-        <button
-          data-sidemenu-toggle
-          onClick={() => setOpen(true)}
-          style={{
-            width: 56, height: 56,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: 'none', cursor: 'pointer', background: 'none', padding: 0,
-            WebkitTapHighlightColor: 'transparent',
-            pointerEvents: 'auto',
-          }}
-        >
-          <div style={{
-            width: 42, height: 42, borderRadius: 14,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 14px rgba(26,111,212,0.4)',
-          }}>
-            <Menu size={20} color="white" />
-          </div>
-        </button>
-      </div>
+      {/* Hidden trigger button — called by HomeFeed header menu button */}
+      <button
+        data-sidemenu-toggle
+        onClick={() => setOpen(true)}
+        style={{ display: 'none' }}
+        aria-hidden="true"
+      />
 
       {open && (
         <div onClick={() => setOpen(false)}
