@@ -19,6 +19,7 @@ import VideoUploader from '@/components/VideoUploader';
 import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
@@ -302,29 +303,7 @@ export default function CreateTask() {
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
       {showNoCreditsModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200000, background: 'rgba(5,15,40,0.6)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
-          onClick={() => setShowNoCreditsModal(false)}>
-          <div dir="rtl" style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '28px 20px 40px' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#e5e7eb', margin: '0 auto 24px' }} />
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>🪙</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>אין מספיק ג'ובות</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>
-                פרסום כ-Story עולה <strong style={{ color: '#7e22ce' }}>10 ג'ובות</strong>.<br />
-                היתרה שלך: <strong style={{ color: '#dc2626' }}>{me?.worker_credits ?? 0} ג'ובות</strong>
-              </div>
-            </div>
-            <button onClick={() => setShowNoCreditsModal(false)}
-              style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', marginBottom: 10 }}>
-              הבנתי
-            </button>
-            <button onClick={() => setShowNoCreditsModal(false)}
-              style={{ width: '100%', height: 46, borderRadius: 16, background: '#f1f5f9', border: 'none', fontWeight: 700, fontSize: 14, color: '#64748b', cursor: 'pointer' }}>
-              פרסם ללא Story
-            </button>
-          </div>
-        </div>
+        <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />
       )}
       {showLoginPrompt && (
         <LoginPromptModal

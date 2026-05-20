@@ -14,9 +14,10 @@ import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import useCountUp from '@/hooks/useCountUp';
+import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 // ── Apply Modal — mobile optimized ──────────────────────────────────────────
-function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
+function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const submitBtnRef = useRef(null);
@@ -37,9 +38,10 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         return;
       }
       if (res.data?.error === 'insufficient_credits') {
-        toast.error(`אין מספיק קרדיטים. כניסה למשימה: ${res.data.credits_required}`);
         submittedRef.current = false;
         setLoading(false);
+        onClose();
+        onInsufficientCredits?.(res.data.credits_required);
         return;
       }
       const charged = res.data?.credits_charged || 0;
@@ -173,6 +175,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [coinFlyDir, setCoinFlyDir] = useState('debit');
   const [applyBtnPos, setApplyBtnPos] = useState(null);
   const cardRef = useRef(null);
+  const [showBuyCredits, setShowBuyCredits] = useState(false);
+  const [neededCredits, setNeededCredits] = useState(0);
   const applicantCount = task.applicants?.length || 0;
   const animatedCount = useCountUp(applicantCount, 450);
   const [countPulsing, setCountPulsing] = useState(false);
@@ -523,6 +527,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           workerName={workerName}
           onClose={() => setShowApplyModal(false)}
           onApplied={handleApplied}
+          onInsufficientCredits={(req) => { setNeededCredits(req); setShowBuyCredits(true); }}
         />,
         document.body
       )}
@@ -544,6 +549,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           type="apply"
         />,
         document.body
+      )}
+
+      {showBuyCredits && (
+        <BuyCreditsModal
+          creditsNeeded={neededCredits}
+          onClose={() => setShowBuyCredits(false)}
+        />
       )}
 
       <CoinFlyAnimation
