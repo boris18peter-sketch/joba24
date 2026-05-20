@@ -167,13 +167,14 @@ export default function Layout() {
     return () => window.removeEventListener('new_review', handleNewReview);
   }, []);
 
-  // Listen for approval revoked by client — show popup + notification to worker ONLY
+  // Listen for approval revoked by client — notification only (popup handled by Task subscription)
   useEffect(() => {
     const handleRevoked = (e) => {
       const { task } = e.detail;
-      // Only show to the worker (not to the task owner/client)
+      // Only notify the worker (not the task owner/client)
       if (!me?.id || me?.id === task?.client_id) return;
-      setRevokedTask(task);
+      // Don't call setRevokedTask here — the Task subscription already handles the popup
+      // to avoid showing it twice when both triggers fire on the same device
       addNotification({
         type: 'approval_revoked',
         taskTitle: task?.title || 'משימה',
@@ -431,7 +432,7 @@ export default function Layout() {
               <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
                 העובד <strong style={{ color: '#0f1e40' }}>{cancelWarningTask.worker_name}</strong> טרח ויצא במיוחד עבורך.
-                <br />בביטול הכסף יוחזר אליך במלואו.
+                <br />ביטול המשימה תחזור לסטטוס פתוחה.
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
