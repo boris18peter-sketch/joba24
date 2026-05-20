@@ -11,6 +11,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import ImageUploader from '@/components/ImageUploader';
@@ -289,28 +290,15 @@ export default function CreateTask() {
           type="publish"
         />
       )}
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 20px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -30, left: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-        <div style={{ position: 'absolute', bottom: -20, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
-          <div style={{ flex: 1 }}>
-            <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"}</h1>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{isRepost ? 'הפרטים מולאו מהג\'ובה הקודמת — ערוך ופרסם' : 'מלא את הפרטים ופרסם תוך שניות'}</p>
-          </div>
-          {draftSaved && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: '4px 10px', fontSize: 11, color: 'white', fontWeight: 700, animation: 'fadeIn 0.25s ease' }}>
-              <Save size={11} /> נשמר
-            </div>
-          )}
-        </div>
-        {/* Completion progress bar */}
+      {/* Header with PageHeader + progress bar */}
+      <PageHeader title={isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"} right={draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(244,247,251,0.9)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: '#1a6fd4', fontWeight: 700 }}><Save size={11} /> נשמר</div>} />
+      {/* Progress bar below header */}
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
         {(() => {
           const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
           const pct = Math.round((filled / 5) * 100);
           return (
-            <div style={{ marginTop: 14 }}>
+            <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>השלמת הטופס</span>
                 <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ מוכן לפרסום!' : ''}</span>

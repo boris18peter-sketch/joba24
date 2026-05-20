@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 import { Navigation, X, MapPin, Clock, ChevronRight, Layers } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 
@@ -160,32 +161,27 @@ export default function MapView() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }} dir="rtl">
-      {/* Header */}
-      <div style={{ background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '44px 16px 12px', zIndex: 1000, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <BackButton />
-          <h1 style={{ fontSize: 17, fontWeight: 800, color: '#0f2b6b', margin: 0, flex: 1 }}>🗺️ מפת ג'ובות</h1>
-          <span style={{ fontSize: 12, fontWeight: 700, background: '#dbeafe', color: '#1d4ed8', padding: '3px 10px', borderRadius: 20 }}>
-            {displayTasks.length} פתוחות
-          </span>
-          {/* Style picker button */}
-          <button
-            onClick={() => setShowStylePicker(v => !v)}
-            style={{ width: 36, height: 36, borderRadius: 10, background: showStylePicker ? '#dbeafe' : 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}
-          >
-            <Layers size={16} color="#1a6fd4" />
-            {showStylePicker && (
-              <div style={{ position: 'absolute', top: 44, left: 0, background: 'white', border: '1px solid #dce8f5', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 1001, overflow: 'hidden', minWidth: 100 }}>
-                {MAP_STYLES.map((s, i) => (
-                  <button key={i} onClick={() => { setStyleIdx(i); setShowStylePicker(false); }}
-                    style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'right', background: styleIdx === i ? '#eff6ff' : 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: styleIdx === i ? 700 : 400, color: styleIdx === i ? '#1a6fd4' : '#374151' }}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </button>
-        </div>
+      {/* Header with PageHeader + style picker */}
+      <PageHeader
+        title="🗺️ מפת ג'ובות"
+        right={<button onClick={() => setShowStylePicker(v => !v)} style={{ width: 36, height: 36, borderRadius: 10, background: showStylePicker ? '#dbeafe' : 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
+          <Layers size={16} color="#1a6fd4" />
+          {showStylePicker && (
+            <div style={{ position: 'absolute', top: 44, left: 0, background: 'white', border: '1px solid #dce8f5', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 1001, overflow: 'hidden', minWidth: 100 }}>
+              {MAP_STYLES.map((s, i) => (
+                <button key={i} onClick={() => { setStyleIdx(i); setShowStylePicker(false); }}
+                  style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'right', background: styleIdx === i ? '#eff6ff' : 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: styleIdx === i ? 700 : 400, color: styleIdx === i ? '#1a6fd4' : '#374151' }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </button>}
+      />
+
+      {/* Counter badge */}
+      <div style={{ background: 'white', borderBottom: '1px solid #dce8f5', padding: '8px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1d4ed8' }}>
+        {displayTasks.length} ג'ובות פתוחות
       </div>
 
       {/* Map */}
