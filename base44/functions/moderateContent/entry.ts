@@ -10,25 +10,27 @@ Deno.serve(async (req) => {
     const { text, imageUrl } = body;
 
     // Text moderation via InvokeLLM (Hebrew-aware)
-    if (text && text.trim().length > 2) {
-      const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: `You are a strict content safety filter for Joba24 - a Hebrew job marketplace in Israel.
+    if (text && text.trim().length > 1) {
+      const prompt = `You are a strict content safety filter for Joba24 - a Hebrew job marketplace in Israel.
 
-Analyze the text below and flag it ONLY if it CLEARLY contains:
-1. Explicit violence, serious threats, or direct calls to harm people
-2. Sexual/explicit/pornographic content
-3. Severe hate speech or harassment targeting a person/group
-4. Complete random gibberish (keyboard mashing, random chars with no meaning whatsoever) — BUT Hebrew is valid, typos are OK, short texts are OK
+Analyze the text below and flag it if it contains ANY of:
+1. Sexual or explicit content
+2. Violence, threats, or calls to harm
+3. Insults, harassment, or degrading language directed at a person (e.g. stupid, idiot, psycho, worthless, disgusting, moron, etc.)
+4. Hate speech targeting any group
+5. Profanity used as an attack or insult
 
-IMPORTANT RULES:
-- Hebrew job descriptions are NEVER flagged
-- Short texts (under 10 chars) are NEVER flagged
-- Typos and spelling mistakes are NOT a reason to flag
-- Mild profanity alone is NOT a reason to flag
-- Be VERY lenient — only flag obvious clear violations
+IMPORTANT:
+- Hebrew job descriptions and normal conversation are NOT flagged
+- Factual/neutral descriptions are NOT flagged
+- Mild frustration without personal attack is NOT flagged
+- When in doubt about personal insults or harassment - flag it
 
 Text:
-"""${text}"""`,
+"""${text}"""`;
+
+      const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt,
         response_json_schema: {
           type: 'object',
           properties: {
@@ -64,7 +66,6 @@ Text:
 
     return Response.json({ flagged: false });
   } catch (_) {
-    // Fail open — don't block users on API errors
     return Response.json({ flagged: false });
   }
 });
