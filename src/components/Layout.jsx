@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Map, Plus, User, Wallet, Bell, Loader2, Menu } from 'lucide-react';
+import { Home, Map, Plus, User, Wallet, Bell, Loader2 } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -398,31 +398,6 @@ export default function Layout() {
       <CoinEarnedToast />
       <SideMenu />
 
-      {/* Global Header */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 16, justifyContent: 'space-between' }}>
-        
-        {/* Left side: Menu button */}
-        <button onClick={() => document.querySelector('[data-sidemenu-toggle]')?.click()} style={{ width: 40, height: 40, borderRadius: 12, background: '#1a6fd4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Menu size={20} color="white" strokeWidth={2.5} />
-        </button>
-
-        {/* Center: Logo + Text */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
-          <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '2px 7px', fontSize: 10, color: '#15803d', fontWeight: 700 }}>
-            <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
-              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.6 }} />
-              <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
-            </span>
-            LIVE
-          </span>
-        </div>
-
-        {/* Right side: Placeholder (for balance, can add future elements) */}
-        <div style={{ width: 40, flexShrink: 0 }} />
-      </div>
-
       {/* Portals — rendered directly to body to escape stacking context */}
       {showVerify && createPortal(
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />,
@@ -505,8 +480,8 @@ export default function Layout() {
         document.body
       )}
       
-      {/* Scrollable content area — paddingTop for header, paddingBottom for bottom nav */}
-      <div id="main-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 0, paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+      {/* Scrollable content area — paddingBottom leaves space for bottom nav */}
+      <div id="main-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
         <Outlet />
       </div>
 
