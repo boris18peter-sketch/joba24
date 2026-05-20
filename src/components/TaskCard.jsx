@@ -13,6 +13,7 @@ import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
+import useCountUp from '@/hooks/useCountUp';
 
 // ── Apply Modal — mobile optimized ──────────────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
@@ -172,6 +173,18 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [coinFlyDir, setCoinFlyDir] = useState('debit');
   const [applyBtnPos, setApplyBtnPos] = useState(null);
   const cardRef = useRef(null);
+  const applicantCount = task.applicants?.length || 0;
+  const animatedCount = useCountUp(applicantCount, 450);
+  const [countPulsing, setCountPulsing] = useState(false);
+  const prevCountRef = useRef(applicantCount);
+
+  useEffect(() => {
+    if (prevCountRef.current !== applicantCount && prevCountRef.current !== 0) {
+      setCountPulsing(true);
+      setTimeout(() => setCountPulsing(false), 700);
+    }
+    prevCountRef.current = applicantCount;
+  }, [applicantCount]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -379,6 +392,18 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
             {/* Bottom meta: location + rating */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {applicantCount > 0 && (
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  fontSize: 11, fontWeight: countPulsing ? 700 : 500,
+                  color: countPulsing ? '#1a6fd4' : '#94a3b8',
+                  transition: 'color 0.25s, font-weight 0.25s',
+                  animation: countPulsing ? 'applicantPulse 0.6s ease' : undefined,
+                  flexShrink: 0,
+                }}>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{animatedCount}</span> מגישים
+                </span>
+              )}
               {task.location_name && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#94a3b8' }}>
                   <MapPin size={11} strokeWidth={1.8} />
@@ -532,6 +557,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
       <style>{`
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
+        @keyframes applicantPulse { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
         @keyframes cardFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes coinBadgePop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
         @keyframes cardSuccessIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
