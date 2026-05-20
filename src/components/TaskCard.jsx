@@ -44,18 +44,14 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         setLoading(false);
         return;
       }
-      // Coin fly + success animation
       const charged = res.data?.credits_charged || 0;
       setCreditsCharged(charged);
       setCoinFly(true);
-      onApplied(res.data?.application);
+      // Pass credits up and close modal — card shows its own overlay
       setTimeout(() => {
-        setSuccess(true);
-        setTimeout(() => {
-          onClose();
-          toast.success(`הגשת בקשה! ${charged} קרדיטים נוכו`);
-        }, 700);
-      }, 400);
+        onApplied(res.data?.application, charged);
+        onClose();
+      }, 350);
     } catch {
       submittedRef.current = false;
       setLoading(false);
@@ -96,33 +92,6 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
-        {/* Success state overlay */}
-        {success && (
-          <div style={{
-            position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.97)',
-            borderRadius: '24px 24px 0 0', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 10,
-            animation: 'fadeInBackdrop 0.2s ease',
-          }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#dcfce7,#bbf7d0)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              animation: 'successPop 0.4s cubic-bezier(0.34,1.6,0.64,1)',
-              boxShadow: '0 0 0 10px rgba(22,163,74,0.08)',
-            }}>
-              <CheckCircle2 size={34} color="#16a34a" />
-            </div>
-            <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40' }}>הבקשה נשלחה!</div>
-            {creditsCharged > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#b45309', fontWeight: 700, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '4px 12px', animation: 'coinBadgePop 0.4s 0.15s cubic-bezier(0.34,1.6,0.64,1) both' }}>
-                <span>-{creditsCharged}</span>
-                <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
-                <span>קרדיטים</span>
-              </div>
-            )}
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>ממתין לאישור בעל הג'ובה</div>
-          </div>
-        )}
         <CoinFlyAnimation trigger={coinFly} count={Math.min(5, Math.max(1, creditsCharged || 2))} fromEl={submitBtnRef} onDone={() => setCoinFly(false)} />
 
         {/* Task summary */}
@@ -201,10 +170,12 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [applyLocked, setApplyLocked] = useState(false);
-  const [applyPressed, setApplyPressed] = useState(false); // micro feedback
+  const [applyPressed, setApplyPressed] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancellingTask, setCancellingTask] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showCardSuccess, setShowCardSuccess] = useState(false);
+  const [cardSuccessCredits, setCardSuccessCredits] = useState(0);
 
   // Close menu on outside click
   useEffect(() => {
@@ -263,7 +234,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     }
   };
 
-  const handleApplied = (realApp) => {
+  const handleApplied = (realApp, creditsCharged = 0) => {
+    setShowCardSuccess(true);
+    setCardSuccessCredits(creditsCharged);
+    setTimeout(() => setShowCardSuccess(false), 2400);
     // Use the real server app record (or a safe fallback)
     const appRecord = realApp || { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `opt_${task.id}` };
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => {
@@ -305,12 +279,44 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         className="bg-white active:scale-[0.982] transition-all"
         style={{
           borderRadius: 16,
-          border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : '1px solid #e8edf5',
+          border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : showCardSuccess ? '1.5px solid #16a34a' : '1px solid #e8edf5',
           boxShadow: '0 1px 6px rgba(15,43,107,0.06)',
           padding: '16px',
           cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* In-card success overlay */}
+        {showCardSuccess && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 20,
+            background: 'rgba(240,253,244,0.97)',
+            borderRadius: 16,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+            animation: 'cardSuccessIn 0.3s cubic-bezier(0.34,1.4,0.64,1)',
+          }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%',
+              background: 'linear-gradient(135deg,#dcfce7,#bbf7d0)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 0 8px rgba(22,163,74,0.1)',
+              animation: 'successPop 0.4s cubic-bezier(0.34,1.6,0.64,1)',
+            }}>
+              <CheckCircle2 size={26} color="#16a34a" />
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#14532d' }}>הבקשה נשלחה!</div>
+            {cardSuccessCredits > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#b45309', fontWeight: 700, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', animation: 'coinBadgePop 0.35s 0.15s cubic-bezier(0.34,1.6,0.64,1) both' }}>
+                <span>-{cardSuccessCredits}</span>
+                <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
+                <span>קרדיטים</span>
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: '#16a34a' }}>ממתין לאישור</div>
+          </div>
+        )}
+
         {/* Approved banner */}
         {isApproved && (
           <div onClick={e => e.stopPropagation()} style={{
@@ -509,6 +515,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
         @keyframes cardFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes coinBadgePop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+        @keyframes cardSuccessIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
+        @keyframes successPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
       `}</style>
       </>
       );
