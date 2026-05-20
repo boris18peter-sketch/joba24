@@ -315,15 +315,20 @@ export default function CreateTask() {
           type="publish"
         />
       )}
-      {/* Header with PageHeader + progress bar */}
-      <PageHeader title={isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"} right={draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(244,247,251,0.9)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: '#1a6fd4', fontWeight: 700 }}><Save size={11} /> נשמר</div>} />
-      {/* Progress bar below header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
-        {(() => {
-          const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
-          const pct = Math.round((filled / 5) * 100);
-          return (
-            <div>
+      {/* Sticky header + progress bar combined */}
+      {(() => {
+        const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
+        const pct = Math.round((filled / 5) * 100);
+        return (
+          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
+              <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
+              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"}</span>
+              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> נשמר</div>}
+            </div>
+            {/* Progress bar */}
+            <div style={{ padding: '0 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>השלמת הטופס</span>
                 <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ מוכן לפרסום!' : ''}</span>
@@ -332,9 +337,9 @@ export default function CreateTask() {
                 <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
               </div>
             </div>
-          );
-        })()}
-      </div>
+          </div>
+        );
+      })()}
 
       <div className="px-4 py-4 space-y-4 pb-12">
         {/* Draft restore indicator */}
