@@ -131,6 +131,19 @@ export default function CreateTask() {
   const [checkingModeration, setCheckingModeration] = useState('');
   // Track whether address was selected from autocomplete (not free text)
   const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng));
+  const [showStickySave, setShowStickySave] = useState(false);
+  const submitBtnRef = useRef(null);
+
+  // Track if submit button is in viewport
+  useEffect(() => {
+    if (!submitBtnRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickySave(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(submitBtnRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const fieldRefs = {
     title: useRef(null),
@@ -642,7 +655,8 @@ export default function CreateTask() {
           return (
             <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
               <button
-                onClick={handleSubmit}
+                ref={submitBtnRef}
+               onClick={handleSubmit}
                 disabled={loading || !!checkingModeration}
                 className="btn-tap"
                 style={{
@@ -672,6 +686,49 @@ export default function CreateTask() {
           );
         })()}
       </div>
+
+      {/* Sticky Submit Button */}
+      {showStickySave && (() => {
+        const isReady = !!(form.title && form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
+        return (
+          <div style={{
+            position: 'fixed',
+            bottom: 'max(80px, calc(80px + env(safe-area-inset-bottom)))',
+            left: 0,
+            right: 0,
+            padding: '12px 16px',
+            background: 'white',
+            borderTop: '1px solid #e8edf5',
+            boxShadow: '0 -2px 12px rgba(15,43,107,0.06)',
+            zIndex: 40,
+          }}>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !!checkingModeration}
+              className="btn-tap"
+              style={{
+                width: '100%', height: 48, borderRadius: 14, fontSize: 15, fontWeight: 900,
+                color: 'white', border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                background: isReady
+                  ? 'linear-gradient(135deg, #059669, #047857)'
+                  : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                boxShadow: isReady
+                  ? '0 4px 16px rgba(5,150,105,0.35)'
+                  : '0 4px 16px rgba(26,111,212,0.35)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transition: 'background 0.2s ease',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {loading
+                ? <><Loader2 size={18} className="animate-spin" /> מפרסם...</>
+                : <><Zap size={16} /> פרסום</>
+              }
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
