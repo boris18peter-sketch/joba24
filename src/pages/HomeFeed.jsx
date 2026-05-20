@@ -346,7 +346,7 @@ export default function HomeFeed() {
       <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 16, justifyContent: 'space-between' }}>
         
         {/* Left side: Menu button */}
-        <button data-menu-button onClick={() => document.querySelector('[data-menu-button]')?.parentElement?.click?.()?.parentElement?.click?.()} style={{ width: 40, height: 40, borderRadius: 12, background: '#1a6fd4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <button onClick={() => document.querySelector('[data-sidemenu-toggle]')?.click()} style={{ width: 40, height: 40, borderRadius: 12, background: '#1a6fd4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Menu size={20} color="white" strokeWidth={2.5} />
         </button>
 

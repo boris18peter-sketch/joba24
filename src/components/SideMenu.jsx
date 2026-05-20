@@ -26,6 +26,7 @@ export default function SideMenu() {
     <>
       <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 10000, display: 'flex', alignItems: 'center', padding: '7px 8px', pointerEvents: 'none' }}>
         <button
+          data-sidemenu-toggle
           onClick={() => setOpen(true)}
           style={{
             width: 56, height: 56,
