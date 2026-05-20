@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2 } from 'lucide-react';
+import { Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES } from '@/lib/categories';
@@ -114,15 +115,7 @@ export default function WorkerProfile() {
 
   return (
     <div className="min-h-screen" dir="rtl">
-      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '14px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
-          <ArrowRight size={18} color="#1a6fd4" />
-        </button>
-        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-          {isViewingOther ? (currentUser?.full_name || 'פרופיל עובד') : 'פרופיל שלי'}
-          {currentUser?.is_verified && <VerifiedBadge size="md" />}
-        </h1>
-      </div>
+      <PageHeader title={isViewingOther ? (currentUser?.full_name || 'פרופיל עובד') : 'פרופיל שלי'} />
 
       <div className="px-4 py-5 space-y-6 pb-12">
         {/* Worker Score */}

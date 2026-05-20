@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
 import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 const STATUS_COLORS = {
   OPEN: { bg: '#dbeafe', text: '#1d4ed8', label: 'פתוח' },
@@ -228,19 +229,14 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7fb' }} dir="rtl">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '14px 16px 20px', position: 'sticky', top: 0, zIndex: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <BackButton iconColor="white" style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)' }} />
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: 'white' }}>דשבורד מנהל</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>מבט-על על כל הפעילות</div>
-          </div>
-          <button onClick={() => { refetchTasks(); refetchUsers(); refetchReports(); }}
-            style={{ marginRight: 'auto', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-            <RefreshCw size={14} color="white" />
-          </button>
-        </div>
+      <PageHeader title="דשבורד מנהל" right={
+        <button onClick={() => { refetchTasks(); refetchUsers(); refetchReports(); }}
+          style={{ background: 'white', border: '1px solid #dce8f5', borderRadius: 10, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <RefreshCw size={14} color="#1a6fd4" />
+        </button>
+      } />
+      {/* Header gradient */}
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 20px' }}>
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>

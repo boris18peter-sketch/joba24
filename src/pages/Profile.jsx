@@ -7,6 +7,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 import ScoringBar from '@/components/ScoringBar';
 
 const StatBox = ({ value, label, sub }) =>
@@ -68,12 +69,7 @@ export default function Profile() {
   if (isLoading) {
     return (
       <div dir="rtl" style={{ background: '#f4f7fb', minHeight: '100dvh' }}>
-        {/* Header skeleton */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', backdropFilter: 'blur(8px)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />
-          <div style={{ flex: 1, height: 18, borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
-          <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />
-        </div>
+        <PageHeader title="הפרופיל שלי" right={<div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />} />
         {/* Hero skeleton */}
         <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
@@ -111,14 +107,7 @@ export default function Profile() {
 
       }
 
-      {/* Sticky header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', backdropFilter: 'blur(8px)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <BackButton />
-        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b', flex: 1 }}>הפרופיל שלי</span>
-        <Link to="/worker-profile" style={{ width: 36, height: 36, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Settings size={16} color="#666" />
-        </Link>
-      </div>
+      <PageHeader title="הפרופיל שלי" right={<Link to="/worker-profile" style={{ width: 36, height: 36, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Settings size={16} color="#666" /></Link>} />
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>

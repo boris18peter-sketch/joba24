@@ -88,15 +88,12 @@ function FAQItem({ q, a }) {
 }
 
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 export default function FAQ() {
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Back Button */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <BackButton />
-        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>שאלות ותשובות</span>
-      </div>
+      <PageHeader title="שאלות ותשובות" />
 
       {/* Header */}
       <div style={{

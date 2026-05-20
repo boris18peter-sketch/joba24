@@ -13,6 +13,7 @@ import ImageUploader from '@/components/ImageUploader';
 import VideoUploader from '@/components/VideoUploader';
 import PriceSuggestion from '@/components/PriceSuggestion';
 import PaymentModal from '@/components/PaymentModal';
+import PageHeader from '@/components/PageHeader';
 
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
@@ -169,12 +170,7 @@ export default function EditTask() {
 
   return (
     <div className="min-h-screen" dir="rtl">
-      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(244,247,251,0.97)', borderBottom: '1px solid #dce8f5', backdropFilter: 'blur(8px)', padding: '14px 16px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 38, height: 38, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
-          <ArrowRight size={18} color="#1a6fd4" />
-        </button>
-        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b', margin: 0 }}>{isRepostMode ? 'פרסום מחדש' : 'עריכת משימה'}</h1>
-      </div>
+      <PageHeader title={isRepostMode ? 'פרסום מחדש' : 'עריכת משימה'} />
 
       <div className="px-4 py-5 space-y-5 pb-12">
         {/* Info */}

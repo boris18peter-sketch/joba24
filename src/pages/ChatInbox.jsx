@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ChatInbox() {
@@ -118,14 +119,7 @@ export default function ChatInbox() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
-        <div>
-          <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>הודעות</h1>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{visibleTasks.length} שיחות פעילות</p>
-        </div>
-      </div>
+      <PageHeader title="הודעות" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{visibleTasks.length} שיחות</span>} />
 
       <div style={{ padding: '16px 16px 100px' }}>
         {isLoading ? (

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 const STATUS_TABS = [
 { key: 'inprogress', label: 'פעילות', icon: '🟣' },
@@ -95,11 +96,7 @@ export default function Wallet() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Sticky header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', backdropFilter: 'blur(8px)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <BackButton />
-        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>הג'ובות שלי</span>
-      </div>
+      <PageHeader title="הארנק שלי" />
 
       {/* Stats hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>

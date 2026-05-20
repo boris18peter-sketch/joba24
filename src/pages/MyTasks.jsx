@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, X, RefreshCw, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 import { getCategoryLabel } from '@/lib/categories';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -127,16 +128,9 @@ export default function MyTasks() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '52px 16px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: 'none', boxShadow: 'none' }} iconColor="white" />
-          <div>
-            <h1 style={{ color: 'white', fontSize: 20, fontWeight: 900, margin: 0 }}>הג'ובות שלי</h1>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: '2px 0 0' }}>{tasks.length} ג'ובות סה"כ</p>
-          </div>
-        </div>
-        {/* Tabs */}
+      <PageHeader title="הג'ובות שלי" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} ג'ובות</span>} />
+      {/* Tabs bar */}
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
         <div style={{ display: 'flex', gap: 8 }}>
           {TABS.map(t => {
             const count = tasks.filter(x => t.statuses.includes(x.status)).length;

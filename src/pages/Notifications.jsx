@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 const TYPE_CONFIG = {
   task_taken: { emoji: '🎉', color: '#16a34a', bg: '#f0fdf4', label: 'עובד נמצא!' },
@@ -57,26 +58,14 @@ export default function Notifications() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Header */}
-      <div style={{ background: 'rgba(244,247,251,0.97)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #dce8f5', padding: '14px 16px 12px', position: 'sticky', top: 0, zIndex: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <BackButton />
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Bell size={18} color="#1a6fd4" />
-            <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>התראות</span>
-            {notifications.length > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 700, background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20 }}>
-                {notifications.length}
-              </span>
-            )}
-          </div>
-          {notifications.length > 0 && (
-            <button onClick={clearAll} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>
-              <Trash2 size={14} /> מחק הכל
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="התראות"
+        right={notifications.length > 0 && (
+          <button onClick={clearAll} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 12, fontWeight: 600 }}>
+            <Trash2 size={14} /> מחק הכל
+          </button>
+        )}
+      />
 
       <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {isLoading ? (

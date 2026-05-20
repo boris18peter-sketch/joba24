@@ -4,6 +4,7 @@ import { Trophy, Star } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
@@ -64,15 +65,7 @@ export default function Leaderboard() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-40 border-b px-4 pt-2 pb-4 flex items-center gap-3"
-        style={{ background: 'rgba(244,247,251,0.97)', borderColor: '#dce8f5', backdropFilter: 'blur(8px)' }}>
-        <BackButton />
-        <div>
-          <h1 className="text-xl font-black" style={{ color: '#0f2b6b' }}>לוח מובילים 🏆</h1>
-          <p className="text-xs" style={{ color: '#1a6fd4' }}>המבצעים המובילים בפלטפורמה</p>
-        </div>
-      </div>
+      <PageHeader title="לוח מובילים 🏆" />
 
       {/* Top 3 Podium */}
       {sorted.length >= 3 && (

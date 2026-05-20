@@ -5,6 +5,7 @@ import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation } from 
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 function getDistance(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -133,11 +134,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Back Button */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <BackButton />
-        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b' }}>מטרת היום</span>
-      </div>
+      <PageHeader title="מטרת היום" />
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '44px 20px 28px', position: 'relative', overflow: 'hidden' }}>

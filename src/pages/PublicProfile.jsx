@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 
 const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
 
@@ -73,11 +74,7 @@ export default function PublicProfile() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(244,247,251,0.95)', backdropFilter: 'blur(8px)', padding: '14px 16px 10px', borderBottom: '1px solid #dce8f5', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <BackButton />
-        <span style={{ fontWeight: 800, fontSize: 17, color: '#0f2b6b', flex: 1 }}>פרופיל משתמש</span>
-      </div>
+      <PageHeader title="פרופיל משתמש" />
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
