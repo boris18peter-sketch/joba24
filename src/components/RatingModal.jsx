@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { moderateText } from '@/hooks/useModeration';
 
 export default function RatingModal({ task, me, onClose }) {
   const queryClient = useQueryClient();
@@ -26,6 +27,14 @@ export default function RatingModal({ task, me, onClose }) {
     if (needsPaymentConfirm && !paymentConfirmed) {
       toast.error(isOwner ? 'יש לאשר שהעבודה הושלמה כראוי' : 'יש לאשר שסיימת את הג״ובה');
       return;
+    }
+    // Moderate comment if provided
+    if (comment && comment.trim().length > 3) {
+      const modResult = await moderateText(comment);
+      if (modResult.flagged) {
+        toast.error('הביקורת מכילה תוכן שאינו עומד בכללי הקהילה. אנא נסח מחדש.');
+        return;
+      }
     }
     setLoading(true);
 

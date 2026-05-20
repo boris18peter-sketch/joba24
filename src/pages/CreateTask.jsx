@@ -19,6 +19,7 @@ import VideoUploader from '@/components/VideoUploader';
 import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import { moderateText, moderateImage } from '@/hooks/useModeration';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -125,6 +126,8 @@ export default function CreateTask() {
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
+  const [moderationErrors, setModerationErrors] = useState({});
+  const [checkingModeration, setCheckingModeration] = useState('');
   // Track whether address was selected from autocomplete (not free text)
   const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng));
 
@@ -151,6 +154,21 @@ export default function CreateTask() {
     }, 1000);
     return () => clearTimeout(draftTimerRef.current);
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
+
+  const checkFieldModeration = async (field, text) => {
+    if (!text || text.trim().length < 4) {
+      setModerationErrors(p => ({ ...p, [field]: null }));
+      return;
+    }
+    setCheckingModeration(field);
+    const result = await moderateText(text);
+    setCheckingModeration('');
+    if (result.flagged) {
+      setModerationErrors(p => ({ ...p, [field]: 'תוכן זה אינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.' }));
+    } else {
+      setModerationErrors(p => ({ ...p, [field]: null }));
+    }
+  };
 
   const handleSubmit = () => {
     if (!isAuthenticated) {
@@ -183,6 +201,34 @@ export default function CreateTask() {
     }
     setShowErrorBanner(false);
     setErrors({});
+    setModerationErrors({});
+
+    // Final moderation checks
+    setCheckingModeration('submit');
+    const [titleCheck, descCheck] = await Promise.all([
+      form.title ? moderateText(form.title) : Promise.resolve({ flagged: false }),
+      form.description ? moderateText(form.description) : Promise.resolve({ flagged: false }),
+    ]);
+    setCheckingModeration('');
+    if (titleCheck.flagged || descCheck.flagged) {
+      const newModerationErrors = {};
+      if (titleCheck.flagged) newModerationErrors.title = 'הכותרת מכילה תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
+      if (descCheck.flagged) newModerationErrors.description = 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
+      setModerationErrors(newModerationErrors);
+      setShowErrorBanner(true);
+      return;
+    }
+    for (const imgUrl of (form.images || [])) {
+      setCheckingModeration('images');
+      const imgCheck = await moderateImage(imgUrl);
+      setCheckingModeration('');
+      if (imgCheck.flagged) {
+        setModerationErrors({ images: 'אחת התמונות שהעלית נחסמה עקב תוכן לא הולם.' });
+        setShowErrorBanner(true);
+        return;
+      }
+    }
+
     // Deduct 10 credits for story
     if (form.is_story) {
       const currentCredits = me?.worker_credits ?? 0;
@@ -332,6 +378,14 @@ export default function CreateTask() {
           </div>
         )}
 
+        {/* Moderation image error */}
+        {moderationErrors.images && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>🛡️ {moderationErrors.images}</p>
+          </div>
+        )}
+
         {/* Info banner */}
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -356,16 +410,24 @@ export default function CreateTask() {
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
           <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
-            value={form.title} onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: errors.title ? 4 : 14 }}
+            value={form.title}
+            onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); setModerationErrors(p => ({...p, title: null})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
+            onBlur={() => checkFieldModeration('title', form.title)}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.title || moderationErrors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: (errors.title || moderationErrors.title) ? 4 : 14 }}
           />
+          {checkingModeration === 'title' && <p style={{ fontSize: 11, color: '#1a6fd4', marginBottom: 8 }}>🔍 בודק תוכן...</p>}
           {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
+          {moderationErrors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>🛡️ {moderationErrors.title}</p>}
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תיאור מפורט *</Label>
           <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
-            value={form.description} onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
+            value={form.description}
+            onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null})); }}
+            onBlur={() => checkFieldModeration('description', form.description)}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description || moderationErrors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
           />
+          {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>🔍 בודק תוכן...</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
+          {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
         </SectionCard>
 
         {/* Images + Video */}
@@ -602,7 +664,7 @@ export default function CreateTask() {
             <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !!checkingModeration}
                 className="btn-tap"
                 style={{
                   width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,

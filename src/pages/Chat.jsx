@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Send, Loader2, Image, Check, CheckCheck, Info, X, MapPin, Clock, Star, ShieldAlert } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import { moderateText } from '@/hooks/useModeration';
 import { format, isToday, isYesterday } from 'date-fns';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
@@ -130,6 +131,7 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
+  const [blockedMsg, setBlockedMsg] = useState(null);
   const [showTaskInfo, setShowTaskInfo] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
@@ -209,8 +211,21 @@ export default function Chat() {
 
   const sendMessage = async (content, imageUrl = null) => {
     if ((!content?.trim() && !imageUrl) || !me) return;
-    setSending(true);
     const msgContent = imageUrl ? `[img]${imageUrl}` : content.trim();
+    setSending(true);
+
+    // Moderation check for text messages
+    if (!imageUrl && content.trim().length > 1) {
+      const modResult = await moderateText(content.trim());
+      if (modResult.flagged) {
+        setSending(false);
+        setInput('');
+        setBlockedMsg(content.trim());
+        setTimeout(() => setBlockedMsg(null), 5000);
+        return;
+      }
+    }
+
     setInput('');
     await base44.entities.ChatMessage.create({
       task_id: taskId,
@@ -380,6 +395,18 @@ export default function Chat() {
         })}
 
         {otherTyping && <TypingIndicator />}
+        {blockedMsg && (
+          <div dir="rtl" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <div style={{ maxWidth: '80%', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '18px 18px 4px 18px', padding: '10px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <ShieldAlert size={14} color="#dc2626" />
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>הודעה נחסמה</span>
+              </div>
+              <div style={{ fontSize: 13, color: '#7f1d1d', wordBreak: 'break-word' }}>{blockedMsg.slice(0, 60)}{blockedMsg.length > 60 ? '...' : ''}</div>
+              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, lineHeight: 1.5 }}>הודעה זו נחסמה כיוון שהיא מפרה את תנאי השימוש — שמרו על שיח מכבד 🤝</div>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} style={{ height: 1 }} />
       </div>
 
