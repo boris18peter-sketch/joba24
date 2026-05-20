@@ -16,10 +16,26 @@ export default function AppHeader({ onOpenMenu }) {
         height: 56,
         display: 'flex', alignItems: 'center',
         paddingRight: 16, paddingLeft: 16,
-        justifyContent: isHomePage ? 'space-between' : 'flex-start',
+        justifyContent: 'space-between',
         flexShrink: 0,
       }}
     >
+      {/* Right: Logo + Joba24 — only on Home */}
+      {isHomePage ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <img
+            src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg"
+            alt="Joba24"
+            style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }}
+          />
+          <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>
+            Joba<span style={{ color: '#fbbf24' }}>24</span>
+          </span>
+        </div>
+      ) : (
+        <div />
+      )}
+
       {/* Left: Menu button */}
       <button
         onClick={onOpenMenu}
@@ -32,14 +48,6 @@ export default function AppHeader({ onOpenMenu }) {
       >
         <Menu size={20} color="white" strokeWidth={2.5} />
       </button>
-
-      {/* Center: Logo + Joba24 — only on Home */}
-      {isHomePage && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
-          <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
-        </div>
-      )}
     </div>
   );
 }

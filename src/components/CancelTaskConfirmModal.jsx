@@ -11,7 +11,7 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 99999,
+        zIndex: 200000,
         background: 'rgba(5,15,40,0.55)',
         display: 'flex',
         alignItems: 'flex-end',
