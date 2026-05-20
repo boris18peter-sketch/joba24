@@ -48,10 +48,16 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
       // Pass credits up and close modal immediately — card handles animation
       onApplied(res.data?.application, charged);
       setTimeout(() => onClose(), 120);
-    } catch {
+    } catch (err) {
       submittedRef.current = false;
       setLoading(false);
-      toast.error('שגיאה בשליחת הבקשה, נסה שוב');
+      const errData = err?.response?.data;
+      if (errData?.error === 'insufficient_credits') {
+        onClose();
+        onInsufficientCredits?.(errData.credits_required);
+      } else {
+        toast.error('שגיאה בשליחת הבקשה, נסה שוב');
+      }
     }
   };
 
