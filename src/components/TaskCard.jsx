@@ -18,9 +18,6 @@ import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [coinFly, setCoinFly] = useState(false);
-  const [creditsCharged, setCreditsCharged] = useState(null);
   const submitBtnRef = useRef(null);
   const submittedRef = useRef(false);
 
@@ -45,13 +42,9 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         return;
       }
       const charged = res.data?.credits_charged || 0;
-      setCreditsCharged(charged);
-      setCoinFly(true);
-      // Pass credits up and close modal — card shows its own overlay
-      setTimeout(() => {
-        onApplied(res.data?.application, charged);
-        onClose();
-      }, 350);
+      // Pass credits up and close modal immediately — card handles animation
+      onApplied(res.data?.application, charged);
+      setTimeout(() => onClose(), 120);
     } catch {
       submittedRef.current = false;
       setLoading(false);
@@ -92,7 +85,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
-        <CoinFlyAnimation trigger={coinFly} count={Math.min(5, Math.max(1, creditsCharged || 2))} fromEl={submitBtnRef} onDone={() => setCoinFly(false)} />
+
 
         {/* Task summary */}
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
@@ -134,21 +127,19 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied }) {
           <button
             ref={submitBtnRef}
             onClick={handleSubmit}
-            disabled={loading || success}
+            disabled={loading}
             style={{
               flex: 1, height: 52, borderRadius: 14,
-              background: success ? '#16a34a' : loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
               border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
-              cursor: (loading || success) ? 'not-allowed' : 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: (loading || success) ? 'none' : '0 6px 20px rgba(26,111,212,0.35)',
+              boxShadow: loading ? 'none' : '0 6px 20px rgba(26,111,212,0.35)',
               transition: 'background 0.2s, transform 0.1s',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> :
-             success ? <><CheckCircle2 size={18} /> נשלח!</> :
-             <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
+            {loading ? <Loader2 size={20} className="animate-spin" /> : <><Send size={16} strokeWidth={1.8} /> שלח בקשה</>}
           </button>
         </div>
       </div>
@@ -176,6 +167,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showMenu, setShowMenu] = useState(false);
   const [showCardSuccess, setShowCardSuccess] = useState(false);
   const [cardSuccessCredits, setCardSuccessCredits] = useState(0);
+  const [coinFlyActive, setCoinFlyActive] = useState(false);
+  const [applyBtnPos, setApplyBtnPos] = useState(null);
 
   // Close menu on outside click
   useEffect(() => {
@@ -237,7 +230,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const handleApplied = (realApp, creditsCharged = 0) => {
     setShowCardSuccess(true);
     setCardSuccessCredits(creditsCharged);
-    setTimeout(() => setShowCardSuccess(false), 2400);
+    setTimeout(() => setShowCardSuccess(false), 4000);
+    // Fire coin fly from apply button toward header
+    setCoinFlyActive(true);
     // Use the real server app record (or a safe fallback)
     const appRecord = realApp || { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `opt_${task.id}` };
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => {
@@ -438,6 +433,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 onPointerLeave={() => setApplyPressed(false)}
                 onClick={e => {
                   e.stopPropagation();
+                  // Capture button position for coin fly
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
                   if (!currentUserId) { setShowLoginPrompt(true); return; }
                   if (applyLocked) return;
                   setApplyLocked(true);
@@ -510,6 +508,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         />,
         document.body
       )}
+
+      <CoinFlyAnimation
+        trigger={coinFlyActive}
+        count={8}
+        fromPos={applyBtnPos}
+        onDone={() => setCoinFlyActive(false)}
+      />
 
       <style>{`
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
