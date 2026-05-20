@@ -27,12 +27,12 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      setCancelling(false);
       setShowCancelConfirm(false);
       onClose();
     } catch {
-      toast.error('שגיאה בביטול, נסה שוב');
-    } finally {
       setCancelling(false);
+      toast.error('שגיאה בביטול, נסה שוב');
     }
   };
 
@@ -177,44 +177,43 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
           const hasPending = pendingCount > 0;
 
           return (
-            <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
-              <div style={{
-                width: 168,
-                minHeight: hasPending ? 126 : 108,
-                background: isExpired ? '#fff7ed' : hasPending ? '#fffdf5' : 'white',
-                borderRadius: 16,
-                border: hasPending ? '1.5px solid #fbbf24' : isTaken ? '1.5px solid #c8903a' : isExpired ? '1.5px solid #c07040' : '1px solid #e8eef8',
-                padding: '11px 12px 10px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: 6,
-                boxShadow: hasPending ? '0 2px 12px rgba(251,191,36,0.18)' : isTaken ? '0 2px 12px rgba(192,135,58,0.15)' : '0 2px 8px rgba(15,43,107,0.06)',
-                position: 'relative',
-                boxSizing: 'border-box',
-              }}>
+            <div key={task.id} style={{ flexShrink: 0, position: 'relative' }}>
+              <div
+                onClick={() => { if (openMenuId !== task.id) navigate(`/task/${task.id}`); }}
+                style={{
+                  width: 168,
+                  minHeight: hasPending ? 126 : 108,
+                  background: isExpired ? '#fff7ed' : hasPending ? '#fffdf5' : 'white',
+                  borderRadius: 16,
+                  border: hasPending ? '1.5px solid #fbbf24' : isTaken ? '1.5px solid #c8903a' : isExpired ? '1.5px solid #c07040' : '1px solid #e8eef8',
+                  padding: '11px 12px 10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: 6,
+                  boxShadow: hasPending ? '0 2px 12px rgba(251,191,36,0.18)' : isTaken ? '0 2px 12px rgba(192,135,58,0.15)' : '0 2px 8px rgba(15,43,107,0.06)',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer',
+                }}>
                 {/* Top row: status + actions */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: status.dot, display: 'inline-block', flexShrink: 0, ...(isTaken ? { animation: 'pulse 1.5s infinite' } : {}) }} />
                     <span style={{ fontSize: 10, color: status.textColor, fontWeight: 700 }}>{status.label}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, position: 'relative' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {isTaken && (
-                      <Link to={`/chat/${task.id}`} onClick={e => e.stopPropagation()}>
+                      <div onClick={e => { e.stopPropagation(); navigate(`/chat/${task.id}`); }}>
                         <div style={{ width: 22, height: 22, borderRadius: 7, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <MessageCircle size={11} color="#1a6fd4" />
                         </div>
-                      </Link>
+                      </div>
                     )}
                     {isOpen && (
-                      <button onClick={e => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }}
+                      <button onClick={e => { e.stopPropagation(); setOpenMenuId(openMenuId === task.id ? null : task.id); }}
                         style={{ width: 22, height: 22, borderRadius: 7, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <MoreVertical size={11} color="#64748b" />
                       </button>
-                    )}
-                    {openMenuId === task.id && (
-                      <TaskMenuSheet task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
                     )}
                   </div>
                 </div>
@@ -244,7 +243,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                   )}
                   {isExpired && (
                     <button
-                      onClick={(e) => handleReopen(e, task)}
+                      onClick={(e) => { e.stopPropagation(); handleReopen(e, task); }}
                       style={{ height: 22, padding: '0 8px', borderRadius: 7, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
                     >
                       <RefreshCw size={9} /> ערוך ופתח
@@ -252,7 +251,10 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                   )}
                 </div>
               </div>
-            </Link>
+              {openMenuId === task.id && (
+                <TaskMenuSheet task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
+              )}
+            </div>
           );
         })}
       </div>

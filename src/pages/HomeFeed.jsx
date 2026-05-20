@@ -225,8 +225,8 @@ export default function HomeFeed() {
       for (const task of bumpableTasks) {
         // Stop if there's already at least one application
         const existingApps = await base44.entities.TaskApplication.filter({ task_id: task.id });
-        const hasApp = existingApps.some(a => a.status === 'pending' || a.status === 'approved');
-        if (hasApp) continue;
+        const hasActiveApp = existingApps.some(a => a.status === 'pending' || a.status === 'approved');
+        if (hasActiveApp) continue;
 
         const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
         if (ageMinutes < 5) continue;
