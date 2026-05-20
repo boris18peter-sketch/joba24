@@ -67,13 +67,14 @@ export default function HomeFeed() {
   });
 
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['allTasks'],
-    queryFn: () => base44.functions.invoke('getOpenTasks').then(r => r.data.tasks || []),
-    staleTime: 30000,
+    queryKey: ['allTasks', isAuthenticated],
+    queryFn: () => base44.entities.Task.filter({ status: 'OPEN' }, '-created_date', 200),
+    staleTime: 0,
     gcTime: 60000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: false,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     refetchInterval: 60000,
+    retry: 2,
   });
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
