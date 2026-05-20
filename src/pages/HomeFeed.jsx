@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock } from 'lucide-react';
+import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock, Menu } from 'lucide-react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import CreditIcon from '@/components/CreditIcon';
 import CreditBalancePill from '@/components/CreditBalancePill';
@@ -347,11 +347,7 @@ export default function HomeFeed() {
         
         {/* Left side: Menu button */}
         <button style={{ width: 40, height: 40, borderRadius: 12, background: '#1a6fd4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
+          <Menu size={20} color="white" strokeWidth={2.5} />
         </button>
 
         {/* Center: Logo + Text */}
