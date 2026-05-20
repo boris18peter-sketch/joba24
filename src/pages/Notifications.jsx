@@ -58,7 +58,7 @@ export default function Notifications() {
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
       {/* Header */}
-      <div style={{ background: 'rgba(244,247,251,0.97)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #dce8f5', padding: '44px 16px 12px', position: 'sticky', top: 0, zIndex: 40 }}>
+      <div style={{ background: 'rgba(244,247,251,0.97)', backdropFilter: 'blur(8px)', borderBottom: '1px solid #dce8f5', padding: '14px 16px 12px', position: 'sticky', top: 0, zIndex: 40 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BackButton />
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
