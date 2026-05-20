@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Search, SlidersHorizontal, SearchX, X, Sparkles, MapPin, Banknote, Flame, Clock, Menu } from 'lucide-react';
-import BuyCreditsModal from '@/components/BuyCreditsModal';
-import CreditIcon from '@/components/CreditIcon';
-import CreditBalancePill from '@/components/CreditBalancePill';
+import { Search, SlidersHorizontal, SearchX, X, MapPin, Banknote, Flame, Clock } from 'lucide-react';
+
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
@@ -14,7 +12,7 @@ import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
-import useCountUp from '@/hooks/useCountUp';
+
 import { rankFeedTasks, buildSmartSections } from '@/lib/feedRanker';
 
 export default function HomeFeed() {
@@ -26,15 +24,13 @@ export default function HomeFeed() {
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '' });
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
-  const [showBuyCredits, setShowBuyCredits] = useState(false);
+
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
   const queryClient = useQueryClient();
 
   const { user: me, isAuthenticated } = useAuth();
-  const animatedCredits = useCountUp(me?.worker_credits ?? 0);
-  const creditPillRef = useRef(null);
 
   // My published tasks
   const { data: myTasks = [] } = useQuery({
@@ -342,51 +338,6 @@ export default function HomeFeed() {
 
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 16, justifyContent: 'space-between' }}>
-        
-        {/* Left side: Menu button */}
-        <button onClick={() => document.querySelector('[data-sidemenu-toggle]')?.click()} style={{ width: 40, height: 40, borderRadius: 12, background: '#1a6fd4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Menu size={20} color="white" strokeWidth={2.5} />
-        </button>
-
-        {/* Center: Logo + Text */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
-          <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '2px 7px', fontSize: 10, color: '#15803d', fontWeight: 700 }}>
-            <span style={{ position: 'relative', display: 'inline-flex', width: 6, height: 6 }}>
-              <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.6 }} />
-              <span style={{ position: 'relative', width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
-            </span>
-            LIVE
-          </span>
-        </div>
-
-        {/* Right side: Credits/Login button */}
-        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          {isAuthenticated ? (
-            <CreditBalancePill
-              credits={me?.worker_credits ?? 0}
-              onClick={() => setShowBuyCredits(true)}
-              pillRef={creditPillRef}
-            />
-          ) : (
-            <button
-              onClick={() => base44.auth.redirectToLogin()}
-              style={{
-                background: '#fbbf24', color: '#1a3a6b', border: 'none',
-                height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
-                fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
-                boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
-              }}
-            >
-              התחבר עכשיו
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Login Banner Carousel — show only when not authenticated */}
       {!isAuthenticated && <LoginBannerCarousel />}
 
@@ -590,7 +541,7 @@ export default function HomeFeed() {
 
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
-      {showBuyCredits && <BuyCreditsModal onClose={() => setShowBuyCredits(false)} onSelect={() => setShowBuyCredits(false)} />}
+
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
       <style>{`
         @keyframes slideInFresh {

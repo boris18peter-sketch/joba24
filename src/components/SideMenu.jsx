@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, LogIn, ShieldCheck } from 'lucide-react';
+import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -17,23 +16,14 @@ const navItems = [
   { to: '/faq', icon: HelpCircle, label: 'שאלות ותשובות' },
 ];
 
-export default function SideMenu() {
-  const [open, setOpen] = useState(false);
+export default function SideMenu({ open, onClose }) {
   const location = useLocation();
   const { isAuthenticated, login } = useAuth();
 
   return (
     <>
-      {/* Hidden trigger button — called by HomeFeed header menu button */}
-      <button
-        data-sidemenu-toggle
-        onClick={() => setOpen(true)}
-        style={{ display: 'none' }}
-        aria-hidden="true"
-      />
-
       {open && (
-        <div onClick={() => setOpen(false)}
+        <div onClick={onClose}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 10001, backdropFilter: 'blur(2px)' }}
         />
       )}
@@ -69,7 +59,7 @@ export default function SideMenu() {
               <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>משימות מהירות בכל רחבי הארץ</div>
             </div>
           </div>
-          <button onClick={() => setOpen(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={18} color="#93c5fd" />
           </button>
         </div>
@@ -78,7 +68,7 @@ export default function SideMenu() {
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
             return (
-              <Link key={to} to={to} onClick={() => setOpen(false)}
+              <Link key={to} to={to} onClick={onClose}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
                   background: active ? 'rgba(96,165,250,0.15)' : 'transparent',
@@ -96,7 +86,7 @@ export default function SideMenu() {
           })}
           {/* Admin link — shown only to admins */}
           {isAuthenticated && (
-            <Link to="/admin" onClick={() => setOpen(false)}
+            <Link to="/admin" onClick={onClose}
               style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
                 background: location.pathname === '/admin' ? 'rgba(251,191,36,0.15)' : 'transparent',
@@ -114,7 +104,7 @@ export default function SideMenu() {
 
         {!isAuthenticated && (
            <button
-              onClick={() => { login(); setOpen(false); }}
+              onClick={() => { login(); onClose(); }}
               style={{
                 width: 'calc(100% - 40px)',
                 margin: '0 20px 20px',

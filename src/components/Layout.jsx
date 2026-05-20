@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, Wallet, Bell, Loader2 } from 'lucide-react';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
@@ -396,7 +398,8 @@ export default function Layout() {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
       <ChatPushNotification />
       <CoinEarnedToast />
-      <SideMenu />
+      <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
+      <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
       {/* Portals — rendered directly to body to escape stacking context */}
       {showVerify && createPortal(
