@@ -343,9 +343,18 @@ export default function HomeFeed() {
   return (
     <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 10, paddingLeft: 66, justifyContent: 'space-between' }}>
+      <div className="sticky top-0 z-40" style={{ background: 'rgba(248,249,252,0.97)', borderBottom: '1px solid #eaeef5', backdropFilter: 'blur(14px)', height: 56, display: 'flex', alignItems: 'center', paddingRight: 16, paddingLeft: 16, justifyContent: 'space-between' }}>
         
-        {/* Right side: Logo + Text */}
+        {/* Left side: Menu button */}
+        <button style={{ width: 40, height: 40, borderRadius: 12, background: '#1a6fd4', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        {/* Center: Logo + Text */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }} />
           <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></span>
@@ -358,7 +367,7 @@ export default function HomeFeed() {
           </span>
         </div>
 
-        {/* Credits/Login button */}
+        {/* Right side: Credits/Login button */}
         <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           {isAuthenticated ? (
             <CreditBalancePill
