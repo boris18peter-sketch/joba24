@@ -43,6 +43,7 @@ import ChatInbox from '@/pages/ChatInbox';
 import PublicProfile from '@/pages/PublicProfile';
 import Notifications from '@/pages/Notifications';
 import AdminDashboard from '@/pages/AdminDashboard';
+import Terms from '@/pages/Terms';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
@@ -69,6 +70,7 @@ const AuthenticatedApp = () => {
         <Route path="/task/:id" element={<TaskDetail />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/create-task" element={<CreateTask />} />
         <Route path="/daily-goal" element={<DailyGoal />} />
         <Route path="/public-profile" element={<PublicProfile />} />
