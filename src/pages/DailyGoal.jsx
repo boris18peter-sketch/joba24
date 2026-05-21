@@ -26,8 +26,8 @@ export default function DailyGoal() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    queryKey: ['open-tasks-daily'],
+    queryFn: () => base44.entities.Task.filter({ status: 'OPEN' }, '-created_date', 100),
     refetchInterval: 30000,
   });
 
@@ -133,7 +133,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
   const displayTasks = recommendedTaskIds.length > 0 ? recommendedTaskIds : openTasksNearby.slice(0, 5);
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div style={{ background: '#f4f7fb', paddingBottom: 80 }} dir="rtl">
       <PageHeader title="מטרת היום" />
 
       {/* Header */}
