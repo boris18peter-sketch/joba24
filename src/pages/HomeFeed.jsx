@@ -533,7 +533,7 @@ export default function HomeFeed() {
                 animationDelay: isNew ? undefined : `${Math.min(index, 12) * 50}ms`,
               }}>
                 <TaskCardWithSwipe
-                task={task}
+                task={{ ...task, _isFirstCard: index === 0 }}
                 myApp={myApp}
                 isMyTask={false}
                 currentUserId={isAuthenticated ? me?.id : null}

@@ -54,10 +54,12 @@ export default function AppHeader({ onOpenMenu }) {
         {/* Left: Credits pill (home only) + Menu button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {isHomePage && isAuthenticated && (
+            <span id="onboarding-credits-pill">
             <CreditBalancePill
               credits={me?.worker_credits ?? 0}
               onClick={() => setShowBuyCredits(true)}
             />
+            </span>
           )}
           {isHomePage && !isAuthenticated && (
             <button

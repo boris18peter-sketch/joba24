@@ -13,6 +13,7 @@ import ChatPushNotification from '@/components/ChatPushNotification';
 import CoinEarnedToast from '@/components/CoinEarnedToast';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
+import OnboardingTutorial from '@/components/OnboardingTutorial';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -22,6 +23,7 @@ export default function Layout() {
   const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
@@ -31,6 +33,14 @@ export default function Layout() {
   const takenWorkerRef = useRef({});
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
+
+  // Show onboarding tutorial for first-time users
+  useEffect(() => {
+    if (!me) return;
+    if (me.is_first_login !== false) {
+      setShowOnboarding(true);
+    }
+  }, [me?.id]);
 
   // Fire coin_earned event when worker_credits increases
   useEffect(() => {
@@ -415,6 +425,10 @@ export default function Layout() {
         <WorkerCancelledPopup task={cancelledTask} onClose={() => setCancelledTask(null)} />,
         document.body
       )}
+      {showOnboarding && isAuthenticated && (
+        <OnboardingTutorial onDone={() => setShowOnboarding(false)} />
+      )}
+
       {cancelSuccessTask && createPortal(
         <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
         document.body
@@ -503,7 +517,7 @@ export default function Layout() {
             const active = location.pathname === to;
             if (primary) {
               return (
-                <button key={to} onClick={() => {
+                <button id="onboarding-create-btn" key={to} onClick={() => {
                   if (!isAuthenticated) {
                     navigate(to);
                     return;

@@ -475,6 +475,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             {/* CTA — apply button */}
             {!viewOnly && !hasActiveApp && task.created_by !== currentUserId && (
               <button
+                id={task._isFirstCard ? 'onboarding-apply-btn' : undefined}
                 onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
                 onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}
                 onPointerLeave={() => setApplyPressed(false)}
