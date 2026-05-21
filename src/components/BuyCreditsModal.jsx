@@ -13,48 +13,34 @@ const PACKAGES = [
   { id: 'boss',       credits: 1600, bonus: 400, price: 449.90, popular: false, coins: 6 },
 ];
 
-// Coin stack SVG — renders `count` stacked coins
-function CoinStack({ count, light = false }) {
-  const coinH = 10; // height of each coin layer
-  const coinW = 36;
-  const coinRx = coinW / 2;
-  const totalH = coinH * (count - 1) + 22; // top ellipse
-  const svgH = totalH + 4;
-
-  const coins = Array.from({ length: count });
-  // bottom coin first
-  const baseColor = light ? ['#fde68a', '#fbbf24', '#f59e0b'] : ['#fde68a', '#fbbf24', '#d97706'];
+// Coin stack — ערימה של אייקוני מטבעות
+function CoinStack({ count }) {
+  const sizes = {
+    1: [24],
+    2: [32, 18],
+    3: [40, 28, 16],
+    4: [48, 36, 24, 14],
+    5: [52, 40, 28, 18, 12],
+    6: [56, 44, 32, 22, 14, 10],
+  }[count] || [24];
 
   return (
-    <svg width={coinW + 6} height={svgH} viewBox={`0 0 ${coinW + 6} ${svgH}`} style={{ display: 'block', overflow: 'visible' }}>
-      {coins.map((_, i) => {
-        const yOffset = totalH - 22 - i * coinH;
-        return (
-          <g key={i}>
-            {/* cylinder body */}
-            <rect
-              x={3} y={yOffset + 6}
-              width={coinW} height={coinH}
-              fill={baseColor[1]}
-            />
-            {/* bottom ellipse */}
-            <ellipse cx={3 + coinRx} cy={yOffset + 6 + coinH} rx={coinRx} ry={5} fill={baseColor[2]} />
-            {/* top ellipse */}
-            <ellipse cx={3 + coinRx} cy={yOffset + 6} rx={coinRx} ry={5} fill={baseColor[0]} />
-            {/* shine on top */}
-            <ellipse cx={3 + coinRx - 5} cy={yOffset + 5} rx={7} ry={2} fill="rgba(255,255,255,0.45)" />
-            {/* J letter on top coin only */}
-            {i === coins.length - 1 && (
-              <text
-                x={3 + coinRx} y={yOffset + 8}
-                textAnchor="middle" fontSize="9" fontWeight="900"
-                fill={baseColor[2]} fontFamily="Inter, sans-serif"
-              >J</text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+    <div style={{ position: 'relative', width: 56, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {sizes.map((size, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            transform: `translateY(${i * 5}px) scale(${size / 24})`,
+            transformOrigin: 'center',
+            opacity: 0.85 + i * 0.02,
+            zIndex: sizes.length - i,
+          }}
+        >
+          <CreditIcon size={24} />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -169,7 +155,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
 
                 {/* Coin stack */}
                 <div style={{ marginBottom: 4, marginTop: pkg.popular ? 6 : 0 }}>
-                  <CoinStack count={pkg.coins} light={pkg.popular} />
+                  <CoinStack count={pkg.coins} />
                 </div>
 
                 {/* Credits count */}
