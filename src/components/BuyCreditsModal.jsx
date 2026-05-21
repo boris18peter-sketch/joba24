@@ -135,7 +135,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         </div>
 
         {/* Packages grid */}
-        <div style={{ padding: '14px 14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ padding: '14px 14px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, overflowX: 'hidden' }}>
           {PACKAGES.map((pkg) => {
             const totalCredits = pkg.credits + pkg.bonus;
             const pricePerCredit = (pkg.price / totalCredits).toFixed(2);
