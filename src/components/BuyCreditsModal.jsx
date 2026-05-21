@@ -10,6 +10,9 @@ const SHIMMER_STYLE = `
     0%   { transform: translateX(-120%) skewX(-15deg); }
     100% { transform: translateX(250%) skewX(-15deg); }
   }
+  .pkg-shimmer::after {
+    animation: shimmerWipe 2s ease-in-out;
+  }
   @keyframes glowPulse {
     0%, 100% { box-shadow: 0 0 10px 2px rgba(251,191,36,0.45), 0 10px 32px rgba(21,101,192,0.38); }
     50%       { box-shadow: 0 0 22px 7px rgba(251,191,36,0.75), 0 10px 32px rgba(21,101,192,0.38); }
@@ -21,7 +24,6 @@ const SHIMMER_STYLE = `
     border-radius: 20px;
     background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
     transform: translateX(-120%) skewX(-15deg);
-    animation: shimmerWipe 1.2s ease-in-out;
     pointer-events: none;
     overflow: hidden;
   }
@@ -163,7 +165,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   alignItems: 'center',
                   gap: 6,
                 }}
-                onPointerDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
+                onPointerDown={e => e.currentTarget.style.transform = 'scale(1.04)'}
                 onPointerUp={e => e.currentTarget.style.transform = 'scale(1)'}
                 onPointerLeave={e => e.currentTarget.style.transform = 'scale(1)'}
               >
@@ -175,8 +177,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     padding: '3px 12px', borderRadius: 99,
                     whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(251,191,36,0.4)',
                     display: 'flex', alignItems: 'center', gap: 4,
+                    zIndex: 10,
                   }}>
-                    <Star size={9} fill="currentColor" /> הכי שווה
+                    <Star size={9} fill="currentColor" /> פופולרי
                   </div>
                 )}
 
