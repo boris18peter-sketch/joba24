@@ -13,36 +13,7 @@ const PACKAGES = [
   { id: 'boss',       credits: 1600, bonus: 400, price: 449.90, popular: false, coins: 6 },
 ];
 
-// Coin stack — ערימה של אייקוני מטבעות
-function CoinStack({ count }) {
-  const sizes = {
-    1: [24],
-    2: [32, 18],
-    3: [40, 28, 16],
-    4: [48, 36, 24, 14],
-    5: [52, 40, 28, 18, 12],
-    6: [56, 44, 32, 22, 14, 10],
-  }[count] || [24];
 
-  return (
-    <div style={{ position: 'relative', width: 56, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {sizes.map((size, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            transform: `translateY(${i * 5}px) scale(${size / 24})`,
-            transformOrigin: 'center',
-            opacity: 0.85 + i * 0.02,
-            zIndex: sizes.length - i,
-          }}
-        >
-          <CreditIcon size={24} />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
@@ -153,11 +124,6 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   </div>
                 )}
 
-                {/* Coin stack */}
-                <div style={{ marginBottom: 4, marginTop: pkg.popular ? 6 : 0 }}>
-                  <CoinStack count={pkg.coins} />
-                </div>
-
                 {/* Credits count */}
                 <div style={{ fontSize: 24, fontWeight: 900, color: pkg.popular ? 'white' : '#0f1e40', letterSpacing: -0.5, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                   {totalCredits}
@@ -167,7 +133,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 {/* Bonus tag */}
                 {pkg.bonus > 0 && (
                   <div style={{ fontSize: 10, color: pkg.popular ? '#fde68a' : '#16a34a', fontWeight: 800, background: pkg.popular ? 'rgba(255,255,255,0.1)' : '#f0fdf4', borderRadius: 20, padding: '2px 8px', border: pkg.popular ? 'none' : '1px solid #bbf7d0' }}>
-                    +{pkg.bonus} בונוס 🎁
+                    +{pkg.bonus} בונוס
                   </div>
                 )}
 
