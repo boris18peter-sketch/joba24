@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, ShieldCheck } from 'lucide-react';
+import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, ShieldCheck, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/profile', icon: User, label: 'פרופיל' },
   { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },
   { to: '/faq', icon: HelpCircle, label: 'שאלות ותשובות' },
+  { to: '/terms', icon: FileText, label: 'תנאי שימוש' },
 ];
 
 export default function SideMenu({ open, onClose }) {
