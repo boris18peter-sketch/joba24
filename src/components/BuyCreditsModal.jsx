@@ -155,19 +155,46 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   textAlign: 'center',
                   cursor: 'pointer',
                   position: 'relative',
-                  overflow: 'hidden',
+                  overflow: 'visible',
                   boxShadow: pkg.popular
                     ? '0 10px 32px rgba(21,101,192,0.38)'
                     : '0 2px 10px rgba(0,0,0,0.06)',
-                  transition: 'transform 0.15s',
+                  transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: 6,
                 }}
-                onPointerDown={e => e.currentTarget.style.transform = 'scale(1.04)'}
-                onPointerUp={e => e.currentTarget.style.transform = 'scale(1)'}
-                onPointerLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                onPointerDown={e => {
+                  e.currentTarget.style.transform = 'scale(1.04)';
+                  e.currentTarget.style.boxShadow = pkg.popular
+                    ? '0 20px 48px rgba(21,101,192,0.55)'
+                    : '0 12px 24px rgba(0,0,0,0.15)';
+                }}
+                onPointerUp={e => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = pkg.popular
+                    ? '0 10px 32px rgba(21,101,192,0.38)'
+                    : '0 2px 10px rgba(0,0,0,0.06)';
+                }}
+                onPointerLeave={e => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = pkg.popular
+                    ? '0 10px 32px rgba(21,101,192,0.38)'
+                    : '0 2px 10px rgba(0,0,0,0.06)';
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'scale(1.04)';
+                  e.currentTarget.style.boxShadow = pkg.popular
+                    ? '0 20px 48px rgba(21,101,192,0.55)'
+                    : '0 12px 24px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = pkg.popular
+                    ? '0 10px 32px rgba(21,101,192,0.38)'
+                    : '0 2px 10px rgba(0,0,0,0.06)';
+                }}
               >
                 {pkg.popular && (
                   <div style={{
