@@ -24,9 +24,9 @@ function TaskRow({ task, badge, onRepost }) {
   };
   const b = badgeMap[badge] || badgeMap.inprogress;
   return (
-    <div style={{ background: 'white', borderRadius: 14, border: '1px solid #dce8f5', padding: '13px 14px' }}>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '13px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-        <div onClick={() => navigate(`/task/${task.id}`)} style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b', flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+        <div onClick={() => navigate(`/task/${task.id}`)} style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
         <div style={{ fontSize: 15, fontWeight: 900, color: '#111', flexShrink: 0 }}>₪{task.price}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -95,7 +95,7 @@ export default function Wallet() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader title="הארנק שלי" />
 
       {/* Stats hero */}
@@ -118,10 +118,10 @@ export default function Wallet() {
       <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Credits History */}
         {creditTxns.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f4fa', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <Coins size={15} color="#1a6fd4" />
-              <span style={{ fontWeight: 800, fontSize: 14, color: '#0f2b6b' }}>היסטוריית קרדיטים</span>
+              <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>היסטוריית קרדיטים</span>
             </div>
             <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
               {creditTxns.map((txn) => {
@@ -135,9 +135,9 @@ export default function Wallet() {
                 };
                 const isPositive = txn.amount > 0;
                 return (
-                  <div key={txn.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 4px', borderBottom: '1px solid #f8faff' }}>
+                  <div key={txn.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 4px', borderBottom: '1px solid var(--border-1)' }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#0f2b6b' }}>{typeLabels[txn.type] || txn.type}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{typeLabels[txn.type] || txn.type}</div>
                       {txn.task_title && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{txn.task_title}</div>}
                     </div>
                     <div style={{ textAlign: 'left' }}>
@@ -156,20 +156,20 @@ export default function Wallet() {
         )}
 
         {/* My worker tasks */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f4fa', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Briefcase size={15} color="#0f2b6b" />
-            <span style={{ fontWeight: 800, fontSize: 14, color: '#0f2b6b' }}>הג'ובות שלי (כעובד)</span>
+            <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>הג'ובות שלי (כעובד)</span>
             {inProgressTasks.length > 0 && (
               <span style={{ background: '#dc2626', color: 'white', fontSize: 10, fontWeight: 900, padding: '2px 7px', borderRadius: 20 }}>{inProgressTasks.length}</span>
             )}
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #f0f4fa' }}>
+          <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--border-1)' }}>
             {STATUS_TABS.map((tab) => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                style={{ flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none', borderBottom: activeTab === tab.key ? '2px solid #1a6fd4' : '2px solid transparent', color: activeTab === tab.key ? '#1a6fd4' : '#888', transition: 'all 0.15s' }}>
+                style={{ flex: 1, padding: '10px 4px', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none', borderBottom: activeTab === tab.key ? '2px solid #1a6fd4' : '2px solid transparent', color: activeTab === tab.key ? '#1a6fd4' : 'var(--text-2)', transition: 'all 0.15s' }}>
                 {tab.icon} {tab.label}
               </button>
             ))}
@@ -185,9 +185,9 @@ export default function Wallet() {
                   const StatusIcon = cfg.icon;
                   return (
                     <div key={app.id} onClick={() => navigate(`/task/${app.task_id}`)}
-                      style={{ background: 'white', borderRadius: 14, border: '1px solid #dce8f5', padding: '12px 14px', cursor: 'pointer' }}>
+                      style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 14px', cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {app.task_title || app.task_id}
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: cfg.bg, color: cfg.color, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>

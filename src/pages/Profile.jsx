@@ -68,7 +68,7 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div dir="rtl" style={{ background: '#f4f7fb', minHeight: '100dvh' }}>
+      <div dir="rtl" style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
         <PageHeader title="הפרופיל שלי" right={<div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />} />
         {/* Hero skeleton */}
         <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
@@ -99,7 +99,7 @@ export default function Profile() {
   const workerScore = me?.worker_score || 0;
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       {showVerifyModal &&
       <VerifyModal
         onClose={() => setShowVerifyModal(false)}
@@ -197,18 +197,18 @@ export default function Profile() {
         <ScoringBar score={me?.trust_score ?? 1} />
 
         {/* Quick links */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
           {[
           { icon: Briefcase, label: 'פרופיל עובד', sub: 'מקצוע, תעודות, ערים', to: '/worker-profile', color: '#1a6fd4' },
           { icon: CreditCard, label: 'הארנק שלי', sub: 'יתרה, תשלומים, היסטוריה', to: '/wallet', color: '#16a34a' }].
           map(({ icon: Icon, label, sub, to, color }, i, arr) =>
-          <Link key={to} to={to} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid #f0f4fa' : 'none' }}>
+          <Link key={to} to={to} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon size={17} color={color} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b' }}>{label}</div>
-                <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>{sub}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>{sub}</div>
               </div>
               <ChevronLeft size={16} color="#ccc" />
             </Link>
@@ -217,7 +217,7 @@ export default function Profile() {
 
         {/* Skills / Categories */}
         {me?.preferred_categories?.length > 0 &&
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <SectionTitle>תחומי עיסוק</SectionTitle>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {me.preferred_categories.map((c) =>
@@ -231,7 +231,7 @@ export default function Profile() {
 
         {/* Certificates */}
         {me?.certificates?.length > 0 &&
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <SectionTitle>תעודות ואישורים</SectionTitle>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {me.certificates.map((cert) =>
@@ -245,18 +245,18 @@ export default function Profile() {
 
         {/* Recent Reviews */}
         {reviews.length > 0 &&
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <SectionTitle>ביקורות אחרונות</SectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {reviews.slice(0, 3).map((review) =>
-            <div key={review.id} style={{ borderBottom: '1px solid #f0f4fa', paddingBottom: 10 }}>
+            <div key={review.id} style={{ borderBottom: '1px solid var(--border-1)', paddingBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
                     {[1, 2, 3, 4, 5].map((s) =>
                 <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
                 )}
                     <span style={{ fontSize: 10, color: '#aaa', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
                   </div>
-                  {review.comment && <p style={{ fontSize: 12, color: '#444', lineHeight: 1.5, margin: 0 }}>{review.comment}</p>}
+                  {review.comment && <p style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{review.comment}</p>}
                 </div>
             )}
             </div>
@@ -273,23 +273,23 @@ export default function Profile() {
         {/* All Reviews Modal */}
         {showAllReviews && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowAllReviews(false)}>
-            <div style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid #f0f4fa' }}>
-                <span style={{ fontSize: 16, fontWeight: 800, color: '#0f2b6b' }}>כל הביקורות שלי ({reviews.length})</span>
+            <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>כל הביקורות שלי ({reviews.length})</span>
                 <button onClick={() => setShowAllReviews(false)} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={16} color="#64748b" />
                 </button>
               </div>
               <div style={{ overflowY: 'auto', padding: '12px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {reviews.map((review) => (
-                  <div key={review.id} style={{ background: '#f8faff', borderRadius: 14, padding: '12px 14px', border: '1px solid #eef2ff' }}>
+                  <div key={review.id} style={{ background: 'var(--surface-3)', borderRadius: 14, padding: '12px 14px', border: '1px solid var(--border-1)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star key={s} size={13} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
                       ))}
                       <span style={{ fontSize: 10, color: '#94a3b8', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
                     </div>
-                    {review.comment && <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, margin: 0 }}>{review.comment}</p>}
+                    {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{review.comment}</p>}
                   </div>
                 ))}
               </div>
@@ -298,7 +298,7 @@ export default function Profile() {
         )}
 
         {/* Logout */}
-        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', overflow: 'hidden', marginBottom: 24 }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 24 }}>
           <button
             onClick={() => base44.auth.logout()}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer' }}>

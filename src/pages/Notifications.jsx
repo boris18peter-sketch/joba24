@@ -57,7 +57,7 @@ export default function Notifications() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader
         title="התראות"
         right={notifications.length > 0 && (
@@ -75,7 +75,7 @@ export default function Notifications() {
         ) : notifications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🔔</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#0f2b6b', marginBottom: 6 }}>אין התראות</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', marginBottom: 6 }}>אין התראות</div>
             <div style={{ fontSize: 13, color: '#94a3b8' }}>כשמשהו יקרה — תראה את זה כאן</div>
           </div>
         ) : (
@@ -87,7 +87,7 @@ export default function Notifications() {
                 key={i}
                 onClick={() => notif.taskId && navigate(`/task/${notif.taskId}`)}
                 style={{
-                  background: notif.read ? 'white' : cfg.bg,
+                  background: notif.read ? 'var(--surface-2)' : cfg.bg,
                   border: `1px solid ${notif.read ? '#e8eef8' : cfg.color + '30'}`,
                   borderRadius: 16,
                   padding: '14px 16px',
@@ -118,11 +118,11 @@ export default function Notifications() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 13, color: '#374151', fontWeight: 600, marginBottom: 2 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-1)', fontWeight: 600, marginBottom: 2 }}>
                     {notif.taskTitle || notif.workerName || notif.senderName || ''}
                   </div>
                   {notif.preview && (
-                    <div style={{ fontSize: 12, color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {notif.preview}
                     </div>
                   )}

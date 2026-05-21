@@ -127,7 +127,7 @@ export default function MyTasks() {
   const pendingCountForTask = (taskId) => allApps.filter(a => a.task_id === taskId).length;
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader title="הג'ובות שלי" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} ג'ובות</span>} />
       {/* Tabs bar */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
@@ -160,7 +160,7 @@ export default function MyTasks() {
         ) : filtered.length === 0 && activeTab === 'active' ? (
           <div style={{ textAlign: 'center', padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <div style={{ fontSize: 40 }}>📭</div>
-            <p style={{ fontWeight: 700, color: '#0f2b6b', margin: 0, fontSize: 16 }}>אין ג'ובות פעילות</p>
+            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>אין ג'ובות פעילות</p>
             <p style={{ fontSize: 13, color: '#888', margin: 0 }}>פרסם ג'ובה חדשה וקבל עובד תוך דקות</p>
             <Link to="/create-task" style={{ textDecoration: 'none' }}>
               <button style={{ display: 'flex', alignItems: 'center', gap: 8, height: 50, paddingInline: 28, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
@@ -172,26 +172,26 @@ export default function MyTasks() {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
-            <p style={{ fontWeight: 700, color: '#0f2b6b', margin: 0 }}>אין ג'ובות כאן</p>
+            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>אין ג'ובות כאן</p>
           </div>
         ) : (
           filtered.map(task => {
             const st = STATUS[task.status] || STATUS.OPEN;
             const pendingApps = pendingCountForTask(task.id);
             return (
-              <div key={task.id} style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 10px rgba(26,111,212,0.06)' }}>
+              <div key={task.id} style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 10px rgba(26,111,212,0.06)' }}>
                 {/* Top row */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
                   <Link to={`/task/${task.id}`} style={{ textDecoration: 'none', flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b', lineHeight: 1.3 }}>{task.title}</div>
-                    <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{getCategoryLabel(task.category)} · {formatDistanceToNow(new Date(task.created_date), { addSuffix: true })}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{getCategoryLabel(task.category)} · {formatDistanceToNow(new Date(task.created_date), { addSuffix: true })}</div>
                   </Link>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: st.bg, color: st.color, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot, display: 'inline-block' }} />
                       {st.label}
                     </span>
-                    <span style={{ fontSize: 17, fontWeight: 900, color: '#0f2b6b' }}>₪{task.price}</span>
+                    <span style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>₪{task.price}</span>
                   </div>
                 </div>
 

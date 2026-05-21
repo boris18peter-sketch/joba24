@@ -403,20 +403,20 @@ export default function TaskDetail() {
 
   if (isLoading) {
     return (
-      <div dir="rtl" style={{ background: '#f4f7fb', minHeight: '100dvh' }}>
+      <div dir="rtl" style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
         <PageHeader title="" right={<div style={{ width: 60, height: 26, borderRadius: 20, background: '#e8edf5' }} className="animate-pulse" />} />
         <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Price hero skeleton */}
           <div style={{ borderRadius: 20, background: '#dce8f5', height: 110 }} className="animate-pulse" />
           {/* Description skeleton */}
-          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ height: 14, width: '40%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
             <div style={{ height: 13, width: '95%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
             <div style={{ height: 13, width: '80%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
             <div style={{ height: 13, width: '60%', borderRadius: 8, background: '#e8edf5' }} className="animate-pulse" />
           </div>
           {/* Details skeleton */}
-          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[1,2,3].map(i => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5', flexShrink: 0 }} className="animate-pulse" />
@@ -443,7 +443,7 @@ export default function TaskDetail() {
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
-    <div className="min-h-screen" dir="rtl">
+    <div className="min-h-screen" dir="rtl" style={{ background: 'var(--surface-1)' }}>
       <TaskTakenConfetti trigger={confetti} />
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(
@@ -727,14 +727,14 @@ export default function TaskDetail() {
 
         {/* Description */}
         {task.description && (
-          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>תיאור</h2>
-            <p style={{ color: '#333', lineHeight: 1.65, fontSize: 14 }}>{task.description}</p>
+            <p style={{ color: 'var(--text-1)', lineHeight: 1.65, fontSize: 14 }}>{task.description}</p>
           </div>
         )}
 
         {/* Details */}
-        <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }} className="space-y-3">
+        <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }} className="space-y-3">
           {task.location_name && (
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -777,7 +777,7 @@ export default function TaskDetail() {
 
         {/* Requirements */}
         {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 10 }}>דרישות</h2>
             <div className="flex flex-wrap gap-2">
               {task.requirements.vehicle && (
@@ -795,9 +795,9 @@ export default function TaskDetail() {
 
         {/* Worker info */}
         {task.worker_name && task.status === 'TAKEN' && (
-          <div style={{ background: 'white', borderRadius: 20, border: '1px solid #dce8f5', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>מבצע</h2>
-            <a href={`/public-profile?id=${task.worker_id}`} style={{ fontWeight: 700, color: '#0f2b6b', textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.worker_name}</a>
+            <a href={`/public-profile?id=${task.worker_id}`} style={{ fontWeight: 700, color: 'var(--text-1)', textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.worker_name}</a>
           </div>
         )}
 
