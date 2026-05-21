@@ -402,7 +402,27 @@ export default function SimulatorPanel() {
           })} />
       </Section>
 
-      {/* ── SCENARIO H: Chat ── */}
+      {/* ── SCENARIO H: Onboarding Tutorial ── */}
+      <Section title="🎓 Onboarding — הדרכת משתמשים חדשים" icon={<Sparkles size={15} color="#f59e0b" />}>
+        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, padding: '6px 10px', background: '#f8faff', borderRadius: 8 }}>
+          הפעל את הטוטוריאל המודרך 3-שלבים עם Spotlight עבור משתמשים חדשים
+        </div>
+        <Btn label="🎓 הפעל טוטוריאל Onboarding"
+          color="#f59e0b"
+          onClick={wrap(async () => {
+            await base44.auth.updateMe({ is_first_login: true });
+            toast.success('is_first_login הוגדר ל-true, טוטוריאל יופעל בעמוד הבא');
+            setTimeout(() => navigate('/'), 500);
+          })} />
+        <Btn label="✅ סמן כמשתמש ישן (דלג על הטוטוריאל)"
+          color="#059669"
+          onClick={wrap(async () => {
+            await base44.auth.updateMe({ is_first_login: false });
+            toast.success('is_first_login הוגדר ל-false');
+          })} />
+      </Section>
+
+      {/* ── SCENARIO I: Chat ── */}
       <Section title="💬 תרחיש ח׳ — צ׳אט" icon={<MessageCircle size={15} color="#1a6fd4" />}>
         {takenByMe.concat(myTakenAsClient).slice(0, 2).map(t => (
           <Btn key={t.id} label={`📩 שלח הודעת בדיקה: ${t.title.slice(0, 20)}`} color="#1a6fd4"
@@ -413,7 +433,7 @@ export default function SimulatorPanel() {
         )}
       </Section>
 
-      {/* ── SCENARIO I: Verification ── */}
+      {/* ── SCENARIO J: Verification ── */}
       <Section title="🛡️ תרחיש ט׳ — אימות זהות" icon={<ShieldCheck size={15} color="#7c3aed" />}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           <Btn label="✅ סמן כמאומת" color="#059669"
