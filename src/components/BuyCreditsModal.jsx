@@ -1,8 +1,34 @@
 import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
 import useCountUp from '@/hooks/useCountUp';
 import { X, Zap, Star } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import CreditIcon from '@/components/CreditIcon';
+
+const SHIMMER_STYLE = `
+  @keyframes shimmerWipe {
+    0%   { transform: translateX(-120%) skewX(-15deg); }
+    100% { transform: translateX(250%) skewX(-15deg); }
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 10px 2px rgba(251,191,36,0.45), 0 10px 32px rgba(21,101,192,0.38); }
+    50%       { box-shadow: 0 0 22px 7px rgba(251,191,36,0.75), 0 10px 32px rgba(21,101,192,0.38); }
+  }
+  .pkg-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+    transform: translateX(-120%) skewX(-15deg);
+    animation: shimmerWipe 1.2s ease-in-out;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .pkg-glow {
+    animation: glowPulse 2.2s ease-in-out infinite;
+  }
+`;
 
 const PACKAGES = [
   { id: 'starter',    credits: 15,   bonus: 0,   price: 9.90,   popular: false, coins: 1 },
@@ -18,6 +44,34 @@ const PACKAGES = [
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
+
+  // Inject keyframes once
+  useEffect(() => {
+    const id = 'buy-credits-styles';
+    if (!document.getElementById(id)) {
+      const s = document.createElement('style');
+      s.id = id;
+      s.textContent = SHIMMER_STYLE;
+      document.head.appendChild(s);
+    }
+  }, []);
+
+  // Trigger shimmer every 4s
+  useEffect(() => {
+    const trigger = () => {
+      document.querySelectorAll('.pkg-card').forEach((el, i) => {
+        setTimeout(() => {
+          el.classList.remove('pkg-shimmer');
+          void el.offsetWidth; // reflow
+          el.classList.add('pkg-shimmer');
+          setTimeout(() => el.classList.remove('pkg-shimmer'), 1300);
+        }, i * 80);
+      });
+    };
+    trigger();
+    const iv = setInterval(trigger, 4000);
+    return () => clearInterval(iv);
+  }, []);
 
   const handleSelect = (pkg) => {
     alert(`בקרוב: רכישת ${pkg.credits + pkg.bonus} קרדיטים ב-₪${pkg.price}`);
@@ -88,6 +142,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               <button
                 key={pkg.id}
                 onClick={() => handleSelect(pkg)}
+                className={`pkg-card${pkg.popular ? ' pkg-glow' : ''}`}
                 style={{
                   background: pkg.popular
                     ? 'linear-gradient(145deg, #1565c0, #0d47a1)'
@@ -98,6 +153,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   textAlign: 'center',
                   cursor: 'pointer',
                   position: 'relative',
+                  overflow: 'hidden',
                   boxShadow: pkg.popular
                     ? '0 10px 32px rgba(21,101,192,0.38)'
                     : '0 2px 10px rgba(0,0,0,0.06)',
