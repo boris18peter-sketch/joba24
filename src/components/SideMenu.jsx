@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import useDarkMode from '@/hooks/useDarkMode';
 import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, ShieldCheck, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -20,6 +21,7 @@ const navItems = [
 export default function SideMenu({ open, onClose }) {
   const location = useLocation();
   const { isAuthenticated, login } = useAuth();
+  const [dark, setDark] = useDarkMode();
 
   return (
     <>
@@ -126,7 +128,40 @@ export default function SideMenu({ open, onClose }) {
             </button>
          )}
         
-        <div style={{ padding: '16px 20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {/* Dark mode toggle */}
+          <button
+            onClick={() => setDark(d => !d)}
+            style={{
+              width: '100%', padding: '10px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)',
+              background: dark ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.07)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer', marginBottom: 14,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 17 }}>{dark ? '☀️' : '🌙'}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: dark ? '#fbbf24' : '#bfdbfe' }}>
+                {dark ? 'מצב יום' : 'מצב לילה'}
+              </span>
+            </div>
+            {/* Toggle pill */}
+            <div style={{
+              width: 42, height: 24, borderRadius: 99,
+              background: dark ? '#fbbf24' : 'rgba(255,255,255,0.2)',
+              position: 'relative', transition: 'background 0.25s',
+              flexShrink: 0,
+            }}>
+              <div style={{
+                position: 'absolute', top: 3,
+                left: dark ? 'calc(100% - 21px)' : 3,
+                width: 18, height: 18, borderRadius: '50%',
+                background: 'white',
+                transition: 'left 0.25s cubic-bezier(0.34,1.2,0.64,1)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+              }} />
+            </div>
+          </button>
           <div style={{ fontSize: 11, color: '#93c5fd', textAlign: 'center', opacity: 0.7 }}>
             🐣 Joba24 — פרסם, מצא, הרוויח
           </div>

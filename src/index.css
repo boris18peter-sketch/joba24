@@ -41,6 +41,28 @@
 }
 
 @layer base {
+  .dark {
+    --background: 222 25% 10%;
+    --foreground: 210 20% 92%;
+    --card: 222 25% 13%;
+    --card-foreground: 210 20% 92%;
+    --popover: 222 25% 13%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 213 80% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 20% 18%;
+    --secondary-foreground: 210 15% 80%;
+    --muted: 222 20% 16%;
+    --muted-foreground: 215 12% 55%;
+    --accent: 213 80% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 20% 20%;
+    --input: 222 20% 20%;
+    --ring: 213 80% 55%;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
