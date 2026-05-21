@@ -92,7 +92,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
       <div
         dir="rtl"
         style={{
-          background: '#f4f7fb',
+          background: 'var(--modal-bg)',
           borderRadius: '28px 28px 0 0',
           width: '100%',
           maxWidth: 480,

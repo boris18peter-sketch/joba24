@@ -25,8 +25,8 @@ export default function AppHeader({ onOpenMenu }) {
         dir="rtl"
         style={{
           position: 'sticky', top: 0, zIndex: 40,
-          background: 'rgba(248,249,252,0.97)',
-          borderBottom: '1px solid #eaeef5',
+          background: 'var(--header-bg)',
+          borderBottom: '1px solid var(--border-1)',
           backdropFilter: 'blur(14px)',
           height: 56,
           display: 'flex', alignItems: 'center',
@@ -43,7 +43,7 @@ export default function AppHeader({ onOpenMenu }) {
               alt="Joba24"
               style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }}
             />
-            <span style={{ fontWeight: 900, fontSize: 17, color: '#0f2b6b', letterSpacing: -0.5 }}>
+            <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--text-1)', letterSpacing: -0.5 }}>
               Joba<span style={{ color: '#fbbf24' }}>24</span>
             </span>
           </div>

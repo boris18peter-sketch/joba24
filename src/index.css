@@ -29,6 +29,18 @@
     --success: 213 90% 45%;
     --warning: 38 92% 50%;
     --font-inter: 'Inter', sans-serif;
+    /* App-specific surface tokens */
+    --surface-1: #f4f7fb;
+    --surface-2: #ffffff;
+    --surface-3: #eff4fb;
+    --text-1: #0f1e40;
+    --text-2: #64748b;
+    --text-3: #94a3b8;
+    --border-1: #e8edf5;
+    --border-2: #dce8f5;
+    --header-bg: rgba(248,249,252,0.97);
+    --nav-bg: #ffffff;
+    --modal-bg: #f4f7fb;
     --sidebar-background: 213 60% 12%;
     --sidebar-foreground: 210 20% 94%;
     --sidebar-primary: 213 72% 55%;
@@ -43,6 +55,18 @@
 @layer base {
   .dark {
     --background: 222 25% 10%;
+    /* App-specific surface tokens — dark */
+    --surface-1: #0d1526;
+    --surface-2: #152035;
+    --surface-3: #1a2b47;
+    --text-1: #e2e8f5;
+    --text-2: #94a3b8;
+    --text-3: #64748b;
+    --border-1: #1e3553;
+    --border-2: #1e3553;
+    --header-bg: rgba(13,21,38,0.97);
+    --nav-bg: #0d1526;
+    --modal-bg: #152035;
     --foreground: 210 20% 92%;
     --card: 222 25% 13%;
     --card-foreground: 210 20% 92%;

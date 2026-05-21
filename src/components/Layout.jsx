@@ -397,7 +397,7 @@ export default function Layout() {
   ];
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f8f9fc', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <CoinEarnedToast />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
@@ -495,7 +495,7 @@ export default function Layout() {
       {/* Bottom Nav */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 90,
-        background: 'white', borderTop: '1px solid #dce8f5',
+        background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
       }}>
@@ -538,7 +538,7 @@ export default function Layout() {
                     }}>{badge}</div>
                   )}
                 </div>
-                <span style={{ fontSize: 10, color: active ? '#1a6fd4' : '#a0b8d8', fontWeight: active ? 700 : 500 }}>{label}</span>
+                <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
               </Link>
             );
           })}

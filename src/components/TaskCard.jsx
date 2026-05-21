@@ -79,7 +79,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
         dir="rtl"
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#fafbff',
+          background: 'var(--modal-bg)',
           borderRadius: '24px 24px 0 0',
           width: '100%', maxWidth: 480,
           boxShadow: '0 -16px 60px rgba(0,0,0,0.2)',
@@ -306,8 +306,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       <div
         ref={cardRef}
         onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
-        className="bg-white active:scale-[0.982] transition-all"
+        className="active:scale-[0.982] transition-all"
         style={{
+          background: 'var(--surface-2)',
           borderRadius: 16,
           border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : showCardSuccess ? '1.5px solid #16a34a' : '1px solid #e8edf5',
           boxShadow: '0 1px 6px rgba(15,43,107,0.06)',
@@ -391,7 +392,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           <div style={{ flex: 1, minWidth: 0 }}>
 
             {/* Title */}
-            <h3 style={{ fontWeight: 700, color: '#0f1e40', fontSize: 15, lineHeight: 1.35, margin: '0 0 6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
               {task.title}
             </h3>
 
@@ -439,7 +440,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
             {/* Price — prominent */}
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 800, color: '#0f1e40', fontSize: 22, lineHeight: 1, letterSpacing: -0.5 }}>
+              <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 22, lineHeight: 1, letterSpacing: -0.5 }}>
                 ₪{currentPrice}
               </div>
               {dist != null && !isNaN(dist) && (
