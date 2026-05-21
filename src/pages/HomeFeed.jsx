@@ -422,7 +422,7 @@ export default function HomeFeed() {
                 onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
                 style={{
                   width: '100%', height: 32, borderRadius: 9,
-                  border: `1px solid ${searchFocused ? '#93c5fd' : '#e2e8f0'}`,
+                  border: `1px solid ${searchFocused ? '#93c5fd' : 'var(--border-1)'}` ,
                   paddingRight: 28, paddingLeft: search ? 24 : 8,
                   fontSize: 13, fontFamily: 'inherit',
                   background: 'var(--surface-3)', outline: 'none', color: 'var(--text-1)',
@@ -450,7 +450,7 @@ export default function HomeFeed() {
               onClick={() => setShowFilters(true)}
               style={{
                 flexShrink: 0, width: 28, height: 28, borderRadius: 6,
-                border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : '#e2e8f0'}`,
+                border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}` ,
                 background: hasSheetFilters ? '#1a6fd4' : '#f8fafc',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', position: 'relative', transition: 'all 0.15s'
