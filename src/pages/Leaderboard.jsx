@@ -64,7 +64,7 @@ export default function Leaderboard() {
   const podiumColors = ['#1a6fd4', '#3b8fe8', '#0a52b0'];
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader title="לוח מובילים 🏆" />
 
       {/* Top 3 Podium */}
@@ -118,20 +118,20 @@ export default function Leaderboard() {
       <div className="px-4 py-3 space-y-2">
         {isLoading ? (
           Array(5).fill(0).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 animate-pulse h-16 border" style={{ borderColor: '#dce8f5' }} />
+            <div key={i} className="bg-card rounded-2xl p-4 animate-pulse h-16 border" style={{ borderColor: 'var(--border-1)' }} />
           ))
         ) : sorted.length === 0 ? (
           <div className="text-center py-16">
             <Trophy className="w-12 h-12 mx-auto mb-3" style={{ color: '#93c5fd' }} />
-            <p className="font-semibold" style={{ color: '#0f2b6b' }}>אין נתונים עדיין</p>
+            <p className="font-semibold" style={{ color: 'var(--text-1)' }}>אין נתונים עדיין</p>
             <p className="text-sm mt-1" style={{ color: '#1a6fd4' }}>בצע משימות כדי להופיע בלוח!</p>
           </div>
         ) : (
           sorted.map((user, idx) => (
             <div
               key={user.user_id}
-              className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm"
-              style={{ border: idx < 3 ? '1px solid #bfdbfe' : '1px solid #dce8f5' }}
+              className="bg-card rounded-2xl p-4 flex items-center gap-3 shadow-sm"
+              style={{ border: idx < 3 ? '1px solid #bfdbfe' : '1px solid var(--border-1)' }}
             >
               <div className="text-lg font-black w-7 text-center" style={{ color: idx < 3 ? '#1a6fd4' : '#9ca3af' }}>
                 {idx < 3 ? medals[idx] : `${idx + 1}`}
@@ -143,7 +143,7 @@ export default function Leaderboard() {
                   : user.avatar}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm truncate flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+              <div className="font-bold text-sm truncate flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
                   {user.name}{user.is_verified && <VerifiedBadge size="sm" />}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">

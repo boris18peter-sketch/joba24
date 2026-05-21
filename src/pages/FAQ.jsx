@@ -171,16 +171,16 @@ const faqs = [
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ background: 'white', borderRadius: 16, border: `1px solid ${open ? '#bfdbfe' : '#e8edf2'}`, overflow: 'hidden', boxShadow: open ? '0 4px 16px rgba(26,111,212,0.1)' : '0 1px 6px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: `1px solid ${open ? '#bfdbfe' : 'var(--border-1)'}` , overflow: 'hidden', boxShadow: open ? '0 4px 16px rgba(26,111,212,0.1)' : '0 1px 6px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}>
       <button
         onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: open ? '#eff6ff' : 'none', border: 'none', cursor: 'pointer', textAlign: 'right', gap: 12, transition: 'background 0.2s' }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: open ? 'var(--surface-3)' : 'none', border: 'none', cursor: 'pointer', textAlign: 'right', gap: 12, transition: 'background 0.2s' }}
       >
-        <span style={{ fontSize: 14, fontWeight: 700, color: open ? '#1a6fd4' : '#111', flex: 1 }}>{q}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: open ? '#1a6fd4' : 'var(--text-1)', flex: 1 }}>{q}</span>
         <ChevronDown size={18} color="#1a6fd4" style={{ flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
       </button>
       {open && (
-        <div style={{ padding: '0 16px 16px', fontSize: 13, color: '#475569', lineHeight: 1.85, whiteSpace: 'pre-line' }}>
+        <div style={{ padding: '0 16px 16px', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.85, whiteSpace: 'pre-line' }}>
           {a}
         </div>
       )}
@@ -193,7 +193,7 @@ export default function FAQ() {
   const filtered = faqs.filter(f => f.cat === activeCategory);
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader title="שאלות ותשובות" />
 
       {/* Hero */}
@@ -204,7 +204,7 @@ export default function FAQ() {
       </div>
 
       {/* Category Tabs */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e8edf2', padding: '12px 16px' }}>
+      <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '12px 16px' }}>
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
           {categories.map(c => (
             <button
@@ -213,8 +213,8 @@ export default function FAQ() {
               style={{
                 flexShrink: 0, padding: '7px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
                 border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                background: activeCategory === c.id ? '#1a6fd4' : '#f1f5f9',
-                color: activeCategory === c.id ? 'white' : '#475569',
+                background: activeCategory === c.id ? '#1a6fd4' : 'var(--surface-3)',
+                color: activeCategory === c.id ? 'white' : 'var(--text-2)',
                 boxShadow: activeCategory === c.id ? '0 2px 8px rgba(26,111,212,0.3)' : 'none',
               }}
             >

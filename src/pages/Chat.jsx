@@ -66,9 +66,9 @@ function DateSeparator({ date }) {
   const label = isToday(d) ? 'היום' : isYesterday(d) ? 'אתמול' : format(d, 'dd/MM/yyyy');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0' }}>
-      <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-      <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{label}</span>
-      <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+      <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
+      <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{label}</span>
+      <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
     </div>
   );
 }
@@ -76,7 +76,7 @@ function DateSeparator({ date }) {
 function TypingIndicator() {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '18px 18px 4px 18px', padding: '10px 14px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: '18px 18px 4px 18px', padding: '10px 14px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           {[0,1,2].map(i => (
             <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', animation: `typingBounce 1.2s ease-in-out ${i*0.2}s infinite` }} />
@@ -90,9 +90,9 @@ function TypingIndicator() {
 function TaskInfoPopup({ task, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', padding: '24px 20px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', padding: '24px 20px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 20px' }} />
-        <div style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', marginBottom: 4 }}>{task.title}</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>{task.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 28, fontWeight: 900, color: '#1a6fd4' }}>₪{task.price}</div>
           {task.client_rating > 0 && (
@@ -268,12 +268,12 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8', zIndex: 9999, position: 'relative' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header */}
       <div style={{
-        background: 'white',
-        borderBottom: '1px solid #e2e8f0',
+        background: 'var(--surface-2)',
+        borderBottom: '1px solid var(--border-1)',
         padding: '48px 16px 12px',
         display: 'flex', alignItems: 'center', gap: 12,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
@@ -290,7 +290,7 @@ export default function Chat() {
           if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`);
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontWeight: 800, color: '#0f2b6b', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
+            <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
             {otherUserData?.is_verified && <VerifiedBadge size="sm" />}
             <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', borderRadius: 6, padding: '1px 6px', fontWeight: 600, flexShrink: 0 }}>{roleLabel}</span>
           </div>
@@ -366,12 +366,12 @@ export default function Chat() {
                     borderRadius: isMe
                       ? (isContinuation ? '14px 14px 14px 4px' : '18px 18px 18px 4px')
                       : (isContinuation ? '14px 14px 4px 14px' : '18px 18px 4px 18px'),
-                    background: isMe ? '#1e293b' : 'white',
-                    color: isMe ? 'white' : '#1e293b',
+                    background: isMe ? '#1e293b' : 'var(--surface-2)',
+                    color: isMe ? 'white' : 'var(--text-1)',
                     fontSize: 14,
                     lineHeight: 1.5,
                     boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
-                    border: isMe ? 'none' : '1px solid #f1f5f9',
+                    border: isMe ? 'none' : '1px solid var(--border-1)',
                     wordBreak: 'break-word',
                   }}>
                     {msg.content}
@@ -412,8 +412,8 @@ export default function Chat() {
 
       {/* Input bar */}
       <div style={{
-        background: 'white',
-        borderTop: '1px solid #e2e8f0',
+        background: 'var(--surface-2)',
+        borderTop: '1px solid var(--border-1)',
         padding: '10px 12px',
         paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
         display: 'flex', alignItems: 'flex-end', gap: 8,
@@ -429,7 +429,7 @@ export default function Chat() {
         <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
 
         {/* Text input */}
-         <div style={{ flex: 1, background: '#f8fafc', borderRadius: 22, border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
+         <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 22, border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
            <textarea
              ref={inputRef}
              placeholder="הקלד הודעה..."

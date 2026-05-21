@@ -19,9 +19,9 @@ function TabButton({ active, onClick, children }) {
   return (
     <button onClick={onClick} style={{
       padding: '8px 16px', borderRadius: 20, fontWeight: 700, fontSize: 13,
-      background: active ? '#0f2b6b' : 'white',
-      color: active ? 'white' : '#64748b',
-      border: active ? 'none' : '1px solid #e5e7eb',
+      background: active ? '#0f2b6b' : 'var(--surface-2)',
+      color: active ? 'white' : 'var(--text-2)',
+      border: active ? 'none' : '1px solid var(--border-1)',
       cursor: 'pointer', flexShrink: 0,
     }}>
       {children}
@@ -33,10 +33,10 @@ function TaskRow({ task }) {
   const [open, setOpen] = useState(false);
   const sc = STATUS_COLORS[task.status] || STATUS_COLORS.OPEN;
   return (
-    <div style={{ background: 'white', borderRadius: 14, border: '1px solid #e8eef8', marginBottom: 8, overflow: 'hidden' }}>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', marginBottom: 8, overflow: 'hidden' }}>
       <div onClick={() => setOpen(v => !v)} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, color: '#0f2b6b', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{task.client_name} · {task.created_date ? format(new Date(task.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
         </div>
         <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20, background: sc.bg, color: sc.text, flexShrink: 0 }}>{sc.label}</span>
@@ -44,7 +44,7 @@ function TaskRow({ task }) {
         {open ? <ChevronUp size={14} color="#94a3b8" /> : <ChevronDown size={14} color="#94a3b8" />}
       </div>
       {open && (
-        <div style={{ padding: '0 16px 14px', borderTop: '1px solid #f0f4fa', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: '#475569' }}>
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-2)' }}>
           {task.description && <div><strong>תיאור:</strong> {task.description}</div>}
           {task.location_name && <div><strong>מיקום:</strong> {task.location_name}</div>}
           {task.category && <div><strong>קטגוריה:</strong> {task.category}</div>}
@@ -69,13 +69,13 @@ function UserRow({ user, onToggleBlock }) {
   };
 
   return (
-    <div style={{ background: user.is_blocked ? '#fef2f2' : 'white', borderRadius: 14, border: `1px solid ${user.is_blocked ? '#fecaca' : '#e8eef8'}`, marginBottom: 8, overflow: 'hidden' }}>
+    <div style={{ background: user.is_blocked ? '#fef2f2' : 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_blocked ? '#fecaca' : 'var(--border-1)'}` , marginBottom: 8, overflow: 'hidden' }}>
       <div onClick={() => setOpen(v => !v)} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
           {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, color: '#0f2b6b', fontSize: 13 }}>{user.full_name}</div>
+          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>{user.full_name}</div>
           <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy') : ''}</div>
         </div>
         {user.is_blocked && <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>חסום</span>}
@@ -95,7 +95,7 @@ function UserRow({ user, onToggleBlock }) {
         {open ? <ChevronUp size={14} color="#94a3b8" /> : <ChevronDown size={14} color="#94a3b8" />}
       </div>
       {open && (
-        <div style={{ padding: '0 16px 14px', borderTop: '1px solid #f0f4fa', fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {user.phone && <div><strong>טלפון:</strong> {user.phone}</div>}
           {user.role && <div><strong>תפקיד:</strong> {user.role}</div>}
           {user.is_verified && <div style={{ color: '#16a34a', fontWeight: 700 }}>✓ משתמש מאומת</div>}
@@ -114,10 +114,10 @@ function ReportRow({ report, onDismiss, onReview }) {
   const REASON_MAP = { spam: 'ספאם', fake: 'מידע כוזב', inappropriate: 'לא הולם', scam: 'הונאה', other: 'אחר' };
 
   return (
-    <div style={{ background: 'white', borderRadius: 14, border: '1px solid #e8eef8', padding: '12px 16px', marginBottom: 8 }}>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 16px', marginBottom: 8 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, color: '#0f2b6b', fontSize: 13 }}>{report.task_title || report.task_id}</div>
+          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>{report.task_title || report.task_id}</div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
             דווח ע"י {report.reporter_name} · {report.created_date ? format(new Date(report.created_date), 'dd/MM HH:mm') : ''}
           </div>
@@ -125,7 +125,7 @@ function ReportRow({ report, onDismiss, onReview }) {
             <span style={{ fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626', padding: '2px 8px', borderRadius: 20 }}>{REASON_MAP[report.reason] || report.reason}</span>
             <span style={{ fontSize: 11, fontWeight: 700, background: s.bg, color: s.color, padding: '2px 8px', borderRadius: 20 }}>{s.label}</span>
           </div>
-          {report.description && <div style={{ fontSize: 12, color: '#475569', marginTop: 6, background: '#f8fafc', borderRadius: 8, padding: '6px 10px' }}>{report.description}</div>}
+          {report.description && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 6, background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>{report.description}</div>}
         </div>
       </div>
       {report.status === 'pending' && (
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f7fb' }} dir="rtl">
+    <div style={{ minHeight: '100vh', background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader title="דשבורד מנהל" right={
         <button onClick={() => { refetchTasks(); refetchUsers(); refetchReports(); }}
           style={{ background: 'white', border: '1px solid #dce8f5', borderRadius: 10, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -272,10 +272,10 @@ export default function AdminDashboard() {
               <div style={{ flex: 1, position: 'relative' }}>
                 <Search size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input value={taskSearch} onChange={e => setTaskSearch(e.target.value)} placeholder="חיפוש..."
-                  style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid #e5e7eb', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-2)', color: 'var(--text-1)' }} />
               </div>
               <select value={taskStatusFilter} onChange={e => setTaskStatusFilter(e.target.value)}
-                style={{ height: 36, borderRadius: 10, border: '1px solid #e5e7eb', padding: '0 10px', fontSize: 12, color: '#374151', outline: 'none', background: 'white' }}>
+                style={{ height: 36, borderRadius: 10, border: '1px solid var(--border-1)', padding: '0 10px', fontSize: 12, color: 'var(--text-1)', outline: 'none', background: 'var(--surface-2)' }}>
                 <option value="">כל הסטטוסים</option>
                 {Object.entries(STATUS_COLORS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
             <div style={{ position: 'relative', marginBottom: 12 }}>
               <Search size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="חיפוש לפי שם או אימייל..."
-                style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid #e5e7eb', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-2)', color: 'var(--text-1)' }} />
             </div>
             {loadingUsers ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} className="animate-spin" color="#1a6fd4" /></div>

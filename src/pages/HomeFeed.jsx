@@ -342,7 +342,7 @@ export default function HomeFeed() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#f8f9fc' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       {/* Login Banner Carousel — show only when not authenticated */}
       {!isAuthenticated && <LoginBannerCarousel />}
 
@@ -369,7 +369,7 @@ export default function HomeFeed() {
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <h2 style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', margin: 0, letterSpacing: 0.3, textTransform: 'uppercase' }}>משימות זמינות</h2>
-            <div style={{ flex: 1, height: 1, background: '#eaeff7' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
           </div>
 
           {/* Stories — מתחת לכותרת, מעל ה-search */}
@@ -393,8 +393,8 @@ export default function HomeFeed() {
                     flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4,
                     padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
                     border: 'none', cursor: 'pointer',
-                    background: activeSection === s.id ? '#1a6fd4' : 'white',
-                    color: activeSection === s.id ? 'white' : '#475569',
+                    background: activeSection === s.id ? '#1a6fd4' : 'var(--surface-2)',
+                    color: activeSection === s.id ? 'white' : 'var(--text-2)',
                     boxShadow: activeSection === s.id ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 4px rgba(0,0,0,0.06)',
                     transition: 'all 0.15s',
                   }}
@@ -408,7 +408,7 @@ export default function HomeFeed() {
         </div>
 
         {/* Search + Filter + Categories toolbar — always visible */}
-        <div style={{ background: 'white', borderRadius: 14, border: '1px solid #e8edf5', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {/* Search row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
@@ -425,7 +425,7 @@ export default function HomeFeed() {
                   border: `1px solid ${searchFocused ? '#93c5fd' : '#e2e8f0'}`,
                   paddingRight: 28, paddingLeft: search ? 24 : 8,
                   fontSize: 13, fontFamily: 'inherit',
-                  background: '#f8fafc', outline: 'none', color: '#1a2540',
+                  background: 'var(--surface-3)', outline: 'none', color: 'var(--text-1)',
                   transition: 'border-color 0.15s', boxSizing: 'border-box'
                 }} />
               
@@ -435,7 +435,7 @@ export default function HomeFeed() {
                     </button>
               }
                   {searchFocused && !search && recentSearches.length > 0 &&
-              <div style={{ position: 'absolute', top: 32, right: 0, left: 0, background: 'white', borderRadius: 8, border: '1px solid #e8eef8', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 32, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
                       {recentSearches.map((s, i) =>
                 <button key={i} onClick={() => {setSearch(s);setSearchFocused(false);}}
                 style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -472,7 +472,7 @@ export default function HomeFeed() {
               <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
                 <button
               onClick={() => setFilters((f) => ({ ...f, category: '' }))}
-              style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : '#f1f5f9', color: !filters.category ? 'white' : '#475569', transition: 'all 0.15s' }}>
+              style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : 'var(--surface-3)', color: !filters.category ? 'white' : 'var(--text-2)', transition: 'all 0.15s' }}>
               הכל</button>
                 {[...CATEGORIES].
             sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN').length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN').length).
@@ -483,7 +483,7 @@ export default function HomeFeed() {
               return (
                 <button key={c.value}
                 onClick={() => setFilters((f) => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: isActive ? '#1a6fd4' : '#f1f5f9', color: isActive ? 'white' : '#475569', display: 'flex', alignItems: 'center', gap: 3, transition: 'all 0.15s' }}>
+                style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: isActive ? '#1a6fd4' : 'var(--surface-3)', color: isActive ? 'white' : 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 3, transition: 'all 0.15s' }}>
                   {c.label}{count > 0 && <span style={{ opacity: 0.55, fontSize: 10 }}>({count})</span>}
                 </button>);
             })}
@@ -494,7 +494,7 @@ export default function HomeFeed() {
         {isLoading ?
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
             {Array(4).fill(0).map((_, i) =>
-          <div key={i} style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf5', padding: '16px' }} className="animate-pulse">
+          <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '16px' }} className="animate-pulse">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div className="h-4 bg-gray-100 rounded-lg w-3/4 mb-3" />
