@@ -15,6 +15,7 @@ import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
+import SignupGiftModal from '@/components/SignupGiftModal';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function Layout() {
@@ -33,6 +34,17 @@ export default function Layout() {
 
   const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
+
+  // Show signup gift modal for brand-new users
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  useEffect(() => {
+    if (!me || !isAuthenticated) return;
+    const alreadyClaimed = localStorage.getItem('joba24_gift_claimed');
+    if (alreadyClaimed) return;
+    if (me.worker_credits === null || me.worker_credits === undefined) {
+      setShowGiftModal(true);
+    }
+  }, [me?.id, isAuthenticated]);
 
   // Fire coin_earned event when worker_credits increases
   useEffect(() => {
@@ -447,6 +459,9 @@ export default function Layout() {
       <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
       {/* Portals — rendered directly to body to escape stacking context */}
+      {showGiftModal && (
+        <SignupGiftModal onClose={() => setShowGiftModal(false)} />
+      )}
       {showVerify && createPortal(
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />,
         document.body

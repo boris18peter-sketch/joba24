@@ -252,7 +252,24 @@
   100% { transform: translateY(0) scale(1); }
 }
 
+/* Gift modal animations */
+@keyframes giftBounce {
+  0%, 100% { transform: translateY(0) rotate(-4deg) scale(1); }
+  50%       { transform: translateY(-12px) rotate(4deg) scale(1.08); }
+}
+
+@keyframes giftCTAPulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 8px 30px rgba(251,191,36,0.55); }
+  50%       { transform: scale(1.04); box-shadow: 0 14px 40px rgba(251,191,36,0.82); }
+}
+
+@keyframes giftSparkle {
+  0%, 100% { opacity: 0.4; transform: scale(1) rotate(0deg); }
+  50%       { opacity: 0.9; transform: scale(1.3) rotate(20deg); }
+}
+
 /* Number count change flash */
+
 @keyframes numFlash {
   0%   { color: #fbbf24; transform: scale(1.18); }
   100% { color: inherit; transform: scale(1); }
