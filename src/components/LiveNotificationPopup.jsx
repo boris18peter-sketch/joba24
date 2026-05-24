@@ -39,6 +39,15 @@ const TYPES = {
     body: (n) => `"${n.taskTitle}" מוכן לביצוע`,
     link: (n) => n.taskId ? `/task/${n.taskId}` : null,
   },
+  application_sent: {
+    emoji: '📤',
+    bg: '#f0fdf4',
+    border: '#86efac',
+    accent: '#16a34a',
+    title: () => 'הבקשה שלך נשלחה!',
+    body: () => 'אנחנו מחכים לאישור המפרסם',
+    link: (n) => n.taskId ? `/task/${n.taskId}` : null,
+  },
   application_rejected: {
     emoji: '❌',
     bg: '#fef2f2',

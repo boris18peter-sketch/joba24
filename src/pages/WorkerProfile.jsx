@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2 } from 'lucide-react';
+import { Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2, Camera, User } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -44,7 +44,19 @@ export default function WorkerProfile() {
   const [form, setForm] = useState(null);
   const [newCert, setNewCert] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const certDocRef = useRef(null);
+  const photoInputRef = useRef(null);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    await base44.auth.updateMe({ profile_photo: file_url });
+    queryClient.invalidateQueries({ queryKey: ['me'] });
+    setUploadingPhoto(false);
+  };
 
   const handleCertDocUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -143,6 +155,29 @@ export default function WorkerProfile() {
                 <div className="text-sm font-bold">{me?.score_quality || 0}</div>
                 <div className="text-[10px] opacity-75">ביצוע</div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Photo */}
+        {!isViewingOther && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px', background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)' }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div
+                onClick={() => photoInputRef.current?.click()}
+                style={{ width: 72, height: 72, borderRadius: 20, background: '#e8edf5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: 'var(--text-2)', overflow: 'hidden', cursor: 'pointer', border: '2px solid var(--border-1)' }}
+              >
+                {me?.profile_photo ? <img src={me.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={28} />}
+              </div>
+              <button onClick={() => photoInputRef.current?.click()} style={{ position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'white', border: '2px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                {uploadingPhoto ? <Loader2 size={12} color="#1a6fd4" className="animate-spin" /> : <Camera size={12} color="#1a6fd4" />}
+              </button>
+              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>{me?.full_name}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{me?.email}</div>
+              <button onClick={() => photoInputRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: '#1a6fd4', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>שנה תמונת פרופיל</button>
             </div>
           </div>
         )}

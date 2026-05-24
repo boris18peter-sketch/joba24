@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save, Mic, MicOff } from 'lucide-react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
@@ -85,6 +85,7 @@ const PAYMENT_METHODS = [
   { value: 'Cash', label: '💵 מזומן' },
   { value: 'Bit', label: '📱 Bit' },
   { value: 'PayBox', label: '📲 PayBox' },
+  { value: 'Other', label: '💰 אחר' },
 ];
 
 export default function CreateTask() {
@@ -93,7 +94,36 @@ export default function CreateTask() {
   const { isAuthenticated, login } = useAuth();
   const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+    audioChunksRef.current = [];
+    mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+    mr.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      setTranscribing(true);
+      const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
+      const file = new File([blob], 'recording.webm', { type: mr.mimeType });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
+      set('description', form.description ? form.description + '\n' + text : text);
+      setTranscribing(false);
+    };
+    mr.start();
+    mediaRecorderRef.current = mr;
+    setRecording(true);
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  };
   const [showNoCreditsModal, setShowNoCreditsModal] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const draftTimerRef = useRef(null);
@@ -402,7 +432,24 @@ export default function CreateTask() {
           {checkingModeration === 'title' && <p style={{ fontSize: 11, color: '#1a6fd4', marginBottom: 8 }}>🔍 בודק תוכן...</p>}
           {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
           {moderationErrors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>🛡️ {moderationErrors.title}</p>}
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תיאור מפורט *</Label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>תיאור מפורט *</Label>
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : '#eff6ff', color: recording ? '#dc2626' : '#1a6fd4' }}
+            >
+              {transcribing ? <Loader2 size={13} className="animate-spin" /> : recording ? <MicOff size={13} /> : <Mic size={13} />}
+              {transcribing ? 'מעבד...' : recording ? 'עצור הקלטה' : 'הקלט תיאור'}
+            </button>
+          </div>
+          {recording && (
+            <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
+              מקליט... לחץ עצור כשסיימת
+            </div>
+          )}
           <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null})); }}
@@ -432,6 +479,9 @@ export default function CreateTask() {
             style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
           />
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
+          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
+            💳 <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
+          </div>
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
 
           {/* Auto bump */}
@@ -631,7 +681,7 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>
             💳 אמצעי תשלום *
           </Label>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {PAYMENT_METHODS.map(pm => (
               <button key={pm.value} onClick={() => { set('payment_method', pm.value); setErrors(p => ({...p, payment_method: false})); }}
                 style={{ flex: 1, padding: '12px 8px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, border: errors.payment_method ? '1.5px solid #ef4444' : '1px solid #dce8f5' }) }}

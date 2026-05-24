@@ -319,21 +319,36 @@ export default function Layout() {
       if (event.type === 'create' && event.data?.task_id) {
         // Someone applied to my task - notify client
         const task = myPublishedTasks.find(t => t.id === event.data.task_id);
-        if (task) {
+        if (task && event.data.worker_id !== me?.id) {
           addNotification({
             type: 'application_received',
             taskTitle: task.title,
             taskId: task.id,
           });
         }
-      } else if (event.type === 'update' && event.data?.status === 'approved') {
-        // My application was approved
+        // I applied to a task - notify me (worker)
         if (event.data.worker_id === me?.id) {
-          const task = myPublishedTasks.find(t => t.id === event.data.task_id) || 
+          addNotification({
+            type: 'application_sent',
+            taskTitle: event.data.task_id,
+            taskId: event.data.task_id,
+          });
+        }
+      } else if (event.type === 'update') {
+        if (event.data?.status === 'approved' && event.data.worker_id === me?.id) {
+          // My application was approved
+          const task = myPublishedTasks.find(t => t.id === event.data.task_id) ||
                       workerTasks.find(t => t.id === event.data.task_id);
           addNotification({
             type: 'application_approved',
             taskTitle: task?.title || 'משימה',
+            taskId: event.data.task_id,
+          });
+        } else if ((event.data?.status === 'rejected' || event.data?.status === 'cancelled') && event.data.worker_id === me?.id) {
+          // My application was rejected/cancelled
+          addNotification({
+            type: 'application_rejected',
+            taskTitle: event.data.task_id,
             taskId: event.data.task_id,
           });
         }

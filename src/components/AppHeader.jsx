@@ -1,4 +1,5 @@
 import { Menu } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -35,21 +36,17 @@ export default function AppHeader({ onOpenMenu }) {
           flexShrink: 0,
         }}
       >
-        {/* Right: Logo + Joba24 — only on Home */}
-        {isHomePage ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <img
-              src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg"
-              alt="Joba24"
-              style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }}
-            />
-            <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--text-1)', letterSpacing: -0.5 }}>
-              Joba<span style={{ color: '#fbbf24' }}>24</span>
-            </span>
-          </div>
-        ) : (
-          <div />
-        )}
+        {/* Right: Logo — always visible, clickable to home */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' }}>
+          <img
+            src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg"
+            alt="Joba24"
+            style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }}
+          />
+          <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--text-1)', letterSpacing: -0.5 }}>
+            Joba<span style={{ color: '#fbbf24' }}>24</span>
+          </span>
+        </Link>
 
         {/* Left: Credits pill (home only) + Menu button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
