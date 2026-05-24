@@ -173,15 +173,14 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
         </div>
 
         {/* Animated progress bar */}
-        <div style={{ height: 10, background: '#f0f0f0', borderRadius: 99, overflow: 'hidden', marginBottom: 8, position: 'relative' }}>
+        <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
           <div style={{
             height: '100%',
             width: `${displayWidth}%`,
             borderRadius: 99,
-            background: `linear-gradient(90deg, #ef4444 0%, #f97316 30%, #eab308 55%, #84cc16 78%, #16a34a 100%)`,
-            backgroundSize: '200px 100%',
-            boxShadow: `0 0 10px ${barColor}70`,
-            transition: 'box-shadow 0.2s',
+            background: barColor,
+            boxShadow: `0 0 10px ${barColor}80`,
+            transition: 'background-color 0.1s, box-shadow 0.1s',
           }} />
         </div>
 
