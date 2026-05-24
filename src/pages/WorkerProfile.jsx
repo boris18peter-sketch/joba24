@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2, Camera, User } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import TrustBadges from '@/components/TrustBadges';
+import TrustCard from '@/components/TrustCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES } from '@/lib/categories';
@@ -38,6 +40,12 @@ export default function WorkerProfile() {
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasks', currentUser?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: currentUser.id }, '-created_date', 20),
+    enabled: !!currentUser?.id,
+  });
+
+  const { data: workerReviews = [] } = useQuery({
+    queryKey: ['workerReviews', currentUser?.id],
+    queryFn: () => base44.entities.Review.filter({ reviewee_id: currentUser.id }, '-created_date', 50),
     enabled: !!currentUser?.id,
   });
 
@@ -157,6 +165,18 @@ export default function WorkerProfile() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Trust Badges */}
+        {currentUser && (
+          <div style={{ padding: '0 2px' }}>
+            <TrustBadges user={currentUser} />
+          </div>
+        )}
+
+        {/* Trust Card — visible when viewing another profile */}
+        {isViewingOther && (
+          <TrustCard user={currentUser} reviews={workerReviews} tasks={workerTasks} />
         )}
 
         {/* Profile Photo */}
@@ -310,8 +330,62 @@ export default function WorkerProfile() {
               <CheckCircle2 className="w-4 h-4 text-green-600" />
               היסטוריית עבודות ({workerTasks.filter(t => t.status === 'COMPLETED').length} הושלמו)
             </Label>
-            <div className="space-y-3">
-              {workerTasks.map(t => <TaskCard key={t.id} task={t} viewOnly />)}
+            {isViewingOther ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {workerTasks.filter(t => t.status === 'COMPLETED').slice(0, 8).map((task, idx, arr) => {
+                  const date = new Date(task.completed_at || task.updated_date);
+                  const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+                  const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                  return (
+                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < arr.length - 1 ? 14 : 0, position: 'relative' }}>
+                      {idx < arr.length - 1 && (
+                        <div style={{ position: 'absolute', right: 10, top: 22, width: 1, bottom: 0, background: '#e2e8f0' }} />
+                      )}
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', lineHeight: 1.3 }}>{task.title}</div>
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {workerTasks.map(t => <TaskCard key={t.id} task={t} viewOnly />)}
+            </div>
+            )}
+          </div>
+        )}
+
+        {/* Structured Reviews — visible when viewing other */}
+        {isViewingOther && workerReviews.length > 0 && (
+          <div>
+            <Label className="text-sm font-semibold mb-3 flex items-center gap-2 block">
+              <Star className="w-4 h-4 text-yellow-500" fill="#fbbf24" />
+              ביקורות ({workerReviews.length})
+            </Label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {workerReviews.slice(0, 5).map(review => (
+                <div key={review.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 14px' }} dir="rtl">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    {'⭐'.repeat(review.rating)}
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginRight: 'auto' }}>
+                      {new Date(review.created_date).toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </span>
+                  </div>
+                  {review.comment && (
+                    <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, marginBottom: 6 }}>"{review.comment}"</div>
+                  )}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 8px' }}>⏱️ הגיע בזמן</span>}
+                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 8px' }}>💼 מקצועי</span>}
+                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>💬 תקשורת טובה</span>}
+                    {review.fair_pricing === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 99, padding: '2px 8px' }}>💰 מחיר הוגן</span>}
+                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 8px' }}>🔁 ממליץ</span>}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

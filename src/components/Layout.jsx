@@ -56,6 +56,15 @@ export default function Layout() {
     }
     prevCreditsRef.current = me.worker_credits;
   }, [me?.worker_credits]);
+  // Update last_active_at once per calendar day per user
+  useEffect(() => {
+    if (!me?.id || !isAuthenticated) return;
+    const key = `joba24_active_${me.id}_${new Date().toDateString()}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    base44.auth.updateMe({ last_active_at: new Date().toISOString() }).catch(() => {});
+  }, [me?.id, isAuthenticated]);
+
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [revokedTask, setRevokedTask] = useState(null);

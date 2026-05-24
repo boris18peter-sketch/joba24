@@ -12,6 +12,16 @@ export default function RatingModal({ task, me, onClose }) {
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [structured, setStructured] = useState({
+    arrivedOnTime: null,
+    professional: null,
+    goodCommunication: null,
+    fairPricing: null,
+    wouldHireAgain: null,
+  });
+
+  const toggleStructured = (key) =>
+    setStructured(s => ({ ...s, [key]: s[key] === true ? null : true }));
 
   const isOwner = me?.id === task.client_id;
   const revieweeId = isOwner ? task.worker_id : task.client_id;
@@ -60,11 +70,28 @@ export default function RatingModal({ task, me, onClose }) {
         rating,
         comment,
         role,
+        arrived_on_time: structured.arrivedOnTime,
+        professional: structured.professional,
+        good_communication: structured.goodCommunication,
+        fair_pricing: structured.fairPricing,
+        would_hire_again: structured.wouldHireAgain,
       });
 
       const allReviews = await base44.entities.Review.filter({ reviewee_id: revieweeId });
       const avg = allReviews.length > 0 ? allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length : rating;
-      await base44.entities.User.update(revieweeId, { rating: Math.round(avg * 10) / 10, rating_count: allReviews.length });
+
+      // Compute on_time_rate and repeat_hires from all reviews
+      const clientRevs = allReviews.filter(r => r.role === 'client');
+      const withOnTime = clientRevs.filter(r => r.arrived_on_time !== null && r.arrived_on_time !== undefined);
+      const onTimeRate = withOnTime.length >= 2
+        ? Math.round((withOnTime.filter(r => r.arrived_on_time === true).length / withOnTime.length) * 100)
+        : null;
+      const repeatHires = clientRevs.filter(r => r.would_hire_again === true).length;
+
+      const userUpdate = { rating: Math.round(avg * 10) / 10, rating_count: allReviews.length };
+      if (onTimeRate !== null) userUpdate.on_time_rate = onTimeRate;
+      if (isOwner) userUpdate.repeat_hires = repeatHires;
+      await base44.entities.User.update(revieweeId, userUpdate);
 
       // 3.3 Loyalty Reward: if client rated worker 5 stars → grant bonus
       if (isOwner && rating === 5 && task.worker_id) {
@@ -128,6 +155,43 @@ export default function RatingModal({ task, me, onClose }) {
         {rating > 0 && (
           <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 14, fontWeight: 700, color: '#1a6fd4' }}>
             {['', '😞 לא טוב', '😐 בינוני', '🙂 סבבה', '😊 טוב מאוד', '🤩 מצוין!'][rating]}
+          </div>
+        )}
+
+        {/* Structured review chips */}
+        {rating > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>
+              {isOwner ? 'מה היה טוב? (לא חובה)' : 'איך היה הלקוח?'}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              {(isOwner ? [
+                { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
+                { key: 'professional', label: '💼 מקצועי' },
+                { key: 'goodCommunication', label: '💬 תקשורת טובה' },
+                { key: 'fairPricing', label: '💰 מחיר הוגן' },
+                { key: 'wouldHireAgain', label: '🔁 אשכור שוב' },
+              ] : [
+                { key: 'arrivedOnTime', label: '⏱️ תיאם בזמן' },
+                { key: 'goodCommunication', label: '💬 תקשורת ברורה' },
+                { key: 'fairPricing', label: '💰 שילם כמוסכם' },
+                { key: 'wouldHireAgain', label: '🔁 אעבוד שוב' },
+              ]).map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => toggleStructured(item.key)}
+                  style={{
+                    padding: '6px 13px', borderRadius: 99, fontSize: 12, fontWeight: 700,
+                    border: `1.5px solid ${structured[item.key] ? '#1a6fd4' : '#e2e8f0'}`,
+                    background: structured[item.key] ? '#eff6ff' : 'white',
+                    color: structured[item.key] ? '#1a6fd4' : '#64748b',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
