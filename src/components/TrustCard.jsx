@@ -2,7 +2,7 @@ import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 import { Shield, CheckCircle, Zap, MessageCircle, Star } from 'lucide-react';
 
 /**
- * TrustCard — Trust score bar + 5 behavioral signal rows.
+ * TrustCard — Dynamic trust bar at top + 5 behavioral signal rows below.
  * Props:
  *   user    — user object
  *   reviews — array of Review records
@@ -130,24 +130,33 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
   return (
     <div dir="rtl" style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
 
-      {/* Header + main score bar */}
-      <div style={{ padding: '13px 16px 12px', background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)', borderBottom: '1px solid var(--border-1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: 17 }}>🤝</span>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#0f1e40', flex: 1 }}>למה סומכים על {firstName}?</span>
-          {activity && (
-            <span style={{ fontSize: 11, fontWeight: 600, color: activity.color, whiteSpace: 'nowrap' }}>{activity.label}</span>
-          )}
-        </div>
-
-        {/* Main trust bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: 1, height: 8, background: '#e8edf5', borderRadius: 99, overflow: 'hidden' }}>
+      {/* Dynamic main trust bar — prominent */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        background: trustLevel.bg,
+        border: `1px solid ${trustLevel.border}`,
+        borderRadius: '18px 18px 0 0',
+        padding: '14px 16px',
+      }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: trustLevel.color, textTransform: 'uppercase', letterSpacing: 0.5 }}>ציון אמון · {trustLevel.label}</span>
+            <span style={{ fontSize: 15, fontWeight: 900, color: trustLevel.color }}>{trustScore}/100</span>
+          </div>
+          <div style={{ height: 8, background: 'rgba(0,0,0,0.08)', borderRadius: 99, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${trustScore}%`, background: trustLevel.bar, borderRadius: 99, transition: 'width 0.7s ease' }} />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 900, color: trustLevel.color, background: trustLevel.bg, border: `1px solid ${trustLevel.border}`, borderRadius: 20, padding: '2px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {trustScore}/100 · {trustLevel.label}
-          </span>
+        </div>
+        {activity && (
+          <span style={{ fontSize: 10, fontWeight: 600, color: activity.color, whiteSpace: 'nowrap', paddingRight: 4 }}>{activity.label}</span>
+        )}
+      </div>
+
+      {/* Header: "למה סומכים" */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-1)', background: 'rgba(0,0,0,0.01)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16 }}>🤝</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40' }}>למה סומכים על {firstName}?</span>
         </div>
       </div>
 
