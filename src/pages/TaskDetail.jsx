@@ -248,8 +248,7 @@ export default function TaskDetail() {
       for (const app of activeApps) {
         const creditsToRefund = app.credits_charged || 0;
         if (creditsToRefund > 0) {
-          const freshUsers = await base44.entities.User.filter({ id: me.id });
-          const freshMe = freshUsers[0];
+          const freshMe = await base44.auth.me();
           const currentCredits = freshMe?.worker_credits ?? 0;
           const newBalance = currentCredits + creditsToRefund;
           await base44.auth.updateMe({ worker_credits: newBalance });
@@ -296,8 +295,7 @@ export default function TaskDetail() {
       // Refund credits before cancelling
       const creditsToRefund = myApp?.credits_charged || 0;
       if (creditsToRefund > 0) {
-        const freshUsers = await base44.entities.User.filter({ id: me.id });
-        const freshMe = freshUsers[0];
+        const freshMe = await base44.auth.me();
         const currentCredits = freshMe?.worker_credits ?? 0;
         const newBalance = currentCredits + creditsToRefund;
         await base44.auth.updateMe({ worker_credits: newBalance });
