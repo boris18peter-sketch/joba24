@@ -110,19 +110,6 @@ export default function PublicProfile() {
 
       <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* Trust Score pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: trustLevel.bg, border: `1px solid ${trustLevel.border}`, borderRadius: 14, padding: '10px 16px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: trustLevel.color }}>ציון אמון • {trustLevel.label}</span>
-              <span style={{ fontSize: 14, fontWeight: 900, color: trustLevel.color }}>{trustScore}/100</span>
-            </div>
-            <div style={{ height: 7, background: 'rgba(0,0,0,0.08)', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${trustScore}%`, background: trustLevel.bar, borderRadius: 99, transition: 'width 0.7s ease' }} />
-            </div>
-          </div>
-        </div>
-
         {/* Trust Badges */}
         <TrustBadges user={user} />
 
