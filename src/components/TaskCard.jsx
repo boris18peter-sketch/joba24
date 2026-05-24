@@ -222,8 +222,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       // Refund credits
       const creditsToRefund = myApp?.credits_charged || 0;
       if (creditsToRefund > 0) {
-        const freshUsers = await base44.entities.User.filter({ id: currentUserId });
-        const freshMe = freshUsers[0];
+        const freshMe = await base44.auth.me();
         const currentCredits = freshMe?.worker_credits ?? 0;
         const newBalance = currentCredits + creditsToRefund;
         await base44.auth.updateMe({ worker_credits: newBalance });
