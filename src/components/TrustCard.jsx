@@ -1,8 +1,8 @@
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
-import { Shield, CheckCircle, Zap, MessageCircle, Star } from 'lucide-react';
+import { CheckCircle, Zap, Users, MessageSquare, Star } from 'lucide-react';
 
 /**
- * TrustCard — Dynamic trust bar at top + 5 behavioral signal rows below.
+ * TrustCard — Large green dynamic trust bar at top + 5 explanation mini-bars below.
  * Props:
  *   user    — user object
  *   reviews — array of Review records
@@ -22,21 +22,21 @@ function getActivityLabel(lastActiveAt) {
   return null;
 }
 
-function ScoreRow({ icon, label, value, sub, score, color }) {
+function SignalRow({ icon, label, value, sub, score, color }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 32, height: 32, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 12, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: '#1a2540' }}>{label}</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: color }}>{value}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: color, flexShrink: 0 }}>{value}</span>
         </div>
-        <div style={{ height: 5, background: '#edf0f7', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 99, transition: 'width 0.6s ease' }} />
+        <div style={{ height: 6, background: '#edf0f7', borderRadius: 99, overflow: 'hidden', marginBottom: sub ? 3 : 0 }}>
+          <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 99, transition: 'width 0.7s ease' }} />
         </div>
-        {sub && <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 10, color: '#94a3b8', lineHeight: 1.3 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -46,125 +46,124 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
   if (!user) return null;
 
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
-
-  // On-time rate
-  const clientReviews = reviews.filter(r => r.role === 'client');
-  const withOnTime = clientReviews.filter(r => r.arrived_on_time != null);
-  const computedOnTime =
-    withOnTime.length >= 2
-      ? Math.round((withOnTime.filter(r => r.arrived_on_time === true).length / withOnTime.length) * 100)
-      : user.on_time_rate || null;
-
   const trustScore = calculateTrustScore(user, { tasks, reviews });
   const trustLevel = getTrustLevel(trustScore);
   const activity = getActivityLabel(user.last_active_at);
   const firstName = user.full_name?.split(' ')[0] || 'העובד';
 
   // ── 5 signal rows ────────────────────────────────────────────────────────
-  const rows = [];
 
   // 1. משימות שביצע
   const taskScore = Math.min(Math.round((completedCount / 20) * 100), 100);
-  rows.push({
-    icon: <CheckCircle size={16} color="#10b981" strokeWidth={2} />,
-    label: 'משימות שבוצעו',
-    value: completedCount > 0 ? `${completedCount} משימות` : 'אין עדיין',
-    sub: completedCount >= 5 ? 'ניסיון מוכח בשטח' : completedCount > 0 ? 'מתחיל לצבור ניסיון' : null,
-    score: taskScore,
-    color: '#10b981',
-  });
+  const taskValue = completedCount > 0 ? `${completedCount}` : '0';
+  const taskSub = completedCount >= 5 ? 'ניסיון מוכח בשטח' : completedCount > 0 ? 'מתחיל לצבור ניסיון' : 'אין משימות עדיין';
 
   // 2. זהות מאומתת
   const idScore = user.is_verified ? 100 : user.is_phone_verified ? 50 : 0;
-  rows.push({
-    icon: <Shield size={16} color="#1a6fd4" strokeWidth={2} />,
-    label: 'זהות מאומתת',
-    value: user.is_verified ? 'מאומת ✓' : user.is_phone_verified ? 'טלפון בלבד' : 'לא מאומת',
-    sub: user.is_verified ? 'אימות תעודת זהות' : null,
-    score: idScore,
-    color: '#1a6fd4',
-  });
+  const idValue = user.is_verified ? '✓ אימת' : user.is_phone_verified ? 'טלפון' : 'לא';
+  const idSub = user.is_verified ? 'מילא ואישר טופס' : null;
 
   // 3. מהירות מענה
   const respMins = user.avg_response_minutes || null;
-  const speedScore = respMins
-    ? Math.max(0, Math.round(100 - Math.min(respMins / 60, 1) * 80))
-    : 0;
-  rows.push({
-    icon: <Zap size={16} color="#f59e0b" strokeWidth={2} />,
-    label: 'מהירות מענה',
-    value: respMins ? (respMins < 60 ? `${respMins} דקות` : `${Math.round(respMins / 60)} שעות`) : 'לא ידוע',
-    sub: speedScore >= 70 ? 'מגיב מהר' : speedScore > 0 ? 'מגיב בסבירות' : null,
-    score: speedScore,
-    color: '#f59e0b',
-  });
+  const speedScore = respMins ? Math.max(0, Math.round(100 - Math.min(respMins / 60, 1) * 80)) : 0;
+  const speedValue = respMins ? (respMins < 60 ? `${Math.round(respMins)} דק׳` : `${Math.round(respMins / 60)}h`) : '—';
+  const speedSub = speedScore >= 70 ? 'מגיב במהירות' : speedScore > 0 ? 'מענה בסבירות' : null;
 
-  // 4. מענה (repeat hires / recommendations)
+  // 4. ממליצים (repeat hires)
   const hires = user.repeat_hires || 0;
   const hiresScore = Math.min(hires * 20, 100);
-  rows.push({
-    icon: <MessageCircle size={16} color="#8b5cf6" strokeWidth={2} />,
-    label: 'ממליצים עליו',
-    value: hires > 0 ? `${hires} ממליצים` : 'אין עדיין',
-    sub: hires >= 3 ? 'בוחרים בו שוב' : hires > 0 ? 'מתחיל לצבור' : null,
-    score: hiresScore,
-    color: '#8b5cf6',
-  });
+  const hiresValue = hires > 0 ? `${hires}` : '0';
+  const hiresSub = hires >= 3 ? 'לקוחות בוחרים בו שוב' : hires > 0 ? 'התחיל לצבור' : 'עדיין לא חזרו';
 
-  // 5. שירות (rating + review quality)
+  // 5. שירות (rating)
   const rating = user.rating || 0;
   const ratingCount = user.rating_count || reviews.length;
   const serviceScore = ratingCount > 0 ? Math.round((rating / 5) * 100) : 0;
   const wouldHireAgain = reviews.filter(r => r.would_hire_again === true).length;
-  rows.push({
-    icon: <Star size={16} color="#db2777" strokeWidth={2} />,
-    label: 'שירות',
-    value: rating > 0 ? `${rating.toFixed(1)} ★ (${ratingCount})` : 'ללא דירוג',
-    sub: wouldHireAgain > 0 ? `${wouldHireAgain} ביקורות חיוביות` : null,
-    score: serviceScore,
-    color: '#db2777',
-  });
+  const serviceValue = rating > 0 ? `${rating.toFixed(1)}★` : '—';
+  const serviceSub = wouldHireAgain > 0 ? `${wouldHireAgain} ממליצים בחום` : ratingCount > 0 ? `${ratingCount} ביקורות` : null;
 
-  if (trustScore === 0 && rows.every(r => r.score === 0)) return null;
+  if (trustScore === 0) return null;
 
   return (
     <div dir="rtl" style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
 
-      {/* Dynamic main trust bar — prominent */}
+      {/* MAIN TRUST BAR — large, dynamic, green ────────────────────────────── */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
         background: trustLevel.bg,
-        border: `1px solid ${trustLevel.border}`,
+        border: `2px solid ${trustLevel.border}`,
         borderRadius: '18px 18px 0 0',
-        padding: '14px 16px',
+        padding: '16px 16px 18px',
       }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: trustLevel.color, textTransform: 'uppercase', letterSpacing: 0.5 }}>ציון אמון · {trustLevel.label}</span>
-            <span style={{ fontSize: 15, fontWeight: 900, color: trustLevel.color }}>{trustScore}/100</span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: trustLevel.color, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 }}>ציון אמון</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: trustLevel.color, lineHeight: 1, letterSpacing: -1 }}>{trustScore}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: trustLevel.color, marginTop: 3 }}>{trustLevel.label}</div>
           </div>
-          <div style={{ height: 8, background: 'rgba(0,0,0,0.08)', borderRadius: 99, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${trustScore}%`, background: trustLevel.bar, borderRadius: 99, transition: 'width 0.7s ease' }} />
-          </div>
+          {activity && (
+            <div style={{ fontSize: 10, fontWeight: 700, color: activity.color, whiteSpace: 'nowrap', textAlign: 'left', paddingTop: 2 }}>
+              {activity.label}
+            </div>
+          )}
         </div>
-        {activity && (
-          <span style={{ fontSize: 10, fontWeight: 600, color: activity.color, whiteSpace: 'nowrap', paddingRight: 4 }}>{activity.label}</span>
-        )}
+
+        {/* Progress bar */}
+        <div style={{ height: 10, background: 'rgba(0,0,0,0.1)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${trustScore}%`, background: trustLevel.bar, borderRadius: 99, transition: 'width 0.8s cubic-bezier(0.34,1.56,0.64,1)', boxShadow: `0 0 12px ${trustLevel.bar}60` }} />
+        </div>
       </div>
 
-      {/* Header: "למה סומכים" */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-1)', background: 'rgba(0,0,0,0.01)' }}>
+      {/* Subheader */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f2f7', background: 'rgba(0,0,0,0.01)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 16 }}>🤝</span>
           <span style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40' }}>למה סומכים על {firstName}?</span>
         </div>
       </div>
 
-      {/* 5 signal rows */}
-      <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 11 }}>
-        {rows.map((row, i) => (
-          <ScoreRow key={i} {...row} />
-        ))}
+      {/* 5 Signal rows with mini-bars */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
+        <SignalRow
+          icon={<CheckCircle size={16} color="#10b981" strokeWidth={2.5} />}
+          label="משימות שבוצעו"
+          value={taskValue}
+          sub={taskSub}
+          score={taskScore}
+          color="#10b981"
+        />
+        <SignalRow
+          icon={<CheckCircle size={16} color="#1a6fd4" strokeWidth={2.5} />}
+          label="זהות מאומתת"
+          value={idValue}
+          sub={idSub}
+          score={idScore}
+          color="#1a6fd4"
+        />
+        <SignalRow
+          icon={<Zap size={16} color="#f59e0b" strokeWidth={2.5} />}
+          label="מהירות מענה"
+          value={speedValue}
+          sub={speedSub}
+          score={speedScore}
+          color="#f59e0b"
+        />
+        <SignalRow
+          icon={<Users size={16} color="#8b5cf6" strokeWidth={2} />}
+          label="ממליצים עליו"
+          value={hiresValue}
+          sub={hiresSub}
+          score={hiresScore}
+          color="#8b5cf6"
+        />
+        <SignalRow
+          icon={<Star size={16} color="#db2777" strokeWidth={2} fill="#db2777" />}
+          label="שירות"
+          value={serviceValue}
+          sub={serviceSub}
+          score={serviceScore}
+          color="#db2777"
+        />
       </div>
     </div>
   );
