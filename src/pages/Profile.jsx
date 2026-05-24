@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
-import ScoringBar from '@/components/ScoringBar';
+import TrustBadges from '@/components/TrustBadges';
+import TrustCard from '@/components/TrustCard';
 
 const StatBox = ({ value, label, sub }) =>
 <div style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 10px', textAlign: 'center' }}>
@@ -193,8 +194,11 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Scoring Bar */}
-        <ScoringBar score={me?.trust_score ?? 1} />
+        {/* Trust Badges */}
+        <TrustBadges user={me} />
+
+        {/* Trust Card */}
+        <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
 
         {/* Quick links */}
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
@@ -256,7 +260,13 @@ export default function Profile() {
                 )}
                     <span style={{ fontSize: 10, color: '#aaa', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
                   </div>
-                  {review.comment && <p style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, margin: 0 }}>{review.comment}</p>}
+                  {review.comment && <p style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, margin: '0 0 6px' }}>{review.comment}</p>}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 7px' }}>⏱️ הגיע בזמן</span>}
+                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 7px' }}>💼 מקצועי</span>}
+                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 7px' }}>💬 תקשורת טובה</span>}
+                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 7px' }}>🔁 ממליץ</span>}
+                  </div>
                 </div>
             )}
             </div>
