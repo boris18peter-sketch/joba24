@@ -30,6 +30,7 @@ import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import ReportModal from '@/components/ReportModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
+import TrustBadges from '@/components/TrustBadges';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -78,6 +79,20 @@ export default function TaskDetail() {
   const autoRatingShownRef = useRef(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
+
+  // Fetch client + worker user data for trust badges
+  const { data: clientUser } = useQuery({
+    queryKey: ['publicUser', task?.client_id],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.client_id }); return u[0] || null; },
+    enabled: !!task?.client_id,
+    staleTime: 120000,
+  });
+  const { data: workerUser } = useQuery({
+    queryKey: ['publicUser', task?.worker_id],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.worker_id }); return u[0] || null; },
+    enabled: !!task?.worker_id && task?.status === 'TAKEN',
+    staleTime: 120000,
+  });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
   // Check if current user already reviewed this task
@@ -762,12 +777,13 @@ export default function TaskDetail() {
               <div className="w-9 h-9 rounded-xl bg-yellow-100 flex items-center justify-center shrink-0">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div className="text-xs text-muted-foreground">מפרסם</div>
                 <div className="font-medium text-sm flex items-center gap-1.5">
                   <a href={`/public-profile?id=${task.client_id}`} style={{ color: '#0f2b6b', fontWeight: 700, textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.client_name}</a>
                   <VerifiedBadge /> · {task.client_rating?.toFixed(1) || 'חדש'}
                 </div>
+                {clientUser && <div style={{ marginTop: 6 }}><TrustBadges user={clientUser} compact /></div>}
               </div>
             </div>
           )}
@@ -796,6 +812,7 @@ export default function TaskDetail() {
           <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
             <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>מבצע</h2>
             <a href={`/public-profile?id=${task.worker_id}`} style={{ fontWeight: 700, color: 'var(--text-1)', textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.worker_name}</a>
+            {workerUser && <div style={{ marginTop: 8 }}><TrustBadges user={workerUser} compact /></div>}
           </div>
         )}
 
