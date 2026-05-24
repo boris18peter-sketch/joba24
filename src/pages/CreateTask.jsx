@@ -20,6 +20,7 @@ import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
+import CategoryFields, { formatCategoryFields } from '@/components/CategoryFields';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
@@ -75,6 +76,7 @@ const DEFAULT_FORM = {
   expiry_hours: null,
   custom_time: '',
   is_story: false,
+  category_fields: {},
   images: [],
   video_url: '',
   requirements: { vehicle: false, two_people: false, experience: false },
@@ -124,6 +126,7 @@ export default function CreateTask() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
+  const setCategoryFields = fields => setForm(p => ({ ...p, category_fields: fields }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
@@ -145,7 +148,7 @@ export default function CreateTask() {
     if (isRepost) return;
     clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
+      const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, category_fields: form.category_fields };
       // Only save if user has typed something meaningful
       if (form.title || form.description || form.price) {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
@@ -204,11 +207,20 @@ export default function CreateTask() {
     setErrors({});
     setModerationErrors({});
 
+    // Auto-enrich description with category fields
+    const extraDetails = formatCategoryFields(form.category, form.category_fields);
+    let enrichedDescription = form.description || '';
+    if (extraDetails && !enrichedDescription.includes('•')) {
+      enrichedDescription = enrichedDescription
+        ? `${enrichedDescription}\n\nפרטים נוספים:\n${extraDetails}`
+        : `פרטים נוספים:\n${extraDetails}`;
+    }
+
     // Final moderation checks
     setCheckingModeration('submit');
     const [titleCheck, descCheck] = await Promise.all([
       form.title ? moderateText(form.title) : Promise.resolve({ flagged: false }),
-      form.description ? moderateText(form.description) : Promise.resolve({ flagged: false }),
+      enrichedDescription ? moderateText(enrichedDescription) : Promise.resolve({ flagged: false }),
     ]);
     setCheckingModeration('');
     if (titleCheck.flagged || descCheck.flagged) {
@@ -258,7 +270,7 @@ export default function CreateTask() {
     const created = await base44.entities.Task.create({
       payment_method: form.payment_method,
       title: form.title,
-      description: form.description,
+      description: enrichedDescription || form.description,
       price: Number(form.price),
       base_price: Number(form.price),
       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
@@ -383,12 +395,21 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map(c => (
-              <button key={c.value} onClick={() => set('category', c.value)}
+              <button key={c.value} onClick={() => { set('category', c.value); setCategoryFields({}); }}
                 style={{ padding: '7px 14px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', ...(form.category === c.value ? activeBtn : inactiveBtn) }}
               >{c.label}</button>
             ))}
           </div>
         </SectionCard>
+
+        {/* Dynamic category fields */}
+        {form.category && form.category !== 'other' && (
+          <CategoryFields
+            category={form.category}
+            values={form.category_fields}
+            onChange={setCategoryFields}
+          />
+        )}
 
         {/* Title + Description */}
         <SectionCard>
