@@ -31,6 +31,7 @@ export default function Layout() {
   // This is never cleared, so cancellation detection always has the worker_id
   const takenWorkerRef = useRef({});
 
+  const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
 
   // Fire coin_earned event when worker_credits increases
@@ -154,6 +155,29 @@ export default function Layout() {
   useEffect(() => {
     if (location.pathname === '/chats') setUnreadMessages(0);
   }, [location.pathname]);
+
+  // CreditTransaction subscription — detect Loyalty_Reward (5-star bonus) in real-time
+  useEffect(() => {
+    if (!me?.id || !isAuthenticated) return;
+    const unsub = base44.entities.CreditTransaction.subscribe((event) => {
+      if (event.type !== 'create' || !event.data) return;
+      const tx = event.data;
+      if (tx.user_id !== me.id) return;
+      if (tx.type === 'Loyalty_Reward') {
+        // Fire coin toast with specific label
+        window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: tx.amount, label: 'בונוס 5 כוכבים ⭐' } }));
+        addNotification({
+          type: 'new_review',
+          reviewerName: 'מפרסם המשימה',
+          rating: 5,
+          preview: `קיבלת ${tx.amount} קרדיטים בונוס על דירוג 5 כוכבים! ⭐`,
+        });
+        // Refresh me to reflect updated balance
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+      }
+    });
+    return unsub;
+  }, [me?.id, isAuthenticated]);
 
   // Listen for new review notifications
   useEffect(() => {
