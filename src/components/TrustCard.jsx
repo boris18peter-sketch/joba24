@@ -1,12 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 import { CheckCircle, Zap, Users, Star, X } from 'lucide-react';
-
-/**
- * TrustCard — horizontal bar (like the image).
- * Tapping/clicking it opens a popup with the 5 signal sub-bars.
- */
 
 function SignalRow({ icon, label, value, sub, score, color }) {
   return (
@@ -20,7 +15,7 @@ function SignalRow({ icon, label, value, sub, score, color }) {
           <span style={{ fontSize: 11, fontWeight: 700, color }}>{value}</span>
         </div>
         <div style={{ height: 5, background: '#edf0f7', borderRadius: 99, overflow: 'hidden', marginBottom: sub ? 3 : 0 }}>
-          <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 99, transition: 'width 0.6s ease' }} />
+          <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 99 }} />
         </div>
         {sub && <div style={{ fontSize: 10, color: '#94a3b8' }}>{sub}</div>}
       </div>
@@ -64,30 +59,26 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, onClose })
         background: 'rgba(10,20,50,0.45)',
         backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        animation: 'fadeIn 0.18s ease',
+        animation: 'tcFadeIn 0.18s ease',
       }}
     >
       <style>{`
-        @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tcSlideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes tcFadeIn  { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
       <div
         dir="rtl"
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'white',
-          borderRadius: '22px 22px 0 0',
+          background: 'white', borderRadius: '22px 22px 0 0',
           width: '100%', maxWidth: 480,
           padding: '20px 20px',
           paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-          animation: 'slideUp 0.22s cubic-bezier(0.34,1.4,0.64,1)',
+          animation: 'tcSlideUp 0.22s cubic-bezier(0.34,1.4,0.64,1)',
           boxShadow: '0 -12px 40px rgba(0,0,0,0.18)',
         }}
       >
-        {/* Handle */}
         <div style={{ width: 36, height: 4, background: '#e2e8f0', borderRadius: 99, margin: '0 auto 16px' }} />
-
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#0f1e40' }}>מד אמינות</div>
@@ -100,8 +91,6 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, onClose })
             </button>
           </div>
         </div>
-
-        {/* 5 rows */}
         <SignalRow icon={<CheckCircle size={15} color="#10b981" strokeWidth={2.5} />} label="משימות שבוצעו" value={taskValue} sub={taskSub} score={taskScore} color="#10b981" />
         <SignalRow icon={<CheckCircle size={15} color="#1a6fd4" strokeWidth={2.5} />} label="זהות מאומתת" value={idValue} sub={idSub} score={idScore} color="#1a6fd4" />
         <SignalRow icon={<Zap size={15} color="#f59e0b" strokeWidth={2.5} />} label="מהירות מענה" value={speedValue} sub={speedSub} score={speedScore} color="#f59e0b" />
@@ -113,14 +102,55 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, onClose })
   );
 }
 
+// Color that transitions red→orange→yellow→green based on progress 0-100
+function getBarColor(w) {
+  if (w < 25) return '#ef4444';
+  if (w < 45) return '#f97316';
+  if (w < 65) return '#eab308';
+  if (w < 82) return '#84cc16';
+  return '#16a34a';
+}
+
 export default function TrustCard({ user, reviews = [], tasks = [] }) {
   const [open, setOpen] = useState(false);
-  if (!user) return null;
+  const [displayWidth, setDisplayWidth] = useState(0);
+  const animRef = useRef(null);
 
   const trustScore = calculateTrustScore(user, { tasks, reviews });
   const trustLevel = getTrustLevel(trustScore);
 
-  if (trustScore === 0) return null;
+  useEffect(() => {
+    if (!user || trustScore === 0) return;
+    let current = 0;
+    const target = trustScore;
+    const duration = 1200; // ms
+    const startTime = performance.now();
+
+    const animate = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      current = Math.round(eased * target);
+      setDisplayWidth(current);
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    const t = setTimeout(() => {
+      animRef.current = requestAnimationFrame(animate);
+    }, 150);
+
+    return () => {
+      clearTimeout(t);
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [trustScore, user]);
+
+  if (!user || trustScore === 0) return null;
+
+  const barColor = getBarColor(displayWidth);
 
   return (
     <>
@@ -128,47 +158,43 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
         dir="rtl"
         onClick={() => setOpen(true)}
         style={{
-          background: 'white',
-          border: '1px solid #e8edf5',
-          borderRadius: 14,
-          padding: '12px 14px',
-          cursor: 'pointer',
-          userSelect: 'none',
+          background: 'white', border: '1px solid #e8edf5',
+          borderRadius: 14, padding: '12px 14px',
+          cursor: 'pointer', userSelect: 'none',
         }}
       >
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מציון</span>
-            <span style={{ fontSize: 18, fontWeight: 900, color: trustLevel.color, letterSpacing: -0.5 }}>{trustScore}%</span>
+            <span style={{ fontSize: 18, fontWeight: 900, color: barColor, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4' }}>מד אמינות</span>
         </div>
 
-        {/* Progress bar */}
-        <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
+        {/* Animated progress bar */}
+        <div style={{ height: 10, background: '#f0f0f0', borderRadius: 99, overflow: 'hidden', marginBottom: 8, position: 'relative' }}>
           <div style={{
             height: '100%',
-            width: `${trustScore}%`,
-            background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+            width: `${displayWidth}%`,
             borderRadius: 99,
-            transition: 'width 0.8s ease',
+            background: `linear-gradient(90deg, #ef4444 0%, #f97316 30%, #eab308 55%, #84cc16 78%, #16a34a 100%)`,
+            backgroundSize: '200px 100%',
+            boxShadow: `0 0 10px ${barColor}70`,
+            transition: 'box-shadow 0.2s',
           }} />
         </div>
 
-        {/* Label */}
-        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: trustLevel.color }}>
+        {/* Trust label */}
+        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>
           ✨ {trustLevel.label}
         </div>
       </div>
 
       {open && (
         <DetailsPopup
-          user={user}
-          reviews={reviews}
-          tasks={tasks}
-          trustScore={trustScore}
-          trustLevel={trustLevel}
+          user={user} reviews={reviews} tasks={tasks}
+          trustScore={trustScore} trustLevel={trustLevel}
           onClose={() => setOpen(false)}
         />
       )}
