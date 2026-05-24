@@ -3,10 +3,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import SignupGiftModal from '@/components/SignupGiftModal';
+import BuyCreditsModal from '@/components/BuyCreditsModal';
+import LoginPromptModal from '@/components/LoginPromptModal';
+import ApprovedPopup from '@/components/ApprovedPopup';
+import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
+import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
+import CancelSuccessPopup from '@/components/CancelSuccessPopup';
+import InstantMatchPopup from '@/components/InstantMatchPopup';
+import CompletionModal from '@/components/CompletionModal';
+import RatingModal from '@/components/RatingModal';
 import {
   ArrowRight, FlaskConical, Loader2, RefreshCw, Trash2,
   CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp,
-  Play, Zap, Clock, User, Wallet, Star, MessageCircle, ShieldCheck, Sparkles, Coins
+  Play, Zap, Clock, User, Wallet, Star, MessageCircle, ShieldCheck, Sparkles, Coins, Bell
 } from 'lucide-react';
 
 /* ─── Reusable UI ─────────────────────────── */
@@ -113,6 +123,16 @@ export default function SimulatorPanel() {
     enabled: !!me?.id,
     refetchInterval: 4000,
   });
+
+  // ── Popup visibility state ──
+  const [popup, setPopup] = useState(null);
+  const closePopup = () => setPopup(null);
+  const mockTask = myTasks?.[0] || allTasks?.[0] || {
+    id: 'demo', title: '🧪 משימת בדיקה', price: 150,
+    worker_id: me?.id, worker_name: me?.full_name,
+    client_id: me?.id, client_name: me?.full_name,
+    status: 'COMPLETED', payment_method: 'Cash',
+  };
 
   const myTasks = allTasks.filter(t => t.client_id === me?.id);
   const testTasks = myTasks.filter(t => t.title?.includes('🧪'));
@@ -481,6 +501,46 @@ export default function SimulatorPanel() {
             }
           })} />
       </Section>
+
+      {/* ── POPUPS SECTION ── */}
+      <Section title="🎭 פופאפים ומודלים — טריגר ידני" icon={<Bell size={15} color="#db2777" />}>
+        <div style={{ fontSize: 11, color: '#64748b', padding: '6px 10px', background: '#fdf2f8', borderRadius: 8, marginBottom: 4, border: '1px solid #fbcfe8' }}>
+          לחץ על כל כפתור כדי לראות את הפופאפ ישירות
+        </div>
+
+        {([
+          { key: 'gift', label: '🎁 מתנת הצטרפות', color: '#d97706', desc: 'כניסה ראשונה | משתמש חדש' },
+          { key: 'buyCredits', label: '🪙 רכישת קרדיטים', color: '#1a6fd4', desc: 'אין קרדיטים / לחיצה על קנה עוד | עובד' },
+          { key: 'login', label: '🔐 כניסה / הרשמה', color: '#6366f1', desc: 'ניסיון לפרסם/להגיש בלי כניסה | גולש לא מחובר' },
+          { key: 'approved', label: '🎉 עובד אושר', color: '#059669', desc: 'בעל משימה בחר בך | העובד שנבחר' },
+          { key: 'workerCancelled', label: '😔 עובד בוטל', color: '#dc2626', desc: 'בעל משימה ביטל את בחירתך | העובד' },
+          { key: 'approvalRevoked', label: '⚠️ אישור בוטל', color: '#f97316', desc: 'בעל משימה חזר בו לאחר אישור | העובד' },
+          { key: 'cancelSuccess', label: '✅ ביטול הצליח', color: '#7c3aed', desc: 'לאחר ביטול משימה | הלקוח שביטל' },
+          { key: 'instantMatch', label: '⚡ עובד נמצא מיידי', color: '#0891b2', desc: 'עובד לקח משימה instant | הלקוח שפרסם' },
+          { key: 'completion', label: '🏁 סיום משימה', color: '#059669', desc: 'לחיצה על "סיימתי" | העובד' },
+          { key: 'rating', label: '⭐ דירוג / ביקורת', color: '#d97706', desc: 'לאחר השלמה | הלקוח והעובד בנפרד' },
+        ]).map(({ key, label, color, desc }) => (
+          <div key={key} style={{ border: '1px solid #f0f0f0', borderRadius: 12, overflow: 'hidden', marginBottom: 2 }}>
+            <div style={{ padding: '5px 10px', background: '#f9fafb' }}>
+              <span style={{ fontSize: 10, color: '#64748b' }}>{desc}</span>
+            </div>
+            <div style={{ padding: 6 }}>
+              <Btn label={label} color={color} onClick={async () => setPopup(key)} />
+            </div>
+          </div>
+        ))}
+      </Section>
+
+      {popup === 'gift' && <SignupGiftModal onClose={closePopup} />}
+      {popup === 'buyCredits' && <BuyCreditsModal onClose={closePopup} creditsNeeded={3} />}
+      {popup === 'login' && <LoginPromptModal onClose={closePopup} />}
+      {popup === 'approved' && <ApprovedPopup task={{ ...mockTask, status: 'TAKEN', worker_id: me?.id, worker_name: me?.full_name }} onClose={closePopup} />}
+      {popup === 'workerCancelled' && <WorkerCancelledPopup task={mockTask} onClose={closePopup} />}
+      {popup === 'approvalRevoked' && <ApprovalRevokedPopup task={mockTask} onClose={closePopup} />}
+      {popup === 'cancelSuccess' && <CancelSuccessPopup task={mockTask} onClose={closePopup} />}
+      {popup === 'instantMatch' && <InstantMatchPopup task={{ ...mockTask, status: 'TAKEN', worker_name: me?.full_name || 'עובד בדיקה' }} onClose={closePopup} />}
+      {popup === 'completion' && <CompletionModal task={{ ...mockTask, status: 'TAKEN' }} onClose={closePopup} onDone={closePopup} />}
+      {popup === 'rating' && <RatingModal task={{ ...mockTask, status: 'COMPLETED', worker_id: me?.id, client_id: me?.id }} currentUserId={me?.id} onClose={closePopup} onDone={closePopup} />}
 
       {/* Quick nav */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 4 }}>
