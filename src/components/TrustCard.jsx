@@ -1,20 +1,26 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
-import { CheckCircle, Zap, Users, Star, ChevronDown } from 'lucide-react';
+import { CheckCircle, Zap, Users, Star, X } from 'lucide-react';
+
+/**
+ * TrustCard — horizontal bar (like the image).
+ * Tapping/clicking it opens a popup with the 5 signal sub-bars.
+ */
 
 function SignalRow({ icon, label, value, sub, score, color }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-      <div style={{ width: 34, height: 34, borderRadius: 11, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: '#1a2540' }}>{label}</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color, flexShrink: 0 }}>{value}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color }}>{value}</span>
         </div>
         <div style={{ height: 5, background: '#edf0f7', borderRadius: 99, overflow: 'hidden', marginBottom: sub ? 3 : 0 }}>
-          <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 99 }} />
+          <div style={{ height: '100%', width: `${score}%`, background: color, borderRadius: 99, transition: 'width 0.6s ease' }} />
         </div>
         {sub && <div style={{ fontSize: 10, color: '#94a3b8' }}>{sub}</div>}
       </div>
@@ -22,22 +28,16 @@ function SignalRow({ icon, label, value, sub, score, color }) {
   );
 }
 
-export default function TrustCard({ user, reviews = [], tasks = [] }) {
-  const [open, setOpen] = useState(false);
-  if (!user) return null;
-
+function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, onClose }) {
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
-  const trustScore = calculateTrustScore(user, { tasks, reviews });
-  const trustLevel = getTrustLevel(trustScore);
 
-  if (trustScore === 0) return null;
-
-  // Signal data
   const taskScore = Math.min(Math.round((completedCount / 20) * 100), 100);
+  const taskValue = `${completedCount}`;
   const taskSub = completedCount >= 5 ? 'ניסיון מוכח בשטח' : completedCount > 0 ? 'מתחיל לצבור ניסיון' : 'אין משימות עדיין';
 
   const idScore = user.is_verified ? 100 : user.is_phone_verified ? 50 : 0;
-  const idValue = user.is_verified ? '✓ מאומת' : user.is_phone_verified ? 'טלפון' : 'לא';
+  const idValue = user.is_verified ? '✓ אומת' : user.is_phone_verified ? 'טלפון' : 'לא';
+  const idSub = user.is_verified ? 'מסמכי זהות אומתו' : null;
 
   const respMins = user.avg_response_minutes || null;
   const speedScore = respMins ? Math.max(0, Math.round(100 - Math.min(respMins / 60, 1) * 80)) : 0;
@@ -46,6 +46,7 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
 
   const hires = user.repeat_hires || 0;
   const hiresScore = Math.min(hires * 20, 100);
+  const hiresValue = `${hires}`;
   const hiresSub = hires >= 3 ? 'לקוחות בוחרים בו שוב' : hires > 0 ? 'התחיל לצבור' : 'עדיין לא חזרו';
 
   const rating = user.rating || 0;
@@ -55,95 +56,122 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
   const serviceValue = rating > 0 ? `${rating.toFixed(1)}★` : '—';
   const serviceSub = wouldHireAgain > 0 ? `${wouldHireAgain} ממליצים בחום` : ratingCount > 0 ? `${ratingCount} ביקורות` : null;
 
-  return (
-    <div dir="rtl" style={{ background: '#fff', borderRadius: 16, border: '1.5px solid #e4ecf8', overflow: 'hidden' }}>
-
-      {/* ── Main bar (always visible, tappable) ── */}
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '14px 16px 12px', textAlign: 'right' }}
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'rgba(10,20,50,0.45)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        animation: 'fadeIn 0.18s ease',
+      }}
+    >
+      <style>{`
+        @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+      <div
+        dir="rtl"
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: '22px 22px 0 0',
+          width: '100%', maxWidth: 480,
+          padding: '20px 20px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+          animation: 'slideUp 0.22s cubic-bezier(0.34,1.4,0.64,1)',
+          boxShadow: '0 -12px 40px rgba(0,0,0,0.18)',
+        }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 900, color: trustLevel.color }}>{trustScore}%</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f1e40' }}>מצוין</span>
+        {/* Handle */}
+        <div style={{ width: 36, height: 4, background: '#e2e8f0', borderRadius: 99, margin: '0 auto 16px' }} />
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#0f1e40' }}>מד אמינות</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>מה בונה את ציון האמון?</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>מדד אמינות</span>
-            <ChevronDown
-              size={14}
-              color="#94a3b8"
-              style={{ transition: 'transform 0.25s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: trustLevel.color }}>{trustScore}</div>
+            <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <X size={14} color="#94a3b8" />
+            </button>
           </div>
         </div>
 
-        {/* Green bar */}
-        <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden' }}>
+        {/* 5 rows */}
+        <SignalRow icon={<CheckCircle size={15} color="#10b981" strokeWidth={2.5} />} label="משימות שבוצעו" value={taskValue} sub={taskSub} score={taskScore} color="#10b981" />
+        <SignalRow icon={<CheckCircle size={15} color="#1a6fd4" strokeWidth={2.5} />} label="זהות מאומתת" value={idValue} sub={idSub} score={idScore} color="#1a6fd4" />
+        <SignalRow icon={<Zap size={15} color="#f59e0b" strokeWidth={2.5} />} label="מהירות מענה" value={speedValue} sub={speedSub} score={speedScore} color="#f59e0b" />
+        <SignalRow icon={<Users size={15} color="#8b5cf6" strokeWidth={2} />} label="ממליצים" value={hiresValue} sub={hiresSub} score={hiresScore} color="#8b5cf6" />
+        <SignalRow icon={<Star size={15} color="#db2777" strokeWidth={2} fill="#db2777" />} label="שירות" value={serviceValue} sub={serviceSub} score={serviceScore} color="#db2777" />
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+export default function TrustCard({ user, reviews = [], tasks = [] }) {
+  const [open, setOpen] = useState(false);
+  if (!user) return null;
+
+  const trustScore = calculateTrustScore(user, { tasks, reviews });
+  const trustLevel = getTrustLevel(trustScore);
+
+  if (trustScore === 0) return null;
+
+  return (
+    <>
+      <div
+        dir="rtl"
+        onClick={() => setOpen(true)}
+        style={{
+          background: 'white',
+          border: '1px solid #e8edf5',
+          borderRadius: 14,
+          padding: '12px 14px',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        {/* Top row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מציון</span>
+            <span style={{ fontSize: 18, fontWeight: 900, color: trustLevel.color, letterSpacing: -0.5 }}>{trustScore}%</span>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4' }}>מד אמינות</span>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
           <div style={{
             height: '100%',
             width: `${trustScore}%`,
+            background: 'linear-gradient(90deg, #22c55e, #16a34a)',
             borderRadius: 99,
-            background: 'linear-gradient(90deg, #4ade80, #16a34a)',
-            boxShadow: '0 0 10px rgba(22,163,74,0.4)',
+            transition: 'width 0.8s ease',
           }} />
         </div>
 
-        <div style={{ marginTop: 7, fontSize: 11, fontWeight: 600, color: trustLevel.color, textAlign: 'center' }}>
+        {/* Label */}
+        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: trustLevel.color }}>
           ✨ {trustLevel.label}
         </div>
-      </button>
-
-      {/* ── Expandable details panel ── */}
-      <div style={{
-        maxHeight: open ? 600 : 0,
-        overflow: 'hidden',
-        transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1)',
-      }}>
-        <div style={{ padding: '4px 16px 16px', display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid #f0f4fa' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', paddingTop: 10, paddingBottom: 2 }}>הסבר הציון</div>
-          <SignalRow
-            icon={<CheckCircle size={15} color="#10b981" strokeWidth={2.5} />}
-            label="משימות שבוצעו"
-            value={`${completedCount}`}
-            sub={taskSub}
-            score={taskScore}
-            color="#10b981"
-          />
-          <SignalRow
-            icon={<CheckCircle size={15} color="#1a6fd4" strokeWidth={2.5} />}
-            label="זהות מאומתת"
-            value={idValue}
-            sub={null}
-            score={idScore}
-            color="#1a6fd4"
-          />
-          <SignalRow
-            icon={<Zap size={15} color="#f59e0b" strokeWidth={2.5} />}
-            label="מהירות מענה"
-            value={speedValue}
-            sub={speedSub}
-            score={speedScore}
-            color="#f59e0b"
-          />
-          <SignalRow
-            icon={<Users size={15} color="#8b5cf6" strokeWidth={2} />}
-            label="ממליצים עליו"
-            value={`${hires}`}
-            sub={hiresSub}
-            score={hiresScore}
-            color="#8b5cf6"
-          />
-          <SignalRow
-            icon={<Star size={15} color="#db2777" strokeWidth={2} fill="#db2777" />}
-            label="שירות"
-            value={serviceValue}
-            sub={serviceSub}
-            score={serviceScore}
-            color="#db2777"
-          />
-        </div>
       </div>
-    </div>
+
+      {open && (
+        <DetailsPopup
+          user={user}
+          reviews={reviews}
+          tasks={tasks}
+          trustScore={trustScore}
+          trustLevel={trustLevel}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }

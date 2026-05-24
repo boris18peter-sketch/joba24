@@ -7,15 +7,6 @@
 
 const BADGES = [
   {
-    key: 'id',
-    check: u => u.is_verified,
-    icon: '🛡️',
-    label: 'מאומת ת.ז.',
-    color: '#1a6fd4',
-    bg: '#eff6ff',
-    border: '#bfdbfe',
-  },
-  {
     key: 'phone',
     check: u => u.is_phone_verified,
     icon: '📱',
