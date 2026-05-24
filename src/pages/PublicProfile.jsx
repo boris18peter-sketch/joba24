@@ -1,14 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { Star, CheckCircle, Shield, Award, FileText, MapPin } from 'lucide-react';
-import ScoringBar from '@/components/ScoringBar';
 import { useNavigate } from 'react-router-dom';
-import VerifiedBadge from '@/components/VerifiedBadge';
-import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
-import BackButton from '@/components/BackButton';
+import { base44 } from '@/api/base44Client';
+import { Star, CheckCircle, FileText, MapPin, Award } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-
-const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
+import TrustBadges from '@/components/TrustBadges';
+import TrustCard from '@/components/TrustCard';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import { getCategoryLabel } from '@/lib/categories';
 
 export default function PublicProfile() {
   const navigate = useNavigate();
@@ -22,12 +20,6 @@ export default function PublicProfile() {
       const users = await base44.entities.User.filter({ id: userId });
       return users[0] || null;
     },
-    enabled: !!userId,
-  });
-
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['publicReviews', userId],
-    queryFn: () => base44.entities.Review.filter({ reviewee_id: userId }, '-created_date', 10),
     enabled: !!userId,
   });
 
@@ -66,8 +58,7 @@ export default function PublicProfile() {
     );
   }
 
-  // Calculate rating from reviews
-  const avgRating = allReviews.length > 0 
+  const avgRating = allReviews.length > 0
     ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
     : '—';
   const workerScore = user.worker_score || 0;
@@ -115,19 +106,11 @@ export default function PublicProfile() {
 
       <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* Verified badge */}
-        {user.is_verified && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Shield size={18} color="#16a34a" />
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#166534' }}>זהות מאומתת</div>
-              <div style={{ fontSize: 11, color: '#15803d' }}>הפרופיל מאומת ומהימן</div>
-            </div>
-          </div>
-        )}
+        {/* Trust Badges */}
+        <TrustBadges user={user} />
 
-        {/* Trust score (ScoringBar) — always show, defaults to 1 (100%) for new users */}
-        <ScoringBar score={user.trust_score ?? 1} />
+        {/* Trust Card — "Why this user is trusted" */}
+        <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
 
         {/* Worker score */}
         {workerScore > 0 && (
@@ -248,16 +231,25 @@ export default function PublicProfile() {
         {allReviews.length > 0 && (
           <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ביקורות ({allReviews.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {allReviews.slice(0, 10).map(review => (
-                <div key={review.id} style={{ borderBottom: '1px solid #f0f4fa', paddingBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                <div key={review.id} style={{ borderBottom: '1px solid #f0f4fa', paddingBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                     {[1,2,3,4,5].map(s => (
                       <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
                     ))}
                     <span style={{ fontSize: 10, color: '#aaa', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
                   </div>
-                  {review.comment && <p style={{ fontSize: 12, color: '#444', lineHeight: 1.5, margin: 0 }}>{review.comment}</p>}
+                  {review.comment && (
+                    <p style={{ fontSize: 12, color: '#444', lineHeight: 1.5, margin: '0 0 7px' }}>{review.comment}</p>
+                  )}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 8px' }}>⏱️ הגיע בזמן</span>}
+                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 8px' }}>💼 מקצועי</span>}
+                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>💬 תקשורת טובה</span>}
+                    {review.fair_pricing === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 99, padding: '2px 8px' }}>💰 מחיר הוגן</span>}
+                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 8px' }}>🔁 ממליץ</span>}
+                  </div>
                 </div>
               ))}
             </div>

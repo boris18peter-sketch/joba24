@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, XCircle, Loader2, Zap, Award, RotateCcw, MessageCircle, UserX } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, Award, MessageCircle, UserX } from 'lucide-react';
+import TrustBadges from '@/components/TrustBadges';
 import { toast } from 'sonner';
 
 export default function TaskApplicants({ task, onApprove }) {
@@ -16,6 +17,20 @@ export default function TaskApplicants({ task, onApprove }) {
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
     staleTime: 30000,
   });
+
+  // Fetch full user data for trust badges per applicant
+  const workerIds = [...new Set(applications.map(a => a.worker_id).filter(Boolean))];
+  const { data: workerUsers = [] } = useQuery({
+    queryKey: ['applicantUsers', workerIds.join(',')],
+    queryFn: async () => {
+      if (!workerIds.length) return [];
+      const all = await base44.entities.User.list();
+      return all.filter(u => workerIds.includes(u.id));
+    },
+    enabled: workerIds.length > 0,
+    staleTime: 60000,
+  });
+  const workerMap = Object.fromEntries(workerUsers.map(u => [u.id, u]));
 
   const approveMutation = useMutation({
     mutationFn: async (app) => {
@@ -175,6 +190,12 @@ export default function TaskApplicants({ task, onApprove }) {
                 <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                   {app.worker_tasks_count > 0 && <span>✅ {app.worker_tasks_count} משימות הושלמו</span>}
                 </div>
+                {/* Trust badges for this worker */}
+                {workerMap[app.worker_id] && (
+                  <div style={{ marginTop: 5 }}>
+                    <TrustBadges user={workerMap[app.worker_id]} compact />
+                  </div>
+                )}
                 {app.message && (
                   <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2 italic">{app.message}</p>
                 )}
