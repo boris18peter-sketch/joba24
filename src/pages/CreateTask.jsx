@@ -21,6 +21,7 @@ import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
+import CategoryExtraFields from '@/components/CategoryExtraFields';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -126,6 +127,7 @@ export default function CreateTask() {
   };
   const [showNoCreditsModal, setShowNoCreditsModal] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [extraFieldsText, setExtraFieldsText] = useState('');
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults
@@ -288,7 +290,9 @@ export default function CreateTask() {
     const created = await base44.entities.Task.create({
       payment_method: form.payment_method,
       title: form.title,
-      description: form.description,
+      description: extraFieldsText
+        ? (form.description ? form.description + '\n\n' + extraFieldsText : extraFieldsText)
+        : form.description,
       price: Number(form.price),
       base_price: Number(form.price),
       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
@@ -460,6 +464,14 @@ export default function CreateTask() {
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
         </SectionCard>
+
+        {/* Smart Category Extra Fields */}
+        <CategoryExtraFields
+          category={form.category}
+          originLat={form.lat}
+          originLng={form.lng}
+          onChange={(_data, text) => setExtraFieldsText(text)}
+        />
 
         {/* Images + Video */}
         <SectionCard>
