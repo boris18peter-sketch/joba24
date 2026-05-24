@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Called by task owner to cancel an approved worker BEFORE they start moving.
-// Only valid while task status is TAKEN and worker_status is null.
+// Refunds credits to the approved worker AND all remaining pending applicants.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -15,27 +15,34 @@ Deno.serve(async (req) => {
     const task = tasks?.[0];
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
 
-    // Only the task owner can cancel
     if (task.client_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    // Only allowed before worker starts moving
     if (task.worker_status) {
       return Response.json({ error: 'Worker already on the way — cannot cancel from here' }, { status: 409 });
     }
 
     const cancelledWorkerId = task.worker_id;
 
-    // Find and reject the approved application + refund credits
+    // Fetch ALL applications for this task
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    const approvedApp = apps.find(a => a.status === 'approved');
-    if (approvedApp) {
-      const creditsToRefund = approvedApp.credits_charged || 0;
+
+    // Refund approved + pending applicants
+    for (const app of apps) {
+      if (app.status !== 'approved' && app.status !== 'pending') continue;
+
+      const creditsToRefund = app.credits_charged || 0;
+      const note = app.status === 'approved'
+        ? 'החזר קרדיטים - בעל המשימה ביטל את בחירתך'
+        : 'החזר קרדיטים - בעל המשימה ביטל את המשימה';
+
+      // Mark as rejected
+      await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'rejected' });
+
       if (creditsToRefund > 0) {
-        const workerUsers = await base44.asServiceRole.entities.User.filter({ id: approvedApp.worker_id });
+        const workerUsers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
         const worker = workerUsers[0];
         if (worker) {
-          const currentCredits = worker.worker_credits ?? 0;
-          const newBalance = currentCredits + creditsToRefund;
+          const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
           await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
           await base44.asServiceRole.entities.CreditTransaction.create({
             user_id: worker.id,
@@ -44,11 +51,11 @@ Deno.serve(async (req) => {
             task_id: taskId,
             task_title: task.title,
             balance_after: newBalance,
-            note: 'החזר קרדיטים - בעל המשימה ביטל את בחירתך',
+            note,
           });
+          console.log(`✅ Refunded ${creditsToRefund} credits to worker ${worker.id} (was ${app.status})`);
         }
       }
-      await base44.asServiceRole.entities.TaskApplication.update(approvedApp.id, { status: 'rejected' });
     }
 
     // Reset task to OPEN

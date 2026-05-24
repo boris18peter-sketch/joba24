@@ -2,58 +2,62 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Cron job — runs every hour.
- * Finds OPEN tasks older than 48h with no worker approved,
- * cancels them, and refunds all applicants.
+ * Expires OPEN tasks whose `expires_at` has passed, OR tasks older than 48h with no expiry set.
+ * Refunds credits to ALL applicants (pending or approved).
  */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
+    const fallbackCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
     // Fetch all OPEN tasks
     const openTasks = await base44.asServiceRole.entities.Task.filter({ status: 'OPEN' });
 
-    // Filter: created more than 48h ago
-    const staleTasks = openTasks.filter(t => t.created_date && t.created_date < cutoff);
+    // A task is expired if:
+    // 1. It has expires_at and it's in the past, OR
+    // 2. It has no expires_at and was created more than 48h ago
+    const expiredTasks = openTasks.filter(t => {
+      if (t.expires_at) return t.expires_at < now;
+      return t.created_date && t.created_date < fallbackCutoff;
+    });
 
-    if (staleTasks.length === 0) {
-      console.log('✅ No stale tasks found');
-      return Response.json({ success: true, cancelled: 0 });
+    if (expiredTasks.length === 0) {
+      console.log('✅ No expired tasks found');
+      return Response.json({ success: true, expired: 0 });
     }
 
-    let cancelledCount = 0;
+    let expiredCount = 0;
     let refundedCount = 0;
 
-    for (const task of staleTasks) {
-      console.log(`🔄 Cancelling stale task: ${task.id} (${task.title})`);
+    for (const task of expiredTasks) {
+      console.log(`🔄 Expiring task: ${task.id} (${task.title})`);
 
-      // Cancel task
-      await base44.asServiceRole.entities.Task.update(task.id, { status: 'CANCELLED' });
-      cancelledCount++;
+      // Mark task as EXPIRED
+      await base44.asServiceRole.entities.Task.update(task.id, { status: 'EXPIRED' });
+      expiredCount++;
 
-      // Find all pending applications for this task
+      // Find ALL applications (pending OR approved) — refund all since task didn't complete
       const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: task.id });
-      const pendingApps = apps.filter(a => a.status === 'pending');
+      const appsToRefund = apps.filter(a => a.status === 'pending' || a.status === 'approved');
 
-      for (const app of pendingApps) {
+      for (const app of appsToRefund) {
         const creditsToRefund = app.credits_charged || 0;
+
+        // Mark application as cancelled
+        await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'cancelled' });
+
         if (creditsToRefund <= 0) continue;
 
-        // Fetch worker
         const users = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
         const worker = users[0];
         if (!worker) continue;
 
         const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
 
-        // Refund credits
         await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
 
-        // Mark application cancelled
-        await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'cancelled' });
-
-        // Log transaction
         await base44.asServiceRole.entities.CreditTransaction.create({
           user_id: app.worker_id,
           amount: creditsToRefund,
@@ -61,7 +65,7 @@ Deno.serve(async (req) => {
           task_id: task.id,
           task_title: task.title,
           balance_after: newBalance,
-          note: `החזר קרדיטים - משימה "${task.title}" בוטלה אוטומטית לאחר 48 שעות`,
+          note: `החזר קרדיטים - משימה "${task.title}" פגה תוקף`,
         });
 
         refundedCount++;
@@ -69,8 +73,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`✅ Done: ${cancelledCount} tasks cancelled, ${refundedCount} refunds issued`);
-    return Response.json({ success: true, cancelled: cancelledCount, refunded: refundedCount });
+    console.log(`✅ Done: ${expiredCount} tasks expired, ${refundedCount} refunds issued`);
+    return Response.json({ success: true, expired: expiredCount, refunded: refundedCount });
 
   } catch (error) {
     console.error('❌ expireInactiveTasks error:', error);
