@@ -79,20 +79,6 @@ export default function TaskDetail() {
   const autoRatingShownRef = useRef(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
-
-  // Fetch client + worker user data for trust badges
-  const { data: clientUser } = useQuery({
-    queryKey: ['publicUser', task?.client_id],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.client_id }); return u[0] || null; },
-    enabled: !!task?.client_id,
-    staleTime: 120000,
-  });
-  const { data: workerUser } = useQuery({
-    queryKey: ['publicUser', task?.worker_id],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.worker_id }); return u[0] || null; },
-    enabled: !!task?.worker_id && task?.status === 'TAKEN',
-    staleTime: 120000,
-  });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
   // Check if current user already reviewed this task
@@ -109,6 +95,20 @@ export default function TaskDetail() {
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+  });
+
+  // Fetch client + worker user data for trust badges
+  const { data: clientUser } = useQuery({
+    queryKey: ['publicUser', task?.client_id],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.client_id }); return u[0] || null; },
+    enabled: !!task?.client_id,
+    staleTime: 120000,
+  });
+  const { data: workerUser } = useQuery({
+    queryKey: ['publicUser', task?.worker_id],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.worker_id }); return u[0] || null; },
+    enabled: !!task?.worker_id && task?.status === 'TAKEN',
+    staleTime: 120000,
   });
 
   // Check if MY application was approved for this task — only active ones
