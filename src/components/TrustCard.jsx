@@ -1,3 +1,5 @@
+import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
+
 /**
  * TrustCard — "Why this worker is trusted" section.
  * Shows behavioral trust metrics derived from tasks, reviews, and user data.
@@ -25,6 +27,8 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
   if (!user) return null;
 
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
+  const trustScore = calculateTrustScore(user, { tasks, reviews });
+  const trustLevel = getTrustLevel(trustScore);
 
   // Calculate on_time_rate live from reviews when enough data
   const clientReviews = reviews.filter(r => r.role === 'client');
@@ -117,9 +121,20 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
         }}
       >
         <span style={{ fontSize: 17 }}>🤝</span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f1e40', flex: 1 }}>
-          למה סומכים על {firstName}?
-        </span>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#0f1e40' }}>
+            למה סומכים על {firstName}?
+          </span>
+          {/* Trust Score Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <div style={{ flex: 1, height: 5, background: '#e8edf5', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${trustScore}%`, background: trustLevel.bar, borderRadius: 99, transition: 'width 0.6s ease' }} />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: trustLevel.color, background: trustLevel.bg, border: `1px solid ${trustLevel.border}`, borderRadius: 20, padding: '1px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {trustScore} / 100
+            </span>
+          </div>
+        </div>
         {activity && (
           <span style={{ fontSize: 11, fontWeight: 600, color: activity.color, whiteSpace: 'nowrap' }}>
             {activity.label}

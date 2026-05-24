@@ -7,6 +7,8 @@ import TrustBadges from '@/components/TrustBadges';
 import TrustCard from '@/components/TrustCard';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { getCategoryLabel } from '@/lib/categories';
+import CompletionTimeline from '@/components/CompletionTimeline';
+import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 
 export default function PublicProfile() {
   const navigate = useNavigate();
@@ -62,6 +64,8 @@ export default function PublicProfile() {
     ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
     : '—';
   const workerScore = user.worker_score || 0;
+  const trustScore = calculateTrustScore(user, { tasks: completedTasks, reviews: allReviews });
+  const trustLevel = getTrustLevel(trustScore);
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
@@ -105,6 +109,19 @@ export default function PublicProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Trust Score pill */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: trustLevel.bg, border: `1px solid ${trustLevel.border}`, borderRadius: 14, padding: '10px 16px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: trustLevel.color }}>ציון אמון • {trustLevel.label}</span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: trustLevel.color }}>{trustScore}/100</span>
+            </div>
+            <div style={{ height: 7, background: 'rgba(0,0,0,0.08)', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${trustScore}%`, background: trustLevel.bar, borderRadius: 99, transition: 'width 0.7s ease' }} />
+            </div>
+          </div>
+        </div>
 
         {/* Trust Badges */}
         <TrustBadges user={user} />
@@ -208,23 +225,9 @@ export default function PublicProfile() {
           </div>
         )}
 
-        {/* Completed tasks as worker */}
+        {/* Completion Timeline */}
         {completedTasks.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ג'ובות שביצע</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {completedTasks.map(t => (
-                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#f8faff', borderRadius: 10 }}>
-                  <CheckCircle size={14} color="#16a34a" style={{ flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2540', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
-                    {t.city && <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.city}</div>}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#1a6fd4', flexShrink: 0 }}>₪{t.price}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <CompletionTimeline tasks={completedTasks} reviews={allReviews} />
         )}
 
         {/* Reviews */}

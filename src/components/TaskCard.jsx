@@ -429,11 +429,20 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                   <span
                     onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#94a3b8', cursor: 'pointer' }}>
-                    <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
-                    <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {task.client_rating > 0 ? `${task.client_rating.toFixed(1)} · ` : ''}{task.client_name}
-                    </span>
-                    {task.client_verified && <VerifiedBadge size="sm" />}
+                    {task.client_verified ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '1px 7px' }}>
+                        <VerifiedBadge size="sm" />
+                        <span style={{ fontWeight: 700, color: '#15803d', fontSize: 10, maxWidth: 70, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
+                        {task.client_rating > 0 && <span style={{ color: '#94a3b8' }}>· ⭐{task.client_rating.toFixed(1)}</span>}
+                      </span>
+                    ) : (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
+                        <span style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {task.client_rating > 0 ? `${task.client_rating.toFixed(1)} · ` : ''}{task.client_name}
+                        </span>
+                      </span>
+                    )}
                   </span>
                 )
               )}
