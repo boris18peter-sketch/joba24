@@ -200,20 +200,21 @@ export default function Layout() {
     return unsub;
   }, [me?.id, isAuthenticated]);
 
-  // Listen for new review notifications
+  // Real-time notification when someone reviews ME (reviewee_id === me.id)
   useEffect(() => {
-    const handleNewReview = (e) => {
-      const { reviewerName, rating, comment } = e.detail;
+    if (!me?.id || !isAuthenticated) return;
+    const unsub = base44.entities.Review.subscribe((event) => {
+      if (event.type !== 'create' || !event.data) return;
+      if (event.data.reviewee_id !== me.id) return;
       addNotification({
         type: 'new_review',
-        reviewerName,
-        rating,
-        preview: comment,
+        taskId: event.data.task_id,
+        rating: event.data.rating,
+        preview: `קיבלת ביקורת ${event.data.rating} כוכבים`,
       });
-    };
-    window.addEventListener('new_review', handleNewReview);
-    return () => window.removeEventListener('new_review', handleNewReview);
-  }, []);
+    });
+    return unsub;
+  }, [me?.id, isAuthenticated]);
 
   // Listen for approval revoked by client — notification only (popup handled by Task subscription)
   useEffect(() => {

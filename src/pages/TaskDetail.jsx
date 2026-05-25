@@ -914,14 +914,14 @@ export default function TaskDetail() {
 
 
           {/* Rating CTA for completed tasks */}
-          {task.status === 'COMPLETED' && (isOwner || isWorker) && !myReview && (
+          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview && (
             <button onClick={() => setShowRating(true)}
               style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}
             >
-              <Star size={16} className="fill-white" /> דרג את {isOwner ? task.worker_name : task.client_name}
+              <Star size={16} className="fill-white" /> דרג את {me?.id === task.client_id ? task.worker_name : task.client_name}
             </button>
           )}
-          {task.status === 'COMPLETED' && (isOwner || isWorker) && myReview && (
+          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview && (
             <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700, cursor: 'not-allowed', opacity: 0.85 }}>
               <Star size={15} className="fill-yellow-400 text-yellow-400" />
               {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב

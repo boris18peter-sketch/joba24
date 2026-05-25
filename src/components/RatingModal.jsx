@@ -111,7 +111,7 @@ export default function RatingModal({ task, me, onClose }) {
   };
 
   return (
-    <div className="mobile-sheet-overlay" onClick={onClose}>
+    <div className="mobile-sheet-overlay">
       <div
         dir="rtl"
         onClick={e => e.stopPropagation()}
@@ -125,9 +125,6 @@ export default function RatingModal({ task, me, onClose }) {
           <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
             {isOwner ? `איך היה עם ${revieweeName}?` : 'דרג את בעל המשימה'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-            <X size={20} color="#999" />
-          </button>
         </div>
 
         <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
