@@ -86,7 +86,6 @@ export default function MapView() {
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
   const [mounted, setMounted] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const containerRef = useRef(null);
 
   // Suppress known Mapbox mouseover NaN bug
@@ -99,13 +98,15 @@ export default function MapView() {
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // Fallback: mount after 300ms regardless
+    const fallback = setTimeout(() => setMounted(true), 300);
+    if (!containerRef.current) return () => clearTimeout(fallback);
     const ro = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) { setMounted(true); ro.disconnect(); }
+      if (width > 0 && height > 0) { clearTimeout(fallback); setMounted(true); ro.disconnect(); }
     });
     ro.observe(containerRef.current);
-    return () => ro.disconnect();
+    return () => { ro.disconnect(); clearTimeout(fallback); };
   }, []);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -211,13 +212,13 @@ export default function MapView() {
         {displayTasks.length} ג'ובות פתוחות
       </div>
 
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0, pointerEvents: mapLoaded ? 'auto' : 'none' }}>
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
         {mounted && (
         <Map
           ref={mapRef}
           {...viewState}
           onMove={e => setViewState(e.viewState)}
-          onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} setMapLoaded(true); }}
+          onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} }}
           onError={(e) => console.warn('Mapbox error:', e.error?.message)}
           mapboxAccessToken={MAPBOX_TOKEN}
           mapStyle={MAP_STYLES[styleIdx].style}
