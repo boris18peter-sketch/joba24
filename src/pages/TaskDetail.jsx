@@ -567,11 +567,8 @@ export default function TaskDetail() {
         )}
 
         {/* Live Activity Pulse — OPEN tasks only */}
-        {task.status === 'OPEN' && !isOwner && (
-          <LiveActivityPulse task={task} applicationCount={task.applicants?.length || 0} />
-        )}
-        {task.status === 'OPEN' && isOwner && (
-          <LiveActivityPulse task={task} applicationCount={task.applicants?.length || 0} />
+        {task.status === 'OPEN' && (
+          <LiveActivityPulse task={task} />
         )}
 
         {/* Price Hero */}

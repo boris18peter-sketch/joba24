@@ -1,40 +1,58 @@
 import { useState, useEffect, useRef } from 'react';
-import { Eye, MapPin, Zap, Bell } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const MESSAGES = [
   { icon: '👀', text: 'עובדים צופים במשימה', color: '#1a6fd4' },
-  { icon: '📍', text: 'עובדים בקרבת מקום', color: '#059669' },
+  { icon: '📍', text: 'עובדים זמינים בקרבת מקום', color: '#059669' },
   { icon: '⚡', text: 'הג\'ובה פעילה ומחפשת עובד', color: '#d97706' },
   { icon: '🔔', text: 'התראות נשלחו לעובדים', color: '#7c3aed' },
 ];
 
-export default function LiveActivityPulse({ task, applicationCount = 0 }) {
+export default function LiveActivityPulse({ task }) {
+  const queryClient = useQueryClient();
   const [msgIdx, setMsgIdx] = useState(0);
-  const [viewCount, setViewCount] = useState(() => Math.max(applicationCount * 4, Math.floor(Math.random() * 18) + 6));
-  const [visible, setVisible] = useState(true);
   const intervalRef = useRef(null);
 
+  // Real: application count for this task
+  const { data: applications = [] } = useQuery({
+    queryKey: ['applications-pulse', task?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }),
+    enabled: !!task?.id,
+    refetchInterval: 12000,
+    staleTime: 8000,
+  });
+  const applicationCount = applications.filter(a => a.status !== 'cancelled').length;
+
+  // Real: online workers count
+  const { data: onlineWorkers = [] } = useQuery({
+    queryKey: ['online-workers-pulse'],
+    queryFn: () => base44.entities.UserPresence.filter({ is_online: true }),
+    refetchInterval: 20000,
+    staleTime: 15000,
+  });
+  const onlineCount = onlineWorkers.length;
+
+  // Subscribe to new applications for this task in real time
   useEffect(() => {
-    // Rotate messages every 4s
+    if (!task?.id) return;
+    const unsub = base44.entities.TaskApplication.subscribe((event) => {
+      if (event.data?.task_id === task.id) {
+        queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+      }
+    });
+    return () => unsub();
+  }, [task?.id]);
+
+  // Rotate status messages
+  useEffect(() => {
     intervalRef.current = setInterval(() => {
       setMsgIdx(i => (i + 1) % MESSAGES.length);
     }, 4000);
     return () => clearInterval(intervalRef.current);
   }, []);
 
-  // Slowly increment view count
-  useEffect(() => {
-    const t = setInterval(() => {
-      if (Math.random() > 0.65) {
-        setViewCount(v => v + 1);
-      }
-    }, 8000);
-    return () => clearInterval(t);
-  }, []);
-
   const msg = MESSAGES[msgIdx];
-
-  if (!visible) return null;
 
   return (
     <div dir="rtl" style={{
@@ -45,67 +63,65 @@ export default function LiveActivityPulse({ task, applicationCount = 0 }) {
       overflow: 'hidden', position: 'relative',
     }}>
       <style>{`
-        @keyframes lapPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: 0.6; } }
-        @keyframes lapSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes lapShimmer { from { transform: translateX(120%); } to { transform: translateX(-120%); } }
+        @keyframes lapPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.5; } }
+        @keyframes lapRing  { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(2.2); opacity: 0; } }
+        @keyframes lapSlideIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes lapShimmer { 0% { transform: translateX(120%); } 100% { transform: translateX(-120%); } }
       `}</style>
 
-      {/* Shimmer line */}
+      {/* Shimmer */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
-        animation: 'lapShimmer 3s ease-in-out infinite',
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)',
+        animation: 'lapShimmer 3.2s ease-in-out infinite',
         pointerEvents: 'none',
       }} />
 
-      {/* Live pulse dot */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Live pulse dot with ring */}
+      <div style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
         <div style={{
-          width: 10, height: 10, borderRadius: '50%',
-          background: '#22c55e',
-          boxShadow: '0 0 0 0 rgba(34,197,94,0.4)',
+          position: 'absolute', inset: 0,
+          borderRadius: '50%', background: '#22c55e',
           animation: 'lapPulse 1.8s ease-in-out infinite',
         }} />
         <div style={{
-          position: 'absolute', inset: -4,
-          borderRadius: '50%',
-          border: '2px solid rgba(34,197,94,0.25)',
-          animation: 'lapPulse 1.8s ease-in-out infinite',
-          animationDelay: '0.4s',
+          position: 'absolute', inset: -3,
+          borderRadius: '50%', border: '2px solid #22c55e',
+          animation: 'lapRing 1.8s ease-out infinite',
         }} />
       </div>
 
-      {/* Rotating message */}
-      <div key={msgIdx} style={{ flex: 1, animation: 'lapSlideIn 0.35s ease' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#0c4a6e', display: 'flex', alignItems: 'center', gap: 6 }}>
+      {/* Message area */}
+      <div key={msgIdx} style={{ flex: 1, animation: 'lapSlideIn 0.3s ease' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#0c4a6e', display: 'flex', alignItems: 'center', gap: 5 }}>
           <span>{msg.icon}</span> {msg.text}
         </div>
-        <div style={{ fontSize: 11, color: '#0369a1', marginTop: 1 }}>
-          {viewCount} אנשים צפו בג'ובה זו
+        <div style={{ fontSize: 11, color: '#0369a1', marginTop: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {onlineCount > 0 && (
+            <span>🟢 <strong>{onlineCount}</strong> עובדים זמינים כרגע</span>
+          )}
+          {applicationCount > 0 && (
+            <span style={{ color: '#059669' }}>· <strong>{applicationCount}</strong> הגישו בקשה</span>
+          )}
+          {applicationCount === 0 && onlineCount === 0 && (
+            <span>הג'ובה זמינה עכשיו · היה הראשון!</span>
+          )}
         </div>
       </div>
 
-      {/* Urgency badge */}
-      {applicationCount === 0 && (
+      {/* Badge */}
+      {applicationCount === 0 ? (
         <div style={{
           background: '#1a6fd4', color: 'white',
           fontSize: 10, fontWeight: 800,
-          padding: '3px 8px', borderRadius: 20,
-          flexShrink: 0,
-          letterSpacing: 0.3,
-        }}>
-          חי
-        </div>
-      )}
-      {applicationCount > 0 && (
+          padding: '3px 9px', borderRadius: 20, flexShrink: 0, letterSpacing: 0.3,
+        }}>חי</div>
+      ) : (
         <div style={{
           background: '#059669', color: 'white',
           fontSize: 10, fontWeight: 800,
-          padding: '3px 8px', borderRadius: 20,
-          flexShrink: 0,
-        }}>
-          {applicationCount} בקשות
-        </div>
+          padding: '3px 9px', borderRadius: 20, flexShrink: 0,
+        }}>{applicationCount} בקשות</div>
       )}
     </div>
   );
