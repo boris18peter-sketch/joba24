@@ -46,7 +46,7 @@ export default function Profile() {
     queryKey: ['myReviews', me?.id],
     queryFn: () => base44.entities.Review.filter({ reviewee_id: me.id }, '-created_date', 100),
     enabled: !!me?.id,
-    refetchInterval: 15000
+    staleTime: 60000
   });
 
   // Live subscribe to new reviews
