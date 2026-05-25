@@ -8,7 +8,7 @@ import PageHeader from '@/components/PageHeader';
 import { Navigation, X, MapPin, Clock, ChevronRight, Layers } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
 
 const MAP_STYLES = [
@@ -86,7 +86,15 @@ export default function MapView() {
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
   const [mounted, setMounted] = useState(false);
+  const [mapToken, setMapToken] = useState('');
   const containerRef = useRef(null);
+
+  // Fetch Mapbox token from backend (VITE_ vars not available in sandbox)
+  useEffect(() => {
+    base44.functions.invoke('getMapboxToken', {}).then(res => {
+      if (res.data?.token) setMapToken(res.data.token);
+    }).catch(() => {});
+  }, []);
 
   // Suppress known Mapbox mouseover NaN bug
   useEffect(() => {
@@ -220,7 +228,7 @@ export default function MapView() {
           onMove={e => setViewState(e.viewState)}
           onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} }}
           onError={(e) => console.warn('Mapbox error:', e.error?.message)}
-          mapboxAccessToken={MAPBOX_TOKEN}
+          mapboxAccessToken={mapToken}
           mapStyle={MAP_STYLES[styleIdx].style}
           style={{ width: '100%', height: '100%' }}
         >
