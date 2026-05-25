@@ -175,6 +175,7 @@ export default function AdminDashboard() {
   });
 
   const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url);
+  const fakeVerified = allUsers.filter(u => u.is_verified && !u.id_number);
 
   // Guard: admin only — AFTER all hooks
   if (me && me.role !== 'admin') {
@@ -335,7 +336,26 @@ export default function AdminDashboard() {
         {/* KYC TAB */}
         {tab === 'kyc' && (
           <>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12 }}>{kycUsers.length} משתמשים עם נתוני KYC</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{kycUsers.length} משתמשים עם נתוני KYC</div>
+            {fakeVerified.length > 0 && (
+              <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#dc2626' }}>⚠️ {fakeVerified.length} משתמשים מאומתים ללא KYC</div>
+                  <div style={{ fontSize: 11, color: '#991b1b', marginTop: 2 }}>סימון אימות ללא תעודת זהות או צילום</div>
+                </div>
+                <button
+                  onClick={async () => {
+                    for (const u of fakeVerified) {
+                      await base44.entities.User.update(u.id, { is_verified: false });
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+                  }}
+                  style={{ padding: '8px 14px', borderRadius: 10, background: '#dc2626', color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+                >
+                  אפס אימות
+                </button>
+              </div>
+            )}
             {kycUsers.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>

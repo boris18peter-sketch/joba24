@@ -134,7 +134,7 @@ export default function Profile() {
           <div>
             <div style={{ color: 'white', fontSize: 19, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7 }}>
               {me?.full_name || 'משתמש'}
-              {me?.is_verified && <VerifiedBadge size="md" />}
+              {(me?.is_verified && me?.id_number) && <VerifiedBadge size="md" />}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{me?.email}</div>
             {me?.profession &&
@@ -155,8 +155,8 @@ export default function Profile() {
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* Verification status - only show banner to unverified users */}
-        {!me?.is_verified && (
+        {/* Verification status - only show banner to users who haven't completed KYC */}
+        {!(me?.is_verified && me?.id_number) && (
           <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
             <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
