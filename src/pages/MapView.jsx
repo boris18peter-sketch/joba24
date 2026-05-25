@@ -197,6 +197,8 @@ export default function MapView() {
           ref={mapRef}
           {...viewState}
           onMove={e => setViewState(e.viewState)}
+          onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} }}
+          onError={(e) => console.warn('Mapbox error:', e.error?.message)}
           mapboxAccessToken={MAPBOX_TOKEN}
           mapStyle={MAP_STYLES[styleIdx].style}
           style={{ width: '100%', height: '100%' }}
