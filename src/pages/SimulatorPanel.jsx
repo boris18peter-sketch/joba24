@@ -127,14 +127,15 @@ export default function SimulatorPanel() {
   // ── Popup visibility state ──
   const [popup, setPopup] = useState(null);
   const closePopup = () => setPopup(null);
-  const mockTask = myTasks?.[0] || allTasks?.[0] || {
+
+  const myTasks = allTasks.filter(t => t.client_id === me?.id);
+
+  const mockTask = myTasks[0] || allTasks[0] || {
     id: 'demo', title: '🧪 משימת בדיקה', price: 150,
     worker_id: me?.id, worker_name: me?.full_name,
     client_id: me?.id, client_name: me?.full_name,
     status: 'COMPLETED', payment_method: 'Cash',
   };
-
-  const myTasks = allTasks.filter(t => t.client_id === me?.id);
   const testTasks = myTasks.filter(t => t.title?.includes('🧪'));
   const openTasks = allTasks.filter(t => t.status === 'OPEN');
   const myOpenTasks = myTasks.filter(t => t.status === 'OPEN');
