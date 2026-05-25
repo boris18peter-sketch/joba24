@@ -87,6 +87,16 @@ export default function MapView() {
   const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef(null);
+
+  // Suppress known Mapbox mouseover NaN bug
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.message?.includes('Invalid LngLat')) { e.preventDefault(); e.stopImmediatePropagation(); }
+    };
+    window.addEventListener('error', handler, true);
+    return () => window.removeEventListener('error', handler, true);
+  }, []);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const ro = new ResizeObserver(entries => {
