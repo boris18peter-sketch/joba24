@@ -221,7 +221,7 @@ export default function MapView() {
       </div>
 
       <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
-        {mounted && (
+        {mounted && mapToken && (
         <Map
           ref={mapRef}
           {...viewState}
