@@ -102,7 +102,9 @@ export default function MapView() {
   }, []);
 
   const displayTasks = tasks.filter(t => t.status === 'OPEN').map(t => {
-    if (t.lat && t.lng) return t;
+    const lat = parseFloat(t.lat);
+    const lng = parseFloat(t.lng);
+    if (isFinite(lat) && isFinite(lng)) return { ...t, lat, lng };
     if (!seedRef.current[t.id]) {
       seedRef.current[t.id] = {
         lat: CENTER.latitude + (Math.random() - 0.5) * 0.06,
