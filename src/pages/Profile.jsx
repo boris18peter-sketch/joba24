@@ -155,11 +155,10 @@ export default function Profile() {
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* Verification status */}
-        {!me?.is_verified ? (
+        {/* Verification status - only show banner to unverified users */}
+        {!me?.is_verified && (
           <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
             <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px', position: 'relative', overflow: 'hidden' }}>
-              {/* Glow */}
               <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 13, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -180,18 +179,6 @@ export default function Profile() {
               </div>
             </div>
           </button>
-        ) : (
-          <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CheckCircle size={20} color="#16a34a" />
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#166534', display: 'flex', alignItems: 'center', gap: 6 }}>
-                זהות מאומתת <span style={{ fontSize: 16 }}>✅</span>
-              </div>
-              <div style={{ fontSize: 11, color: '#15803d', marginTop: 2 }}>הפרופיל שלך מהימן ומקבל חשיפה גבוהה יותר</div>
-            </div>
-          </div>
         )}
 
         {/* Trust Badges */}

@@ -174,6 +174,8 @@ export default function AdminDashboard() {
     staleTime: 60000,
   });
 
+  const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url);
+
   // Guard: admin only — AFTER all hooks
   if (me && me.role !== 'admin') {
     return (
@@ -261,6 +263,10 @@ export default function AdminDashboard() {
           <Flag size={13} style={{ display: 'inline', marginLeft: 4 }} /> דיווחים
           {pendingReports > 0 && <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{pendingReports}</span>}
         </TabButton>
+        <TabButton active={tab === 'kyc'} onClick={() => setTab('kyc')}>
+          <Shield size={13} style={{ display: 'inline', marginLeft: 4 }} /> KYC
+          {kycUsers.length > 0 && <span style={{ marginRight: 4, background: '#7c3aed', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{kycUsers.length}</span>}
+        </TabButton>
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
@@ -323,6 +329,55 @@ export default function AdminDashboard() {
                 <ReportRow key={report.id} report={report} onReview={handleReviewReport} onDismiss={handleDismissReport} />
               ))
             )}
+          </>
+        )}
+
+        {/* KYC TAB */}
+        {tab === 'kyc' && (
+          <>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 12 }}>{kycUsers.length} משתמשים עם נתוני KYC</div>
+            {kycUsers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f2b6b' }}>אין נתוני KYC עדיין</div>
+              </div>
+            ) : kycUsers.map(user => (
+              <div key={user.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_verified ? '#bbf7d0' : '#fde68a'}`, marginBottom: 10, overflow: 'hidden' }}>
+                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 15, flexShrink: 0, overflow: 'hidden' }}>
+                    {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14 }}>{user.full_name}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: user.is_verified ? '#dcfce7' : '#fef9c3', color: user.is_verified ? '#166534' : '#854d0e', flexShrink: 0 }}>
+                    {user.is_verified ? '✓ מאומת' : '⏳ ממתין'}
+                  </span>
+                </div>
+                <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+                  {user.phone && (
+                    <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>📱 טלפון</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{user.phone}</div>
+                    </div>
+                  )}
+                  {user.id_number && (
+                    <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>🪪 ת.ז.</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-1)', letterSpacing: 1 }}>{user.id_number}</div>
+                    </div>
+                  )}
+                  {user.id_photo_url && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>📷 צילום תעודת זהות</div>
+                      <img src={user.id_photo_url} alt="ת.ז." style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff' }} />
+                    </div>
+                  )}
+                  <div style={{ gridColumn: '1 / -1', fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
+                </div>
+              </div>
+            ))}
           </>
         )}
       </div>

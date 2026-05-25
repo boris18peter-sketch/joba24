@@ -23,7 +23,7 @@ function SignalRow({ icon, label, value, sub, score, color }) {
   );
 }
 
-function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, onClose }) {
+function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor, onClose }) {
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
 
   const taskScore = Math.min(Math.round((completedCount / 20) * 100), 100);
@@ -91,11 +91,11 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, onClose })
             </button>
           </div>
         </div>
-        <SignalRow icon={<CheckCircle size={15} color="#10b981" strokeWidth={2.5} />} label="משימות שבוצעו" value={taskValue} sub={taskSub} score={taskScore} color="#10b981" />
-        <SignalRow icon={<CheckCircle size={15} color="#1a6fd4" strokeWidth={2.5} />} label="זהות מאומתת" value={idValue} sub={idSub} score={idScore} color="#1a6fd4" />
-        <SignalRow icon={<Zap size={15} color="#f59e0b" strokeWidth={2.5} />} label="מהירות מענה" value={speedValue} sub={speedSub} score={speedScore} color="#f59e0b" />
-        <SignalRow icon={<Users size={15} color="#8b5cf6" strokeWidth={2} />} label="ממליצים" value={hiresValue} sub={hiresSub} score={hiresScore} color="#8b5cf6" />
-        <SignalRow icon={<Star size={15} color="#db2777" strokeWidth={2} fill="#db2777" />} label="שירות" value={serviceValue} sub={serviceSub} score={serviceScore} color="#db2777" />
+        <SignalRow icon={<CheckCircle size={15} color={mainColor} strokeWidth={2.5} />} label="משימות שבוצעו" value={taskValue} sub={taskSub} score={taskScore} color={mainColor} />
+        <SignalRow icon={<CheckCircle size={15} color={mainColor} strokeWidth={2.5} />} label="זהות מאומתת" value={idValue} sub={idSub} score={idScore} color={mainColor} />
+        <SignalRow icon={<Zap size={15} color={mainColor} strokeWidth={2.5} />} label="מהירות מענה" value={speedValue} sub={speedSub} score={speedScore} color={mainColor} />
+        <SignalRow icon={<Users size={15} color={mainColor} strokeWidth={2} />} label="ממליצים" value={hiresValue} sub={hiresSub} score={hiresScore} color={mainColor} />
+        <SignalRow icon={<Star size={15} color={mainColor} strokeWidth={2} fill={mainColor} />} label="שירות" value={serviceValue} sub={serviceSub} score={serviceScore} color={mainColor} />
       </div>
     </div>,
     document.body
@@ -194,6 +194,7 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
         <DetailsPopup
           user={user} reviews={reviews} tasks={tasks}
           trustScore={trustScore} trustLevel={trustLevel}
+          mainColor={barColor}
           onClose={() => setOpen(false)}
         />
       )}

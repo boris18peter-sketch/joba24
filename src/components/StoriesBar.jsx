@@ -13,24 +13,28 @@ function StoryCard({ task, onClick }) {
    const emoji = label.split(' ')[0];
    const currentPrice = calculateCurrentPrice(task);
    return (
-     <button onClick={() => onClick(task)} className="flex flex-col items-center gap-1.5 shrink-0">
-       <div className="relative w-14 h-14 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-md bg-gray-100">
-         {task.images?.[0] ? (
-           <img src={task.images[0]} alt={task.title} className="w-full h-full object-cover" />
-         ) : (
-           <div className="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-blue-800 to-blue-600">
-             {emoji}
-           </div>
-         )}
-         <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
-           <div className="text-white font-black text-[10px] text-center">₪{currentPrice}</div>
-         </div>
-         {/* Task ID for tracking */}
-         <div className="absolute top-1 right-1 text-white font-mono text-[7px] bg-black/40 px-1 rounded">
-           {task.id?.slice(-4)}
+     <button onClick={() => onClick(task)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+       {/* Gradient ring like Instagram stories */}
+       <div style={{
+         width: 64, height: 64,
+         borderRadius: '50%',
+         background: 'linear-gradient(135deg, #f97316, #ec4899, #1a6fd4)',
+         padding: 2.5,
+         boxShadow: '0 2px 12px rgba(26,111,212,0.3)',
+       }}>
+         <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '2px solid white', overflow: 'hidden', background: '#1a3a6b' }}>
+           {task.images?.[0] ? (
+             <img src={task.images[0]} alt={task.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+           ) : (
+             <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', gap: 1 }}>
+               <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
+             </div>
+           )}
          </div>
        </div>
-       <span className="text-[10px] text-gray-600 font-medium text-center leading-tight max-w-[56px] truncate">
+       {/* Price badge */}
+       <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 800, color: 'white', letterSpacing: 0.3 }}>₪{currentPrice}</div>
+       <span style={{ fontSize: 10, color: '#475569', fontWeight: 600, textAlign: 'center', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2 }}>
          {task.title}
        </span>
      </button>
@@ -156,8 +160,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
       <div className="absolute bottom-0 left-0 right-0 text-white z-20" style={{ padding: '0 24px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
         <div className="text-4xl font-black mb-1">₪{currentPrice}</div>
         <h2 className="text-xl font-bold leading-tight mb-2">{task.title}</h2>
-        {/* Task ID for tracking */}
-        <div className="text-xs text-white/60 font-mono mb-2">ID: {task.id?.slice(-8)}</div>
+
         {task.description && (
           <p className="text-sm text-white/80 mb-3 line-clamp-2">{task.description}</p>
         )}
