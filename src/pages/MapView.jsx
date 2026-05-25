@@ -220,7 +220,7 @@ export default function MapView() {
           )}
 
           {/* Task markers */}
-          {displayTasks.map(task => (
+          {displayTasks.filter(t => isFinite(t.lat) && isFinite(t.lng)).map(task => (
             <Marker
               key={task.id}
               longitude={task.lng}
