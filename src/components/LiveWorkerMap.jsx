@@ -40,21 +40,21 @@ function TaskDot() {
 }
 
 export default function LiveWorkerMap({ task }) {
-  const workerLat = task?.worker_lat;
-  const workerLng = task?.worker_lng;
-  const taskLat = task?.lat;
-  const taskLng = task?.lng;
+  const workerLat = parseFloat(task?.worker_lat);
+  const workerLng = parseFloat(task?.worker_lng);
+  const taskLat = parseFloat(task?.lat);
+  const taskLng = parseFloat(task?.lng);
 
-  if (!workerLat || !workerLng) return null;
+  if (!isFinite(workerLat) || !isFinite(workerLng)) return null;
 
-  const distKm = taskLat && taskLng ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
+  const distKm = isFinite(taskLat) && isFinite(taskLng) ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
   const etaMins = distKm ? Math.max(1, Math.round(distKm * 1.4 / 35 * 60)) : null;
 
   // Center between worker and task
-  const centerLng = taskLng ? (workerLng + taskLng) / 2 : workerLng;
-  const centerLat = taskLat ? (workerLat + taskLat) / 2 : workerLat;
+  const centerLng = isFinite(taskLng) ? (workerLng + taskLng) / 2 : workerLng;
+  const centerLat = isFinite(taskLat) ? (workerLat + taskLat) / 2 : workerLat;
 
-  const routeGeoJSON = taskLat && taskLng ? {
+  const routeGeoJSON = isFinite(taskLat) && isFinite(taskLng) ? {
     type: 'Feature',
     geometry: {
       type: 'LineString',
@@ -110,7 +110,7 @@ export default function LiveWorkerMap({ task }) {
           <WorkerDot />
         </Marker>
 
-        {taskLat && taskLng && (
+        {isFinite(taskLat) && isFinite(taskLng) && (
           <Marker longitude={taskLng} latitude={taskLat} anchor="center">
             <TaskDot />
           </Marker>
