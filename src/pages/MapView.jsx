@@ -8,7 +8,7 @@ import PageHeader from '@/components/PageHeader';
 import { Navigation, X, MapPin, Clock, ChevronRight, Layers } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
 
 const MAP_STYLES = [
