@@ -86,7 +86,16 @@ export default function MapView() {
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+  const containerRef = useRef(null);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) { setMounted(true); ro.disconnect(); }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: tasks = [] } = useQuery({
@@ -191,7 +200,7 @@ export default function MapView() {
         {displayTasks.length} ג'ובות פתוחות
       </div>
 
-      <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
         {mounted && (
         <Map
           ref={mapRef}
