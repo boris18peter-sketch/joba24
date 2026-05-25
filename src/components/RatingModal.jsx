@@ -28,9 +28,9 @@ export default function RatingModal({ task, me, onClose }) {
   const revieweeName = isOwner ? task.worker_name : task.client_name;
   const role = isOwner ? 'client' : 'worker';
 
-  // Each side confirms independently based on their own status
-  const needsPaymentConfirm = task.status === 'COMPLETED' && (isOwner ? !task.client_confirmed : !task.worker_confirmed);
-  const canSubmit = rating > 0 && (!needsPaymentConfirm || paymentConfirmed);
+  // Payment confirmation is always required before submitting a review
+  const needsPaymentConfirm = true;
+  const canSubmit = rating > 0 && paymentConfirmed;
 
   const handleSubmit = async () => {
     if (!rating) { toast.error('בחר דירוג'); return; }
@@ -220,7 +220,9 @@ export default function RatingModal({ task, me, onClose }) {
                 {isOwner ? '✅ העבודה בוצעה לשביעות רצוני' : '✅ ביצעתי את העבודה בהצלחה'}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                {isOwner ? 'אשר שהעבודה הושלמה כנדרש' : 'אשר שסיימת את ביצוע הג\'ובה'}
+                {isOwner
+                  ? 'אשר שהתשלום יבוצע כמוסכם ושני הצדדים הסתדרו'
+                  : 'אשר שסיימת את הג\'ובה והתשלום יתקבל כמוסכם'}
               </div>
             </div>
           </button>

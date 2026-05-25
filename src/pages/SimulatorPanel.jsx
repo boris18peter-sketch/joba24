@@ -11,7 +11,7 @@ import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
-import CompletionModal from '@/components/CompletionModal';
+
 import RatingModal from '@/components/RatingModal';
 import {
   ArrowRight, FlaskConical, Loader2, RefreshCw, Trash2,
@@ -540,7 +540,7 @@ export default function SimulatorPanel() {
       {popup === 'approvalRevoked' && <ApprovalRevokedPopup task={mockTask} onClose={closePopup} />}
       {popup === 'cancelSuccess' && <CancelSuccessPopup task={mockTask} onClose={closePopup} />}
       {popup === 'instantMatch' && <InstantMatchPopup task={{ ...mockTask, status: 'TAKEN', worker_name: me?.full_name || 'עובד בדיקה' }} onClose={closePopup} />}
-      {popup === 'completion' && <CompletionModal task={{ ...mockTask, status: 'TAKEN' }} onClose={closePopup} onDone={closePopup} />}
+      {popup === 'completion' && <RatingModal task={{ ...mockTask, status: 'COMPLETED', worker_id: me?.id, client_id: me?.id }} me={me} onClose={closePopup} />}
       {popup === 'rating' && <RatingModal task={{ ...mockTask, status: 'COMPLETED', worker_id: me?.id, client_id: me?.id }} currentUserId={me?.id} onClose={closePopup} onDone={closePopup} />}
 
       {/* Quick nav */}
