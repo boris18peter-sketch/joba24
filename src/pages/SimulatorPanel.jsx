@@ -109,19 +109,19 @@ export default function SimulatorPanel() {
   const { data: allTasks = [], refetch: refetchTasks } = useQuery({
     queryKey: ['sim_tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 50),
-    refetchInterval: 3000,
+    staleTime: 15000,
   });
   const { data: myApps = [] } = useQuery({
     queryKey: ['sim_apps'],
     queryFn: () => me?.id ? base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50) : [],
     enabled: !!me?.id,
-    refetchInterval: 3000,
+    staleTime: 15000,
   });
   const { data: creditTxs = [] } = useQuery({
     queryKey: ['sim_credit_txs'],
     queryFn: () => me?.id ? base44.entities.CreditTransaction.filter({ user_id: me.id }, '-created_date', 20) : [],
     enabled: !!me?.id,
-    refetchInterval: 4000,
+    staleTime: 15000,
   });
 
   // ── Popup visibility state ──
