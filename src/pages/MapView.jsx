@@ -85,6 +85,8 @@ export default function MapView() {
   const [styleIdx, setStyleIdx] = useState(0);
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: tasks = [] } = useQuery({
@@ -190,6 +192,7 @@ export default function MapView() {
       </div>
 
       <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        {mounted && (
         <Map
           ref={mapRef}
           {...viewState}
@@ -239,6 +242,7 @@ export default function MapView() {
             </Marker>
           ))}
         </Map>
+        )}
 
         {/* Legend */}
         <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, background: 'white', borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 10px rgba(0,0,0,0.12)', border: '1px solid #e5e9f5', display: 'flex', flexDirection: 'column', gap: 5 }}>
