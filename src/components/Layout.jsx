@@ -490,6 +490,7 @@ export default function Layout() {
       )}
       {cancelWarningTask && createPortal(
         <div className="mobile-sheet-overlay"
+          style={{ zIndex: 100001 }}
           onClick={(e) => { if (e.target === e.currentTarget) setCancelWarningTask(null); }}
           onPointerDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}

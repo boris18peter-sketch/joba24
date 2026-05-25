@@ -104,7 +104,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999,
+      position: 'fixed', inset: 0, zIndex: 100001,
       background: 'rgba(5,15,40,0.65)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(6px)',

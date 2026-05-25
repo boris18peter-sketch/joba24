@@ -6,7 +6,7 @@ export default function WorkerCancelledPopup({ task, onClose }) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 99999,
+        zIndex: 100001,
         background: 'rgba(5,15,40,0.55)',
         display: 'flex',
         alignItems: 'flex-end',
@@ -45,7 +45,7 @@ export default function WorkerCancelledPopup({ task, onClose }) {
           style={{
             position: 'absolute',
             top: 16,
-            left: 16,
+            left: 16, /* RTL: visually top-right */
             width: 36,
             height: 36,
             borderRadius: 12,

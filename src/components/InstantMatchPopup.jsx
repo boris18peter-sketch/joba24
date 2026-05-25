@@ -58,7 +58,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId }) {
   const isUrgent = countdown <= 6;
 
   return (
-    <div style={{ position: 'fixed', bottom: 100, left: 12, right: 12, zIndex: 99998 }} dir="rtl">
+    <div style={{ position: 'fixed', bottom: 'calc(80px + max(0px, env(safe-area-inset-bottom)) + 12px)', left: 12, right: 12, zIndex: 100000 }} dir="rtl">
       <style>{`
         @keyframes slideUpPop {
           from { opacity: 0; transform: translateY(30px) scale(0.96); }
@@ -154,7 +154,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId }) {
               boxShadow: isUrgent ? '0 4px 16px rgba(239,68,68,0.35)' : '0 4px 16px rgba(245,158,11,0.35)',
             }}
           >
-            {isUrgent ? '🔥 קח עכשיו לפני שנגמר!' : '⚡ צפה במשימה'}
+            {isUrgent ? '🔥 קח עכשיו לפני שנגמר!' : '⚡ צפה במשימה מיד'}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
+import { X, Gift } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
 const COIN_COUNT = 26;
@@ -60,37 +61,30 @@ function spawnCoins(queryClient) {
     });
     document.body.appendChild(coin);
 
-    // Phase 1: appear and explode outward
     setTimeout(() => {
       coin.style.transition = 'transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease';
       coin.style.opacity = '1';
       coin.style.transform = `translate(${ex - cx}px, ${ey - cy}px) scale(1.1) rotate(${spinDeg * 0.3}deg)`;
     }, stagger);
 
-    // Phase 2: arc to target
     setTimeout(() => {
       coin.style.transition = 'transform 0.65s cubic-bezier(0.6, 0, 0.9, 0.4), opacity 0.4s ease 0.25s';
       coin.style.transform = `translate(${targetX - cx}px, ${targetY - cy}px) scale(0.18) rotate(${spinDeg}deg)`;
       coin.style.opacity = '0';
     }, stagger + 400);
 
-    // Pulse pill on each coin impact
     setTimeout(() => {
       if (pill) {
         pill.style.transition = 'transform 0.12s cubic-bezier(0.16, 1, 0.3, 1)';
         pill.style.transform = 'scale(1.22)';
-        setTimeout(() => {
-          if (pill) pill.style.transform = 'scale(1)';
-        }, 120);
+        setTimeout(() => { if (pill) pill.style.transform = 'scale(1)'; }, 120);
       }
       if (navigator.vibrate) navigator.vibrate(7);
     }, stagger + 1060);
 
-    // Cleanup
     setTimeout(() => coin.remove(), stagger + 1200);
   }
 
-  // After all coins land, refresh balance
   setTimeout(() => {
     queryClient.invalidateQueries({ queryKey: ['me'] });
   }, COIN_COUNT * 32 + 1100);
@@ -98,109 +92,114 @@ function spawnCoins(queryClient) {
 
 export default function SignupGiftModal({ onClose }) {
   const [claimed, setClaimed] = useState(false);
-  const [visible, setVisible] = useState(true);
   const queryClient = useQueryClient();
 
   const handleClaim = () => {
     if (claimed) return;
     setClaimed(true);
-
     localStorage.setItem('joba24_gift_claimed', '1');
-
-    // Fire and forget
     base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
-
-    // Fade out modal
-    setVisible(false);
-
-    // Spawn coin particles
-    setTimeout(() => spawnCoins(queryClient), 220);
-
-    // Close component shell
+    setTimeout(() => spawnCoins(queryClient), 180);
     setTimeout(() => onClose(), COIN_COUNT * 32 + 1600);
   };
 
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 99998,
-        background: visible ? 'rgba(5,15,45,0.82)' : 'rgba(0,0,0,0)',
-        backdropFilter: visible ? 'blur(12px)' : 'none',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '20px',
-        transition: 'background 0.28s ease, backdrop-filter 0.28s ease',
-        pointerEvents: visible ? 'auto' : 'none',
+        position: 'fixed', inset: 0, zIndex: 100001,
+        background: 'rgba(5,15,40,0.65)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        backdropFilter: 'blur(8px)',
+        touchAction: 'none',
       }}
+      onClick={(e) => { if (e.target === e.currentTarget && !claimed) onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div
         dir="rtl"
+        onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'linear-gradient(155deg, #0b1a42 0%, #1a3a7a 55%, #0c2350 100%)',
-          borderRadius: 28,
-          width: '100%', maxWidth: 358,
-          padding: '40px 26px 30px',
-          textAlign: 'center',
-          boxShadow: '0 32px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(251,191,36,0.22), inset 0 1px 0 rgba(255,255,255,0.09)',
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'scale(1) translateY(0)' : 'scale(0.82) translateY(-28px)',
-          transition: 'opacity 0.25s ease, transform 0.25s ease',
+          background: 'white',
+          borderRadius: '28px 28px 0 0',
+          width: '100%',
+          maxWidth: 480,
+          boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
+          padding: '24px 20px',
+          paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
+          animation: 'slideUpModal 0.35s cubic-bezier(0.34,1.4,0.64,1)',
+          maxHeight: '90dvh',
+          overflowY: 'auto',
           position: 'relative',
-          overflow: 'hidden',
         }}
       >
-        {/* Radial glow top */}
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at 50% -10%, rgba(251,191,36,0.18) 0%, transparent 65%)',
-        }} />
-        {/* Sparkle corners */}
-        <div style={{ position: 'absolute', top: 18, right: 20, fontSize: 18, opacity: 0.6, animation: 'giftSparkle 1.8s ease-in-out infinite' }}>✨</div>
-        <div style={{ position: 'absolute', top: 22, left: 22, fontSize: 14, opacity: 0.5, animation: 'giftSparkle 2.1s ease-in-out infinite 0.4s' }}>⭐</div>
-        <div style={{ position: 'absolute', bottom: 60, left: 16, fontSize: 12, opacity: 0.4, animation: 'giftSparkle 2.4s ease-in-out infinite 0.8s' }}>✨</div>
+        {/* Handle */}
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
 
-        {/* Gift emoji */}
-        <div style={{
-          fontSize: 72, lineHeight: 1, marginBottom: 18,
-          display: 'inline-block',
-          animation: 'giftBounce 1.9s ease-in-out infinite',
-          filter: 'drop-shadow(0 10px 22px rgba(251,191,36,0.45))',
-          position: 'relative', zIndex: 1,
-        }}>
-          🎁
-        </div>
+        {/* Close button */}
+        {!claimed && (
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute', top: 20, left: 16,
+              width: 36, height: 36, borderRadius: 12,
+              background: '#f3f4f6', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', zIndex: 10,
+            }}
+          >
+            <X size={18} color="#6b7280" />
+          </button>
+        )}
 
-        {/* Title */}
-        <div style={{
-          fontSize: 22, fontWeight: 900, color: '#fbbf24',
-          letterSpacing: -0.5, marginBottom: 10,
-          textShadow: '0 2px 12px rgba(251,191,36,0.35)',
-          position: 'relative', zIndex: 1,
-        }}>
-          מתנת הצטרפות חגיגית! 🎉
-        </div>
-
-        {/* Body */}
-        <div style={{
-          fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.8,
-          marginBottom: 24, position: 'relative', zIndex: 1,
-        }}>
-          פינקנו אותך ב-<strong style={{ color: '#fbbf24', fontSize: 15 }}>100 ג'ובות</strong> במתנה כדי שתוכל
-          לצאת לדרך — לבצע משימות או לפתוח משימות מיד!
+        {/* Gift icon */}
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 22,
+            background: 'linear-gradient(135deg, #dbeafe, #eff6ff)',
+            border: '2px solid #bfdbfe',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px',
+            fontSize: 36,
+            boxShadow: '0 8px 32px rgba(26,111,212,0.18)',
+            animation: 'giftBounce 1.9s ease-in-out infinite',
+          }}>
+            🎁
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.4, marginBottom: 8 }}>
+            מתנת הצטרפות! 🎉
+          </div>
+          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>
+            פינקנו אותך ב-<strong style={{ color: '#1a6fd4' }}>100 קרדיטים</strong> במתנה כדי שתוכל
+            לצאת לדרך — לבצע משימות או לפרסם משימות מיד!
+          </div>
         </div>
 
         {/* Credits box */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-          marginBottom: 26, padding: '15px 20px',
-          background: 'rgba(251,191,36,0.09)',
-          border: '1.5px solid rgba(251,191,36,0.28)',
-          borderRadius: 18,
-          position: 'relative', zIndex: 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+          margin: '20px 0',
+          background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+          border: '1.5px solid #bfdbfe',
+          borderRadius: 20,
+          padding: '18px 24px',
         }}>
-          <span style={{ fontSize: 52, fontWeight: 900, color: '#fbbf24', letterSpacing: -2, lineHeight: 1 }}>100</span>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-            <CreditIcon size={32} />
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>ג'ובות</span>
+          <span style={{ fontSize: 56, fontWeight: 900, color: '#1a6fd4', letterSpacing: -3, lineHeight: 1 }}>100</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+            <CreditIcon size={34} />
+            <span style={{ fontSize: 13, color: '#3b82f6', fontWeight: 700 }}>קרדיטים</span>
+          </div>
+        </div>
+
+        {/* Info row */}
+        <div style={{
+          background: '#f8faff', border: '1px solid #e5eaf5', borderRadius: 14,
+          padding: '12px 16px', marginBottom: 20,
+          display: 'flex', gap: 10, alignItems: 'flex-start',
+        }}>
+          <span style={{ fontSize: 16 }}>💡</span>
+          <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
+            <strong style={{ color: '#0f1e40' }}>קרדיטים</strong> הם המטבע של המערכת — משמשים להגשת בקשות למשימות. ניתן לרכוש עוד בכל עת.
           </div>
         </div>
 
@@ -209,28 +208,30 @@ export default function SignupGiftModal({ onClose }) {
           onClick={handleClaim}
           disabled={claimed}
           style={{
-            width: '100%', height: 58, borderRadius: 18,
-            background: claimed
-              ? 'rgba(251,191,36,0.35)'
-              : 'linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #f59e0b 100%)',
-            color: '#7c2d12', fontWeight: 900, fontSize: 19,
+            width: '100%', height: 56, borderRadius: 16,
+            background: claimed ? '#93b4d8' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            color: 'white', fontWeight: 900, fontSize: 17,
             border: 'none', cursor: claimed ? 'default' : 'pointer',
-            boxShadow: claimed ? 'none' : '0 8px 30px rgba(251,191,36,0.6)',
+            boxShadow: claimed ? 'none' : '0 6px 24px rgba(26,111,212,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             letterSpacing: -0.2,
-            animation: claimed ? 'none' : 'giftCTAPulse 2.1s ease-in-out infinite',
-            position: 'relative', zIndex: 1,
           }}
-          onPointerDown={e => { if (!claimed) e.currentTarget.style.transform = 'scale(0.96)'; }}
+          onPointerDown={e => { if (!claimed) e.currentTarget.style.transform = 'scale(0.97)'; }}
           onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
-          {claimed ? '⏳ טוען...' : "🪙 קבל ג'ובות!"}
+          {claimed ? '⏳ מעביר קרדיטים...' : '🪙 קבל 100 קרדיטים חינם!'}
         </button>
 
-        <div style={{ marginTop: 14, fontSize: 11, color: 'rgba(255,255,255,0.3)', position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginTop: 12, fontSize: 11, color: '#9ca3af' }}>
           מתנה חד-פעמית · אחד לכל משתמש
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideUpModal { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes giftBounce { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.05)} }
+      `}</style>
     </div>,
     document.body
   );

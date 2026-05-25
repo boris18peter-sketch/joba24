@@ -82,7 +82,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 99999,
+        position: 'fixed', inset: 0, zIndex: 100001,
         background: 'rgba(5,15,40,0.65)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
@@ -242,7 +242,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         </div>
 
         <div style={{ padding: '14px 20px', textAlign: 'center', color: '#bbb', fontSize: 11 }}>
-          🔒 קרדיטים = עבודה = רווחים
+          🔒 קרדיטים משמשים להגשת בקשות למשימות
         </div>
       </div>
     </div>,

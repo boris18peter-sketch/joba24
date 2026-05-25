@@ -5,7 +5,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999,
+      position: 'fixed', inset: 0, zIndex: 100001,
       background: 'rgba(5,15,40,0.72)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(8px)',
