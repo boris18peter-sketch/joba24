@@ -86,6 +86,7 @@ export default function MapView() {
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
   const [mounted, setMounted] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const containerRef = useRef(null);
 
   // Suppress known Mapbox mouseover NaN bug
@@ -210,13 +211,13 @@ export default function MapView() {
         {displayTasks.length} ג'ובות פתוחות
       </div>
 
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+      <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0, pointerEvents: mapLoaded ? 'auto' : 'none' }}>
         {mounted && (
         <Map
           ref={mapRef}
           {...viewState}
           onMove={e => setViewState(e.viewState)}
-          onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} }}
+          onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} setMapLoaded(true); }}
           onError={(e) => console.warn('Mapbox error:', e.error?.message)}
           mapboxAccessToken={MAPBOX_TOKEN}
           mapStyle={MAP_STYLES[styleIdx].style}
