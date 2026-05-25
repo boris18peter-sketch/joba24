@@ -31,6 +31,7 @@ import ReportModal from '@/components/ReportModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
+import LiveActivityPulse from '@/components/LiveActivityPulse';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -563,6 +564,14 @@ export default function TaskDetail() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Live Activity Pulse — OPEN tasks only */}
+        {task.status === 'OPEN' && !isOwner && (
+          <LiveActivityPulse task={task} applicationCount={task.applicants?.length || 0} />
+        )}
+        {task.status === 'OPEN' && isOwner && (
+          <LiveActivityPulse task={task} applicationCount={task.applicants?.length || 0} />
         )}
 
         {/* Price Hero */}

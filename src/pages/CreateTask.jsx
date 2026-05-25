@@ -22,6 +22,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
+import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -95,6 +96,9 @@ export default function CreateTask() {
   const { isAuthenticated, login } = useAuth();
   const isRepost = searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
+  const [searchingTaskId, setSearchingTaskId] = useState(null);
+  const [searchingTaskTitle, setSearchingTaskTitle] = useState('');
+  const [searchingTaskPrice, setSearchingTaskPrice] = useState(null);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const mediaRecorderRef = useRef(null);
@@ -325,11 +329,28 @@ export default function CreateTask() {
     setLoading(false);
     localStorage.removeItem(DRAFT_KEY);
     toast.success('הג\'ובה פורסמה! ⚡');
-    navigate(created?.id ? `/task/${created.id}` : '/');
+    if (created?.id) {
+      setSearchingTaskId(created.id);
+      setSearchingTaskTitle(form.title);
+      setSearchingTaskPrice(Number(form.price));
+    } else {
+      navigate('/');
+    }
   };
 
   const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
   const inactiveBtn = { background: 'white', color: '#555', border: '1px solid #dce8f5' };
+
+  if (searchingTaskId) {
+    return (
+      <LiveSearchOverlay
+        taskId={searchingTaskId}
+        taskTitle={searchingTaskTitle}
+        taskPrice={searchingTaskPrice}
+        onDismiss={() => setSearchingTaskId(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
