@@ -160,7 +160,7 @@ export default function MapView() {
   } : null;
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }} dir="rtl">
+    <div style={{ height: 'calc(100dvh - 56px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} dir="rtl">
       <PageHeader
         title="🗺️ מפת ג'ובות"
         right={
@@ -189,7 +189,7 @@ export default function MapView() {
         {displayTasks.length} ג'ובות פתוחות
       </div>
 
-      <div style={{ flex: 1, position: 'relative' }}>
+      <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
         <Map
           ref={mapRef}
           {...viewState}
