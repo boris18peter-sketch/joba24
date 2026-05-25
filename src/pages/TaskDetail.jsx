@@ -32,6 +32,7 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 import LiveActivityPulse from '@/components/LiveActivityPulse';
+import LiveWorkerMap from '@/components/LiveWorkerMap';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -692,9 +693,13 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Worker tracker:
-            - Owner: show when task is TAKEN
-            - Worker: show when TAKEN */}
+        {/* Live worker map — shown when worker is in transit with GPS coordinates */}
+        {task.status === 'TAKEN' && task.worker_lat && task.worker_lng &&
+          ['on_the_way', 'delayed', 'parking'].includes(task.worker_status) && (
+          <LiveWorkerMap task={task} />
+        )}
+
+        {/* Worker tracker: Owner & Worker when TAKEN */}
         {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
           <WorkerTrackerBar
             task={task}

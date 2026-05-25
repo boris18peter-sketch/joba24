@@ -206,6 +206,22 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     return () => clearInterval(t);
   }, [task?.on_the_way_at]);
 
+  // Continuous GPS tracking while worker is on_the_way (every 30s)
+  useEffect(() => {
+    if (!isWorker || localStatus !== 'on_the_way') return;
+    if (!navigator.geolocation) return;
+    const interval = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          onUpdate({ worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude });
+        },
+        () => {},
+        { timeout: 6000, maximumAge: 15000 }
+      );
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isWorker, localStatus]);
+
   const handleNoShowReport = async () => {
     setNoShowLoading(true);
     try {
