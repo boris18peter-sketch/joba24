@@ -75,7 +75,7 @@ export default function TaskLocationMap({ task }) {
         >
           <Maximize2 size={15} color="#334155" />
         </button>
-        <MapContent height={180} />
+        <MapContent height={220} />
         <NavButtons />
       </div>
 

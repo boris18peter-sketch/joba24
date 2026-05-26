@@ -143,20 +143,9 @@ export default function Layout() {
     });
   }, [me?.id]);
 
-  // Watch for application status changes
+  // Keep prevApplicationsRef up to date for revocation detection
   useEffect(() => {
     myApplications.forEach(app => {
-      const prevApp = prevApplicationsRef.current[app.id];
-      if (prevApp && prevApp.status !== app.status) {
-      if (app.status === 'approved') {
-        const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === app.task_id);
-        addNotification({
-          type: 'application_approved',
-          taskTitle: relatedTask?.title || 'משימה',
-          taskId: app.task_id,
-        });
-        }
-      }
       prevApplicationsRef.current[app.id] = app;
     });
   }, [myApplications]);
@@ -374,10 +363,12 @@ export default function Layout() {
   useEffect(() => {
     if (!isAuthenticated || !me?.id) return;
     const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
+      let prevAppStatus = null; // Save BEFORE mutation to avoid reading stale appStatusRef in else-if
       // Detect when MY approved application is rejected → publisher revoked after approving
       if (event.type === 'update' && event.data?.worker_id === me?.id) {
         const appId = event.id || event.data?.id;
         const prevStatus = appStatusRef.current[appId];
+        prevAppStatus = prevStatus; // Save before mutation
         appStatusRef.current[appId] = event.data?.status;
         if (prevStatus === 'approved' && event.data?.status === 'rejected') {
           const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data?.task_id);
@@ -421,9 +412,8 @@ export default function Layout() {
           // Only show 'application_rejected' when the app was pending (not approved).
           // If it was already approved, this is either a revocation (handled by ApprovalRevokedPopup)
           // or a task cancellation (handled by task_cancelled_worker). Avoid double-notifications.
-          const rejAppId = event.id || event.data?.id;
-          const rejPrevStatus = appStatusRef.current[rejAppId];
-          if (rejPrevStatus !== 'approved') {
+          // Use prevAppStatus (saved before appStatusRef was mutated) to correctly distinguish revocation from rejection
+          if (prevAppStatus !== 'approved') {
             const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data.task_id);
             addNotification({
               type: 'application_rejected',

@@ -34,6 +34,7 @@ import TrustBadges from '@/components/TrustBadges';
 
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
+import ApplySheet from '@/components/ApplySheet';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -380,11 +381,12 @@ export default function TaskDetail() {
     },
   });
 
-  const handleApply = async () => {
+  const handleApply = async (msgOverride) => {
     if (applyLoading) return;
     setApplyLoading(true);
+    const messageToSend = msgOverride !== undefined ? msgOverride : applyMessage;
     try {
-      const res = await base44.functions.invoke('applyForTask', { taskId: id, message: applyMessage });
+      const res = await base44.functions.invoke('applyForTask', { taskId: id, message: messageToSend });
       const data = res.data;
 
       if (data?.error === 'already_applied') {
@@ -931,28 +933,15 @@ export default function TaskDetail() {
         {/* Actions */}
         {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED','CANCELLED','EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-          {/* Apply form (shown only when triggered) */}
-          {canApplyManual && showApplyForm && (
-            <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל המשימה (לא חובה)</p>
-              <textarea
-                placeholder="לדוגמא: יש לי ניסיון של 5 שנים בתחום..."
-                value={applyMessage}
-                onChange={e => setApplyMessage(e.target.value)}
-                rows={3}
-                style={{ background: 'white', border: '1px solid #bfdbfe', borderRadius: 12, padding: '12px 14px', fontSize: 16, fontFamily: 'inherit', resize: 'none', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-              />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={handleApply} disabled={applyLoading}
-                  style={{ flex: 1, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}
-                >
-                  {applyLoading ? <Loader2 size={18} className="animate-spin" /> : 'שלח בקשה'}
-                </button>
-                <button onClick={() => setShowApplyForm(false)}
-                  style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#666', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}
-                >ביטול</button>
-              </div>
-            </div>
+          {/* Apply sheet portal */}
+          {canApplyManual && showApplyForm && createPortal(
+            <ApplySheet
+              task={task}
+              loading={applyLoading}
+              onClose={() => setShowApplyForm(false)}
+              onApply={(msg) => { setApplyMessage(msg); handleApply(msg); }}
+            />,
+            document.body
           )}
 
           {/* Rating CTA for completed tasks */}
