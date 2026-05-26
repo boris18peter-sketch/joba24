@@ -76,7 +76,16 @@ export default function TaskDetail() {
   const [showReport, setShowReport] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [creditsNeeded, setCreditsNeeded] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
   const prevWorkerIdRef = useRef(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      }, () => {}, { timeout: 5000 });
+    }
+  }, []);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
 
@@ -448,6 +457,24 @@ export default function TaskDetail() {
   }
   if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
 
+  const STATUS_GRADIENT = {
+    OPEN: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
+    TAKEN: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+    COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
+    EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+  };
+  const taskGradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
+
+  const distKm = (() => {
+    if (!userLocation || !task.lat || !task.lng) return null;
+    const R = 6371;
+    const dLat = (task.lat - userLocation.lat) * Math.PI / 180;
+    const dLon = (task.lng - userLocation.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(userLocation.lat * Math.PI/180) * Math.cos(task.lat * Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  })();
+
   const isOwner = me?.id === task.client_id;
   const hasWorker = !!task.worker_id;
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
@@ -573,30 +600,49 @@ export default function TaskDetail() {
         )}
 
         {/* Price Hero */}
-        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 20, padding: '20px 20px', color: 'white', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -20, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ background: taskGradient, borderRadius: 22, padding: '18px 20px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+          {/* Status badge + live dot */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            {task.status === 'OPEN' && (
+              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
+              </span>
+            )}
+            <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+          </div>
+          {/* Price + Distance */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>תגמול</div>
-              <div style={{ fontSize: 42, fontWeight: 900, letterSpacing: -2 }}>₪{task.price}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>תגמול</div>
+              <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>₪{task.price}</div>
             </div>
-
+            {distKm != null && !isNaN(distKm) && (
+              <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 14, padding: '8px 16px', textAlign: 'center', backdropFilter: 'blur(4px)', flexShrink: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>
+                  {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>ממך</div>
+              </div>
+            )}
           </div>
           {/* Bottom row: time + expiry */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
             {task.estimated_time && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
-                <Clock size={13} />
-                <span>זמן משוער: {task.estimated_time}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.12)', borderRadius: 20, padding: '4px 10px' }}>
+                <Clock size={12} />
+                <span>{task.estimated_time}</span>
               </div>
             )}
             {task.expires_at && task.status === 'OPEN' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 10, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
-                <Clock size={12} />
-                <span>⏳ נסגרת בעוד: <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
+                <Clock size={11} />
+                <span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
               </div>
             )}
           </div>
+          <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
 
         {/* Images + Video */}

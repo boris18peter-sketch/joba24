@@ -221,7 +221,6 @@ export default function CreateTask() {
 
   const doSubmit = async () => {
     if (submittingRef.current) return;
-    submittingRef.current = true;
     const newErrors = {};
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
@@ -242,6 +241,7 @@ export default function CreateTask() {
     setShowErrorBanner(false);
     setErrors({});
     setModerationErrors({});
+    setLoading(true); // disable button immediately to prevent double-clicks
 
     // Final moderation checks
     setCheckingModeration('submit');
@@ -256,6 +256,7 @@ export default function CreateTask() {
       if (descCheck.flagged) newModerationErrors.description = 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
       setModerationErrors(newModerationErrors);
       setShowErrorBanner(true);
+      setLoading(false);
       return;
     }
     for (const imgUrl of (form.images || [])) {
@@ -265,6 +266,7 @@ export default function CreateTask() {
       if (imgCheck.flagged) {
         setModerationErrors({ images: 'אחת התמונות שהעלית נחסמה עקב תוכן לא הולם.' });
         setShowErrorBanner(true);
+        setLoading(false);
         return;
       }
     }
@@ -274,6 +276,7 @@ export default function CreateTask() {
       const currentCredits = me?.worker_credits ?? 0;
       if (currentCredits < 10) {
         setShowNoCreditsModal(true);
+        setLoading(false);
         return;
       }
       const newBalance = currentCredits - 10;
@@ -289,7 +292,6 @@ export default function CreateTask() {
       });
     }
 
-    setLoading(true);
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
