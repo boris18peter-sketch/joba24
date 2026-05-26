@@ -464,6 +464,13 @@ export default function TaskDetail() {
     CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
     EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
   };
+  const STATUS_PILL = {
+    OPEN:      { background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' },
+    TAKEN:     { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' },
+    COMPLETED: { background: '#f0fdf4', color: '#059669', border: '1px solid #86efac' },
+    CANCELLED: { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' },
+    EXPIRED:   { background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' },
+  };
   const taskGradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
 
   const distKm = (() => {
@@ -549,10 +556,32 @@ export default function TaskDetail() {
 
       <PageHeader
         title={task.title}
-        right={<span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' }}>{statusLabel}</span>}
+        right={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            {isOwner && task.status === 'OPEN' && (
+              <Link to={`/edit-task/${id}`}>
+                <button style={{ height: 26, padding: '0 9px', borderRadius: 20, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 700, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Pencil size={9} /> עריכה
+                </button>
+              </Link>
+            )}
+            {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
+              <button
+                onClick={() => {
+                  const workerIsActive = ['on_the_way','delayed','parking','arrived','starting','finishing','done'].includes(task.worker_status);
+                  if (task.status === 'TAKEN' && workerIsActive) {
+                    window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
+                  } else { setShowCancelConfirm(true); }
+                }}
+                style={{ height: 26, padding: '0 9px', borderRadius: 20, background: '#fff5f5', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 10, cursor: 'pointer' }}
+              >ביטול</button>
+            )}
+            <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, ...(STATUS_PILL[task.status] || STATUS_PILL.OPEN) }}>{statusLabel}</span>
+          </div>
+        }
       />
 
-      <div style={{ padding: '16px 16px 0' }} className="space-y-4">
+      <div style={{ padding: '10px 12px 0' }} className="space-y-3">
         {/* Expired banner */}
         {isExpired && (
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 20, padding: 16 }}>
@@ -596,7 +625,7 @@ export default function TaskDetail() {
 
         {/* Live Activity Pulse — OPEN tasks only */}
         {task.status === 'OPEN' && (
-          <LiveActivityPulse task={task} />
+          <LiveActivityPulse task={task} compact />
         )}
 
         {/* Price Hero */}
@@ -642,6 +671,15 @@ export default function TaskDetail() {
               </div>
             )}
           </div>
+          {canApplyManual && !showApplyForm && (
+            <button
+              onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } gate(() => setShowApplyForm(true)); }}
+              style={{ marginTop: 12, width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}
+            >
+              <Send size={15} strokeWidth={1.8} />
+              הגש בקשה — {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={14} />
+            </button>
+          )}
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
 
@@ -752,12 +790,9 @@ export default function TaskDetail() {
 
         {/* Owner waiting for worker to depart — shown after approval but before worker_status is set */}
         {isOwner && task.status === 'TAKEN' && !task.worker_status && (
-          <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 20 }}>⏳</div>
-            <div>
-              <div style={{ fontWeight: 800, color: '#166534', fontSize: 14 }}>אושר! מחכה שהעובד יצא לדרך</div>
-              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>העובד <strong>{task.worker_name}</strong> קיבל הודעה ויצא בקרוב</div>
-            </div>
+          <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>⏳</span>
+            <div style={{ fontSize: 12, color: '#166534', fontWeight: 700 }}>ממתין לעדכון מהעובד · <strong>{task.worker_name}</strong></div>
           </div>
         )}
 
@@ -792,18 +827,18 @@ export default function TaskDetail() {
 
         {/* Description */}
         {task.description && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>תיאור</h2>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '11px 14px' }}>
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', marginBottom: 6 }}>תיאור</h2>
             <p style={{ color: 'var(--text-1)', lineHeight: 1.65, fontSize: 14 }}>{task.description}</p>
           </div>
         )}
 
         {/* Details */}
-        <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }} className="space-y-3">
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '10px 12px' }} className="space-y-2">
           {task.location_name && (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <MapPin className="w-4 h-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
               </div>
               <div className="flex-1">
                 <div className="text-xs text-muted-foreground">מיקום</div>
@@ -813,9 +848,9 @@ export default function TaskDetail() {
             </div>
           )}
           {task.created_date && (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Clock className="w-3.5 h-3.5 text-primary" />
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">פורסם</div>
@@ -825,8 +860,8 @@ export default function TaskDetail() {
           )}
 
           {task.client_name && (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-yellow-100 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-yellow-100 flex items-center justify-center shrink-0">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
               </div>
               <div style={{ flex: 1 }}>
@@ -843,8 +878,8 @@ export default function TaskDetail() {
 
         {/* Requirements */}
         {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 10 }}>דרישות</h2>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '10px 12px' }}>
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>דרישות</h2>
             <div className="flex flex-wrap gap-2">
               {task.requirements.vehicle && (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-xl text-sm font-medium"><Car className="w-3.5 h-3.5" /> רכב</span>
@@ -861,15 +896,15 @@ export default function TaskDetail() {
 
         {/* Worker info */}
         {task.worker_name && task.status === 'TAKEN' && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 8px rgba(26,111,212,0.05)' }}>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>מבצע</h2>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '10px 12px' }}>
+            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', marginBottom: 6 }}>מבצע</h2>
             <a href={`/public-profile?id=${task.worker_id}`} style={{ fontWeight: 700, color: 'var(--text-1)', textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.worker_name}</a>
             {workerUser && <div style={{ marginTop: 8 }}><TrustBadges user={workerUser} compact /></div>}
           </div>
         )}
 
         {/* Actions */}
-        <div style={{ paddingBottom: canTakeInstant || canApplyManual || hasPendingApp ? 100 : 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* Chat button for applicant — can message the task owner */}
           {(hasPendingApp || isApproved) && !isOwner && (
@@ -883,12 +918,9 @@ export default function TaskDetail() {
 
           {/* Pending application banner */}
           {hasPendingApp && isWorker && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 18, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} color="#d97706" /></div>
-              <div>
-                <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={15} /> בקשתך התקבלה וממתינה לאישור</div>
-                <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>בעל המשימה יאשר אותך בקרוב</div>
-              </div>
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock size={12} color="#d97706" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>בקשתך ממתינה לאישור המעסיק</span>
             </div>
           )}
 
@@ -927,30 +959,9 @@ export default function TaskDetail() {
 
 
 
-          {isOwner && task.status === 'OPEN' && (
-            <Link to={`/edit-task/${id}`}>
-              <button style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#0f2b6b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
-                <Pencil size={18} />עריכת המשימה
-              </button>
-            </Link>
-          )}
 
-          {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
-            <button
-              onClick={() => {
-                const workerIsActive = ['on_the_way', 'delayed', 'parking', 'arrived', 'starting', 'finishing', 'done'].includes(task.worker_status);
-                if (task.status === 'TAKEN' && workerIsActive) {
-                  window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
-                } else {
-                  setShowCancelConfirm(true);
-                }
-              }}
-              disabled={cancelMutation.isPending}
-              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
-            >
-              {cancelMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה'}
-            </button>
-          )}
+
+
 
 
 
@@ -1022,27 +1033,7 @@ export default function TaskDetail() {
         </div>
       </div>
 
-      {/* Sticky bottom CTA */}
-      {(canApplyManual && !showApplyForm) && (
-        <div style={{ position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', left: 16, right: 16, zIndex: 50 }}>
-          <button onClick={() => {
-            if (!isAuthenticated) {
-              setShowLoginPrompt(true);
-              return;
-            }
-            gate(() => setShowApplyForm(true));
-          }}
-            style={{ width: '100%', height: 58, borderRadius: 18, fontSize: 17, fontWeight: 900, color: 'white', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 8px 28px rgba(26,111,212,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Send size={18} strokeWidth={1.8} /> הגש בקשה לביצוע
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 4 }}>
-              כניסה למשימה {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={13} />
-            </div>
-          </button>
-        </div>
-      )}
+
 
       {showCompletion && createPortal(
         <CompletionModal task={task} me={me} onClose={() => { setShowCompletion(false); setShowRating(true); }} />,

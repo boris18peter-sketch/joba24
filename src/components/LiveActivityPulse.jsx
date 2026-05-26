@@ -9,7 +9,7 @@ const MESSAGES = [
   { icon: '🔔', text: 'התראות נשלחו לעובדים', color: '#7c3aed' },
 ];
 
-export default function LiveActivityPulse({ task }) {
+export default function LiveActivityPulse({ task, compact }) {
   const queryClient = useQueryClient();
   const [msgIdx, setMsgIdx] = useState(0);
   const intervalRef = useRef(null);
@@ -53,6 +53,20 @@ export default function LiveActivityPulse({ task }) {
   }, []);
 
   const msg = MESSAGES[msgIdx];
+
+  if (compact) return (
+    <div dir="rtl" style={{ background: 'linear-gradient(90deg,#f0f9ff,#e0f2fe)', border: '1px solid #bae6fd', borderRadius: 10, padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#22c55e', animation: 'lapPulse 1.8s ease-in-out infinite' }} />
+      </div>
+      <div key={msgIdx} style={{ flex: 1, fontSize: 11, fontWeight: 700, color: '#0c4a6e' }}>{msg.icon} {msg.text}</div>
+      <div style={{ fontSize: 10, color: '#0369a1', display: 'flex', gap: 4, flexShrink: 0 }}>
+        {onlineCount > 0 && <span>🟢 <strong>{onlineCount}</strong></span>}
+        {applicationCount > 0 && <span style={{ color: '#059669' }}>· <strong>{applicationCount}</strong> בקשות</span>}
+      </div>
+      <style>{`@keyframes lapPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.5}}`}</style>
+    </div>
+  );
 
   return (
     <div dir="rtl" style={{
