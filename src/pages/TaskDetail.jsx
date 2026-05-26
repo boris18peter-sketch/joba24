@@ -480,7 +480,7 @@ export default function TaskDetail() {
 
   const STATUS_GRADIENT = {
     OPEN: '#1a6fd4',
-    TAKEN: '#059669',
+    TAKEN: task.worker_status === 'done' ? '#059669' : '#1a6fd4',
     COMPLETED: '#059669',
     CANCELLED: '#64748b',
     EXPIRED: '#ea580c',

@@ -129,13 +129,8 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           const tStepIdx  = tStatusInfo?.step ?? -1;
           const quickAction = tIsWorker ? getQuickAction(tStepIdx, t.worker_status) : null;
 
-          const gradient = tIsWorker
-            ? tStepIdx === 1
-              ? 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)'
-              : tStepIdx === 2
-              ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-              : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)'
-            : tStepIdx === 2
+          const isDone = t.worker_status === 'done';
+          const gradient = isDone
             ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
             : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
 
@@ -222,7 +217,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                         boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.2)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={14} color={done ? gradient.includes('#d97706') ? '#d97706' : gradient.includes('#059669') ? '#059669' : '#1a6fd4' : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={14} color={done ? (isDone ? '#059669' : '#1a6fd4') : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
                       <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.5)', marginTop: 4 }}>{label}</div>
                     </div>
