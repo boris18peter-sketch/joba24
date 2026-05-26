@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, CheckCircle } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 import { getCategoryLabel } from '@/lib/categories';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
@@ -92,6 +93,8 @@ export default function MapView() {
   const [totalTime, setTotalTime] = useState(null);
   const containerRef = useRef(null);
 
+  const { isAuthenticated } = useAuth();
+
   const [viewState, setViewState] = useState({
     longitude: CENTER.longitude, latitude: CENTER.latitude,
     zoom: 13.5, pitch: 52, bearing: 0,
@@ -116,7 +119,7 @@ export default function MapView() {
     }
   }, []);
 
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 100),
