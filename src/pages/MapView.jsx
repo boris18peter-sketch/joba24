@@ -5,16 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
-import { Navigation, X, MapPin, Clock, ChevronRight, Layers } from 'lucide-react';
+import { Navigation, X, MapPin, Clock, ChevronRight, Layers, Compass, Building2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
-
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
 
 const MAP_STYLES = [
-  { label: 'בהיר', style: 'mapbox://styles/mapbox/light-v11' },
+  { label: 'בהיר',   style: 'mapbox://styles/mapbox/light-v11' },
   { label: 'רחובות', style: 'mapbox://styles/mapbox/streets-v12' },
-  { label: 'לילה', style: 'mapbox://styles/mapbox/dark-v11' },
+  { label: 'לילה',   style: 'mapbox://styles/mapbox/dark-v11' },
   { label: 'לוויין', style: 'mapbox://styles/mapbox/satellite-streets-v12' },
 ];
 
@@ -26,27 +25,25 @@ function distKm(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
 }
 
-function TaskPin({ task, selected, isMyTask, onClick }) {
+function TaskPin({ task, selected, isMyTask }) {
   const bg = isMyTask
     ? (selected ? 'linear-gradient(135deg,#d97706,#f59e0b)' : '#f59e0b')
     : (selected ? 'linear-gradient(135deg,#0a52b0,#1a6fd4)' : '#1a6fd4');
   const arrowColor = isMyTask ? '#f59e0b' : (selected ? '#0a52b0' : '#1a6fd4');
-
   return (
-    <div
-      onClick={onClick}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        cursor: 'pointer',
-        transform: selected ? 'scale(1.25)' : 'scale(1)',
-        transition: 'transform 0.2s',
-        filter: selected ? `drop-shadow(0 4px 12px ${isMyTask ? 'rgba(245,158,11,0.6)' : 'rgba(26,111,212,0.6)'})` : 'none',
-      }}
-    >
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      cursor: 'pointer',
+      transform: selected ? 'scale(1.3)' : 'scale(1)',
+      transition: 'transform 0.25s cubic-bezier(0.34,1.5,0.64,1)',
+      filter: selected
+        ? `drop-shadow(0 6px 16px ${isMyTask ? 'rgba(245,158,11,0.7)' : 'rgba(26,111,212,0.7)'})`
+        : 'drop-shadow(0 2px 8px rgba(0,0,0,0.25))',
+    }}>
       <div style={{
         background: bg,
         border: selected ? '3px solid white' : '2px solid white',
-        boxShadow: selected ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 10px rgba(0,0,0,0.2)',
+        boxShadow: selected ? '0 4px 20px rgba(0,0,0,0.35)' : '0 2px 10px rgba(0,0,0,0.2)',
         borderRadius: 20, padding: '5px 10px',
         fontSize: selected ? 13 : 12, fontWeight: 900, color: 'white', whiteSpace: 'nowrap',
       }}>
@@ -79,34 +76,36 @@ export default function MapView() {
   const navigate = useNavigate();
   const mapRef = useRef(null);
   const seedRef = useRef({});
+  const animFrameRef = useRef(null);
+  const dashOffsetRef = useRef(0);
+  const cinematicDoneRef = useRef(false);
 
   const [userLocation, setUserLocation] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [styleIdx, setStyleIdx] = useState(0);
   const [showStylePicker, setShowStylePicker] = useState(false);
-  const [viewState, setViewState] = useState({ longitude: CENTER.longitude, latitude: CENTER.latitude, zoom: 13 });
+  const [show3D, setShow3D] = useState(true);
+  const [viewState, setViewState] = useState({
+    longitude: CENTER.longitude,
+    latitude: CENTER.latitude,
+    zoom: 13,
+    pitch: 45,
+    bearing: -17,
+  });
   const [mounted, setMounted] = useState(false);
   const [mapToken, setMapToken] = useState('');
+  const [routeOffset, setRouteOffset] = useState(0);
   const containerRef = useRef(null);
 
-  // Fetch Mapbox token from backend (VITE_ vars not available in sandbox)
+  // Fetch Mapbox token
   useEffect(() => {
     base44.functions.invoke('getMapboxToken', {}).then(res => {
       if (res.data?.token) setMapToken(res.data.token);
     }).catch(() => {});
   }, []);
 
-  // Suppress known Mapbox mouseover NaN bug
+  // Mount detection
   useEffect(() => {
-    const handler = (e) => {
-      if (e.message?.includes('Invalid LngLat')) { e.preventDefault(); e.stopImmediatePropagation(); }
-    };
-    window.addEventListener('error', handler, true);
-    return () => window.removeEventListener('error', handler, true);
-  }, []);
-
-  useEffect(() => {
-    // Fallback: mount after 300ms regardless
     const fallback = setTimeout(() => setMounted(true), 300);
     if (!containerRef.current) return () => clearTimeout(fallback);
     const ro = new ResizeObserver(entries => {
@@ -116,6 +115,19 @@ export default function MapView() {
     ro.observe(containerRef.current);
     return () => { ro.disconnect(); clearTimeout(fallback); };
   }, []);
+
+  // Animate route dash offset
+  useEffect(() => {
+    if (!selectedTask) return;
+    let frame;
+    const animate = () => {
+      dashOffsetRef.current = (dashOffsetRef.current + 0.15) % 10;
+      setRouteOffset(dashOffsetRef.current);
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [selectedTask?.id]);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: tasks = [] } = useQuery({
@@ -145,6 +157,54 @@ export default function MapView() {
     return { ...t, ...seedRef.current[t.id] };
   });
 
+  // Add 3D buildings layer on map load
+  const onMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    map.resize();
+
+    // Add 3D buildings
+    if (!map.getLayer('3d-buildings')) {
+      map.addLayer({
+        id: '3d-buildings',
+        source: 'composite',
+        'source-layer': 'building',
+        filter: ['==', 'extrude', 'true'],
+        type: 'fill-extrusion',
+        minzoom: 13,
+        paint: {
+          'fill-extrusion-color': '#aec6cf',
+          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 13, 0, 16, ['get', 'height']],
+          'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 13, 0, 16, ['get', 'min_height']],
+          'fill-extrusion-opacity': 0.6,
+        },
+      });
+    }
+
+    // Cinematic intro
+    if (!cinematicDoneRef.current) {
+      cinematicDoneRef.current = true;
+      setTimeout(() => {
+        map.flyTo({
+          center: [CENTER.longitude, CENTER.latitude],
+          zoom: 14.5,
+          pitch: 55,
+          bearing: 20,
+          duration: 3500,
+          easing: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+        });
+      }, 600);
+    }
+  }, []);
+
+  // Update 3D buildings opacity when toggling
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !map.getLayer('3d-buildings')) return;
+    map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', show3D ? 0.6 : 0);
+  }, [show3D]);
+
   // Fit bounds after tasks load
   const didFit = useRef(false);
   useEffect(() => {
@@ -152,50 +212,84 @@ export default function MapView() {
     didFit.current = true;
     const map = mapRef.current.getMap();
     if (displayTasks.length === 1) {
-      map.flyTo({ center: [displayTasks[0].lng, displayTasks[0].lat], zoom: 14, duration: 1200 });
+      map.flyTo({ center: [displayTasks[0].lng, displayTasks[0].lat], zoom: 15, pitch: 50, bearing: 0, duration: 1400 });
     } else {
       const lngs = displayTasks.map(t => t.lng);
       const lats = displayTasks.map(t => t.lat);
       if (userLocation) { lngs.push(userLocation.lng); lats.push(userLocation.lat); }
       map.fitBounds(
         [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-        { padding: 60, maxZoom: 15, duration: 1200 }
+        { padding: 80, maxZoom: 15, duration: 1400, pitch: 45 }
       );
     }
-  }, [displayTasks.length, userLocation, mapRef.current]);
+  }, [displayTasks.length]);
 
-  // Fly to selected task
+  // Cinematic camera on selected task
   useEffect(() => {
     if (!selectedTask || !mapRef.current) return;
-    mapRef.current.getMap().flyTo({
+    const map = mapRef.current.getMap();
+    map.flyTo({
       center: [selectedTask.lng, selectedTask.lat],
-      zoom: Math.max(viewState.zoom, 15),
-      duration: 800,
+      zoom: 16,
+      pitch: 60,
+      bearing: Math.random() * 60 - 30,
+      duration: 1200,
+      easing: t => 1 - Math.pow(1 - t, 3),
     });
   }, [selectedTask?.id]);
+
+  // Reset camera when deselecting
+  useEffect(() => {
+    if (selectedTask) return;
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    map.easeTo({ pitch: 45, bearing: -17, duration: 800 });
+  }, [selectedTask]);
 
   const dist = selectedTask && userLocation
     ? distKm(userLocation, { lat: selectedTask.lat, lng: selectedTask.lng })
     : null;
 
-  // Route GeoJSON
   const routeGeoJSON = selectedTask && userLocation ? {
-    type: 'Feature',
-    geometry: {
-      type: 'LineString',
-      coordinates: [
-        [userLocation.lng, userLocation.lat],
-        [selectedTask.lng, selectedTask.lat],
-      ],
-    },
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: [[userLocation.lng, userLocation.lat], [selectedTask.lng, selectedTask.lat]] },
+    }],
   } : null;
 
   return (
     <div style={{ height: 'calc(100dvh - 56px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} dir="rtl">
       <PageHeader
-        title="🗺️ מפת ג'ובות"
+        title="🗺️ מפת משימות"
         right={
-          <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', position: 'relative' }}>
+            {/* 3D toggle */}
+            <button
+              onClick={() => setShow3D(v => !v)}
+              title={show3D ? 'כבה 3D' : 'הפעל 3D'}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: show3D ? '#dbeafe' : 'white',
+                border: `1px solid ${show3D ? '#3b82f6' : '#dce8f5'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}
+            >
+              <Building2 size={16} color={show3D ? '#1a6fd4' : '#9ca3af'} />
+            </button>
+
+            {/* Reset camera */}
+            <button
+              onClick={() => {
+                const map = mapRef.current?.getMap();
+                map?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 20, duration: 1200 });
+              }}
+              style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <Compass size={16} color="#1a6fd4" />
+            </button>
+
+            {/* Style picker */}
             <button
               onClick={() => setShowStylePicker(v => !v)}
               style={{ width: 36, height: 36, borderRadius: 10, background: showStylePicker ? '#dbeafe' : 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -217,66 +311,111 @@ export default function MapView() {
       />
 
       <div style={{ background: 'white', borderBottom: '1px solid #dce8f5', padding: '8px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1d4ed8' }}>
-        {displayTasks.length} ג'ובות פתוחות
+        {displayTasks.length} משימות פתוחות
       </div>
 
       <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
         {mounted && mapToken && (
-        <Map
-          ref={mapRef}
-          {...viewState}
-          onMove={e => setViewState(e.viewState)}
-          onLoad={() => { try { mapRef.current?.getMap()?.resize(); } catch(e) {} }}
-          onError={(e) => console.warn('Mapbox error:', e.error?.message)}
-          mapboxAccessToken={mapToken}
-          mapStyle={MAP_STYLES[styleIdx].style}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <NavigationControl position="bottom-left" showCompass={false} />
+          <Map
+            ref={mapRef}
+            {...viewState}
+            onMove={e => setViewState(e.viewState)}
+            onLoad={onMapLoad}
+            onError={(e) => console.warn('Mapbox error:', e.error?.message)}
+            mapboxAccessToken={mapToken}
+            mapStyle={MAP_STYLES[styleIdx].style}
+            style={{ width: '100%', height: '100%' }}
+            maxPitch={85}
+            minZoom={8}
+            attributionControl={false}
+          >
+            <NavigationControl position="bottom-left" showCompass visualizePitch />
 
-          {/* Route line */}
-          {routeGeoJSON && (
-            <>
-              <Source id="route" type="geojson" data={routeGeoJSON}>
-                <Layer id="route-bg" type="line" paint={{ 'line-color': '#bfdbfe', 'line-width': 9, 'line-opacity': 0.6 }} />
-                <Layer id="route-line" type="line" paint={{ 'line-color': '#1a6fd4', 'line-width': 4, 'line-dasharray': [2, 2], 'line-opacity': 0.9 }} />
-              </Source>
-              {/* Destination pulse circle */}
-              <Source id="dest" type="geojson" data={{ type: 'Feature', geometry: { type: 'Point', coordinates: [selectedTask.lng, selectedTask.lat] } }}>
-                <Layer id="dest-circle" type="circle" paint={{ 'circle-radius': 30, 'circle-color': '#1a6fd4', 'circle-opacity': 0.12, 'circle-stroke-width': 2, 'circle-stroke-color': '#1a6fd4', 'circle-stroke-opacity': 0.4 }} />
-              </Source>
-            </>
-          )}
+            {/* Animated route */}
+            {routeGeoJSON && (
+              <>
+                <Source id="route-bg" type="geojson" data={routeGeoJSON}>
+                  <Layer id="route-glow" type="line" paint={{
+                    'line-color': '#3b82f6',
+                    'line-width': 14,
+                    'line-opacity': 0.18,
+                    'line-blur': 6,
+                  }} />
+                  <Layer id="route-casing" type="line" paint={{
+                    'line-color': '#bfdbfe',
+                    'line-width': 8,
+                    'line-opacity': 0.7,
+                  }} />
+                  <Layer id="route-line" type="line" paint={{
+                    'line-color': '#1a6fd4',
+                    'line-width': 4,
+                    'line-opacity': 0.95,
+                    'line-dasharray': [0, 2, 6, 0],
+                  }} />
+                </Source>
+                {/* Animated dashes (separate source for dash animation) */}
+                <Source id="route-anim" type="geojson" data={routeGeoJSON}>
+                  <Layer id="route-dash" type="line" paint={{
+                    'line-color': 'white',
+                    'line-width': 2,
+                    'line-opacity': 0.8,
+                    'line-dasharray': [0, routeOffset % 10 < 5 ? 4 : 0, 6, 0],
+                  }} />
+                </Source>
 
-          {/* User marker */}
-          {userLocation && (
-            <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="bottom">
-              <UserPin />
-            </Marker>
-          )}
+                {/* Destination pulse */}
+                <Source id="dest-pulse" type="geojson" data={{
+                  type: 'Feature',
+                  geometry: { type: 'Point', coordinates: [selectedTask.lng, selectedTask.lat] },
+                }}>
+                  <Layer id="dest-circle-outer" type="circle" paint={{
+                    'circle-radius': 40,
+                    'circle-color': '#1a6fd4',
+                    'circle-opacity': 0.08,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#1a6fd4',
+                    'circle-stroke-opacity': 0.25,
+                  }} />
+                </Source>
+              </>
+            )}
 
-          {/* Task markers */}
-          {displayTasks.filter(t => isFinite(t.lat) && isFinite(t.lng)).map(task => (
-            <Marker
-              key={task.id}
-              longitude={task.lng}
-              latitude={task.lat}
-              anchor="bottom"
-              onClick={e => { e.originalEvent.stopPropagation(); setSelectedTask(prev => prev?.id === task.id ? null : task); }}
-            >
-              <TaskPin
-                task={task}
-                selected={selectedTask?.id === task.id}
-                isMyTask={task.client_id === me?.id}
-                onClick={() => {}}
-              />
-            </Marker>
-          ))}
-        </Map>
+            {/* User marker */}
+            {userLocation && (
+              <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="bottom">
+                <UserPin />
+              </Marker>
+            )}
+
+            {/* Task markers */}
+            {displayTasks.filter(t => isFinite(t.lat) && isFinite(t.lng)).map(task => (
+              <Marker
+                key={task.id}
+                longitude={task.lng}
+                latitude={task.lat}
+                anchor="bottom"
+                onClick={e => { e.originalEvent.stopPropagation(); setSelectedTask(prev => prev?.id === task.id ? null : task); }}
+              >
+                <TaskPin
+                  task={task}
+                  selected={selectedTask?.id === task.id}
+                  isMyTask={task.client_id === me?.id}
+                />
+              </Marker>
+            ))}
+          </Map>
         )}
 
         {/* Legend */}
-        <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, background: 'white', borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 10px rgba(0,0,0,0.12)', border: '1px solid #e5e9f5', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{
+          position: 'absolute', top: 12, right: 12, zIndex: 10,
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(8px)',
+          borderRadius: 12, padding: '8px 12px',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+          border: '1px solid #e5e9f5',
+          display: 'flex', flexDirection: 'column', gap: 5,
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
             <div style={{ width: 12, height: 12, borderRadius: 3, background: '#1a6fd4' }} />
             <span>משימות זמינות</span>
@@ -287,9 +426,15 @@ export default function MapView() {
               <span>המשימות שלי</span>
             </div>
           )}
+          {show3D && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
+              <Building2 size={11} color="#6b7280" />
+              <span>3D בניינים</span>
+            </div>
+          )}
         </div>
 
-        {/* Floating task card */}
+        {/* Task card */}
         {selectedTask && (
           <div
             style={{
@@ -330,7 +475,7 @@ export default function MapView() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>
                   {dist < 1 ? `${Math.round(dist * 1000)} מטר ממך` : `${dist.toFixed(1)} ק"מ ממך`}
                 </span>
-                <span style={{ fontSize: 11, color: '#93c5fd', marginRight: 'auto' }}>המסלול מוצג במפה</span>
+                <span style={{ fontSize: 11, color: '#93c5fd', marginRight: 'auto' }}>מסלול מוצג במפה</span>
               </div>
             )}
 
@@ -342,7 +487,7 @@ export default function MapView() {
               <button
                 onClick={() => window.open(`https://maps.google.com/?q=${selectedTask.lat},${selectedTask.lng}`, '_blank')}
                 style={{ flex: 1, height: 40, borderRadius: 12, background: '#4285f4', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >Google Maps</button>
+              >Google</button>
               <button
                 onClick={() => navigate(`/task/${selectedTask.id}`)}
                 style={{ flex: 1, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
@@ -354,7 +499,9 @@ export default function MapView() {
         )}
       </div>
 
-      <style>{`@keyframes slideUpCard { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }`}</style>
+      <style>{`
+        @keyframes slideUpCard { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+      `}</style>
     </div>
   );
 }

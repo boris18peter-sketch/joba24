@@ -1,7 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+import { base44 } from '@/api/base44Client';
 
 function calcDistance(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -14,17 +14,17 @@ function calcDistance(lat1, lng1, lat2, lng2) {
 
 function WorkerDot() {
   return (
-    <div style={{ position: 'relative', width: 20, height: 20 }}>
+    <div style={{ position: 'relative', width: 26, height: 26 }}>
       <div style={{
         position: 'absolute', inset: 0, borderRadius: '50%',
-        background: 'rgba(34,197,94,0.3)', animation: 'workerPulse 1.6s ease-in-out infinite',
+        background: 'rgba(34,197,94,0.25)', animation: 'workerPulse 1.6s ease-in-out infinite',
       }} />
       <div style={{
-        position: 'absolute', inset: 3, borderRadius: '50%',
+        position: 'absolute', inset: 4, borderRadius: '50%',
         background: '#22c55e', border: '2.5px solid white',
-        boxShadow: '0 2px 8px rgba(34,197,94,0.6)',
+        boxShadow: '0 2px 10px rgba(34,197,94,0.6)',
       }} />
-      <style>{`@keyframes workerPulse{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(2);opacity:0}}`}</style>
+      <style>{`@keyframes workerPulse{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.2);opacity:0}}`}</style>
     </div>
   );
 }
@@ -32,34 +32,90 @@ function WorkerDot() {
 function TaskDot() {
   return (
     <div style={{
-      width: 18, height: 18, borderRadius: '50%',
-      background: '#1a6fd4', border: '2.5px solid white',
-      boxShadow: '0 2px 8px rgba(26,111,212,0.5)',
+      width: 22, height: 22, borderRadius: '50%',
+      background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+      border: '2.5px solid white',
+      boxShadow: '0 2px 10px rgba(26,111,212,0.55)',
     }} />
   );
 }
 
 export default function LiveWorkerMap({ task }) {
+  const mapRef = useRef(null);
+  const [mapToken, setMapToken] = useState('');
+  const [dashOffset, setDashOffset] = useState(0);
+  const animRef = useRef(null);
+
   const workerLat = parseFloat(task?.worker_lat);
   const workerLng = parseFloat(task?.worker_lng);
   const taskLat = parseFloat(task?.lat);
   const taskLng = parseFloat(task?.lng);
 
-  if (!isFinite(workerLat) || !isFinite(workerLng)) return null;
+  const hasWorker = isFinite(workerLat) && isFinite(workerLng);
+  const hasTask = isFinite(taskLat) && isFinite(taskLng);
 
-  const distKm = isFinite(taskLat) && isFinite(taskLng) ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
+  // Fetch token
+  useEffect(() => {
+    base44.functions.invoke('getMapboxToken', {}).then(res => {
+      if (res.data?.token) setMapToken(res.data.token);
+    }).catch(() => {});
+  }, []);
+
+  // Animate route dashes
+  useEffect(() => {
+    if (!hasWorker || !hasTask) return;
+    const animate = () => {
+      setDashOffset(v => (v + 0.18) % 10);
+      animRef.current = requestAnimationFrame(animate);
+    };
+    animRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [hasWorker, hasTask]);
+
+  // Fly to worker when location updates
+  useEffect(() => {
+    if (!hasWorker || !mapRef.current) return;
+    const map = mapRef.current.getMap?.();
+    if (!map) return;
+    map.easeTo({
+      center: hasTask ? [(workerLng + taskLng) / 2, (workerLat + taskLat) / 2] : [workerLng, workerLat],
+      duration: 800,
+      easing: t => 1 - Math.pow(1 - t, 3),
+    });
+  }, [workerLat, workerLng]);
+
+  // Add 3D buildings on load
+  const onLoad = () => {
+    const map = mapRef.current?.getMap?.();
+    if (!map) return;
+    if (!map.getLayer('3d-buildings-live')) {
+      map.addLayer({
+        id: '3d-buildings-live',
+        source: 'composite',
+        'source-layer': 'building',
+        filter: ['==', 'extrude', 'true'],
+        type: 'fill-extrusion',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-color': '#c7d9f0',
+          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14, 0, 17, ['get', 'height']],
+          'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 14, 0, 17, ['get', 'min_height']],
+          'fill-extrusion-opacity': 0.55,
+        },
+      });
+    }
+  };
+
+  if (!hasWorker) return null;
+
+  const distKm = hasTask ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
   const etaMins = distKm ? Math.max(1, Math.round(distKm * 1.4 / 35 * 60)) : null;
+  const centerLng = hasTask ? (workerLng + taskLng) / 2 : workerLng;
+  const centerLat = hasTask ? (workerLat + taskLat) / 2 : workerLat;
 
-  // Center between worker and task
-  const centerLng = isFinite(taskLng) ? (workerLng + taskLng) / 2 : workerLng;
-  const centerLat = isFinite(taskLat) ? (workerLat + taskLat) / 2 : workerLat;
-
-  const routeGeoJSON = isFinite(taskLat) && isFinite(taskLng) ? {
+  const routeGeoJSON = hasTask ? {
     type: 'Feature',
-    geometry: {
-      type: 'LineString',
-      coordinates: [[workerLng, workerLat], [taskLng, taskLat]],
-    },
+    geometry: { type: 'LineString', coordinates: [[workerLng, workerLat], [taskLng, taskLat]] },
   } : null;
 
   return (
@@ -77,7 +133,7 @@ export default function LiveWorkerMap({ task }) {
             🚗 {task.worker_name} בדרך אליך
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           {distKm && (
             <span style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', background: 'white', border: '1px solid #bae6fd', borderRadius: 20, padding: '3px 10px' }}>
               📍 {distKm < 1 ? `${Math.round(distKm * 1000)} מ'` : `${distKm.toFixed(1)} ק"מ`}
@@ -91,31 +147,61 @@ export default function LiveWorkerMap({ task }) {
         </div>
       </div>
 
-      {/* Map */}
-      <Map
-        initialViewState={{ longitude: centerLng, latitude: centerLat, zoom: 13 }}
-        mapboxAccessToken={MAPBOX_TOKEN}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-        style={{ height: 200, width: '100%' }}
-        interactive={false}
-        attributionControl={false}
-      >
-        {routeGeoJSON && (
-          <Source id="route" type="geojson" data={routeGeoJSON}>
-            <Layer id="route-line" type="line" paint={{ 'line-color': '#1a6fd4', 'line-width': 2.5, 'line-dasharray': [3, 3], 'line-opacity': 0.8 }} />
-          </Source>
-        )}
+      {/* 3D Map */}
+      {mapToken ? (
+        <Map
+          ref={mapRef}
+          initialViewState={{
+            longitude: centerLng,
+            latitude: centerLat,
+            zoom: 14,
+            pitch: 45,
+            bearing: -10,
+          }}
+          mapboxAccessToken={mapToken}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          style={{ height: 220, width: '100%' }}
+          interactive={false}
+          attributionControl={false}
+          onLoad={onLoad}
+        >
+          {routeGeoJSON && (
+            <Source id="live-route" type="geojson" data={routeGeoJSON}>
+              <Layer id="live-route-glow" type="line" paint={{
+                'line-color': '#3b82f6',
+                'line-width': 10,
+                'line-opacity': 0.15,
+                'line-blur': 4,
+              }} />
+              <Layer id="live-route-bg" type="line" paint={{
+                'line-color': '#bfdbfe',
+                'line-width': 6,
+                'line-opacity': 0.7,
+              }} />
+              <Layer id="live-route-line" type="line" paint={{
+                'line-color': '#1a6fd4',
+                'line-width': 3,
+                'line-opacity': 0.9,
+                'line-dasharray': [2, dashOffset % 5 < 2.5 ? 3 : 1],
+              }} />
+            </Source>
+          )}
 
-        <Marker longitude={workerLng} latitude={workerLat} anchor="center">
-          <WorkerDot />
-        </Marker>
-
-        {isFinite(taskLat) && isFinite(taskLng) && (
-          <Marker longitude={taskLng} latitude={taskLat} anchor="center">
-            <TaskDot />
+          <Marker longitude={workerLng} latitude={workerLat} anchor="center">
+            <WorkerDot />
           </Marker>
-        )}
-      </Map>
+
+          {hasTask && (
+            <Marker longitude={taskLng} latitude={taskLat} anchor="center">
+              <TaskDot />
+            </Marker>
+          )}
+        </Map>
+      ) : (
+        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f9ff' }}>
+          <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+        </div>
+      )}
     </div>
   );
 }
