@@ -30,7 +30,7 @@ export default function CompletionModal({ task, me, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success('🎉 הג\'ובה הושלמה בהצלחה!');
+      toast.success('🎉 המשימה הושלמה בהצלחה!');
       onClose();
       navigate('/');
     },
@@ -45,7 +45,7 @@ export default function CompletionModal({ task, me, onClose }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
-            {isWorker ? '💪 סיימת עבודה מעולה!' : '✅ אשר סיום הג\'ובה'}
+            {isWorker ? '💪 סיימת עבודה מעולה!' : '✅ אשר סיום המשימה'}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
             <X size={20} color="#999" />
@@ -85,7 +85,7 @@ export default function CompletionModal({ task, me, onClose }) {
           disabled={completeMutation.isPending}
           style={{ width: '100%', height: 52, borderRadius: 16, background: completeMutation.isPending ? '#93c5fd' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: completeMutation.isPending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}
         >
-          {completeMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : isWorker ? '✅ סיימתי את הג\'ובה!' : '✅ סיימתי הג\'ובה'}
+          {completeMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : isWorker ? '✅ סיימתי את המשימה!' : '✅ אשר סיום המשימה'}
         </button>
       </div>
     </div>

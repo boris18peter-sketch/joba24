@@ -49,6 +49,7 @@ export default function HomeFeed() {
     enabled: !!me?.id,
     staleTime: 60000,
     gcTime: 120000,
+    placeholderData: (prev) => prev,
     refetchOnWindowFocus: false
   });
 

@@ -104,6 +104,7 @@ export default function CreateTask() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const submittingRef = useRef(false);
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -219,6 +220,8 @@ export default function CreateTask() {
   };
 
   const doSubmit = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     const newErrors = {};
     if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
@@ -327,6 +330,7 @@ export default function CreateTask() {
     });
 
     setLoading(false);
+    submittingRef.current = false;
     localStorage.removeItem(DRAFT_KEY);
     toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
@@ -133,8 +133,10 @@ const TYPES = {
 export default function LiveNotificationPopup({ notification, onClose }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(100);
+  const [swipeY, setSwipeY] = useState(0);
   const navigate = useNavigate();
   const DURATION = 7500;
+  const touchStartY = useRef(null);
 
   useEffect(() => {
     const start = Date.now();
@@ -155,8 +157,28 @@ export default function LiveNotificationPopup({ notification, onClose }) {
 
   const cfg = TYPES[notification.type] || TYPES.application_received;
 
+  const handleTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchMove = (e) => {
+    if (touchStartY.current === null) return;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (dy < 0) setSwipeY(dy);
+  };
+  const handleTouchEnd = (e) => {
+    if (touchStartY.current === null) return;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (dy < -40) { setVisible(false); onClose?.(); }
+    else setSwipeY(0);
+    touchStartY.current = null;
+  };
+
   return (
-    <div style={{ padding: '8px 12px' }} dir="rtl">
+    <div style={{ padding: '8px 12px', transform: `translateY(${swipeY}px)`, transition: swipeY === 0 ? 'transform 0.2s ease' : 'none' }} dir="rtl"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <style>{`
         @keyframes notifSlide {
           from { opacity: 0; transform: translateY(-16px) scale(0.97); }

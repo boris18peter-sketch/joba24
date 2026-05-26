@@ -11,12 +11,15 @@ import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 
-const STATUS = {
-  OPEN:      { label: 'פתוח',     bg: '#dbeafe', color: '#1d4ed8', dot: '#3b82f6' },
-  TAKEN:     { label: 'בעבודה',   bg: '#fef3c7', color: '#b45309', dot: '#f59e0b' },
-  COMPLETED: { label: 'הושלם',    bg: '#dcfce7', color: '#166534', dot: '#10b981' },
-  CANCELLED: { label: 'בוטל',     bg: '#fee2e2', color: '#991b1b', dot: '#ef4444' },
-  EXPIRED:   { label: 'פג תוקף',  bg: '#fef3c7', color: '#92400e', dot: '#f97316' },
+const STATUS_GRADIENT = {
+  OPEN:      'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
+  TAKEN:     'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+  COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+  CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
+  EXPIRED:   'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+};
+const STATUS_LABEL = {
+  OPEN: 'פתוח', TAKEN: 'בעבודה', COMPLETED: 'הושלם', CANCELLED: 'בוטל', EXPIRED: 'פג תוקף',
 };
 
 const TABS = [
@@ -176,80 +179,54 @@ export default function MyTasks() {
           </div>
         ) : (
           filtered.map(task => {
-            const st = STATUS[task.status] || STATUS.OPEN;
+            const gradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
+            const statusLabel = STATUS_LABEL[task.status] || task.status;
             const pendingApps = pendingCountForTask(task.id);
             return (
-              <div key={task.id} style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, boxShadow: '0 2px 10px rgba(26,111,212,0.06)' }}>
-                {/* Top row */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
-                  <Link to={`/task/${task.id}`} style={{ textDecoration: 'none', flex: 1 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{getCategoryLabel(task.category)} · {formatDistanceToNow(new Date(task.created_date), { addSuffix: true })}</div>
-                  </Link>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: st.bg, color: st.color, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.dot, display: 'inline-block' }} />
-                      {st.label}
-                    </span>
-                    <span style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>₪{task.price}</span>
+              <div key={task.id} onClick={() => navigate(`/task/${task.id}`)} style={{ borderRadius: 22, overflow: 'hidden', boxShadow: '0 6px 24px rgba(0,0,0,0.13)', cursor: 'pointer' }}>
+                <div style={{ background: gradient, padding: '16px 16px 14px', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: 12, left: 14, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {task.status === 'TAKEN' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'inline-block', boxShadow: '0 0 0 3px rgba(255,255,255,0.3)' }} />}
+                    <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: 0.4 }}>{statusLabel}</span>
+                  </div>
+                  <div style={{ height: 18 }} />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: 'white', fontWeight: 900, fontSize: 16, lineHeight: 1.25, marginBottom: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{task.title}</div>
+                      {task.location_name && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>📍 {task.location_name}</div>}
+                      {task.worker_name && task.status === 'TAKEN' && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.9)', marginTop: 3, fontWeight: 700 }}>👷 {task.worker_name}</div>}
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0, backdropFilter: 'blur(4px)' }}>
+                      <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{task.price}</div>
+                      {task.estimated_time && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 2 }}>{task.estimated_time}</div>}
+                    </div>
                   </div>
                 </div>
-
-                {/* Worker info */}
-                {task.worker_name && task.status === 'TAKEN' && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 12, padding: '8px 12px', marginBottom: 10, fontSize: 13, fontWeight: 700, color: '#b45309' }}>
-                    👷 {task.worker_name} מבצע את המשימה
-                  </div>
-                )}
-
-                {/* Pending applicants badge */}
-                {pendingApps > 0 && task.status === 'OPEN' && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '8px 12px', marginBottom: 10, fontSize: 12, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pendingPulse 1.5s infinite' }} />
-                    {pendingApps} בקשות ממתינות לאישורך
-                    <span style={{ marginRight: 'auto', background: '#fbbf24', color: 'white', borderRadius: 20, padding: '1px 7px', fontSize: 11, fontWeight: 900 }}>{pendingApps}</span>
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Link to={`/task/${task.id}`} style={{ textDecoration: 'none', flex: 1 }}>
-                    <button style={{ width: '100%', height: 36, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      👁 פרטים
-                    </button>
+                <div style={{ background: 'white', padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                  {pendingApps > 0 && task.status === 'OPEN' && (
+                    <div style={{ flex: 1, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pendingPulse 1.5s infinite', flexShrink: 0 }} />
+                      {pendingApps} בקשות ממתינות
+                    </div>
+                  )}
+                  <Link to={`/task/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                    <button style={{ height: 34, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>פרטים</button>
                   </Link>
-
                   {task.status === 'TAKEN' && (
-                    <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}>
-                      <button style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <MessageCircle size={14} /> צ'אט
+                    <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                      <button style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <MessageCircle size={13} /> צ'אט
                       </button>
                     </Link>
                   )}
-
                   {task.status === 'OPEN' && (
-                    <Link to={`/task/${task.id}`} style={{ textDecoration: 'none' }}>
-                      <button style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <Users size={14} /> מועמדים
-                      </button>
-                    </Link>
-                  )}
-
-                  {task.status === 'OPEN' && (
-                    <button
-                      onClick={() => setCancelTask(task)}
-                      style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#fff1f1', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <X size={14} /> בטל
+                    <button onClick={e => { e.stopPropagation(); setCancelTask(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#fff1f1', border: '1px solid #fecaca', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <X size={13} /> בטל
                     </button>
                   )}
-
                   {(task.status === 'EXPIRED' || task.status === 'CANCELLED') && (
-                    <button
-                      onClick={() => handleReopen(task)}
-                      style={{ height: 36, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <RefreshCw size={14} /> ערוך ופתח
+                    <button onClick={e => { e.stopPropagation(); handleReopen(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <RefreshCw size={13} /> פתח שוב
                     </button>
                   )}
                 </div>

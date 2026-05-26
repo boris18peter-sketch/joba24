@@ -167,7 +167,7 @@ function StatusDescription({ localStatus, isOwner, workerName }) {
     arrived:    { worker: 'אתה בשטח! עדכן כשמתחיל',  owner: `${workerName} הגיע — ממתין להתחיל` },
     starting:   { worker: 'מתחיל עכשיו, בהצלחה!',    owner: `${workerName} מתחיל את העבודה` },
     finishing:  { worker: 'כמעט שם, לחץ "סיימתי" בסיום', owner: `${workerName} מסיים — בקרוב הושלם` },
-    done:       { worker: 'ממתין לאישור המעסיק',      owner: 'לחץ "אשר ביצוע" לשחרר תשלום' },
+    done:       { worker: 'ממתין לאישור המעסיק',      owner: 'לחץ "אשר ביצוע" לאישור סיום העבודה' },
   };
   const desc = DESCRIPTIONS[localStatus];
   if (!desc) return null;
@@ -284,8 +284,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     if (stepIdx === 2) return {
       gradient: 'linear-gradient(135deg, #065f46, #059669)',
       emoji: '✅',
-      title: isOwner ? `${task.worker_name} סיים את הג'ובה!` : 'כל הכבוד! סיימת',
-      sub: isOwner ? 'אשר ביצוע לשחרר תשלום' : 'ממתין לאישור המעסיק',
+      title: isOwner ? `${task.worker_name} סיים את המשימה!` : 'כל הכבוד! סיימת',
+      sub: isOwner ? 'אשר ביצוע לאישור סיום העבודה' : 'ממתין לאישור המעסיק',
       badge: null,
     };
     if (stepIdx === 1) return {
@@ -322,13 +322,12 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     if (!isWorker) return null;
     if (stepIdx < 0 || localStatus === null)  return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#2563eb' };
     if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#d97706' };
-    if (stepIdx === 1) return { label: 'סיימתי את הג\'ובה', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
+    if (stepIdx === 1) return { label: 'סיימתי את המשימה', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
     return null;
   })();
 
   return (
     <motion.div
-      key={localStatus}
       initial={{ opacity: 0.85, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -445,7 +444,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             onClick={() => onUpdate({ status: 'COMPLETED', client_confirmed: true })}
             style={{ width: '100%', height: 56, borderRadius: 18, background: 'linear-gradient(135deg, #065f46, #059669)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', boxShadow: '0 6px 22px rgba(5,150,105,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            <CheckCircle size={19} strokeWidth={2} /> אשר ביצוע עבודה — שחרר תשלום
+            <CheckCircle size={19} strokeWidth={2} /> אשר סיום עבודה ✓
           </motion.button>
         </div>
       )}
