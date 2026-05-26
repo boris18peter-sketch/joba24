@@ -31,6 +31,8 @@ export default function Layout() {
   // Dedicated map: taskId → worker_id for tasks I'm working on as a TAKEN worker
   // This is never cleared, so cancellation detection always has the worker_id
   const takenWorkerRef = useRef({});
+  // Tracks application statuses to detect approved→rejected (revocation)
+  const appStatusRef = useRef({});
 
   const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
@@ -100,6 +102,15 @@ export default function Layout() {
     enabled: !!me?.id && isAuthenticated,
     staleTime: 60000,
   });
+
+  // Seed appStatusRef with current approved applications
+  useEffect(() => {
+    myApplications.forEach(app => {
+      if (!appStatusRef.current[app.id]) {
+        appStatusRef.current[app.id] = app.status;
+      }
+    });
+  }, [myApplications]);
 
   // Watch for task status changes — keep prevTasksRef up to date for all relevant tasks
   useEffect(() => {
@@ -315,14 +326,14 @@ export default function Layout() {
             workerName: prev.worker_name,
           });
         }
-        // Worker: publisher revoked the approval — only show to the worker, never to the client
-        if (prevWorkerId === me?.id && me?.id !== task.client_id && !prev.worker_status) {
+        // Worker: publisher revoked the approval — notification only here.
+      // Popup (setRevokedTask) is triggered via TaskApplication subscription (approved→rejected)
+        if (prevWorkerId === me?.id && me?.id !== task.client_id) {
           addNotification({
             type: 'approval_revoked',
             taskTitle: task.title,
             taskId: task.id,
           });
-          setRevokedTask(task);
         }
       }
 
@@ -364,6 +375,17 @@ export default function Layout() {
   useEffect(() => {
     if (!isAuthenticated || !me?.id) return;
     const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
+      // Detect when MY approved application is rejected → publisher revoked after approving
+      if (event.type === 'update' && event.data?.worker_id === me?.id) {
+        const appId = event.id || event.data?.id;
+        const prevStatus = appStatusRef.current[appId];
+        appStatusRef.current[appId] = event.data?.status;
+        if (prevStatus === 'approved' && event.data?.status === 'rejected') {
+          const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data?.task_id);
+          setRevokedTask(relatedTask || { id: event.data?.task_id, title: event.data?.task_title || 'משימה' });
+        }
+      }
+
       if (event.type === 'create' && event.data?.task_id) {
         // Someone applied to my task - notify client
         const task = myPublishedTasks.find(t => t.id === event.data.task_id);
