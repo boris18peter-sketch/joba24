@@ -19,8 +19,8 @@ export default function LiveActivityPulse({ task, compact }) {
     queryKey: ['applications-pulse', task?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }),
     enabled: !!task?.id,
-    refetchInterval: 12000,
-    staleTime: 8000,
+    refetchInterval: 45000,
+    staleTime: 30000,
   });
   const applicationCount = applications.filter(a => a.status !== 'cancelled').length;
 
@@ -28,8 +28,8 @@ export default function LiveActivityPulse({ task, compact }) {
   const { data: onlineWorkers = [] } = useQuery({
     queryKey: ['online-workers-pulse'],
     queryFn: () => base44.entities.UserPresence.filter({ is_online: true }),
-    refetchInterval: 20000,
-    staleTime: 15000,
+    refetchInterval: 60000,
+    staleTime: 45000,
   });
   const onlineCount = onlineWorkers.length;
 
