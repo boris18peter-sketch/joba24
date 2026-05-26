@@ -415,13 +415,19 @@ export default function Layout() {
             taskId: event.data.task_id,
           });
         } else if ((event.data?.status === 'rejected' || event.data?.status === 'cancelled') && event.data.worker_id === me?.id) {
-          // My application was rejected/cancelled
-          const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data.task_id);
-          addNotification({
-            type: 'application_rejected',
-            taskTitle: rejectedTask?.title || 'משימה',
-            taskId: event.data.task_id,
-          });
+          // Only show 'application_rejected' when the app was pending (not approved).
+          // If it was already approved, this is either a revocation (handled by ApprovalRevokedPopup)
+          // or a task cancellation (handled by task_cancelled_worker). Avoid double-notifications.
+          const rejAppId = event.id || event.data?.id;
+          const rejPrevStatus = appStatusRef.current[rejAppId];
+          if (rejPrevStatus !== 'approved') {
+            const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data.task_id);
+            addNotification({
+              type: 'application_rejected',
+              taskTitle: rejectedTask?.title || 'משימה',
+              taskId: event.data.task_id,
+            });
+          }
         }
       }
     });

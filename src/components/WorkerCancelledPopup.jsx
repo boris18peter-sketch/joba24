@@ -1,16 +1,20 @@
-import { Loader2, X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function WorkerCancelledPopup({ task, onClose }) {
+  const navigate = useNavigate();
+
+  const handleClose = () => {
+    onClose();
+    navigate('/');
+  };
+
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100001,
+        position: 'fixed', inset: 0, zIndex: 100001,
         background: 'rgba(5,15,40,0.55)',
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
         animation: 'fadeInBackdrop 0.2s ease',
         touchAction: 'none',
@@ -21,88 +25,84 @@ export default function WorkerCancelledPopup({ task, onClose }) {
     >
       <div
         dir="rtl"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
           background: 'white',
           borderRadius: '28px 28px 0 0',
-          width: '100%',
-          maxWidth: 480,
+          width: '100%', maxWidth: 480,
           boxShadow: '0 -20px 80px rgba(0,0,0,0.3)',
-          padding: '24px 20px 16px',
-          animation: 'slideUpModal 0.3s cubic-bezier(0.34,1.4,0.64,1)',
-          maxHeight: '90dvh',
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
+          padding: '24px 20px',
           paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+          animation: 'slideUpModal 0.3s cubic-bezier(0.34,1.4,0.64,1)',
+          maxHeight: '90dvh', overflowY: 'auto',
+          position: 'relative',
         }}
       >
         {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#e5e7eb', margin: '0 auto 24px' }} />
 
-        {/* Close button */}
+        {/* Close */}
         <button
           onClick={onClose}
           style={{
-            position: 'absolute',
-            top: 16,
-            left: 16, /* RTL: visually top-right */
-            width: 36,
-            height: 36,
-            borderRadius: 12,
-            background: '#f3f4f6',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 10,
-            transition: 'background 0.2s',
+            position: 'absolute', top: 16, left: 16,
+            width: 36, height: 36, borderRadius: 12,
+            background: '#f3f4f6', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 10,
           }}
         >
           <X size={18} color="#6b7280" />
         </button>
 
-        {/* Icon + Title + Description */}
-        <div style={{ textAlign: 'center', marginBottom: 28, marginTop: 8 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <span style={{ fontSize: 32 }}>😞</span>
+        {/* Icon + Title */}
+        <div style={{ textAlign: 'center', marginBottom: 24, marginTop: 8 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 20,
+            background: '#fff7ed', border: '2px solid #fed7aa',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px',
+          }}>
+            <AlertTriangle size={32} color="#f97316" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>המשימה בוטלה</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 12 }}>
-            בעל המשימה <strong style={{ color: '#1f2937' }}>"{task.title}"</strong> ביטל לאחר שיצאת לדרך
-          </div>
-          <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-            אתה יכול למצוא משימות אחרות בפיד
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>המשימה בוטלה</div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>
+            בעל המשימה ביטל לאחר שיצאת לדרך
           </div>
         </div>
 
-        {/* Info box - Support */}
-        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '14px 16px', marginBottom: 28 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#16a34a', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>✓</span> המשימה בוטלה על ידי המפרסם
+        {/* Task details */}
+        {task && (
+          <div style={{
+            background: '#fff7ed', border: '1px solid #fed7aa',
+            borderRadius: 14, padding: '14px 16px', marginBottom: 24,
+          }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#7c2d12', marginBottom: 4 }}>{task.title}</div>
+            {task.location_name && (
+              <div style={{ fontSize: 13, color: '#374151' }}>📍 {task.location_name}</div>
+            )}
           </div>
-          <div style={{ fontSize: 12, color: '#15803d' }}>תוכל להמשיך לחפש משימות אחרות בפיד</div>
+        )}
+
+        {/* Info */}
+        <div style={{
+          background: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: 12, padding: '12px 14px', marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 12, color: '#1a6fd4', lineHeight: 1.6 }}>
+            תוכל למצוא משימות אחרות בפיד
+          </div>
         </div>
 
         {/* Button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="btn-tap"
           style={{
-            width: '100%',
-            height: 52,
-            borderRadius: 14,
+            width: '100%', height: 52, borderRadius: 14,
             background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-            border: 'none',
-            color: 'white',
-            fontWeight: 900,
-            fontSize: 16,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            boxShadow: '0 4px 16px rgba(26, 111, 212, 0.35)',
+            border: 'none', color: 'white', fontWeight: 900, fontSize: 16,
+            cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)',
             WebkitTapHighlightColor: 'transparent',
           }}
         >
