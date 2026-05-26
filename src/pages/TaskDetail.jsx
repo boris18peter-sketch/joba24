@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -76,6 +76,7 @@ export default function TaskDetail() {
   const [showReport, setShowReport] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [creditsNeeded, setCreditsNeeded] = useState(null);
+  const [showOwnerMenu, setShowOwnerMenu] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const prevWorkerIdRef = useRef(null);
 
@@ -556,29 +557,7 @@ export default function TaskDetail() {
 
       <PageHeader
         title={task.title}
-        right={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            {isOwner && task.status === 'OPEN' && (
-              <Link to={`/edit-task/${id}`}>
-                <button style={{ height: 26, padding: '0 9px', borderRadius: 20, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 700, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Pencil size={9} /> עריכה
-                </button>
-              </Link>
-            )}
-            {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
-              <button
-                onClick={() => {
-                  const workerIsActive = ['on_the_way','delayed','parking','arrived','starting','finishing','done'].includes(task.worker_status);
-                  if (task.status === 'TAKEN' && workerIsActive) {
-                    window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
-                  } else { setShowCancelConfirm(true); }
-                }}
-                style={{ height: 26, padding: '0 9px', borderRadius: 20, background: '#fff5f5', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 10, cursor: 'pointer' }}
-              >ביטול</button>
-            )}
-            <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, ...(STATUS_PILL[task.status] || STATUS_PILL.OPEN) }}>{statusLabel}</span>
-          </div>
-        }
+        right={<span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, ...(STATUS_PILL[task.status] || STATUS_PILL.OPEN) }}>{statusLabel}</span>}
       />
 
       <div style={{ padding: '10px 12px 0' }} className="space-y-3">
@@ -630,16 +609,54 @@ export default function TaskDetail() {
 
         {/* Price Hero */}
         <div style={{ background: taskGradient, borderRadius: 22, padding: '18px 20px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+          {showOwnerMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowOwnerMenu(false)} />}
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-          {/* Status badge + live dot */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            {task.status === 'OPEN' && (
-              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-                <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
-              </span>
+          {/* Top row: status + 3-dot */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {task.status === 'OPEN' && (
+                <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                  <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
+                </span>
+              )}
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+            </div>
+            {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
+              <div style={{ position: 'relative', zIndex: 100 }}>
+                <button
+                  onClick={e => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
+                  style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+                >
+                  <MoreHorizontal size={17} />
+                </button>
+                {showOwnerMenu && (
+                  <div style={{ position: 'absolute', top: 38, left: 0, zIndex: 200, background: 'white', borderRadius: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', overflow: 'hidden', minWidth: 168 }} onClick={e => e.stopPropagation()}>
+                    {task.status === 'OPEN' && (
+                      <Link to={`/edit-task/${id}`} onClick={() => setShowOwnerMenu(false)}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
+                          <Pencil size={14} color="#1a6fd4" />
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b' }}>עריכת משימה</span>
+                        </div>
+                      </Link>
+                    )}
+                    <div
+                      onClick={() => {
+                        setShowOwnerMenu(false);
+                        const workerIsActive = ['on_the_way','delayed','parking','arrived','starting','finishing','done'].includes(task.worker_status);
+                        if (task.status === 'TAKEN' && workerIsActive) {
+                          window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
+                        } else { setShowCancelConfirm(true); }
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer' }}
+                    >
+                      <X size={14} color="#dc2626" />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626' }}>ביטול משימה</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-            <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
           </div>
           {/* Price + Distance */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
@@ -656,16 +673,33 @@ export default function TaskDetail() {
               </div>
             )}
           </div>
-          {/* Bottom row: time + expiry */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+          {/* Info row: publisher · location · date */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 7, flexWrap: 'wrap' }}>
+            {task.client_name && (
+              <a href={`/public-profile?id=${task.client_id}`} style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 700, textDecoration: 'none' }}>{task.client_name}</a>
+            )}
+            {task.location_name && (
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                {task.client_name && <span>·</span>} <MapPin size={9} strokeWidth={2} /> {task.location_name.split(',')[0]}
+              </span>
+            )}
+            {task.created_date && (
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>· {format(new Date(task.created_date), 'dd.MM.yy')}</span>
+            )}
+          </div>
+          {/* Time section */}
+          <div style={{ marginTop: 12 }}>
             {task.estimated_time && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.12)', borderRadius: 20, padding: '4px 10px' }}>
-                <Clock size={12} />
-                <span>{task.estimated_time}</span>
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginBottom: 3, letterSpacing: 0.3 }}>זמן משוער להשלמת משימה</div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px' }}>
+                  <Clock size={12} />
+                  <span>{task.estimated_time}</span>
+                </div>
               </div>
             )}
             {task.expires_at && task.status === 'OPEN' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
                 <Clock size={11} />
                 <span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
               </div>
@@ -847,33 +881,9 @@ export default function TaskDetail() {
               <NavButtons lat={task.lat} lng={task.lng} locationName={task.location_name} />
             </div>
           )}
-          {task.created_date && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">פורסם</div>
-                <div className="font-medium text-sm">{format(new Date(task.created_date), 'dd.MM.yyyy · HH:mm')}</div>
-              </div>
-            </div>
-          )}
 
-          {task.client_name && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-yellow-100 flex items-center justify-center shrink-0">
-                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div className="text-xs text-muted-foreground">מפרסם</div>
-                <div className="font-medium text-sm flex items-center gap-1.5">
-                  <a href={`/public-profile?id=${task.client_id}`} style={{ color: '#0f2b6b', fontWeight: 700, textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.client_name}</a>
-                  <VerifiedBadge /> · {task.client_rating?.toFixed(1) || 'חדש'}
-                </div>
-                {clientUser && <div style={{ marginTop: 6 }}><TrustBadges user={clientUser} compact /></div>}
-              </div>
-            </div>
-          )}
+
+
         </div>
 
         {/* Requirements */}
