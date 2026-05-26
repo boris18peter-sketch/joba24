@@ -286,18 +286,6 @@ export default function EditTask() {
           )}
         </SectionCard>
 
-        {/* Payment Method */}
-        <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>💳 אמצעי תשלום</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {PAYMENT_METHODS.map(pm => (
-              <button key={pm.value} onClick={() => set('payment_method', pm.value)}
-                style={{ padding: '12px 8px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : inactiveBtn) }}
-              >{pm.label}</button>
-            ))}
-          </div>
-        </SectionCard>
-
         {/* Expiry */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
@@ -394,6 +382,18 @@ export default function EditTask() {
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : '#555' }}>{label}</span>
               </button>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* Payment Method */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>💳 אמצעי תשלום</Label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {PAYMENT_METHODS.map(pm => (
+              <button key={pm.value} onClick={() => set('payment_method', pm.value)}
+                style={{ padding: '12px 8px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : inactiveBtn) }}
+              >{pm.label}</button>
             ))}
           </div>
         </SectionCard>
