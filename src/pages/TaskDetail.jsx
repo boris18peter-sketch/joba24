@@ -459,11 +459,11 @@ export default function TaskDetail() {
   if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
 
   const STATUS_GRADIENT = {
-    OPEN: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
-    TAKEN: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
-    COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-    CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
-    EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+    OPEN: '#1a6fd4',
+    TAKEN: '#059669',
+    COMPLETED: '#059669',
+    CANCELLED: '#64748b',
+    EXPIRED: '#ea580c',
   };
   const STATUS_PILL = {
     OPEN:      { background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' },
