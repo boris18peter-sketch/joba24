@@ -38,11 +38,11 @@ import ApplySheet from '@/components/ApplySheet';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
-  if (status === 'OPEN')      return isOwner ? 'מחפש פועל' : 'פתוח';
-  if (status === 'TAKEN')     return isOwner ? 'בביצוע' : 'לקחתי';
+  if (status === 'OPEN') return isOwner ? 'מחפש פועל' : 'פתוח';
+  if (status === 'TAKEN') return isOwner ? 'בביצוע' : 'לקחתי';
   if (status === 'COMPLETED') return 'הושלם';
   if (status === 'CANCELLED') return 'בוטל';
-  if (status === 'EXPIRED')   return 'פג תוקף';
+  if (status === 'EXPIRED') return 'פג תוקף';
   return status;
 };
 const statusConfig = {
@@ -50,7 +50,7 @@ const statusConfig = {
   TAKEN: { label: 'בביצוע', color: 'text-indigo-700 bg-indigo-100' },
   COMPLETED: { label: 'הושלם', color: 'text-gray-700 bg-gray-100' },
   CANCELLED: { label: 'בוטל', color: 'text-red-700 bg-red-100' },
-  EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' },
+  EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' }
 };
 
 export default function TaskDetail() {
@@ -86,7 +86,7 @@ export default function TaskDetail() {
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
+      navigator.geolocation.getCurrentPosition((pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       }, () => {}, { timeout: 5000 });
     }
@@ -101,8 +101,8 @@ export default function TaskDetail() {
   const { data: myReview } = useQuery({
     queryKey: ['myReview', id, me?.id],
     queryFn: () => base44.entities.Review.filter({ task_id: id, reviewer_id: me.id }),
-    select: data => data[0],
-    enabled: !!me?.id,
+    select: (data) => data[0],
+    enabled: !!me?.id
   });
   // Application count for live activity in banner
   const { data: taskApplications = [] } = useQuery({
@@ -110,47 +110,47 @@ export default function TaskDetail() {
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
     enabled: !!id,
     staleTime: 30000,
-    refetchInterval: 45000,
+    refetchInterval: 45000
   });
-  const applicationCount = taskApplications.filter(a => a.status !== 'cancelled').length;
+  const applicationCount = taskApplications.filter((a) => a.status !== 'cancelled').length;
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
-    select: data => data[0],
+    select: (data) => data[0],
     staleTime: 0,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: true
   });
 
   // Rotate status label text every 3s for OPEN tasks
   useEffect(() => {
     if (!task || task.status !== 'OPEN' || applicationCount === 0) return;
-    const iv = setInterval(() => setLabelRotIdx(i => (i + 1) % 2), 3000);
+    const iv = setInterval(() => setLabelRotIdx((i) => (i + 1) % 2), 3000);
     return () => clearInterval(iv);
   }, [task?.status, applicationCount]);
 
   // Fetch client + worker user data for trust badges
   const { data: clientUser } = useQuery({
     queryKey: ['publicUser', task?.client_id],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.client_id }); return u[0] || null; },
+    queryFn: async () => {const u = await base44.entities.User.filter({ id: task.client_id });return u[0] || null;},
     enabled: !!task?.client_id,
-    staleTime: 120000,
+    staleTime: 120000
   });
   const { data: workerUser } = useQuery({
     queryKey: ['publicUser', task?.worker_id],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: task.worker_id }); return u[0] || null; },
+    queryFn: async () => {const u = await base44.entities.User.filter({ id: task.worker_id });return u[0] || null;},
     enabled: !!task?.worker_id && task?.status === 'TAKEN',
-    staleTime: 120000,
+    staleTime: 120000
   });
 
   // Check if MY application was approved for this task — only active ones
   const { data: myApp } = useQuery({
     queryKey: ['myApp', id, me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
-    select: data => data.find(a => a.status === 'pending' || a.status === 'approved') || null,
+    select: (data) => data.find((a) => a.status === 'pending' || a.status === 'approved') || null,
     enabled: !!me?.id,
-    staleTime: 0,
+    staleTime: 0
   });
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
@@ -252,7 +252,7 @@ export default function TaskDetail() {
       status: 'TAKEN',
       worker_id: me?.id,
       worker_name: me?.full_name,
-      worker_status: 'on_the_way',
+      worker_status: 'on_the_way'
     }),
     onSuccess: async () => {
       setTaskTaken(true);
@@ -265,7 +265,7 @@ export default function TaskDetail() {
       setTimeout(() => setConfetti(false), 100);
       console.log('✅ TAKE TASK MUTATION COMPLETE - Task refetched');
       toast.success('קחת את המשימה! 🎉');
-    },
+    }
   });
 
   const cancelMutation = useMutation({
@@ -277,7 +277,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
-    },
+    }
   });
 
   const reopenMutation = useMutation({
@@ -285,14 +285,14 @@ export default function TaskDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       toast.success('המשימה נפתחה מחדש!');
-    },
+    }
   });
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
       // 1. Cancel the worker's approved application + refund credits
       const workerApps = await base44.entities.TaskApplication.filter({ task_id: id, worker_id: me?.id });
-      const activeApps = workerApps.filter(a => a.status === 'approved' || a.status === 'pending');
+      const activeApps = workerApps.filter((a) => a.status === 'approved' || a.status === 'pending');
       for (const app of activeApps) {
         const creditsToRefund = app.credits_charged || 0;
         if (creditsToRefund > 0) {
@@ -306,7 +306,7 @@ export default function TaskDetail() {
             type: 'Refund_Rejection',
             task_id: id,
             balance_after: newBalance,
-            note: `החזר קרדיטים - יציאה מהמשימה`,
+            note: `החזר קרדיטים - יציאה מהמשימה`
           });
         }
         await base44.entities.TaskApplication.update(app.id, { status: 'cancelled' });
@@ -317,7 +317,7 @@ export default function TaskDetail() {
           task_id: id,
           sender_id: me.id,
           sender_name: me.full_name,
-          content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`,
+          content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`
         });
       }
       // 3. Reset task back to OPEN
@@ -335,7 +335,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
       toast.success('יצאת מהמשימה והקרדיטים הוחזרו 🪙');
       navigate('/');
-    },
+    }
   });
 
   const cancelApplicationMutation = useMutation({
@@ -353,7 +353,7 @@ export default function TaskDetail() {
           type: 'Refund_Rejection',
           task_id: id,
           balance_after: newBalance,
-          note: `החזר קרדיטים - ביטול בקשה`,
+          note: `החזר קרדיטים - ביטול בקשה`
         });
       }
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
@@ -364,7 +364,7 @@ export default function TaskDetail() {
       queryClient.setQueryData(['myApp', id, me?.id], null);
       // Also update the feed applications cache immediately
       queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) =>
-        old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
+      old.map((a) => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
       );
     },
     onSuccess: () => {
@@ -378,7 +378,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
       toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
-    },
+    }
   });
 
   const handleApply = async (msgOverride) => {
@@ -401,7 +401,7 @@ export default function TaskDetail() {
       // Sync caches
       queryClient.setQueryData(['myApp', id, me?.id], newApp);
       queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
-        const without = old.filter(a => !(a.task_id === id && a.worker_id === me?.id));
+        const without = old.filter((a) => !(a.task_id === id && a.worker_id === me?.id));
         return [...without, newApp];
       });
       // Refresh me to reflect updated credits
@@ -437,12 +437,12 @@ export default function TaskDetail() {
       task_id: id,
       sender_id: me.id,
       sender_name: me.full_name,
-      content: `👋 היי! המשימה "${task.title}" פגה תוקף אבל אני מעוניין לבצע אותה. תוכל לפתוח אותה מחדש עבורי?`,
+      content: `👋 היי! המשימה "${task.title}" פגה תוקף אבל אני מעוניין לבצע אותה. תוכל לפתוח אותה מחדש עבורי?`
     });
     // Also create a signal record on the task so owner can see interested workers
     await base44.entities.Task.update(id, {
       signal_worker_id: me.id,
-      signal_worker_name: me.full_name,
+      signal_worker_name: me.full_name
     });
     setSignalSent(true);
     toast.success('האיתות נשלח לבעל המשימה! 📣');
@@ -464,19 +464,19 @@ export default function TaskDetail() {
           </div>
           {/* Details skeleton */}
           <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[1,2,3].map(i => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {[1, 2, 3].map((i) =>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5', flexShrink: 0 }} className="animate-pulse" />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                   <div style={{ height: 11, width: '30%', borderRadius: 6, background: '#e8edf5' }} className="animate-pulse" />
                   <div style={{ height: 14, width: '55%', borderRadius: 6, background: '#e8edf5' }} className="animate-pulse" />
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   }
   if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
 
@@ -485,14 +485,14 @@ export default function TaskDetail() {
     TAKEN: task.worker_status === 'done' ? '#059669' : '#1a6fd4',
     COMPLETED: '#059669',
     CANCELLED: '#64748b',
-    EXPIRED: '#ea580c',
+    EXPIRED: '#ea580c'
   };
   const STATUS_PILL = {
-    OPEN:      { background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' },
-    TAKEN:     { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' },
+    OPEN: { background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' },
+    TAKEN: { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' },
     COMPLETED: { background: '#f0fdf4', color: '#059669', border: '1px solid #86efac' },
     CANCELLED: { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' },
-    EXPIRED:   { background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' },
+    EXPIRED: { background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa' }
   };
   const taskGradient = STATUS_GRADIENT[task.status] || STATUS_GRADIENT.OPEN;
 
@@ -501,8 +501,8 @@ export default function TaskDetail() {
     const R = 6371;
     const dLat = (task.lat - userLocation.lat) * Math.PI / 180;
     const dLon = (task.lng - userLocation.lng) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(userLocation.lat * Math.PI/180) * Math.cos(task.lat * Math.PI/180) * Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation.lat * Math.PI / 180) * Math.cos(task.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   })();
 
   const isOwner = me?.id === task.client_id;
@@ -525,8 +525,8 @@ export default function TaskDetail() {
             login();
           }}
           onClose={() => setShowLoginPrompt(false)}
-          type="apply"
-        />,
+          type="apply" />,
+
         document.body
       )}
       {showApprovedPopup && createPortal(
@@ -557,15 +557,15 @@ export default function TaskDetail() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setShowExitWarning(false)}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
-              >
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
+                
                 המשך במשימה
               </button>
               <button
-                onClick={() => { setShowExitWarning(false); cancelTakeMutation.mutate(); }}
+                onClick={() => {setShowExitWarning(false);cancelTakeMutation.mutate();}}
                 disabled={cancelTakeMutation.isPending}
-                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-              >
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                
                 {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> כן, צא מהמשימה</>}
               </button>
             </div>
@@ -579,13 +579,13 @@ export default function TaskDetail() {
 
       <PageHeader
         title={task.title}
-        right={<span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, ...(STATUS_PILL[task.status] || STATUS_PILL.OPEN) }}>{statusLabel}</span>}
-      />
+        right={<span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, ...(STATUS_PILL[task.status] || STATUS_PILL.OPEN) }} className="hidden">{statusLabel}</span>} />
+      
 
       <div style={{ padding: '10px 12px 0' }} className="space-y-3">
         {/* Expired banner */}
-        {isExpired && (
-          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 20, padding: 16 }}>
+        {isExpired &&
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 20, padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <AlertTriangle size={20} color="#f97316" />
               <div>
@@ -593,36 +593,36 @@ export default function TaskDetail() {
                 <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>המשימה הייתה פתוחה ופג תוקפה</div>
               </div>
             </div>
-            {isOwner && (
-              <Button
-                onClick={() => {
-                  if (task.payment_status === 'funded') {
-                    navigate(`/edit-task/${id}`, { state: { repostMode: true } });
-                  } else {
-                    reopenMutation.mutate();
-                  }
-                }}
-                disabled={reopenMutation.isPending}
-                className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11"
-              >
+            {isOwner &&
+          <Button
+            onClick={() => {
+              if (task.payment_status === 'funded') {
+                navigate(`/edit-task/${id}`, { state: { repostMode: true } });
+              } else {
+                reopenMutation.mutate();
+              }
+            }}
+            disabled={reopenMutation.isPending}
+            className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11">
+            
                 {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את המשימה מחדש</>}
               </Button>
-            )}
-            {!isOwner && !signalSent && (
-              <Button onClick={() => gate(handleSignalReopen)} variant="outline"
-                className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
-              >
+          }
+            {!isOwner && !signalSent &&
+          <Button onClick={() => gate(handleSignalReopen)} variant="outline"
+          className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11">
+            
                 <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> שלח איתות לבעל המשימה
               </Button>
-            )}
-            {!isOwner && signalSent && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px' }}>
+          }
+            {!isOwner && signalSent &&
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px' }}>
                 <div style={{ fontWeight: 800, color: '#166534', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} color="#16a34a" /> האיתות נשלח!</div>
                 <div style={{ fontSize: 12, color: '#15803d', marginTop: 3 }}>מחכה לאישור פתיחת המשימה מחדש</div>
               </div>
-            )}
+          }
           </div>
-        )}
+        }
 
 
 
@@ -631,50 +631,50 @@ export default function TaskDetail() {
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
           {/* WorkerTracker at top when TAKEN */}
-          {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
-            <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
+          {(isOwner && task.status === 'TAKEN' || isWorker && task.status === 'TAKEN') &&
+          <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
               <WorkerTrackerBar
-                task={task}
-                isWorker={isWorker}
-                isOwner={isOwner}
-                onUpdate={handleWorkerUpdate}
-                showMapButton={!!(task.worker_lat && task.worker_lng)}
-                onMapToggle={() => setShowWorkerMap(v => !v)}
-              />
-              {showWorkerMap && isOwner && task.worker_lat && task.worker_lng && (
-                <div style={{ marginTop: 10, borderRadius: 16, overflow: 'hidden' }}>
+              task={task}
+              isWorker={isWorker}
+              isOwner={isOwner}
+              onUpdate={handleWorkerUpdate}
+              showMapButton={!!(task.worker_lat && task.worker_lng)}
+              onMapToggle={() => setShowWorkerMap((v) => !v)} />
+            
+              {showWorkerMap && isOwner && task.worker_lat && task.worker_lng &&
+            <div style={{ marginTop: 10, borderRadius: 16, overflow: 'hidden' }}>
                   <LiveWorkerMap task={task} />
                 </div>
-              )}
+            }
             </div>
-          )}
+          }
 
           <div style={{ padding: '16px 18px 18px' }}>
             {/* Top row: status + 3-dot */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {task.status === 'OPEN' && (
-                  <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                {task.status === 'OPEN' &&
+                <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
                     <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
                     <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
                   </span>
-                )}
+                }
                 <span key={labelRotIdx} style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5, transition: 'opacity 0.3s' }}>
-                  {task.status === 'OPEN'
-                    ? (applicationCount > 0 && labelRotIdx === 1
-                      ? `${applicationCount} עובדים הגישו בקשה`
-                      : 'מחפש פועל')
-                    : statusLabel}
+                  {task.status === 'OPEN' ?
+                  applicationCount > 0 && labelRotIdx === 1 ?
+                  `${applicationCount} עובדים הגישו בקשה` :
+                  'מחפש פועל' :
+                  statusLabel}
                 </span>
               </div>
-              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
-                <button
-                  onClick={e => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
-                  style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
-                >
+              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN' && !!task.worker_status) &&
+              <button
+                onClick={(e) => {e.stopPropagation();setShowOwnerMenu((v) => !v);}}
+                style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                
                   <MoreVertical size={17} />
                 </button>
-              )}
+              }
             </div>
 
             {/* Price + Distance/Location */}
@@ -684,41 +684,41 @@ export default function TaskDetail() {
                 <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>₪{task.price}</div>
               </div>
               <div style={{ flexShrink: 0 }}>
-                {distKm != null && !isNaN(distKm) ? (
-                  <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
+                {distKm != null && !isNaN(distKm) ?
+                <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
                     <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>
                       {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
                     </div>
-                    {task.location_name && (
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 3, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</div>
-                    )}
-                  </div>
-                ) : task.location_name ? (
-                  <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {task.location_name &&
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 3, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</div>
+                  }
+                  </div> :
+                task.location_name ?
+                <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
                     <MapPin size={12} strokeWidth={2} />
                     <span style={{ fontSize: 11, fontWeight: 600, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</span>
-                  </div>
-                ) : null}
+                  </div> :
+                null}
               </div>
             </div>
 
             {/* Description */}
-            {task.description && (
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
+            {task.description &&
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
                 {task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description}
               </div>
-            )}
+            }
 
             {/* Publisher + requirements */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              {task.client_name && (
-                <a href={`/public-profile?id=${task.client_id}`} style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {task.client_name &&
+              <a href={`/public-profile?id=${task.client_id}`} style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>{task.client_name[0]}</div>
                   <span>{task.client_name}</span>
                   {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 10 }}>★ {task.client_rating.toFixed(1)}</span>}
                   {task.client_verified && <VerifiedBadge size="sm" />}
                 </a>
-              )}
+              }
               <div style={{ display: 'flex', gap: 4 }}>
                 {task.requirements?.vehicle && <span title="דרוש רכב" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🚗</span>}
                 {task.requirements?.two_people && <span title="שני אנשים" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>👥</span>}
@@ -727,211 +727,211 @@ export default function TaskDetail() {
             </div>
 
             {/* Time + expiry */}
-            {(task.estimated_time || (task.expires_at && task.status === 'OPEN')) && (
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-                {task.estimated_time && (
-                  <div>
+            {(task.estimated_time || task.expires_at && task.status === 'OPEN') &&
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+                {task.estimated_time &&
+              <div>
                     <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 3, letterSpacing: 0.3 }}>זמן משוער</div>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px' }}>
                       <Clock size={11} /><span>{task.estimated_time}</span>
                     </div>
                   </div>
-                )}
-                {task.expires_at && task.status === 'OPEN' && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
+              }
+                {task.expires_at && task.status === 'OPEN' &&
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
                     <Clock size={11} /><span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
                   </div>
-                )}
+              }
               </div>
-            )}
+            }
 
             {/* Owner: waiting for applications */}
-            {isOwner && task.status === 'OPEN' && applicationCount === 0 && (
-              <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '7px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
+            {isOwner && task.status === 'OPEN' && applicationCount === 0 &&
+            <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '7px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
                 <span style={{ fontSize: 13 }}>✋</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.88)' }}>ממתין לאישור · עדיין לא הגיעו בקשות מעובדים</span>
               </div>
-            )}
+            }
 
 
 
             {/* Approved CTA */}
-            {isApproved && !isWorker && task.status === 'OPEN' && (
-              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
+            {isApproved && !isWorker && task.status === 'OPEN' &&
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
                 <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>🎉 בקשתך אושרה!</div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
-                    style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                  >
+                style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  
                     {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : '🚀 צא עכשיו'}
                   </button>
                   <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
-                    style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-                  >בטל</button>
+                style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                  בטל</button>
                 </div>
               </div>
-            )}
+            }
 
             {/* Apply button */}
-            {canApplyManual && !showApplyForm && (
-              <button
-                onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } gate(() => setShowApplyForm(true)); }}
-                style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}
-              >
+            {canApplyManual && !showApplyForm &&
+            <button
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;}gate(() => setShowApplyForm(true));}}
+              style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
+              
                 <Send size={15} strokeWidth={1.8} />
                 הגש בקשה — {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={14} />
               </button>
-            )}
+            }
 
             {/* Pending pill */}
-            {hasPendingApp && !isOwner && (
-              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {hasPendingApp && !isOwner &&
+            <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock size={12} />
                 <span style={{ fontSize: 12, fontWeight: 700 }}>בקשתך ממתינה לאישור</span>
               </div>
-            )}
+            }
 
             {/* Secondary actions: chat + cancel — inside banner */}
-            {!isOwner && (hasPendingApp || isApproved) && (
-              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            {!isOwner && (hasPendingApp || isApproved) &&
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                 <button
-                  onClick={() => navigate(`/chat/${id}`)}
-                  style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                >
+                onClick={() => navigate(`/chat/${id}`)}
+                style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                
                   <MessageCircle size={13} /> הודעה למפרסם
                 </button>
-                {hasPendingApp && (
-                  <button
-                    onClick={() => cancelApplicationMutation.mutate()}
-                    disabled={cancelApplicationMutation.isPending}
-                    style={{ height: 34, padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-                  >
+                {hasPendingApp &&
+              <button
+                onClick={() => cancelApplicationMutation.mutate()}
+                disabled={cancelApplicationMutation.isPending}
+                style={{ height: 34, padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                
                     {cancelApplicationMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <><X size={11} /> בטל בקשה</>}
                   </button>
-                )}
+              }
               </div>
-            )}
+            }
 
             {/* Report — tiny, inside banner */}
-            {!isOwner && (
-              <button
-                onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } setShowReport(true); }}
-                style={{ width: '100%', height: 26, background: 'none', border: 'none', color: 'rgba(255,255,255,0.38)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}
-              >
+            {!isOwner &&
+            <button
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;}setShowReport(true);}}
+              style={{ width: '100%', height: 26, background: 'none', border: 'none', color: 'rgba(255,255,255,0.38)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}>
+              
                 <Flag size={10} /> דיווח על המשימה
               </button>
-            )}
+            }
           </div>
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
 
         {/* Task location map — shown for non-TAKEN tasks with location */}
-        {task.status !== 'TAKEN' && task.lat && task.lng && (
-          <TaskLocationMap task={task} />
-        )}
+        {task.status !== 'TAKEN' && task.lat && task.lng &&
+        <TaskLocationMap task={task} />
+        }
 
         {/* Images + Video */}
-        {(task.images?.length > 0 || task.video_url) && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {task.images?.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {task.images.map((img, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      const allItems = [
-                        ...task.images.map(url => ({ type: 'image', url })),
-                        ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
-                      ];
-                      setLightboxIndex(allItems.findIndex(it => it.url === img));
-                      setLightboxOpen(true);
-                    }}
-                    style={{
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      background: 'none',
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      flex: '0 0 auto',
-                      position: 'relative',
-                      display: 'block',
-                    }}
-                  >
+        {(task.images?.length > 0 || task.video_url) &&
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {task.images?.length > 0 &&
+          <div className="flex gap-2 overflow-x-auto pb-1">
+                {task.images.map((img, i) =>
+            <button
+              key={i}
+              onClick={() => {
+                const allItems = [
+                ...task.images.map((url) => ({ type: 'image', url })),
+                ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])];
+
+                setLightboxIndex(allItems.findIndex((it) => it.url === img));
+                setLightboxOpen(true);
+              }}
+              style={{
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                background: 'none',
+                borderRadius: 16,
+                overflow: 'hidden',
+                flex: '0 0 auto',
+                position: 'relative',
+                display: 'block'
+              }}>
+              
                     <img src={img} alt="" className="w-32 h-24 rounded-2xl object-cover border border-gray-100 hover:opacity-80 transition-opacity" />
                   </button>
-                ))}
-              </div>
             )}
-            {task.video_url && (
-              <button
-                onClick={() => {
-                  const allItems = [
-                    ...task.images.map(url => ({ type: 'image', url })),
-                    { type: 'video', url: task.video_url }
-                  ];
-                  setLightboxIndex(allItems.length - 1);
-                  setLightboxOpen(true);
-                }}
-                style={{
-                  border: 'none',
-                  padding: 0,
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  background: '#000',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  display: 'block',
-                }}
-              >
+              </div>
+          }
+            {task.video_url &&
+          <button
+            onClick={() => {
+              const allItems = [
+              ...task.images.map((url) => ({ type: 'image', url })),
+              { type: 'video', url: task.video_url }];
+
+              setLightboxIndex(allItems.length - 1);
+              setLightboxOpen(true);
+            }}
+            style={{
+              border: 'none',
+              padding: 0,
+              borderRadius: 16,
+              overflow: 'hidden',
+              background: '#000',
+              cursor: 'pointer',
+              position: 'relative',
+              display: 'block'
+            }}>
+            
                 <video
-                  src={task.video_url}
-                  style={{ width: '100%', maxHeight: 220, display: 'block', objectFit: 'cover', opacity: 0.9 }}
-                />
+              src={task.video_url}
+              style={{ width: '100%', maxHeight: 220, display: 'block', objectFit: 'cover', opacity: 0.9 }} />
+            
                 <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    borderRadius: 16,
-                    pointerEvents: 'none',
-                  }}
-                >
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(0, 0, 0, 0.3)',
+                borderRadius: 16,
+                pointerEvents: 'none'
+              }}>
+              
                   <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      background: 'rgba(255, 255, 255, 0.8)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                
                     <Play size={20} color="#000" fill="#000" />
                   </div>
                 </div>
               </button>
-            )}
+          }
           </div>
-        )}
+        }
 
         {/* Live worker map */}
         {task.status === 'TAKEN' && task.worker_lat && task.worker_lng &&
-          ['on_the_way', 'delayed', 'parking'].includes(task.worker_status) && (
-          <LiveWorkerMap task={task} />
-        )}
+        ['on_the_way', 'delayed', 'parking'].includes(task.worker_status) &&
+        <LiveWorkerMap task={task} />
+        }
 
         {/* Applicants for owner — only show when there are actual applicants */}
-        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) && (
-          <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
-        )}
+        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || task.status === 'TAKEN' && !task.worker_status) &&
+        <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
+        }
 
         {/* Actions */}
-        {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED','CANCELLED','EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {(canApplyManual || task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) || isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) || isWorker && task.status === 'TAKEN') && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* Apply sheet portal */}
           {canApplyManual && showApplyForm && createPortal(
@@ -939,58 +939,58 @@ export default function TaskDetail() {
               task={task}
               loading={applyLoading}
               onClose={() => setShowApplyForm(false)}
-              onApply={(msg) => { setApplyMessage(msg); handleApply(msg); }}
-            />,
+              onApply={(msg) => {setApplyMessage(msg);handleApply(msg);}} />,
+
             document.body
           )}
 
           {/* Rating CTA for completed tasks */}
-          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview && (
-            <button onClick={() => setShowRating(true)}
-              style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}
-            >
+          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview &&
+          <button onClick={() => setShowRating(true)}
+          style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
+            
               <Star size={16} className="fill-white" /> דרג את {me?.id === task.client_id ? task.worker_name : task.client_name}
             </button>
-          )}
-          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview && (
-            <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
+          }
+          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview &&
+          <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
               <Star size={15} className="fill-yellow-400 text-yellow-400" />
-              {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב
+              {[1, 2, 3, 4, 5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב
             </div>
-          )}
+          }
 
           {/* Repost */}
-          {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) && (
-            <button
-              onClick={() => {
-                if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
-                  navigate(`/edit-task/${id}`, { state: { repostMode: true } });
-                  return;
-                }
-                const params = new URLSearchParams({ repost: '1', title: task.title || '', description: task.description || '', price: String(task.price || ''), city: task.city || '', location_name: task.location_name || '', category: task.category || '', estimated_time: task.estimated_time || '', approval_mode: task.approval_mode || 'manual' });
-                navigate(`/create-task?${params.toString()}`);
-              }}
-              style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}
-            >
+          {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) &&
+          <button
+            onClick={() => {
+              if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
+                navigate(`/edit-task/${id}`, { state: { repostMode: true } });
+                return;
+              }
+              const params = new URLSearchParams({ repost: '1', title: task.title || '', description: task.description || '', price: String(task.price || ''), city: task.city || '', location_name: task.location_name || '', category: task.category || '', estimated_time: task.estimated_time || '', approval_mode: task.approval_mode || 'manual' });
+              navigate(`/create-task?${params.toString()}`);
+            }}
+            style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
+            
               <RotateCcw size={16} /> פרסם שוב
             </button>
-          )}
+          }
 
           {/* Exit task */}
-          {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
-            <button onClick={() => setShowExitWarning(true)} disabled={cancelTakeMutation.isPending}
-              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
-            >
+          {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' &&
+          <button onClick={() => setShowExitWarning(true)} disabled={cancelTakeMutation.isPending}
+          style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+            
               {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
             </button>
-          )}
+          }
         </div>}
       </div>
 
 
 
       {showCompletion && createPortal(
-        <CompletionModal task={task} me={me} onClose={() => { setShowCompletion(false); setShowRating(true); }} />,
+        <CompletionModal task={task} me={me} onClose={() => {setShowCompletion(false);setShowRating(true);}} />,
         document.body
       )}
       {showRating && task && me && createPortal(
@@ -1003,21 +1003,21 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {showBuyCredits && (
-        <BuyCreditsModal
-          creditsNeeded={creditsNeeded}
-          onClose={() => setShowBuyCredits(false)}
-        />
-      )}
+      {showBuyCredits &&
+      <BuyCreditsModal
+        creditsNeeded={creditsNeeded}
+        onClose={() => setShowBuyCredits(false)} />
+
+      }
 
       {/* Owner 3-dot bottom sheet */}
       {showOwnerMenu && createPortal(
         <div className="mobile-sheet-overlay" onClick={() => setShowOwnerMenu(false)}>
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={e => e.stopPropagation()}>
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>פעולות משימה</div>
-            {task.status === 'OPEN' && (
-              <Link to={`/edit-task/${id}`} onClick={() => setShowOwnerMenu(false)}>
+            {task.status === 'OPEN' &&
+            <Link to={`/edit-task/${id}`} onClick={() => setShowOwnerMenu(false)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Pencil size={17} color="#1a6fd4" />
@@ -1028,17 +1028,17 @@ export default function TaskDetail() {
                   </div>
                 </div>
               </Link>
-            )}
+            }
             <div
               onClick={() => {
                 setShowOwnerMenu(false);
-                const workerIsActive = ['on_the_way','delayed','parking','arrived','starting','finishing','done'].includes(task.worker_status);
+                const workerIsActive = ['on_the_way', 'delayed', 'parking', 'arrived', 'starting', 'finishing', 'done'].includes(task.worker_status);
                 if (task.status === 'TAKEN' && workerIsActive) {
                   window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
-                } else { setShowCancelConfirm(true); }
+                } else {setShowCancelConfirm(true);}
               }}
-              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}
-            >
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}>
+              
               <div style={{ width: 40, height: 40, borderRadius: 13, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <X size={17} color="#dc2626" />
               </div>
@@ -1058,23 +1058,23 @@ export default function TaskDetail() {
           task={task}
           isLoading={cancelMutation.isPending}
           onConfirm={() => cancelMutation.mutate()}
-          onClose={() => setShowCancelConfirm(false)}
-        />,
+          onClose={() => setShowCancelConfirm(false)} />,
+
         document.body
       )}
 
       {/* Lightbox */}
-      {task && (
-        <MediaLightbox
-          isOpen={lightboxOpen}
-          items={[
-            ...task.images.map(url => ({ type: 'image', url })),
-            ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
-          ]}
-          initialIndex={lightboxIndex}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
-    </div>
-  );
+      {task &&
+      <MediaLightbox
+        isOpen={lightboxOpen}
+        items={[
+        ...task.images.map((url) => ({ type: 'image', url })),
+        ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])]
+        }
+        initialIndex={lightboxIndex}
+        onClose={() => setLightboxOpen(false)} />
+
+      }
+    </div>);
+
 }

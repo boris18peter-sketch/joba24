@@ -15,11 +15,11 @@ export default function PageHeader({ title, right, backTo }) {
       backdropFilter: 'blur(8px)',
       padding: '14px 16px 12px',
       borderBottom: '1px solid var(--border-1)',
-      display: 'flex', alignItems: 'center', gap: 12,
+      display: 'flex', alignItems: 'center', gap: 12
     }}>
       <BackButton to={backTo} />
-      <span style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-1)', flex: 1 }}>{title}</span>
+      <span style={{ fontWeight: 800, fontSize: 17, color: 'var(--text-1)', flex: 1 }} className="hidden">{title}</span>
       {right && <div style={{ flexShrink: 0 }}>{right}</div>}
-    </div>
-  );
+    </div>);
+
 }
