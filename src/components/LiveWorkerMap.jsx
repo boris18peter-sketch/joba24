@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Map, { Marker, Source, Layer } from 'react-map-gl';
+import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { base44 } from '@/api/base44Client';
 
@@ -44,6 +44,7 @@ export default function LiveWorkerMap({ task }) {
   const mapRef = useRef(null);
   const [mapToken, setMapToken] = useState('');
   const [dashOffset, setDashOffset] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const animRef = useRef(null);
 
   const workerLat = parseFloat(task?.worker_lat);
@@ -140,7 +141,7 @@ export default function LiveWorkerMap({ task }) {
             🚗 {task.worker_name} בדרך אליך
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {distKm && (
             <span style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', background: 'white', border: '1px solid #bae6fd', borderRadius: 20, padding: '3px 10px' }}>
               📍 {distKm < 1 ? `${Math.round(distKm * 1000)} מ'` : `${distKm.toFixed(1)} ק"מ`}
@@ -151,6 +152,12 @@ export default function LiveWorkerMap({ task }) {
               ⏱ ~{etaMins} דק'
             </span>
           )}
+          <button
+            onClick={() => setExpanded(v => !v)}
+            style={{ width: 32, height: 32, borderRadius: 10, background: '#0369a1', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: 16 }}
+          >
+            {expanded ? '↙️' : '↗️'}
+          </button>
         </div>
       </div>
 
@@ -167,8 +174,8 @@ export default function LiveWorkerMap({ task }) {
           }}
           mapboxAccessToken={mapToken}
           mapStyle="mapbox://styles/mapbox/outdoors-v12"
-          style={{ height: 220, width: '100%' }}
-          interactive={false}
+          style={{ height: expanded ? 'calc(100dvh - 110px)' : 220, width: '100%', transition: 'height 0.35s ease' }}
+          interactive={expanded}
           attributionControl={false}
           onLoad={onLoad}
         >

@@ -4,8 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '@/components/PageHeader';
-import { Navigation, X, MapPin, Clock, ChevronRight, Layers, Compass, Building2 } from 'lucide-react';
+import { Navigation, X, MapPin, Clock, ChevronRight, Layers, Compass, Building2, ArrowRight } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
@@ -17,7 +16,7 @@ const MAP_STYLES = [
   { label: '🛰️ לוויין', style: 'mapbox://styles/mapbox/satellite-streets-v12' },
 ];
 
-function distKm(a, b) {
+function calcDist(a, b) {
   const R = 6371;
   const dLat = (b.lat - a.lat) * Math.PI / 180;
   const dLng = (b.lng - a.lng) * Math.PI / 180;
@@ -49,11 +48,24 @@ function TaskPin({ task, selected, isMyTask }) {
       }}>
         {isMyTask ? '⭐ ' : ''}₪{task.price}
       </div>
+      <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: `8px solid ${arrowColor}`, marginTop: -1 }} />
+    </div>
+  );
+}
+
+function WorkerLivePin({ task }) {
+  return (
+    <div onClick={() => {}} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{
-        width: 0, height: 0,
-        borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
-        borderTop: `8px solid ${arrowColor}`, marginTop: -1,
-      }} />
+        background: 'linear-gradient(135deg,#059669,#10b981)',
+        border: '2.5px solid white', borderRadius: 20, padding: '5px 10px',
+        fontSize: 12, fontWeight: 900, color: 'white', whiteSpace: 'nowrap',
+        boxShadow: '0 3px 14px rgba(16,185,129,0.55)',
+        display: 'flex', alignItems: 'center', gap: 4,
+      }}>
+        <span style={{ fontSize: 10 }}>🚗</span> {task.worker_name?.split(' ')[0]}
+      </div>
+      <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '8px solid #10b981', marginTop: -1 }} />
     </div>
   );
 }
@@ -76,35 +88,30 @@ export default function MapView() {
   const navigate = useNavigate();
   const mapRef = useRef(null);
   const seedRef = useRef({});
-  const animFrameRef = useRef(null);
   const dashOffsetRef = useRef(0);
   const cinematicDoneRef = useRef(false);
+  const didFit = useRef(false);
 
   const [userLocation, setUserLocation] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [styleIdx, setStyleIdx] = useState(0);
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [show3D, setShow3D] = useState(true);
-  const [viewState, setViewState] = useState({
-    longitude: CENTER.longitude,
-    latitude: CENTER.latitude,
-    zoom: 13,
-    pitch: 50,
-    bearing: 25,
-  });
   const [mounted, setMounted] = useState(false);
   const [mapToken, setMapToken] = useState('');
   const [routeOffset, setRouteOffset] = useState(0);
+  const [viewState, setViewState] = useState({
+    longitude: CENTER.longitude, latitude: CENTER.latitude,
+    zoom: 13, pitch: 50, bearing: 25,
+  });
   const containerRef = useRef(null);
 
-  // Fetch Mapbox token
   useEffect(() => {
     base44.functions.invoke('getMapboxToken', {}).then(res => {
       if (res.data?.token) setMapToken(res.data.token);
     }).catch(() => {});
   }, []);
 
-  // Mount detection
   useEffect(() => {
     const fallback = setTimeout(() => setMounted(true), 300);
     if (!containerRef.current) return () => clearTimeout(fallback);
@@ -116,7 +123,7 @@ export default function MapView() {
     return () => { ro.disconnect(); clearTimeout(fallback); };
   }, []);
 
-  // Animate route dash offset
+  // Animate route dashes
   useEffect(() => {
     if (!selectedTask) return;
     let frame;
@@ -145,8 +152,7 @@ export default function MapView() {
   }, []);
 
   const displayTasks = tasks.filter(t => t.status === 'OPEN').map(t => {
-    const lat = parseFloat(t.lat);
-    const lng = parseFloat(t.lng);
+    const lat = parseFloat(t.lat), lng = parseFloat(t.lng);
     if (isFinite(lat) && isFinite(lng)) return { ...t, lat, lng };
     if (!seedRef.current[t.id]) {
       seedRef.current[t.id] = {
@@ -157,22 +163,22 @@ export default function MapView() {
     return { ...t, ...seedRef.current[t.id] };
   });
 
-  // Add 3D buildings layer on map load
+  // Workers actively on the way (live tracking pins)
+  const activeTakenTasks = tasks.filter(t =>
+    t.status === 'TAKEN' &&
+    t.worker_status === 'on_the_way' &&
+    isFinite(parseFloat(t.worker_lat)) &&
+    isFinite(parseFloat(t.worker_lng))
+  ).map(t => ({ ...t, worker_lat: parseFloat(t.worker_lat), worker_lng: parseFloat(t.worker_lng) }));
+
   const onMapLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
-
     map.resize();
-
-    // Add 3D buildings with warm colors
     if (!map.getLayer('3d-buildings')) {
       map.addLayer({
-        id: '3d-buildings',
-        source: 'composite',
-        'source-layer': 'building',
-        filter: ['==', 'extrude', 'true'],
-        type: 'fill-extrusion',
-        minzoom: 13,
+        id: '3d-buildings', source: 'composite', 'source-layer': 'building',
+        filter: ['==', 'extrude', 'true'], type: 'fill-extrusion', minzoom: 13,
         paint: {
           'fill-extrusion-color': ['interpolate', ['linear'], ['zoom'], 13, '#d4a574', 16, '#c8956f'],
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 13, 0, 16, ['get', 'height']],
@@ -181,40 +187,22 @@ export default function MapView() {
           'fill-extrusion-vertical-gradient': true,
         },
       });
-      // Add light effect
-      map.setLight({
-        anchor: 'viewport',
-        color: '#ffb366',
-        intensity: 0.6,
-        position: [1.15, 210, 30],
-      });
+      map.setLight({ anchor: 'viewport', color: '#ffb366', intensity: 0.6, position: [1.15, 210, 30] });
     }
-
-    // Cinematic intro
     if (!cinematicDoneRef.current) {
       cinematicDoneRef.current = true;
       setTimeout(() => {
-        map.flyTo({
-          center: [CENTER.longitude, CENTER.latitude],
-          zoom: 14.5,
-          pitch: 60,
-          bearing: 35,
-          duration: 3800,
-          easing: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-        });
+        map.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 14.5, pitch: 60, bearing: 35, duration: 3800, easing: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t });
       }, 600);
     }
   }, []);
 
-  // Update 3D buildings opacity when toggling
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!map || !map.getLayer('3d-buildings')) return;
     map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', show3D ? ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 0.75] : 0);
   }, [show3D]);
 
-  // Fit bounds after tasks load
-  const didFit = useRef(false);
   useEffect(() => {
     if (didFit.current || displayTasks.length === 0 || !mapRef.current) return;
     didFit.current = true;
@@ -225,105 +213,75 @@ export default function MapView() {
       const lngs = displayTasks.map(t => t.lng);
       const lats = displayTasks.map(t => t.lat);
       if (userLocation) { lngs.push(userLocation.lng); lats.push(userLocation.lat); }
-      map.fitBounds(
-        [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-        { padding: 80, maxZoom: 15, duration: 1400, pitch: 50, bearing: 25 }
-      );
+      map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 80, maxZoom: 15, duration: 1400, pitch: 50, bearing: 25 });
     }
   }, [displayTasks.length]);
 
-  // Cinematic camera on selected task
   useEffect(() => {
     if (!selectedTask || !mapRef.current) return;
     const map = mapRef.current.getMap();
-    const warmBearing = 30 + Math.random() * 50;
-    map.flyTo({
-      center: [selectedTask.lng, selectedTask.lat],
-      zoom: 16.5,
-      pitch: 65,
-      bearing: warmBearing,
-      duration: 1400,
-      easing: t => 1 - Math.pow(1 - t, 3),
-    });
+    map.flyTo({ center: [selectedTask.lng, selectedTask.lat], zoom: 16.5, pitch: 65, bearing: 30 + Math.random() * 50, duration: 1400, easing: t => 1 - Math.pow(1 - t, 3) });
   }, [selectedTask?.id]);
 
-  // Reset camera when deselecting
   useEffect(() => {
     if (selectedTask) return;
-    const map = mapRef.current?.getMap();
-    if (!map) return;
-    map.easeTo({ pitch: 50, bearing: 25, duration: 900 });
+    mapRef.current?.getMap()?.easeTo({ pitch: 50, bearing: 25, duration: 900 });
   }, [selectedTask]);
 
-  const dist = selectedTask && userLocation
-    ? distKm(userLocation, { lat: selectedTask.lat, lng: selectedTask.lng })
-    : null;
-
+  const dist = selectedTask && userLocation ? calcDist(userLocation, { lat: selectedTask.lat, lng: selectedTask.lng }) : null;
   const routeGeoJSON = selectedTask && userLocation ? {
     type: 'FeatureCollection',
-    features: [{
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: [[userLocation.lng, userLocation.lat], [selectedTask.lng, selectedTask.lat]] },
-    }],
+    features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: [[userLocation.lng, userLocation.lat], [selectedTask.lng, selectedTask.lat]] } }],
   } : null;
 
   return (
-    <div style={{ height: 'calc(100dvh - 56px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} dir="rtl">
-      <PageHeader
-        title="🗺️ מפת משימות"
-        right={
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', position: 'relative' }}>
-            {/* 3D toggle */}
-            <button
-              onClick={() => setShow3D(v => !v)}
-              title={show3D ? 'כבה 3D' : 'הפעל 3D'}
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: show3D ? '#dbeafe' : 'white',
-                border: `1px solid ${show3D ? '#3b82f6' : '#dce8f5'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              }}
-            >
-              <Building2 size={16} color={show3D ? '#1a6fd4' : '#9ca3af'} />
-            </button>
-
-            {/* Reset camera */}
-            <button
-              onClick={() => {
-                const map = mapRef.current?.getMap();
-                map?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 25, duration: 1200 });
-              }}
-              style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <Compass size={16} color="#1a6fd4" />
-            </button>
-
-            {/* Style picker */}
-            <button
-              onClick={() => setShowStylePicker(v => !v)}
-              style={{ width: 36, height: 36, borderRadius: 10, background: showStylePicker ? '#dbeafe' : 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
-              <Layers size={16} color="#1a6fd4" />
-            </button>
-            {showStylePicker && (
-              <div style={{ position: 'absolute', top: 44, left: 0, background: 'white', border: '1px solid #dce8f5', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 1001, overflow: 'hidden', minWidth: 110 }}>
-                {MAP_STYLES.map((s, i) => (
-                  <button key={i} onClick={() => { setStyleIdx(i); setShowStylePicker(false); }}
-                    style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'right', background: styleIdx === i ? '#eff6ff' : 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: styleIdx === i ? 700 : 400, color: styleIdx === i ? '#1a6fd4' : '#374151' }}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        }
-      />
-
-      <div style={{ background: 'white', borderBottom: '1px solid #dce8f5', padding: '8px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1d4ed8' }}>
-        {displayTasks.length} משימות פתוחות
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }} dir="rtl">
+      {/* Floating top bar */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+        padding: '12px 14px 14px',
+        paddingTop: 'calc(12px + env(safe-area-inset-top))',
+        background: 'linear-gradient(to bottom, rgba(255,248,230,0.97) 65%, transparent)',
+        display: 'flex', alignItems: 'center', gap: 10,
+        pointerEvents: 'none',
+      }}>
+        <button onClick={() => navigate(-1)} style={{ pointerEvents: 'all', width: 40, height: 40, borderRadius: 13, background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}>
+          <ArrowRight size={18} color="#374151" />
+        </button>
+        <div style={{ pointerEvents: 'none', flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontWeight: 900, fontSize: 17, color: '#1a1a1a', letterSpacing: -0.3 }}>מפת משימות</span>
+          <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>{displayTasks.length}</span>
+          {activeTakenTasks.length > 0 && (
+            <span style={{ background: '#10b981', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+              🚗 {activeTakenTasks.length} בדרך
+            </span>
+          )}
+        </div>
+        <div style={{ pointerEvents: 'all', display: 'flex', gap: 7, alignItems: 'center', position: 'relative' }}>
+          <button onClick={() => setShow3D(v => !v)} style={{ width: 38, height: 38, borderRadius: 12, background: show3D ? '#dbeafe' : 'rgba(255,255,255,0.92)', border: `1.5px solid ${show3D ? '#3b82f6' : 'rgba(0,0,0,0.09)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Building2 size={16} color={show3D ? '#1a6fd4' : '#6b7280'} />
+          </button>
+          <button onClick={() => { mapRef.current?.getMap()?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 25, duration: 1200 }); }} style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Compass size={16} color="#1a6fd4" />
+          </button>
+          <button onClick={() => setShowStylePicker(v => !v)} style={{ width: 38, height: 38, borderRadius: 12, background: showStylePicker ? '#dbeafe' : 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Layers size={16} color="#1a6fd4" />
+          </button>
+          {showStylePicker && (
+            <div style={{ position: 'absolute', top: 46, left: 0, background: 'white', border: '1px solid #dce8f5', borderRadius: 14, boxShadow: '0 6px 24px rgba(0,0,0,0.14)', zIndex: 1001, overflow: 'hidden', minWidth: 110 }}>
+              {MAP_STYLES.map((s, i) => (
+                <button key={i} onClick={() => { setStyleIdx(i); setShowStylePicker(false); }}
+                  style={{ display: 'block', width: '100%', padding: '11px 14px', textAlign: 'right', background: styleIdx === i ? '#eff6ff' : 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: styleIdx === i ? 700 : 400, color: styleIdx === i ? '#1a6fd4' : '#374151' }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div ref={containerRef} style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+      {/* Map */}
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
         {mounted && mapToken && (
           <Map
             ref={mapRef}
@@ -340,76 +298,43 @@ export default function MapView() {
           >
             <NavigationControl position="bottom-left" showCompass visualizePitch />
 
-            {/* Animated route */}
+            {/* Route */}
             {routeGeoJSON && (
               <>
                 <Source id="route-bg" type="geojson" data={routeGeoJSON}>
-                  <Layer id="route-glow" type="line" paint={{
-                    'line-color': '#3b82f6',
-                    'line-width': 14,
-                    'line-opacity': 0.18,
-                    'line-blur': 6,
-                  }} />
-                  <Layer id="route-casing" type="line" paint={{
-                    'line-color': '#bfdbfe',
-                    'line-width': 8,
-                    'line-opacity': 0.7,
-                  }} />
-                  <Layer id="route-line" type="line" paint={{
-                    'line-color': '#1a6fd4',
-                    'line-width': 4,
-                    'line-opacity': 0.95,
-                    'line-dasharray': [0, 2, 6, 0],
-                  }} />
+                  <Layer id="route-glow" type="line" paint={{ 'line-color': '#3b82f6', 'line-width': 14, 'line-opacity': 0.18, 'line-blur': 6 }} />
+                  <Layer id="route-casing" type="line" paint={{ 'line-color': '#bfdbfe', 'line-width': 8, 'line-opacity': 0.7 }} />
+                  <Layer id="route-line" type="line" paint={{ 'line-color': '#1a6fd4', 'line-width': 4, 'line-opacity': 0.95, 'line-dasharray': [0, 2, 6, 0] }} />
                 </Source>
-                {/* Animated dashes (separate source for dash animation) */}
                 <Source id="route-anim" type="geojson" data={routeGeoJSON}>
-                  <Layer id="route-dash" type="line" paint={{
-                    'line-color': 'white',
-                    'line-width': 2,
-                    'line-opacity': 0.8,
-                    'line-dasharray': [0, routeOffset % 10 < 5 ? 4 : 0, 6, 0],
-                  }} />
+                  <Layer id="route-dash" type="line" paint={{ 'line-color': 'white', 'line-width': 2, 'line-opacity': 0.8, 'line-dasharray': [0, routeOffset % 10 < 5 ? 4 : 0, 6, 0] }} />
                 </Source>
-
-                {/* Destination pulse */}
-                <Source id="dest-pulse" type="geojson" data={{
-                  type: 'Feature',
-                  geometry: { type: 'Point', coordinates: [selectedTask.lng, selectedTask.lat] },
-                }}>
-                  <Layer id="dest-circle-outer" type="circle" paint={{
-                    'circle-radius': 40,
-                    'circle-color': '#1a6fd4',
-                    'circle-opacity': 0.08,
-                    'circle-stroke-width': 2,
-                    'circle-stroke-color': '#1a6fd4',
-                    'circle-stroke-opacity': 0.25,
-                  }} />
+                <Source id="dest-pulse" type="geojson" data={{ type: 'Feature', geometry: { type: 'Point', coordinates: [selectedTask.lng, selectedTask.lat] } }}>
+                  <Layer id="dest-circle-outer" type="circle" paint={{ 'circle-radius': 40, 'circle-color': '#1a6fd4', 'circle-opacity': 0.08, 'circle-stroke-width': 2, 'circle-stroke-color': '#1a6fd4', 'circle-stroke-opacity': 0.25 }} />
                 </Source>
               </>
             )}
 
-            {/* User marker */}
+            {/* User */}
             {userLocation && (
               <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="bottom">
                 <UserPin />
               </Marker>
             )}
 
-            {/* Task markers */}
+            {/* OPEN task markers */}
             {displayTasks.filter(t => isFinite(t.lat) && isFinite(t.lng)).map(task => (
-              <Marker
-                key={task.id}
-                longitude={task.lng}
-                latitude={task.lat}
-                anchor="bottom"
-                onClick={e => { e.originalEvent.stopPropagation(); setSelectedTask(prev => prev?.id === task.id ? null : task); }}
-              >
-                <TaskPin
-                  task={task}
-                  selected={selectedTask?.id === task.id}
-                  isMyTask={task.client_id === me?.id}
-                />
+              <Marker key={task.id} longitude={task.lng} latitude={task.lat} anchor="bottom"
+                onClick={e => { e.originalEvent.stopPropagation(); setSelectedTask(prev => prev?.id === task.id ? null : task); }}>
+                <TaskPin task={task} selected={selectedTask?.id === task.id} isMyTask={task.client_id === me?.id} />
+              </Marker>
+            ))}
+
+            {/* Live worker pins */}
+            {activeTakenTasks.map(task => (
+              <Marker key={`worker-${task.id}`} longitude={task.worker_lng} latitude={task.worker_lat} anchor="bottom"
+                onClick={e => { e.originalEvent.stopPropagation(); navigate(`/task/${task.id}`); }}>
+                <WorkerLivePin task={task} />
               </Marker>
             ))}
           </Map>
@@ -417,51 +342,36 @@ export default function MapView() {
 
         {/* Legend */}
         <div style={{
-          position: 'absolute', top: 12, right: 12, zIndex: 10,
-          background: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(8px)',
-          borderRadius: 12, padding: '8px 12px',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-          border: '1px solid #e5e9f5',
+          position: 'absolute', top: 72, right: 12, zIndex: 10,
+          background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)',
+          borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', border: '1px solid #e5e9f5',
           display: 'flex', flexDirection: 'column', gap: 5,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
-            <div style={{ width: 12, height: 12, borderRadius: 3, background: '#1a6fd4' }} />
-            <span>משימות זמינות</span>
+            <div style={{ width: 12, height: 12, borderRadius: 3, background: '#1a6fd4' }} /><span>פתוחות</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
+            <div style={{ width: 12, height: 12, borderRadius: 3, background: '#10b981' }} /><span>בדרך</span>
           </div>
           {me && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b' }} />
-              <span>המשימות שלי</span>
-            </div>
-          )}
-          {show3D && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#374151' }}>
-              <Building2 size={11} color="#6b7280" />
-              <span>3D בניינים</span>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b' }} /><span>שלי</span>
             </div>
           )}
         </div>
 
         {/* Task card */}
         {selectedTask && (
-          <div
-            style={{
-              position: 'absolute', bottom: 20, left: 16, right: 16, zIndex: 10,
-              background: 'white', borderRadius: 24,
-              boxShadow: '0 8px 40px rgba(15,43,107,0.22)',
-              padding: '16px 16px 14px', border: '1px solid #dce8f5',
-              animation: 'slideUpCard 0.25s cubic-bezier(0.34,1.3,0.64,1)',
-            }}
-            dir="rtl"
-          >
-            <button
-              onClick={() => setSelectedTask(null)}
-              style={{ position: 'absolute', top: 12, left: 12, width: 28, height: 28, borderRadius: 8, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-            >
+          <div style={{
+            position: 'absolute', bottom: 24, left: 16, right: 16, zIndex: 10,
+            background: 'white', borderRadius: 24,
+            boxShadow: '0 8px 40px rgba(15,43,107,0.22)',
+            padding: '16px 16px 14px', border: '1px solid #dce8f5',
+            animation: 'slideUpCard 0.25s cubic-bezier(0.34,1.3,0.64,1)',
+          }} dir="rtl">
+            <button onClick={() => setSelectedTask(null)} style={{ position: 'absolute', top: 12, left: 12, width: 28, height: 28, borderRadius: 8, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={14} color="#6b7280" />
             </button>
-
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
               <div style={{ background: 'linear-gradient(135deg,#0f2b6b,#1a6fd4)', borderRadius: 14, padding: '10px 14px', flexShrink: 0 }}>
                 <div style={{ fontSize: 20, fontWeight: 900, color: 'white', letterSpacing: -1 }}>₪{selectedTask.price}</div>
@@ -477,30 +387,19 @@ export default function MapView() {
                 </div>
               </div>
             </div>
-
             {dist != null && (
               <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Navigation size={13} color="#1a6fd4" />
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>
                   {dist < 1 ? `${Math.round(dist * 1000)} מטר ממך` : `${dist.toFixed(1)} ק"מ ממך`}
                 </span>
-                <span style={{ fontSize: 11, color: '#93c5fd', marginRight: 'auto' }}>מסלול מוצג במפה</span>
+                <span style={{ fontSize: 11, color: '#93c5fd', marginRight: 'auto' }}>מסלול מוצג</span>
               </div>
             )}
-
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => window.open(`https://waze.com/ul?ll=${selectedTask.lat},${selectedTask.lng}&navigate=yes`, '_blank')}
-                style={{ flex: 1, height: 40, borderRadius: 12, background: '#1da462', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >Waze</button>
-              <button
-                onClick={() => window.open(`https://maps.google.com/?q=${selectedTask.lat},${selectedTask.lng}`, '_blank')}
-                style={{ flex: 1, height: 40, borderRadius: 12, background: '#4285f4', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >Google</button>
-              <button
-                onClick={() => navigate(`/task/${selectedTask.id}`)}
-                style={{ flex: 1, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-              >
+              <button onClick={() => window.open(`https://waze.com/ul?ll=${selectedTask.lat},${selectedTask.lng}&navigate=yes`, '_blank')} style={{ flex: 1, height: 40, borderRadius: 12, background: '#1da462', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Waze</button>
+              <button onClick={() => window.open(`https://maps.google.com/?q=${selectedTask.lat},${selectedTask.lng}`, '_blank')} style={{ flex: 1, height: 40, borderRadius: 12, background: '#4285f4', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Google</button>
+              <button onClick={() => navigate(`/task/${selectedTask.id}`)} style={{ flex: 1, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 פרטים <ChevronRight size={14} />
               </button>
             </div>
@@ -508,9 +407,7 @@ export default function MapView() {
         )}
       </div>
 
-      <style>{`
-        @keyframes slideUpCard { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
-      `}</style>
+      <style>{`@keyframes slideUpCard{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
     </div>
   );
 }

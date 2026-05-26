@@ -465,7 +465,7 @@ export default function Layout() {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <CoinEarnedToast />
-      <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
+      {location.pathname !== '/map' && <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />}
       <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
       {/* Portals — rendered directly to body to escape stacking context */}
@@ -555,14 +555,21 @@ export default function Layout() {
       )}
       
       {/* Scrollable content area — paddingBottom leaves space for bottom nav */}
-      <div id="main-scroll" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+      <div id="main-scroll" style={{
+        flex: 1,
+        overflowY: location.pathname === '/map' ? 'hidden' : 'auto',
+        overflowX: 'hidden',
+        paddingBottom: location.pathname === '/map' ? 0 : 'calc(80px + env(safe-area-inset-bottom))',
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain',
+      }}>
         <Outlet />
       </div>
 
 
 
-      {/* Bottom Nav */}
-      <div style={{
+      {/* Bottom Nav — hidden on map page */}
+      {location.pathname !== '/map' && <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 90,
         background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
@@ -612,7 +619,7 @@ export default function Layout() {
             );
           })}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
