@@ -212,16 +212,20 @@ export default function HomeFeed() {
   }, []);
 
   // Auto price bump — only run on MY tasks, only every 5 minutes via interval
-  // Stops bumping once ANY application (pending or approved) exists
+  // Use a ref so myTasks changes don't restart the interval and trigger extra API calls
+  const myTasksRef = useRef(myTasks);
+  useEffect(() => { myTasksRef.current = myTasks; }, [myTasks]);
+
   useEffect(() => {
-    const bumpableTasks = myTasks.filter(t =>
-      t.status === 'OPEN' && t.auto_bump_enabled && t.max_price && t.price < t.max_price
-    );
-    if (!bumpableTasks.length) return;
+    if (!me?.id) return;
 
     const runBump = async () => {
+      const bumpableTasks = myTasksRef.current.filter(t =>
+        t.status === 'OPEN' && t.auto_bump_enabled && t.max_price && t.price < t.max_price
+      );
+      if (!bumpableTasks.length) return;
+
       for (const task of bumpableTasks) {
-        // Stop if there's already at least one application
         const existingApps = await base44.entities.TaskApplication.filter({ task_id: task.id });
         const hasActiveApp = existingApps.some(a => a.status === 'pending' || a.status === 'approved');
         if (hasActiveApp) continue;
@@ -238,10 +242,9 @@ export default function HomeFeed() {
       }
     };
 
-    runBump();
-    const interval = setInterval(runBump, 5 * 60 * 1000); // every 5 minutes
+    const interval = setInterval(runBump, 5 * 60 * 1000); // every 5 minutes, no immediate call
     return () => clearInterval(interval);
-  }, [myTasks]);
+  }, [me?.id]);
 
   // ── Smart Ranking Engine ──────────────────────────────────────────────────
   // Build worker profile for category matching
