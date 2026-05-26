@@ -233,7 +233,7 @@ export default function TaskDetail() {
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
       console.log('✅ TAKE TASK MUTATION COMPLETE - Task refetched');
-      toast.success('קחת את הג\'ובה! 🎉');
+      toast.success('קחת את המשימה! 🎉');
     },
   });
 
@@ -253,7 +253,7 @@ export default function TaskDetail() {
     mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('הג\'ובה נפתחה מחדש!');
+      toast.success('המשימה נפתחה מחדש!');
     },
   });
 
@@ -446,7 +446,7 @@ export default function TaskDetail() {
       </div>
     );
   }
-  if (!task) return <div className="p-8 text-center text-muted-foreground">ג'ובה לא נמצאה</div>;
+  if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
 
   const isOwner = me?.id === task.client_id;
   const hasWorker = !!task.worker_id;
@@ -532,8 +532,8 @@ export default function TaskDetail() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <AlertTriangle size={20} color="#f97316" />
               <div>
-                <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 14 }}>הג'ובה פגה תוקף</div>
-                <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>הג'ובה הייתה פתוחה ופג תוקפה</div>
+                <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 14 }}>המשימה פגה תוקף</div>
+                <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>המשימה הייתה פתוחה ופג תוקפה</div>
               </div>
             </div>
             {isOwner && (
@@ -548,14 +548,14 @@ export default function TaskDetail() {
                 disabled={reopenMutation.isPending}
                 className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11"
               >
-                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את הג'ובה מחדש</>}
+                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את המשימה מחדש</>}
               </Button>
             )}
             {!isOwner && !signalSent && (
               <Button onClick={() => gate(handleSignalReopen)} variant="outline"
                 className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11"
               >
-                <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> שלח איתות לבעל הג'ובה
+                <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> שלח איתות לבעל המשימה
               </Button>
             )}
             {!isOwner && signalSent && (
@@ -846,7 +846,7 @@ export default function TaskDetail() {
               <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Clock size={18} color="#d97706" /></div>
               <div>
                 <div style={{ fontWeight: 800, color: '#92400e', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={15} /> בקשתך התקבלה וממתינה לאישור</div>
-                <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>בעל הג'ובה יאשר אותך בקרוב</div>
+                <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>בעל המשימה יאשר אותך בקרוב</div>
               </div>
             </div>
           )}
@@ -854,7 +854,7 @@ export default function TaskDetail() {
           {/* Apply form (shown only when triggered) */}
           {canApplyManual && showApplyForm && (
             <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל הג'ובה (לא חובה)</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל המשימה (לא חובה)</p>
               <textarea
                 placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
                 value={applyMessage}
@@ -889,7 +889,7 @@ export default function TaskDetail() {
           {isOwner && task.status === 'OPEN' && (
             <Link to={`/edit-task/${id}`}>
               <button style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#0f2b6b', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
-                <Pencil size={18} />עריכת הג'ובה
+                <Pencil size={18} />עריכת המשימה
               </button>
             </Link>
           )}

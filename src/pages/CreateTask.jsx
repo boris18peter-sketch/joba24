@@ -44,7 +44,7 @@ function SocialProofBar() {
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       <span>🤝</span>
-      <span>הצטרף ל-<strong style={{ color: '#1a6fd4' }}>{completedCount}+</strong> משתמשים שכבר ביצעו ג'ובות בהצלחה</span>
+      <span>הצטרף ל-<strong style={{ color: '#1a6fd4' }}>{completedCount}+</strong> משתמשים שכבר ביצעו משימות בהצלחה</span>
     </div>
   );
 }
@@ -280,8 +280,8 @@ export default function CreateTask() {
         user_id: me.id,
         amount: -10,
         type: 'Application_Fee',
-        note: `עלות סטורי פרסום: ${form.title || 'ג\'ובה'}`,
-        task_title: form.title || 'ג\'ובה',
+        note: `עלות סטורי פרסום: ${form.title || 'משימה'}`,
+        task_title: form.title || 'משימה',
         balance_after: newBalance,
       });
     }
@@ -328,7 +328,7 @@ export default function CreateTask() {
 
     setLoading(false);
     localStorage.removeItem(DRAFT_KEY);
-    toast.success('הג\'ובה פורסמה! ⚡');
+    toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {
       setSearchingTaskId(created.id);
       setSearchingTaskTitle(form.title);
@@ -379,7 +379,7 @@ export default function CreateTask() {
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
-              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום ג'ובה חדשה"}</span>
+              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום משימה חדשה"}</span>
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> נשמר</div>}
             </div>
             {/* Progress bar */}
@@ -429,7 +429,7 @@ export default function CreateTask() {
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
           <p style={{ fontSize: 13, color: '#1e40af', margin: 0, lineHeight: 1.6 }}>
-            <strong>חשוב!</strong> ככל שהג'ובה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים.
+            <strong>חשוב!</strong> ככל שהמשימה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים.
           </p>
         </div>
 
@@ -543,7 +543,7 @@ export default function CreateTask() {
         {/* Expiry */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
-            <Clock size={14} /> תוקף הג'ובה
+            <Clock size={14} /> תוקף המשימה
           </Label>
           <div className="flex gap-2 flex-wrap">
             {EXPIRY_OPTIONS.map(opt => (
@@ -591,7 +591,7 @@ export default function CreateTask() {
             <span style={{ fontSize: 22 }}>🚀</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>חשיפה גבוהה פי 3 בשורת ה-Stories</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>הג'ובה תופיע למעלה בפיד למשך 24 שעות · עלות: <strong style={{color:'#7e22ce'}}>10 ג'ובות</strong></div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>המשימה תופיע למעלה בפיד למשך 24 שעות · עלות: <strong style={{color:'#7e22ce'}}>10 ג'ובות</strong></div>
             </div>
           </div>
         </div>
@@ -751,8 +751,8 @@ export default function CreateTask() {
                 {loading
                   ? <><Loader2 size={22} className="animate-spin" /> מפרסם...</>
                   : isReady
-                    ? <><Zap size={20} />פרסם ג'ובה עכשיו ✓</>
-                    : <><Zap size={20} />פרסם ג'ובה חדשה</>
+                    ? <><Zap size={20} />פרסם משימה עכשיו ✓</>
+                    : <><Zap size={20} />פרסם משימה חדשה</>
                 }
               </button>
               <SocialProofBar />

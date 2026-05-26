@@ -4,10 +4,10 @@ import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCi
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'פיד ג\'ובות' },
-  { to: '/map', icon: Map, label: 'מפת ג\'ובות' },
-  { to: '/create-task', icon: Plus, label: 'פרסם ג\'ובה' },
-  { to: '/my-tasks', icon: ClipboardList, label: 'הג\'ובות שלי' },
+  { to: '/', icon: Home, label: 'פיד משימות' },
+  { to: '/map', icon: Map, label: 'מפת משימות' },
+  { to: '/create-task', icon: Plus, label: 'פרסם משימה' },
+  { to: '/my-tasks', icon: ClipboardList, label: 'המשימות שלי' },
   { to: '/notifications', icon: Bell, label: 'התראות' },
   { to: '/chats', icon: MessageCircle, label: 'צ\'אטים' },
   { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },

@@ -477,7 +477,7 @@ export default function Layout() {
   const navItems = [
     { to: '/', icon: Home, label: 'פיד' },
     { to: '/map', icon: Map, label: 'מפה' },
-    { to: '/create-task', icon: Plus, label: 'ג\'ובה', primary: true },
+    { to: '/create-task', icon: Plus, label: 'משימה', primary: true },
     { to: '/chats', icon: MessageCircle, label: 'צ\'אט', badge: unreadMessages },
     { to: '/profile', icon: User, label: 'פרופיל' },
   ];

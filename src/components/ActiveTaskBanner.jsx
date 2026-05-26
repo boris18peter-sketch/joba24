@@ -21,7 +21,7 @@ const STATUS_STEPS = {
 function getQuickAction(stepIdx, workerStatus) {
   if (stepIdx < 0)  return { label: 'יצאתי לדרך', nextKey: 'on_the_way', color: '#3b82f6' };
   if (stepIdx === 0) return { label: 'הגעתי למיקום', nextKey: 'arrived',    color: '#f59e0b' };
-  if (stepIdx === 1) return { label: 'סיימתי הג׳ובה', nextKey: 'done',      color: '#10b981' };
+  if (stepIdx === 1) return { label: 'סיימתי המשימה', nextKey: 'done',      color: '#10b981' };
   return null; // done
 }
 
@@ -44,7 +44,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
             {action.nextKey === 'arrived' ? '📍' : action.nextKey === 'done' ? '✅' : '🚀'}
           </div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 6 }}>
-            {action.nextKey === 'arrived' ? 'אשר הגעה למיקום' : action.nextKey === 'done' ? 'אשר סיום הג׳ובה' : 'יציאה לדרך'}
+            {action.nextKey === 'arrived' ? 'אשר הגעה למיקום' : action.nextKey === 'done' ? 'אשר סיום המשימה' : 'יציאה לדרך'}
           </div>
           <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
             {action.nextKey === 'arrived' ? 'ברגע שתאשר, המעסיק יקבל עדכון שהגעת' :

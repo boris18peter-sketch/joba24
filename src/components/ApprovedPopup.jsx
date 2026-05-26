@@ -86,7 +86,7 @@ export default function ApprovedPopup({ task, onClose }) {
           <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '24px 24px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: 56, marginBottom: 8 }}>🎉</div>
             <div style={{ color: 'white', fontWeight: 900, fontSize: 22, marginBottom: 4 }}>הבקשה אושרה!</div>
-            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>בעל הג'ובה בחר בך</div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>בעל המשימה בחר בך</div>
           </div>
 
           {/* Task details */}
