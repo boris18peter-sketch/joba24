@@ -11,10 +11,10 @@ import { getCategoryLabel } from '@/lib/categories';
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
 
 const MAP_STYLES = [
-  { label: 'בהיר',   style: 'mapbox://styles/mapbox/light-v11' },
-  { label: 'רחובות', style: 'mapbox://styles/mapbox/streets-v12' },
-  { label: 'לילה',   style: 'mapbox://styles/mapbox/dark-v11' },
-  { label: 'לוויין', style: 'mapbox://styles/mapbox/satellite-streets-v12' },
+  { label: '🌅 חם',    style: 'mapbox://styles/mapbox/outdoors-v12' },
+  { label: '🏙️ עיר',  style: 'mapbox://styles/mapbox/streets-v12' },
+  { label: '🌙 לילה',  style: 'mapbox://styles/mapbox/dark-v11' },
+  { label: '🛰️ לוויין', style: 'mapbox://styles/mapbox/satellite-streets-v12' },
 ];
 
 function distKm(a, b) {
@@ -89,8 +89,8 @@ export default function MapView() {
     longitude: CENTER.longitude,
     latitude: CENTER.latitude,
     zoom: 13,
-    pitch: 45,
-    bearing: -17,
+    pitch: 50,
+    bearing: 25,
   });
   const [mounted, setMounted] = useState(false);
   const [mapToken, setMapToken] = useState('');
@@ -164,7 +164,7 @@ export default function MapView() {
 
     map.resize();
 
-    // Add 3D buildings
+    // Add 3D buildings with warm colors
     if (!map.getLayer('3d-buildings')) {
       map.addLayer({
         id: '3d-buildings',
@@ -174,11 +174,19 @@ export default function MapView() {
         type: 'fill-extrusion',
         minzoom: 13,
         paint: {
-          'fill-extrusion-color': '#aec6cf',
+          'fill-extrusion-color': ['interpolate', ['linear'], ['zoom'], 13, '#d4a574', 16, '#c8956f'],
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 13, 0, 16, ['get', 'height']],
           'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 13, 0, 16, ['get', 'min_height']],
-          'fill-extrusion-opacity': 0.6,
+          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 0.75],
+          'fill-extrusion-vertical-gradient': true,
         },
+      });
+      // Add light effect
+      map.setLight({
+        anchor: 'viewport',
+        color: '#ffb366',
+        intensity: 0.6,
+        position: [1.15, 210, 30],
       });
     }
 
@@ -189,9 +197,9 @@ export default function MapView() {
         map.flyTo({
           center: [CENTER.longitude, CENTER.latitude],
           zoom: 14.5,
-          pitch: 55,
-          bearing: 20,
-          duration: 3500,
+          pitch: 60,
+          bearing: 35,
+          duration: 3800,
           easing: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
         });
       }, 600);
@@ -202,7 +210,7 @@ export default function MapView() {
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!map || !map.getLayer('3d-buildings')) return;
-    map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', show3D ? 0.6 : 0);
+    map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', show3D ? ['interpolate', ['linear'], ['zoom'], 13, 0.5, 16, 0.75] : 0);
   }, [show3D]);
 
   // Fit bounds after tasks load
@@ -212,14 +220,14 @@ export default function MapView() {
     didFit.current = true;
     const map = mapRef.current.getMap();
     if (displayTasks.length === 1) {
-      map.flyTo({ center: [displayTasks[0].lng, displayTasks[0].lat], zoom: 15, pitch: 50, bearing: 0, duration: 1400 });
+      map.flyTo({ center: [displayTasks[0].lng, displayTasks[0].lat], zoom: 15, pitch: 55, bearing: 25, duration: 1400 });
     } else {
       const lngs = displayTasks.map(t => t.lng);
       const lats = displayTasks.map(t => t.lat);
       if (userLocation) { lngs.push(userLocation.lng); lats.push(userLocation.lat); }
       map.fitBounds(
         [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-        { padding: 80, maxZoom: 15, duration: 1400, pitch: 45 }
+        { padding: 80, maxZoom: 15, duration: 1400, pitch: 50, bearing: 25 }
       );
     }
   }, [displayTasks.length]);
@@ -228,12 +236,13 @@ export default function MapView() {
   useEffect(() => {
     if (!selectedTask || !mapRef.current) return;
     const map = mapRef.current.getMap();
+    const warmBearing = 30 + Math.random() * 50;
     map.flyTo({
       center: [selectedTask.lng, selectedTask.lat],
-      zoom: 16,
-      pitch: 60,
-      bearing: Math.random() * 60 - 30,
-      duration: 1200,
+      zoom: 16.5,
+      pitch: 65,
+      bearing: warmBearing,
+      duration: 1400,
       easing: t => 1 - Math.pow(1 - t, 3),
     });
   }, [selectedTask?.id]);
@@ -243,7 +252,7 @@ export default function MapView() {
     if (selectedTask) return;
     const map = mapRef.current?.getMap();
     if (!map) return;
-    map.easeTo({ pitch: 45, bearing: -17, duration: 800 });
+    map.easeTo({ pitch: 50, bearing: 25, duration: 900 });
   }, [selectedTask]);
 
   const dist = selectedTask && userLocation
@@ -282,7 +291,7 @@ export default function MapView() {
             <button
               onClick={() => {
                 const map = mapRef.current?.getMap();
-                map?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 20, duration: 1200 });
+                map?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 25, duration: 1200 });
               }}
               style={{ width: 36, height: 36, borderRadius: 10, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >

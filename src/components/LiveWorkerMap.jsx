@@ -84,7 +84,7 @@ export default function LiveWorkerMap({ task }) {
     });
   }, [workerLat, workerLng]);
 
-  // Add 3D buildings on load
+  // Add 3D buildings on load with warm colors
   const onLoad = () => {
     const map = mapRef.current?.getMap?.();
     if (!map) return;
@@ -97,11 +97,18 @@ export default function LiveWorkerMap({ task }) {
         type: 'fill-extrusion',
         minzoom: 14,
         paint: {
-          'fill-extrusion-color': '#c7d9f0',
+          'fill-extrusion-color': ['interpolate', ['linear'], ['zoom'], 14, '#d9956f', 17, '#c88555'],
           'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14, 0, 17, ['get', 'height']],
           'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 14, 0, 17, ['get', 'min_height']],
-          'fill-extrusion-opacity': 0.55,
+          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 17, 0.7],
+          'fill-extrusion-vertical-gradient': true,
         },
+      });
+      map.setLight({
+        anchor: 'viewport',
+        color: '#ffb366',
+        intensity: 0.55,
+        position: [1.2, 205, 35],
       });
     }
   };
@@ -155,11 +162,11 @@ export default function LiveWorkerMap({ task }) {
             longitude: centerLng,
             latitude: centerLat,
             zoom: 14,
-            pitch: 45,
-            bearing: -10,
+            pitch: 52,
+            bearing: 30,
           }}
           mapboxAccessToken={mapToken}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
+          mapStyle="mapbox://styles/mapbox/outdoors-v12"
           style={{ height: 220, width: '100%' }}
           interactive={false}
           attributionControl={false}
