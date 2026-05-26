@@ -83,13 +83,6 @@ export default function TaskDetail() {
   const [showWorkerMap, setShowWorkerMap] = useState(false);
   const prevWorkerIdRef = useRef(null);
 
-  // Rotate status label text every 3s for OPEN tasks
-  useEffect(() => {
-    if (!task || task.status !== 'OPEN' || applicationCount === 0) return;
-    const iv = setInterval(() => setLabelRotIdx(i => (i + 1) % 2), 3000);
-    return () => clearInterval(iv);
-  }, [task?.status, applicationCount]);
-
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
@@ -128,6 +121,13 @@ export default function TaskDetail() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  // Rotate status label text every 3s for OPEN tasks
+  useEffect(() => {
+    if (!task || task.status !== 'OPEN' || applicationCount === 0) return;
+    const iv = setInterval(() => setLabelRotIdx(i => (i + 1) % 2), 3000);
+    return () => clearInterval(iv);
+  }, [task?.status, applicationCount]);
 
   // Fetch client + worker user data for trust badges
   const { data: clientUser } = useQuery({
