@@ -579,7 +579,7 @@ export default function TaskDetail() {
 
       <PageHeader
         title={task.title}
-        right={<span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, ...(STATUS_PILL[task.status] || STATUS_PILL.OPEN) }} className="hidden">{statusLabel}</span>} />
+        right={null} />
       
 
       <div style={{ padding: '10px 12px 0' }} className="space-y-3">
