@@ -751,6 +751,37 @@ export default function TaskDetail() {
                 <span style={{ fontSize: 12, fontWeight: 700 }}>בקשתך ממתינה לאישור</span>
               </div>
             )}
+
+            {/* Secondary actions: chat + cancel — inside banner */}
+            {!isOwner && (hasPendingApp || isApproved) && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <button
+                  onClick={() => navigate(`/chat/${id}`)}
+                  style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                >
+                  <MessageCircle size={13} /> הודעה למפרסם
+                </button>
+                {hasPendingApp && (
+                  <button
+                    onClick={() => cancelApplicationMutation.mutate()}
+                    disabled={cancelApplicationMutation.isPending}
+                    style={{ height: 34, padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                  >
+                    {cancelApplicationMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <><X size={11} /> בטל בקשה</>}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Report — tiny, inside banner */}
+            {!isOwner && (
+              <button
+                onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } setShowReport(true); }}
+                style={{ width: '100%', height: 26, background: 'none', border: 'none', color: 'rgba(255,255,255,0.38)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}
+              >
+                <Flag size={10} /> דיווח על המשימה
+              </button>
+            )}
           </div>
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
@@ -858,30 +889,12 @@ export default function TaskDetail() {
         {/* Actions */}
         <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-          {/* Chat button for applicant — can message the task owner */}
-          {(hasPendingApp || isApproved) && !isOwner && (
-            <button
-              onClick={() => navigate(`/chat/${id}`)}
-              style={{ width: '100%', height: 44, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-            >
-              <MessageCircle size={16} strokeWidth={1.8} /> שלח הודעה למפרסם
-            </button>
-          )}
-
-          {/* Pending application banner */}
-          {hasPendingApp && isWorker && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Clock size={12} color="#d97706" style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>בקשתך ממתינה לאישור המעסיק</span>
-            </div>
-          )}
-
           {/* Apply form (shown only when triggered) */}
           {canApplyManual && showApplyForm && (
             <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: 0 }}>הוסף הודעה לבעל המשימה (לא חובה)</p>
               <textarea
-                placeholder="לדוגמה: יש לי ניסיון של 5 שנים בתחום..."
+                placeholder="לדוגמא: יש לי ניסיון של 5 שנים בתחום..."
                 value={applyMessage}
                 onChange={e => setApplyMessage(e.target.value)}
                 rows={3}
@@ -900,23 +913,6 @@ export default function TaskDetail() {
             </div>
           )}
 
-          {/* Cancel pending application */}
-          {hasPendingApp && !isWorker && (
-            <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
-              style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
-            >
-              {cancelApplicationMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><X size={16} strokeWidth={2} /> בטל בקשה</>}
-            </button>
-          )}
-
-
-
-
-
-
-
-
-
           {/* Rating CTA for completed tasks */}
           {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview && (
             <button onClick={() => setShowRating(true)}
@@ -926,33 +922,21 @@ export default function TaskDetail() {
             </button>
           )}
           {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview && (
-            <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700, cursor: 'not-allowed', opacity: 0.85 }}>
+            <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
               <Star size={15} className="fill-yellow-400 text-yellow-400" />
               {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב
             </div>
           )}
 
-          {/* Repost button for owner on closed tasks */}
+          {/* Repost */}
           {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) && (
             <button
               onClick={() => {
-                // EXPIRED + already paid → go directly to EditTask (no new payment needed)
                 if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
                   navigate(`/edit-task/${id}`, { state: { repostMode: true } });
                   return;
                 }
-                // All other cases → go to CreateTask (new payment required)
-                const params = new URLSearchParams({
-                  repost: '1',
-                  title: task.title || '',
-                  description: task.description || '',
-                  price: String(task.price || ''),
-                  city: task.city || '',
-                  location_name: task.location_name || '',
-                  category: task.category || '',
-                  estimated_time: task.estimated_time || '',
-                  approval_mode: task.approval_mode || 'manual',
-                });
+                const params = new URLSearchParams({ repost: '1', title: task.title || '', description: task.description || '', price: String(task.price || ''), city: task.city || '', location_name: task.location_name || '', category: task.category || '', estimated_time: task.estimated_time || '', approval_mode: task.approval_mode || 'manual' });
                 navigate(`/create-task?${params.toString()}`);
               }}
               style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}
@@ -961,25 +945,12 @@ export default function TaskDetail() {
             </button>
           )}
 
+          {/* Exit task */}
           {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' && (
             <button onClick={() => setShowExitWarning(true)} disabled={cancelTakeMutation.isPending}
               style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}
             >
               {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
-            </button>
-          )}
-
-          {!isOwner && (
-            <button
-              onClick={() => {
-                if (!isAuthenticated) {
-                  setShowLoginPrompt(true);
-                  return;
-                }
-                setShowReport(true);
-              }}
-              style={{ width: '100%', height: 40, borderRadius: 14, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13 }}>
-              <Flag size={15} />דיווח על המשימה
             </button>
           )}
         </div>
