@@ -28,7 +28,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
               <CreditIcon size={12} />
               <span style={{ fontWeight: 800 }}>{cost}</span>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>יזדינית</div>
+
             <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
           </div>
         </div>
