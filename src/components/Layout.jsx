@@ -465,7 +465,7 @@ export default function Layout() {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <CoinEarnedToast />
-      {location.pathname !== '/map' && <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />}
+      <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
       {/* Portals — rendered directly to body to escape stacking context */}

@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, X, MapPin, Clock, ChevronRight, Layers, Compass, Building2, ArrowRight } from 'lucide-react';
+import { Navigation, X, MapPin, Clock, ChevronRight, Layers, Compass, Building2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
@@ -85,7 +85,6 @@ function UserPin() {
 }
 
 export default function MapView() {
-  const navigate = useNavigate();
   const mapRef = useRef(null);
   const seedRef = useRef({});
   const dashOffsetRef = useRef(0);
@@ -235,52 +234,7 @@ export default function MapView() {
   } : null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }} dir="rtl">
-      {/* Floating top bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
-        padding: '12px 14px 14px',
-        paddingTop: 'calc(12px + env(safe-area-inset-top))',
-        background: 'linear-gradient(to bottom, rgba(255,248,230,0.97) 65%, transparent)',
-        display: 'flex', alignItems: 'center', gap: 10,
-        pointerEvents: 'none',
-      }}>
-        <button onClick={() => navigate(-1)} style={{ pointerEvents: 'all', width: 40, height: 40, borderRadius: 13, background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }}>
-          <ArrowRight size={18} color="#374151" />
-        </button>
-        <div style={{ pointerEvents: 'none', flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontWeight: 900, fontSize: 17, color: '#1a1a1a', letterSpacing: -0.3 }}>מפת משימות</span>
-          <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>{displayTasks.length}</span>
-          {activeTakenTasks.length > 0 && (
-            <span style={{ background: '#10b981', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-              🚗 {activeTakenTasks.length} בדרך
-            </span>
-          )}
-        </div>
-        <div style={{ pointerEvents: 'all', display: 'flex', gap: 7, alignItems: 'center', position: 'relative' }}>
-          <button onClick={() => setShow3D(v => !v)} style={{ width: 38, height: 38, borderRadius: 12, background: show3D ? '#dbeafe' : 'rgba(255,255,255,0.92)', border: `1.5px solid ${show3D ? '#3b82f6' : 'rgba(0,0,0,0.09)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <Building2 size={16} color={show3D ? '#1a6fd4' : '#6b7280'} />
-          </button>
-          <button onClick={() => { mapRef.current?.getMap()?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 25, duration: 1200 }); }} style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <Compass size={16} color="#1a6fd4" />
-          </button>
-          <button onClick={() => setShowStylePicker(v => !v)} style={{ width: 38, height: 38, borderRadius: 12, background: showStylePicker ? '#dbeafe' : 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <Layers size={16} color="#1a6fd4" />
-          </button>
-          {showStylePicker && (
-            <div style={{ position: 'absolute', top: 46, left: 0, background: 'white', border: '1px solid #dce8f5', borderRadius: 14, boxShadow: '0 6px 24px rgba(0,0,0,0.14)', zIndex: 1001, overflow: 'hidden', minWidth: 110 }}>
-              {MAP_STYLES.map((s, i) => (
-                <button key={i} onClick={() => { setStyleIdx(i); setShowStylePicker(false); }}
-                  style={{ display: 'block', width: '100%', padding: '11px 14px', textAlign: 'right', background: styleIdx === i ? '#eff6ff' : 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: styleIdx === i ? 700 : 400, color: styleIdx === i ? '#1a6fd4' : '#374151' }}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Map */}
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} dir="rtl">
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }}>
         {mounted && mapToken && (
           <Map
@@ -333,16 +287,58 @@ export default function MapView() {
             {/* Live worker pins */}
             {activeTakenTasks.map(task => (
               <Marker key={`worker-${task.id}`} longitude={task.worker_lng} latitude={task.worker_lat} anchor="bottom"
-                onClick={e => { e.originalEvent.stopPropagation(); navigate(`/task/${task.id}`); }}>
+                onClick={e => { e.originalEvent.stopPropagation(); }}>
                 <WorkerLivePin task={task} />
               </Marker>
             ))}
           </Map>
         )}
 
-        {/* Legend */}
+        {/* Floating controls — top right */}
+        <div style={{ position: 'absolute', top: 'calc(72px + env(safe-area-inset-top))', right: 12, zIndex: 10, display: 'flex', gap: 8, flexDirection: 'column' }}>
+          <button onClick={() => setShow3D(v => !v)} style={{ width: 40, height: 40, borderRadius: 12, background: show3D ? '#dbeafe' : 'rgba(255,255,255,0.92)', border: `1.5px solid ${show3D ? '#3b82f6' : 'rgba(0,0,0,0.09)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Building2 size={16} color={show3D ? '#1a6fd4' : '#6b7280'} />
+          </button>
+          <button onClick={() => { mapRef.current?.getMap()?.flyTo({ center: [CENTER.longitude, CENTER.latitude], zoom: 13.5, pitch: 50, bearing: 25, duration: 1200 }); }} style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Compass size={16} color="#1a6fd4" />
+          </button>
+          <button onClick={() => setShowStylePicker(v => !v)} style={{ width: 40, height: 40, borderRadius: 12, background: showStylePicker ? '#dbeafe' : 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(0,0,0,0.09)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <Layers size={16} color="#1a6fd4" />
+          </button>
+          {showStylePicker && (
+            <div style={{ position: 'absolute', top: 128, right: 0, background: 'white', border: '1px solid #dce8f5', borderRadius: 14, boxShadow: '0 6px 24px rgba(0,0,0,0.14)', zIndex: 1001, overflow: 'hidden', minWidth: 120 }}>
+              {MAP_STYLES.map((s, i) => (
+                <button key={i} onClick={() => { setStyleIdx(i); setShowStylePicker(false); }}
+                  style={{ display: 'block', width: '100%', padding: '11px 14px', textAlign: 'right', background: styleIdx === i ? '#eff6ff' : 'white', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: styleIdx === i ? 700 : 400, color: styleIdx === i ? '#1a6fd4' : '#374151' }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Task counter — top left */}
+        <div style={{ position: 'absolute', top: 'calc(72px + env(safe-area-inset-top))', left: 12, zIndex: 10, background: 'rgba(255,255,255,0.92)', borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', border: '1px solid #e5e9f5' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>{displayTasks.length}</span>
+              <span style={{ fontSize: 11, color: '#374151', fontWeight: 600 }}>משימות</span>
+            </div>
+            {activeTakenTasks.length > 0 && (
+              <>
+                <span style={{ fontSize: 11, color: '#bbb', opacity: 0.5 }}>·</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ background: '#10b981', color: 'white', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>🚗</span>
+                  <span style={{ fontSize: 11, color: '#374151', fontWeight: 600 }}>{activeTakenTasks.length}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Legend — bottom right */}
         <div style={{
-          position: 'absolute', top: 72, right: 12, zIndex: 10,
+          position: 'absolute', bottom: 140, right: 12, zIndex: 10,
           background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)',
           borderRadius: 12, padding: '8px 12px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', border: '1px solid #e5e9f5',
           display: 'flex', flexDirection: 'column', gap: 5,
@@ -399,7 +395,7 @@ export default function MapView() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => window.open(`https://waze.com/ul?ll=${selectedTask.lat},${selectedTask.lng}&navigate=yes`, '_blank')} style={{ flex: 1, height: 40, borderRadius: 12, background: '#1da462', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Waze</button>
               <button onClick={() => window.open(`https://maps.google.com/?q=${selectedTask.lat},${selectedTask.lng}`, '_blank')} style={{ flex: 1, height: 40, borderRadius: 12, background: '#4285f4', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Google</button>
-              <button onClick={() => navigate(`/task/${selectedTask.id}`)} style={{ flex: 1, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+              <button onClick={() => window.location.href = `/task/${selectedTask.id}`} style={{ flex: 1, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 פרטים <ChevronRight size={14} />
               </button>
             </div>
