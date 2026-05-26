@@ -31,7 +31,7 @@ import ReportModal from '@/components/ReportModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
-import LiveActivityPulse from '@/components/LiveActivityPulse';
+
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
@@ -100,6 +100,16 @@ export default function TaskDetail() {
     select: data => data[0],
     enabled: !!me?.id,
   });
+  // Application count for live activity in banner
+  const { data: taskApplications = [] } = useQuery({
+    queryKey: ['applications-pulse', id],
+    queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
+    enabled: !!id,
+    staleTime: 30000,
+    refetchInterval: 45000,
+  });
+  const applicationCount = taskApplications.filter(a => a.status !== 'cancelled').length;
+
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
@@ -602,10 +612,7 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Live Activity Pulse — OPEN tasks only */}
-        {task.status === 'OPEN' && (
-          <LiveActivityPulse task={task} compact />
-        )}
+
 
         {/* Main Task Banner */}
         <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
@@ -628,7 +635,13 @@ export default function TaskDetail() {
                     <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
                   </span>
                 )}
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>
+                  {task.status === 'OPEN'
+                    ? applicationCount > 0
+                      ? `מחפש פועל · ${applicationCount} בקשות`
+                      : 'מחפש פועל'
+                    : statusLabel}
+                </span>
               </div>
               {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
                 <button
@@ -708,7 +721,15 @@ export default function TaskDetail() {
               </div>
             )}
 
-            {/* Owner waiting */}
+            {/* Owner: waiting for applications */}
+            {isOwner && task.status === 'OPEN' && applicationCount === 0 && (
+              <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '7px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ fontSize: 13 }}>✋</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.88)' }}>ממתין לאישור · עדיין לא הגיעו בקשות מעובדים</span>
+              </div>
+            )}
+
+            {/* Owner waiting for worker to start */}
             {isOwner && task.status === 'TAKEN' && !task.worker_status && (
               <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span>⏳</span>
@@ -881,13 +902,13 @@ export default function TaskDetail() {
           <LiveWorkerMap task={task} />
         )}
 
-        {/* Applicants for owner */}
-        {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) && (
+        {/* Applicants for owner — only show when there are actual applicants */}
+        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) && (
           <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
         )}
 
         {/* Actions */}
-        <div style={{ paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED','CANCELLED','EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* Apply form (shown only when triggered) */}
           {canApplyManual && showApplyForm && (
@@ -953,7 +974,7 @@ export default function TaskDetail() {
               {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
             </button>
           )}
-        </div>
+        </div>}
       </div>
 
 
