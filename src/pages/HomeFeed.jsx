@@ -76,7 +76,9 @@ export default function HomeFeed() {
 
   // Force refetch when auth state changes (e.g. user logs in)
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+    if (isAuthenticated === true) {
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+    }
   }, [isAuthenticated]);
 
   // ── Real-time subscriptions ──────────────────────────────────────────────

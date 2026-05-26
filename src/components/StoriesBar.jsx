@@ -206,9 +206,8 @@ export default function StoriesBar() {
       const now = new Date();
       return tasks.filter(t => t.story_expires_at && new Date(t.story_expires_at) > now && t.status === 'OPEN');
     },
-    // Refresh every 30s so price updates are reflected
-    refetchInterval: 30000,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   if (stories.length === 0) return null;
