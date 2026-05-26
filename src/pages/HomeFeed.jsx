@@ -37,9 +37,8 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 30000,
+    staleTime: 60000,
     refetchOnWindowFocus: false,
-    refetchInterval: 120000
   });
 
   // Active task I'm working on as a worker
@@ -48,8 +47,7 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    refetchInterval: 60000,
-    staleTime: 30000,
+    staleTime: 60000,
     gcTime: 120000,
     refetchOnWindowFocus: false
   });
@@ -69,12 +67,11 @@ export default function HomeFeed() {
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['allTasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 200),
-    staleTime: 30000,
-    gcTime: 120000,
+    staleTime: 60000,
+    gcTime: 300000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
-    refetchInterval: 120000,
-    retry: 2,
+    retry: 1,
   });
 
   // Force refetch when auth state changes (e.g. user logs in)
@@ -192,10 +189,7 @@ export default function HomeFeed() {
             old.filter(a => a.id !== event.id)
           );
         }
-        // Hard sync only on update (not every create)
-        if (event.type === 'update') {
-          queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
-        }
+        // Data already updated via setQueryData above — no extra network call needed
       }
 
       // If it's an application for one of MY published tasks — sync the applicants panel
