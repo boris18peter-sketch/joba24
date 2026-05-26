@@ -80,6 +80,7 @@ export default function TaskDetail() {
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
+  const [showWorkerMap, setShowWorkerMap] = useState(false);
   const prevWorkerIdRef = useRef(null);
 
   // Rotate status label text every 3s for OPEN tasks
@@ -630,7 +631,19 @@ export default function TaskDetail() {
           {/* WorkerTracker at top when TAKEN */}
           {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
             <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
-              <WorkerTrackerBar task={task} isWorker={isWorker} isOwner={isOwner} onUpdate={handleWorkerUpdate} />
+              <WorkerTrackerBar
+                task={task}
+                isWorker={isWorker}
+                isOwner={isOwner}
+                onUpdate={handleWorkerUpdate}
+                showMapButton={!!(task.worker_lat && task.worker_lng)}
+                onMapToggle={() => setShowWorkerMap(v => !v)}
+              />
+              {showWorkerMap && isOwner && task.worker_lat && task.worker_lng && (
+                <div style={{ marginTop: 10, borderRadius: 16, overflow: 'hidden' }}>
+                  <LiveWorkerMap task={task} />
+                </div>
+              )}
             </div>
           )}
 

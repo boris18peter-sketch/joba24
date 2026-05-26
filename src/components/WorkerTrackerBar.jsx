@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag, AlertOctagon, ChevronLeft } from 'lucide-react';
-import LiveWorkerMap from '@/components/LiveWorkerMap';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,7 +30,6 @@ function getStatusInfo(key) {
   return WORKER_STATUSES.find(s => s.key === key) || WORKER_STATUSES[0];
 }
 
-// ── Live ETA Timer ─────────────────────────────────────────────────────────────
 function ETATimer({ since, label, color = 'white' }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -47,18 +45,13 @@ function ETATimer({ since, label, color = 'white' }) {
   const display = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')} דק'` : `${secs} שנ'`;
 
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '4px 12px',
-      fontSize: 13, color, fontWeight: 800, letterSpacing: 0.5,
-    }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '4px 12px', fontSize: 13, color, fontWeight: 800, letterSpacing: 0.5 }}>
       <Clock size={12} />
       {label}: {display}
     </div>
   );
 }
 
-// ── Step Progress ─────────────────────────────────────────────────────────────
 function StepProgress({ currentStatus }) {
   const stepIdx = getStepIndex(currentStatus);
   const fillPct = stepIdx === 0 ? '16%' : stepIdx === 1 ? '50%' : '84%';
@@ -66,12 +59,9 @@ function StepProgress({ currentStatus }) {
   return (
     <div style={{ padding: '16px 20px 10px', background: 'white' }}>
       <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-        {/* Track */}
         <div style={{ position: 'absolute', top: 18, right: 22, left: 22, height: 5, background: '#e2e8f0', borderRadius: 99, zIndex: 0 }} />
-        {/* Fill */}
         <motion.div
-          style={{ position: 'absolute', top: 18, right: 22, height: 5, borderRadius: 99, zIndex: 1,
-            background: 'linear-gradient(90deg, #1a6fd4, #06b6d4)' }}
+          style={{ position: 'absolute', top: 18, right: 22, height: 5, borderRadius: 99, zIndex: 1, background: 'linear-gradient(90deg, #1a6fd4, #06b6d4)' }}
           animate={{ width: fillPct }}
           transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
         />
@@ -84,13 +74,7 @@ function StepProgress({ currentStatus }) {
               <motion.div
                 animate={{ scale: isActive ? 1.15 : 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                style={{
-                  width: 38, height: 38, borderRadius: '50%',
-                  background: isDone ? (isActive ? '#1a6fd4' : '#bfdbfe') : 'white',
-                  border: `2.5px solid ${isDone ? '#1a6fd4' : '#e2e8f0'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: isActive ? '0 0 0 6px rgba(26,111,212,0.15)' : 'none',
-                }}
+                style={{ width: 38, height: 38, borderRadius: '50%', background: isDone ? (isActive ? '#1a6fd4' : '#bfdbfe') : 'white', border: `2.5px solid ${isDone ? '#1a6fd4' : '#e2e8f0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: isActive ? '0 0 0 6px rgba(26,111,212,0.15)' : 'none' }}
               >
                 <StepIcon size={17} color={isDone ? '#1a6fd4' : '#94a3b8'} strokeWidth={isActive ? 2.5 : 1.8} />
               </motion.div>
@@ -101,25 +85,23 @@ function StepProgress({ currentStatus }) {
           );
         })}
       </div>
-      <style>{`@keyframes activeRing{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.2);opacity:.7}}`}</style>
     </div>
   );
 }
 
-// ── Sub-status chips ────────────────────────────────────────────────────────────
 function SubStatusPicker({ currentStatus, onSelect, loading }) {
   const stepIdx = getStepIndex(currentStatus);
   const subOptions = stepIdx === 0
     ? [
-        { key: 'on_the_way', label: 'בדרך',       Icon: Navigation, color: '#2563eb' },
-        { key: 'delayed',    label: 'מתעכב',      Icon: Clock,      color: '#d97706' },
-        { key: 'parking',    label: 'חניה',        Icon: MapPin,     color: '#7c3aed' },
+        { key: 'on_the_way', label: 'בדרך',   Icon: Navigation, color: '#2563eb' },
+        { key: 'delayed',    label: 'מתעכב',  Icon: Clock,      color: '#d97706' },
+        { key: 'parking',    label: 'חניה',    Icon: MapPin,     color: '#7c3aed' },
       ]
     : stepIdx === 1
     ? [
-        { key: 'arrived',   label: 'הגעתי',       Icon: MapPin,  color: '#d97706' },
-        { key: 'starting',  label: 'מתחיל',       Icon: Wrench,  color: '#059669' },
-        { key: 'finishing', label: 'מסיים',       Icon: Flag,    color: '#0d9488' },
+        { key: 'arrived',   label: 'הגעתי',  Icon: MapPin,  color: '#d97706' },
+        { key: 'starting',  label: 'מתחיל',  Icon: Wrench,  color: '#059669' },
+        { key: 'finishing', label: 'מסיים',  Icon: Flag,    color: '#0d9488' },
       ]
     : [];
 
@@ -127,9 +109,7 @@ function SubStatusPicker({ currentStatus, onSelect, loading }) {
 
   return (
     <div style={{ padding: '4px 16px 14px' }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textAlign: 'center' }}>
-        עדכן סטטוס מדויק
-      </div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 8, textAlign: 'center' }}>עדכן סטטוס מדויק</div>
       <div style={{ display: 'flex', gap: 8 }}>
         {subOptions.map(opt => {
           const isSelected = currentStatus === opt.key;
@@ -140,15 +120,7 @@ function SubStatusPicker({ currentStatus, onSelect, loading }) {
               disabled={loading}
               onClick={() => onSelect(opt.key)}
               whileTap={{ scale: 0.95 }}
-              style={{
-                flex: 1, height: 44, borderRadius: 14,
-                background: isSelected ? opt.color : '#f8fafc',
-                color: isSelected ? 'white' : '#475569',
-                fontWeight: 700, fontSize: 12, border: isSelected ? 'none' : '1.5px solid #e2e8f0',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                boxShadow: isSelected ? `0 4px 14px ${opt.color}44` : 'none',
-                transition: 'all 0.2s',
-              }}
+              style={{ flex: 1, height: 44, borderRadius: 14, background: isSelected ? opt.color : '#f8fafc', color: isSelected ? 'white' : '#475569', fontWeight: 700, fontSize: 12, border: isSelected ? 'none' : '1.5px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: isSelected ? `0 4px 14px ${opt.color}44` : 'none', transition: 'all 0.2s' }}
             >
               <OptIcon size={13} strokeWidth={1.8} /> {opt.label}
             </motion.button>
@@ -159,20 +131,18 @@ function SubStatusPicker({ currentStatus, onSelect, loading }) {
   );
 }
 
-// ── Status description row ─────────────────────────────────────────────────────
-function StatusDescription({ localStatus, isOwner, workerName }) {
+function StatusDescription({ localStatus, workerName }) {
   const DESCRIPTIONS = {
-    on_the_way: { worker: 'לחץ "הגיע" כשתגיע למיקום', owner: `${workerName} בדרך — תוכל לפנות אליו בצ'אט` },
-    delayed:    { worker: 'עדכן מוקדם ככל האפשר',     owner: `${workerName} מתעכב — ייתכן עיכוב בלתי צפוי` },
-    parking:    { worker: 'מיקום ממוקם, מחפש חניה',   owner: `${workerName} מחפש חניה — יגיע בדקות הקרובות` },
-    arrived:    { worker: 'אתה בשטח! עדכן כשמתחיל',  owner: `${workerName} הגיע — ממתין להתחיל` },
-    starting:   { worker: 'מתחיל עכשיו, בהצלחה!',    owner: `${workerName} מתחיל את העבודה` },
-    finishing:  { worker: 'כמעט שם, לחץ "סיימתי" בסיום', owner: `${workerName} מסיים — בקרוב הושלם` },
-    done:       { worker: 'ממתין לאישור המעסיק',      owner: 'לחץ "אשר ביצוע" לאישור סיום העבודה' },
+    on_the_way: 'לחץ "הגיע" כשתגיע למיקום',
+    delayed:    'עדכן מוקדם ככל האפשר',
+    parking:    'מיקום ממוקם, מחפש חניה',
+    arrived:    'אתה בשטח! עדכן כשמתחיל',
+    starting:   'מתחיל עכשיו, בהצלחה!',
+    finishing:  'כמעט שם, לחץ "סיימתי" בסיום',
+    done:       'ממתין לאישור המעסיק',
   };
-  const desc = DESCRIPTIONS[localStatus];
-  if (!desc) return null;
-  const text = isOwner ? desc.owner : desc.worker;
+  const text = DESCRIPTIONS[localStatus];
+  if (!text) return null;
 
   return (
     <div style={{ margin: '0 16px 14px', background: '#f8fafc', borderRadius: 12, padding: '10px 14px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
@@ -181,15 +151,13 @@ function StatusDescription({ localStatus, isOwner, workerName }) {
   );
 }
 
-// ── Main Component ──────────────────────────────────────────────────────────────
-export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) {
+export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, onMapToggle, showMapButton }) {
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
   const [completionPhoto, setCompletionPhoto] = useState(task?.completion_photo || null);
   const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
   const [noShowLoading, setNoShowLoading] = useState(false);
   const [minutesOnTheWay, setMinutesOnTheWay] = useState(0);
-  const [showMap, setShowMap] = useState(false);
   const prevStatusRef = useRef(localStatus);
 
   useEffect(() => {
@@ -199,24 +167,18 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
 
   useEffect(() => {
     if (!task?.on_the_way_at) return;
-    const update = () => {
-      const mins = Math.floor((Date.now() - new Date(task.on_the_way_at).getTime()) / 60000);
-      setMinutesOnTheWay(mins);
-    };
+    const update = () => setMinutesOnTheWay(Math.floor((Date.now() - new Date(task.on_the_way_at).getTime()) / 60000));
     update();
     const t = setInterval(update, 60000);
     return () => clearInterval(t);
   }, [task?.on_the_way_at]);
 
-  // Continuous GPS tracking while worker is on_the_way (every 30s)
   useEffect(() => {
     if (!isWorker || localStatus !== 'on_the_way') return;
     if (!navigator.geolocation) return;
     const interval = setInterval(() => {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          onUpdate({ worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude });
-        },
+        (pos) => onUpdate({ worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude }),
         () => {},
         { timeout: 6000, maximumAge: 15000 }
       );
@@ -249,7 +211,6 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
 
   const stepIdx = getStepIndex(localStatus);
   const statusInfo = localStatus ? getStatusInfo(localStatus) : null;
-  const StatusIcon = statusInfo?.Icon || Navigation;
 
   const handleStatusUpdate = async (statusKey, extra = {}) => {
     setLoading(true);
@@ -281,7 +242,6 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
     }
   };
 
-  // ── Header gradient & text config ─────────────────────────────────────────────
   const headerConfig = (() => {
     if (stepIdx === 2) return {
       gradient: 'linear-gradient(135deg, #065f46, #059669)',
@@ -291,7 +251,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       badge: null,
     };
     if (stepIdx === 1) return {
-      gradient: `linear-gradient(135deg, #92400e, #d97706)`,
+      gradient: 'linear-gradient(135deg, #92400e, #d97706)',
       emoji: '📍',
       title: isOwner ? `${task.worker_name} — ${statusInfo?.ownerLabel || 'הגיע'}` : (statusInfo?.label || 'בשטח'),
       sub: isOwner ? 'העובד נמצא בשטח' : 'עדכן את ההתקדמות',
@@ -322,7 +282,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
 
   const mainCTA = (() => {
     if (!isWorker) return null;
-    if (stepIdx < 0 || localStatus === null)  return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#2563eb' };
+    if (stepIdx < 0 || localStatus === null) return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#2563eb' };
     if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#d97706' };
     if (stepIdx === 1) return { label: 'סיימתי את המשימה', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
     return null;
@@ -336,10 +296,9 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       dir="rtl"
       style={{ background: 'white', borderRadius: 24, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 6px 28px rgba(0,0,0,0.09)' }}
     >
-      {/* ── Gradient Header ── */}
+      {/* Gradient Header */}
       <div style={{ background: headerConfig.gradient, padding: '18px 20px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* Emoji icon */}
           <div style={{ width: 50, height: 50, borderRadius: 16, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>
             {headerConfig.emoji}
           </div>
@@ -351,13 +310,10 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
               {headerConfig.sub}
             </div>
           </div>
-          {/* Price badge */}
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '6px 14px', color: 'white', fontWeight: 900, fontSize: 20, flexShrink: 0, backdropFilter: 'blur(4px)' }}>
             ₪{task.price}
           </div>
         </div>
-
-        {/* ETA + badge row */}
         {(etaSince || headerConfig.badge) && (
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             {etaSince && <ETATimer since={etaSince} label={etaLabel} />}
@@ -370,46 +326,38 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         )}
       </div>
 
-      {/* ── 3-Step Progress ── */}
+      {/* 3-Step Progress */}
       <StepProgress currentStatus={localStatus} />
 
-      {/* ── Status Description — worker only ── */}
-      {isWorker && <StatusDescription localStatus={localStatus} isOwner={isOwner} workerName={task.worker_name} />}
+      {/* Status Description — worker only */}
+      {isWorker && <StatusDescription localStatus={localStatus} workerName={task.worker_name} />}
 
-      {/* ── Sub-status detail (worker only, not when done) ── */}
+      {/* Sub-status chips — worker only */}
       {isWorker && stepIdx < 2 && (
         <SubStatusPicker currentStatus={localStatus} onSelect={handleStatusUpdate} loading={loading} />
       )}
 
-      {/* ── Go back (worker only) ── */}
+      {/* Go back button — worker only */}
       {isWorker && stepIdx > 0 && stepIdx < 2 && (
         <div style={{ padding: '0 16px 4px' }}>
           <button
             onClick={() => handleStatusUpdate(stepIdx === 1 ? 'on_the_way' : 'arrived')}
             disabled={loading}
-            style={{ width: '100%', height: 38, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+            style={{ width: '100%', height: 38, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <ChevronLeft size={14} />
           </button>
         </div>
       )}
 
-      {/* ── Worker Main CTA ── */}
+      {/* Worker Main CTA */}
       {isWorker && mainCTA && stepIdx < 2 && (
         <div style={{ padding: '0 16px 14px', marginTop: stepIdx < 0 ? 8 : 0 }}>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={() => handleStatusUpdate(mainCTA.nextKey)}
             disabled={loading}
-            style={{
-              width: '100%', height: 56, borderRadius: 18,
-              background: loading ? '#94a3b8' : mainCTA.color,
-              color: 'white', fontWeight: 900, fontSize: 16, border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : `0 6px 22px ${mainCTA.color}66`,
-              transition: 'background 0.2s, box-shadow 0.2s',
-            }}
+            style={{ width: '100%', height: 56, borderRadius: 18, background: loading ? '#94a3b8' : mainCTA.color, color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : `0 6px 22px ${mainCTA.color}66`, transition: 'background 0.2s' }}
           >
             {loading
               ? <><Loader2 size={18} className="animate-spin" /> רגע...</>
@@ -419,7 +367,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── Worker done state ── */}
+      {/* Worker done state */}
       {isWorker && stepIdx === 2 && (
         <div style={{ margin: '0 16px 14px' }}>
           <WorkerCompletionPhoto photoUrl={completionPhoto} onPhotoUploaded={setCompletionPhoto} />
@@ -432,7 +380,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── Owner: confirm completion ── */}
+      {/* Owner: confirm completion */}
       {isOwner && stepIdx === 2 && (
         <div style={{ margin: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {completionPhoto && (
@@ -451,7 +399,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── Chat link + map toggle ── */}
+      {/* Chat link + map toggle */}
       {(task.status === 'TAKEN' || task.status === 'IN_PROGRESS' || task.status === 'ARRIVED' || task.status === 'ON_THE_WAY') && (
         <div style={{ padding: '0 16px 16px' }}>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -461,22 +409,17 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
                 שלח הודעה ל{isWorker ? 'מעסיק' : 'עובד'}
               </div>
             </Link>
-            {isOwner && task.worker_lat && task.worker_lng && (
+            {isOwner && showMapButton && (
               <button
-                onClick={() => setShowMap(v => !v)}
-                style={{ width: 44, height: 44, borderRadius: 14, background: showMap ? '#1a6fd4' : '#f8fafc', border: '1.5px solid #dce8f5', color: showMap ? 'white' : '#2563eb', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                onClick={onMapToggle}
+                style={{ width: 44, height: 44, borderRadius: 14, background: '#f8fafc', border: '1.5px solid #dce8f5', color: '#2563eb', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               >🗺️</button>
             )}
           </div>
-          {showMap && isOwner && task.worker_lat && task.worker_lng && (
-            <div style={{ marginTop: 10 }}>
-              <LiveWorkerMap task={task} />
-            </div>
-          )}
         </div>
       )}
 
-      {/* ── No-Show report button ── */}
+      {/* No-Show report button */}
       {isOwner && task.worker_status === 'on_the_way' && minutesOnTheWay >= 60 && (
         <div style={{ padding: '0 16px 16px' }}>
           <button
@@ -488,7 +431,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── No-Show Modal ── */}
+      {/* No-Show Modal */}
       <AnimatePresence>
         {showNoShowConfirm && (
           <motion.div
