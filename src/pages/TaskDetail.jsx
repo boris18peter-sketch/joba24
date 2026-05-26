@@ -33,6 +33,7 @@ import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 
 import LiveWorkerMap from '@/components/LiveWorkerMap';
+import TaskLocationMap from '@/components/TaskLocationMap';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -78,7 +79,15 @@ export default function TaskDetail() {
   const [creditsNeeded, setCreditsNeeded] = useState(null);
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [labelRotIdx, setLabelRotIdx] = useState(0);
   const prevWorkerIdRef = useRef(null);
+
+  // Rotate status label text every 3s for OPEN tasks
+  useEffect(() => {
+    if (!task || task.status !== 'OPEN' || applicationCount === 0) return;
+    const iv = setInterval(() => setLabelRotIdx(i => (i + 1) % 2), 3000);
+    return () => clearInterval(iv);
+  }, [task?.status, applicationCount]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -635,11 +644,11 @@ export default function TaskDetail() {
                     <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
                   </span>
                 )}
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>
+                <span key={labelRotIdx} style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5, transition: 'opacity 0.3s' }}>
                   {task.status === 'OPEN'
-                    ? applicationCount > 0
-                      ? `מחפש פועל · ${applicationCount} בקשות`
-                      : 'מחפש פועל'
+                    ? (applicationCount > 0 && labelRotIdx === 1
+                      ? `${applicationCount} עובדים הגישו בקשה`
+                      : 'מחפש פועל')
                     : statusLabel}
                 </span>
               </div>
@@ -729,13 +738,7 @@ export default function TaskDetail() {
               </div>
             )}
 
-            {/* Owner waiting for worker to start */}
-            {isOwner && task.status === 'TAKEN' && !task.worker_status && (
-              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span>⏳</span>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>ממתין שהעובד יצא · <strong>{task.worker_name}</strong></span>
-              </div>
-            )}
+
 
             {/* Approved CTA */}
             {isApproved && !isWorker && task.status === 'OPEN' && (
@@ -806,6 +809,11 @@ export default function TaskDetail() {
           </div>
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
+
+        {/* Task location map — shown for non-TAKEN tasks with location */}
+        {task.status !== 'TAKEN' && task.lat && task.lng && (
+          <TaskLocationMap task={task} />
+        )}
 
         {/* Images + Video */}
         {(task.images?.length > 0 || task.video_url) && (

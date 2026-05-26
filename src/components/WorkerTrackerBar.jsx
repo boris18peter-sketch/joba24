@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag, AlertOctagon, ChevronLeft, Phone } from 'lucide-react';
+import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag, AlertOctagon, ChevronLeft } from 'lucide-react';
+import LiveWorkerMap from '@/components/LiveWorkerMap';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -188,6 +189,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
   const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
   const [noShowLoading, setNoShowLoading] = useState(false);
   const [minutesOnTheWay, setMinutesOnTheWay] = useState(0);
+  const [showMap, setShowMap] = useState(false);
   const prevStatusRef = useRef(localStatus);
 
   useEffect(() => {
@@ -371,8 +373,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
       {/* ── 3-Step Progress ── */}
       <StepProgress currentStatus={localStatus} />
 
-      {/* ── Status Description ── */}
-      <StatusDescription localStatus={localStatus} isOwner={isOwner} workerName={task.worker_name} />
+      {/* ── Status Description — worker only ── */}
+      {isWorker && <StatusDescription localStatus={localStatus} isOwner={isOwner} workerName={task.worker_name} />}
 
       {/* ── Sub-status detail (worker only, not when done) ── */}
       {isWorker && stepIdx < 2 && (
@@ -387,7 +389,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
             disabled={loading}
             style={{ width: '100%', height: 38, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
           >
-            <ChevronLeft size={14} /> חזור לשלב הקודם
+            <ChevronLeft size={14} />
           </button>
         </div>
       )}
@@ -449,15 +451,28 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate }) 
         </div>
       )}
 
-      {/* ── Chat link ── */}
+      {/* ── Chat link + map toggle ── */}
       {(task.status === 'TAKEN' || task.status === 'IN_PROGRESS' || task.status === 'ARRIVED' || task.status === 'ON_THE_WAY') && (
         <div style={{ padding: '0 16px 16px' }}>
-          <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 14, border: '1.5px solid #dce8f5', background: '#f8fafc', color: '#2563eb', fontWeight: 700, fontSize: 13, transition: 'background 0.15s' }}>
-              <MessageCircle size={16} />
-              שלח הודעה ל{isWorker ? 'מעסיק' : 'עובד'}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Link to={`/chat/${task.id}`} style={{ flex: 1, textDecoration: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 14, border: '1.5px solid #dce8f5', background: '#f8fafc', color: '#2563eb', fontWeight: 700, fontSize: 13 }}>
+                <MessageCircle size={16} />
+                שלח הודעה ל{isWorker ? 'מעסיק' : 'עובד'}
+              </div>
+            </Link>
+            {isOwner && task.worker_lat && task.worker_lng && (
+              <button
+                onClick={() => setShowMap(v => !v)}
+                style={{ width: 44, height: 44, borderRadius: 14, background: showMap ? '#1a6fd4' : '#f8fafc', border: '1.5px solid #dce8f5', color: showMap ? 'white' : '#2563eb', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              >🗺️</button>
+            )}
+          </div>
+          {showMap && isOwner && task.worker_lat && task.worker_lng && (
+            <div style={{ marginTop: 10 }}>
+              <LiveWorkerMap task={task} />
             </div>
-          </Link>
+          )}
         </div>
       )}
 

@@ -415,6 +415,9 @@ export default function Layout() {
             taskId: event.data.task_id,
           });
         } else if ((event.data?.status === 'rejected' || event.data?.status === 'cancelled') && event.data.worker_id === me?.id) {
+          // Don't notify publisher about their own application being rejected on their own task
+          const isMyOwnTask = myPublishedTasks.some(t => t.id === event.data.task_id);
+          if (isMyOwnTask) return;
           // Only show 'application_rejected' when the app was pending (not approved).
           // If it was already approved, this is either a revocation (handled by ApprovalRevokedPopup)
           // or a task cancellation (handled by task_cancelled_worker). Avoid double-notifications.
