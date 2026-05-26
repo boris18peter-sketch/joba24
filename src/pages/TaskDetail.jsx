@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreHorizontal } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -607,113 +607,151 @@ export default function TaskDetail() {
           <LiveActivityPulse task={task} compact />
         )}
 
-        {/* Price Hero */}
-        <div style={{ background: taskGradient, borderRadius: 22, padding: '18px 20px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
-          {showOwnerMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowOwnerMenu(false)} />}
-          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-          {/* Top row: status + 3-dot */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {task.status === 'OPEN' && (
-                <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-                  <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
-                </span>
-              )}
-              <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+        {/* Main Task Banner */}
+        <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+          <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+
+          {/* WorkerTracker at top when TAKEN */}
+          {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
+            <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
+              <WorkerTrackerBar task={task} isWorker={isWorker} isOwner={isOwner} onUpdate={handleWorkerUpdate} />
             </div>
-            {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
-              <div style={{ position: 'relative', zIndex: 100 }}>
+          )}
+
+          <div style={{ padding: '16px 18px 18px' }}>
+            {/* Top row: status + 3-dot */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {task.status === 'OPEN' && (
+                  <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                    <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
+                  </span>
+                )}
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+              </div>
+              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
                 <button
                   onClick={e => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
-                  style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
+                  style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}
                 >
-                  <MoreHorizontal size={17} />
+                  <MoreVertical size={17} />
                 </button>
-                {showOwnerMenu && (
-                  <div style={{ position: 'absolute', top: 38, left: 0, zIndex: 200, background: 'white', borderRadius: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', overflow: 'hidden', minWidth: 168 }} onClick={e => e.stopPropagation()}>
-                    {task.status === 'OPEN' && (
-                      <Link to={`/edit-task/${id}`} onClick={() => setShowOwnerMenu(false)}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
-                          <Pencil size={14} color="#1a6fd4" />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b' }}>עריכת משימה</span>
-                        </div>
-                      </Link>
-                    )}
-                    <div
-                      onClick={() => {
-                        setShowOwnerMenu(false);
-                        const workerIsActive = ['on_the_way','delayed','parking','arrived','starting','finishing','done'].includes(task.worker_status);
-                        if (task.status === 'TAKEN' && workerIsActive) {
-                          window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
-                        } else { setShowCancelConfirm(true); }
-                      }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', cursor: 'pointer' }}
-                    >
-                      <X size={14} color="#dc2626" />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626' }}>ביטול משימה</span>
+              )}
+            </div>
+
+            {/* Price + Distance/Location */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>תגמול</div>
+                <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>₪{task.price}</div>
+              </div>
+              <div style={{ flexShrink: 0 }}>
+                {distKm != null && !isNaN(distKm) ? (
+                  <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>
+                      {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
                     </div>
+                    {task.location_name && (
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 3, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</div>
+                    )}
+                  </div>
+                ) : task.location_name ? (
+                  <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <MapPin size={12} strokeWidth={2} />
+                    <span style={{ fontSize: 11, fontWeight: 600, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Description */}
+            {task.description && (
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
+                {task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description}
+              </div>
+            )}
+
+            {/* Publisher + requirements */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              {task.client_name && (
+                <a href={`/public-profile?id=${task.client_id}`} style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>{task.client_name[0]}</div>
+                  <span>{task.client_name}</span>
+                  {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 10 }}>★ {task.client_rating.toFixed(1)}</span>}
+                  {task.client_verified && <VerifiedBadge size="sm" />}
+                </a>
+              )}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {task.requirements?.vehicle && <span title="דרוש רכב" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🚗</span>}
+                {task.requirements?.two_people && <span title="שני אנשים" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>👥</span>}
+                {task.requirements?.experience && <span title="ניסיון" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🛠️</span>}
+              </div>
+            </div>
+
+            {/* Time + expiry */}
+            {(task.estimated_time || (task.expires_at && task.status === 'OPEN')) && (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+                {task.estimated_time && (
+                  <div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 3, letterSpacing: 0.3 }}>זמן משוער</div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px' }}>
+                      <Clock size={11} /><span>{task.estimated_time}</span>
+                    </div>
+                  </div>
+                )}
+                {task.expires_at && task.status === 'OPEN' && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
+                    <Clock size={11} /><span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
                   </div>
                 )}
               </div>
             )}
-          </div>
-          {/* Price + Distance */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>תגמול</div>
-              <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>₪{task.price}</div>
-            </div>
-            {distKm != null && !isNaN(distKm) && (
-              <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 14, padding: '8px 16px', textAlign: 'center', backdropFilter: 'blur(4px)', flexShrink: 0 }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>
-                  {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
-                </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>ממך</div>
+
+            {/* Owner waiting */}
+            {isOwner && task.status === 'TAKEN' && !task.worker_status && (
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span>⏳</span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>ממתין שהעובד יצא · <strong>{task.worker_name}</strong></span>
               </div>
             )}
-          </div>
-          {/* Info row: publisher · location · date */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 7, flexWrap: 'wrap' }}>
-            {task.client_name && (
-              <a href={`/public-profile?id=${task.client_id}`} style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 700, textDecoration: 'none' }}>{task.client_name}</a>
-            )}
-            {task.location_name && (
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                {task.client_name && <span>·</span>} <MapPin size={9} strokeWidth={2} /> {task.location_name.split(',')[0]}
-              </span>
-            )}
-            {task.created_date && (
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>· {format(new Date(task.created_date), 'dd.MM.yy')}</span>
-            )}
-          </div>
-          {/* Time section */}
-          <div style={{ marginTop: 12 }}>
-            {task.estimated_time && (
-              <div style={{ marginBottom: 4 }}>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginBottom: 3, letterSpacing: 0.3 }}>זמן משוער להשלמת משימה</div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px' }}>
-                  <Clock size={12} />
-                  <span>{task.estimated_time}</span>
+
+            {/* Approved CTA */}
+            {isApproved && !isWorker && task.status === 'OPEN' && (
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
+                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>🎉 בקשתך אושרה!</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
+                    style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  >
+                    {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : '🚀 צא עכשיו'}
+                  </button>
+                  <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
+                    style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                  >בטל</button>
                 </div>
               </div>
             )}
-            {task.expires_at && task.status === 'OPEN' && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
-                <Clock size={11} />
-                <span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
+
+            {/* Apply button */}
+            {canApplyManual && !showApplyForm && (
+              <button
+                onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } gate(() => setShowApplyForm(true)); }}
+                style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}
+              >
+                <Send size={15} strokeWidth={1.8} />
+                הגש בקשה — {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={14} />
+              </button>
+            )}
+
+            {/* Pending pill */}
+            {hasPendingApp && !isOwner && (
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={12} />
+                <span style={{ fontSize: 12, fontWeight: 700 }}>בקשתך ממתינה לאישור</span>
               </div>
             )}
           </div>
-          {canApplyManual && !showApplyForm && (
-            <button
-              onClick={() => { if (!isAuthenticated) { setShowLoginPrompt(true); return; } gate(() => setShowApplyForm(true)); }}
-              style={{ marginTop: 12, width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}
-            >
-              <Send size={15} strokeWidth={1.8} />
-              הגש בקשה — {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={14} />
-            </button>
-          )}
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
 
@@ -806,111 +844,15 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Live worker map — shown when worker is in transit with GPS coordinates */}
+        {/* Live worker map */}
         {task.status === 'TAKEN' && task.worker_lat && task.worker_lng &&
           ['on_the_way', 'delayed', 'parking'].includes(task.worker_status) && (
           <LiveWorkerMap task={task} />
         )}
 
-        {/* Worker tracker: Owner & Worker when TAKEN */}
-        {((isOwner && task.status === 'TAKEN') || (isWorker && task.status === 'TAKEN')) && (
-          <WorkerTrackerBar
-            task={task}
-            isWorker={isWorker}
-            isOwner={isOwner}
-            onUpdate={handleWorkerUpdate}
-          />
-        )}
-
-        {/* Owner waiting for worker to depart — shown after approval but before worker_status is set */}
-        {isOwner && task.status === 'TAKEN' && !task.worker_status && (
-          <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 14 }}>⏳</span>
-            <div style={{ fontSize: 12, color: '#166534', fontWeight: 700 }}>ממתין לעדכון מהעובד · <strong>{task.worker_name}</strong></div>
-          </div>
-        )}
-
-        {/* Approved worker banner — shown when this worker's app was approved */}
-        {isApproved && !isWorker && task.status === 'OPEN' && (
-          <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 20, padding: '18px 20px', color: 'white' }}>
-            <div style={{ fontWeight: 900, fontSize: 17, marginBottom: 4 }}>🎉 בקשתך אושרה!</div>
-            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 14 }}>אתה יכול לצאת לדרך ולהתחיל את המשימה</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => gate(() => takeMutation.mutate())}
-                disabled={takeMutation.isPending}
-                style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-              >
-                {takeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : '🚀 צא עכשיו'}
-              </button>
-              <button
-                onClick={() => cancelApplicationMutation.mutate()}
-                disabled={cancelApplicationMutation.isPending}
-                style={{ height: 46, padding: '0 16px', borderRadius: 14, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
-              >בטל</button>
-            </div>
-          </div>
-        )}
-
-        {/* Applicants for owner — OPEN (no worker) OR TAKEN but worker hasn't departed yet */}
+        {/* Applicants for owner */}
         {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) && (
-          <TaskApplicants task={task} onApprove={() => {
-            queryClient.refetchQueries({ queryKey: ['task', id] });
-          }} />
-        )}
-
-        {/* Description */}
-        {task.description && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '11px 14px' }}>
-            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', marginBottom: 6 }}>תיאור</h2>
-            <p style={{ color: 'var(--text-1)', lineHeight: 1.65, fontSize: 14 }}>{task.description}</p>
-          </div>
-        )}
-
-        {/* Details */}
-        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '10px 12px' }} className="space-y-2">
-          {task.location_name && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <MapPin className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <div className="text-xs text-muted-foreground">מיקום</div>
-                <div className="font-medium text-sm">{task.location_name}</div>
-              </div>
-              <NavButtons lat={task.lat} lng={task.lng} locationName={task.location_name} />
-            </div>
-          )}
-
-
-
-        </div>
-
-        {/* Requirements */}
-        {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '10px 12px' }}>
-            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', marginBottom: 8 }}>דרישות</h2>
-            <div className="flex flex-wrap gap-2">
-              {task.requirements.vehicle && (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-xl text-sm font-medium"><Car className="w-3.5 h-3.5" /> רכב</span>
-              )}
-              {task.requirements.two_people && (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-xl text-sm font-medium"><Users className="w-3.5 h-3.5" /> שני אנשים</span>
-              )}
-              {task.requirements.experience && (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-xl text-sm font-medium"><Wrench className="w-3.5 h-3.5" /> ניסיון</span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Worker info */}
-        {task.worker_name && task.status === 'TAKEN' && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '10px 12px' }}>
-            <h2 style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', marginBottom: 6 }}>מבצע</h2>
-            <a href={`/public-profile?id=${task.worker_id}`} style={{ fontWeight: 700, color: 'var(--text-1)', textDecoration: 'none', borderBottom: '1px solid #bfdbfe' }}>{task.worker_name}</a>
-            {workerUser && <div style={{ marginTop: 8 }}><TrustBadges user={workerUser} compact /></div>}
-          </div>
+          <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
         )}
 
         {/* Actions */}
@@ -1064,6 +1006,49 @@ export default function TaskDetail() {
           creditsNeeded={creditsNeeded}
           onClose={() => setShowBuyCredits(false)}
         />
+      )}
+
+      {/* Owner 3-dot bottom sheet */}
+      {showOwnerMenu && createPortal(
+        <div className="mobile-sheet-overlay" onClick={() => setShowOwnerMenu(false)}>
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>פעולות משימה</div>
+            {task.status === 'OPEN' && (
+              <Link to={`/edit-task/${id}`} onClick={() => setShowOwnerMenu(false)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Pencil size={17} color="#1a6fd4" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b' }}>עריכת משימה</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>שינוי פרטים, מחיר ותיאור</div>
+                  </div>
+                </div>
+              </Link>
+            )}
+            <div
+              onClick={() => {
+                setShowOwnerMenu(false);
+                const workerIsActive = ['on_the_way','delayed','parking','arrived','starting','finishing','done'].includes(task.worker_status);
+                if (task.status === 'TAKEN' && workerIsActive) {
+                  window.dispatchEvent(new CustomEvent('show_cancel_warning', { detail: { task } }));
+                } else { setShowCancelConfirm(true); }
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', cursor: 'pointer' }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 13, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <X size={17} color="#dc2626" />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>ביטול משימה</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>המשימה תחזור לרשימה</div>
+              </div>
+            </div>
+            <div style={{ height: 24 }} />
+          </div>
+        </div>,
+        document.body
       )}
 
       {showCancelConfirm && task && createPortal(
