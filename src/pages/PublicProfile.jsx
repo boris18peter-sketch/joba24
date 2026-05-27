@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Star, CheckCircle, FileText, MapPin, Award } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
@@ -12,17 +12,18 @@ import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 
 export default function PublicProfile() {
   const navigate = useNavigate();
-  const urlParams = new URLSearchParams(window.location.search);
-  const userId = urlParams.get('id');
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get('id');
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ['publicUser', userId],
+    queryKey: ['publicProfileUser', userId],
     queryFn: async () => {
       if (!userId) return null;
       const users = await base44.entities.User.filter({ id: userId });
       return users[0] || null;
     },
     enabled: !!userId,
+    staleTime: 0,
   });
 
   const { data: completedTasks = [] } = useQuery({

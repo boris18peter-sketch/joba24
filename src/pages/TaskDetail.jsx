@@ -825,6 +825,11 @@ export default function TaskDetail() {
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
         </div>
 
+        {/* Applicants for owner — above the map */}
+        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || task.status === 'TAKEN' && !task.worker_status) &&
+        <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
+        }
+
         {/* Task location map — shown for non-TAKEN tasks with location */}
         {task.status !== 'TAKEN' && task.lat && task.lng &&
         <TaskLocationMap task={task} />
@@ -925,10 +930,7 @@ export default function TaskDetail() {
         <LiveWorkerMap task={task} />
         }
 
-        {/* Applicants for owner — only show when there are actual applicants */}
-        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || task.status === 'TAKEN' && !task.worker_status) &&
-        <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
-        }
+
 
         {/* Actions */}
         {(canApplyManual || task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) || isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) || isWorker && task.status === 'TAKEN') && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -123,7 +123,7 @@ export default function TaskApplicants({ task, onApprove }) {
   ];
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
       {/* Cancel Worker Confirmation Modal */}
       {showCancelWorkerConfirm && (
@@ -157,96 +157,85 @@ export default function TaskApplicants({ task, onApprove }) {
         </div>
       )}
 
-      <h3 className="font-bold text-sm text-gray-700">עובדים שמבקשים לבצע ({visibleApps.length})</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.3 }}>עובדים שמבקשים לבצע ({visibleApps.length})</span>
+      </div>
 
       {visibleApps.map(app => {
         const isApproved = app.status === 'approved';
         return (
-          <div key={app.id} style={{ background: isApproved ? '#f0fdf4' : 'white', border: isApproved ? '1.5px solid #86efac' : '1px solid #e5e7eb', borderRadius: 16, padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-            <div className="flex items-start gap-3">
-              <Link to={`/public-profile?id=${app.worker_id}`} className="shrink-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-lg font-bold text-white cursor-pointer">
-                  {app.worker_name?.[0]?.toUpperCase() || '?'}
-                </div>
-              </Link>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Link to={`/public-profile?id=${app.worker_id}`} className="font-bold text-gray-900 text-sm hover:text-blue-700 transition-colors">
+          <div key={app.id} style={{ background: isApproved ? '#f0fdf4' : 'white', border: isApproved ? '1.5px solid #86efac' : '1px solid #e8edf5', borderRadius: 14, padding: '10px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+            {/* Top row: avatar + name + rating + actions */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Avatar */}
+              <div
+                onClick={() => navigate(`/public-profile?id=${app.worker_id}`)}
+                style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 900, color: 'white', cursor: 'pointer', flexShrink: 0 }}
+              >
+                {app.worker_name?.[0]?.toUpperCase() || '?'}
+              </div>
+
+              {/* Name + rating + tasks */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span
+                    onClick={() => navigate(`/public-profile?id=${app.worker_id}`)}
+                    style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40', cursor: 'pointer' }}
+                  >
                     {app.worker_name}
-                  </Link>
+                  </span>
                   {app.worker_rating > 0 && (
-                    <span className="flex items-center gap-0.5 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold border border-amber-200">
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#b45309', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 20, padding: '1px 7px' }}>
+                      <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
                       {app.worker_rating.toFixed(1)}
                     </span>
                   )}
-                  {app.worker_score > 0 && (
-                    <span className="flex items-center gap-0.5 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
-                      <Award className="w-3 h-3" />
-                      {app.worker_score.toFixed(0)} נק'
-                    </span>
+                  {app.worker_tasks_count > 0 && (
+                    <span style={{ fontSize: 10, color: '#64748b' }}>✅ {app.worker_tasks_count}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                  {app.worker_tasks_count > 0 && <span>✅ {app.worker_tasks_count} משימות הושלמו</span>}
-                </div>
-                {/* Trust badges for this worker */}
-                {workerMap[app.worker_id] && (
-                  <div style={{ marginTop: 5 }}>
-                    <TrustBadges user={workerMap[app.worker_id]} compact />
-                  </div>
-                )}
                 {app.message && (
-                  <p className="text-xs text-gray-600 mt-2 bg-gray-50 rounded-lg p-2 italic">{app.message}</p>
+                  <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{app.message}</p>
                 )}
               </div>
-            </div>
 
-            {/* Chat button */}
-            <div className="mt-2">
-              <button
-                onClick={() => navigate(`/chat/${task.id}`)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '6px 12px', fontSize: 12, fontWeight: 700, color: '#1a6fd4', cursor: 'pointer' }}
-              >
-                <MessageCircle size={13} /> שלח הודעה ל{app.worker_name?.split(' ')[0]}
-              </button>
-            </div>
+              {/* Actions — inline */}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() => navigate(`/chat/${task.id}`)}
+                  style={{ width: 32, height: 32, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  title={`הודעה ל${app.worker_name?.split(' ')[0]}`}
+                >
+                  <MessageCircle size={14} color="#1a6fd4" />
+                </button>
 
-            {/* Action row */}
-            <div className="flex gap-2 mt-3">
-              {isApproved ? (
-                <>
-                  {/* Approved status label */}
-                  <div style={{ flex: 1, height: 36, borderRadius: 10, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#166534' }}>
-                    <CheckCircle2 size={14} /> {workerStarted ? 'יצא לדרך ✓' : 'אישרתי — מחכה שיצא'}
-                  </div>
-                  {/* Cancel Worker button — only before worker starts moving */}
-                  {!workerStarted && (
+                {isApproved ? (
+                  !workerStarted && (
                     <button
                       onClick={() => setShowCancelWorkerConfirm(true)}
-                      style={{ flex: 1, height: 36, borderRadius: 10, background: 'white', border: '1.5px solid #fca5a5', color: '#dc2626', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                      style={{ height: 32, padding: '0 10px', borderRadius: 10, background: 'white', border: '1.5px solid #fca5a5', color: '#dc2626', fontWeight: 700, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                     >
-                      <UserX size={13} /> ביטול עובד
+                      <UserX size={12} /> בטל
                     </button>
-                  )}
-                </>
-              ) : (
-                /* Pending — show approve button only if no one else is approved yet */
-                !approvedApp && (
-                  <Button
-                    size="sm"
-                    onClick={() => approveMutation.mutate(app)}
-                    disabled={approveMutation.isPending}
-                    className="flex-1 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold text-xs h-9 transition-all"
-                  >
-                    {approveMutation.isPending ? (
-                      <><Loader2 className="w-3 h-3 animate-spin ml-1" />אישור בעיצומו...</>
-                    ) : (
-                      <><CheckCircle2 className="w-3.5 h-3.5 ml-1" />אשר</>
-                    )}
-                  </Button>
-                )
-              )}
+                  )
+                ) : (
+                  !approvedApp && (
+                    <button
+                      onClick={() => approveMutation.mutate(app)}
+                      disabled={approveMutation.isPending}
+                      style={{ height: 32, padding: '0 12px', borderRadius: 10, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: approveMutation.isPending ? 0.6 : 1 }}
+                    >
+                      {approveMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <><CheckCircle2 size={13} /> אשר</>}
+                    </button>
+                  )
+                )}
+
+                {isApproved && (
+                  <div style={{ height: 32, padding: '0 10px', borderRadius: 10, background: '#dcfce7', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#166534' }}>
+                    <CheckCircle2 size={12} /> {workerStarted ? 'יצא ✓' : 'אושר'}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
