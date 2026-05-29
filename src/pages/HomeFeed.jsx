@@ -476,10 +476,10 @@ export default function HomeFeed() {
               style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : 'var(--surface-3)', color: !filters.category ? 'white' : 'var(--text-2)', transition: 'all 0.15s' }}>
               הכל</button>
                 {[...CATEGORIES].
-            sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN').length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN').length).
-            map((c) => {
-              const count = tasks.filter((t) => t.category === c.value && t.status === 'OPEN').length;
-              if (count === 0 && !filters.category) return null;
+                sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length).
+                map((c) => {
+                const count = tasks.filter((t) => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
+                if (count === 0) return null;
               const isActive = filters.category === c.value;
               return (
                 <button key={c.value}
