@@ -54,6 +54,9 @@ export default function LiveWorkerMap({ task }) {
   const [dashOffset, setDashOffset] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const animRef = useRef(null);
+  const initialDistRef = useRef(null); // track starting distance for progress %
+  const lastUpdateRef = useRef(Date.now());
+  const [secondsAgo, setSecondsAgo] = useState(0);
 
   const workerLat = parseFloat(task?.worker_lat);
   const workerLng = parseFloat(task?.worker_lng);
@@ -62,6 +65,29 @@ export default function LiveWorkerMap({ task }) {
 
   const hasWorker = isFinite(workerLat) && isFinite(workerLng);
   const hasTask = isFinite(taskLat) && isFinite(taskLng);
+
+  const distKm = (hasWorker && hasTask) ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
+  const etaMins = distKm ? Math.max(1, Math.round(distKm * 1.4 / 35 * 60)) : null;
+
+  // Track initial distance for progress %
+  useEffect(() => {
+    if (distKm !== null && initialDistRef.current === null) {
+      initialDistRef.current = distKm;
+    }
+  }, [distKm !== null]);
+
+  const progressPct = (initialDistRef.current && distKm !== null)
+    ? Math.min(100, Math.max(0, Math.round((1 - distKm / initialDistRef.current) * 100)))
+    : 0;
+
+  // Live "freshness" counter
+  useEffect(() => {
+    if (!hasWorker) return;
+    lastUpdateRef.current = Date.now();
+    setSecondsAgo(0);
+    const iv = setInterval(() => setSecondsAgo(Math.floor((Date.now() - lastUpdateRef.current) / 1000)), 1000);
+    return () => clearInterval(iv);
+  }, [workerLat, workerLng]);
 
   // Fetch token
   useEffect(() => {
@@ -124,8 +150,6 @@ export default function LiveWorkerMap({ task }) {
 
   if (!hasWorker) return null;
 
-  const distKm = hasTask ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
-  const etaMins = distKm ? Math.max(1, Math.round(distKm * 1.4 / 35 * 60)) : null;
   const centerLng = hasTask ? (workerLng + taskLng) / 2 : workerLng;
   const centerLat = hasTask ? (workerLat + taskLat) / 2 : workerLat;
 
@@ -135,37 +159,55 @@ export default function LiveWorkerMap({ task }) {
   } : null;
 
   return (
-    <div dir="rtl" style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid #bae6fd', background: '#f0f9ff' }}>
-      {/* Top banner */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 14px',
-        background: 'linear-gradient(135deg, #e0f2fe, #f0f9ff)',
-        borderBottom: '1px solid #bae6fd',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 0 3px rgba(34,197,94,0.25)' }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#0c4a6e' }}>
-            🚗 {task.worker_name} בדרך אליך
-          </span>
+    <div dir="rtl" style={{ borderRadius: 20, overflow: 'hidden', border: '1.5px solid #bae6fd', background: '#f0f9ff' }}>
+      {/* Header: worker name + live dot + collapse */}
+      <div style={{ padding: '12px 14px 10px', background: 'linear-gradient(135deg,#0c4a6e,#0369a1)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'relative', width: 12, height: 12, flexShrink: 0 }}>
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(34,197,94,0.4)', animation: 'workerPulse 1.6s ease-in-out infinite' }} />
+          <div style={{ position: 'absolute', inset: 2, borderRadius: '50%', background: '#22c55e' }} />
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {distKm && (
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', background: 'white', border: '1px solid #bae6fd', borderRadius: 20, padding: '3px 10px' }}>
-              📍 {distKm < 1 ? `${Math.round(distKm * 1000)} מ'` : `${distKm.toFixed(1)} ק"מ`}
-            </span>
-          )}
-          {etaMins && (
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#0369a1', background: 'white', border: '1px solid #bae6fd', borderRadius: 20, padding: '3px 10px' }}>
-              ⏱ ~{etaMins} דק'
-            </span>
-          )}
-          <button
-            onClick={() => setExpanded(v => !v)}
-            style={{ width: 32, height: 32, borderRadius: 10, background: '#0369a1', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white', fontSize: 16 }}
-          >
-            {expanded ? '↙️' : '↗️'}
-          </button>
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'white', flex: 1 }}>🚗 {task.worker_name} בדרך אליך</span>
+        {secondsAgo < 30 && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>עדכון לפני {secondsAgo}ש'</span>}
+        <button onClick={() => setExpanded(v => !v)}
+          style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 13, fontWeight: 800 }}>
+          {expanded ? '✕' : '⛶'}
+        </button>
+      </div>
+
+      {/* ETA + Distance + Progress */}
+      <div style={{ padding: '10px 14px', background: 'white', borderBottom: '1.5px solid #e0f2fe' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          {/* ETA card */}
+          <div style={{ flex: 1, background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1.5px solid #86efac', borderRadius: 14, padding: '8px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', lineHeight: 1 }}>{etaMins ? `~${etaMins}` : '–'}</div>
+            <div style={{ fontSize: 10, color: '#166534', fontWeight: 700, marginTop: 2 }}>דקות להגעה</div>
+          </div>
+          {/* Distance card */}
+          <div style={{ flex: 1, background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1.5px solid #93c5fd', borderRadius: 14, padding: '8px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#1d4ed8', lineHeight: 1 }}>
+              {distKm ? (distKm < 1 ? `${Math.round(distKm * 1000)}` : distKm.toFixed(1)) : '–'}
+            </div>
+            <div style={{ fontSize: 10, color: '#1e40af', fontWeight: 700, marginTop: 2 }}>{distKm && distKm < 1 ? 'מטרים' : 'ק"מ נותרו'}</div>
+          </div>
+          {/* Progress card */}
+          <div style={{ flex: 1, background: 'linear-gradient(135deg,#fff7ed,#fef3c7)', border: '1.5px solid #fcd34d', borderRadius: 14, padding: '8px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#b45309', lineHeight: 1 }}>{progressPct}%</div>
+            <div style={{ fontSize: 10, color: '#92400e', fontWeight: 700, marginTop: 2 }}>של המסלול</div>
+          </div>
+        </div>
+        {/* Route progress bar */}
+        <div style={{ height: 8, background: '#e0f2fe', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${progressPct}%`,
+            background: progressPct > 70 ? 'linear-gradient(90deg,#22c55e,#16a34a)' : progressPct > 30 ? 'linear-gradient(90deg,#3b82f6,#1d4ed8)' : 'linear-gradient(90deg,#f59e0b,#d97706)',
+            borderRadius: 99,
+            transition: 'width 1.2s ease, background 0.5s ease',
+          }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 9, color: '#94a3b8', fontWeight: 600 }}>
+          <span>יצא</span>
+          <span>הגיע</span>
         </div>
       </div>
 
