@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Clock, Loader2, Save, CheckSquare, Info, MapPin } from 'lucide-react';
+import CategoryExtraFields from '@/components/CategoryExtraFields';
 import { toast } from 'sonner';
 import { CATEGORIES } from '@/lib/categories';
 import ImageUploader from '@/components/ImageUploader';
@@ -47,6 +48,7 @@ export default function EditTask() {
   const [form, setForm] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [addressConfirmed, setAddressConfirmed] = useState(false);
+  const [extraFieldsText, setExtraFieldsText] = useState('');
   const isRepostMode = location.state?.repostMode;
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -111,10 +113,13 @@ export default function EditTask() {
     setLoading(true);
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
     const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+    const finalDescription = extraFieldsText
+      ? (form.description ? form.description + '\n\n' + extraFieldsText : extraFieldsText)
+      : form.description;
 
     await base44.entities.Task.update(id, {
       title: form.title,
-      description: form.description,
+      description: finalDescription,
       price: Number(form.price),
       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
       auto_bump_enabled: form.auto_bump_enabled,
@@ -219,6 +224,15 @@ export default function EditTask() {
             ))}
           </div>
         </SectionCard>
+
+        {/* Category Extra Fields */}
+        <CategoryExtraFields
+          key={form.category}
+          category={form.category}
+          originLat={form.lat}
+          originLng={form.lng}
+          onChange={(_data, text) => setExtraFieldsText(text)}
+        />
 
         {/* Title + Description */}
         <SectionCard>
