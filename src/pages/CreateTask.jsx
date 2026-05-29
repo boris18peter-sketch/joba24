@@ -541,6 +541,15 @@ export default function CreateTask() {
           </div>
         </SectionCard>
 
+        {/* Smart Category Extra Fields — right below category picker */}
+        <CategoryExtraFields
+          key={form.category}
+          category={form.category}
+          originLat={form.lat}
+          originLng={form.lng}
+          onChange={(_data, text) => setExtraFieldsText(text)}
+        />
+
         {/* Title + Description */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
@@ -582,13 +591,7 @@ export default function CreateTask() {
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
         </SectionCard>
 
-        {/* Smart Category Extra Fields */}
-        <CategoryExtraFields
-          category={form.category}
-          originLat={form.lat}
-          originLng={form.lng}
-          onChange={(_data, text) => setExtraFieldsText(text)}
-        />
+
 
         {/* Images + Video */}
         <SectionCard>
