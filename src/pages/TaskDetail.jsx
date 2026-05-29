@@ -101,7 +101,7 @@ export default function TaskDetail() {
   const { data: myReview } = useQuery({
     queryKey: ['myReview', id, me?.id],
     queryFn: () => base44.entities.Review.filter({ task_id: id, reviewer_id: me.id }),
-    select: (data) => data[0],
+    select: (data) => data[0] ?? null,
     enabled: !!me?.id
   });
   // Application count for live activity in banner

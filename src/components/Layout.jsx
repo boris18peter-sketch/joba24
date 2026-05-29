@@ -489,8 +489,9 @@ export default function Layout() {
       <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
       {/* Portals — rendered directly to body to escape stacking context */}
-      {showGiftModal && (
-        <SignupGiftModal onClose={() => setShowGiftModal(false)} />
+      {showGiftModal && createPortal(
+        <SignupGiftModal onClose={() => setShowGiftModal(false)} />,
+        document.body
       )}
       {showVerify && createPortal(
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />,
