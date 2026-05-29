@@ -94,7 +94,10 @@ export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isAuthenticated, login } = useAuth();
-  const isRepost = searchParams.get('repost') === '1';
+  const editId = searchParams.get('editId');
+  const isEditMode = !!editId;
+  const isRepostMode = isEditMode && searchParams.get('repost') === '1';
+  const isRepost = !isEditMode && searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
   const [searchingTaskId, setSearchingTaskId] = useState(null);
   const [searchingTaskTitle, setSearchingTaskTitle] = useState('');
@@ -135,7 +138,7 @@ export default function CreateTask() {
   const [extraFieldsText, setExtraFieldsText] = useState('');
   const draftTimerRef = useRef(null);
 
-  // Initialize form: repost params > saved draft > defaults
+  // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
   const [form, setForm] = useState(() => {
     if (isRepost) {
       return {
@@ -159,6 +162,51 @@ export default function CreateTask() {
   });
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  // Edit mode: load existing task
+  const { data: editTask } = useQuery({
+    queryKey: ['task', editId],
+    queryFn: () => base44.entities.Task.filter({ id: editId }).then(d => d[0]),
+    enabled: isEditMode,
+  });
+  const { data: editApplications = [] } = useQuery({
+    queryKey: ['applications', editId],
+    queryFn: () => base44.entities.TaskApplication.filter({ task_id: editId }),
+    enabled: isEditMode,
+  });
+  const hasActiveApplications = isEditMode && editApplications.some(a => a.status === 'pending' || a.status === 'approved');
+
+  // Populate form when editTask loads
+  useEffect(() => {
+    if (!editTask || !isEditMode) return;
+    const isCustomTime = editTask.estimated_time && !['15m', '30m', '1h', '2h'].includes(editTask.estimated_time);
+    setForm({
+      ...DEFAULT_FORM,
+      title: editTask.title || '',
+      description: editTask.description || '',
+      price: String(editTask.price || ''),
+      max_price: String(editTask.max_price || ''),
+      auto_bump_enabled: editTask.auto_bump_enabled || false,
+      location_name: editTask.location_name || '',
+      city: editTask.city || '',
+      lat: editTask.lat || null,
+      lng: editTask.lng || null,
+      address_building: editTask.address_building || '',
+      address_floor: editTask.address_floor || '',
+      address_apartment: editTask.address_apartment || '',
+      address_notes: editTask.address_notes || '',
+      estimated_time: isCustomTime ? 'custom' : (editTask.estimated_time || '1h'),
+      custom_time: isCustomTime ? editTask.estimated_time : '',
+      category: editTask.category || 'other',
+      approval_mode: 'manual',
+      expiry_hours: editTask.expiry_duration_hours || null,
+      images: editTask.images || [],
+      video_url: editTask.video_url || '',
+      requirements: editTask.requirements || { vehicle: false, two_people: false, experience: false },
+      payment_method: editTask.payment_method || '',
+    });
+    setAddressConfirmed(!!(editTask.lat && editTask.lng));
+  }, [editTask?.id]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
@@ -179,7 +227,7 @@ export default function CreateTask() {
 
   // Auto-save draft on form change (debounced 1s)
   useEffect(() => {
-    if (isRepost) return;
+    if (isRepost || isEditMode) return;
     clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
       const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
@@ -227,6 +275,46 @@ export default function CreateTask() {
     if (!form.price) newErrors.price = true;
     if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
     if (!form.payment_method) newErrors.payment_method = true;
+
+    // Edit mode: save & navigate
+    if (isEditMode) {
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setShowErrorBanner(true);
+        return;
+      }
+      setLoading(true);
+      const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
+      const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+      await base44.entities.Task.update(editId, {
+        title: form.title,
+        description: form.description,
+        price: hasActiveApplications ? editTask.price : Number(form.price),
+        max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
+        auto_bump_enabled: form.auto_bump_enabled,
+        location_name: form.location_name,
+        city: form.city,
+        lat: form.lat || undefined,
+        lng: form.lng || undefined,
+        address_building: form.address_building || undefined,
+        address_floor: form.address_floor || undefined,
+        address_apartment: form.address_apartment || undefined,
+        address_notes: form.address_notes || undefined,
+        estimated_time: estimatedTime,
+        category: form.category,
+        expiry_duration_hours: form.expiry_hours,
+        expires_at: expires,
+        images: form.images,
+        video_url: form.video_url || undefined,
+        requirements: form.requirements,
+        payment_method: form.payment_method || undefined,
+        ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
+      });
+      setLoading(false);
+      toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
+      navigate(`/task/${editId}`);
+      return;
+    }
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
@@ -385,7 +473,9 @@ export default function CreateTask() {
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
-              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>{isRepost ? '🔄 פרסם שוב' : "פרסום משימה חדשה"}</span>
+              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
+        {isRepostMode ? '🔄 פרסם שוב' : isEditMode ? '✏️ עריכת משימה' : isRepost ? '🔄 פרסם שוב' : 'פרסום משימה חדשה'}
+      </span>
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> נשמר</div>}
             </div>
             {/* Progress bar */}
@@ -404,7 +494,7 @@ export default function CreateTask() {
 
       <div className="px-4 py-4 space-y-4 pb-12">
         {/* Draft restore indicator */}
-        {!isRepost && form.title && (
+        {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 700 }}>
               <Save size={14} /> טיוטה שמורה — המשך מהיכן שעצרת
@@ -514,9 +604,12 @@ export default function CreateTask() {
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
           <Input ref={fieldRefs.price} type="number" placeholder="100"
-            value={form.price} onChange={e => { set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8 }}
+            value={form.price}
+            onChange={e => { if (hasActiveApplications) return; set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
+            disabled={hasActiveApplications}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
           />
+          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             💳 <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
@@ -561,8 +654,8 @@ export default function CreateTask() {
           {form.expiry_hours && <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>}
         </SectionCard>
 
-        {/* Story */}
-        <div
+        {/* Story — only when creating new task */}
+        {!isEditMode && <div
           onClick={() => {
             if (!form.is_story) {
               // Trying to enable — check credits
@@ -600,7 +693,7 @@ export default function CreateTask() {
               <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>המשימה תופיע למעלה בפיד למשך 24 שעות · עלות: <strong style={{color:'#7e22ce'}}>10 ג'ובות</strong></div>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Location */}
         <SectionCard>
@@ -757,11 +850,11 @@ export default function CreateTask() {
                 {loading
                   ? <><Loader2 size={22} className="animate-spin" /> מפרסם...</>
                   : isReady
-                    ? <><Zap size={20} />פרסם משימה עכשיו ✓</>
-                    : <><Zap size={20} />פרסם משימה חדשה</>
+                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם משימה עכשיו ✓</>)
+                    : (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם משימה חדשה</>)
                 }
               </button>
-              <SocialProofBar />
+              {!isEditMode && <SocialProofBar />}
             </div>
           );
         })()}

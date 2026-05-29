@@ -597,7 +597,7 @@ export default function TaskDetail() {
           <Button
             onClick={() => {
               if (task.payment_status === 'funded') {
-                navigate(`/edit-task/${id}`, { state: { repostMode: true } });
+                navigate(`/create-task?editId=${id}&repost=1`);
               } else {
                 reopenMutation.mutate();
               }
@@ -966,7 +966,7 @@ export default function TaskDetail() {
           <button
             onClick={() => {
               if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
-                navigate(`/edit-task/${id}`, { state: { repostMode: true } });
+                navigate(`/create-task?editId=${id}&repost=1`);
                 return;
               }
               const params = new URLSearchParams({ repost: '1', title: task.title || '', description: task.description || '', price: String(task.price || ''), city: task.city || '', location_name: task.location_name || '', category: task.category || '', estimated_time: task.estimated_time || '', approval_mode: task.approval_mode || 'manual' });
@@ -1019,7 +1019,7 @@ export default function TaskDetail() {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>פעולות משימה</div>
             {task.status === 'OPEN' &&
-            <Link to={`/edit-task/${id}`} onClick={() => setShowOwnerMenu(false)}>
+            <div onClick={() => { setShowOwnerMenu(false); navigate(`/create-task?editId=${id}`); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Pencil size={17} color="#1a6fd4" />
@@ -1029,7 +1029,7 @@ export default function TaskDetail() {
                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>שינוי פרטים, מחיר ותיאור</div>
                   </div>
                 </div>
-              </Link>
+              </div>
             }
             <div
               onClick={() => {
