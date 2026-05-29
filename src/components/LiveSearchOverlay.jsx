@@ -3,15 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 
-const WORKER_NAMES = ['ליאור', 'מאור', 'יעל', 'אבי', 'דנה', 'רון', 'מיכל', 'אדם', 'שיר', 'ניר', 'גל', 'עומר'];
-const AREA_LABELS = ['תל אביב', 'רמת גן', 'גבעתיים', 'פתח תקווה', 'חולון', 'ראשון לציון', 'בת ים'];
 
-function randomBetween(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 
 export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDismiss }) {
   const navigate = useNavigate();
   const [workerCount, setWorkerCount] = useState(0);
-  const [viewCount, setViewCount] = useState(0);
   const [pulseWorkers, setPulseWorkers] = useState([]);
   const [canSkip, setCanSkip] = useState(false);
   const [firstAppReceived, setFirstAppReceived] = useState(false);
@@ -38,28 +34,12 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
     };
   }, []);
 
-  // Animate worker + view count upward
+  // Real application count
   useEffect(() => {
-    const notifyCount = randomBetween(8, 24);
-    let cur = 0;
-    const interval = setInterval(() => {
-      cur += randomBetween(1, 3);
-      if (cur >= notifyCount) { cur = notifyCount; clearInterval(interval); }
-      setWorkerCount(cur);
-    }, 180);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const viewTarget = randomBetween(40, 120);
-    let cur = 0;
-    const interval = setInterval(() => {
-      cur += randomBetween(2, 6);
-      if (cur >= viewTarget) { cur = viewTarget; clearInterval(interval); }
-      setViewCount(cur);
-    }, 120);
-    return () => clearInterval(interval);
-  }, []);
+    if (!taskId) return;
+    base44.entities.TaskApplication.filter({ task_id: taskId })
+      .then(apps => setWorkerCount(apps.length));
+  }, [taskId]);
 
   // Ping workers appearing
   useEffect(() => {
@@ -77,17 +57,14 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
     return () => clearInterval(iv);
   }, []);
 
-  // Add pinging workers on the radar
+  // Radar dots (visual only)
   useEffect(() => {
     const interval = setInterval(() => {
-      const newWorker = {
+      setPulseWorkers(prev => [...prev.slice(-6), {
         id: Date.now(),
-        name: WORKER_NAMES[Math.floor(Math.random() * WORKER_NAMES.length)],
-        area: AREA_LABELS[Math.floor(Math.random() * AREA_LABELS.length)],
         angle: Math.random() * 360,
-        dist: randomBetween(35, 80), // % from center
-      };
-      setPulseWorkers(prev => [...prev.slice(-6), newWorker]);
+        dist: 35 + Math.random() * 45,
+      }]);
     }, 2200);
     return () => clearInterval(interval);
   }, []);
@@ -97,6 +74,7 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
     if (!taskId) return;
     const unsub = base44.entities.TaskApplication.subscribe((event) => {
       if (event.data?.task_id === taskId && event.type === 'create') {
+        setWorkerCount(c => c + 1);
         setFirstAppReceived(true);
         setPhase('found');
         setStatusMsg('🎉 התקבלה מועמדות ראשונה!');
@@ -236,41 +214,10 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
         {statusMsg}
       </div>
 
-      {/* Stats row */}
-      <div style={{
-        display: 'flex', gap: 24, marginBottom: 32,
-        animation: 'slideUpIn 0.6s ease',
-      }}>
-        {[
-          { label: 'עובדים קיבלו התראה', value: workerCount, color: '#60a5fa' },
-          { label: 'צפיות בג\'ובה', value: viewCount, color: '#a78bfa' },
-        ].map(({ label, value, color }) => (
-          <div key={label} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 28, fontWeight: 900, color, letterSpacing: -1 }}>{value}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 600, marginTop: 2 }}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent pings */}
-      <div style={{
-        width: '100%', maxWidth: 320, padding: '0 20px',
-        animation: 'slideUpIn 0.7s ease',
-      }}>
-        {pulseWorkers.slice(-3).reverse().map((w) => (
-          <div key={w.id} style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '8px 12px', marginBottom: 6,
-            background: 'rgba(255,255,255,0.06)',
-            borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
-            animation: 'slideUpIn 0.3s ease',
-          }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', flexShrink: 0 }} />
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
-              {w.name} מ{w.area} <span style={{ color: 'rgba(255,255,255,0.4)' }}>· זמין עכשיו</span>
-            </div>
-          </div>
-        ))}
+      {/* Stats row — real data only */}
+      <div style={{ textAlign: 'center', animation: 'slideUpIn 0.6s ease', marginBottom: 32 }}>
+        <div style={{ fontSize: 40, fontWeight: 900, color: '#60a5fa', letterSpacing: -2 }}>{workerCount}</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>מועמדויות שהתקבלו</div>
       </div>
     </div>
   );
