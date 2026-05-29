@@ -1,11 +1,12 @@
+import { createPortal } from 'react-dom';
 import { LogIn, X, Lock, Sparkles, Zap } from 'lucide-react';
 
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const isPublish = type === 'publish';
 
-  return (
+  const modal = (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100001,
+      position: 'fixed', inset: 0, zIndex: 999999,
       background: 'rgba(5,15,40,0.72)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(8px)',
@@ -30,7 +31,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         {/* Header */}
         <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Logo */}
             <div style={{
               width: 52, height: 52, borderRadius: 18,
               background: 'linear-gradient(135deg,#059669,#047857)',
@@ -41,7 +41,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
             </div>
             <div>
               <div style={{ fontSize: 22, fontWeight: 950, color: '#0f1e40', letterSpacing: -0.8 }}>
-                בואו נתחילו 🚀
+                בואו נתחיל 🚀
               </div>
               <div style={{ fontSize: 13, color: '#64748b', marginTop: 3, fontWeight: 500 }}>
                 {isPublish ? 'לפרסום משימות דחופות' : 'לקבלת עבודה בקרוב'}
@@ -59,12 +59,42 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
         <div style={{ padding: '20px 20px 0' }}>
 
+          {/* Main headline + benefits */}
+          <div style={{
+            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
+            borderRadius: 22, padding: '20px 18px', marginBottom: 18,
+            border: '1.5px solid #c7e9c0',
+            boxShadow: '0 4px 20px rgba(5,150,105,0.08)',
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 850, color: '#0f2b6b', marginBottom: 14, lineHeight: 1.6 }}>
+              הצטרפו לקהילה של אלפי אנשים שמפרסמים ומבצעים משימות זמינות
+            </div>
 
+            {/* Benefit 1 */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 20, height: 20, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', marginBottom: 1 }}>צריך עזרה בהקדם?</div>
+                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>פרסם משימה תוך 30 שניות וקבל בקשות מעובדים</div>
+              </div>
+            </div>
+
+            {/* Benefit 2 */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ width: 20, height: 20, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', marginBottom: 1 }}>רוצה להרוויח כסף?</div>
+                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>בחר משימות בסביבתך וקבל תשלום תוך כמה שעות</div>
+              </div>
+            </div>
+          </div>
 
           {/* Trust badges */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20,
-          }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
             {[
               { icon: Lock, label: 'בטוח 100%', text: 'מאומת' },
               { icon: Zap, label: 'מהיר', text: 'תוך דקות' },
@@ -74,17 +104,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                 background: 'white', borderRadius: 16, padding: '14px 10px',
                 border: '1.5px solid #e8edf5',
-                transition: 'all 0.3s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#f0fdf4';
-                e.currentTarget.style.borderColor = '#c7e9c0';
-                e.currentTarget.style.boxShadow = '0 4px 16px rgba(5,150,105,0.12)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'white';
-                e.currentTarget.style.borderColor = '#e8edf5';
-                e.currentTarget.style.boxShadow = 'none';
               }}>
                 <Icon size={18} color="#059669" strokeWidth={1.8} />
                 <div style={{ fontSize: 11, fontWeight: 800, color: '#0f1e40', textAlign: 'center' }}>{label}</div>
@@ -104,15 +123,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               boxShadow: '0 8px 28px rgba(5,150,105,0.4)',
               marginBottom: 14, letterSpacing: 0.3,
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 12px 36px rgba(5,150,105,0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 28px rgba(5,150,105,0.4)';
             }}
           >
             <LogIn size={20} strokeWidth={1.8} /> התחבר / הצטרף עכשיו
@@ -126,4 +136,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
