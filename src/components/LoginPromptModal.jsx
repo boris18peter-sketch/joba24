@@ -1,4 +1,4 @@
-import { LogIn, X, ShieldCheck, Star, Users } from 'lucide-react';
+import { LogIn, X, Lock, Sparkles, Zap } from 'lucide-react';
 
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const isPublish = type === 'publish';
@@ -16,11 +16,11 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       onTouchStart={(e) => e.stopPropagation()}
     >
       <div style={{
-        background: 'white',
+        background: 'linear-gradient(180deg, #fafbff 0%, #f4f7fb 100%)',
         borderRadius: '32px 32px 0 0',
         width: '100%', maxWidth: 480,
         maxHeight: '95vh', overflowY: 'auto',
-        boxShadow: '0 -24px 80px rgba(0,0,0,0.25)',
+        boxShadow: '0 -24px 120px rgba(0,0,0,0.3)',
         paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
       }} dir="rtl">
 
@@ -32,19 +32,19 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             {/* Logo */}
             <div style={{
-              width: 52, height: 52, borderRadius: 16,
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              width: 52, height: 52, borderRadius: 18,
+              background: 'linear-gradient(135deg,#059669,#047857)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              boxShadow: '0 4px 16px rgba(26,111,212,0.35)',
+              boxShadow: '0 8px 28px rgba(5,150,105,0.4)',
             }}>
-              <LogIn size={24} color="white" strokeWidth={1.8} />
+              <Sparkles size={24} color="white" strokeWidth={1.8} />
             </div>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.5 }}>
-                התחבר ל־Joba24
+              <div style={{ fontSize: 22, fontWeight: 950, color: '#0f1e40', letterSpacing: -0.8 }}>
+                בואו נתחילו 🚀
               </div>
-              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-                {isPublish ? 'כדי לפרסם משימות' : 'כדי להגיש בקשות'}
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 3, fontWeight: 500 }}>
+                {isPublish ? 'לפרסום משימות דחופות' : 'לקבלת עבודה בקרוב'}
               </div>
             </div>
           </div>
@@ -59,49 +59,68 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
         <div style={{ padding: '20px 20px 0' }}>
 
-          {/* Main headline */}
+          {/* Main headline + benefits */}
           <div style={{
-            background: 'linear-gradient(135deg, #f0f7ff, #e8f0fe)',
-            borderRadius: 20, padding: '18px 16px', marginBottom: 16,
-            border: '1px solid #c7d9f8',
+            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
+            borderRadius: 22, padding: '20px 18px', marginBottom: 18,
+            border: '1.5px solid #c7e9c0',
+            boxShadow: '0 4px 20px rgba(5,150,105,0.08)',
           }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', marginBottom: 12, lineHeight: 1.5 }}>
-              הצטרף לאנשים שכבר מפרסמים ולוקחים משימות בכל רגע.
+            <div style={{ fontSize: 15, fontWeight: 850, color: '#0f2b6b', marginBottom: 14, lineHeight: 1.6 }}>
+              הצטרפו לקהילה של אלפי אנשים שנהנים מעבודה גמישה וזמינה בשנייה
             </div>
 
-            {/* Bullet 1 */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>✅</span>
-              <div style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.6 }}>
-                <strong>צריך עזרה?</strong> פרסם משימה, קבל בקשות לביצוע, אשר בקשה ומישהו יבוא אליך תוך דקות.
+            {/* Benefit 1 */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 20, height: 20, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', marginBottom: 1 }}>צריך עזרה בהקדם?</div>
+                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>פרסם משימה תוך 30 שניות וקבל בקשות מעובדים מיומנים</div>
               </div>
             </div>
 
-            {/* Bullet 2 */}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>✅</span>
-              <div style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.6 }}>
-                <strong>רוצה להרוויח?</strong> הגש בקשות למשימות באזור שלך, בצע אותן ותרוויח.
+            {/* Benefit 2 */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ width: 20, height: 20, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', marginBottom: 1 }}>רוצה להרוויח כסף?</div>
+                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>בחר משימות בסביבתך וקבל תשלום תוך כמה שעות</div>
               </div>
             </div>
           </div>
 
           {/* Trust badges */}
           <div style={{
-            display: 'flex', gap: 8, marginBottom: 20, justifyContent: 'center',
+            display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20,
           }}>
             {[
-              { icon: <ShieldCheck size={13} strokeWidth={2} />, text: 'משתמשים מאומתים' },
-              { icon: <Star size={13} strokeWidth={2} />, text: 'דירוגים' },
-              { icon: <Users size={13} strokeWidth={2} />, text: 'חוויה בטוחה' },
-            ].map(({ icon, text }) => (
-              <div key={text} style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                background: '#f8faff', borderRadius: 14, padding: '10px 6px',
-                border: '1px solid #e5eaf5',
+              { icon: Lock, label: 'בטוח 100%', text: 'מאומת' },
+              { icon: Zap, label: 'מהיר', text: 'תוך דקות' },
+              { icon: Sparkles, label: 'קל', text: 'בלי ביורוקרטיה' },
+            ].map(({ icon: Icon, label, text }) => (
+              <div key={label} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                background: 'white', borderRadius: 16, padding: '14px 10px',
+                border: '1.5px solid #e8edf5',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f0fdf4';
+                e.currentTarget.style.borderColor = '#c7e9c0';
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(5,150,105,0.12)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.borderColor = '#e8edf5';
+                e.currentTarget.style.boxShadow = 'none';
               }}>
-                <div style={{ color: '#1a6fd4' }}>{icon}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textAlign: 'center', lineHeight: 1.3 }}>{text}</div>
+                <Icon size={18} color="#059669" strokeWidth={1.8} />
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#0f1e40', textAlign: 'center' }}>{label}</div>
+                <div style={{ fontSize: 10, color: '#64748b', textAlign: 'center' }}>{text}</div>
               </div>
             ))}
           </div>
@@ -110,21 +129,30 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
           <button
             onClick={onLogin}
             style={{
-              width: '100%', height: 56, borderRadius: 16,
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
-              color: 'white', fontWeight: 900, fontSize: 16,
+              width: '100%', height: 56, borderRadius: 18,
+              background: 'linear-gradient(135deg,#059669,#047857)',
+              color: 'white', fontWeight: 950, fontSize: 16,
               border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              boxShadow: '0 6px 24px rgba(26,111,212,0.38)',
-              marginBottom: 12, letterSpacing: 0.2,
+              boxShadow: '0 8px 28px rgba(5,150,105,0.4)',
+              marginBottom: 14, letterSpacing: 0.3,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 12px 36px rgba(5,150,105,0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 28px rgba(5,150,105,0.4)';
             }}
           >
             <LogIn size={20} strokeWidth={1.8} /> התחבר / הצטרף עכשיו
           </button>
 
           {/* Social login hint */}
-          <div style={{ fontSize: 12, color: '#9ca3af', textAlign: 'center', lineHeight: 1.7 }}>
-            Google · Apple · אימייל — בחינם לחלוטין
+          <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', lineHeight: 1.8, fontWeight: 500 }}>
+            🔐 Google, Apple, אימייל — בחינם לחלוטין
           </div>
         </div>
       </div>
