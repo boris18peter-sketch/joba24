@@ -59,39 +59,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
         <div style={{ padding: '20px 20px 0' }}>
 
-          {/* Main headline + benefits */}
-          <div style={{
-            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
-            borderRadius: 22, padding: '20px 18px', marginBottom: 18,
-            border: '1.5px solid #c7e9c0',
-            boxShadow: '0 4px 20px rgba(5,150,105,0.08)',
-          }}>
-            <div style={{ fontSize: 15, fontWeight: 850, color: '#0f2b6b', marginBottom: 14, lineHeight: 1.6 }}>
-              הצטרפו לקהילה של אלפי אנשים שנהנים מעבודה גמישה וזמינה בשנייה
-            </div>
 
-            {/* Benefit 1 */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 20, height: 20, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', marginBottom: 1 }}>צריך עזרה בהקדם?</div>
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>פרסם משימה תוך 30 שניות וקבל בקשות מעובדים מיומנים</div>
-              </div>
-            </div>
-
-            {/* Benefit 2 */}
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div style={{ width: 20, height: 20, borderRadius: 10, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', marginBottom: 1 }}>רוצה להרוויח כסף?</div>
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>בחר משימות בסביבתך וקבל תשלום תוך כמה שעות</div>
-              </div>
-            </div>
-          </div>
 
           {/* Trust badges */}
           <div style={{

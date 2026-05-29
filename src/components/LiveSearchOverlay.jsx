@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
@@ -23,11 +24,11 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
     navigate(`/task/${taskId}`);
   };
 
-  // Allow skip after 5s
+  // Allow skip after 3s
   useEffect(() => {
-    skipTimerRef.current = setTimeout(() => setCanSkip(true), 5000);
-    // Auto-navigate after 35s regardless
-    navigateRef.current = setTimeout(goToTask, 35000);
+    skipTimerRef.current = setTimeout(() => setCanSkip(true), 3000);
+    // Auto-navigate after 15s regardless
+    navigateRef.current = setTimeout(goToTask, 15000);
     return () => {
       clearTimeout(skipTimerRef.current);
       clearTimeout(navigateRef.current);
@@ -47,7 +48,7 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
       'שולח התראות לעובדים...',
       'עובדים בקרבת מקום נמצאו 🎯',
       'ממתין לתגובות ראשונות...',
-      'הג\'ובה שלך חיה!',
+      'המשימה שלך חיה! 🚀',
     ];
     let i = 0;
     const iv = setInterval(() => {
@@ -87,11 +88,11 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
   const dotX = (angle, dist) => 50 + dist * Math.cos((angle * Math.PI) / 180);
   const dotY = (angle, dist) => 50 + dist * Math.sin((angle * Math.PI) / 180);
 
-  return (
+  const content = (
     <div
       dir="rtl"
       style={{
-        position: 'fixed', inset: 0, zIndex: 99999,
+        position: 'fixed', inset: 0, zIndex: 999999,
         background: 'linear-gradient(160deg, #05112e 0%, #0a1f4e 60%, #0d2a60 100%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center',
@@ -214,11 +215,15 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
         {statusMsg}
       </div>
 
-      {/* Stats row — real data only */}
-      <div style={{ textAlign: 'center', animation: 'slideUpIn 0.6s ease', marginBottom: 32 }}>
-        <div style={{ fontSize: 40, fontWeight: 900, color: '#60a5fa', letterSpacing: -2 }}>{workerCount}</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>מועמדויות שהתקבלו</div>
-      </div>
+      {/* Stats row — only show when there are applications */}
+      {workerCount > 0 && (
+        <div style={{ textAlign: 'center', animation: 'slideUpIn 0.6s ease', marginBottom: 32 }}>
+          <div style={{ fontSize: 40, fontWeight: 900, color: '#60a5fa', letterSpacing: -2 }}>{workerCount}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>מועמדויות שהתקבלו</div>
+        </div>
+      )}
     </div>
   );
+
+  return createPortal(content, document.body);
 }
