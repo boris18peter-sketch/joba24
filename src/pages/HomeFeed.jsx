@@ -289,10 +289,10 @@ export default function HomeFeed() {
     return true;
   });
 
-  // Run smart ranking
+  // Run smart ranking — pass isLoggedIn so fallback modes activate correctly
   const rankedTasks = useMemo(() =>
-    rankFeedTasks(candidateTasks, userLocation, workerProfile),
-    [candidateTasks.length, userLocation?.lat, userLocation?.lng, workerProfile]
+    rankFeedTasks(candidateTasks, userLocation, workerProfile, { isLoggedIn: !!isAuthenticated }),
+    [candidateTasks.length, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated]
   );
 
   // Override sort if user manually picks one
