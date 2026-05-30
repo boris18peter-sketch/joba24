@@ -27,11 +27,11 @@ import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
-  { label: '⚡ עכשיו ממש', sublabel: 'צריך עובד תוך ~שעה מעכשיו', hours: 1, hot: true },
-  { label: '🔥 היום', sublabel: 'צריך לסיים עד הערב', hours: 8, hot: true },
-  { label: '📅 מחר', sublabel: 'צריך עד מחר בלילה', hours: 24 },
-  { label: '🗓️ השבוע הזה', sublabel: 'גמיש בתוך 3 ימים', hours: 72 },
-  { label: '🙌 אין דחיפות', sublabel: 'ללא מועד סיום ספציפי', hours: null },
+  { label: 'ללא תוקף', hours: null },
+  { label: '6 שעות', hours: 6 },
+  { label: 'יום', hours: 24 },
+  { label: '2 ימים', hours: 48 },
+  { label: 'שבוע', hours: 168 },
 ];
 
 function SocialProofBar() {
@@ -644,49 +644,17 @@ export default function CreateTask() {
 
         {/* Expiry */}
         <SectionCard>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#0f2b6b', display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
-              <Clock size={15} color="#1a6fd4" /> מתי אתה צריך את העובד?
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '8px 12px' }}>
-              💡 זה עוזר לעובדים להבין את הדחיפות ומגדיל מאוד את סיכוי ה-Match המהיר. משימות דחופות מקבלות מערכת עובדים פי 3 יותר.
-            </div>
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+            <Clock size={14} /> תוקף המשימה
+          </Label>
+          <div className="flex gap-2 flex-wrap">
+            {EXPIRY_OPTIONS.map(opt => (
+              <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
+                style={{ padding: '8px 16px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.expiry_hours === opt.hours ? activeBtn : inactiveBtn) }}
+              >{opt.label}</button>
+            ))}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {EXPIRY_OPTIONS.map(opt => {
-              const isActive = form.expiry_hours === opt.hours;
-              const [emoji, ...rest] = opt.label.split(' ');
-              return (
-                <button
-                  key={String(opt.hours)}
-                  onClick={() => set('expiry_hours', opt.hours)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14,
-                    textAlign: 'right', cursor: 'pointer', transition: 'all 0.15s',
-                    background: isActive ? (opt.hot ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#eff6ff') : (opt.hot ? '#fff7ed' : '#f4f7fb'),
-                    border: isActive ? (opt.hot ? '1.5px solid #1a6fd4' : '1.5px solid #1a6fd4') : (opt.hot ? '1px solid #fed7aa' : '1px solid #dce8f5'),
-                    boxShadow: isActive && opt.hot ? '0 4px 16px rgba(26,111,212,0.25)' : 'none',
-                  }}
-                >
-                  <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive && opt.hot ? 'rgba(255,255,255,0.18)' : opt.hot ? '#ffedd5' : '#e8f0fe' }}>
-                    {emoji}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: isActive && opt.hot ? 'white' : '#0f2b6b' }}>{rest.join(' ')}</span>
-                      {opt.hot && !isActive && <span style={{ fontSize: 10, background: '#dc2626', color: 'white', borderRadius: 20, padding: '1px 7px', fontWeight: 800 }}>חם</span>}
-                    </div>
-                    <div style={{ fontSize: 12, color: isActive && opt.hot ? 'rgba(255,255,255,0.75)' : '#94a3b8', marginTop: 2, fontWeight: 500 }}>{opt.sublabel}</div>
-                  </div>
-                  {isActive && (
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: isActive && opt.hot ? 'rgba(255,255,255,0.25)' : '#1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ color: 'white', fontSize: 12, fontWeight: 800 }}>✓</span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {form.expiry_hours && <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>}
         </SectionCard>
 
         {/* Story — only when creating new task */}
