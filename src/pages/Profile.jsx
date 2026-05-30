@@ -191,7 +191,7 @@ export default function Profile() {
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
           {[
           { icon: Briefcase, label: 'פרופיל עובד', sub: 'מקצוע, תעודות, ערים', to: '/worker-profile', color: '#1a6fd4' },
-          { icon: CreditCard, label: 'הארנק שלי', sub: 'יתרה, תשלומים, היסטוריה', to: '/wallet', color: '#16a34a' }].
+          { icon: CreditCard, label: 'תנועת קרדיטים', sub: 'יתרה, תשלומים, היסטוריה', to: '/wallet', color: '#16a34a' }].
           map(({ icon: Icon, label, sub, to, color }, i, arr) =>
           <Link key={to} to={to} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

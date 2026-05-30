@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, Loader2, Image, Check, CheckCheck, Info, X, MapPin, Clock, Star, ShieldAlert } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import { moderateText } from '@/hooks/useModeration';
@@ -139,6 +139,7 @@ export default function Chat() {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
+  const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   usePingPresence(me?.id);
@@ -159,12 +160,26 @@ export default function Chat() {
     enabled: !!otherPersonIdCalc,
   });
 
-  // Load message history
+  // Load message history with polling fallback
+  const { data: fetchedMessages = [] } = useQuery({
+    queryKey: ['chatMessages', taskId],
+    queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
+    staleTime: 3000,
+    refetchInterval: 8000,
+  });
+
+  // Sync fetched messages into local state (merging with real-time updates)
   useEffect(() => {
-    base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500).then(msgs => {
-      setMessages(msgs);
+    if (!fetchedMessages.length) return;
+    setMessages(prev => {
+      // Merge: keep real-time messages that aren't in fetched yet
+      const fetchedIds = new Set(fetchedMessages.map(m => m.id));
+      const extraRealtime = prev.filter(m => !fetchedIds.has(m.id));
+      return [...fetchedMessages, ...extraRealtime].sort((a, b) =>
+        new Date(a.created_date || 0) - new Date(b.created_date || 0)
+      );
     });
-  }, [taskId]);
+  }, [fetchedMessages]);
 
   // Mark incoming messages as read
   useEffect(() => {
@@ -175,19 +190,19 @@ export default function Chat() {
     });
   }, [messages, me?.id]);
 
-  // Real-time subscription
+  // Real-time subscription for instant updates
   useEffect(() => {
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== taskId) return;
       if (event.type === 'create') {
         setMessages(prev => prev.some(m => m.id === event.data.id) ? prev : [...prev, event.data]);
-        // Mark as read immediately if it's from the other person
+        // Also invalidate query so polling stays in sync
+        queryClient.invalidateQueries({ queryKey: ['chatMessages', taskId] });
         if (event.data.sender_id !== me?.id && event.data.id) {
           base44.entities.ChatMessage.update(event.data.id, { read: true }).catch(() => {});
         }
         if (event.data.sender_id !== me?.id) setOtherTyping(false);
       }
-      // Update read status in real-time for my messages
       if (event.type === 'update' && event.data?.read) {
         setMessages(prev => prev.map(m => m.id === event.data.id ? { ...m, read: true } : m));
       }

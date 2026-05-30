@@ -68,6 +68,7 @@ export default function TaskDetail() {
   const [hasApplied, setHasApplied] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
 
 
   const [showExitWarning, setShowExitWarning] = useState(false);
@@ -118,9 +119,9 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: (data) => data[0],
-    staleTime: 0,
+    staleTime: 8000,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: false
   });
 
   // Rotate status label text every 3s for OPEN tasks
@@ -947,7 +948,7 @@ export default function TaskDetail() {
           )}
 
           {/* Rating CTA for completed tasks */}
-          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview &&
+          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview && !hasRated &&
           <button onClick={() => setShowRating(true)}
           style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
             
@@ -996,7 +997,7 @@ export default function TaskDetail() {
         document.body
       )}
       {showRating && task && me && createPortal(
-        <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />,
+        <RatingModal task={task} me={me} onClose={() => { setShowRating(false); setHasRated(true); }} />,
         document.body
       )}
 

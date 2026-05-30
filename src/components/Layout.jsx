@@ -405,7 +405,7 @@ export default function Layout() {
             taskTitle: task?.title || 'משימה',
             taskId: event.data.task_id,
           });
-        } else if ((event.data?.status === 'rejected' || event.data?.status === 'cancelled') && event.data.worker_id === me?.id) {
+        } else if (event.data?.status === 'rejected' && event.data.worker_id === me?.id) {
           // Don't notify publisher about their own application being rejected on their own task
           const isMyOwnTask = myPublishedTasks.some(t => t.id === event.data.task_id);
           if (isMyOwnTask) return;
