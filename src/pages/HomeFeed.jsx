@@ -21,7 +21,7 @@ export default function HomeFeed() {
   const [recentSearches, setRecentSearches] = useState(() => {
     try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '' });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
 
@@ -286,6 +286,7 @@ export default function HomeFeed() {
     if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
     if (filters.category && t.category !== filters.category) return false;
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
+    if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
     return true;
   });
 
@@ -329,7 +330,7 @@ export default function HomeFeed() {
   }, [sortedTasks, smartSections, activeSection]);
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category;
-  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy);
+  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag);
 
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
@@ -516,7 +517,7 @@ export default function HomeFeed() {
             <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
             <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
             {(search || hasFilters) &&
-          <button onClick={() => {setSearch('');setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '' });}}
+          <button onClick={() => {setSearch('');setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });}}
           style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 נקה חיפוש
               </button>

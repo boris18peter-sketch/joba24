@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MapPin } from 'lucide-react';
 
+const URGENCY_FILTER_TAGS = [
+  { value: 'immediate', label: '🔥 עובד מיידי' },
+  { value: 'few_hours', label: '⏰ שעות הקרובות' },
+  { value: 'evening',   label: '🌅 לקראת הערב' },
+  { value: 'flexible',  label: '😌 לא לחוץ' },
+];
+
 const timeOptions = ['15m', '30m', '1h', '2h'];
 const cities = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה'];
 
@@ -34,13 +41,13 @@ function SectionLabel({ children }) {
 }
 
 export default function FilterSheet({ open, onClose, filters, onApply }) {
-  const [local, setLocal] = useState({ minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', ...filters });
+  const [local, setLocal] = useState({ minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', urgency_tag: '', ...filters });
 
   const activePriceOption = PRICE_OPTIONS.find(o => o.min === (local.minPrice || '') && o.max === (local.maxPrice || '')) || null;
 
   const handleApply = () => { onApply(local); onClose(); };
   const handleReset = () => {
-    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', category: '' };
+    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', category: '', urgency_tag: '' };
     setLocal(reset); onApply(reset); onClose();
   };
 
@@ -120,6 +127,19 @@ export default function FilterSheet({ open, onClose, filters, onApply }) {
                 <Chip key={opt.val} label={opt.label}
                   active={local.sortBy === opt.val}
                   onClick={() => setLocal(p => ({ ...p, sortBy: opt.val }))}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Urgency Tag */}
+          <div>
+            <SectionLabel>⏱️ זמינות עובד</SectionLabel>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {URGENCY_FILTER_TAGS.map(tag => (
+                <Chip key={tag.value} label={tag.label}
+                  active={local.urgency_tag === tag.value}
+                  onClick={() => setLocal(p => ({ ...p, urgency_tag: p.urgency_tag === tag.value ? '' : tag.value }))}
                 />
               ))}
             </div>

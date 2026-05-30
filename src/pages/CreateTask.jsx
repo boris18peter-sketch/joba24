@@ -28,10 +28,22 @@ const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
   { label: 'ללא תוקף', hours: null },
+  { label: "30 דק'", hours: 0.5 },
+  { label: 'שעה', hours: 1 },
+  { label: '2 שעות', hours: 2 },
+  { label: '4 שעות', hours: 4 },
   { label: '6 שעות', hours: 6 },
   { label: 'יום', hours: 24 },
   { label: '2 ימים', hours: 48 },
   { label: 'שבוע', hours: 168 },
+  { label: '⌨️ מותאם', hours: 'custom' },
+];
+
+const URGENCY_TAGS = [
+  { value: 'immediate', emoji: '🔥', label: 'צריך עובד מיידי', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
+  { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
 ];
 
 function SocialProofBar() {
@@ -81,6 +93,8 @@ const DEFAULT_FORM = {
   video_url: '',
   requirements: { vehicle: false, two_people: false, experience: false },
   payment_method: '',
+  urgency_tag: '',
+  custom_expiry_hours: '',
 };
 
 const PAYMENT_METHODS = [
@@ -204,6 +218,8 @@ export default function CreateTask() {
       video_url: editTask.video_url || '',
       requirements: editTask.requirements || { vehicle: false, two_people: false, experience: false },
       payment_method: editTask.payment_method || '',
+      urgency_tag: editTask.urgency_tag || '',
+      custom_expiry_hours: '',
     });
     setAddressConfirmed(!!(editTask.lat && editTask.lng));
   }, [editTask?.id]);
@@ -285,7 +301,8 @@ export default function CreateTask() {
       }
       setLoading(true);
       const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
-      const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+      const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
+      const expires = expiryHoursEdit ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() : null;
       await base44.entities.Task.update(editId, {
         title: form.title,
         description: form.description,
@@ -302,12 +319,13 @@ export default function CreateTask() {
         address_notes: form.address_notes || undefined,
         estimated_time: estimatedTime,
         category: form.category,
-        expiry_duration_hours: form.expiry_hours,
+        expiry_duration_hours: expiryHoursEdit,
         expires_at: expires,
         images: form.images,
         video_url: form.video_url || undefined,
         requirements: form.requirements,
         payment_method: form.payment_method || undefined,
+        urgency_tag: form.urgency_tag || undefined,
         ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
       });
       setLoading(false);
@@ -380,7 +398,8 @@ export default function CreateTask() {
       });
     }
 
-    const expires = form.expiry_hours ? new Date(Date.now() + form.expiry_hours * 60 * 60 * 1000).toISOString() : null;
+    const expiryHours = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
+    const expires = expiryHours ? new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
@@ -405,7 +424,7 @@ export default function CreateTask() {
       estimated_time: estimatedTime,
       category: form.category,
       approval_mode: form.approval_mode,
-      expiry_duration_hours: form.expiry_hours || null,
+      expiry_duration_hours: expiryHours || null,
       expires_at: expires,
       is_story: form.is_story,
       story_expires_at: storyExpires,
@@ -413,6 +432,7 @@ export default function CreateTask() {
       video_url: form.video_url || undefined,
       requirements: form.requirements,
       status: 'OPEN',
+      urgency_tag: form.urgency_tag || undefined,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
@@ -642,19 +662,57 @@ export default function CreateTask() {
           )}
         </SectionCard>
 
-        {/* Expiry */}
+        {/* Expiry + Urgency */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
             <Clock size={14} /> תוקף המשימה
           </Label>
-          <div className="flex gap-2 flex-wrap">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {EXPIRY_OPTIONS.map(opt => (
               <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
-                style={{ padding: '8px 16px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.expiry_hours === opt.hours ? activeBtn : inactiveBtn) }}
+                style={{ padding: '7px 14px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.expiry_hours === opt.hours ? activeBtn : inactiveBtn) }}
               >{opt.label}</button>
             ))}
           </div>
-          {form.expiry_hours && <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>}
+          {form.expiry_hours === 'custom' && (
+            <input
+              type="number" min="0.5" step="0.5"
+              placeholder="מספר שעות (לדוגמה: 3)"
+              value={form.custom_expiry_hours}
+              onChange={e => set('custom_expiry_hours', e.target.value)}
+              style={{ width: '100%', marginTop: 10, padding: '10px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
+            />
+          )}
+          {form.expiry_hours && form.expiry_hours !== 'custom' && (
+            <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>המשימה תסומן כפגת תוקף אחרי {EXPIRY_OPTIONS.find(o => o.hours === form.expiry_hours)?.label}</p>
+          )}
+
+          {/* Urgency tag */}
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #f0f4fb' }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b', marginBottom: 10 }}>⏱️ מתי דרוש עובד?</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {URGENCY_TAGS.map(tag => {
+                const isActive = form.urgency_tag === tag.value;
+                return (
+                  <button key={tag.value}
+                    onClick={() => set('urgency_tag', isActive ? '' : tag.value)}
+                    style={{
+                      padding: '10px 12px', borderRadius: 14, fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', textAlign: 'center',
+                      background: isActive ? tag.bg : 'white',
+                      color: isActive ? tag.color : '#555',
+                      border: isActive ? `1.5px solid ${tag.border}` : '1px solid #dce8f5',
+                      transition: 'all 0.15s',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    <span style={{ fontSize: 20 }}>{tag.emoji}</span>
+                    <span style={{ lineHeight: 1.3 }}>{tag.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </SectionCard>
 
         {/* Story — only when creating new task */}

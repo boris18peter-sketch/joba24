@@ -16,6 +16,13 @@ import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import useCountUp from '@/hooks/useCountUp';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 
+const URGENCY_TAG_CONFIG = {
+  immediate: { emoji: '🔥', label: 'עובד מיידי', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  few_hours: { emoji: '⏰', label: 'שעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  evening:   { emoji: '🌅', label: 'לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
+  flexible:  { emoji: '😌', label: 'לא לחוץ', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+};
+
 // ── Apply Modal — mobile optimized ──────────────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits }) {
   const [message, setMessage] = useState('');
@@ -540,6 +547,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             {task.description}
           </p>
         )}
+
+        {/* Urgency tag badge */}
+        {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (() => {
+          const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
+          return (
+            <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}` }}>
+              {tag.emoji} {tag.label}
+            </div>
+          );
+        })()}
       </div>
 
       {showApplyModal && createPortal(
