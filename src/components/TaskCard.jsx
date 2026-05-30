@@ -17,7 +17,7 @@ import useCountUp from '@/hooks/useCountUp';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 const URGENCY_TAG_CONFIG = {
-  immediate: { emoji: '🔥', label: 'עובד מיידי', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  immediate: { emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
   few_hours: { emoji: '⏰', label: 'שעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
   evening:   { emoji: '🌅', label: 'לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
   flexible:  { emoji: '😌', label: 'לא לחוץ', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },

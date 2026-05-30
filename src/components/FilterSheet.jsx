@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom';
 import { X, MapPin } from 'lucide-react';
 
 const URGENCY_FILTER_TAGS = [
-  { value: 'immediate', label: '🔥 עובד מיידי' },
-  { value: 'few_hours', label: '⏰ שעות הקרובות' },
-  { value: 'evening',   label: '🌅 לקראת הערב' },
-  { value: 'flexible',  label: '😌 לא לחוץ' },
+  { value: 'immediate', label: 'צריך עובד דחוף' },
+  { value: 'few_hours', label: 'שעות הקרובות' },
+  { value: 'evening',   label: 'לקראת הערב' },
+  { value: 'flexible',  label: 'לא לחוץ' },
 ];
 
 const timeOptions = ['15m', '30m', '1h', '2h'];
