@@ -36,7 +36,7 @@ export default function ReportModal({ task, me, onClose }) {
 
   return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.6)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)', touchAction: 'none' }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div dir="rtl" style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 40px', maxHeight: '90vh', overflowY: 'auto' }}>

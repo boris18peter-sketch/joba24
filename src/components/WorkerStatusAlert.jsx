@@ -1,10 +1,10 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigation, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Shown to workers who took a task but didn't update status within 3 minutes
 export default function WorkerStatusAlert({ task, me }) {
   const [show, setShow] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
@@ -17,7 +17,6 @@ export default function WorkerStatusAlert({ task, me }) {
     const takenAt = new Date(task.updated_date || task.created_date).getTime();
     const elapsed = (Date.now() - takenAt) / 1000;
     const remaining = 180 - elapsed;
-
     if (remaining <= 0) { releaseTask(); return; }
     const showTimer = setTimeout(() => { setShow(true); setSecondsLeft(60); }, remaining * 1000);
     return () => clearTimeout(showTimer);
@@ -39,10 +38,7 @@ export default function WorkerStatusAlert({ task, me }) {
   };
 
   const markOnTheWay = async () => {
-    await base44.entities.Task.update(task.id, {
-      worker_status: 'on_the_way',
-      on_the_way_at: new Date().toISOString(),
-    });
+    await base44.entities.Task.update(task.id, { worker_status: 'on_the_way', on_the_way_at: new Date().toISOString() });
     queryClient.invalidateQueries({ queryKey: ['task', task.id] });
     setShow(false);
     toast.success('עודכן — יצאת לדרך! 🛵');
@@ -53,65 +49,65 @@ export default function WorkerStatusAlert({ task, me }) {
   const urgent = secondsLeft <= 20;
   const progress = (secondsLeft / 60) * 100;
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 16 }} dir="rtl">
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
-      <div style={{
-        position: 'relative',
-        background: 'white',
-        borderRadius: 28,
-        width: '100%',
-        maxWidth: 400,
-        overflow: 'hidden',
-        boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
-        animation: 'slideUpAlert 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      }}>
-        <style>{`@keyframes slideUpAlert { from { opacity:0; transform: translateY(40px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }`}</style>
-
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 999999,
+        background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        touchAction: 'none',
+      }}
+      dir="rtl"
+    >
+      <div
+        style={{
+          background: 'white', borderRadius: '28px 28px 0 0',
+          width: '100%', maxWidth: 480,
+          overflow: 'hidden', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
+          animation: 'slideUpModal 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+        }}
+      >
         {/* Progress bar */}
         <div style={{ height: 4, background: '#f1f5f9' }}>
-          <div style={{ height: '100%', background: urgent ? '#ef4444' : '#f59e0b', width: `${progress}%`, transition: 'width 1s linear', borderRadius: 2 }} />
+          <div style={{ height: '100%', background: urgent ? 'linear-gradient(90deg,#dc2626,#ef4444)' : 'linear-gradient(90deg,#d97706,#f59e0b)', width: `${progress}%`, transition: 'width 1s linear', borderRadius: 2 }} />
         </div>
 
-        {/* Header */}
-        <div style={{ background: urgent ? 'linear-gradient(135deg, #dc2626, #ef4444)' : 'linear-gradient(135deg, #d97706, #f59e0b)', padding: '20px 20px 18px', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>{urgent ? '🚨' : '⚠️'}</div>
+        {/* Handle */}
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 0' }} />
+
+        {/* Color header */}
+        <div style={{ background: urgent ? 'linear-gradient(135deg,#dc2626,#ef4444)' : 'linear-gradient(135deg,#d97706,#f59e0b)', padding: '20px 20px 16px', textAlign: 'center' }}>
+          <div style={{ fontSize: 44, marginBottom: 8 }}>{urgent ? '🚨' : '⚠️'}</div>
           <div style={{ color: 'white', fontWeight: 900, fontSize: 20, marginBottom: 4 }}>
             {urgent ? 'המשימה עומדת להשתחרר!' : 'עדכן את הסטטוס שלך'}
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
-            {task?.title}
-          </div>
+          <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>{task?.title}</div>
         </div>
 
         {/* Countdown */}
         <div style={{ padding: '20px 24px 8px', textAlign: 'center' }}>
-          <div style={{ fontSize: 52, fontWeight: 900, color: urgent ? '#ef4444' : '#f59e0b', fontVariantNumeric: 'tabular-nums', lineHeight: 1, marginBottom: 6 }}>
+          <div style={{ fontSize: 52, fontWeight: 900, color: urgent ? '#dc2626' : '#d97706', lineHeight: 1, marginBottom: 6 }}>
             {String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:{String(secondsLeft % 60).padStart(2, '0')}
           </div>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>
+          <div style={{ fontSize: 13, color: '#64748b' }}>
             {urgent ? 'המשימה תשוחרר לציבור!' : 'שניות עד לשחרור אוטומטי'}
           </div>
         </div>
 
         {/* Buttons */}
-        <div style={{ padding: '16px 20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            onClick={markOnTheWay}
-            style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}
-          >
-            <Navigation size={18} />
-            יצאתי לדרך
+        <div style={{ padding: '16px 20px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button onClick={markOnTheWay} style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}>
+            <Navigation size={18} /> יצאתי לדרך
           </button>
-          <button
-            onClick={releaseTask}
-            style={{ width: '100%', height: 44, borderRadius: 14, background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-          >
-            <X size={14} style={{ display: 'inline', marginLeft: 6 }} />
-            בטל לקיחת המשימה
+          <button onClick={releaseTask} style={{ width: '100%', height: 46, borderRadius: 14, background: 'white', border: '1.5px solid #fca5a5', color: '#ef4444', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <X size={14} /> בטל לקיחת המשימה
           </button>
         </div>
       </div>
-    </div>
+
+      <style>{`@keyframes slideUpModal{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+    </div>,
+    document.body
   );
 }

@@ -1,41 +1,58 @@
 import { useState } from 'react';
-import { Loader2, Send } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Loader2, Send, X } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
 export default function ApplySheet({ task, onClose, onApply, loading }) {
   const [message, setMessage] = useState('');
-
   const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
 
-  return (
+  return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 100002, background: 'rgba(5,15,40,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 999999,
+        background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        touchAction: 'none',
+      }}
       onClick={onClose}
+      onPointerDown={e => e.stopPropagation()}
+      onTouchStart={e => e.stopPropagation()}
     >
       <div
         dir="rtl"
-        style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 0', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -16px 60px rgba(0,0,0,0.2)', animation: 'sheetSlideUp 0.3s ease' }}
+        style={{
+          background: 'white', borderRadius: '28px 28px 0 0',
+          width: '100%', maxWidth: 480,
+          padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+          boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
+          animation: 'sheetSlideUp 0.3s cubic-bezier(0.34,1.4,0.64,1)',
+          position: 'relative',
+        }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Drag handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+        {/* Handle */}
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
 
-        {/* Dark blue header with task info */}
-        <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '18px 20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' }}>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span>עלות הגשה:</span>
-              <CreditIcon size={12} />
-              <span style={{ fontWeight: 800 }}>{cost}</span>
-            </div>
+        {/* Close */}
+        <button onClick={onClose} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 12, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}>
+          <X size={18} color="#6b7280" />
+        </button>
 
-            <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px 20px', marginBottom: 16, color: 'white' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span>עלות הגשה:</span>
+            <CreditIcon size={12} />
+            <span style={{ fontWeight: 800 }}>{cost}</span>
           </div>
+          <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{task?.title}</div>
         </div>
 
-        {/* Message section in light blue box */}
-        <div style={{ background: '#f0f6ff', border: '1.5px solid #bfdbfe', borderRadius: 18, padding: '14px 16px', marginBottom: 14 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10, margin: 0 }}>
+        {/* Message */}
+        <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>
             הוסף הודעה לבעל המשימה (לא חובה)
           </p>
           <textarea
@@ -65,6 +82,7 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

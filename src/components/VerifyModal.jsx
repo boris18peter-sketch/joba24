@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -102,14 +103,15 @@ export default function VerifyModal({ onClose, onSuccess }) {
     setStep(2);
   };
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100001,
+      position: 'fixed', inset: 0, zIndex: 999999,
       background: 'rgba(5,15,40,0.65)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      backdropFilter: 'blur(6px)',
+      backdropFilter: 'blur(8px)',
+      touchAction: 'none',
     }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{
+    <div style={{
         background: '#fafbff',
         borderRadius: '28px 28px 0 0',
         width: '100%', maxWidth: 480,
@@ -392,6 +394,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

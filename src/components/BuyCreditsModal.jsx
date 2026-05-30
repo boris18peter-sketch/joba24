@@ -82,7 +82,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 100001,
+        position: 'fixed', inset: 0, zIndex: 999999,
         background: 'rgba(5,15,40,0.65)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
