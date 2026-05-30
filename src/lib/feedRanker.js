@@ -115,6 +115,10 @@ function scoreTaskRelevance(task, workerProfile) {
  * URGENCY (0.10) — explicit keywords + expiry pressure
  */
 function scoreUrgency(task) {
+  // urgency_tag 'immediate' is the explicit signal
+  if (task.urgency_tag === 'immediate') return 1.0;
+  if (task.urgency_tag === 'few_hours') return 0.7;
+  if (task.urgency_tag === 'evening')   return 0.4;
   const text = `${task.title || ''} ${task.description || ''}`.toLowerCase();
   if (URGENCY_KEYWORDS.some(kw => text.includes(kw))) return 1.0;
   if (task.expires_at) {
@@ -146,7 +150,7 @@ function scoreReliabilityFit(task) {
 function buildBadges(task, distKm) {
   const ageMins = (Date.now() - new Date(task.created_date).getTime()) / 60000;
   return {
-    isUrgent:         scoreUrgency(task) > 0.5,
+    isUrgent:         task.urgency_tag === 'immediate' || scoreUrgency(task) > 0.5,
     isNew:            ageMins < 30,
     isFunded:         task.payment_status === 'funded',
     isNearby:         distKm !== null && distKm < 5,

@@ -697,17 +697,15 @@ export default function CreateTask() {
                   <button key={tag.value}
                     onClick={() => set('urgency_tag', isActive ? '' : tag.value)}
                     style={{
-                      padding: '10px 12px', borderRadius: 14, fontSize: 12, fontWeight: 700,
+                      padding: '10px 14px', borderRadius: 14, fontSize: 13, fontWeight: 700,
                       cursor: 'pointer', textAlign: 'center',
                       background: isActive ? tag.bg : 'white',
                       color: isActive ? tag.color : '#555',
                       border: isActive ? `1.5px solid ${tag.border}` : '1px solid #dce8f5',
                       transition: 'all 0.15s',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                     }}
                   >
-                    <span style={{ fontSize: 20 }}>{tag.emoji}</span>
-                    <span style={{ lineHeight: 1.3 }}>{tag.label}</span>
+                    {tag.label}
                   </button>
                 );
               })}
