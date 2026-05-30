@@ -40,7 +40,7 @@ const EXPIRY_OPTIONS = [
 ];
 
 const URGENCY_TAGS = [
-  { value: 'immediate', emoji: '🔥', label: 'צריך עובד מיידי', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  { value: 'immediate', emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
   { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
   { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
   { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
