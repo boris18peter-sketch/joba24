@@ -16,6 +16,18 @@ import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import useCountUp from '@/hooks/useCountUp';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 
+// ── Urgency helper ─────────────────────────────────────────────────────────
+function getUrgencyBadge(task) {
+  if (!task.expires_at || task.status !== 'OPEN') return null;
+  const diffH = (new Date(task.expires_at) - Date.now()) / 3600000;
+  if (diffH <= 0) return null;
+  if (diffH <= 1.5) return { label: 'תוך שעה!', emoji: '⚡', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' };
+  if (diffH <= 10) return { label: 'היום', emoji: '🔥', color: '#c2410c', bg: '#fff7ed', border: '#fed7aa' };
+  if (diffH <= 32) return { label: 'מחר', emoji: '📅', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe' };
+  if (diffH <= 80) return { label: 'השבוע', emoji: '🗓️', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' };
+  return null;
+}
+
 // ── Apply Modal — mobile optimized ──────────────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits }) {
   const [message, setMessage] = useState('');
@@ -400,8 +412,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>{catLabel}</span>
             </div>
 
-            {/* Bottom meta: location + rating */}
+            {/* Bottom meta: urgency + location + rating */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {(() => { const ub = getUrgencyBadge(task); return ub ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: ub.color, background: ub.bg, border: `1px solid ${ub.border}`, borderRadius: 20, padding: '2px 7px', flexShrink: 0, animation: ub.label.includes('!') ? 'urgentPulse 1.5s ease-in-out infinite' : undefined }}>
+                  {ub.emoji} {ub.label}
+                </span>
+              ) : null; })()}
               {applicantCount > 0 && (
                 <span style={{
                   display: 'flex', alignItems: 'center', gap: 3,
@@ -596,6 +613,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         @keyframes coinBadgePop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
         @keyframes cardSuccessIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
         @keyframes successPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+        @keyframes urgentPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.05)} }
       `}</style>
       </>
       );
