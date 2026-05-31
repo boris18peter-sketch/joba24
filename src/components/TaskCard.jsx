@@ -381,22 +381,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         )}
 
-        {/* Card Header: applicant count (left) + all tags (right) */}
+        {/* Card Header: tags (right in RTL = first child) + applicant count (left = second child) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          {/* Left: applicant count */}
-          <div>
-            {applicantCount > 0 && (
-              <span style={{
-                fontSize: 11, fontWeight: countPulsing ? 700 : 500,
-                color: countPulsing ? '#1a6fd4' : '#94a3b8',
-                display: 'flex', alignItems: 'center', gap: 2,
-                transition: 'color 0.25s',
-              }}>
-                👥 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{animatedCount}</span>
-              </span>
-            )}
-          </div>
-          {/* Right: urgency + badge labels in one horizontal row */}
+          {/* First child = RIGHT side in RTL: all tags */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (() => {
               const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
@@ -411,6 +398,19 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 {label}
               </span>
             ))}
+          </div>
+          {/* Second child = LEFT side in RTL: applicant count */}
+          <div>
+            {applicantCount > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: countPulsing ? 700 : 500,
+                color: countPulsing ? '#1a6fd4' : '#94a3b8',
+                display: 'flex', alignItems: 'center', gap: 2,
+                transition: 'color 0.25s',
+              }}>
+                👥 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{animatedCount}</span>
+              </span>
+            )}
           </div>
         </div>
 
