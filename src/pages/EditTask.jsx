@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Clock, Loader2, Save, CheckSquare, Info, MapPin } from 'lucide-react';
+import { Clock, Loader2, Save, CheckSquare, Info, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import { toast } from 'sonner';
 import { CATEGORIES } from '@/lib/categories';
@@ -16,13 +16,63 @@ import PaymentModal from '@/components/PaymentModal';
 import BackButton from '@/components/BackButton';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 
-const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
   { label: 'ללא תוקף', hours: null },
+  { label: "30 דק'", hours: 0.5 },
+  { label: 'שעה', hours: 1 },
+  { label: '2 שעות', hours: 2 },
+  { label: '4 שעות', hours: 4 },
   { label: '6 שעות', hours: 6 },
   { label: 'יום', hours: 24 },
   { label: '2 ימים', hours: 48 },
   { label: 'שבוע', hours: 168 },
+];
+const TIME_OPTIONS = [
+  { value: '15m', label: '15 דקות' },
+  { value: '30m', label: '30 דקות' },
+  { value: '1h', label: 'שעה' },
+  { value: '2h', label: 'שעתיים' },
+  { value: '3h', label: '3 שעות' },
+  { value: '4h', label: '4 שעות' },
+  { value: '6h', label: '6 שעות' },
+  { value: 'day', label: 'יום שלם' },
+  { value: 'week', label: 'שבוע' },
+  { value: 'custom', label: 'מותאם אישית' },
+];
+const REQUIREMENT_CATEGORIES = [
+  { label: '🚗 רכבים', items: [
+    { key: 'vehicle', label: 'רכב פרטי' },
+    { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
+    { key: 'truck', label: 'טנדר / משאית' },
+    { key: 'motorcycle', label: 'קטנוע / אופנוע' },
+  ]},
+  { label: '🔧 כלי עבודה', items: [
+    { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
+    { key: 'drill', label: 'מקדחה / אינבורר' },
+    { key: 'ladder', label: 'סולם' },
+    { key: 'grinder', label: 'מטחנה / גרינדר' },
+    { key: 'welder', label: 'מולחם' },
+  ]},
+  { label: '🏗️ ניסיון מקצועי', items: [
+    { key: 'experience', label: 'ניסיון בתחום' },
+    { key: 'certified', label: 'הסמכה / רישיון מקצועי' },
+    { key: 'experience_animals', label: 'ניסיון עם בעלי חיים' },
+    { key: 'english', label: 'אנגלית' },
+    { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
+  ]},
+  { label: '🏢 מקצועות', items: [
+    { key: 'electrician', label: 'חשמלאי מוסמך' },
+    { key: 'plumber', label: 'אינסטלטור מוסמך' },
+    { key: 'carpenter', label: 'נגר מוסמך' },
+    { key: 'painter_pro', label: 'צבעי מוסמך' },
+    { key: 'cleaner_pro', label: 'מנקה מקצועי' },
+    { key: 'driver', label: 'נהג מקצועי' },
+  ]},
+  { label: '👥 כמות אנשים', items: [
+    { key: 'two_people', label: '2 אנשים' },
+    { key: 'three_people', label: '3 אנשים' },
+    { key: 'four_plus_people', label: '4+ אנשים' },
+  ]},
 ];
 const PAYMENT_METHODS = [
   { value: 'Cash', label: '💵 מזומן' },
@@ -45,6 +95,7 @@ export default function EditTask() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [showRequirements, setShowRequirements] = useState(false);
   const [form, setForm] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [addressConfirmed, setAddressConfirmed] = useState(false);
@@ -215,13 +266,13 @@ export default function EditTask() {
 
         {/* Category */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
-          <div className="flex gap-2 flex-wrap">
-            {CATEGORIES.map(c => (
-              <button key={c.value} onClick={() => set('category', c.value)}
-                style={{ padding: '7px 14px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', ...(form.category === c.value ? activeBtn : inactiveBtn) }}
-              >{c.label}</button>
-            ))}
+          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
+          <div style={{ position: 'relative' }}>
+            <select value={form.category} onChange={e => set('category', e.target.value)}
+              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}>
+              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
           </div>
         </SectionCard>
 
@@ -255,11 +306,16 @@ export default function EditTask() {
 
         {/* Images + Video */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>תמונות (עד 4)</Label>
-          <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
-          <div style={{ marginTop: 14 }}>
-            <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>סרטון (אופציונלי)</Label>
-            <VideoUploader videoUrl={form.video_url} onChange={url => set('video_url', url)} />
+          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>מדיה</Label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>📸 תמונות (עד 4)</p>
+              <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>🎥 סרטון</p>
+              <VideoUploader videoUrl={form.video_url} onChange={url => set('video_url', url)} />
+            </div>
           </div>
         </SectionCard>
 
@@ -302,15 +358,18 @@ export default function EditTask() {
 
         {/* Expiry */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
             <Clock size={14} /> תוקף המשימה
           </Label>
-          <div className="flex gap-2 flex-wrap">
-            {EXPIRY_OPTIONS.map(opt => (
-              <button key={String(opt.hours)} onClick={() => set('expiry_hours', opt.hours)}
-                style={{ padding: '8px 16px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.expiry_hours === opt.hours ? activeBtn : inactiveBtn) }}
-              >{opt.label}</button>
-            ))}
+          <div style={{ position: 'relative' }}>
+            <select
+              value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
+              onChange={e => { const v = e.target.value; set('expiry_hours', v === 'null' ? null : parseFloat(v)); }}
+              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
+            >
+              {EXPIRY_OPTIONS.map(opt => <option key={String(opt.hours)} value={opt.hours === null ? 'null' : String(opt.hours)}>{opt.label}</option>)}
+            </select>
+            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
           </div>
         </SectionCard>
 
@@ -362,42 +421,59 @@ export default function EditTask() {
           <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
             <Clock size={14} /> זמן ביצוע משוער
           </Label>
-          <div className="flex gap-2 flex-wrap">
-            {timeOptions.map(t => (
-              <button key={t} onClick={() => set('estimated_time', t)}
-                style={{ padding: '8px 16px', borderRadius: 24, fontSize: 13, fontWeight: 600, cursor: 'pointer', ...(form.estimated_time === t ? activeBtn : inactiveBtn) }}
-              >{t === 'custom' ? '⌨️ מותאם' : t}</button>
-            ))}
+          <div style={{ position: 'relative' }}>
+            <select value={form.estimated_time} onChange={e => set('estimated_time', e.target.value)}
+              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}>
+              {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
           </div>
           {form.estimated_time === 'custom' && (
-            <input type="text" placeholder="לדוגמה: 3 שעות, יום שלם, שבוע..."
+            <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
               value={form.custom_time || ''} onChange={e => set('custom_time', e.target.value)}
-              style={{ marginTop: 10, width: '100%', padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 14, outline: 'none' }}
+              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
             />
           )}
         </SectionCard>
 
         {/* Requirements */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
-            <CheckSquare size={14} /> דרישות
-          </Label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              { key: 'vehicle', label: '🚗 דרוש רכב' },
-              { key: 'two_people', label: '👥 שני אנשים' },
-              { key: 'experience', label: '🛠️ ניסיון' },
-            ].map(({ key, label }) => (
-              <button key={key} onClick={() => setReq(key, !form.requirements[key])}
-                style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? '#eff6ff' : '#f4f7fb', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : '#dce8f5'}` }}
-              >
-                <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : '#cbd5e1'}`, background: form.requirements[key] ? '#1a6fd4' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {form.requirements[key] && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+          <button type="button" onClick={() => setShowRequirements(v => !v)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
+            <Label className="text-sm font-bold flex items-center gap-1" style={{ color: '#0f2b6b', cursor: 'pointer', margin: 0 }}>
+              <CheckSquare size={14} /> דרישות
+            </Label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{count} נבחרו</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>לחץ להוספה</span>; })()}
+              {showRequirements ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
+            </div>
+          </button>
+          {showRequirements && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {REQUIREMENT_CATEGORIES.map(cat => (
+                <div key={cat.label}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    {cat.items.map(({ key, label }) => (
+                      <button key={key} onClick={() => setReq(key, !form.requirements[key])}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? '#eff6ff' : '#f4f7fb', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : '#dce8f5'}`, transition: 'all 0.15s' }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : '#cbd5e1'}`, background: form.requirements[key] ? '#1a6fd4' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {form.requirements[key] && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : '#555' }}>{label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : '#555' }}>{label}</span>
-              </button>
-            ))}
-          </div>
+              ))}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>✏️ דרישה חופשית</div>
+                <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
+                  value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+          )}
         </SectionCard>
 
         {/* Payment Method */}
