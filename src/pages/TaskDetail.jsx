@@ -963,7 +963,7 @@ export default function TaskDetail() {
           }
 
           {/* Repost */}
-          {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) &&
+          {isOwner && ['COMPLETED', 'CANCELLED'].includes(task.status) &&
           <button
             onClick={() => {
               if (task.status === 'EXPIRED' && task.payment_status === 'funded') {

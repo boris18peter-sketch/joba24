@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Search, SlidersHorizontal, SearchX, X, MapPin, Banknote, Flame, Clock } from 'lucide-react';
+import { Search, SlidersHorizontal, SearchX, X, MapPin, Banknote, Flame, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
@@ -24,6 +24,7 @@ export default function HomeFeed() {
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
@@ -360,9 +361,11 @@ export default function HomeFeed() {
         );
       })()}
 
-      {/* My Published Tasks Carousel */}
+      {/* My Published Tasks Carousel — visually distinct */}
       {myTasks.some(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status)) && (
-        <MyTasksCarousel myTasks={myTasks} hideWhenWorking={false} />
+        <div style={{ margin: '0 0 4px', background: 'linear-gradient(135deg, #eff6ff 0%, #f8faff 100%)', borderTop: '2px solid #1a6fd4', borderBottom: '1px solid #dbeafe' }}>
+          <MyTasksCarousel myTasks={myTasks} hideWhenWorking={false} />
+        </div>
       )}
 
       <div className="px-4" style={{ paddingTop: 16, paddingBottom: 8 }}>
@@ -371,6 +374,13 @@ export default function HomeFeed() {
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <h2 style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', margin: 0, letterSpacing: 0.3, textTransform: 'uppercase' }}>משימות זמינות</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe', flexShrink: 0 }}>
+              <span style={{ position: 'relative', display: 'inline-flex', width: 4, height: 4 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
+                <span style={{ position: 'relative', width: 4, height: 4, borderRadius: '50%', background: '#3b82f6' }} />
+              </span>
+              <span style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 600 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
+            </div>
             <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
           </div>
 
@@ -409,88 +419,103 @@ export default function HomeFeed() {
           )}
         </div>
 
-        {/* Search + Filter + Categories toolbar — always visible */}
-        <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* Search row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                  <Search size={12} style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', color: searchFocused ? '#1a6fd4' : '#b0bec5', pointerEvents: 'none' }} />
-                  <input
-                placeholder="חיפוש משימות..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
-                style={{
-                  width: '100%', height: 32, borderRadius: 9,
-                  border: `1px solid ${searchFocused ? '#93c5fd' : 'var(--border-1)'}` ,
-                  paddingRight: 28, paddingLeft: search ? 24 : 8,
-                  fontSize: 13, fontFamily: 'inherit',
-                  background: 'var(--surface-3)', outline: 'none', color: 'var(--text-1)',
-                  transition: 'border-color 0.15s', boxSizing: 'border-box'
-                }} />
-              
-                  {search &&
-              <button onClick={() => setSearch('')} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
-                      <X size={10} color="#94a3b8" />
-                    </button>
-              }
-                  {searchFocused && !search && recentSearches.length > 0 &&
-              <div style={{ position: 'absolute', top: 32, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
-                      {recentSearches.map((s, i) =>
-                <button key={i} onClick={() => {setSearch(s);setSearchFocused(false);}}
-                style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Search size={9} color="#94a3b8" /> {s}
-                        </button>
-                )}
-                    </div>
-              }
-                </div>
-                {/* Filter button */}
-                <button
+        {/* Search bar — compact with category dropdown */}
+        <div style={{ position: 'relative' }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Search size={12} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0, pointerEvents: 'none' }} />
+            <input
+              placeholder="חיפוש משימות..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+              style={{
+                flex: 1, height: 28, border: 'none', background: 'transparent',
+                fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)',
+              }}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}>
+                <X size={11} color="#94a3b8" />
+              </button>
+            )}
+            {/* Category dropdown trigger */}
+            <button
+              onClick={() => setShowCategoryDropdown(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px',
+                borderRadius: 8, border: `1px solid ${filters.category ? '#93c5fd' : 'var(--border-1)'}`,
+                background: filters.category ? '#eff6ff' : 'var(--surface-3)',
+                cursor: 'pointer', flexShrink: 0, fontSize: 11,
+                color: filters.category ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {filters.category ? getCategoryLabel(filters.category) : 'קטגוריה'}
+              {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+            </button>
+            {/* Filter button */}
+            <button
               onClick={() => setShowFilters(true)}
               style={{
                 flexShrink: 0, width: 28, height: 28, borderRadius: 6,
-                border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}` ,
+                border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}`,
                 background: hasSheetFilters ? '#1a6fd4' : '#f8fafc',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', position: 'relative', transition: 'all 0.15s'
-              }}>
-                  <SlidersHorizontal size={10} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
-                  {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
+              }}
+            >
+              <SlidersHorizontal size={10} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+              {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
+            </button>
+          </div>
+
+          {/* Recent searches */}
+          {searchFocused && !search && recentSearches.length > 0 && (
+            <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
+              {recentSearches.map((s, i) => (
+                <button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }}
+                  style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Search size={9} color="#94a3b8" /> {s}
                 </button>
-                {/* Live count */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe' }}>
-                  <span style={{ position: 'relative', display: 'inline-flex', width: 4, height: 4 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
-                    <span style={{ position: 'relative', width: 4, height: 4, borderRadius: '50%', background: '#3b82f6' }} />
-                  </span>
-                  <span style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 600 }}>{sortedTasks.filter((t) => t.status === 'OPEN').length}</span>
-                </div>
-              </div>
+              ))}
+            </div>
+          )}
 
-              {/* Category pills */}
-              <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+          {/* Category dropdown */}
+          {showCategoryDropdown && (
+            <>
+              <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+              <div style={{
+                position: 'absolute', top: 38, right: 0, left: 0,
+                background: 'var(--surface-2)', borderRadius: 10,
+                border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+                zIndex: 100, maxHeight: 220, overflowY: 'auto',
+              }}>
                 <button
-              onClick={() => setFilters((f) => ({ ...f, category: '' }))}
-              style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: !filters.category ? '#1a6fd4' : 'var(--surface-3)', color: !filters.category ? 'white' : 'var(--text-2)', transition: 'all 0.15s' }}>
-              הכל</button>
-                {[...CATEGORIES].
-                sort((a, b) => tasks.filter((t) => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length - tasks.filter((t) => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length).
-                map((c) => {
-                const count = tasks.filter((t) => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
-                if (count === 0) return null;
-              const isActive = filters.category === c.value;
-              return (
-                <button key={c.value}
-                onClick={() => setFilters((f) => ({ ...f, category: f.category === c.value ? '' : c.value }))}
-                style={{ flexShrink: 0, padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid transparent', cursor: 'pointer', background: isActive ? '#1a6fd4' : 'var(--surface-3)', color: isActive ? 'white' : 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 3, transition: 'all 0.15s' }}>
-                  {c.label}{count > 0 && <span style={{ opacity: 0.55, fontSize: 10 }}>({count})</span>}
-                </button>);
-            })}
+                  onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }}
+                  style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : '#374151', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
+                  הכל
+                </button>
+                {[...CATEGORIES].sort((a, b) =>
+                  tasks.filter(t => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length -
+                  tasks.filter(t => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length
+                ).map(c => {
+                  const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
+                  if (count === 0) return null;
+                  return (
+                    <button key={c.value}
+                      onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }}
+                      style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : '#374151', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
+                      <span>{c.label}</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
+                    </button>
+                  );
+                })}
               </div>
-
+            </>
+          )}
         </div>
 
         {isLoading ?
