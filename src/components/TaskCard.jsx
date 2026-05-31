@@ -17,10 +17,10 @@ import useCountUp from '@/hooks/useCountUp';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 const URGENCY_TAG_CONFIG = {
-  immediate: { emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
-  few_hours: { emoji: '⏰', label: 'שעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  evening:   { emoji: '🌅', label: 'לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
-  flexible:  { emoji: '😌', label: 'לא לחוץ', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+  immediate: { emoji: '🔥', label: 'דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  few_hours: { emoji: '⏰', label: 'שעות הקרובות', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
+  evening:   { emoji: '🌅', label: 'לקראת הערב', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
+  flexible:  { emoji: '😌', label: 'לא לחוץ', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
 };
 
 // ── Apply Modal — mobile optimized ──────────────────────────────────────────
@@ -403,9 +403,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                   onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                   {task.client_verified ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '2px 7px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                       <VerifiedBadge size="sm" />
-                      <span style={{ fontWeight: 700, color: '#15803d', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
+                      <span style={{ fontWeight: 600, color: '#64748b', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
                     </span>
                   ) : (
                     <span style={{ fontSize: 11, color: '#64748b', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
@@ -468,7 +468,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           {/* Price + payment */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
             <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{currentPrice}</span>
-            {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method === 'Cash' ? '💵' : task.payment_method === 'Bit' ? '📱' : '📲'} {task.payment_method}</span>}
+            {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method}</span>}
             {dist != null && !isNaN(dist) && (
               <span style={{ fontSize: 10, color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
