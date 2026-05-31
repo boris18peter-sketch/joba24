@@ -1,14 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, X, Send, Loader2, MoreVertical, Trash2, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
-import TaskBadges from '@/components/TaskBadges';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -23,7 +22,7 @@ const URGENCY_TAG_CONFIG = {
   flexible:  { emoji: '😌', label: 'לא לחוץ', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
 };
 
-// ── Apply Modal — mobile optimized ──────────────────────────────────────────
+// ── Apply Modal ──────────────────────────────────────────────────────────────
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +51,6 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
         return;
       }
       const charged = res.data?.credits_charged || 0;
-      // Pass credits up and close modal immediately — card handles animation
       onApplied(res.data?.application, charged);
       setTimeout(() => onClose(), 120);
     } catch (err) {
@@ -98,12 +96,8 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           overscrollBehavior: 'contain',
         }}
       >
-        {/* Handle */}
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
-
-
-        {/* Task summary */}
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
             <span>עלות הגשה:</span>
@@ -115,11 +109,8 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{task.price}</div>
         </div>
 
-        {/* Message area */}
         <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>
-            הוסף הודעה (לא חובה)
-          </p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>הוסף הודעה (לא חובה)</p>
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
@@ -134,7 +125,6 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           />
         </div>
 
-        {/* Buttons */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={onClose}
@@ -203,7 +193,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     prevCountRef.current = applicantCount;
   }, [applicantCount]);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!showMenu) return;
     const handler = () => setShowMenu(false);
@@ -226,7 +215,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     );
     queryClient.setQueryData(['myApp', task.id, currentUserId], null);
     try {
-      // Refund credits
       const creditsToRefund = myApp?.credits_charged || 0;
       if (creditsToRefund > 0) {
         const freshMe = await base44.auth.me();
@@ -249,7 +237,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['creditTxns', currentUserId] });
-      // Coins fly FROM card TO pill (credit: credits return to wallet)
       if (cardRef.current) {
         const r = cardRef.current.getBoundingClientRect();
         setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
@@ -270,18 +257,14 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     setShowCardSuccess(true);
     setCardSuccessCredits(creditsCharged);
     setTimeout(() => setShowCardSuccess(false), 4000);
-    // Coins fly FROM pill TO apply button (debit: credits leave wallet)
     setCoinFlyDir('debit');
     setCoinFlyActive(true);
-    // Use the real server app record (or a safe fallback)
     const appRecord = realApp || { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `opt_${task.id}` };
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => {
-      // Replace any existing record for this task, or append
       const without = old.filter(a => !(a.task_id === task.id && a.worker_id === currentUserId));
       return [...without, appRecord];
     });
     queryClient.setQueryData(['myApp', task.id, currentUserId], appRecord);
-    // Hard sync from server to confirm
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
@@ -306,6 +289,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const isApproved  = appStatus === 'approved';
   const isPending   = appStatus === 'pending';
   const currentPrice = calculateCurrentPrice(task);
+
+  // Build badge labels (urgency handled separately)
+  const badgeLabels = [];
+  if (badges && !hasActiveApp) {
+    if (badges.isNew)    badgeLabels.push('חדש');
+    if (badges.isHighPay) badgeLabels.push('שכר גבוה');
+    if (badges.isFunded)  badgeLabels.push('ממומן');
+    if (badges.isNearby)  badgeLabels.push('קרוב אליך');
+    if (badges.isLowComp && !badges.isNew) badgeLabels.push('ללא מגישים');
+  }
 
   return (
     <>
@@ -388,51 +381,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         )}
 
-        {/* Smart badges */}
-        {badges && !hasActiveApp && <TaskBadges badges={badges} />}
-
-        {/* Card Header: user info + badges */}
+        {/* Card Header: applicant count (left) + all tags (right) */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          {/* User profile */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            {task.client_name && (
-              task.client_id === currentUserId ? (
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '2px 8px' }}>אני</span>
-              ) : (
-                <span
-                  onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                  {task.client_verified ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <VerifiedBadge size="sm" />
-                      <span style={{ fontWeight: 600, color: '#64748b', fontSize: 10, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: '#64748b', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
-                  )}
-                  {task.client_rating > 0 && (
-                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Star size={9} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
-                      {task.client_rating.toFixed(1)}
-                    </span>
-                  )}
-                </span>
-              )
-            )}
-          </div>
-          {/* Status badges */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (() => {
-              const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
-              return (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
-                  {tag.emoji} {tag.label}
-                </span>
-              );
-            })()}
+          {/* Left: applicant count */}
+          <div>
             {applicantCount > 0 && (
               <span style={{
-                fontSize: 10, fontWeight: countPulsing ? 700 : 500,
+                fontSize: 11, fontWeight: countPulsing ? 700 : 500,
                 color: countPulsing ? '#1a6fd4' : '#94a3b8',
                 display: 'flex', alignItems: 'center', gap: 2,
                 transition: 'color 0.25s',
@@ -440,6 +395,22 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 👥 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{animatedCount}</span>
               </span>
             )}
+          </div>
+          {/* Right: urgency + badge labels in one horizontal row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (() => {
+              const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
+              return (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
+                  {tag.emoji} {tag.label}
+                </span>
+              );
+            })()}
+            {badgeLabels.slice(0, 2).map((label, i) => (
+              <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                {label}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -455,6 +426,24 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             )}
             {task.location_name && catLabel && <span>•</span>}
             {catLabel && <span>{catLabel}</span>}
+            {task.client_name && (
+              task.client_id === currentUserId ? (
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
+              ) : (
+                <span
+                  onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }}>
+                  {task.client_verified && <VerifiedBadge size="sm" />}
+                  <span style={{ color: '#94a3b8', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
+                  {task.client_rating > 0 && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Star size={9} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
+                      <span>{task.client_rating.toFixed(1)}</span>
+                    </span>
+                  )}
+                </span>
+              )
+            )}
           </div>
           {task.description && (
             <p style={{ color: '#94a3b8', fontSize: 12, margin: 0, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
@@ -465,7 +454,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
         {/* Card Footer: price + apply */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
-          {/* Price + payment */}
+          {/* Price + payment + distance */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
             <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{currentPrice}</span>
             {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method}</span>}
@@ -476,7 +465,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               </span>
             )}
           </div>
-          {/* Right side: owner menu or apply button */}
+          {/* Right: owner menu or apply button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {task.created_by === currentUserId && (
               <div style={{ position: 'relative' }}>
@@ -592,12 +581,11 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
       <style>{`
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
-        @keyframes applicantPulse { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
         @keyframes cardFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
         @keyframes coinBadgePop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
         @keyframes cardSuccessIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
         @keyframes successPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
       `}</style>
-      </>
-      );
-      }
+    </>
+  );
+}
