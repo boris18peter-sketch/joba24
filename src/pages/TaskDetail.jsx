@@ -20,6 +20,13 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
+
+const CATEGORY_EMOJI = {
+  plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
+  moving: '📦', painting: '🎨', carpentry: '🪚', ac: '❄️',
+  locksmith: '🔐', shopping: '🛍️', delivery: '🚚', babysitting: '👶',
+  tutoring: '📚', it_support: '💻', other: '🔨'
+};
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
@@ -667,6 +674,7 @@ export default function TaskDetail() {
                   'מחפש פועל' :
                   statusLabel}
                 </span>
+                {task.title && <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginTop: 8, lineHeight: 1.25 }}>{task.title}</div>}
               </div>
               {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN' && !!task.worker_status) &&
               <button
@@ -681,7 +689,7 @@ export default function TaskDetail() {
             {/* Price + Distance/Location */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>תגמול</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>שכר מוצע</div>
                 <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>₪{task.price}</div>
               </div>
               <div style={{ flexShrink: 0 }}>
@@ -697,7 +705,9 @@ export default function TaskDetail() {
                 task.location_name ?
                 <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
                     <MapPin size={12} strokeWidth={2} />
-                    <span style={{ fontSize: 11, fontWeight: 600, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {task.location_name.split(',')[0]}{distKm != null && !isNaN(distKm) ? ` (${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`})` : ''}
+                    </span>
                   </div> :
                 null}
               </div>
@@ -721,9 +731,10 @@ export default function TaskDetail() {
                 </a>
               }
               <div style={{ display: 'flex', gap: 4 }}>
+                <span title={getCategoryLabel(task.category)} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>{CATEGORY_EMOJI[task.category] || '🔨'}</span>
                 {task.requirements?.vehicle && <span title="דרוש רכב" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🚗</span>}
                 {task.requirements?.two_people && <span title="שני אנשים" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>👥</span>}
-                {task.requirements?.experience && <span title="ניסיון" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🛠️</span>}
+                {task.requirements?.experience && <span title="ניסיון" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>⭐</span>}
               </div>
             </div>
 
@@ -780,7 +791,7 @@ export default function TaskDetail() {
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />
-                הגש בקשה — {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={14} />
+                הגש מועמדות למשימה — {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={14} />
               </button>
             }
 

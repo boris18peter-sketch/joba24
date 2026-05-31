@@ -457,10 +457,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           {/* Price + payment + distance */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
             <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{currentPrice}</span>
-            {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method}</span>}
+            {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
             {dist != null && !isNaN(dist) && (
-              <span style={{ fontSize: 10, color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 7px' }}>
+                <Navigation size={10} strokeWidth={2} color="#1a6fd4" />
                 {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
               </span>
             )}
