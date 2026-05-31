@@ -11,7 +11,7 @@ const banners = [
       'כל משימה - גם הכי קטנה או הכי מוזרה',
       { text: 'פשוט תפרסם, קבל בקשות לביצוע, תאשר בקשה ומישהו יגיע לבצע אותה תוך ', highlight: 'כמה דקות!' },
     ],
-    btn: 'התחבר עכשיו',
+    btn: 'התחבר וקבל 🎁',
     btnBg: '#fbbf24',
     btnColor: '#1a6fd4',
   },
@@ -22,7 +22,7 @@ const banners = [
       'בכל יום משימות חדשות מחכות לך.',
       { text: 'הגש בקשות למשימות באזור שלך, בצע אותן ', highlight: 'ותרוויח.' },
     ],
-    btn: 'התחבר עכשיו',
+    btn: 'התחבר וקבל 🎁',
     btnBg: '#fbbf24',
     btnColor: '#047857',
   },
@@ -73,7 +73,7 @@ export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCr
     <div 
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', cursor: 'grab', userSelect: 'none', minHeight: 220 }}>
+      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', cursor: 'grab', userSelect: 'none', height: 220, boxSizing: 'border-box' }}>
       {/* Decorative circles */}
       <div style={{ position: 'absolute', top: -30, left: -30, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -20, right: -20, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
