@@ -14,7 +14,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
  *   size       — 'sm' | 'md' (default 'sm')
  *   onClick    — optional click override
  */
-export default function UserBadge({ name, userId, verified, rating, dark = false, size = 'sm', onClick }) {
+export default function UserBadge({ name, userId, verified, rating, dark = false, size = 'sm', onClick, photo }) {
   const navigate = useNavigate();
   if (!name) return null;
 
@@ -41,16 +41,13 @@ export default function UserBadge({ name, userId, verified, rating, dark = false
         direction: 'rtl',
       }}
     >
-      {/* Avatar */}
-      <span style={{
-        width: avatarSize, height: avatarSize, borderRadius: '50%',
-        background: dark ? 'rgba(255,255,255,0.22)' : '#e0e9f5',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: avatarSize * 0.42, fontWeight: 900, flexShrink: 0,
-        color: dark ? 'white' : '#1a6fd4',
-      }}>
-        {name[0]}
-      </span>
+      {/* Avatar — only show if photo provided */}
+      {photo && (
+        <img src={photo} alt="" style={{
+          width: avatarSize, height: avatarSize, borderRadius: '50%',
+          objectFit: 'cover', flexShrink: 0,
+        }} />
+      )}
 
       {/* Name */}
       <span style={{

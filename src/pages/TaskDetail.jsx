@@ -675,7 +675,7 @@ export default function TaskDetail() {
                   'מחפש פועל' :
                   statusLabel}
                 </span>
-                {task.title && <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginTop: 8, lineHeight: 1.25 }}>{task.title}</div>}
+
               </div>
               {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN' && !!task.worker_status) &&
               <button
@@ -686,6 +686,13 @@ export default function TaskDetail() {
                 </button>
               }
             </div>
+
+            {/* Task title — centered below status */}
+            {task.title && (
+              <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 14, lineHeight: 1.25, textAlign: 'right' }}>
+                {task.title}
+              </div>
+            )}
 
             {/* Price + Distance/Location */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -714,10 +721,13 @@ export default function TaskDetail() {
               </div>
             </div>
 
-            {/* Description */}
-            {task.description &&
+            {/* Description + estimated time inline */}
+            {(task.description || task.estimated_time) &&
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
-                {task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description}
+                {task.description ? (task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description) : ''}
+                {task.estimated_time && (
+                  <span style={{ opacity: 0.65, marginRight: 6 }}> · ⏱ {task.estimated_time}</span>
+                )}
               </div>
             }
 
@@ -734,24 +744,15 @@ export default function TaskDetail() {
               />
             }
               <div style={{ display: 'flex', gap: 4 }}>
-                <span title={getCategoryLabel(task.category)} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>{CATEGORY_EMOJI[task.category] || '🔨'}</span>
                 {task.requirements?.vehicle && <span title="דרוש רכב" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🚗</span>}
                 {task.requirements?.two_people && <span title="שני אנשים" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>👥</span>}
                 {task.requirements?.experience && <span title="ניסיון" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>⭐</span>}
               </div>
             </div>
 
-            {/* Time + expiry */}
-            {(task.estimated_time || task.expires_at && task.status === 'OPEN') &&
+            {/* Expiry only */}
+            {(task.expires_at && task.status === 'OPEN') &&
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-                {task.estimated_time &&
-              <div>
-                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 3, letterSpacing: 0.3 }}>זמן משוער</div>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.9)', background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px' }}>
-                      <Clock size={11} /><span>{task.estimated_time}</span>
-                    </div>
-                  </div>
-              }
                 {task.expires_at && task.status === 'OPEN' &&
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
                     <Clock size={11} /><span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
