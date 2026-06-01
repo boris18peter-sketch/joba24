@@ -490,11 +490,11 @@ export default function TaskDetail() {
   if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
 
   const STATUS_GRADIENT = {
-    OPEN: '#1a6fd4',
-    TAKEN: task.worker_status === 'done' ? '#059669' : '#1a6fd4',
-    COMPLETED: '#059669',
-    CANCELLED: '#64748b',
-    EXPIRED: '#ea580c'
+    OPEN: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
+    TAKEN: task.worker_status === 'done' ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)' : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
+    COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+    CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
+    EXPIRED: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)'
   };
   const STATUS_PILL = {
     OPEN: { background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe' },
@@ -696,9 +696,9 @@ export default function TaskDetail() {
 
             {/* Price + Distance/Location */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>שכר מוצע</div>
-                <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>₪{task.price}</div>
+              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{task.price}</div>
+                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
               </div>
               <div style={{ flexShrink: 0 }}>
                 {distKm != null && !isNaN(distKm) ?
@@ -721,13 +721,10 @@ export default function TaskDetail() {
               </div>
             </div>
 
-            {/* Description + estimated time inline */}
-            {(task.description || task.estimated_time) &&
+            {/* Description */}
+            {task.description &&
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
-                {task.description ? (task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description) : ''}
-                {task.estimated_time && (
-                  <span style={{ opacity: 0.65, marginRight: 6 }}> · ⏱ {task.estimated_time}</span>
-                )}
+                {task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description}
               </div>
             }
 

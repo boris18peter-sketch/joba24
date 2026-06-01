@@ -185,7 +185,6 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
                   <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{t.price}</div>
-                  {t.estimated_time && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 2 }}>⏱ {t.estimated_time}</div>}
                 </div>
               </div>
 

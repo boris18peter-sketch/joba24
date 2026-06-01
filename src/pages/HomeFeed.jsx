@@ -385,36 +385,6 @@ export default function HomeFeed() {
         {/* ── Available Tasks Tab ────────────────────────────── */}
         {activeTab === 'available' && (
           <>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <h2 style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', margin: 0, letterSpacing: 0.3, textTransform: 'uppercase' }}>משימות זמינות</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe', flexShrink: 0 }}>
-                  <span style={{ position: 'relative', display: 'inline-flex', width: 4, height: 4 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
-                    <span style={{ position: 'relative', width: 4, height: 4, borderRadius: '50%', background: '#3b82f6' }} />
-                  </span>
-                  <span style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 600 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
-                </div>
-                <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-              </div>
-              <React.Suspense fallback={null}><StoriesBar /></React.Suspense>
-              {smartSections && (
-                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, marginTop: 8 }}>
-                  {[
-                    { id: 'nearby',  icon: <MapPin size={11} />,    label: 'קרוב אליך', count: smartSections.nearby.length },
-                    { id: 'highpay', icon: <Banknote size={11} />,  label: 'שכר גבוה', count: smartSections.highPaying.length },
-                    { id: 'urgent',  icon: <Flame size={11} />,     label: 'דחוף', count: smartSections.urgent.length },
-                    { id: 'new',     icon: <Clock size={11} />,     label: 'חדש',  count: smartSections.newTasks.length },
-                  ].filter(s => s.count > 0).map(s => (
-                    <button key={s.id} onClick={() => setActiveSection(activeSection === s.id ? 'all' : s.id)}
-                      style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', background: activeSection === s.id ? '#1a6fd4' : 'var(--surface-2)', color: activeSection === s.id ? 'white' : 'var(--text-2)', boxShadow: activeSection === s.id ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.15s' }}>
-                      {s.icon} {s.label} <span style={{ fontSize: 9, opacity: 0.7, marginRight: 1 }}>({s.count})</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Search bar */}
             <div style={{ position: 'relative' }}>
               <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
