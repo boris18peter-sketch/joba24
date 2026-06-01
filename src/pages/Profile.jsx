@@ -108,10 +108,13 @@ export default function Profile() {
 
       }
 
-      <PageHeader title="הפרופיל שלי" right={<Link to="/worker-profile" style={{ width: 36, height: 36, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Pencil size={16} color="#666" /></Link>} />
+      <PageHeader title="הפרופיל שלי" />
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
+        <Link to="/worker-profile" style={{ position: 'absolute', top: 12, left: 12, width: 36, height: 36, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+          <Pencil size={16} color="white" />
+        </Link>
         
 
         {/* Avatar + Name */}
@@ -181,8 +184,7 @@ export default function Profile() {
           </button>
         )}
 
-        {/* Trust Badges */}
-        <TrustBadges user={me} />
+
 
         {/* Trust Card */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />

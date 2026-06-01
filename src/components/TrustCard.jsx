@@ -85,7 +85,7 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>מה בונה את ציון האמון?</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ fontSize: 22, fontWeight: 900, color: trustLevel.color }}>{trustScore}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: trustLevel.color }}>{trustScore}%</div>
             <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={14} color="#94a3b8" />
             </button>
@@ -169,7 +169,7 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
             <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מציון</span>
             <span style={{ fontSize: 18, fontWeight: 900, color: barColor, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4' }}>מד אמינות</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>מד אמינות</span>
         </div>
 
         {/* Animated progress bar */}

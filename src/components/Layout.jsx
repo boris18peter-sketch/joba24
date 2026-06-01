@@ -474,11 +474,12 @@ export default function Layout() {
   });
 
   const navItems = [
+    { to: '/', icon: Home, label: 'פיד' },
     { to: '/map', icon: Map, label: 'מפה' },
     { to: '/create-task', icon: Plus, label: 'משימה', primary: true },
-    { to: '/', icon: Home, label: 'פיד' },
+    { to: '/chats', icon: MessageCircle, label: "צ'אט", badge: unreadMessages },
+    { to: '/profile', icon: User, label: 'פרופיל' },
   ];
-  const activeIndex = navItems.findIndex(item => location.pathname === item.to);
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
@@ -595,39 +596,44 @@ export default function Layout() {
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
         paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
       }}>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '6px 12px 10px' }}>
-          {/* Sliding blue indicator */}
-          {activeIndex >= 0 && (
-            <div style={{
-              position: 'absolute',
-              width: 'calc(33.33% - 8px)',
-              height: 52,
-              background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-              borderRadius: 18,
-              left: `calc(${activeIndex} * 33.33% + 4px)`,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              transition: 'left 0.38s cubic-bezier(0.34, 1.2, 0.64, 1)',
-              boxShadow: '0 4px 20px rgba(26,111,212,0.4)',
-              zIndex: 0,
-            }} />
-          )}
-
-          {navItems.map(({ to, icon: Icon, label, primary }, index) => {
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
+          {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
             const active = location.pathname === to;
-            const handleClick = primary
-              ? () => { if (!isAuthenticated) { navigate(to); return; } gate(() => navigate(to)); }
-              : () => navigate(to);
+            if (primary) {
+              return (
+                <button id="onboarding-create-btn" key={to} onClick={() => {
+                  if (!isAuthenticated) { navigate(to); return; }
+                  gate(() => navigate(to));
+                }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 4px 20px rgba(26,111,212,0.45)',
+                  }}>
+                    <Icon size={24} color="white" />
+                  </div>
+                  <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
+                </button>
+              );
+            }
             return (
-              <button id={primary ? 'onboarding-create-btn' : undefined} key={to} onClick={handleClick} style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: '10px 0',
-                position: 'relative', zIndex: 1,
-              }}>
-                <Icon size={primary ? 22 : 20} color={active ? 'white' : '#a0b8d8'} strokeWidth={active ? 2.2 : 1.8} />
-                <span style={{ fontSize: 10, color: active ? 'white' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
-              </button>
+              <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
+                <div style={{ position: 'relative' }}>
+                  <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
+                  {badge > 0 && (
+                    <div style={{
+                      position: 'absolute', top: -6, right: -8,
+                      background: '#dc2626', color: 'white',
+                      fontSize: 9, fontWeight: 900,
+                      width: 16, height: 16, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1.5px solid white',
+                    }}>{badge}</div>
+                  )}
+                </div>
+                <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
+              </Link>
             );
           })}
         </div>
