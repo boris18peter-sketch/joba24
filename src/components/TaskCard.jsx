@@ -162,7 +162,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
 }
 
 // ── TaskCard ──────────────────────────────────────────────────────────────────
-export default function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly }) {
+export default function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
@@ -460,68 +460,69 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               </span>
             )}
           </div>
-          {/* Right: owner menu or apply button */}
+          {/* Right: owner controls or apply button */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {task.created_by === currentUserId && (
-              <div style={{ position: 'relative' }}>
+            {isMyPublished ? (
+              // Owner management controls
+              task.status === 'OPEN' ? (
                 <button
-                  onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }}
-                  style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={e => { e.stopPropagation(); useNavigate && navigate(`/task/${task.id}`); }}
+                  style={{ height: 36, padding: '0 14px', borderRadius: 10, background: (task.applicants?.length ?? 0) > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent' }}
                 >
-                  <MoreVertical size={14} />
+                  <span>צפה במועמדים</span>
+                  {(task.applicants?.length ?? 0) > 0 && (
+                    <span style={{ background: 'white', color: (task.applicants?.length ?? 0) > 0 ? '#d97706' : '#1a6fd4', fontSize: 10, fontWeight: 900, borderRadius: 10, padding: '1px 6px' }}>{task.applicants.length}</span>
+                  )}
                 </button>
-                {showMenu && (
-                  <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }}
-                    style={{ position: 'absolute', bottom: 32, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }}
-                      style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Trash2 size={14} /> מחק משימה
-                    </button>
+              ) : task.status === 'TAKEN' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {task.worker_status === 'on_the_way' ? 'בדרך אליך' : task.worker_status === 'arrived' ? 'הגיע לשטח' : task.worker_status === 'done' ? 'ממתין לאישורך' : 'בעבודה'}
+                  </span>
+                </div>
+              ) : (
+                <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#f1f5f9', border: '1.5px solid #e2e8f0', color: '#64748b', fontSize: 11, fontWeight: 700, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                  פרטים
+                </button>
+              )
+            ) : (
+              <>
+                {task.created_by === currentUserId && (
+                  <div style={{ position: 'relative' }}>
+                    <button onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); setShowMenu(v => !v); }} style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MoreVertical size={14} /></button>
+                    {showMenu && (
+                      <div onClick={e => { e.stopPropagation(); e.nativeEvent?.stopImmediatePropagation?.(); }} style={{ position: 'absolute', bottom: 32, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 1000, minWidth: 140, overflow: 'hidden' }}>
+                        <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowCancelConfirm(true); }} style={{ width: '100%', textAlign: 'right', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={14} /> מחק משימה</button>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
-            {!viewOnly && !hasActiveApp && task.created_by !== currentUserId && (
-              <button
-                id={task._isFirstCard ? 'onboarding-apply-btn' : undefined}
-                onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
-                onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}
-                onPointerLeave={() => setApplyPressed(false)}
-                onClick={e => {
-                  e.stopPropagation();
-                  const r = e.currentTarget.getBoundingClientRect();
-                  setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-                  if (!currentUserId) { setShowLoginPrompt(true); return; }
-                  if (applyLocked) return;
-                  setApplyLocked(true);
-                  setShowApplyModal(true);
-                  setTimeout(() => setApplyLocked(false), 600);
-                }}
-                disabled={applyLocked}
-                style={{
-                  height: 36, padding: '0 14px', borderRadius: 10,
-                  background: '#1a6fd4',
-                  border: 'none', color: 'white', fontSize: 12, fontWeight: 700,
-                  cursor: applyLocked ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  opacity: applyLocked ? 0.6 : 1,
-                  whiteSpace: 'nowrap',
-                  WebkitTapHighlightColor: 'transparent',
-                  transform: applyPressed ? 'scale(0.93)' : 'scale(1)',
-                  transition: 'transform 0.1s ease, opacity 0.15s',
-                  boxShadow: applyPressed ? 'none' : '0 3px 10px rgba(26,111,212,0.3)',
-                }}
-              >
-                {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
-                  <>
-                    <span>הגש מועמדות</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>
-                      {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={10} />
-                    </span>
-                  </>
+                {!viewOnly && !hasActiveApp && task.created_by !== currentUserId && (
+                  <button
+                    id={task._isFirstCard ? 'onboarding-apply-btn' : undefined}
+                    onPointerDown={e => { e.stopPropagation(); setApplyPressed(true); }}
+                    onPointerUp={e => { e.stopPropagation(); setApplyPressed(false); }}
+                    onPointerLeave={() => setApplyPressed(false)}
+                    onClick={e => {
+                      e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                      if (!currentUserId) { setShowLoginPrompt(true); return; }
+                      if (applyLocked) return;
+                      setApplyLocked(true);
+                      setShowApplyModal(true);
+                      setTimeout(() => setApplyLocked(false), 600);
+                    }}
+                    disabled={applyLocked}
+                    style={{ height: 36, padding: '0 14px', borderRadius: 10, background: '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : '0 3px 10px rgba(26,111,212,0.3)' }}
+                  >
+                    {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
+                      <><span>הגש מועמדות</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={10} /></span></>
+                    )}
+                  </button>
                 )}
-              </button>
+              </>
             )}
           </div>
         </div>

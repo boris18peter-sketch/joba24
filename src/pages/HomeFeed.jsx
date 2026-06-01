@@ -29,6 +29,7 @@ export default function HomeFeed() {
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
+  const [activeTab, setActiveTab] = useState('available'); // 'available' | 'my_published'
   const queryClient = useQueryClient();
 
   const { user: me, isAuthenticated } = useAuth();
@@ -333,6 +334,12 @@ export default function HomeFeed() {
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category;
   const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag);
 
+  // Red dot: any OPEN published task has pending applicants
+  const hasNewApplicants = useMemo(() =>
+    isAuthenticated && myTasks.some(t => t.status === 'OPEN' && (t.applicants?.length ?? 0) > 0),
+    [myTasks, isAuthenticated]
+  );
+
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
     setSearch(val);
@@ -349,230 +356,154 @@ export default function HomeFeed() {
       {/* Login Banner Carousel — show only when not authenticated */}
       {!isAuthenticated && <LoginBannerCarousel />}
 
-      {/* Active Task Banners Carousel */}
-      {(activeWorkerTask || activeClientTask) && (() => {
-        const activeTasks = [];
-        if (activeWorkerTask) activeTasks.push({ ...activeWorkerTask, _roleHint: 'worker' });
-        if (activeClientTask && activeClientTask.id !== activeWorkerTask?.id) activeTasks.push({ ...activeClientTask, _roleHint: 'client' });
-        return activeTasks.length > 0 && (
-          <div style={{ padding: '14px 16px 0' }}>
-            <ActiveTaskBanner tasks={activeTasks} roleHint={activeTasks[0]._roleHint} />
-          </div>
-        );
-      })()}
-
-      {/* My Published Tasks Carousel — visually distinct */}
-      {myTasks.some(t => ['OPEN', 'TAKEN', 'EXPIRED'].includes(t.status)) && (
-        <div style={{ margin: '0 0 4px', background: 'linear-gradient(135deg, #eff6ff 0%, #f8faff 100%)', borderTop: '2px solid #1a6fd4', borderBottom: '1px solid #dbeafe' }}>
-          <MyTasksCarousel myTasks={myTasks} hideWhenWorking={false} />
+      {/* Active Task Banner — context-aware by tab */}
+      {activeTab === 'available' && activeWorkerTask && (
+        <div style={{ padding: '10px 16px 0' }}>
+          <ActiveTaskBanner tasks={[{ ...activeWorkerTask, _roleHint: 'worker' }]} roleHint="worker" />
+        </div>
+      )}
+      {activeTab === 'my_published' && activeClientTask && (
+        <div style={{ padding: '10px 16px 0' }}>
+          <ActiveTaskBanner tasks={[{ ...activeClientTask, _roleHint: 'client' }]} roleHint="client" />
         </div>
       )}
 
-      <div className="px-4" style={{ paddingTop: 16, paddingBottom: 8 }}>
-
-        {/* Section title */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <h2 style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', margin: 0, letterSpacing: 0.3, textTransform: 'uppercase' }}>משימות זמינות</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe', flexShrink: 0 }}>
-              <span style={{ position: 'relative', display: 'inline-flex', width: 4, height: 4 }}>
-                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
-                <span style={{ position: 'relative', width: 4, height: 4, borderRadius: '50%', background: '#3b82f6' }} />
-              </span>
-              <span style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 600 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
-            </div>
-            <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
-          </div>
-
-          {/* Stories — מתחת לכותרת, מעל ה-search */}
-          <React.Suspense fallback={null}>
-            <StoriesBar />
-          </React.Suspense>
-
-          {/* Smart section selector — only show when not filtering */}
-          {smartSections && (
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, marginTop: 8 }}>
-              {[
-                { id: 'nearby',  icon: <MapPin size={11} />,    label: 'קרוב אליך', count: smartSections.nearby.length },
-                { id: 'highpay', icon: <Banknote size={11} />,  label: 'שכר גבוה', count: smartSections.highPaying.length },
-                { id: 'urgent',  icon: <Flame size={11} />,     label: 'דחוף', count: smartSections.urgent.length },
-                { id: 'new',     icon: <Clock size={11} />,     label: 'חדש',  count: smartSections.newTasks.length },
-              ].filter(s => s.count > 0).map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => setActiveSection(activeSection === s.id ? 'all' : s.id)}
-                  style={{
-                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                    border: 'none', cursor: 'pointer',
-                    background: activeSection === s.id ? '#1a6fd4' : 'var(--surface-2)',
-                    color: activeSection === s.id ? 'white' : 'var(--text-2)',
-                    boxShadow: activeSection === s.id ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 4px rgba(0,0,0,0.06)',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {s.icon} {s.label}
-                  <span style={{ fontSize: 9, opacity: 0.7, marginRight: 1 }}>({s.count})</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Search bar — compact with category dropdown */}
-        <div style={{ position: 'relative' }}>
-          <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Search size={12} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0, pointerEvents: 'none' }} />
-            <input
-              placeholder="חיפוש משימות..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
-              style={{
-                flex: 1, height: 28, border: 'none', background: 'transparent',
-                fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)',
-              }}
-            />
-            {search && (
-              <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}>
-                <X size={11} color="#94a3b8" />
-              </button>
+      {/* Segmented Control Tabs */}
+      <div dir="rtl" style={{ background: 'white', borderBottom: '1.5px solid #e8edf5', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 40, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
+          {/* Sliding backdrop */}
+          <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'available' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
+          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>
+            משימות זמינות
+          </button>
+          <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+            משימות שפרסמתי
+            {hasNewApplicants && (
+              <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 12, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white', boxShadow: '0 0 6px rgba(239,68,68,0.6)', animation: 'pulseRedDot 1.5s infinite' }} />
             )}
-            {/* Category dropdown trigger */}
-            <button
-              onClick={() => setShowCategoryDropdown(v => !v)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px',
-                borderRadius: 8, border: `1px solid ${filters.category ? '#93c5fd' : 'var(--border-1)'}`,
-                background: filters.category ? '#eff6ff' : 'var(--surface-3)',
-                cursor: 'pointer', flexShrink: 0, fontSize: 11,
-                color: filters.category ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {filters.category ? getCategoryLabel(filters.category) : 'קטגוריה'}
-              {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-            </button>
-            {/* Filter button */}
-            <button
-              onClick={() => setShowFilters(true)}
-              style={{
-                flexShrink: 0, width: 28, height: 28, borderRadius: 6,
-                border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}`,
-                background: hasSheetFilters ? '#1a6fd4' : '#f8fafc',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', position: 'relative', transition: 'all 0.15s'
-              }}
-            >
-              <SlidersHorizontal size={10} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
-              {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
-            </button>
-          </div>
+          </button>
+        </div>
+      </div>
 
-          {/* Recent searches */}
-          {searchFocused && !search && recentSearches.length > 0 && (
-            <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
-              {recentSearches.map((s, i) => (
-                <button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }}
-                  style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Search size={9} color="#94a3b8" /> {s}
-                </button>
-              ))}
-            </div>
-          )}
+      <div className="px-4" style={{ paddingTop: 12, paddingBottom: 8 }}>
 
-          {/* Category dropdown */}
-          {showCategoryDropdown && (
-            <>
-              <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
-              <div style={{
-                position: 'absolute', top: 38, right: 0, left: 0,
-                background: 'var(--surface-2)', borderRadius: 10,
-                border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
-                zIndex: 100, maxHeight: 220, overflowY: 'auto',
-              }}>
-                <button
-                  onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }}
-                  style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : '#374151', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
-                  הכל
-                </button>
-                {[...CATEGORIES].sort((a, b) =>
-                  tasks.filter(t => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length -
-                  tasks.filter(t => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length
-                ).map(c => {
-                  const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
-                  if (count === 0) return null;
-                  return (
-                    <button key={c.value}
-                      onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }}
-                      style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : '#374151', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
-                      <span>{c.label}</span>
-                      <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
+        {/* ── Available Tasks Tab ─────────────────────────────────── */}
+        {activeTab === 'available' && (
+          <>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <h2 style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', margin: 0, letterSpacing: 0.3, textTransform: 'uppercase' }}>משימות זמינות</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 16, padding: '2px 6px', border: '0.5px solid #dbeafe', flexShrink: 0 }}>
+                  <span style={{ position: 'relative', display: 'inline-flex', width: 4, height: 4 }}>
+                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#60a5fa', animation: 'ping 1.5s ease-in-out infinite', opacity: 0.7 }} />
+                    <span style={{ position: 'relative', width: 4, height: 4, borderRadius: '50%', background: '#3b82f6' }} />
+                  </span>
+                  <span style={{ fontSize: 9, color: '#1d4ed8', fontWeight: 600 }}>{sortedTasks.filter(t => t.status === 'OPEN').length}</span>
+                </div>
+                <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
+              </div>
+              <React.Suspense fallback={null}><StoriesBar /></React.Suspense>
+              {smartSections && (
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2, marginTop: 8 }}>
+                  {[
+                    { id: 'nearby',  icon: <MapPin size={11} />,    label: 'קרוב אליך', count: smartSections.nearby.length },
+                    { id: 'highpay', icon: <Banknote size={11} />,  label: 'שכר גבוה', count: smartSections.highPaying.length },
+                    { id: 'urgent',  icon: <Flame size={11} />,     label: 'דחוף', count: smartSections.urgent.length },
+                    { id: 'new',     icon: <Clock size={11} />,     label: 'חדש',  count: smartSections.newTasks.length },
+                  ].filter(s => s.count > 0).map(s => (
+                    <button key={s.id} onClick={() => setActiveSection(activeSection === s.id ? 'all' : s.id)}
+                      style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer', background: activeSection === s.id ? '#1a6fd4' : 'var(--surface-2)', color: activeSection === s.id ? 'white' : 'var(--text-2)', boxShadow: activeSection === s.id ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.15s' }}>
+                      {s.icon} {s.label} <span style={{ fontSize: 9, opacity: 0.7, marginRight: 1 }}>({s.count})</span>
                     </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Search bar */}
+            <div style={{ position: 'relative' }}>
+              <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Search size={12} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0, pointerEvents: 'none' }} />
+                <input placeholder="חיפוש משימות..." value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 150)} onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+                  style={{ flex: 1, height: 28, border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)' }} />
+                {search && (<button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><X size={11} color="#94a3b8" /></button>)}
+                <button onClick={() => setShowCategoryDropdown(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 8, border: `1px solid ${filters.category ? '#93c5fd' : 'var(--border-1)'}`, background: filters.category ? '#eff6ff' : 'var(--surface-3)', cursor: 'pointer', flexShrink: 0, fontSize: 11, color: filters.category ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {filters.category ? getCategoryLabel(filters.category) : 'קטגוריה'}
+                  {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                </button>
+                <button onClick={() => setShowFilters(true)} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 6, border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}`, background: hasSheetFilters ? '#1a6fd4' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' }}>
+                  <SlidersHorizontal size={10} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                  {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
+                </button>
+              </div>
+              {searchFocused && !search && recentSearches.length > 0 && (
+                <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
+                  {recentSearches.map((s, i) => (<button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }} style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Search size={9} color="#94a3b8" /> {s}</button>))}
+                </div>
+              )}
+              {showCategoryDropdown && (
+                <>
+                  <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+                  <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 220, overflowY: 'auto' }}>
+                    <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : '#374151', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>הכל</button>
+                    {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length - tasks.filter(t => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length).map(c => {
+                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
+                      if (count === 0) return null;
+                      return (<button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : '#374151', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}><span>{c.label}</span><span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {isLoading ?
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                {Array(4).fill(0).map((_, i) => <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '16px' }} className="animate-pulse"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}><div style={{ flex: 1 }}><div className="h-4 bg-gray-100 rounded-lg w-3/4 mb-3" /><div className="h-3 bg-gray-100 rounded-lg w-1/3 mb-4" /><div className="h-3 bg-gray-100 rounded-lg w-1/2" /></div><div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}><div className="h-6 bg-gray-100 rounded-lg w-16" /><div className="h-8 bg-gray-100 rounded-lg w-16" /></div></div></div>)}
+              </div> :
+            displayedTasks.length === 0 ?
+              <div className="text-center py-16">
+                <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
+                <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
+                <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
+                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
+              </div> :
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                {displayedTasks.map((task, index) => {
+                  const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
+                  const isNew = newTaskIds.has(task.id);
+                  return (
+                    <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : `slideInStagger 0.45s ease-out both`, animationDelay: isNew ? undefined : `${Math.min(index, 12) * 50}ms` }}>
+                      <TaskCardWithSwipe task={{ ...task, _isFirstCard: index === 0 }} myApp={myApp} isMyTask={false} currentUserId={isAuthenticated ? me?.id : null} workerName={me?.full_name} badges={task._badges}
+                        onDismiss={(taskId) => setDismissedTasks((prev) => new Set([...prev, taskId]))} />
+                    </div>
                   );
                 })}
               </div>
-            </>
-          )}
-        </div>
+            }
+          </>
+        )}
 
-        {isLoading ?
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-            {Array(4).fill(0).map((_, i) =>
-          <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '16px' }} className="animate-pulse">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="h-4 bg-gray-100 rounded-lg w-3/4 mb-3" />
-                    <div className="h-3 bg-gray-100 rounded-lg w-1/3 mb-4" />
-                    <div className="h-3 bg-gray-100 rounded-lg w-1/2" />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                    <div className="h-6 bg-gray-100 rounded-lg w-16" />
-                    <div className="h-8 bg-gray-100 rounded-lg w-16" />
-                  </div>
-                </div>
+        {/* ── My Published Tasks Tab ───────────────────────────────── */}
+        {activeTab === 'my_published' && (
+          <div style={{ paddingTop: 4 }}>
+            {myTasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                <div style={{ fontSize: 44 }}>📭</div>
+                <p style={{ fontWeight: 800, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>עוד לא פרסמת משימות</p>
+                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>פרסם משימה וקבל עובד תוך דקות</p>
               </div>
-          )}
-          </div> :
-        displayedTasks.length === 0 ?
-        <div className="text-center py-16">
-            <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
-            <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
-            <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-            {(search || hasFilters) &&
-          <button onClick={() => {setSearch('');setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });}}
-          style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                נקה חיפוש
-              </button>
-          }
-          </div> :
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-            {displayedTasks.map((task, index) => {
-            const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
-            const isNew = newTaskIds.has(task.id);
-            return (
-              <div key={task.id} style={{
-                position: 'relative',
-                animation: isNew ? 'slideInFresh 0.4s ease-out' : `slideInStagger 0.45s ease-out both`,
-                animationDelay: isNew ? undefined : `${Math.min(index, 12) * 50}ms`,
-              }}>
-                <TaskCardWithSwipe
-                task={{ ...task, _isFirstCard: index === 0 }}
-                myApp={myApp}
-                isMyTask={false}
-                currentUserId={isAuthenticated ? me?.id : null}
-                workerName={me?.full_name}
-                badges={task._badges}
-                onDismiss={(taskId) => {
-                  setDismissedTasks((prev) => new Set([...prev, taskId]));
-                }} />
-              </div>);
-          })}
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {myTasks.map((task, index) => (
+                  <div key={task.id} style={{ animation: `slideInStagger 0.45s ease-out both`, animationDelay: `${Math.min(index, 12) * 50}ms` }}>
+                    <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        }
+        )}
+
       </div>
 
 
@@ -591,6 +522,10 @@ export default function HomeFeed() {
         @keyframes ping {
           0%, 100% { transform: scale(1); opacity: 0.75; }
           50% { transform: scale(2); opacity: 0; }
+        }
+        @keyframes pulseRedDot {
+          0%, 100% { transform: translateY(-50%) scale(1); opacity: 1; }
+          50% { transform: translateY(-50%) scale(1.5); opacity: 0.5; }
         }
       `}</style>
     </div>);
