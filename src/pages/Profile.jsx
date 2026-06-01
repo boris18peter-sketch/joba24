@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Settings, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X } from 'lucide-react';
+import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -108,7 +108,7 @@ export default function Profile() {
 
       }
 
-      <PageHeader title="הפרופיל שלי" right={<Link to="/worker-profile" style={{ width: 36, height: 36, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Settings size={16} color="#666" /></Link>} />
+      <PageHeader title="הפרופיל שלי" right={<Link to="/worker-profile" style={{ width: 36, height: 36, borderRadius: 12, background: 'white', border: '1px solid #dce8f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Pencil size={16} color="#666" /></Link>} />
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>

@@ -31,7 +31,6 @@ const MapContent = memo(({ mapToken, taskLng, taskLat, locationName, height }) =
       initialViewState={{ longitude: taskLng, latitude: taskLat, zoom: 15 }}
       mapboxAccessToken={mapToken}
       mapStyle="mapbox://styles/mapbox/streets-v12"
-      language="he"
       style={{ height, width: '100%' }}
       interactive={true}
       attributionControl={false}

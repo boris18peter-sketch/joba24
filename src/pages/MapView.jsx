@@ -223,7 +223,6 @@ export default function MapView() {
             onMove={e => setViewState(e.viewState)}
             mapboxAccessToken={mapToken}
             mapStyle={MAP_STYLE}
-            language="he"
             style={{ width: '100%', height: '100%' }}
             maxPitch={85}
             minZoom={8}
