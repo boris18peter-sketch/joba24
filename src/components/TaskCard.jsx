@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2 } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import UserBadge from '@/components/UserBadge';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -430,18 +431,12 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               task.client_id === currentUserId ? (
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
               ) : (
-                <span
-                  onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }}>
-                  {task.client_verified && <VerifiedBadge size="sm" />}
-                  <span style={{ color: '#94a3b8', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.client_name}</span>
-                  {task.client_rating > 0 && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Star size={9} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
-                      <span>{task.client_rating.toFixed(1)}</span>
-                    </span>
-                  )}
-                </span>
+                <UserBadge
+                  name={task.client_name}
+                  userId={task.client_id}
+                  verified={task.client_verified}
+                  rating={task.client_rating}
+                />
               )
             )}
           </div>

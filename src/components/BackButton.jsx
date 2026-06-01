@@ -14,9 +14,9 @@ export default function BackButton({ to, style, iconColor }) {
     <button
       onClick={() => to ? navigate(to) : navigate(-1)}
       style={{
-        width: 40,
-        height: 40,
-        borderRadius: 14,
+        width: 28,
+        height: 28,
+        borderRadius: 10,
         background: 'white',
         border: '1.5px solid #dce8f5',
         display: 'flex',
@@ -36,7 +36,7 @@ export default function BackButton({ to, style, iconColor }) {
       onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
-      <ArrowRight size={18} color={iconColor || '#1a6fd4'} />
+      <ArrowRight size={14} color={iconColor || '#1a6fd4'} />
     </button>
   );
 }

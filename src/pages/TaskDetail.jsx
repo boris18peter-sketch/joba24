@@ -29,6 +29,7 @@ const CATEGORY_EMOJI = {
 };
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import UserBadge from '@/components/UserBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -723,13 +724,15 @@ export default function TaskDetail() {
             {/* Publisher + requirements */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               {task.client_name &&
-              <a href={`/public-profile?id=${task.client_id}`} style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, flexShrink: 0 }}>{task.client_name[0]}</div>
-                  <span>{task.client_name}</span>
-                  {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 10 }}>★ {task.client_rating.toFixed(1)}</span>}
-                  {task.client_verified && <VerifiedBadge size="sm" />}
-                </a>
-              }
+              <UserBadge
+                name={task.client_name}
+                userId={task.client_id}
+                verified={task.client_verified}
+                rating={task.client_rating}
+                dark
+                size="md"
+              />
+            }
               <div style={{ display: 'flex', gap: 4 }}>
                 <span title={getCategoryLabel(task.category)} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>{CATEGORY_EMOJI[task.category] || '🔨'}</span>
                 {task.requirements?.vehicle && <span title="דרוש רכב" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🚗</span>}
