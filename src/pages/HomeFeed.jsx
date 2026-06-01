@@ -356,7 +356,19 @@ export default function HomeFeed() {
       {/* Login Banner Carousel — show only when not authenticated */}
       {!isAuthenticated && <LoginBannerCarousel />}
 
-      {/* Active Task Banner — context-aware by tab */}
+      {/* Segmented Control Tabs */}
+      <div dir="rtl" style={{ background: 'white', borderBottom: '1.5px solid #e8edf5', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 40, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
+          <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'available' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
+          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>משימות זמינות</button>
+          <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+            משימות שפרסמתי
+            {hasNewApplicants && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 12, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white', animation: 'pulseRedDot 1.5s infinite' }} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Active Task Banner — below segmented control */}
       {activeTab === 'available' && activeWorkerTask && (
         <div style={{ padding: '10px 16px 0' }}>
           <ActiveTaskBanner tasks={[{ ...activeWorkerTask, _roleHint: 'worker' }]} roleHint="worker" />
@@ -368,26 +380,9 @@ export default function HomeFeed() {
         </div>
       )}
 
-      {/* Segmented Control Tabs */}
-      <div dir="rtl" style={{ background: 'white', borderBottom: '1.5px solid #e8edf5', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 40, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-        <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
-          {/* Sliding backdrop */}
-          <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'available' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
-          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>
-            משימות זמינות
-          </button>
-          <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
-            משימות שפרסמתי
-            {hasNewApplicants && (
-              <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 12, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white', boxShadow: '0 0 6px rgba(239,68,68,0.6)', animation: 'pulseRedDot 1.5s infinite' }} />
-            )}
-          </button>
-        </div>
-      </div>
-
       <div className="px-4" style={{ paddingTop: 12, paddingBottom: 8 }}>
 
-        {/* ── Available Tasks Tab ─────────────────────────────────── */}
+        {/* ── Available Tasks Tab ────────────────────────────── */}
         {activeTab === 'available' && (
           <>
             <div style={{ marginBottom: 12 }}>
@@ -483,7 +478,7 @@ export default function HomeFeed() {
           </>
         )}
 
-        {/* ── My Published Tasks Tab ───────────────────────────────── */}
+        {/* ── My Published Tasks Tab ───────────────────────────── */}
         {activeTab === 'my_published' && (
           <div style={{ paddingTop: 4 }}>
             {myTasks.length === 0 ? (

@@ -120,7 +120,7 @@ function SubStatusPicker({ currentStatus, onSelect, loading }) {
               disabled={loading}
               onClick={() => onSelect(opt.key)}
               whileTap={{ scale: 0.95 }}
-              style={{ flex: 1, height: 44, borderRadius: 14, background: isSelected ? opt.color : '#f8fafc', color: isSelected ? 'white' : '#475569', fontWeight: 700, fontSize: 12, border: isSelected ? 'none' : '1.5px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: isSelected ? `0 4px 14px ${opt.color}44` : 'none', transition: 'all 0.2s' }}
+              style={{ flex: 1, height: 44, borderRadius: 14, background: isSelected ? '#059669' : '#f8fafc', color: isSelected ? 'white' : '#475569', fontWeight: 700, fontSize: 12, border: isSelected ? 'none' : '1.5px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: isSelected ? '0 4px 14px rgba(5,150,105,0.35)' : 'none', transition: 'all 0.2s' }}
             >
               <OptIcon size={13} strokeWidth={1.8} /> {opt.label}
             </motion.button>
@@ -264,11 +264,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
       badge: statusInfo?.label,
     };
     if (stepIdx === 0) return {
-      gradient: statusInfo?.key === 'delayed'
-        ? 'linear-gradient(135deg, #92400e, #f59e0b)'
-        : statusInfo?.key === 'parking'
-        ? 'linear-gradient(135deg, #4c1d95, #7c3aed)'
-        : 'linear-gradient(135deg, #1e3a8a, #2563eb)',
+      gradient: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
       emoji: statusInfo?.key === 'delayed' ? '⏳' : statusInfo?.key === 'parking' ? '🅿️' : '🚗',
       title: isOwner ? `${task.worker_name} — ${statusInfo?.ownerLabel || 'בדרך'}` : (statusInfo?.label || 'בדרך'),
       sub: isOwner ? 'מגיע אליך בקרוב' : 'עדכן כשתגיע למיקום',
@@ -288,7 +284,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
 
   const mainCTA = (() => {
     if (!isWorker) return null;
-    if (stepIdx < 0 || localStatus === null) return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#2563eb' };
+    if (stepIdx < 0 || localStatus === null) return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#059669' };
     if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#059669' };
     if (stepIdx === 1) return { label: 'סיימתי את המשימה', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
     return null;
@@ -349,9 +345,10 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
           <button
             onClick={() => handleStatusUpdate(stepIdx === 1 ? 'on_the_way' : 'arrived')}
             disabled={loading}
-            style={{ width: '100%', height: 38, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: '100%', height: 38, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             <ChevronLeft size={14} />
+            {stepIdx === 1 ? 'עדיין בדרך' : 'חזרה לשטח'}
           </button>
         </div>
       )}
@@ -363,7 +360,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
             whileTap={{ scale: 0.97 }}
             onClick={() => handleStatusUpdate(mainCTA.nextKey)}
             disabled={loading}
-            style={{ width: '100%', height: 56, borderRadius: 18, background: loading ? '#94a3b8' : mainCTA.color, color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : `0 6px 22px ${mainCTA.color}66`, transition: 'background 0.2s' }}
+            style={{ width: '100%', height: 56, borderRadius: 18, background: loading ? '#94a3b8' : '#059669', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: loading ? 'none' : '0 6px 22px rgba(5,150,105,0.4)', transition: 'background 0.2s', minWidth: 0 }}
           >
             {loading
               ? <><Loader2 size={18} className="animate-spin" /> רגע...</>

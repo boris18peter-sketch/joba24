@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -14,17 +14,17 @@ export default function BackButton({ to, style, iconColor }) {
     <button
       onClick={() => to ? navigate(to) : navigate(-1)}
       style={{
-        height: 34,
-        paddingInline: '10px 12px',
-        borderRadius: 12,
+        width: 28,
+        height: 28,
+        borderRadius: 10,
         background: 'white',
         border: '1.5px solid #dce8f5',
         display: 'flex',
         alignItems: 'center',
-        gap: 5,
+        justifyContent: 'center',
         flexShrink: 0,
         cursor: 'pointer',
-        boxShadow: '0 2px 8px rgba(26,111,212,0.10)',
+        boxShadow: '0 2px 8px rgba(26,111,212,0.08)',
         transition: 'transform 0.15s',
         position: 'relative',
         zIndex: 10,
@@ -36,8 +36,7 @@ export default function BackButton({ to, style, iconColor }) {
       onPointerUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       onPointerLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
-      <ArrowLeft size={14} color={iconColor || '#1a6fd4'} />
-      <span style={{ fontSize: 13, fontWeight: 700, color: iconColor || '#1a6fd4' }}>חזור</span>
+      <ArrowRight size={14} color={iconColor || '#1a6fd4'} />
     </button>
   );
 }
