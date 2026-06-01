@@ -154,7 +154,8 @@ function StatusDescription({ localStatus, workerName }) {
 export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, onMapToggle, showMapButton }) {
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
-  const [completionPhoto, setCompletionPhoto] = useState(task?.completion_photo || null);
+  const [completionPhotos, setCompletionPhotos] = useState(task?.completion_photos || (task?.completion_photo ? [task.completion_photo] : []));
+  const [completionVideo, setCompletionVideo] = useState(task?.completion_video_url || '');
   const [showNoShowConfirm, setShowNoShowConfirm] = useState(false);
   const [noShowLoading, setNoShowLoading] = useState(false);
   const [minutesOnTheWay, setMinutesOnTheWay] = useState(0);
@@ -162,8 +163,9 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
 
   useEffect(() => {
     setLocalStatus(task?.worker_status ?? null);
-    setCompletionPhoto(task?.completion_photo || null);
-  }, [task?.worker_status, task?.completion_photo]);
+    setCompletionPhotos(task?.completion_photos || (task?.completion_photo ? [task.completion_photo] : []));
+    setCompletionVideo(task?.completion_video_url || '');
+  }, [task?.worker_status, task?.completion_photos, task?.completion_video_url]);
 
   useEffect(() => {
     if (!task?.on_the_way_at) return;
@@ -230,7 +232,11 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
         update.arrived_at = new Date().toISOString();
       } else if (statusKey === 'done') {
         update.completed_at = new Date().toISOString();
-        if (completionPhoto) update.completion_photo = completionPhoto;
+        if (completionPhotos.length > 0) {
+          update.completion_photos = completionPhotos;
+          update.completion_photo = completionPhotos[0]; // backward compat
+        }
+        if (completionVideo) update.completion_video_url = completionVideo;
       }
       await onUpdate(update);
       toast.success(getStatusInfo(statusKey).label);
@@ -370,7 +376,12 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
       {/* Worker done state */}
       {isWorker && stepIdx === 2 && (
         <div style={{ margin: '0 16px 14px' }}>
-          <WorkerCompletionPhoto photoUrl={completionPhoto} onPhotoUploaded={setCompletionPhoto} />
+          <WorkerCompletionPhoto
+            photos={completionPhotos}
+            videoUrl={completionVideo}
+            onPhotosChange={setCompletionPhotos}
+            onVideoChange={setCompletionVideo}
+          />
           <div style={{ background: '#f0fdf4', borderRadius: 16, padding: '16px', textAlign: 'center', border: '1.5px solid #bbf7d0', marginTop: 10 }}>
             <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15, display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center' }}>
               <CheckCircle size={18} color="#059669" /> כל הכבוד! ממתין לאישור
@@ -383,10 +394,17 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
       {/* Owner: confirm completion */}
       {isOwner && stepIdx === 2 && (
         <div style={{ margin: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {completionPhoto && (
+          {(completionPhotos.length > 0 || completionVideo) && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>📸 תמונת הוכחה מהעובד:</div>
-              <img src={completionPhoto} alt="proof" style={{ width: '100%', height: 170, objectFit: 'cover', borderRadius: 16, border: '2px solid #d1fae5' }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 8 }}>📸 הוכחת ביצוע מהעובד:</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: completionVideo ? 6 : 0 }}>
+                {completionPhotos.map((url, i) => (
+                  <img key={i} src={url} alt="proof" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 10, border: '2px solid #d1fae5' }} />
+                ))}
+              </div>
+              {completionVideo && (
+                <video src={completionVideo} controls style={{ width: '100%', maxHeight: 180, borderRadius: 12, objectFit: 'cover', border: '2px solid #d1fae5' }} />
+              )}
             </div>
           )}
           <motion.button

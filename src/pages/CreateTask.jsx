@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play } from 'lucide-react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
@@ -14,8 +14,7 @@ import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
-import ImageUploader from '@/components/ImageUploader';
-import VideoUploader from '@/components/VideoUploader';
+
 import { CATEGORIES } from '@/lib/categories';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -57,6 +56,71 @@ function SocialProofBar() {
     <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       <span>🤝</span>
       <span>הצטרף ל-<strong style={{ color: '#1a6fd4' }}>{completedCount}+</strong> משתמשים שכבר ביצעו משימות בהצלחה</span>
+    </div>
+  );
+}
+
+function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange }) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleFiles = async (files) => {
+    if (!files?.length) return;
+    setUploading(true);
+    const newImages = [...images];
+    let newVideo = videoUrl;
+    for (const file of Array.from(files)) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      if (file.type.startsWith('video/')) {
+        newVideo = file_url;
+        onVideoChange(file_url);
+      } else {
+        if (newImages.length < 4) newImages.push(file_url);
+      }
+    }
+    onImagesChange(newImages);
+    onVideoChange(newVideo);
+    setUploading(false);
+  };
+
+  const removeImage = (idx) => onImagesChange(images.filter((_, i) => i !== idx));
+  const hasMedia = images.length > 0 || videoUrl;
+
+  return (
+    <div>
+      {hasMedia && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+          {images.map((url, i) => (
+            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden', border: '1.5px solid #dce8f5' }}>
+              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button onClick={() => removeImage(i)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={12} color="white" />
+              </button>
+            </div>
+          ))}
+          {videoUrl && (
+            <div style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden', background: '#000', border: '1.5px solid #dce8f5' }}>
+              <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}><Play size={18} color="white" fill="white" /></div>
+              <button onClick={() => onVideoChange('')} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={12} color="white" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        style={{ width: '100%', borderRadius: 16, border: '2px dashed #bfdbfe', background: '#f0f7ff', cursor: uploading ? 'not-allowed' : 'pointer', padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+      >
+        {uploading
+          ? <Loader2 size={22} className="animate-spin" color="#1a6fd4" />
+          : <Plus size={22} color="#1a6fd4" strokeWidth={2.5} />}
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>הוסף תמונות / סרטון</span>
+      </button>
+      <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
     </div>
   );
 }
@@ -684,16 +748,7 @@ export default function CreateTask() {
         {/* Images + Video */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>מדיה</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>📸 תמונות (עד 4)</p>
-              <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
-            </div>
-            <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>🎥 סרטון</p>
-              <VideoUploader videoUrl={form.video_url} onChange={url => set('video_url', url)} />
-            </div>
-          </div>
+          <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} />
         </SectionCard>
 
         {/* Price */}
