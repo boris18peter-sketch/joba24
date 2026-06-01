@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import useDarkMode from '@/hooks/useDarkMode';
-import { X, Home, Map, Plus, User, Wallet, Trophy, HelpCircle, Target, MessageCircle, ClipboardList, Bell, ShieldCheck, FileText } from 'lucide-react';
+import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, ClipboardList, Bell, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 const navItems = [
@@ -11,11 +11,8 @@ const navItems = [
   { to: '/notifications', icon: Bell, label: 'התראות' },
   { to: '/chats', icon: MessageCircle, label: 'צ\'אטים' },
   { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
-  { to: '/wallet', icon: Wallet, label: 'ארנק' },
   { to: '/profile', icon: User, label: 'פרופיל' },
   { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },
-  { to: '/faq', icon: HelpCircle, label: 'שאלות ותשובות' },
-  { to: '/terms', icon: FileText, label: 'תנאי שימוש' },
 ];
 
 export default function SideMenu({ open, onClose }) {
@@ -162,8 +159,10 @@ export default function SideMenu({ open, onClose }) {
               }} />
             </div>
           </button>
-          <div style={{ fontSize: 11, color: '#93c5fd', textAlign: 'center', opacity: 0.7 }}>
-            🐣 Joba24 — פרסם, מצא, הרוויח
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
+            <Link to="/faq" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>שאלות ותשובות</Link>
+            <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 12 }}>|</span>
+            <Link to="/terms" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>תנאי שימוש</Link>
           </div>
         </div>
       </div>
