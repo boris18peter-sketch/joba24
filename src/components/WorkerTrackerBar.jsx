@@ -10,7 +10,7 @@ const WORKER_STATUSES = [
   { key: 'on_the_way', label: 'בדרך',        ownerLabel: 'בדרך אליך',       Icon: Navigation,  color: '#2563eb', bg: '#dbeafe', step: 0 },
   { key: 'delayed',    label: 'מתעכב',       ownerLabel: 'מתעכב קצת',       Icon: Clock,       color: '#d97706', bg: '#fef3c7', step: 0 },
   { key: 'parking',    label: 'מחפש חניה',  ownerLabel: 'מחפש חניה',       Icon: MapPin,      color: '#7c3aed', bg: '#ede9fe', step: 0 },
-  { key: 'arrived',    label: 'הגעתי',       ownerLabel: 'הגיע',             Icon: MapPin,      color: '#d97706', bg: '#fef3c7', step: 1 },
+  { key: 'arrived',    label: 'הגעתי',       ownerLabel: 'הגיע',             Icon: MapPin,      color: '#059669', bg: '#d1fae5', step: 1 },
   { key: 'starting',   label: 'מתחיל עבודה', ownerLabel: 'מתחיל עבודה',    Icon: Wrench,      color: '#059669', bg: '#d1fae5', step: 1 },
   { key: 'finishing',  label: 'מסיים עבודה', ownerLabel: 'מסיים עבודה',    Icon: Flag,        color: '#0d9488', bg: '#ccfbf1', step: 1 },
   { key: 'done',       label: 'סיימתי',      ownerLabel: 'סיים — ממתין לאישור', Icon: CheckCircle, color: '#16a34a', bg: '#dcfce7', step: 2 },
@@ -257,7 +257,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
       badge: null,
     };
     if (stepIdx === 1) return {
-      gradient: 'linear-gradient(135deg, #92400e, #d97706)',
+      gradient: 'linear-gradient(135deg, #065f46, #059669)',
       emoji: '📍',
       title: isOwner ? `${task.worker_name} — ${statusInfo?.ownerLabel || 'הגיע'}` : (statusInfo?.label || 'בשטח'),
       sub: isOwner ? 'העובד נמצא בשטח' : 'עדכן את ההתקדמות',
@@ -289,7 +289,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
   const mainCTA = (() => {
     if (!isWorker) return null;
     if (stepIdx < 0 || localStatus === null) return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#2563eb' };
-    if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#d97706' };
+    if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#059669' };
     if (stepIdx === 1) return { label: 'סיימתי את המשימה', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
     return null;
   })();
@@ -417,23 +417,13 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
         </div>
       )}
 
-      {/* Chat link + map toggle */}
-      {(task.status === 'TAKEN' || task.status === 'IN_PROGRESS' || task.status === 'ARRIVED' || task.status === 'ON_THE_WAY') && (
-        <div style={{ padding: '0 16px 16px' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link to={`/chat/${task.id}`} style={{ flex: 1, textDecoration: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 14, border: '1.5px solid #dce8f5', background: '#f8fafc', color: '#2563eb', fontWeight: 700, fontSize: 13 }}>
-                <MessageCircle size={16} />
-                שלח הודעה ל{isWorker ? 'מעסיק' : 'עובד'}
-              </div>
-            </Link>
-            {isOwner && showMapButton && (
-              <button
-                onClick={onMapToggle}
-                style={{ width: 44, height: 44, borderRadius: 14, background: '#f8fafc', border: '1.5px solid #dce8f5', color: '#2563eb', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-              >🗺️</button>
-            )}
-          </div>
+      {/* Map toggle — owner only */}
+      {isOwner && showMapButton && (
+        <div style={{ padding: '0 16px 12px', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onMapToggle}
+            style={{ width: 44, height: 44, borderRadius: 14, background: '#f8fafc', border: '1.5px solid #dce8f5', color: '#2563eb', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >🗺️</button>
         </div>
       )}
 

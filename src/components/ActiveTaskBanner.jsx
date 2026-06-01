@@ -19,9 +19,9 @@ const STATUS_STEPS = {
 
 // Quick Action config per step
 function getQuickAction(stepIdx, workerStatus) {
-  if (stepIdx < 0)  return { label: 'יצאתי לדרך', nextKey: 'on_the_way', color: '#3b82f6' };
-  if (stepIdx === 0) return { label: 'הגעתי למיקום', nextKey: 'arrived',    color: '#f59e0b' };
-  if (stepIdx === 1) return { label: 'סיימתי המשימה', nextKey: 'done',      color: '#10b981' };
+  if (stepIdx < 0)   return { label: 'יצאתי לדרך',  nextKey: 'on_the_way', color: '#1a6fd4' };
+  if (stepIdx === 0) return { label: 'הגעתי למיקום', nextKey: 'arrived',    color: '#059669' };
+  if (stepIdx === 1) return { label: 'סיימתי המשימה', nextKey: 'done',      color: '#059669' };
   return null; // done
 }
 
@@ -145,7 +145,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           return (
             <div
               key={t.id}
-              style={{ flex: '0 0 calc(100% - 32px)', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ flex: '0 0 100%', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
               onClick={() => navigate(`/task/${t.id}`)}
             >
               {/* Live dot + badge */}
