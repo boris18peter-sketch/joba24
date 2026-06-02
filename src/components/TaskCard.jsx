@@ -293,6 +293,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
   // Build badge labels (urgency handled separately)
   const badgeLabels = [];
+  const isForYou = !hasActiveApp && badges?.isForYou;
   if (badges && !hasActiveApp) {
     if (badges.isNew)    badgeLabels.push('חדש');
     if (badges.isHighPay) badgeLabels.push('שכר גבוה');
@@ -394,14 +395,27 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 </span>
               );
             })()}
-            {badgeLabels.slice(0, 2).map((label, i) => (
+            {badgeLabels.slice(0, 1).map((label, i) => (
               <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                 {label}
               </span>
             ))}
           </div>
-          {/* Second child = LEFT side in RTL: applicant count */}
-          <div>
+          {/* Second child = LEFT side in RTL: For You badge + applicant count */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {isForYou && (
+              <span style={{
+                fontSize: 10, fontWeight: 800,
+                padding: '3px 9px', borderRadius: 20,
+                background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+                color: 'white',
+                display: 'flex', alignItems: 'center', gap: 3,
+                boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+                whiteSpace: 'nowrap',
+              }}>
+                ⭐ מומלץ
+              </span>
+            )}
             {applicantCount > 0 && (
               <span style={{
                 fontSize: 11, fontWeight: countPulsing ? 700 : 500,

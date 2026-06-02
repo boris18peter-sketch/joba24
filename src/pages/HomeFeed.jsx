@@ -13,7 +13,7 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
-import { rankFeedTasks, buildSmartSections } from '@/lib/feedRanker';
+import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 
 export default function HomeFeed() {
   const [search, setSearch] = useState('');
@@ -21,7 +21,7 @@ export default function HomeFeed() {
   const [recentSearches, setRecentSearches] = useState(() => {
     try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false });
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -270,6 +270,16 @@ export default function HomeFeed() {
     };
   }, [myTasks, me?.preferred_categories, me?.preferred_cities]);
 
+  // Build behavioral profile from applications + completed tasks
+  const behavioralProfile = useMemo(() => {
+    const completedTasks = (myTasks || []).filter(t => t.status === 'COMPLETED' && t.worker_id === me?.id);
+    const appliedTaskDetails = myApplications.map(a => {
+      const task = tasks.find(t => t.id === a.task_id);
+      return task || { category: null, price: null };
+    });
+    return buildBehavioralProfile(appliedTaskDetails, completedTasks);
+  }, [myApplications, myTasks, tasks, me?.id]);
+
   // Categorize my applications
   const approvedApps = myApplications.filter(a => a.status === 'approved');
   const pendingApps  = myApplications.filter(a => a.status === 'pending');
@@ -296,13 +306,14 @@ export default function HomeFeed() {
     if (filters.category && t.category !== filters.category) return false;
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
     if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
+    if (filters.payment_method && t.payment_method !== filters.payment_method) return false;
     return true;
   });
 
-  // Run smart ranking — pass isLoggedIn so fallback modes activate correctly
+  // Run smart ranking — pass isLoggedIn + behavioralProfile
   const rankedTasks = useMemo(() =>
-    rankFeedTasks(candidateTasks, userLocation, workerProfile, { isLoggedIn: !!isAuthenticated }),
-    [candidateTasks.length, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated]
+    rankFeedTasks(candidateTasks, userLocation, workerProfile, { isLoggedIn: !!isAuthenticated, behavioralProfile }),
+    [candidateTasks.length, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated, behavioralProfile]
   );
 
   // Override sort if user manually picks one
@@ -328,18 +339,24 @@ export default function HomeFeed() {
     [rankedTasks, search, filters.category, filters.sortBy]
   );
 
-  // Which tasks to show in the feed based on active section tab
+  // Which tasks to show in the feed based on active section tab + forYou filter
   const displayedTasks = useMemo(() => {
-    if (!smartSections || activeSection === 'all') return sortedTasks;
-    if (activeSection === 'nearby')  return smartSections.nearby.length  ? smartSections.nearby  : sortedTasks;
-    if (activeSection === 'highpay') return smartSections.highPaying.length ? smartSections.highPaying : sortedTasks;
-    if (activeSection === 'urgent')  return smartSections.urgent.length  ? smartSections.urgent  : sortedTasks;
-    if (activeSection === 'new')     return smartSections.newTasks.length ? smartSections.newTasks : sortedTasks;
-    return sortedTasks;
-  }, [sortedTasks, smartSections, activeSection]);
+    let base;
+    if (!smartSections || activeSection === 'all') base = sortedTasks;
+    else if (activeSection === 'nearby')  base = smartSections.nearby.length  ? smartSections.nearby  : sortedTasks;
+    else if (activeSection === 'highpay') base = smartSections.highPaying.length ? smartSections.highPaying : sortedTasks;
+    else if (activeSection === 'urgent')  base = smartSections.urgent.length  ? smartSections.urgent  : sortedTasks;
+    else if (activeSection === 'new')     base = smartSections.newTasks.length ? smartSections.newTasks : sortedTasks;
+    else base = sortedTasks;
+    // Apply forYou filter — only tasks with isForYou badge
+    if (filters.forYou && behavioralProfile?.hasStrongPattern) {
+      base = base.filter(t => t._badges?.isForYou);
+    }
+    return base;
+  }, [sortedTasks, smartSections, activeSection, filters.forYou, behavioralProfile]);
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category;
-  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag);
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category || filters.payment_method || filters.forYou;
+  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou);
 
   // Red dot: any OPEN published task has pending applicants
   const hasNewApplicants = useMemo(() =>
@@ -437,7 +454,7 @@ export default function HomeFeed() {
                 <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
                 <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
                 <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
+                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {displayedTasks.map((task, index) => {
@@ -519,7 +536,7 @@ export default function HomeFeed() {
       </div>
 
 
-      <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
+      <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} hasForYou={behavioralProfile?.hasStrongPattern} />
 
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
       <style>{`
