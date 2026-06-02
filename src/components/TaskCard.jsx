@@ -406,14 +406,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             {isForYou && (
               <span style={{
                 fontSize: 10, fontWeight: 800,
-                padding: '3px 9px', borderRadius: 20,
+                padding: '2px 8px', borderRadius: 6,
                 background: 'linear-gradient(135deg,#f59e0b,#d97706)',
                 color: 'white',
-                display: 'flex', alignItems: 'center', gap: 3,
-                boxShadow: '0 2px 8px rgba(245,158,11,0.4)',
+                display: 'inline-flex', alignItems: 'center', gap: 3,
+                boxShadow: '0 2px 6px rgba(245,158,11,0.45)',
                 whiteSpace: 'nowrap',
+                letterSpacing: 0.1,
+                border: '1px solid rgba(255,255,255,0.25)',
               }}>
-                ⭐ מומלץ
+                ✦ For You
               </span>
             )}
             {applicantCount > 0 && (

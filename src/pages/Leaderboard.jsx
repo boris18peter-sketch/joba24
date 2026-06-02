@@ -92,14 +92,16 @@ export default function Leaderboard() {
                         ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : user.avatar}
                     </div>
-                    <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', maxWidth: 72, color: 'white', display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center' }} className="truncate">
-                      {user.name}{user.is_verified && <VerifiedBadge size="sm" />}
+                    <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', color: 'white', display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 80, lineHeight: 1.3 }}>
+                      <span style={{ wordBreak: 'break-word', textAlign: 'center' }}>{user.name}</span>
+                      {user.is_verified && <VerifiedBadge size="sm" />}
                     </div>
-                    {user.profession && (
-                      <div style={{ fontSize: 10, color: '#93c5fd', textAlign: 'center', marginTop: 1 }}>{user.profession}</div>
+                    {user.avg > 0 && (
+                      <div style={{ fontSize: 10, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                        {'★'.repeat(Math.round(user.avg))}<span style={{ color: '#93c5fd', marginRight: 2 }}>{user.avg.toFixed(1)}</span>
+                      </div>
                     )}
-                    <div style={{ fontSize: 13, fontWeight: 900, color: '#7dd3fc', marginTop: 2 }}>₪{user.earnings.toLocaleString()}</div>
-                    <div style={{ fontSize: 11, color: '#93c5fd' }}>{user.count} משימות</div>
+                    <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 2 }}>{user.count} משימות</div>
                     <div style={{
                       marginTop: 8, height: isFirst ? 72 : i === 1 ? 48 : 40, width: '100%',
                       background: `rgba(255,255,255,0.08)`,
