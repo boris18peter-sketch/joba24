@@ -415,18 +415,21 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Card Body: title + meta + description */}
+        {/* Card Body: title + description + meta */}
         <div style={{ marginBottom: 10 }}>
-          <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 5px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
             {task.title}
           </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', marginBottom: 5, flexWrap: 'wrap' }}>
+          {task.description && (
+            <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+              {task.description}
+            </p>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
             {task.location_name && (
               <><MapPin size={10} strokeWidth={1.8} />
               <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span></>
             )}
-            {task.location_name && catLabel && <span>•</span>}
-            {catLabel && <span>{catLabel}</span>}
             {task.client_name && (
               task.client_id === currentUserId ? (
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
@@ -440,11 +443,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               )
             )}
           </div>
-          {task.description && (
-            <p style={{ color: '#94a3b8', fontSize: 12, margin: 0, lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-              {task.description}
-            </p>
-          )}
         </div>
 
         {/* Card Footer: price + apply */}

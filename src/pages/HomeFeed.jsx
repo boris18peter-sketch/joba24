@@ -30,6 +30,13 @@ export default function HomeFeed() {
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
   const [activeTab, setActiveTab] = useState('available'); // 'available' | 'my_published'
+  const [myPubTab, setMyPubTab] = useState('active'); // 'active' | 'completed' | 'other'
+
+  const MY_PUB_TABS = [
+    { key: 'active',    label: 'פעילות',  statuses: ['OPEN', 'TAKEN'] },
+    { key: 'completed', label: 'הושלמו',  statuses: ['COMPLETED'] },
+    { key: 'other',     label: 'ארכיון',  statuses: ['CANCELLED', 'EXPIRED'] },
+  ];
   const queryClient = useQueryClient();
 
   const { user: me, isAuthenticated } = useAuth();
@@ -449,25 +456,65 @@ export default function HomeFeed() {
         )}
 
         {/* ── My Published Tasks Tab ───────────────────────────── */}
-        {activeTab === 'my_published' && (
-          <div style={{ paddingTop: 4 }}>
-            {myTasks.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-                <div style={{ fontSize: 44 }}>📭</div>
-                <p style={{ fontWeight: 800, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>עוד לא פרסמת משימות</p>
-                <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>פרסם משימה וקבל עובד תוך דקות</p>
+        {activeTab === 'my_published' && (() => {
+          const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
+          const filteredPub = myTasks.filter(t => pubTab?.statuses.includes(t.status));
+          return (
+            <div>
+              {/* Sub-tabs bar — same height as search bar for layout symmetry */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                {MY_PUB_TABS.map(t => {
+                  const count = myTasks.filter(x => t.statuses.includes(x.status)).length;
+                  const active = myPubTab === t.key;
+                  return (
+                    <button key={t.key} onClick={() => setMyPubTab(t.key)}
+                      style={{ flex: 1, height: 38, borderRadius: 10, fontSize: 13, fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+                        background: active ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
+                        color: active ? 'white' : 'var(--text-2)',
+                        borderColor: active ? '#1a6fd4' : 'var(--border-1)',
+                        boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : 'none',
+                      }}
+                    >
+                      {t.label}
+                      {count > 0 && (
+                        <span style={{ marginRight: 4, fontSize: 10, background: active ? 'rgba(255,255,255,0.25)' : '#e8edf5', color: active ? 'white' : '#64748b', padding: '1px 5px', borderRadius: 8 }}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {myTasks.map((task, index) => (
-                  <div key={task.id} style={{ animation: `slideInStagger 0.45s ease-out both`, animationDelay: `${Math.min(index, 12) * 50}ms` }}>
-                    <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+
+              {filteredPub.length === 0 && myPubTab === 'active' ? (
+                <div style={{ textAlign: 'center', padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                  <div style={{ fontSize: 40 }}>📭</div>
+                  <p style={{ fontWeight: 800, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>אין משימות פעילות</p>
+                  <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>פרסם משימה וקבל עובד תוך דקות</p>
+                  <a href="/create-task" style={{ textDecoration: 'none' }}>
+                    <button style={{ display: 'flex', alignItems: 'center', gap: 8, height: 50, paddingInline: 28, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
+                      <span style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>+</span>
+                      פרסם משימה
+                    </button>
+                  </a>
+                </div>
+              ) : filteredPub.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                  <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
+                  <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>אין משימות כאן</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {filteredPub.map((task, index) => (
+                    <div key={task.id} style={{ animation: `slideInStagger 0.45s ease-out both`, animationDelay: `${Math.min(index, 12) * 50}ms` }}>
+                      <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       </div>
 

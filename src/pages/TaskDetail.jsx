@@ -694,30 +694,11 @@ export default function TaskDetail() {
               </div>
             )}
 
-            {/* Price + Distance/Location */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
+            {/* Price */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
                 <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{task.price}</div>
                 {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
-              </div>
-              <div style={{ flexShrink: 0 }}>
-                {distKm != null && !isNaN(distKm) ?
-                <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>
-                      {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
-                    </div>
-                    {task.location_name &&
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 3, maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name.split(',')[0]}</div>
-                  }
-                  </div> :
-                task.location_name ?
-                <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <MapPin size={12} strokeWidth={2} />
-                    <span style={{ fontSize: 11, fontWeight: 600, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {task.location_name.split(',')[0]}{distKm != null && !isNaN(distKm) ? ` (${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`})` : ''}
-                    </span>
-                  </div> :
-                null}
               </div>
             </div>
 
@@ -728,8 +709,8 @@ export default function TaskDetail() {
               </div>
             }
 
-            {/* Publisher + requirements */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            {/* Publisher + location */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
               {task.client_name &&
               <UserBadge
                 name={task.client_name}
@@ -740,11 +721,13 @@ export default function TaskDetail() {
                 size="md"
               />
             }
-              <div style={{ display: 'flex', gap: 4 }}>
-                {task.requirements?.vehicle && <span title="דרוש רכב" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>🚗</span>}
-                {task.requirements?.two_people && <span title="שני אנשים" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>👥</span>}
-                {task.requirements?.experience && <span title="ניסיון" style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '3px 7px', fontSize: 13 }}>⭐</span>}
-              </div>
+              {task.location_name && (
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <MapPin size={10} strokeWidth={2} />
+                  {task.location_name.split(',')[0]}
+                  {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}`}
+                </span>
+              )}
             </div>
 
             {/* Expiry only */}

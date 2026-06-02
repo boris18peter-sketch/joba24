@@ -8,10 +8,9 @@ const navItems = [
   { to: '/map', icon: Map, label: 'מפת משימות' },
   { to: '/create-task', icon: Plus, label: 'פרסם משימה' },
   { to: '/my-tasks', icon: ClipboardList, label: 'המשימות שלי' },
+  { to: '/chats', icon: MessageCircle, label: "צ'אטים" },
   { to: '/notifications', icon: Bell, label: 'התראות' },
-  { to: '/chats', icon: MessageCircle, label: 'צ\'אטים' },
   { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
-  { to: '/profile', icon: User, label: 'פרופיל' },
   { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },
 ];
 
@@ -41,7 +40,7 @@ export default function SideMenu({ open, onClose }) {
       >
         {/* Header */}
         <div style={{
-          padding: '52px 20px 28px',
+          padding: '52px 20px 16px',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
@@ -64,7 +63,48 @@ export default function SideMenu({ open, onClose }) {
           </button>
         </div>
 
-        <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+          {/* Profile / Login at top */}
+          {isAuthenticated ? (
+            <Link to="/profile" onClick={onClose}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+                background: location.pathname === '/profile' ? 'rgba(96,165,250,0.15)' : 'transparent',
+                color: location.pathname === '/profile' ? '#60a5fa' : '#bfdbfe',
+                fontWeight: location.pathname === '/profile' ? 700 : 500, fontSize: 15,
+                textDecoration: 'none',
+                borderLeft: location.pathname === '/profile' ? '3px solid #60a5fa' : '3px solid transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              <User size={18} style={{ opacity: location.pathname === '/profile' ? 1 : 0.7 }} />
+              פרופיל
+            </Link>
+          ) : (
+            <button
+              onClick={() => { login(); onClose(); }}
+              style={{
+                width: 'calc(100% - 24px)',
+                margin: '8px 12px',
+                padding: '13px 16px',
+                background: '#fbbf24',
+                color: '#0a1f5c',
+                border: 'none',
+                borderRadius: 14,
+                fontWeight: 800,
+                fontSize: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <User size={16} />
+              התחבר עכשיו
+            </button>
+          )}
+
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
             return (
@@ -90,7 +130,7 @@ export default function SideMenu({ open, onClose }) {
               style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
                 background: location.pathname === '/admin' ? 'rgba(251,191,36,0.15)' : 'transparent',
-                color: location.pathname === '/admin' ? '#fbbf24' : '#fbbf24',
+                color: '#fbbf24',
                 fontWeight: 700, fontSize: 15, textDecoration: 'none',
                 borderLeft: location.pathname === '/admin' ? '3px solid #fbbf24' : '3px solid transparent',
                 opacity: 0.85,
@@ -101,29 +141,6 @@ export default function SideMenu({ open, onClose }) {
             </Link>
           )}
         </nav>
-
-        {!isAuthenticated && (
-           <button
-              onClick={() => { login(); onClose(); }}
-              style={{
-                width: 'calc(100% - 40px)',
-                margin: '0 20px 20px',
-                padding: '14px 16px',
-                background: '#fbbf24',
-                color: '#0a1f5c',
-                border: 'none',
-                borderRadius: 14,
-                fontWeight: 800,
-                fontSize: 14,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              התחבר עכשיו
-            </button>
-         )}
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           {/* Dark mode toggle */}
