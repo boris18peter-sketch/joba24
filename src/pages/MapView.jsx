@@ -4,9 +4,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag } from 'lucide-react';
-import { getCategoryLabel } from '@/lib/categories';
+import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/AuthContext';
+import FilterSheet from '@/components/FilterSheet';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
 const MAP_STYLE = 'mapbox://styles/mapbox/standard';
@@ -94,6 +95,11 @@ export default function MapView() {
   const [mounted, setMounted] = useState(false);
   const [mapToken, setMapToken] = useState('');
 
+  // Filters
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
   // Route & nav state
   const [route, setRoute] = useState(null);
   const [navSteps, setNavSteps] = useState([]);
@@ -135,7 +141,19 @@ export default function MapView() {
     staleTime: 20000,
   });
 
-  const displayTasks = tasks.filter(t => t.status === 'OPEN').map(t => {
+  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag);
+
+  const displayTasks = tasks.filter(t => {
+    if (t.status !== 'OPEN') return false;
+    if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
+    if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
+    if (filters.time && t.estimated_time !== filters.time) return false;
+    if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
+    if (filters.category && t.category !== filters.category) return false;
+    if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
+    if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
+    return true;
+  }).map(t => {
     const lat = parseFloat(t.lat), lng = parseFloat(t.lng);
     if (isFinite(lat) && isFinite(lng)) return { ...t, lat, lng };
     if (!seedRef.current[t.id]) {
@@ -215,6 +233,7 @@ export default function MapView() {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} dir="rtl">
+      {/* Map fills everything — header overlays on top */}
       <div style={{ position: 'absolute', inset: 0 }}>
         {mounted && mapToken && (
           <Map
@@ -273,31 +292,100 @@ export default function MapView() {
           </Map>
         )}
 
-        {/* ── Back button ── */}
-        {!navMode && (
-          <button onClick={() => navigate(-1)} style={{
-            position: 'absolute', top: 'calc(70px + env(safe-area-inset-top))', right: 14, zIndex: 20,
-            width: 44, height: 44, borderRadius: 14,
-            background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(0,0,0,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', boxShadow: '0 2px 14px rgba(0,0,0,0.14)',
-          }}>
-            <ArrowRight size={19} color="#374151" />
-          </button>
-        )}
-
-        {/* ── Task counter ── */}
+        {/* ── Map Header ── */}
         {!navMode && (
           <div style={{
-            position: 'absolute', top: 'calc(70px + env(safe-area-inset-top))', left: 14, zIndex: 20,
-            background: 'rgba(255,255,255,0.95)', borderRadius: 14, padding: '10px 14px',
-            boxShadow: '0 2px 14px rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.07)',
-            display: 'flex', alignItems: 'center', gap: 7,
+            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+            background: 'rgba(255,255,255,0.97)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1.5px solid #e8edf5',
+            paddingTop: 'max(8px, env(safe-area-inset-top))',
+            paddingBottom: 8,
+            paddingLeft: 14,
+            paddingRight: 14,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
           }}>
-            <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 9px', fontSize: 11, fontWeight: 800 }}>{displayTasks.length}</span>
-            <span style={{ fontSize: 11, color: '#374151', fontWeight: 600 }}>משימות פתוחות</span>
+            {/* Row 1: back + title + counter */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40, marginBottom: 8 }}>
+              <button onClick={() => navigate(-1)} style={{
+                width: 34, height: 34, borderRadius: 10,
+                background: 'white', border: '1.5px solid #dce8f5',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.08)', flexShrink: 0,
+              }}>
+                <ArrowRight size={15} color="#1a6fd4" />
+              </button>
+              <span style={{ fontWeight: 800, fontSize: 16, color: '#0f1e40', flex: 1 }}>מפת משימות</span>
+              <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>
+                {displayTasks.length} פתוחות
+              </span>
+            </div>
+
+            {/* Row 2: category + filters — identical to HomeFeed */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+              {/* Category button */}
+              <button
+                onClick={() => setShowCategoryDropdown(v => !v)}
+                style={{
+                  flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  borderRadius: 10, border: `1px solid ${filters.category ? '#93c5fd' : '#e8edf5'}`,
+                  background: filters.category ? '#eff6ff' : '#f8fafc',
+                  color: filters.category ? '#1a6fd4' : '#64748b',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                {filters.category ? getCategoryLabel(filters.category) : 'קטגוריה'}
+                {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </button>
+
+              {/* Filters button */}
+              <button
+                onClick={() => setShowFilters(true)}
+                style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : '#e8edf5'}`,
+                  background: hasSheetFilters ? '#1a6fd4' : '#f8fafc',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', position: 'relative', flexShrink: 0,
+                }}
+              >
+                <SlidersHorizontal size={14} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
+              </button>
+
+              {/* Category dropdown */}
+              {showCategoryDropdown && (
+                <>
+                  <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+                  <div style={{
+                    position: 'absolute', top: 42, right: 0, left: 0,
+                    background: 'white', borderRadius: 10, border: '1px solid #e8edf5',
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100,
+                    maxHeight: 220, overflowY: 'auto',
+                  }}>
+                    <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }}
+                      style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : '#374151', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
+                      הכל
+                    </button>
+                    {CATEGORIES.map(c => {
+                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
+                      if (count === 0) return null;
+                      return (
+                        <button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }}
+                          style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : '#374151', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
+                          <span>{c.label}</span>
+                          <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
+
+        <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} />
 
         {/* ════════════════════════════════
              WAZE-STYLE NAV HUD

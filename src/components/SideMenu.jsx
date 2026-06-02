@@ -7,7 +7,6 @@ const navItems = [
   { to: '/', icon: Home, label: 'פיד משימות' },
   { to: '/map', icon: Map, label: 'מפת משימות' },
   { to: '/create-task', icon: Plus, label: 'פרסם משימה' },
-  { to: '/my-tasks', icon: ClipboardList, label: 'המשימות שלי' },
   { to: '/chats', icon: MessageCircle, label: "צ'אטים" },
   { to: '/notifications', icon: Bell, label: 'התראות' },
   { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
