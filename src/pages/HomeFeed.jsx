@@ -29,17 +29,7 @@ export default function HomeFeed() {
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
-  const hasActiveTasks = myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN');
   const [activeTab, setActiveTab] = useState('available'); // 'available' | 'my_published'
-
-  // Switch to my_published if user has active tasks (once myTasks loads)
-  const didAutoSwitch = useRef(false);
-  useEffect(() => {
-    if (!didAutoSwitch.current && myTasks.length > 0 && hasActiveTasks) {
-      setActiveTab('my_published');
-      didAutoSwitch.current = true;
-    }
-  }, [myTasks.length]);
   const [myPubTab, setMyPubTab] = useState('active'); // 'active' | 'completed' | 'other'
 
   const MY_PUB_TABS = [
@@ -59,6 +49,15 @@ export default function HomeFeed() {
     staleTime: 60000,
     refetchOnWindowFocus: false,
   });
+
+  // Auto-switch to my_published if user has active tasks
+  const didAutoSwitch = useRef(false);
+  useEffect(() => {
+    if (!didAutoSwitch.current && myTasks.length > 0 && myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN')) {
+      setActiveTab('my_published');
+      didAutoSwitch.current = true;
+    }
+  }, [myTasks.length]);
 
   // Active task I'm working on as a worker
   const { data: activeWorkerTask } = useQuery({
