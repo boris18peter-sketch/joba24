@@ -150,9 +150,9 @@ export default function Profile() {
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <StatBox value={completedCount} label="ג'ובות בוצעו" />
+          <StatBox value={completedCount} label="משימות בוצעו" />
           <StatBox value={avgRating + (rating > 0 ? '★' : '')} label="דירוג" sub={`${me?.rating_count || 0} ביקורות`} />
-          <StatBox value={me?.worker_credits ?? 100} label="קרדיטים" sub="ג'ובות" />
+          <StatBox value={me?.worker_credits ?? 100} label="קרדיטים" sub="למשימות" />
         </div>
       </div>
 

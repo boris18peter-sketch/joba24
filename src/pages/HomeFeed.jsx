@@ -29,7 +29,8 @@ export default function HomeFeed() {
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
-  const [activeTab, setActiveTab] = useState('available'); // 'available' | 'my_published'
+  const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'available');
+  const setActiveTab = (tab) => { sessionStorage.setItem('homeTab', tab); sessionStorage.setItem('homeTabChosen', '1'); setActiveTabRaw(tab); };
   const [myPubTab, setMyPubTab] = useState('active'); // 'active' | 'completed' | 'other'
 
   const MY_PUB_TABS = [
@@ -50,12 +51,14 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
-  // Auto-switch to my_published if user has active tasks
+  // Auto-switch to my_published silently if user has active tasks and hasn't manually chosen a tab
   const didAutoSwitch = useRef(false);
   useEffect(() => {
     if (!didAutoSwitch.current && myTasks.length > 0 && myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN')) {
-      setActiveTab('my_published');
       didAutoSwitch.current = true;
+      if (!sessionStorage.getItem('homeTabChosen')) {
+        setActiveTab('my_published');
+      }
     }
   }, [myTasks.length]);
 

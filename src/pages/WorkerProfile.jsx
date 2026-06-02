@@ -283,7 +283,7 @@ export default function WorkerProfile() {
 
         {/* Preferred Categories */}
          <div>
-           <Label className="text-sm font-semibold mb-2 block">סוגי עבודות שאני מבצע</Label>
+           <Label className="text-sm font-semibold mb-2 block">סוגי משימות שאני מבצע</Label>
            <div className="flex gap-2 flex-wrap">
              {CATEGORIES.map(c => (
                <button key={c.value} onClick={() => !isViewingOther && toggleCategory(c.value)}
@@ -300,7 +300,7 @@ export default function WorkerProfile() {
 
         {/* Preferred Cities */}
          <div>
-           <Label className="text-sm font-semibold mb-2 block">ערים שאני מוכן לעבוד בהן</Label>
+           <Label className="text-sm font-semibold mb-2 block">ערים שאני מוכן לבצע משימות</Label>
            <div className="flex gap-2 flex-wrap">
              {CITIES.map(c => (
                <button key={c} onClick={() => !isViewingOther && toggleCity(c)}
@@ -328,7 +328,7 @@ export default function WorkerProfile() {
           <div>
             <Label className="text-sm font-semibold mb-3 flex items-center gap-2 block">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
-              היסטוריית עבודות ({workerTasks.filter(t => t.status === 'COMPLETED').length} הושלמו)
+              היסטוריית משימות ({workerTasks.filter(t => t.status === 'COMPLETED').length} הושלמו)
             </Label>
             {isViewingOther ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
