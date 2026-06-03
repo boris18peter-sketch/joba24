@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Clock, Loader2, Save, CheckSquare, Info, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Loader2, Save, CheckSquare, Info, MapPin, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import { toast } from 'sonner';
 import { CATEGORIES } from '@/lib/categories';
@@ -40,27 +40,27 @@ const TIME_OPTIONS = [
   { value: 'custom', label: 'מותאם אישית' },
 ];
 const REQUIREMENT_CATEGORIES = [
-  { label: '🚗 רכבים', items: [
+  { label: 'רכבים', items: [
     { key: 'vehicle', label: 'רכב פרטי' },
     { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
     { key: 'truck', label: 'טנדר / משאית' },
     { key: 'motorcycle', label: 'קטנוע / אופנוע' },
   ]},
-  { label: '🔧 כלי עבודה', items: [
+  { label: 'כלי עבודה', items: [
     { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
     { key: 'drill', label: 'מקדחה / אינבורר' },
     { key: 'ladder', label: 'סולם' },
     { key: 'grinder', label: 'מטחנה / גרינדר' },
     { key: 'welder', label: 'מולחם' },
   ]},
-  { label: '🏗️ ניסיון מקצועי', items: [
+  { label: 'ניסיון מקצועי', items: [
     { key: 'experience', label: 'ניסיון בתחום' },
     { key: 'certified', label: 'הסמכה / רישיון מקצועי' },
     { key: 'experience_animals', label: 'ניסיון עם בעלי חיים' },
     { key: 'english', label: 'אנגלית' },
     { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
   ]},
-  { label: '🏢 מקצועות', items: [
+  { label: 'מקצועות', items: [
     { key: 'electrician', label: 'חשמלאי מוסמך' },
     { key: 'plumber', label: 'אינסטלטור מוסמך' },
     { key: 'carpenter', label: 'נגר מוסמך' },
@@ -68,17 +68,17 @@ const REQUIREMENT_CATEGORIES = [
     { key: 'cleaner_pro', label: 'מנקה מקצועי' },
     { key: 'driver', label: 'נהג מקצועי' },
   ]},
-  { label: '👥 כמות אנשים', items: [
+  { label: 'כמות אנשים', items: [
     { key: 'two_people', label: '2 אנשים' },
     { key: 'three_people', label: '3 אנשים' },
     { key: 'four_plus_people', label: '4+ אנשים' },
   ]},
 ];
 const PAYMENT_METHODS = [
-  { value: 'Cash', label: '💵 מזומן' },
-  { value: 'Bit', label: '📱 Bit' },
-  { value: 'PayBox', label: '📲 PayBox' },
-  { value: 'Other', label: '💰 אחר' },
+  { value: 'Cash', label: 'מזומן' },
+  { value: 'Bit', label: 'Bit' },
+  { value: 'PayBox', label: 'PayBox' },
+  { value: 'Other', label: 'אחר' },
 ];
 
 function SectionCard({ children }) {
@@ -151,8 +151,8 @@ export default function EditTask() {
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
 
-  const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
-  const inactiveBtn = { background: 'white', color: '#555', border: '1px solid #dce8f5' };
+  const activeBtn = { background: '#2563EB', color: 'white', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
+  const inactiveBtn = { background: '#F1F5F9', color: '#475569', border: 'none' };
 
   const handleSave = async () => {
     if (!form.title) { toast.error('חובה למלא כותרת'); return; }
@@ -250,7 +250,7 @@ export default function EditTask() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 14px' }}>
           <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
           <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
-            {isRepostMode ? '🔄 פרסם שוב' : '✏️ עריכת משימה'}
+            {isRepostMode ? 'פרסם שוב' : 'עריכת משימה'}
           </span>
         </div>
       </div>
@@ -309,11 +309,11 @@ export default function EditTask() {
           <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>מדיה</Label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>📸 תמונות (עד 4)</p>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>תמונות (עד 4)</p>
               <ImageUploader images={form.images} onChange={imgs => set('images', imgs)} />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>🎥 סרטון</p>
+              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 700, marginBottom: 6 }}>סרטון</p>
               <VideoUploader videoUrl={form.video_url} onChange={url => set('video_url', url)} />
             </div>
           </div>
@@ -341,7 +341,7 @@ export default function EditTask() {
               {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>⚡ העלאת מחיר אוטומטית</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>העלאת מחיר אוטומטית</div>
               <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>המחיר יעלה כל 5 דקות עד המקסימום</div>
             </div>
           </button>
@@ -467,7 +467,7 @@ export default function EditTask() {
                 </div>
               ))}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>✏️ דרישה חופשית</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>דרישה חופשית</div>
                 <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
@@ -478,11 +478,14 @@ export default function EditTask() {
 
         {/* Payment Method */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>💳 אמצעי תשלום</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+            <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
+            <Label className="text-sm font-bold" style={{ color: '#334155', margin: 0 }}>אמצעי תשלום</Label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
             {PAYMENT_METHODS.map(pm => (
               <button key={pm.value} onClick={() => set('payment_method', pm.value)}
-                style={{ padding: '12px 8px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : inactiveBtn) }}
+                style={{ width: '100%', padding: '10px 4px', borderRadius: 10, fontSize: 13, fontWeight: form.payment_method === pm.value ? 700 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : inactiveBtn) }}
               >{pm.label}</button>
             ))}
           </div>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Users, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users } from 'lucide-react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
@@ -35,7 +35,7 @@ const EXPIRY_OPTIONS = [
   { label: 'יום', hours: 24 },
   { label: '2 ימים', hours: 48 },
   { label: 'שבוע', hours: 168 },
-  { label: '⌨️ מותאם', hours: 'custom' },
+  { label: 'מותאם', hours: 'custom' },
 ];
 
 const URGENCY_TAGS = [
@@ -54,8 +54,7 @@ function SocialProofBar() {
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length || 238;
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      <span>🤝</span>
-      <span>הצטרף ל-<strong style={{ color: '#1a6fd4' }}>{completedCount}+</strong> משתמשים שכבר ביצעו משימות בהצלחה</span>
+      <span>הצטרף ל-<strong style={{ color: '#2563EB' }}>{completedCount}+</strong> משתמשים שכבר ביצעו משימות בהצלחה</span>
     </div>
   );
 }
@@ -162,10 +161,10 @@ const DEFAULT_FORM = {
 };
 
 const PAYMENT_METHODS = [
-  { value: 'Cash', label: '💵 מזומן' },
-  { value: 'Bit', label: '📱 Bit' },
-  { value: 'PayBox', label: '📲 PayBox' },
-  { value: 'Other', label: '💰 אחר' },
+  { value: 'Cash', label: 'מזומן' },
+  { value: 'Bit', label: 'Bit' },
+  { value: 'PayBox', label: 'PayBox' },
+  { value: 'Other', label: 'אחר' },
 ];
 
 const TIME_OPTIONS = [
@@ -183,7 +182,7 @@ const TIME_OPTIONS = [
 
 const REQUIREMENT_CATEGORIES = [
   {
-    label: '🚗 רכבים',
+    label: 'רכבים',
     items: [
       { key: 'vehicle', label: 'רכב פרטי' },
       { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
@@ -192,7 +191,7 @@ const REQUIREMENT_CATEGORIES = [
     ]
   },
   {
-    label: '🔧 כלי עבודה',
+    label: 'כלי עבודה',
     items: [
       { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
       { key: 'drill', label: 'מקדחה / אינבורר' },
@@ -202,7 +201,7 @@ const REQUIREMENT_CATEGORIES = [
     ]
   },
   {
-    label: '🏗️ ניסיון מקצועי',
+    label: 'ניסיון מקצועי',
     items: [
       { key: 'experience', label: 'ניסיון בתחום' },
       { key: 'certified', label: 'הסמכה / רישיון מקצועי' },
@@ -212,7 +211,7 @@ const REQUIREMENT_CATEGORIES = [
     ]
   },
   {
-    label: '🏢 מקצועות',
+    label: 'מקצועות',
     items: [
       { key: 'electrician', label: 'חשמלאי מוסמך' },
       { key: 'plumber', label: 'אינסטלטור מוסמך' },
@@ -223,7 +222,7 @@ const REQUIREMENT_CATEGORIES = [
     ]
   },
   {
-    label: '👥 כמות אנשים',
+    label: 'כמות אנשים',
     items: [
       { key: 'two_people', label: '2 אנשים' },
       { key: 'three_people', label: '3 אנשים' },
@@ -581,8 +580,8 @@ export default function CreateTask() {
     }
   };
 
-  const activeBtn = { background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', border: '1px solid #1a6fd4' };
-  const inactiveBtn = { background: 'white', color: '#555', border: '1px solid #dce8f5' };
+  const activeBtn = { background: '#2563EB', color: 'white', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
+  const inactiveBtn = { background: '#F1F5F9', color: '#475569', border: 'none' };
 
   if (searchingTaskId) {
     return (
@@ -623,7 +622,7 @@ export default function CreateTask() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
               <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
-        {isRepostMode ? '🔄 פרסם שוב' : isEditMode ? '✏️ עריכת משימה' : isRepost ? '🔄 פרסם שוב' : 'פרסום משימה חדשה'}
+        {isRepostMode ? 'פרסם שוב' : isEditMode ? 'עריכת משימה' : isRepost ? 'פרסם שוב' : 'פרסום משימה חדשה'}
       </span>
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> נשמר</div>}
             </div>
@@ -763,7 +762,7 @@ export default function CreateTask() {
           {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
-            💳 <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
+            <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
           </div>
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
 
@@ -775,7 +774,7 @@ export default function CreateTask() {
               {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>⚡ העלאת מחיר אוטומטית</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>העלאת מחיר אוטומטית</div>
               <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>המחיר יעלה כל 5 דקות עד המקסימום</div>
             </div>
           </button>
@@ -817,7 +816,10 @@ export default function CreateTask() {
 
           {/* Urgency tag */}
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #f0f4fb' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b', marginBottom: 10 }}>⏱️ מתי דרוש עובד?</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+            <Zap size={14} color="#94a3b8" strokeWidth={1.8} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>מתי דרוש עובד?</span>
+          </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {URGENCY_TAGS.map(tag => {
                 const isActive = form.urgency_tag === tag.value;
@@ -874,7 +876,7 @@ export default function CreateTask() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : '#f4f7fb', borderRadius: 12, padding: '10px 12px' }}>
-            <span style={{ fontSize: 22 }}>🚀</span>
+            <Zap size={18} color="#a855f7" />
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>חשיפה גבוהה פי 3 בשורת ה-Stories</div>
               <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>המשימה תופיע למעלה בפיד למשך 24 שעות · עלות: <strong style={{color:'#7e22ce'}}>10 ג'ובות</strong></div>
@@ -1000,7 +1002,7 @@ export default function CreateTask() {
                 </div>
               ))}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>✏️ דרישה חופשית</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>דרישה חופשית</div>
                 <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
@@ -1011,17 +1013,18 @@ export default function CreateTask() {
 
         {/* Payment Method */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>
-            💳 אמצעי תשלום *
-          </Label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {PAYMENT_METHODS.map(pm => (
-              <button key={pm.value} onClick={() => { set('payment_method', pm.value); setErrors(p => ({...p, payment_method: false})); }}
-                style={{ flex: 1, padding: '12px 8px', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, border: errors.payment_method ? '1.5px solid #ef4444' : '1px solid #dce8f5' }) }}
-              >{pm.label}</button>
-            ))}
-          </div>
-          {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>⚠️ יש לבחור אמצעי תשלום</p>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+          <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
+          <Label className="text-sm font-bold" style={{ color: '#334155', margin: 0 }}>אמצעי תשלום *</Label>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+          {PAYMENT_METHODS.map(pm => (
+            <button key={pm.value} onClick={() => { set('payment_method', pm.value); setErrors(p => ({...p, payment_method: false})); }}
+              style={{ width: '100%', padding: '10px 4px', borderRadius: 10, fontSize: 13, fontWeight: form.payment_method === pm.value ? 700 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, outline: errors.payment_method ? '1.5px solid #ef4444' : 'none' }) }}
+            >{pm.label}</button>
+          ))}
+        </div>
+        {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
         </SectionCard>
 
         {/* Submit */}
