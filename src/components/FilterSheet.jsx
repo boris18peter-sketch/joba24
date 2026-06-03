@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Sparkles } from 'lucide-react';
+import { X, MapPin, Sparkles, Clock, DollarSign, Zap, ArrowUpDown, CreditCard } from 'lucide-react';
 
 const URGENCY_FILTER_TAGS = [
   { value: 'immediate', label: 'דחוף עכשיו' },
@@ -9,45 +9,71 @@ const URGENCY_FILTER_TAGS = [
   { value: 'flexible',  label: 'לא לחוץ' },
 ];
 
-const timeOptions = ['15m', '30m', '1h', '2h'];
+const timeOptions = [
+  { value: '15m', label: '15 דק׳' },
+  { value: '30m', label: '30 דק׳' },
+  { value: '1h',  label: 'שעה' },
+  { value: '2h',  label: '2 שעות' },
+];
+
 const cities = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'חולון', 'בת ים'];
 
 const PRICE_OPTIONS = [
-  { label: 'הכל', min: '', max: '' },
+  { label: 'הכל',     min: '', max: '' },
   { label: 'עד ₪100', min: '', max: '100' },
   { label: '₪100–300', min: '100', max: '300' },
   { label: '₪300–600', min: '300', max: '600' },
-  { label: '₪600+', min: '600', max: '' },
+  { label: '₪600+',   min: '600', max: '' },
 ];
 
 const PAYMENT_METHODS = [
-  { value: 'Cash', label: '💵 מזומן' },
-  { value: 'Bit', label: '📱 ביט' },
-  { value: 'PayBox', label: '💳 PayBox' },
+  { value: 'Cash',   label: 'מזומן' },
+  { value: 'Bit',    label: 'ביט' },
+  { value: 'PayBox', label: 'PayBox' },
 ];
 
-function Chip({ label, active, onClick, gold }) {
+const SORT_OPTIONS = [
+  { val: '',           label: 'רלוונטי' },
+  { val: 'newest',     label: 'חדשות' },
+  { val: 'price_desc', label: 'מחיר גבוה' },
+  { val: 'price_asc',  label: 'מחיר נמוך' },
+];
+
+// Chip — grid-aware, full width of its cell
+function Chip({ label, active, onClick }) {
   return (
     <button
       onClick={onClick}
       style={{
-        padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
-        cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0,
-        background: gold
-          ? (active ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#fffbeb')
-          : (active ? '#1a6fd4' : 'white'),
-        color: gold ? (active ? 'white' : '#92400e') : (active ? 'white' : '#555'),
-        border: gold
-          ? (active ? '1px solid #d97706' : '1px solid #fde68a')
-          : (active ? '1px solid #1a6fd4' : '1px solid #dce8f5'),
-        boxShadow: active && gold ? '0 2px 8px rgba(245,158,11,0.4)' : 'none',
+        width: '100%',
+        padding: '9px 4px',
+        borderRadius: 10,
+        fontSize: 13,
+        fontWeight: active ? 700 : 500,
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+        border: 'none',
+        background: active ? '#2563EB' : '#F1F5F9',
+        color: active ? 'white' : '#475569',
+        boxShadow: active ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+        textAlign: 'center',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
       }}
-    >{label}</button>
+    >
+      {label}
+    </button>
   );
 }
 
-function SectionLabel({ children }) {
-  return <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b', marginBottom: 10 }}>{children}</div>;
+function SectionLabel({ icon: Icon, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+      {Icon && <Icon size={14} color="#94a3b8" strokeWidth={1.8} />}
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#334155', letterSpacing: -0.1 }}>{children}</span>
+    </div>
+  );
 }
 
 export default function FilterSheet({ open, onClose, filters, onApply, hasForYou = false }) {
@@ -89,16 +115,15 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
           maxHeight: '90dvh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
-          paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+          boxShadow: '0 -16px 60px rgba(0,0,0,0.22)',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle + Header */}
-        <div style={{ padding: '14px 20px 12px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
-          <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 14px' }} />
+        <div style={{ padding: '14px 20px 12px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: '#e2e8f0', margin: '0 auto 14px' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 17, fontWeight: 900, color: '#0f2b6b' }}>פילטרים</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>פילטרים</div>
             <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={15} color="#64748b" />
             </button>
@@ -106,49 +131,45 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 20, overscrollBehavior: 'contain' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 22, overscrollBehavior: 'contain' }}>
 
-          {/* For You — only shown when system has learned enough */}
+          {/* For You */}
           {hasForYou && (
-            <div style={{
-              background: local.forYou ? 'linear-gradient(135deg,#fffbeb,#fef3c7)' : '#fffbeb',
-              border: `1.5px solid ${local.forYou ? '#f59e0b' : '#fde68a'}`,
-              borderRadius: 16, padding: '14px 16px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer',
-            }}
+            <div
+              style={{
+                background: local.forYou ? '#fffbeb' : '#fafafa',
+                border: `1.5px solid ${local.forYou ? '#f59e0b' : '#e2e8f0'}`,
+                borderRadius: 14, padding: '13px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                cursor: 'pointer',
+              }}
               onClick={() => setLocal(p => ({ ...p, forYou: !p.forYou }))}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 11,
-                  background: 'linear-gradient(135deg,#f59e0b,#d97706)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 3px 10px rgba(245,158,11,0.4)',
-                }}>
-                  <Sparkles size={17} color="white" strokeWidth={1.8} />
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: local.forYou ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={16} color={local.forYou ? 'white' : '#94a3b8'} strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 14, color: '#92400e' }}>For You ⭐</div>
-                  <div style={{ fontSize: 11, color: '#a16207', marginTop: 1 }}>משימות שהמערכת לומדת שמתאימות לך</div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: local.forYou ? '#92400e' : '#334155' }}>For You</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>משימות שהמערכת לומדת שמתאימות לך</div>
                 </div>
               </div>
               <div style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: local.forYou ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'white',
-                border: `2px solid ${local.forYou ? '#d97706' : '#fde68a'}`,
+                width: 22, height: 22, borderRadius: '50%',
+                background: local.forYou ? '#f59e0b' : '#e2e8f0',
+                border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
               }}>
-                {local.forYou && <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'white' }} />}
+                {local.forYou && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />}
               </div>
             </div>
           )}
 
-          {/* Price */}
+          {/* Price — 3-col grid (skip "הכל" as separate row) */}
           <div>
-            <SectionLabel>💰 מחיר</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <SectionLabel icon={DollarSign}>טווח שכר</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {PRICE_OPTIONS.map(opt => (
                 <Chip key={opt.label} label={opt.label}
                   active={activePriceOption?.label === opt.label}
@@ -158,10 +179,23 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             </div>
           </div>
 
-          {/* Urgency / availability */}
+          {/* Time — 4-col grid */}
           <div>
-            <SectionLabel>⚡ דחיפות לעובד</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <SectionLabel icon={Clock}>זמן ביצוע</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+              {timeOptions.map(t => (
+                <Chip key={t.value} label={t.label}
+                  active={local.time === t.value}
+                  onClick={() => setLocal(p => ({ ...p, time: p.time === t.value ? '' : t.value }))}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Urgency — 2-col grid */}
+          <div>
+            <SectionLabel icon={Zap}>דחיפות המשימה</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 7 }}>
               {URGENCY_FILTER_TAGS.map(tag => (
                 <Chip key={tag.value} label={tag.label}
                   active={local.urgency_tag === tag.value}
@@ -171,23 +205,10 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             </div>
           </div>
 
-          {/* Time */}
+          {/* Payment method — 3-col grid */}
           <div>
-            <SectionLabel>⏱️ זמן ביצוע משוער</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {timeOptions.map(t => (
-                <Chip key={t} label={t}
-                  active={local.time === t}
-                  onClick={() => setLocal(p => ({ ...p, time: p.time === t ? '' : t }))}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Payment method */}
-          <div>
-            <SectionLabel>💳 אמצעי תשלום</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <SectionLabel icon={CreditCard}>אמצעי תשלום</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {PAYMENT_METHODS.map(pm => (
                 <Chip key={pm.value} label={pm.label}
                   active={local.payment_method === pm.value}
@@ -197,10 +218,23 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             </div>
           </div>
 
+          {/* Sort — 3-col + 1 row */}
+          <div>
+            <SectionLabel icon={ArrowUpDown}>סינון ומיון</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
+              {SORT_OPTIONS.map(opt => (
+                <Chip key={opt.val} label={opt.label}
+                  active={local.sortBy === opt.val}
+                  onClick={() => setLocal(p => ({ ...p, sortBy: opt.val }))}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* City */}
           <div>
-            <SectionLabel><MapPin size={13} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 4 }} />מיקום</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+            <SectionLabel icon={MapPin}>מיקום</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7, marginBottom: 10 }}>
               {cities.map(c => (
                 <Chip key={c} label={c}
                   active={local.city === c}
@@ -212,32 +246,34 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               placeholder="עיר אחרת..."
               value={!cities.includes(local.city) ? local.city : ''}
               onChange={e => setLocal(p => ({ ...p, city: e.target.value }))}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid #dce8f5', background: '#f4f7fb', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: '#334155' }}
             />
           </div>
 
-          {/* Sort */}
-          <div>
-            <SectionLabel>🔃 מיון</SectionLabel>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[{ val: '', label: 'רלוונטי' }, { val: 'newest', label: '🆕 חדשות' }, { val: 'price_desc', label: '💰 מחיר גבוה' }, { val: 'price_asc', label: '💸 מחיר נמוך' }].map(opt => (
-                <Chip key={opt.val} label={opt.label}
-                  active={local.sortBy === opt.val}
-                  onClick={() => setLocal(p => ({ ...p, sortBy: opt.val }))}
-                />
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* Footer buttons */}
-        <div style={{ padding: '14px 20px 16px', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 10, flexShrink: 0 }}>
+        {/* Sticky Footer */}
+        <div style={{
+          padding: '12px 20px',
+          paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+          display: 'flex', alignItems: 'center', gap: 12,
+          flexShrink: 0,
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(10px)',
+          borderTop: '1px solid #f1f5f9',
+        }}>
+          {/* Reset — text button */}
           <button onClick={handleReset}
-            style={{ flex: 1, height: 50, borderRadius: 14, background: 'white', border: '1.5px solid #dce8f5', color: '#0f2b6b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-          >איפוס</button>
+            style={{ flexShrink: 0, height: 48, padding: '0 16px', borderRadius: 12, background: 'none', border: 'none', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            נקה הכל
+          </button>
+          {/* Apply — full remaining width */}
           <button onClick={handleApply}
-            style={{ flex: 2, height: 50, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}
-          >החל פילטרים</button>
+            style={{ flex: 1, height: 48, borderRadius: 12, background: '#2563EB', color: 'white', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
+          >
+            החל פילטרים
+          </button>
         </div>
       </div>
     </div>,
