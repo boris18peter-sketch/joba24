@@ -376,8 +376,16 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
           <WorkerCompletionPhoto
             photos={completionPhotos}
             videoUrl={completionVideo}
-            onPhotosChange={setCompletionPhotos}
-            onVideoChange={setCompletionVideo}
+            onPhotosChange={(newPhotos) => {
+              setCompletionPhotos(newPhotos);
+              // Save immediately to DB so owner sees in real-time
+              onUpdate({ completion_photos: newPhotos, completion_photo: newPhotos[0] || null });
+            }}
+            onVideoChange={(url) => {
+              setCompletionVideo(url);
+              // Save immediately to DB so owner sees in real-time
+              onUpdate({ completion_video_url: url });
+            }}
           />
           <div style={{ background: '#f0fdf4', borderRadius: 16, padding: '16px', textAlign: 'center', border: '1.5px solid #bbf7d0', marginTop: 10 }}>
             <div style={{ fontWeight: 900, color: '#065f46', fontSize: 15, display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center' }}>
