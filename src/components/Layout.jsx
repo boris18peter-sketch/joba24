@@ -23,6 +23,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const notifQueueRef = useRef([]);
+  const notifActiveRef = useRef(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   const prevTasksRef = useRef({});
@@ -314,23 +316,17 @@ export default function Layout() {
             workerName: prev.worker_name,
           });
         }
-        // Worker: publisher revoked the approval — notification only here.
-      // Popup (setRevokedTask) is triggered via TaskApplication subscription (approved→rejected)
-        if (prevWorkerId === me?.id && me?.id !== task.client_id) {
-          addNotification({
-            type: 'approval_revoked',
-            taskTitle: task.title,
-            taskId: task.id,
-          });
-        }
+        // Worker: publisher revoked the approval — notification handled by TaskApplication subscription
+        // Do NOT add approval_revoked here to avoid double notification
       }
 
       // Worker notification: task was cancelled after being assigned (only show to the worker, not the client)
       // Use takenWorkerRef as the most reliable source — never cleared, even if worker_id was nulled
       const workerIdForTask = takenWorkerRef.current[task.id] || prev.worker_id;
+      const prevWasActiveForWorker = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(prev.status);
       if (
         task.status === 'CANCELLED' &&
-        prev.status === 'TAKEN' &&
+        prevWasActiveForWorker &&
         workerIdForTask === me?.id &&
         me?.id !== task.client_id
       ) {
@@ -437,6 +433,16 @@ export default function Layout() {
     localStorage.setItem('joba24_notifications', JSON.stringify(updated));
   };
 
+  const showNextNotif = () => {
+    if (notifQueueRef.current.length === 0) {
+      notifActiveRef.current = false;
+      return;
+    }
+    notifActiveRef.current = true;
+    const next = notifQueueRef.current.shift();
+    setNotifications([next]);
+  };
+
   const addNotification = (notification) => {
     // Dedup: same type+task within 10 seconds won't fire twice
     const dedupKey = `${notification.type}__${notification.taskTitle || ''}__${notification.taskId || ''}`;
@@ -444,16 +450,22 @@ export default function Layout() {
     recentNotifKeysRef.current.add(dedupKey);
     setTimeout(() => recentNotifKeysRef.current.delete(dedupKey), 10000);
 
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     persistNotification(notification);
-    setNotifications(prev => {
-      const capped = prev.length >= 3 ? prev.slice(0, 2) : prev;
-      return [{ ...notification, id }, ...capped];
-    });
+    const notifObj = { ...notification, id };
+
+    if (!notifActiveRef.current) {
+      notifActiveRef.current = true;
+      setNotifications([notifObj]);
+    } else {
+      notifQueueRef.current.push(notifObj);
+    }
   };
 
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications([]);
+    // Small delay before showing next so there's a visual gap
+    setTimeout(showNextNotif, 400);
   };
 
   // Active task I published that a worker is currently doing

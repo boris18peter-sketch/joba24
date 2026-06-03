@@ -19,8 +19,16 @@ export default function PublicProfile() {
     queryKey: ['publicProfileUser', userId],
     queryFn: async () => {
       if (!userId) return null;
-      const users = await base44.entities.User.filter({ id: userId });
-      return users[0] || null;
+      try {
+        // Try direct list first (admin access)
+        const users = await base44.entities.User.filter({ id: userId });
+        if (users?.length > 0) return users[0];
+        // Fallback: get all and find by id
+        const all = await base44.entities.User.list();
+        return all.find(u => u.id === userId) || null;
+      } catch {
+        return null;
+      }
     },
     enabled: !!userId,
     staleTime: 0,

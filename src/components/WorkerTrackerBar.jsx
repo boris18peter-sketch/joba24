@@ -176,16 +176,17 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
   }, [task?.on_the_way_at]);
 
   useEffect(() => {
-    if (!isWorker || localStatus !== 'on_the_way') return;
+    if (!isWorker || !['on_the_way', 'delayed', 'parking'].includes(localStatus)) return;
     if (!navigator.geolocation) return;
-    const interval = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => onUpdate({ worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude }),
-        () => {},
-        { timeout: 6000, maximumAge: 15000 }
-      );
-    }, 30000);
-    return () => clearInterval(interval);
+
+    // Use watchPosition for real-time updates while navigating
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => onUpdate({ worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
   }, [isWorker, localStatus]);
 
   const handleNoShowReport = async () => {
