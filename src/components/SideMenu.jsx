@@ -2,6 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import useDarkMode from '@/hooks/useDarkMode';
 import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, ClipboardList, Bell, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useState } from 'react';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד משימות' },
@@ -17,6 +19,7 @@ export default function SideMenu({ open, onClose }) {
   const location = useLocation();
   const { isAuthenticated, login } = useAuth();
   const [dark, setDark] = useDarkMode();
+  const [showLogin, setShowLogin] = useState(false);
 
   return (
     <>
@@ -81,7 +84,7 @@ export default function SideMenu({ open, onClose }) {
             </Link>
           ) : (
             <button
-              onClick={() => { login(); onClose(); }}
+              onClick={() => { setShowLogin(true); onClose(); }}
               style={{
                 width: 'calc(100% - 24px)',
                 margin: '8px 12px',
@@ -182,6 +185,7 @@ export default function SideMenu({ open, onClose }) {
           </div>
         </div>
       </div>
+      {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
     </>
   );
 }

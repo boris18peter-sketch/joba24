@@ -7,12 +7,14 @@ import { base44 } from '@/api/base44Client';
 import CreditBalancePill from '@/components/CreditBalancePill';
 import { useState } from 'react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 export default function AppHeader({ onOpenMenu }) {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
   const { isAuthenticated } = useAuth();
   const [showBuyCredits, setShowBuyCredits] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -60,7 +62,7 @@ export default function AppHeader({ onOpenMenu }) {
           )}
           {isHomePage && !isAuthenticated && (
             <button
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => setShowLogin(true)}
               style={{
                 background: '#fbbf24', color: '#1a3a6b', border: 'none',
                 height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
@@ -90,6 +92,9 @@ export default function AppHeader({ onOpenMenu }) {
           onClose={() => setShowBuyCredits(false)}
           onSelect={() => setShowBuyCredits(false)}
         />
+      )}
+      {showLogin && (
+        <LoginPromptModal onClose={() => setShowLogin(false)} />
       )}
     </>
   );
