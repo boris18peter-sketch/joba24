@@ -85,7 +85,7 @@ export default function RatingModal({ task, me, onClose }) {
           width: '100%', maxWidth: 480,
           padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
           boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
-          animation: 'slideUpModal 0.3s cubic-bezier(0.34,1.4,0.64,1)',
+          animation: 'sheetSlideUp 0.32s cubic-bezier(0.34,1.4,0.64,1) both',
           maxHeight: '92dvh', overflowY: 'auto',
           position: 'relative',
         }}
@@ -181,7 +181,7 @@ export default function RatingModal({ task, me, onClose }) {
         </button>
       </div>
 
-      <style>{`@keyframes slideUpModal{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+      <style>{`@keyframes sheetSlideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
     </div>,
     document.body
   );

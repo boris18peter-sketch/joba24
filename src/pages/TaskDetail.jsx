@@ -283,9 +283,13 @@ export default function TaskDetail() {
       if (!res.data?.success) throw new Error('שגיאה בביטול');
     },
     onSuccess: () => {
+      setShowCancelConfirm(false);
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
+      toast.success('המשימה בוטלה');
+      navigate('/my-tasks');
     }
   });
 
