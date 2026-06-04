@@ -163,9 +163,13 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
 
   useEffect(() => {
     setLocalStatus(task?.worker_status ?? null);
-    setCompletionPhotos(task?.completion_photos || (task?.completion_photo ? [task.completion_photo] : []));
+    const photos = task?.completion_photos?.length
+      ? task.completion_photos
+      : (task?.completion_photo ? [task.completion_photo] : []);
+    setCompletionPhotos(photos);
     setCompletionVideo(task?.completion_video_url || '');
-  }, [task?.worker_status, task?.completion_photos, task?.completion_video_url]);
+  // Also watch completion_photo (singular) so owner sees updates in real-time
+  }, [task?.worker_status, task?.completion_photos, task?.completion_photo, task?.completion_video_url]);
 
   useEffect(() => {
     if (!task?.on_the_way_at) return;
@@ -287,7 +291,13 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
     if (!isWorker) return null;
     if (stepIdx < 0 || localStatus === null) return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#059669' };
     if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#059669' };
-    if (stepIdx === 1) return { label: 'סיימתי את המשימה', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
+    // When at site — show "Done" only after uploading proof photo/video
+    if (stepIdx === 1) {
+      if (completionPhotos.length > 0 || completionVideo) {
+        return { label: 'סיימתי את המשימה ✓', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
+      }
+      return null; // show photo upload prompt instead
+    }
     return null;
   })();
 
@@ -351,6 +361,27 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
             <ChevronLeft size={14} />
             {stepIdx === 1 ? 'עדיין בדרך' : 'חזרה לשטח'}
           </button>
+        </div>
+      )}
+
+      {/* Worker at site (step 1) — show photo upload before "Done" CTA */}
+      {isWorker && stepIdx === 1 && !mainCTA && (
+        <div style={{ margin: '0 16px 14px' }}>
+          <WorkerCompletionPhoto
+            photos={completionPhotos}
+            videoUrl={completionVideo}
+            onPhotosChange={(newPhotos) => {
+              setCompletionPhotos(newPhotos);
+              onUpdate({ completion_photos: newPhotos, completion_photo: newPhotos[0] || null });
+            }}
+            onVideoChange={(url) => {
+              setCompletionVideo(url);
+              onUpdate({ completion_video_url: url });
+            }}
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
+            📸 הוסף תמונה/סרטון כדי לאשר סיום
+          </div>
         </div>
       )}
 

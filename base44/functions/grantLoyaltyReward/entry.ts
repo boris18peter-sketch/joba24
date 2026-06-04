@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const { taskId, workerId, rating } = await req.json();
+    const { taskId, workerId, rating, taskTitle } = await req.json();
     if (!taskId || !workerId || rating === undefined) {
       return Response.json({ error: 'taskId, workerId, rating required' }, { status: 400 });
     }
@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
       amount: bonus,
       type: 'Loyalty_Reward',
       task_id: taskId,
+      task_title: taskTitle || '',
       note: `בונוס מקצועיות - דירוג 5 כוכבים (10% מ-${creditsCharged} קרדיטים)`,
       balance_after: newBalance,
     });

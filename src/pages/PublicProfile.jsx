@@ -19,16 +19,29 @@ export default function PublicProfile() {
     queryKey: ['publicProfileUser', userId],
     queryFn: async () => {
       if (!userId) return null;
+      // Use created_by_id trick: the User entity stores id as created_by_id too
+      // Best approach: filter tasks to extract user info, or use the review entity
+      // Primary: try filter by id (works for admins & same user)
       try {
-        // Try direct list first (admin access)
         const users = await base44.entities.User.filter({ id: userId });
         if (users?.length > 0) return users[0];
-        // Fallback: get all and find by id
-        const all = await base44.entities.User.list();
-        return all.find(u => u.id === userId) || null;
-      } catch {
-        return null;
-      }
+      } catch (_) {}
+      // Fallback: reconstruct from Task data (client_id / worker_id fields have names)
+      try {
+        const workerTasks = await base44.entities.Task.filter({ worker_id: userId }, '-created_date', 1);
+        const clientTasks = await base44.entities.Task.filter({ client_id: userId }, '-created_date', 1);
+        const task = workerTasks[0] || clientTasks[0];
+        if (task) {
+          const isWorker = task.worker_id === userId;
+          return {
+            id: userId,
+            full_name: isWorker ? task.worker_name : task.client_name,
+            rating: isWorker ? task.worker_rating : task.client_rating,
+            is_verified: isWorker ? task.worker_verified : task.client_verified,
+          };
+        }
+      } catch (_) {}
+      return null;
     },
     enabled: !!userId,
     staleTime: 0,

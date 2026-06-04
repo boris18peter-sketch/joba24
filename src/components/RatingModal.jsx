@@ -58,7 +58,7 @@ export default function RatingModal({ task, me, onClose }) {
       if (isOwner) userUpdate.repeat_hires = repeatHires;
       await base44.entities.User.update(revieweeId, userUpdate);
       if (isOwner && rating === 5 && task.worker_id) {
-        base44.functions.invoke('grantLoyaltyReward', { taskId: task.id, workerId: task.worker_id, rating }).catch(() => {});
+        base44.functions.invoke('grantLoyaltyReward', { taskId: task.id, workerId: task.worker_id, rating, taskTitle: task.title }).catch(() => {});
       }
       queryClient.invalidateQueries({ queryKey: ['myReviews', revieweeId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -175,8 +175,8 @@ export default function RatingModal({ task, me, onClose }) {
           style={{ width: '100%', padding: '12px 14px', borderRadius: 14, border: '1.5px solid #dce8f5', background: '#f4f7fb', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
         />
 
-        <button onClick={handleSubmit} disabled={loading || !canSubmit} style={{ pointerEvents: loading ? 'none' : 'auto' }}
-          style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: canSubmit ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0', color: canSubmit ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? '0 4px 16px rgba(26,111,212,0.3)' : 'none' }}>
+        <button onClick={handleSubmit} disabled={loading || !canSubmit}
+          style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: canSubmit ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0', color: canSubmit ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? '0 4px 16px rgba(26,111,212,0.3)' : 'none', pointerEvents: loading ? 'none' : 'auto' }}>
           ⭐ שלח ביקורת
         </button>
       </div>
