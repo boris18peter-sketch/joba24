@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/AuthContext';
 import FilterSheet from '@/components/FilterSheet';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
-const MAP_STYLE = 'mapbox://styles/mapbox/streets-v12';
+const MAP_STYLE = 'mapbox://styles/mapbox/standard';
 
 function formatDist(meters) {
   if (meters < 1000) return `${Math.round(meters)} מ'`;
@@ -246,15 +246,7 @@ export default function MapView() {
             maxPitch={85}
             minZoom={8}
             attributionControl={false}
-            onLoad={() => {
-              const map = mapRef.current?.getMap();
-              if (!map) return;
-              map.getStyle().layers.forEach(layer => {
-                if (layer.type === 'symbol' && layer.layout?.['text-field']) {
-                  map.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', 'name_he'], ['get', 'name']]);
-                }
-              });
-            }}
+            onLoad={() => {}}
           >
             {/* Road route */}
             {route && (
