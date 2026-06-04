@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Send, Loader2, Image, Check, CheckCheck, Info, X, MapPin, Clock, Star, ShieldAlert } from 'lucide-react';
+import { Send, Loader2, Image, Check, CheckCheck, Info, MapPin, Clock, Star, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
 import BackButton from '@/components/BackButton';
 import { moderateText } from '@/hooks/useModeration';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -227,28 +228,50 @@ export default function Chat() {
   const sendMessage = async (content, imageUrl = null) => {
     if ((!content?.trim() && !imageUrl) || !me) return;
     const msgContent = imageUrl ? `[img]${imageUrl}` : content.trim();
-    setSending(true);
 
-    // Moderation check for text messages
-    if (!imageUrl && content.trim().length > 1) {
-      const modResult = await moderateText(content.trim());
-      if (modResult.flagged) {
-        setSending(false);
-        setInput('');
-        setBlockedMsg(content.trim());
-        setTimeout(() => setBlockedMsg(null), 5000);
-        return;
-      }
-    }
-
-    setInput('');
-    await base44.entities.ChatMessage.create({
+    // Optimistic: add message to UI immediately
+    const optimisticId = `opt-${Date.now()}`;
+    const optimisticMsg = {
+      id: optimisticId,
       task_id: taskId,
       sender_id: me.id,
       sender_name: me.full_name,
       content: msgContent,
-    });
-    setSending(false);
+      created_date: new Date().toISOString(),
+      read: false,
+      _optimistic: true,
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+    setInput('');
+    setSending(true);
+
+    // Moderation check in parallel — remove optimistic msg if flagged
+    if (!imageUrl && content.trim().length > 1) {
+      moderateText(content.trim()).then(modResult => {
+        if (modResult.flagged) {
+          setMessages(prev => prev.filter(m => m.id !== optimisticId));
+          setBlockedMsg(content.trim());
+          setTimeout(() => setBlockedMsg(null), 5000);
+        }
+      });
+    }
+
+    try {
+      const created = await base44.entities.ChatMessage.create({
+        task_id: taskId,
+        sender_id: me.id,
+        sender_name: me.full_name,
+        content: msgContent,
+      });
+      // Replace optimistic with real message
+      setMessages(prev => prev.map(m => m.id === optimisticId ? (created || { ...optimisticMsg, _optimistic: false }) : m));
+    } catch {
+      // Remove optimistic on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      toast.error('שגיאה בשליחה');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleFileUpload = async (e) => {

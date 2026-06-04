@@ -88,33 +88,52 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     if (!pendingAction || updating) return;
     const { task, action } = pendingAction;
     setUpdating(true);
+
+    const update = { worker_status: action.nextKey };
+    if (action.nextKey === 'on_the_way' && !task.on_the_way_at) {
+      update.on_the_way_at = new Date().toISOString();
+    } else if (action.nextKey === 'arrived' && !task.arrived_at) {
+      update.arrived_at = new Date().toISOString();
+    } else if (action.nextKey === 'done') {
+      update.completed_at = new Date().toISOString();
+    }
+
+    // ── Optimistic update — update cache immediately so UI responds instantly ──
+    const optimisticTask = { ...task, ...update };
+    queryClient.setQueryData(['task', task.id], optimisticTask);
+    queryClient.setQueryData(['tasks'], (old) =>
+      Array.isArray(old) ? old.map(t => t.id === task.id ? optimisticTask : t) : old
+    );
+    queryClient.setQueryData(['myTasks'], (old) =>
+      Array.isArray(old) ? old.map(t => t.id === task.id ? optimisticTask : t) : old
+    );
+
+    toast.success(action.label + ' ✓');
+    setPendingAction(null);
+    setUpdating(false);
+
+    // Fire & forget geolocation + DB write in background
     try {
-      const update = { worker_status: action.nextKey };
-      if (action.nextKey === 'on_the_way' && !task.on_the_way_at) {
-        update.on_the_way_at = new Date().toISOString();
-        await new Promise(resolve => {
-          if (!navigator.geolocation) return resolve();
-          navigator.geolocation.getCurrentPosition(
-            pos => { update.worker_lat = pos.coords.latitude; update.worker_lng = pos.coords.longitude; resolve(); },
-            () => resolve(), { timeout: 3000 }
-          );
-        });
-      } else if (action.nextKey === 'arrived' && !task.arrived_at) {
-        update.arrived_at = new Date().toISOString();
-      } else if (action.nextKey === 'done') {
-        update.completed_at = new Date().toISOString();
+      if (action.nextKey === 'on_the_way' && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            base44.entities.Task.update(task.id, { ...update, worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude })
+              .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }));
+          },
+          () => {
+            base44.entities.Task.update(task.id, update)
+              .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }));
+          },
+          { timeout: 4000 }
+        );
+      } else {
+        await base44.entities.Task.update(task.id, update);
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       }
-      await base44.entities.Task.update(task.id, update);
-      await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      toast.success(action.label + ' ✓');
-      setPendingAction(null);
     } catch {
-      toast.error('שגיאה בעדכון');
-    } finally {
-      setUpdating(false);
+      toast.error('שגיאת שמירה — נסה שוב');
     }
   };
 
