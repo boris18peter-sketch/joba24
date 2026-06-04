@@ -173,7 +173,10 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               {PRICE_OPTIONS.map(opt => (
                 <Chip key={opt.label} label={opt.label}
                   active={activePriceOption?.label === opt.label}
-                  onClick={() => setLocal(p => ({ ...p, minPrice: opt.min, maxPrice: opt.max }))}
+                  onClick={() => setLocal(p => activePriceOption?.label === opt.label
+                    ? { ...p, minPrice: '', maxPrice: '' }
+                    : { ...p, minPrice: opt.min, maxPrice: opt.max }
+                  )}
                 />
               ))}
             </div>
@@ -225,7 +228,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               {SORT_OPTIONS.map(opt => (
                 <Chip key={opt.val} label={opt.label}
                   active={local.sortBy === opt.val}
-                  onClick={() => setLocal(p => ({ ...p, sortBy: opt.val }))}
+                  onClick={() => setLocal(p => ({ ...p, sortBy: p.sortBy === opt.val ? '' : opt.val }))}
                 />
               ))}
             </div>

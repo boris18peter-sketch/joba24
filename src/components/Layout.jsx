@@ -574,7 +574,7 @@ export default function Layout() {
 
       {/* Live Notifications Stack */}
       {createPortal(
-        <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 200000, pointerEvents: 'none' }}>
+        <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 9999999, pointerEvents: 'none' }}>
           {notifications.map(notif => (
             <div key={notif.id} style={{ pointerEvents: 'auto' }}>
               <LiveNotificationPopup 

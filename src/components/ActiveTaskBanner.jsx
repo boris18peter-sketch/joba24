@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, ChevronLeft, Hammer, HardHat, CheckCircle, Clock, Loader2, X } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -129,10 +129,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           const tStepIdx  = tStatusInfo?.step ?? -1;
           const quickAction = tIsWorker ? getQuickAction(tStepIdx, t.worker_status) : null;
 
-          const isDone = t.worker_status === 'done';
-          const gradient = isDone
-            ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-            : 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)';
+          const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
           const statusText = tIsOwner
             ? tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד'
@@ -150,12 +147,12 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
             >
               {/* Live dot + badge */}
               <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ position: 'relative', display: 'inline-flex', width: 9, height: 9 }}>
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.6)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-                  <span style={{ position: 'relative', width: 9, height: 9, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
+                <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                  <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {tIsWorker ? <><Hammer size={11} /> משימה שאתה מבצע עכשיו</> : <><HardHat size={11} /> משימה שלך — בביצוע</>}
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 700, letterSpacing: 0.3 }}>
+                  {tIsWorker ? 'משימה פעילה' : 'בביצוע'}
                 </span>
               </div>
 
@@ -166,8 +163,9 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
               {/* Title + price */}
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>{statusText}</div>
                   <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
                     {tIsWorker ? (
                       <>
                         <span onClick={e => { e.stopPropagation(); if (t.client_id) navigate(`/public-profile?id=${t.client_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {t.client_name}</span>
@@ -216,7 +214,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                         boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.2)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={14} color={done ? (isDone ? '#059669' : '#1a6fd4') : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={14} color={done ? '#1a6fd4' : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
                       <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.5)', marginTop: 4 }}>{label}</div>
                     </div>
