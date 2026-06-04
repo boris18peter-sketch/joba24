@@ -484,7 +484,7 @@ export default function EditTask() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
             {PAYMENT_METHODS.map(pm => (
-              <button key={pm.value} onClick={() => set('payment_method', pm.value)}
+              <button key={pm.value} onClick={() => set('payment_method', form.payment_method === pm.value ? '' : pm.value)}
                 style={{ width: '100%', padding: '10px 4px', borderRadius: 10, fontSize: 13, fontWeight: form.payment_method === pm.value ? 700 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : inactiveBtn) }}
               >{pm.label}</button>
             ))}
