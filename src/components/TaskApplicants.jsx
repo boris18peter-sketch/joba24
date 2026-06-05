@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, Loader2, MessageCircle, UserX } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
+  // Track which application IDs are currently being declined (prevents double-click)
+  const decliningRef = useRef(new Set());
+  const [decliningIds, setDecliningIds] = useState(new Set());
+  // Track fade-out animations
+  const [fadingIds, setFadingIds] = useState(new Set());
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
@@ -87,13 +92,57 @@ export default function TaskApplicants({ task, onApprove }) {
     },
   });
 
+  // Decline (reject) a pending application — with double-click guard
+  const handleDecline = async (app) => {
+    if (decliningRef.current.has(app.id)) return; // already in flight
+    decliningRef.current.add(app.id);
+    setDecliningIds(new Set(decliningRef.current));
+
+    try {
+      const res = await base44.functions.invoke('declineApplication', {
+        applicationId: app.id,
+        taskId: task.id,
+      });
+
+      if (res.data?.code === 'already_declined') {
+        toast.info('הבקשה כבר נדחתה');
+        return;
+      }
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+
+      // Fade-out animation before removing
+      setFadingIds(prev => new Set([...prev, app.id]));
+      setTimeout(() => {
+        setFadingIds(prev => { const n = new Set(prev); n.delete(app.id); return n; });
+        queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        if (res.data?.auto_bump_resumed) {
+          toast.success('הבקשה נדחתה ועליית המחיר האוטומטית ממשיכה 📈');
+        } else {
+          toast.success('הבקשה נדחתה והקרדיטים הוחזרו לעובד 🪙');
+        }
+        onApprove?.();
+      }, 350);
+
+    } catch (err) {
+      if (err?.response?.status === 409) {
+        toast.info('הבקשה כבר נדחתה');
+      } else {
+        toast.error('שגיאה בדחיית הבקשה');
+      }
+    } finally {
+      decliningRef.current.delete(app.id);
+      setDecliningIds(new Set(decliningRef.current));
+    }
+  };
+
   const approvedApp = applications.find(a => a.status === 'approved');
   const pending = applications.filter(a => a.status === 'pending');
   const workerStarted = !!(task.worker_status);
 
   if (isLoading) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
-  if (applications.filter(a => a.status !== 'rejected').length === 0) {
+  if (applications.filter(a => a.status !== 'rejected' && a.status !== 'cancelled').length === 0) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
         <div className="text-2xl mb-2">✋</div>
@@ -157,8 +206,24 @@ export default function TaskApplicants({ task, onApprove }) {
 
       {visibleApps.map(app => {
         const isApproved = app.status === 'approved';
+        const isBeingDeclined = decliningIds.has(app.id);
+        const isFading = fadingIds.has(app.id);
+
         return (
-          <div key={app.id} style={{ background: isApproved ? '#f0fdf4' : 'white', border: isApproved ? '1.5px solid #86efac' : '1px solid #e8edf5', borderRadius: 14, padding: '10px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+          <div
+            key={app.id}
+            style={{
+              background: isApproved ? '#f0fdf4' : 'white',
+              border: isApproved ? '1.5px solid #86efac' : '1px solid #e8edf5',
+              borderRadius: 14,
+              padding: '10px 12px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              transition: 'opacity 0.35s ease, transform 0.35s ease',
+              opacity: isFading ? 0 : 1,
+              transform: isFading ? 'translateX(20px)' : 'translateX(0)',
+              pointerEvents: isFading ? 'none' : 'auto',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div
                 onClick={() => navigate(`/public-profile?id=${app.worker_id}`)}
@@ -205,15 +270,39 @@ export default function TaskApplicants({ task, onApprove }) {
                     </button>
                   )
                 ) : (
-                  !approvedApp && (
-                    <button
-                      onClick={() => approveMutation.mutate(app)}
-                      disabled={approveMutation.isPending}
-                      style={{ height: 32, padding: '0 12px', borderRadius: 10, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: approveMutation.isPending ? 0.6 : 1 }}
-                    >
-                      {approveMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <><CheckCircle2 size={13} /> אשר</>}
-                    </button>
-                  )
+                  <>
+                    {/* Decline button — only for pending, no approved app yet */}
+                    {!approvedApp && (
+                      <button
+                        onClick={() => handleDecline(app)}
+                        disabled={isBeingDeclined}
+                        style={{
+                          height: 32, padding: '0 10px', borderRadius: 10,
+                          background: 'white',
+                          border: '1px solid #e2e8f0',
+                          color: isBeingDeclined ? '#94a3b8' : '#64748b',
+                          fontWeight: 700, fontSize: 11,
+                          cursor: isBeingDeclined ? 'not-allowed' : 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          opacity: isBeingDeclined ? 0.6 : 1,
+                          transition: 'opacity 0.15s',
+                        }}
+                      >
+                        {isBeingDeclined ? <Loader2 size={12} className="animate-spin" /> : <><X size={12} /> דחה</>}
+                      </button>
+                    )}
+
+                    {/* Approve button */}
+                    {!approvedApp && (
+                      <button
+                        onClick={() => approveMutation.mutate(app)}
+                        disabled={approveMutation.isPending}
+                        style={{ height: 32, padding: '0 12px', borderRadius: 10, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: approveMutation.isPending ? 0.6 : 1 }}
+                      >
+                        {approveMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <><CheckCircle2 size={13} /> אשר</>}
+                      </button>
+                    )}
+                  </>
                 )}
 
                 {isApproved && (

@@ -182,6 +182,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
+  const cancellingRef = useRef(false); // hard guard — survives re-renders
+  const cancelTaskRef = useRef(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [applyLocked, setApplyLocked] = useState(false);
@@ -243,7 +245,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const handleCancelApp = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (cancelling || !myApp?.id) return;
+    if (cancellingRef.current || !myApp?.id) return;
+    cancellingRef.current = true;
     setCancelling(true);
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) =>
       old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
@@ -284,6 +287,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       queryClient.setQueryData(['myApp', task.id, currentUserId], myApp);
       toast.error('שגיאה בביטול, נסה שוב');
     } finally {
+      cancellingRef.current = false;
       setCancelling(false);
     }
   };
@@ -306,6 +310,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   };
 
   const handleCancelTask = async () => {
+    if (cancelTaskRef.current) return;
+    cancelTaskRef.current = true;
     setCancellingTask(true);
     try {
       const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
@@ -317,6 +323,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     } catch {
       toast.error('שגיאה בביטול, נסה שוב');
     } finally {
+      cancelTaskRef.current = false;
       setCancellingTask(false);
     }
   };
