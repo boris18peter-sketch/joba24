@@ -107,7 +107,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
             </span>
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
-          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{calculateCurrentPrice(task)}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
         </div>
 
         <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
@@ -499,7 +499,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           {/* Price + payment + distance */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{currentPrice}</span>
+              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{Math.round(currentPrice)}</span>
               {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
               {dist != null && !isNaN(dist) && (
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 7px' }}>

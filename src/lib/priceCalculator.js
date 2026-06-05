@@ -22,5 +22,5 @@ export function calculateCurrentPrice(task) {
   const progress = Math.min(elapsedHours / 24, 1);
 
   const currentPrice = task.base_price + (task.max_price - task.base_price) * progress;
-  return parseFloat(currentPrice.toFixed(2));
+  return Math.round(currentPrice);
 }

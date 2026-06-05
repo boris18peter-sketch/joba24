@@ -706,7 +706,7 @@ export default function TaskDetail() {
             {/* Price */}
             <div style={{ marginBottom: 12 }}>
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
+                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
                 {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
               </div>
             </div>
@@ -784,7 +784,7 @@ export default function TaskDetail() {
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />
-                הגש מועמדות למשימה — {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={14} />
+                הגש מועמדות למשימה — {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
               </button>
             }
 
@@ -952,8 +952,8 @@ export default function TaskDetail() {
                 <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.5 }}>
                   המחיר עולה בהדרגה מ-₪{task.base_price} עד ₪{task.max_price} כל 5 דקות, כדי שהמשימה תהיה אטרקטיבית ותמשוך בקשות לביצוע.
                   {applicationCount > 0
-                    ? <span style={{ color: '#059669', fontWeight: 700, display: 'block', marginTop: 2 }}>✓ המחיר הוקפא על ₪{calculateCurrentPrice(task)} — התקבלה בקשה</span>
-                    : <span style={{ display: 'block', marginTop: 2 }}>כעת: ₪{calculateCurrentPrice(task)} · נעצר אוטומטית עם קבלת בקשה ראשונה</span>}
+                    ? <span style={{ color: '#059669', fontWeight: 700, display: 'block', marginTop: 2 }}>✓ המחיר הוקפא על ₪{Math.round(calculateCurrentPrice(task))} — התקבלה בקשה</span>
+                    : <span style={{ display: 'block', marginTop: 2 }}>כעת: ₪{Math.round(calculateCurrentPrice(task))} · נעצר אוטומטית עם קבלת בקשה ראשונה</span>}
                 </div>
               </div>
             )}
