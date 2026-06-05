@@ -119,10 +119,10 @@ export default function TaskDetail() {
     queryKey: ['applications-pulse', id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
     enabled: !!id,
-    staleTime: 30000,
-    refetchInterval: 45000
+    staleTime: 0,
+    refetchInterval: 15000
   });
-  const applicationCount = taskApplications.filter((a) => a.status !== 'cancelled').length;
+  const applicationCount = taskApplications.filter((a) => a.status === 'pending' || a.status === 'approved').length;
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
@@ -202,6 +202,7 @@ export default function TaskDetail() {
         queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
         queryClient.invalidateQueries({ queryKey: ['task', id] });
         queryClient.invalidateQueries({ queryKey: ['applications', id] });
+        queryClient.invalidateQueries({ queryKey: ['applications-pulse', id] });
       }
     });
     return () => {

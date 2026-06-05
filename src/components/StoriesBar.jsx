@@ -44,9 +44,11 @@ function StoryCard({ task, onClick }) {
 function StoriesViewer({ stories, startIndex, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
-  const intervalRef = useRef(null);
+  const [paused, setPaused] = useState(false);
   const progressRef = useRef(null);
   const touchStartX = useRef(null);
+  const touchStartTime = useRef(null);
+  const holdTimer = useRef(null);
 
   const task = stories[currentIndex];
 
@@ -67,7 +69,10 @@ function StoriesViewer({ stories, startIndex, onClose }) {
   };
 
   useEffect(() => {
-    setProgress(0);
+    if (paused) {
+      clearInterval(progressRef.current);
+      return;
+    }
     const step = 50;
     const increment = (step / STORY_DURATION) * 100;
 
@@ -83,39 +88,59 @@ function StoriesViewer({ stories, startIndex, onClose }) {
     }, step);
 
     return () => clearInterval(progressRef.current);
-  }, [currentIndex]);
-
-  const handleTap = (e) => {
-    const x = e.clientX || (e.touches?.[0]?.clientX);
-    const half = window.innerWidth / 2;
-    if (x < half) goPrev();
-    else goNext();
-  };
+  }, [currentIndex, paused]);
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
+    touchStartTime.current = Date.now();
+    // Hold to pause
+    holdTimer.current = setTimeout(() => setPaused(true), 150);
   };
 
   const handleTouchEnd = (e) => {
+    clearTimeout(holdTimer.current);
+    const elapsed = Date.now() - touchStartTime.current;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
+
+    if (paused) {
+      setPaused(false);
+      return;
+    }
+
     if (Math.abs(dx) > 50) {
       if (dx > 0) goPrev();
       else goNext();
+    } else if (elapsed < 300) {
+      const x = e.changedTouches[0].clientX;
+      const half = window.innerWidth / 2;
+      if (x < half) goPrev();
+      else goNext();
     }
+  };
+
+  const handleMouseDown = () => {
+    holdTimer.current = setTimeout(() => setPaused(true), 150);
+  };
+
+  const handleMouseUp = () => {
+    clearTimeout(holdTimer.current);
+    if (paused) setPaused(false);
   };
 
   if (!task) return null;
 
   const label = getCategoryLabel(task.category);
   const currentPrice = calculateCurrentPrice(task);
+  const applyCost = Math.max(1, Math.round((currentPrice || 0) * 0.05));
 
   return (
     <div
       className="fixed inset-0 bg-black flex items-center justify-center"
-      style={{ zIndex: 100000 }}
-      onClick={handleTap}
+      style={{ zIndex: 100000, userSelect: 'none' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
       dir="rtl"
     >
       {/* Progress bars */}
@@ -156,28 +181,37 @@ function StoriesViewer({ stories, startIndex, onClose }) {
         <span className="bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full">{label}</span>
       </div>
 
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 text-white z-20" style={{ padding: '0 24px', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-        <div className="text-4xl font-black mb-1">₪{currentPrice}</div>
-        <h2 className="text-xl font-bold leading-tight mb-2">{task.title}</h2>
+      {/* Content — bottom panel with background */}
+      <div className="absolute bottom-0 left-0 right-0 z-20" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+        {/* Text background panel */}
+        <div style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 70%, transparent 100%)', padding: '28px 20px 16px', color: 'white' }}>
+          <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>₪{currentPrice}</div>
+          <h2 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.25, marginBottom: task.description ? 8 : 10 }}>{task.title}</h2>
 
-        {task.description && (
-          <p className="text-sm text-white/80 mb-3 line-clamp-2">{task.description}</p>
-        )}
-        {task.location_name && (
-          <div className="flex items-center gap-1.5 text-xs text-white/70 mb-3">
-            <MapPin className="w-3.5 h-3.5" />
-            {task.location_name}
-          </div>
-        )}
-        <Link
-          to={`/task/${task.id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full rounded-2xl flex items-center justify-center font-bold text-base py-4 text-white"
-          style={{ background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)' }}
-        >
-          🔍 בדוק את הג'ובה
-        </Link>
+          {task.description && (
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45 }}>{task.description}</p>
+          )}
+          {task.location_name && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 12 }}>
+              <MapPin size={12} />
+              {task.location_name}
+            </div>
+          )}
+        </div>
+        {/* CTA button */}
+        <div style={{ padding: '0 16px' }}>
+          <Link
+            to={`/task/${task.id}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none' }}
+          >
+            🔍 בדוק את המשימה
+            <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 9px', fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 3 }}>
+              {applyCost}
+              <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
+            </span>
+          </Link>
+        </div>
       </div>
     </div>
   );
