@@ -943,12 +943,12 @@ export default function TaskDetail() {
             {/* Auto-bump — owner only, at top */}
             {isOwner && task.auto_bump_enabled && task.base_price && task.max_price && (
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '9px 14px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 2 }}>📈 מחיר עולה אוטומטית</div>
-                <div style={{ fontSize: 12, color: '#b45309' }}>
-                  הגדרת טווח מחיר: ₪{task.base_price} → ₪{task.max_price}
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 4 }}>📈 מחיר עולה אוטומטית</div>
+                <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.5 }}>
+                  המחיר עולה בהדרגה מ-₪{task.base_price} עד ₪{task.max_price} כל 5 דקות, כדי שהמשימה תהיה אטרקטיבית ותמשוך בקשות לביצוע.
                   {applicationCount > 0
-                    ? ` · המחיר הוקפא על ₪${calculateCurrentPrice(task)} (יש מועמדים)`
-                    : ` · כעת: ₪${calculateCurrentPrice(task)}`}
+                    ? <span style={{ color: '#059669', fontWeight: 700, display: 'block', marginTop: 2 }}>✓ המחיר הוקפא על ₪{calculateCurrentPrice(task)} — התקבלה בקשה</span>
+                    : <span style={{ display: 'block', marginTop: 2 }}>כעת: ₪{calculateCurrentPrice(task)} · נעצר אוטומטית עם קבלת בקשה ראשונה</span>}
                 </div>
               </div>
             )}

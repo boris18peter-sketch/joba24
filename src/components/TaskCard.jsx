@@ -13,7 +13,6 @@ import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
-import useCountUp from '@/hooks/useCountUp';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 const URGENCY_TAG_CONFIG = {
@@ -163,30 +162,19 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
 
 // ── Scanning Label (no applicants state) ─────────────────────────────────────
 function ScanningLabel() {
-  const [phase, setPhase] = useState(0); // 0 = "אין עדיין בקשות", 1 = scanner
-  useEffect(() => {
-    const iv = setInterval(() => setPhase(p => (p + 1) % 2), 2200);
-    return () => clearInterval(iv);
-  }, []);
-
-  if (phase === 1) {
-    // Radar/scanner animation
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
-          {/* outer ring */}
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+        <span style={{ position: 'relative', width: 13, height: 13, flexShrink: 0 }}>
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
-          {/* sweep */}
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
-          {/* center dot */}
           <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
         </span>
-        <span style={{ fontSize: 11 }}>סורק עובדים...</span>
+        <span style={{ fontSize: 11, fontWeight: 700 }}>סורק עובדים...</span>
       </span>
-    );
-  }
-
-  return <span style={{ fontSize: 11 }}>אין עדיין בקשות</span>;
+      <span style={{ fontSize: 9, opacity: 0.8, fontWeight: 500 }}>אין עדיין בקשות</span>
+    </span>
+  );
 }
 
 // ── TaskCard ──────────────────────────────────────────────────────────────────
@@ -209,17 +197,25 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const cardRef = useRef(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
-  // Live applicant count from TaskApplication entity (more reliable than task.applicants array)
-  const [liveApplicantCount, setLiveApplicantCount] = useState(task.applicants?.length || 0);
-  const animatedCount = useCountUp(liveApplicantCount, 450);
-  const [countPulsing, setCountPulsing] = useState(false);
+  // Live applicant count — initialised from TaskApplication entity to avoid stale task.applicants cache
+  const [liveApplicantCount, setLiveApplicantCount] = useState(() => {
+    // task.applicants may be stale; we'll refetch from DB shortly, but start with best guess
+    return task.applicants?.length || 0;
+  });
   const prevCountRef = useRef(liveApplicantCount);
+
+  // Fetch accurate count on mount (bypasses stale task.applicants cache)
+  useEffect(() => {
+    base44.entities.TaskApplication.filter({ task_id: task.id }).then(apps => {
+      const activeCount = apps.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length;
+      setLiveApplicantCount(activeCount);
+    }).catch(() => {});
+  }, [task.id]);
 
   useEffect(() => {
     // Subscribe to live application changes for this task
     const unsub = base44.entities.TaskApplication.subscribe(event => {
       if (event.data?.task_id !== task.id) return;
-      // Refetch count when an application is created/updated/deleted
       base44.entities.TaskApplication.filter({ task_id: task.id }).then(apps => {
         const activeCount = apps.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length;
         setLiveApplicantCount(activeCount);
@@ -229,10 +225,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   }, [task.id]);
 
   useEffect(() => {
-    if (prevCountRef.current !== liveApplicantCount && prevCountRef.current !== 0) {
-      setCountPulsing(true);
-      setTimeout(() => setCountPulsing(false), 700);
-    }
     prevCountRef.current = liveApplicantCount;
   }, [liveApplicantCount]);
 
@@ -413,17 +405,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         )}
 
-        {/* Auto-bump banner — owner only */}
-        {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ fontSize: 12 }}>📈</span>
-            <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600 }}>
-              מחיר עולה אוטומטית · ₪{task.base_price} → ₪{task.max_price}
-              {liveApplicantCount > 0 && <span style={{ color: '#059669', marginRight: 4 }}> · קפוא</span>}
-            </div>
-          </div>
-        )}
-
         {/* Pending banner */}
         {isPending && (
           <div onClick={e => e.stopPropagation()} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -471,17 +452,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 ✦ For You
               </span>
             )}
-            {liveApplicantCount > 0 && (
-              <span style={{
-                fontSize: 11, fontWeight: countPulsing ? 700 : 500,
-                color: countPulsing ? '#1a6fd4' : '#94a3b8',
-                display: 'flex', alignItems: 'center', gap: 2,
-                transition: 'color 0.25s',
-                animation: countPulsing ? 'numFlash 0.5s ease' : 'none',
-              }}>
-                👥 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{animatedCount}</span>
-              </span>
-            )}
+
           </div>
         </div>
 
@@ -518,13 +489,20 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         {/* Card Footer: price + apply */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
           {/* Price + payment + distance */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{currentPrice}</span>
-            {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
-            {dist != null && !isNaN(dist) && (
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 7px' }}>
-                <Navigation size={10} strokeWidth={2} color="#1a6fd4" />
-                {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{currentPrice}</span>
+              {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
+              {dist != null && !isNaN(dist) && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 7px' }}>
+                  <Navigation size={10} strokeWidth={2} color="#1a6fd4" />
+                  {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+                </span>
+              )}
+            </div>
+            {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
+              <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>
+                📈 ₪{task.base_price} ← ₪{task.max_price}{liveApplicantCount > 0 ? ' · נעצר (יש בקשה)' : ' · נעצר כאשר יש בקשה'}
               </span>
             )}
           </div>

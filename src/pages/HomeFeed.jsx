@@ -457,6 +457,9 @@ export default function HomeFeed() {
               )}
             </div>
 
+            {/* Stories Bar — only in available tab, below search */}
+            <StoriesBar />
+
             {isLoading ?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {Array(4).fill(0).map((_, i) => <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '16px' }} className="animate-pulse"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}><div style={{ flex: 1 }}><div className="h-4 bg-gray-100 rounded-lg w-3/4 mb-3" /><div className="h-3 bg-gray-100 rounded-lg w-1/3 mb-4" /><div className="h-3 bg-gray-100 rounded-lg w-1/2" /></div><div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}><div className="h-6 bg-gray-100 rounded-lg w-16" /><div className="h-8 bg-gray-100 rounded-lg w-16" /></div></div></div>)}

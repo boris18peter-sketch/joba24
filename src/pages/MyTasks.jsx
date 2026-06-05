@@ -104,7 +104,14 @@ export default function MyTasks() {
     },
   });
 
-  const handleReopen = (task) => {
+  const handleReopen = async (task) => {
+    // Reset applications + refund credits before reopening
+    try {
+      await base44.functions.invoke('resetTaskApplications', { taskId: task.id });
+    } catch (e) {
+      console.error('resetTaskApplications failed', e);
+    }
+
     // Only EXPIRED tasks that were already paid don't need a new payment
     if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
       navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
@@ -115,7 +122,7 @@ export default function MyTasks() {
       repost: '1',
       title: task.title || '',
       description: task.description || '',
-      price: String(task.price || ''),
+      price: String(task.base_price || task.price || ''),
       city: task.city || '',
       location_name: task.location_name || '',
       category: task.category || '',

@@ -340,14 +340,15 @@ export default function EditTask() {
             <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>העלאת מחיר אוטומטית</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>המחיר יעלה כל 5 דקות עד המקסימום</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>📈 העלאת מחיר אוטומטית</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>המחיר יעלה מהמחיר שהגדרת לעיל עד למחיר המקסימלי, כל 5 דקות — כדי שהמשימה תהיה אטרקטיבית יותר ותמשוך בקשות. העלאת המחיר נעצרת אוטומטית ברגע שמגיעה בקשה ראשונה.</div>
             </div>
           </button>
           {form.auto_bump_enabled && (
             <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
-              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 8 }}>מחיר מקסימלי (₪)</Label>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>מחיר מקסימלי (₪)</Label>
+              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>המחיר יעלה בהדרגה מ-₪{form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.</div>
               <Input type="number" placeholder="250"
                 value={form.max_price} onChange={e => set('max_price', e.target.value)}
                 style={{ background: 'white', border: '1px solid #fcd34d', borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
