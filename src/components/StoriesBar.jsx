@@ -5,6 +5,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import { X, MapPin, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
+import { parseDescription } from '@/lib/descriptionParser';
 
 function calcDistKm(userLoc, task) {
   if (!userLoc || !task.lat || !task.lng) return null;
@@ -142,6 +143,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
   const currentPrice = calculateCurrentPrice(task);
   const applyCost = Math.max(1, Math.round((currentPrice || 0) * 0.05));
   const distKm = calcDistKm(userLocation, task);
+  const { mainDescription } = parseDescription(task.description);
 
   return (
     <div
@@ -198,8 +200,8 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
           <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>₪{currentPrice}</div>
           <h2 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.25, marginBottom: task.description ? 8 : 10 }}>{task.title}</h2>
 
-          {task.description && (
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45 }}>{task.description}</p>
+          {mainDescription && (
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45 }}>{mainDescription}</p>
           )}
           {(task.location_name || distKm != null) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 12, flexWrap: 'wrap' }}>
