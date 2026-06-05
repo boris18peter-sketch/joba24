@@ -14,6 +14,7 @@ import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
+import { parseDescription } from '@/lib/descriptionParser';
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔥', label: 'דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
@@ -470,7 +471,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </h3>
           {task.description && (
             <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-              {task.description}
+              {parseDescription(task.description).mainDescription}
             </p>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>

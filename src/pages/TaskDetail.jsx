@@ -40,6 +40,7 @@ import ReportModal from '@/components/ReportModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
+import { parseDescription } from '@/lib/descriptionParser';
 
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
@@ -520,6 +521,8 @@ export default function TaskDetail() {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   })();
 
+  const { mainDescription, extraLines } = parseDescription(task.description);
+
   const isOwner = me?.id === task.client_id;
   const hasWorker = !!task.worker_id;
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
@@ -708,10 +711,10 @@ export default function TaskDetail() {
               </div>
             </div>
 
-            {/* Description */}
-            {task.description &&
+            {/* Description — only the user-written part, not category extras */}
+            {mainDescription &&
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
-                {task.description.length > 180 ? task.description.slice(0, 180) + '…' : task.description}
+                {mainDescription.length > 180 ? mainDescription.slice(0, 180) + '…' : mainDescription}
               </div>
             }
 
@@ -938,6 +941,7 @@ export default function TaskDetail() {
         {(task.estimated_time || task.category ||
           task.address_building || task.address_floor || task.address_apartment || task.address_notes ||
           task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience ||
+          extraLines.length > 0 ||
           (isOwner && task.auto_bump_enabled && task.base_price && task.max_price)) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 11 }}>
 
@@ -1021,6 +1025,31 @@ export default function TaskDetail() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Category-specific extra fields (from description parser) */}
+            {extraLines.length > 0 && (
+              <>
+                <div style={{ height: 1, background: 'var(--border-1)', margin: '2px 0' }} />
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטים נוספים</div>
+                {extraLines.map((line, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>
+                      {line.isToggle ? '✓' : '•'}
+                    </div>
+                    <div>
+                      {line.isToggle ? (
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{line.label}</div>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{line.label}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{line.value}</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         )}

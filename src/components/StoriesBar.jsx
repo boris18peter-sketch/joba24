@@ -2,9 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { getCategoryLabel } from '@/lib/categories';
-import { X, MapPin } from 'lucide-react';
+import { X, MapPin, Navigation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
+
+function calcDistKm(userLoc, task) {
+  if (!userLoc || !task.lat || !task.lng) return null;
+  const R = 6371;
+  const dLat = (task.lat - userLoc.lat) * Math.PI / 180;
+  const dLon = (task.lng - userLoc.lng) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLoc.lat * Math.PI / 180) * Math.cos(task.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 const STORY_DURATION = 5000; // 5 seconds per story
 
@@ -41,7 +50,7 @@ function StoryCard({ task, onClick }) {
    );
  }
 
-function StoriesViewer({ stories, startIndex, onClose }) {
+function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -132,6 +141,7 @@ function StoriesViewer({ stories, startIndex, onClose }) {
   const label = getCategoryLabel(task.category);
   const currentPrice = calculateCurrentPrice(task);
   const applyCost = Math.max(1, Math.round((currentPrice || 0) * 0.05));
+  const distKm = calcDistKm(userLocation, task);
 
   return (
     <div
@@ -191,10 +201,15 @@ function StoriesViewer({ stories, startIndex, onClose }) {
           {task.description && (
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.45 }}>{task.description}</p>
           )}
-          {task.location_name && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 12 }}>
-              <MapPin size={12} />
-              {task.location_name}
+          {(task.location_name || distKm != null) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 12, flexWrap: 'wrap' }}>
+              {task.location_name && <><MapPin size={12} /><span>{task.location_name.split(',')[0]}</span></>}
+              {distKm != null && !isNaN(distKm) && (
+                <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Navigation size={10} />
+                  {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -219,7 +234,18 @@ function StoriesViewer({ stories, startIndex, onClose }) {
 
 export default function StoriesBar() {
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { timeout: 5000 }
+      );
+    }
+  }, []);
 
   // Real-time price updates in stories
   useEffect(() => {
@@ -259,6 +285,7 @@ export default function StoriesBar() {
         <StoriesViewer
           stories={stories}
           startIndex={selectedIndex}
+          userLocation={userLocation}
           onClose={() => setSelectedIndex(null)}
         />
       )}
