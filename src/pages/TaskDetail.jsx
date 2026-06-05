@@ -703,11 +703,6 @@ export default function TaskDetail() {
             <div style={{ marginBottom: 12 }}>
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
                 <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{calculateCurrentPrice(task)}</div>
-                {task.auto_bump_enabled && task.base_price && task.max_price && (
-                  <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 10, marginTop: 2 }}>
-                    📈 {applicationCount > 0 ? 'מחיר קפוא (יש מועמדים)' : `${task.base_price}₪ → ${task.max_price}₪ אוטומטי`}
-                  </div>
-                )}
                 {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
               </div>
             </div>
@@ -939,63 +934,36 @@ export default function TaskDetail() {
 
 
         {/* ── Task Details Card ───────────────────────────────────────── */}
-        {(task.estimated_time || task.category || task.approval_mode || task.urgency_tag ||
+        {(task.estimated_time || task.category ||
           task.address_building || task.address_floor || task.address_apartment || task.address_notes ||
           task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
 
-            {/* Estimated time */}
-            {task.estimated_time && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 11, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={15} color="#1a6fd4" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>זמן משוער</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>
-                    {task.estimated_time === '15m' ? 'רבע שעה' : task.estimated_time === '30m' ? 'חצי שעה' : task.estimated_time === '1h' ? 'שעה' : task.estimated_time === '2h' ? 'שעתיים' : task.estimated_time}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Category */}
-            {task.category && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 11, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>
-                  {CATEGORY_EMOJI[task.category] || '🔨'}
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>קטגוריה</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
-                </div>
-              </div>
-            )}
-
-            {/* Approval mode */}
-            {task.approval_mode && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 11, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <CheckCircle2 size={15} color="#059669" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>אופן אישור</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>
-                    {task.approval_mode === 'instant' ? '⚡ אישור מיידי' : '🤝 אישור ידני על ידי המפרסם'}
-                  </div>
-                </div>
+            {/* Quick info row: estimated time + category */}
+            {(task.estimated_time || task.category) && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {task.estimated_time && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 20, padding: '4px 12px' }}>
+                    <Clock size={12} /> {task.estimated_time === '15m' ? 'רבע שעה' : task.estimated_time === '30m' ? 'חצי שעה' : task.estimated_time === '1h' ? 'שעה' : task.estimated_time === '2h' ? 'שעתיים' : task.estimated_time}
+                  </span>
+                )}
+                {task.category && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#374151', background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 20, padding: '4px 12px' }}>
+                    {CATEGORY_EMOJI[task.category] || '🔨'} {getCategoryLabel(task.category)}
+                  </span>
+                )}
               </div>
             )}
 
             {/* Full address */}
             {(task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 11, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <MapPin size={15} color="#ea580c" />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MapPin size={13} color="#ea580c" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>פרטי כתובת</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>פרטי כתובת</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
                     {[
                       task.address_building && `בניין ${task.address_building}`,
@@ -1011,39 +979,29 @@ export default function TaskDetail() {
             {/* Requirements */}
             {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
               <div>
-                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8 }}>דרישות מיוחדות</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>דרישות</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {task.requirements.vehicle && (
-                    <span style={{ fontSize: 12, fontWeight: 700, background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: 20, padding: '4px 12px' }}>
-                      🚗 נדרש רכב
-                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: 20, padding: '4px 12px' }}>🚗 נדרש רכב</span>
                   )}
                   {task.requirements.two_people && (
-                    <span style={{ fontSize: 12, fontWeight: 700, background: '#ede9fe', color: '#5b21b6', border: '1px solid #ddd6fe', borderRadius: 20, padding: '4px 12px' }}>
-                      👥 שני אנשים
-                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, background: '#ede9fe', color: '#5b21b6', border: '1px solid #ddd6fe', borderRadius: 20, padding: '4px 12px' }}>👥 שני אנשים</span>
                   )}
                   {task.requirements.experience && (
-                    <span style={{ fontSize: 12, fontWeight: 700, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 20, padding: '4px 12px' }}>
-                      🎓 נדרש ניסיון
-                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 20, padding: '4px 12px' }}>🎓 נדרש ניסיון</span>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Auto-bump price info */}
-            {task.auto_bump_enabled && task.base_price && task.max_price && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '10px 14px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 4 }}>📈 מחיר עולה אוטומטית</div>
-                <div style={{ fontSize: 12, color: '#b45309' }}>
-                  המחיר עולה מ-₪{task.base_price} עד ₪{task.max_price} · כעת: ₪{calculateCurrentPrice(task)}
+            {/* Auto-bump — owner only */}
+            {isOwner && task.auto_bump_enabled && task.base_price && task.max_price && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13 }}>📈</span>
+                <div style={{ fontSize: 12, color: '#b45309', fontWeight: 600 }}>
+                  מחיר עולה אוטומטית · ₪{task.base_price} → ₪{task.max_price}
+                  {applicationCount > 0 && <span style={{ color: '#059669', marginRight: 6 }}>· קפוא</span>}
                 </div>
-                {applicationCount > 0 && (
-                  <div style={{ fontSize: 11, color: '#059669', marginTop: 4, fontWeight: 700 }}>
-                    ✅ המחיר הוקפא — יש {applicationCount} מועמדים
-                  </div>
-                )}
               </div>
             )}
           </div>
