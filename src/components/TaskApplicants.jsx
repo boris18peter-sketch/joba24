@@ -79,6 +79,7 @@ export default function TaskApplicants({ task, onApprove }) {
       await queryClient.refetchQueries({ queryKey: ['task', task.id] });
       await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
       const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
@@ -115,6 +116,7 @@ export default function TaskApplicants({ task, onApprove }) {
       setTimeout(() => {
         setFadingIds(prev => { const n = new Set(prev); n.delete(app.id); return n; });
         queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+        queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         if (res.data?.auto_bump_resumed) {
           toast.success('הבקשה נדחתה ועליית המחיר האוטומטית ממשיכה 📈');
