@@ -161,24 +161,33 @@ export default function Chat() {
     enabled: !!otherPersonIdCalc,
   });
 
-  // Load message history with polling fallback
+  // Load message history — use sessionStorage cache to avoid empty screen on re-enter
+  const CACHE_KEY = `chat_msgs_${taskId}`;
   const { data: fetchedMessages = [] } = useQuery({
     queryKey: ['chatMessages', taskId],
     queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
-    staleTime: 3000,
-    refetchInterval: 8000,
+    staleTime: 5000,
+    refetchInterval: 10000,
+    initialData: () => {
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        return cached ? JSON.parse(cached) : undefined;
+      } catch { return undefined; }
+    },
   });
 
-  // Sync fetched messages into local state (merging with real-time updates)
+  // Sync fetched messages into local state + persist to sessionStorage
   useEffect(() => {
     if (!fetchedMessages.length) return;
     setMessages(prev => {
-      // Merge: keep real-time messages that aren't in fetched yet
       const fetchedIds = new Set(fetchedMessages.map(m => m.id));
-      const extraRealtime = prev.filter(m => !fetchedIds.has(m.id));
-      return [...fetchedMessages, ...extraRealtime].sort((a, b) =>
+      const extraRealtime = prev.filter(m => m._optimistic || !fetchedIds.has(m.id));
+      const merged = [...fetchedMessages, ...extraRealtime].sort((a, b) =>
         new Date(a.created_date || 0) - new Date(b.created_date || 0)
       );
+      // Persist to session for instant restore on re-entry
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetchedMessages)); } catch {}
+      return merged;
     });
   }, [fetchedMessages]);
 

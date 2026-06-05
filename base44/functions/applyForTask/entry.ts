@@ -57,6 +57,20 @@ Deno.serve(async (req) => {
     note: `הגשת בקשה למשימה: ${task.title}`,
   });
 
+  // If auto_bump is enabled and this is the FIRST application, freeze the current price on the task
+  if (task.auto_bump_enabled && task.base_price && task.max_price) {
+    const existingApps = await base44.entities.TaskApplication.filter({ task_id: taskId });
+    const activeApps = existingApps.filter(a => a.status === 'pending' || a.status === 'approved');
+    if (activeApps.length === 0) {
+      // First applicant: freeze price by writing current calculated price to task.price
+      const createdTime = new Date(task.created_date).getTime();
+      const elapsedHours = (Date.now() - createdTime) / (1000 * 60 * 60);
+      const progress = Math.min(elapsedHours / 24, 1);
+      const frozenPrice = parseFloat((task.base_price + (task.max_price - task.base_price) * progress).toFixed(2));
+      await base44.asServiceRole.entities.Task.update(taskId, { price: frozenPrice });
+    }
+  }
+
   // Create application
   const newApp = await base44.entities.TaskApplication.create({
     task_id: taskId,

@@ -103,11 +103,11 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
             <span>עלות הגשה:</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={12} />
+              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} />
             </span>
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
-          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{task.price}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{calculateCurrentPrice(task)}</div>
         </div>
 
         <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
@@ -181,18 +181,32 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const cardRef = useRef(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
-  const applicantCount = task.applicants?.length || 0;
-  const animatedCount = useCountUp(applicantCount, 450);
+  // Live applicant count from TaskApplication entity (more reliable than task.applicants array)
+  const [liveApplicantCount, setLiveApplicantCount] = useState(task.applicants?.length || 0);
+  const animatedCount = useCountUp(liveApplicantCount, 450);
   const [countPulsing, setCountPulsing] = useState(false);
-  const prevCountRef = useRef(applicantCount);
+  const prevCountRef = useRef(liveApplicantCount);
 
   useEffect(() => {
-    if (prevCountRef.current !== applicantCount && prevCountRef.current !== 0) {
+    // Subscribe to live application changes for this task
+    const unsub = base44.entities.TaskApplication.subscribe(event => {
+      if (event.data?.task_id !== task.id) return;
+      // Refetch count when an application is created/updated/deleted
+      base44.entities.TaskApplication.filter({ task_id: task.id }).then(apps => {
+        const activeCount = apps.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length;
+        setLiveApplicantCount(activeCount);
+      }).catch(() => {});
+    });
+    return unsub;
+  }, [task.id]);
+
+  useEffect(() => {
+    if (prevCountRef.current !== liveApplicantCount && prevCountRef.current !== 0) {
       setCountPulsing(true);
       setTimeout(() => setCountPulsing(false), 700);
     }
-    prevCountRef.current = applicantCount;
-  }, [applicantCount]);
+    prevCountRef.current = liveApplicantCount;
+  }, [liveApplicantCount]);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -299,7 +313,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     if (badges.isHighPay) badgeLabels.push('שכר גבוה');
     if (badges.isFunded)  badgeLabels.push('ממומן');
     if (badges.isNearby)  badgeLabels.push('קרוב אליך');
-    if (badges.isLowComp && !badges.isNew) badgeLabels.push('ללא מגישים');
+    if (badges.isLowComp && !badges.isNew && liveApplicantCount === 0) badgeLabels.push('ללא מגישים');
   }
 
   return (
@@ -418,12 +432,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 ✦ For You
               </span>
             )}
-            {applicantCount > 0 && (
+            {liveApplicantCount > 0 && (
               <span style={{
                 fontSize: 11, fontWeight: countPulsing ? 700 : 500,
                 color: countPulsing ? '#1a6fd4' : '#94a3b8',
                 display: 'flex', alignItems: 'center', gap: 2,
                 transition: 'color 0.25s',
+                animation: countPulsing ? 'numFlash 0.5s ease' : 'none',
               }}>
                 👥 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{animatedCount}</span>
               </span>
@@ -532,7 +547,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                     style={{ height: 36, padding: '0 14px', borderRadius: 10, background: '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : '0 3px 10px rgba(26,111,212,0.3)' }}
                   >
                     {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
-                      <><span>הגש מועמדות</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((task.price || 0) * 0.05))} <CreditIcon size={10} /></span></>
+                      <><span>הגש מועמדות</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
                     )}
                   </button>
                 )}

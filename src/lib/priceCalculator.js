@@ -1,23 +1,26 @@
 /**
- * Calculate the current price of a task based on auto-bump settings
- * If auto_bump_enabled and base_price + max_price are set, the price gradually increases over time
- * Otherwise, returns the fixed price
+ * Calculate the current price of a task based on auto-bump settings.
+ * Price increases linearly over 24 hours from base_price to max_price.
+ * STOPS increasing as soon as there is at least one active applicant.
  */
 export function calculateCurrentPrice(task) {
-  // If auto_bump not enabled or missing required fields, return fixed price
   if (!task.auto_bump_enabled || !task.base_price || !task.max_price) {
+    return task.price;
+  }
+
+  // Freeze price when there are active applicants
+  const activeApplicants = (task.applicants || []).length;
+  if (activeApplicants > 0) {
+    // Return the stored price (which was the price at the time of the first application)
     return task.price;
   }
 
   // Price increases linearly over 24 hours
   const createdTime = new Date(task.created_date).getTime();
   const now = new Date().getTime();
-  const elapsedMs = now - createdTime;
-  const elapsedHours = elapsedMs / (1000 * 60 * 60);
-  const bumpProgressPercent = Math.min(elapsedHours / 24, 1); // Cap at 100% (24 hours)
+  const elapsedHours = (now - createdTime) / (1000 * 60 * 60);
+  const progress = Math.min(elapsedHours / 24, 1);
 
-  const priceIncrease = (task.max_price - task.base_price) * bumpProgressPercent;
-  const currentPrice = task.base_price + priceIncrease;
-
+  const currentPrice = task.base_price + (task.max_price - task.base_price) * progress;
   return parseFloat(currentPrice.toFixed(2));
 }
