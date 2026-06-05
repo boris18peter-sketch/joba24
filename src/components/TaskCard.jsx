@@ -161,6 +161,34 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
   );
 }
 
+// ── Scanning Label (no applicants state) ─────────────────────────────────────
+function ScanningLabel() {
+  const [phase, setPhase] = useState(0); // 0 = "אין עדיין בקשות", 1 = scanner
+  useEffect(() => {
+    const iv = setInterval(() => setPhase(p => (p + 1) % 2), 2200);
+    return () => clearInterval(iv);
+  }, []);
+
+  if (phase === 1) {
+    // Radar/scanner animation
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
+          {/* outer ring */}
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
+          {/* sweep */}
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
+          {/* center dot */}
+          <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
+        </span>
+        <span style={{ fontSize: 11 }}>סורק עובדים...</span>
+      </span>
+    );
+  }
+
+  return <span style={{ fontSize: 11 }}>אין עדיין בקשות</span>;
+}
+
 // ── TaskCard ──────────────────────────────────────────────────────────────────
 export default function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
   const navigate = useNavigate();
@@ -385,6 +413,17 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         )}
 
+        {/* Auto-bump banner — owner only */}
+        {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '8px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ fontSize: 12 }}>📈</span>
+            <div style={{ fontSize: 11, color: '#b45309', fontWeight: 600 }}>
+              מחיר עולה אוטומטית · ₪{task.base_price} → ₪{task.max_price}
+              {liveApplicantCount > 0 && <span style={{ color: '#059669', marginRight: 4 }}> · קפוא</span>}
+            </div>
+          </div>
+        )}
+
         {/* Pending banner */}
         {isPending && (
           <div onClick={e => e.stopPropagation()} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -495,12 +534,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               // Owner management controls
               task.status === 'OPEN' ? (
                 <button
-                  onClick={e => { e.stopPropagation(); useNavigate && navigate(`/task/${task.id}`); }}
-                  style={{ height: 36, padding: '0 14px', borderRadius: 10, background: (task.applicants?.length ?? 0) > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent' }}
+                  onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                  style={{ height: 36, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
                 >
-                  <span>צפה במועמדים</span>
-                  {(task.applicants?.length ?? 0) > 0 && (
-                    <span style={{ background: 'white', color: (task.applicants?.length ?? 0) > 0 ? '#d97706' : '#1a6fd4', fontSize: 10, fontWeight: 900, borderRadius: 10, padding: '1px 6px' }}>{task.applicants.length}</span>
+                  {liveApplicantCount > 0 ? (
+                    <>
+                      <span>צפה במועמדים</span>
+                      <span style={{ background: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 900, borderRadius: 8, padding: '1px 7px' }}>{liveApplicantCount}</span>
+                    </>
+                  ) : (
+                    <ScanningLabel />
                   )}
                 </button>
               ) : task.status === 'TAKEN' ? (
@@ -610,6 +653,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         @keyframes coinBadgePop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
         @keyframes cardSuccessIn { from{opacity:0;transform:scale(0.94)} to{opacity:1;transform:scale(1)} }
         @keyframes successPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+        @keyframes scanRing { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.35);opacity:0} }
+        @keyframes scanSweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
       `}</style>
     </>
   );
