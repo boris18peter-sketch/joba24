@@ -5,6 +5,7 @@ function fireEvent(taskId, eventType) {
   const key = `task_${eventType}_${taskId}`;
   if (sessionStorage.getItem(key)) return;
   sessionStorage.setItem(key, '1');
+  // Fire and let the real-time Task subscription update the UI automatically
   base44.functions.invoke('trackTaskEvent', { taskId, eventType }).catch(() => {});
 }
 

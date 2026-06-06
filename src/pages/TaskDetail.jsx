@@ -131,7 +131,7 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: (data) => data[0],
-    staleTime: 8000,
+    staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: false
   });
@@ -606,17 +606,7 @@ export default function TaskDetail() {
       {/* Worker 3-min alert */}
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
-      <PageHeader
-        title={task.title}
-        right={
-          isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) ? (
-            <button
-              onClick={() => setShowOwnerMenu(v => !v)}
-              style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(0,0,0,0.07)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#374151' }}>
-              <MoreVertical size={17} />
-            </button>
-          ) : null
-        } />
+      <PageHeader title={task.title} right={null} />
       
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
@@ -694,25 +684,32 @@ export default function TaskDetail() {
               </div>
             )}
 
-            {/* Title + Media row */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-              {/* Right: title + price */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {task.title && (
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 10, lineHeight: 1.25 }}>
-                    {task.title}
-                  </div>
-                )}
-                {/* Price */}
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
-                    <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-                    {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
-                  </div>
+            {/* Title row — with 3-dot on left for owner */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+              {task.title && (
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25, flex: 1, minWidth: 0 }}>
+                  {task.title}
                 </div>
-              </div>
+              )}
+              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
+                  style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
+                  <MoreVertical size={17} />
+                </button>
+              )}
+            </div>
 
-              {/* Left: single media tile with prev/next arrows */}
+            {/* Price + Media row — on same line */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+              {/* Price */}
+              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
+                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
+              </div>
+              <div style={{ flex: 1 }} />
+
+              {/* Media tile */}
               {(() => {
                 const allMedia = [
                   ...(task.images || []).map(url => ({ type: 'image', url })),
@@ -796,20 +793,20 @@ export default function TaskDetail() {
 
 
 
-            {/* Owner Analytics — views & clicks */}
+            {/* Owner Analytics — views & clicks (no emojis) */}
             {isOwner && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>👁 צפיות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>צפיות</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>🖱 כניסות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>כניסות</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{applicationCount}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>📩 בקשות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>בקשות</div>
                 </div>
               </div>
             )}

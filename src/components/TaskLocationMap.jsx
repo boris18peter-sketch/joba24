@@ -9,11 +9,11 @@ import { base44 } from '@/api/base44Client';
 const NavButtons = ({ taskLat, taskLng }) => (
   <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: 'var(--surface-2)', borderTop: '1px solid var(--border-1)' }}>
     <a href={`https://waze.com/ul?ll=${taskLat},${taskLng}&navigate=yes`} target="_blank" rel="noopener noreferrer"
-      style={{ flex: 1, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#33ccff,#00b2d9)', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,178,217,0.3)' }}
-    >🗺️ Waze</a>
+      style={{ flex: 1, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#33ccff,#00b2d9)', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,178,217,0.3)' }}
+    >Waze</a>
     <a href={`https://maps.google.com/maps?daddr=${taskLat},${taskLng}`} target="_blank" rel="noopener noreferrer"
-      style={{ flex: 1, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#4285f4,#1967d2)', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)' }}
-    >📍 GPS</a>
+      style={{ flex: 1, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#4285f4,#1967d2)', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)' }}
+    >GPS</a>
   </div>
 );
 

@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     const newCount = (task[countField] || 0) + 1;
     await base44.asServiceRole.entities.Task.update(taskId, { [countField]: newCount });
 
-    return Response.json({ ok: true, [countField]: newCount });
+    return Response.json({ ok: true, [countField]: newCount, views_count: countField === 'views_count' ? newCount : task.views_count, clicks_count: countField === 'clicks_count' ? newCount : task.clicks_count });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
