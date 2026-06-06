@@ -641,7 +641,7 @@ export default function Layout() {
                     flexDirection: 'column',
                     overflowY: tabPath === '/map' ? 'hidden' : 'auto',
                     overflowX: 'hidden',
-                    paddingBottom: tabPath === '/map' ? 0 : 'calc(80px + env(safe-area-inset-bottom))',
+                    paddingBottom: tabPath === '/map' ? 0 : 'calc(100px + env(safe-area-inset-bottom))',
                     WebkitOverflowScrolling: 'touch',
                     overscrollBehavior: 'contain',
                     height: isActive ? '100%' : 0,
@@ -654,18 +654,18 @@ export default function Layout() {
             {/* Non-root routes rendered via Outlet */}
             {isNonRootTab && (
               <div
-                id="main-scroll"
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflowY: 'auto',
-                  overflowX: 'hidden',
-                  paddingBottom: 'calc(80px + env(safe-area-inset-bottom))',
-                  WebkitOverflowScrolling: 'touch',
-                  overscrollBehavior: 'contain',
-                  height: '100%',
-                }}
+               id="main-scroll"
+               style={{
+                 flex: 1,
+                 display: 'flex',
+                 flexDirection: 'column',
+                 overflowY: 'auto',
+                 overflowX: 'hidden',
+                 paddingBottom: 'calc(100px + env(safe-area-inset-bottom))',
+                 WebkitOverflowScrolling: 'touch',
+                 overscrollBehavior: 'contain',
+                 height: '100%',
+               }}
               >
                 <Outlet />
               </div>

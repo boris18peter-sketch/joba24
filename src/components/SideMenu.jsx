@@ -1,8 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import { useState } from 'react';
+import CreditBalancePill from '@/components/CreditBalancePill';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד משימות' },
@@ -18,6 +22,13 @@ export default function SideMenu({ open, onClose }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+  const [showBuyCredits, setShowBuyCredits] = useState(false);
+
+  const { data: me } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => base44.auth.me(),
+    enabled: isAuthenticated,
+  });
 
   return (
     <>
@@ -143,6 +154,15 @@ export default function SideMenu({ open, onClose }) {
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {/* Show credits pill only when authenticated */}
+          {isAuthenticated && (
+            <div style={{ marginBottom: 14 }}>
+              <CreditBalancePill
+                credits={me?.worker_credits ?? 0}
+                onClick={() => { setShowBuyCredits(true); onClose(); }}
+              />
+            </div>
+          )}
           {/* Joba24 yellow CTA button — same as AppHeader */}
           <Link
             to={isAuthenticated ? '/create-task' : '#'}
@@ -167,6 +187,7 @@ export default function SideMenu({ open, onClose }) {
         </div>
       </div>
       {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
+      {showBuyCredits && <BuyCreditsModal onClose={() => setShowBuyCredits(false)} />}
     </>
   );
 }
