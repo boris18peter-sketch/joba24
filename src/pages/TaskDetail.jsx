@@ -173,7 +173,7 @@ export default function TaskDetail() {
     if (!task?.id) return;
     const isOwnerForTracking = me?.id ? (me.id === task.client_id) : false;
     if (!isOwnerForTracking) {
-      trackTaskClick(task.id);
+      trackTaskClick(task.id, queryClient);
     }
   }, [task?.id, me?.id]);
 
