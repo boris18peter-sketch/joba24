@@ -678,58 +678,81 @@ export default function TaskDetail() {
           }
 
           <div style={{ padding: '16px 18px 18px' }}>
-            {/* Top row: status + 3-dot */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {task.status === 'OPEN' &&
-                <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.55)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-                    <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
-                  </span>
-                }
-                <span key={labelRotIdx} style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5, transition: 'opacity 0.3s' }}>
-                  {task.status === 'OPEN' ?
-                  applicationCount > 0 && labelRotIdx === 1 ?
-                  `${applicationCount} עובדים הגישו בקשה` :
-                  isOwner ? 'ממתין לבקשות' : 'פתוח' :
-                  statusLabel}
-                </span>
-
-              </div>
+            {/* Top row: 3-dot only (status label removed) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: 10 }}>
               {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN' && !!task.worker_status) &&
               <button
                 onClick={(e) => {e.stopPropagation();setShowOwnerMenu((v) => !v);}}
                 style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
-                
-                  <MoreVertical size={17} />
-                </button>
+                <MoreVertical size={17} />
+              </button>
               }
+              {/* Non-owner status pill */}
+              {!isOwner && task.status !== 'OPEN' && (
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
+              )}
             </div>
 
-            {/* Task title — centered below status */}
-            {task.title && (
-              <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 14, lineHeight: 1.25, textAlign: 'right' }}>
-                {task.title}
+            {/* Title + Media row */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+              {/* Right: title + price + description */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {task.title && (
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 10, lineHeight: 1.25 }}>
+                    {task.title}
+                  </div>
+                )}
+                {/* Price */}
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
+                    <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+                    {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* Price */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
-              </div>
+              {/* Left: media carousel */}
+              {(task.images?.length > 0 || task.video_url) && (() => {
+                const allMedia = [
+                  ...(task.images || []).map(url => ({ type: 'image', url })),
+                  ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+                ];
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                    {allMedia.slice(0, 3).map((item, i) => (
+                      <button key={i} onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+                        style={{ width: 72, height: 54, borderRadius: 12, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', background: '#000', padding: 0, cursor: 'pointer', flexShrink: 0, position: 'relative', display: 'block' }}>
+                        {item.type === 'image' ? (
+                          <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        ) : (
+                          <>
+                            <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
+                              <Play size={16} color="white" fill="white" />
+                            </div>
+                          </>
+                        )}
+                        {i === 2 && allMedia.length > 3 && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 13, fontWeight: 800 }}>
+                            +{allMedia.length - 2}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* Description — only the user-written part, not category extras */}
+            {/* Description */}
             {mainDescription &&
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 10 }}>
                 {mainDescription.length > 180 ? mainDescription.slice(0, 180) + '…' : mainDescription}
               </div>
             }
 
             {/* Publisher + location */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
               {task.client_name &&
               <UserBadge
                 name={task.client_name}
@@ -851,95 +874,6 @@ export default function TaskDetail() {
         {/* Task location map — shown for non-TAKEN tasks with location */}
         {task.status !== 'TAKEN' && task.lat && task.lng &&
         <TaskLocationMap task={task} />
-        }
-
-        {/* Images + Video */}
-        {(task.images?.length > 0 || task.video_url) &&
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {task.images?.length > 0 &&
-          <div className="flex gap-2 overflow-x-auto pb-1">
-                {task.images.map((img, i) =>
-            <button
-              key={i}
-              onClick={() => {
-                const allItems = [
-                ...task.images.map((url) => ({ type: 'image', url })),
-                ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])];
-
-                setLightboxIndex(allItems.findIndex((it) => it.url === img));
-                setLightboxOpen(true);
-              }}
-              style={{
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                background: 'none',
-                borderRadius: 16,
-                overflow: 'hidden',
-                flex: '0 0 auto',
-                position: 'relative',
-                display: 'block'
-              }}>
-              
-                    <img src={img} alt="" className="w-32 h-24 rounded-2xl object-cover border border-gray-100 hover:opacity-80 transition-opacity" />
-                  </button>
-            )}
-              </div>
-          }
-            {task.video_url &&
-          <button
-            onClick={() => {
-              const allItems = [
-              ...task.images.map((url) => ({ type: 'image', url })),
-              { type: 'video', url: task.video_url }];
-
-              setLightboxIndex(allItems.length - 1);
-              setLightboxOpen(true);
-            }}
-            style={{
-              border: 'none',
-              padding: 0,
-              borderRadius: 16,
-              overflow: 'hidden',
-              background: '#000',
-              cursor: 'pointer',
-              position: 'relative',
-              display: 'block'
-            }}>
-            
-                <video
-              src={task.video_url}
-              style={{ width: '100%', maxHeight: 220, display: 'block', objectFit: 'cover', opacity: 0.9 }} />
-            
-                <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(0, 0, 0, 0.3)',
-                borderRadius: 16,
-                pointerEvents: 'none'
-              }}>
-              
-                  <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  background: 'rgba(255, 255, 255, 0.8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                
-                    <Play size={20} color="#000" fill="#000" />
-                  </div>
-                </div>
-              </button>
-          }
-          </div>
         }
 
         {/* Live worker map */}
