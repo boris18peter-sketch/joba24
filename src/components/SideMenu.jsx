@@ -165,7 +165,7 @@ export default function SideMenu({ open, onClose }) {
               boxShadow: '0 4px 16px rgba(251,191,36,0.4)'
             }}>
             
-            <Plus size={18} className="hidden" />
+            
             + פרסם משימה
           </Link>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
