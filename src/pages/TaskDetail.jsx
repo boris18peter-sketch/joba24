@@ -744,28 +744,9 @@ export default function TaskDetail() {
               )}
             </div>
 
-            {/* Expiry only */}
-            {(task.expires_at && task.status === 'OPEN') &&
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-                {task.expires_at && task.status === 'OPEN' &&
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 20, padding: '4px 10px', fontSize: 12, fontWeight: 700, color: 'white' }}>
-                    <Clock size={11} /><span>⏳ <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline /></span>
-                  </div>
-              }
-              </div>
-            }
 
-            {/* Owner: waiting for applications */}
-            {isOwner && task.status === 'OPEN' && applicationCount === 0 &&
-            <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 14px', marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ position: 'relative', width: 13, height: 13, flexShrink: 0, display: 'inline-flex' }}>
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
-                  <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>סורק עובדים · ממתין לבקשות</span>
-              </div>
-            }
+
+
 
             {/* Owner Analytics — views & clicks */}
             {isOwner && (
@@ -986,6 +967,21 @@ export default function TaskDetail() {
             )}
 
             <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
+
+            {/* Expiry — moved from banner */}
+            {task.expires_at && task.status === 'OPEN' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Clock size={13} color="#ea580c" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>תוקף המשימה</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
+                    <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Estimated time */}
             {task.estimated_time && (

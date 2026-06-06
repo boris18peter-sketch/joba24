@@ -165,16 +165,16 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
 // ── Scanning Label (no applicants state) ─────────────────────────────────────
 function ScanningLabel() {
   return (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-        <span style={{ position: 'relative', width: 13, height: 13, flexShrink: 0 }}>
+        <span style={{ position: 'relative', width: 12, height: 12, flexShrink: 0 }}>
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
           <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
         </span>
-        <span style={{ fontSize: 11, fontWeight: 700 }}>סורק עובדים...</span>
+        <span style={{ fontSize: 12, fontWeight: 800 }}>סורק עובדים...</span>
       </span>
-      <span style={{ fontSize: 9, opacity: 0.8, fontWeight: 500 }}>אין עדיין בקשות</span>
+      <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 500 }}>אין עדיין בקשות</span>
     </span>
   );
 }
@@ -523,7 +523,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               task.status === 'OPEN' ? (
                 <button
                   onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-                  style={{ height: 36, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
+                  style={{ minWidth: 120, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
                 >
                   {liveApplicantCount > 0 ? (
                     <>
@@ -548,10 +548,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               )
             ) : null}
             {isMyPublished && (
-              <div style={{ fontSize: 10, color: '#94a3b8', display: 'flex', gap: 8, whiteSpace: 'nowrap' }}>
-                <span>צפיות: <strong style={{ color: '#64748b' }}>{task.views_count || 0}</strong></span>
-                <span>|</span>
-                <span>כניסות: <strong style={{ color: '#64748b' }}>{task.clicks_count || 0}</strong></span>
+              <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: '#94a3b8', whiteSpace: 'nowrap', paddingTop: 2 }}>
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <strong style={{ color: '#64748b', fontSize: 12 }}>{task.views_count || 0}</strong>
+                  <span>צפיות</span>
+                </span>
+                <span style={{ color: '#e2e8f0' }}>|</span>
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <strong style={{ color: '#64748b', fontSize: 12 }}>{task.clicks_count || 0}</strong>
+                  <span>כניסות</span>
+                </span>
               </div>
             )}
             {!isMyPublished && (
