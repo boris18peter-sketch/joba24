@@ -9,13 +9,13 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 
 
 const navItems = [
-  { to: '/', icon: Home, label: 'פיד משימות' },
-  { to: '/map', icon: Map, label: 'מפת משימות' },
-  { to: '/chats', icon: MessageCircle, label: "צ'אטים" },
-  { to: '/notifications', icon: Bell, label: 'התראות' },
-  { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
-  { to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' },
-];
+{ to: '/', icon: Home, label: 'פיד משימות' },
+{ to: '/map', icon: Map, label: 'מפת משימות' },
+{ to: '/chats', icon: MessageCircle, label: "צ'אטים" },
+{ to: '/notifications', icon: Bell, label: 'התראות' },
+{ to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
+{ to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' }];
+
 
 export default function SideMenu({ open, onClose }) {
   const location = useLocation();
@@ -25,16 +25,16 @@ export default function SideMenu({ open, onClose }) {
   const { data: me } = useQuery({
     queryKey: ['me'],
     queryFn: () => base44.auth.me(),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated
   });
 
   return (
     <>
-      {open && (
-        <div onClick={onClose}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 10001, backdropFilter: 'blur(2px)' }}
-        />
-      )}
+      {open &&
+      <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 10001, backdropFilter: 'blur(2px)' }} />
+
+      }
 
       <div
         style={{
@@ -44,21 +44,21 @@ export default function SideMenu({ open, onClose }) {
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
           boxShadow: '6px 0 32px rgba(0,0,0,0.25)',
-          display: 'flex', flexDirection: 'column',
-        }}
-      >
+          display: 'flex', flexDirection: 'column'
+        }}>
+        
         {/* Header */}
         <div style={{
           padding: '52px 20px 16px',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10,
               background: 'rgba(255,255,255,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden',
+              overflow: 'hidden'
             }}>
               <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8 }} />
             </div>
@@ -74,98 +74,98 @@ export default function SideMenu({ open, onClose }) {
 
         <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
           {/* Profile / Login at top */}
-          {isAuthenticated ? (
-            <Link to="/profile" onClick={onClose}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
-                background: location.pathname === '/profile' ? 'rgba(96,165,250,0.15)' : 'transparent',
-                color: location.pathname === '/profile' ? '#60a5fa' : '#bfdbfe',
-                fontWeight: location.pathname === '/profile' ? 700 : 500, fontSize: 15,
-                textDecoration: 'none',
-                borderLeft: location.pathname === '/profile' ? '3px solid #60a5fa' : '3px solid transparent',
-                transition: 'all 0.15s',
-              }}
-            >
+          {isAuthenticated ?
+          <Link to="/profile" onClick={onClose}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+            background: location.pathname === '/profile' ? 'rgba(96,165,250,0.15)' : 'transparent',
+            color: location.pathname === '/profile' ? '#60a5fa' : '#bfdbfe',
+            fontWeight: location.pathname === '/profile' ? 700 : 500, fontSize: 15,
+            textDecoration: 'none',
+            borderLeft: location.pathname === '/profile' ? '3px solid #60a5fa' : '3px solid transparent',
+            transition: 'all 0.15s'
+          }}>
+            
               <User size={18} style={{ opacity: location.pathname === '/profile' ? 1 : 0.7 }} />
               פרופיל
-            </Link>
-          ) : (
-            <button
-              onClick={() => { setShowLogin(true); onClose(); }}
-              style={{
-                width: 'calc(100% - 24px)',
-                margin: '8px 12px',
-                padding: '13px 16px',
-                background: '#fbbf24',
-                color: '#0a1f5c',
-                border: 'none',
-                borderRadius: 14,
-                fontWeight: 800,
-                fontSize: 14,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
+            </Link> :
+
+          <button
+            onClick={() => {setShowLogin(true);onClose();}}
+            style={{
+              width: 'calc(100% - 24px)',
+              margin: '8px 12px',
+              padding: '13px 16px',
+              background: '#fbbf24',
+              color: '#0a1f5c',
+              border: 'none',
+              borderRadius: 14,
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8
+            }}>
+            
               <User size={16} />
               התחבר עכשיו
             </button>
-          )}
+          }
 
           {navItems.map(({ to, icon: Icon, label }) => {
             const active = location.pathname === to;
             return (
               <Link key={to} to={to} onClick={onClose}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
-                  background: active ? 'rgba(96,165,250,0.15)' : 'transparent',
-                  color: active ? '#60a5fa' : '#bfdbfe',
-                  fontWeight: active ? 700 : 500, fontSize: 15,
-                  textDecoration: 'none',
-                  borderLeft: active ? '3px solid #60a5fa' : '3px solid transparent',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Icon size={18} style={{ opacity: active ? 1 : 0.7 }} />
-                {label}
-              </Link>
-            );
-          })}
-          {/* Admin link — shown only to admins */}
-          {isAuthenticated && (
-            <Link to="/admin" onClick={onClose}
               style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
-                background: location.pathname === '/admin' ? 'rgba(251,191,36,0.15)' : 'transparent',
-                color: '#fbbf24',
-                fontWeight: 700, fontSize: 15, textDecoration: 'none',
-                borderLeft: location.pathname === '/admin' ? '3px solid #fbbf24' : '3px solid transparent',
-                opacity: 0.85,
-              }}
-            >
+                background: active ? 'rgba(96,165,250,0.15)' : 'transparent',
+                color: active ? '#60a5fa' : '#bfdbfe',
+                fontWeight: active ? 700 : 500, fontSize: 15,
+                textDecoration: 'none',
+                borderLeft: active ? '3px solid #60a5fa' : '3px solid transparent',
+                transition: 'all 0.15s'
+              }}>
+                
+                <Icon size={18} style={{ opacity: active ? 1 : 0.7 }} />
+                {label}
+              </Link>);
+
+          })}
+          {/* Admin link — shown only to admins */}
+          {isAuthenticated &&
+          <Link to="/admin" onClick={onClose}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+            background: location.pathname === '/admin' ? 'rgba(251,191,36,0.15)' : 'transparent',
+            color: '#fbbf24',
+            fontWeight: 700, fontSize: 15, textDecoration: 'none',
+            borderLeft: location.pathname === '/admin' ? '3px solid #fbbf24' : '3px solid transparent',
+            opacity: 0.85
+          }}>
+            
               <ShieldCheck size={18} />
               דשבורד מנהל
             </Link>
-          )}
+          }
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           {/* Joba24 yellow CTA button — same as AppHeader */}
           <Link
             to={isAuthenticated ? '/create-task' : '#'}
-            onClick={(e) => { if (!isAuthenticated) { e.preventDefault(); setShowLogin(true); } onClose(); }}
+            onClick={(e) => {if (!isAuthenticated) {e.preventDefault();setShowLogin(true);}onClose();}}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '13px 16px', borderRadius: 14,
               background: '#fbbf24', color: '#0a1f5c',
               border: 'none', fontWeight: 900, fontSize: 15,
               textDecoration: 'none', marginBottom: 14,
-              boxShadow: '0 4px 16px rgba(251,191,36,0.4)',
-            }}
-          >
-            <Plus size={18} />
+              boxShadow: '0 4px 16px rgba(251,191,36,0.4)'
+            }}>
+            
+            <Plus size={18} className="hidden" />
             + פרסם משימה
           </Link>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
@@ -176,6 +176,6 @@ export default function SideMenu({ open, onClose }) {
         </div>
       </div>
       {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
-    </>
-  );
+    </>);
+
 }
