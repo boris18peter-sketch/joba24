@@ -1,18 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { queryClientInstance } from '@/lib/query-client';
 
 function fireEvent(taskId, eventType) {
   const key = `task_${eventType}_${taskId}`;
   if (sessionStorage.getItem(key)) return;
   sessionStorage.setItem(key, '1');
-  base44.functions.invoke('trackTaskEvent', { taskId, eventType })
-    .then(() => {
-      // Refresh the task query so owner sees updated count immediately
-      queryClientInstance.invalidateQueries({ queryKey: ['task', taskId] });
-      queryClientInstance.invalidateQueries({ queryKey: ['tasks'] });
-    })
-    .catch(() => {});
+  base44.functions.invoke('trackTaskEvent', { taskId, eventType }).catch(() => {});
 }
 
 // Track a view when the card element scrolls into view (≥50% visible for ≥500ms)

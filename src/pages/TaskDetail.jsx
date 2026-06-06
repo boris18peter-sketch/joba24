@@ -606,7 +606,17 @@ export default function TaskDetail() {
       {/* Worker 3-min alert */}
       {isWorker && <WorkerStatusAlert task={task} me={me} />}
 
-      <PageHeader title={task.title} right={null} />
+      <PageHeader
+        title={task.title}
+        right={
+          isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) ? (
+            <button
+              onClick={() => setShowOwnerMenu(v => !v)}
+              style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(0,0,0,0.07)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#374151' }}>
+              <MoreVertical size={17} />
+            </button>
+          ) : null
+        } />
       
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
@@ -684,35 +694,25 @@ export default function TaskDetail() {
               </div>
             )}
 
-            {/* Title row + 3-dot (for owner) */}
+            {/* Title + Media row */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-              {/* Right: title */}
+              {/* Right: title + price */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 {task.title && (
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25 }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 10, lineHeight: 1.25 }}>
                     {task.title}
                   </div>
                 )}
-              </div>
-              {/* Left: 3-dot button for owner */}
-              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
-                  style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
-                  <MoreVertical size={17} />
-                </button>
-              )}
-            </div>
-
-            {/* Price + Media row — symmetric height */}
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: 10, marginBottom: 10 }}>
-              {/* Price box */}
-              <div style={{ flex: 1, background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '10px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 3 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
+                {/* Price */}
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
+                    <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+                    {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
+                  </div>
+                </div>
               </div>
 
-              {/* Media tile — same size as price box */}
+              {/* Left: single media tile with prev/next arrows */}
               {(() => {
                 const allMedia = [
                   ...(task.images || []).map(url => ({ type: 'image', url })),
@@ -721,13 +721,13 @@ export default function TaskDetail() {
                 if (allMedia.length === 0) return null;
                 const cur = allMedia[mediaIdx] || allMedia[0];
                 return (
-                  <div style={{ flex: 1, position: 'relative', borderRadius: 14, overflow: 'visible', minHeight: 72 }}>
+                  <div style={{ flexShrink: 0, position: 'relative', width: 88, height: 72 }}>
                     <button onClick={() => { setLightboxIndex(mediaIdx); setLightboxOpen(true); }}
-                      style={{ width: '100%', height: '100%', minHeight: 72, borderRadius: 14, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.35)', background: '#000', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      style={{ width: 88, height: 72, borderRadius: 14, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.35)', background: '#000', padding: 0, cursor: 'pointer', display: 'block' }}>
                       {cur.type === 'image' ? (
                         <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       ) : (
-                        <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 72 }}>
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                           <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
                             <Play size={18} color="white" fill="white" />
@@ -735,9 +735,9 @@ export default function TaskDetail() {
                         </div>
                       )}
                     </button>
-                    {/* Dots */}
+                    {/* Dots or counter */}
                     {allMedia.length > 1 && (
-                      <div style={{ position: 'absolute', bottom: 5, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 3, pointerEvents: 'none', zIndex: 2 }}>
+                      <div style={{ position: 'absolute', bottom: 4, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 3, pointerEvents: 'none' }}>
                         {allMedia.length <= 5 ? allMedia.map((_, i) => (
                           <span key={i} style={{ width: i === mediaIdx ? 10 : 5, height: 5, borderRadius: 3, background: i === mediaIdx ? 'white' : 'rgba(255,255,255,0.5)', transition: 'width 0.2s' }} />
                         )) : (
@@ -745,17 +745,17 @@ export default function TaskDetail() {
                         )}
                       </div>
                     )}
-                    {/* Prev arrow (RTL: right = prev) */}
+                    {/* Prev arrow */}
                     {allMedia.length > 1 && (
                       <button onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i - 1 + allMedia.length) % allMedia.length); }}
-                        style={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0, zIndex: 3 }}>
+                        style={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0 }}>
                         <ChevronRight size={13} color="#1a1a1a" />
                       </button>
                     )}
                     {/* Next arrow */}
                     {allMedia.length > 1 && (
                       <button onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i + 1) % allMedia.length); }}
-                        style={{ position: 'absolute', top: '50%', left: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0, zIndex: 3 }}>
+                        style={{ position: 'absolute', top: '50%', left: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0 }}>
                         <ChevronLeft size={13} color="#1a1a1a" />
                       </button>
                     )}
@@ -801,15 +801,15 @@ export default function TaskDetail() {
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>צפיות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>👁 צפיות</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>כניסות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>🖱 כניסות</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{applicationCount}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>בקשות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>📩 בקשות</div>
                 </div>
               </div>
             )}
