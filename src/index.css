@@ -228,7 +228,10 @@
 .dark [style*="background: #ffffff"],
 .dark [style*="background: #fff"],
 .dark [style*="background:#ffffff"],
-.dark [style*="background:#fff"] {
+.dark [style*="background:#fff"],
+.dark [style*="background-color: white"],
+.dark [style*="background-color: #ffffff"],
+.dark [style*="background-color: #fff"] {
   background: var(--surface-2) !important;
   color: var(--text-1) !important;
 }
@@ -322,6 +325,115 @@
   background: var(--surface-3) !important;
   border-color: var(--border-1) !important;
   color: var(--text-1) !important;
+}
+
+/* ── Dark: white/light borders → surface borders ── */
+.dark [style*="border: 1px solid white"],
+.dark [style*="border: 1.5px solid white"],
+.dark [style*="border: 2px solid white"],
+.dark [style*="border-color: white"],
+.dark [style*="border-color: #fff"],
+.dark [style*="border-color: #ffffff"] {
+  border-color: var(--border-1) !important;
+}
+
+/* ── Dark: separator lines ── */
+.dark [style*="background: #e5e7eb"],
+.dark [style*="background: #e8edf5"],
+.dark [style*="background: #dde3ee"],
+.dark [style*="background: #d1dde8"],
+.dark [style*="background: #edf0f7"],
+.dark [style*="background: #f0f2f7"],
+.dark [style*="background: #e5e9f5"],
+.dark [style*="background: #e4e8f0"] {
+  background: var(--border-1) !important;
+}
+
+/* ── Dark: placeholder / muted text ── */
+.dark [style*="color: #a0b8d8"],
+.dark [style*="color: #b0c4d8"],
+.dark [style*="color: #9ca3af"],
+.dark [style*="color: #d1d5db"] {
+  color: var(--text-3) !important;
+}
+
+/* ── Dark: task cards and feed cards with white bg ── */
+.dark [style*="background: white"],
+.dark [style*="background: #fff"],
+.dark [style*="background: #ffffff"] {
+  background: var(--surface-2) !important;
+}
+
+/* ── Dark: tag/chip elements ── */
+.dark [style*="background: #eff4fb"],
+.dark [style*="background: #eef2f8"],
+.dark [style*="background: #f0f4fb"] {
+  background: var(--surface-3) !important;
+}
+
+/* ── Dark: divider lines in cards (hr-like 1px dividers) ── */
+.dark [style*="border-top: 1px solid"],
+.dark [style*="border-bottom: 1px solid"],
+.dark [style*="border-top: 1.5px solid"],
+.dark [style*="border-bottom: 1.5px solid"] {
+  border-color: var(--border-1) !important;
+}
+
+/* ── Dark: "pill" white badges/tags ── */
+.dark [style*="background: rgba(255,255,255"],
+.dark [style*="background: rgba(255, 255, 255"] {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+/* ── Dark: card/task borders that use light colors ── */
+.dark [style*="border: 1px solid #e8edf5"],
+.dark [style*="border: 1.5px solid #e8edf5"],
+.dark [style*="border: 1px solid #f1f5f9"],
+.dark [style*="border: 1.5px solid #f1f5f9"],
+.dark [style*="border: 1px solid #e2e8f0"],
+.dark [style*="border: 1.5px solid #e2e8f0"],
+.dark [style*="border: 1px solid #e5e7eb"],
+.dark [style*="border: 1.5px solid #e5e7eb"],
+.dark [style*="border: 1px solid #e5e9f5"],
+.dark [style*="border: 1.5px solid #e5e9f5"] {
+  border-color: var(--border-1) !important;
+}
+
+/* ── Dark: stat text / secondary text colors ── */
+.dark [style*="color: #64748b"],
+.dark [style*="color: #6b7280"],
+.dark [style*="color: #718096"],
+.dark [style*="color: #475569"] {
+  color: var(--text-2) !important;
+}
+
+/* ── Dark: views/clicks counts ── */
+.dark [style*="color: #94a3b8"],
+.dark [style*="color: #9ca3af"] {
+  color: var(--text-3) !important;
+}
+
+/* ── Dark: divider pipe | color ── */
+.dark [style*="color: #e2e8f0"],
+.dark [style*="color: #e8edf5"] {
+  color: var(--border-1) !important;
+}
+
+/* ── Dark: "אני" pill background ── */
+.dark [style*="background: #eff6ff"] {
+  background: rgba(26,111,212,0.18) !important;
+}
+
+/* ── Dark: stats box with light bg ── */
+.dark [style*="background: #f8faff"],
+.dark [style*="background: #f8fafc"],
+.dark [style*="background: #f9fafb"] {
+  background: var(--surface-3) !important;
+}
+
+/* ── Dark: distance badge ── */
+.dark [style*="background: #eff6ff"][style*="border-radius"] {
+  background: rgba(26,111,212,0.15) !important;
 }
 
 /* Custom scrollbar */

@@ -51,10 +51,19 @@ function getDepth(pathname) {
   return 1;
 }
 
-const PAGE_VARIANTS = {
-  enter: (dir) => ({ x: dir > 0 ? '-100%' : '100%' }),
-  center: { x: 0 },
-  exit: (dir) => ({ x: dir > 0 ? '100%' : '-100%' }),
+// Push: new screen slides in from right, old slides out left
+// Pop:  new screen slides in from left, old slides out right
+// Tab switch: no slide — just instant swap (handled by key='root')
+const PUSH_VARIANTS = {
+  enter: (dir) => ({
+    x: dir > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir) => ({
+    x: dir > 0 ? '-30%' : '30%',
+    opacity: 0,
+  }),
 };
 
 const AuthenticatedApp = () => {
@@ -66,7 +75,6 @@ const AuthenticatedApp = () => {
   useEffect(() => { prevDepthRef.current = curDepth; }, [location.pathname]);
 
   const isRootTab = ROOT_TABS.has(location.pathname);
-  // Root tabs share one animation key so they don't slide against each other
   const animKey = isRootTab ? 'root' : location.pathname;
 
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -87,11 +95,15 @@ const AuthenticatedApp = () => {
         <motion.div
           key={animKey}
           custom={slideDir}
-          variants={PAGE_VARIANTS}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ type: 'tween', ease: [0.32, 0, 0.67, 0], duration: 0.26 }}
+          variants={isRootTab ? undefined : PUSH_VARIANTS}
+          initial={isRootTab ? { opacity: 0 } : 'enter'}
+          animate={isRootTab ? { opacity: 1 } : 'center'}
+          exit={isRootTab ? { opacity: 0 } : 'exit'}
+          transition={
+            isRootTab
+              ? { duration: 0.18, ease: 'easeOut' }
+              : { type: 'tween', ease: [0.25, 0.46, 0.45, 0.94], duration: 0.32 }
+          }
           style={{ position: 'absolute', inset: 0 }}
         >
           <Routes location={location}>
