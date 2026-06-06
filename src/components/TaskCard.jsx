@@ -15,6 +15,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
+import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔥', label: 'דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
@@ -348,7 +349,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     <>
       <div
         ref={cardRef}
-        onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
+        onClick={() => { if (showMenu) { setShowMenu(false); return; } if (!isMyPublished) trackTaskClick(task.id); navigate(`/task/${task.id}`); }}
         className="active:scale-[0.982] transition-all"
         style={{
           background: 'var(--surface-2)',
@@ -509,9 +510,19 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               )}
             </div>
             {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
-              <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>
-                📈 ₪{task.base_price} ← ₪{task.max_price}{liveApplicantCount > 0 ? ' · נעצר (יש בקשה)' : ' · נעצר כאשר יש בקשה'}
+            <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>
+              📈 ₪{task.base_price} ← ₪{task.max_price}{liveApplicantCount > 0 ? ' · נעצר (יש בקשה)' : ' · נעצר כאשר יש בקשה'}
+            </span>
+            )}
+            {isMyPublished && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+              <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 2 }}>
+                👁 {task.views_count || 0}
               </span>
+              <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 2 }}>
+                🖱 {task.clicks_count || 0}
+              </span>
+            </div>
             )}
           </div>
           {/* Right: owner controls or apply button */}

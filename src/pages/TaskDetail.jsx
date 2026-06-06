@@ -41,6 +41,7 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
+import { useTrackTaskView } from '@/hooks/useTrackTaskEvent';
 
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
@@ -104,6 +105,10 @@ export default function TaskDetail() {
   }, []);
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
+
+  // Track unique view — only for non-owners, enabled once task & me are loaded
+  const isOwnerForTracking = me?.id ? (me.id === task?.client_id) : false;
+  useTrackTaskView(task?.id, !!task?.id && !isOwnerForTracking);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -757,6 +762,24 @@ export default function TaskDetail() {
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.88)' }}>ממתין לאישור · עדיין לא הגיעו בקשות מעובדים</span>
               </div>
             }
+
+            {/* Owner Analytics — views & clicks */}
+            {isOwner && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>👁 צפיות</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>🖱 כניסות</div>
+                </div>
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{applicationCount}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>📩 בקשות</div>
+                </div>
+              </div>
+            )}
 
 
 

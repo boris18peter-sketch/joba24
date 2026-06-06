@@ -354,7 +354,9 @@ export default function HomeFeed() {
   // Which tasks to show in the feed based on active section tab + forYou filter
   const displayedTasks = useMemo(() => {
     let base;
-    if (!smartSections || activeSection === 'all') base = sortedTasks;
+    // When any filter/search is active, always use sortedTasks (already filtered)
+    const hasActiveFilter = search || filters.category || filters.sortBy || filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.urgency_tag || filters.payment_method || filters.forYou;
+    if (!smartSections || activeSection === 'all' || hasActiveFilter) base = sortedTasks;
     else if (activeSection === 'nearby')  base = smartSections.nearby.length  ? smartSections.nearby  : sortedTasks;
     else if (activeSection === 'highpay') base = smartSections.highPaying.length ? smartSections.highPaying : sortedTasks;
     else if (activeSection === 'urgent')  base = smartSections.urgent.length  ? smartSections.urgent  : sortedTasks;
@@ -365,7 +367,7 @@ export default function HomeFeed() {
       base = base.filter(t => t._badges?.isForYou);
     }
     return base;
-  }, [sortedTasks, smartSections, activeSection, filters.forYou, behavioralProfile]);
+  }, [sortedTasks, smartSections, activeSection, filters, search, behavioralProfile]);
 
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category || filters.payment_method || filters.forYou;
   const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou);
