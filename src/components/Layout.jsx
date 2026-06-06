@@ -31,6 +31,20 @@ export default function Layout() {
   const notifActiveRef = useRef(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
+  // Lazy-mount tabs: track which tabs have been visited so we only mount them on first visit
+  const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter(p => ROOT_TAB_PATHS.includes(p))));
+  useEffect(() => {
+    if (ROOT_TAB_PATHS.includes(location.pathname)) {
+      setVisitedTabs(prev => {
+        if (prev.has(location.pathname)) return prev;
+        const next = new Set(prev);
+        next.add(location.pathname);
+        return next;
+      });
+    }
+  }, [location.pathname]);
+
   // Preserve scroll position per tab
   const scrollPositions = useRef({});
   const prevPathRef = useRef(location.pathname);
@@ -605,16 +619,17 @@ export default function Layout() {
         document.body
       )}
       
-      {/* Scrollable content area — paddingBottom leaves space for bottom nav */}
-      {/* Root tabs: always mounted, display toggled for instant tab switching with preserved scroll */}
+      {/* Scrollable content area — lazy-mount tabs: only mount on first visit, keep alive after */}
       {(() => {
-        const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
         const isRootTab = ROOT_TAB_PATHS.includes(location.pathname);
         const isNonRootTab = !isRootTab;
         return (
           <>
             {ROOT_TAB_PATHS.map(tabPath => {
               const isActive = location.pathname === tabPath;
+              const hasBeenVisited = visitedTabs.has(tabPath);
+              // Only render if this tab has been visited at least once
+              if (!hasBeenVisited) return null;
               const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
               return (
                 <div
@@ -636,7 +651,7 @@ export default function Layout() {
                 </div>
               );
             })}
-            {/* Non-root routes rendered via Outlet (root tabs handle themselves above) */}
+            {/* Non-root routes rendered via Outlet */}
             {isNonRootTab && (
               <div
                 id="main-scroll"
