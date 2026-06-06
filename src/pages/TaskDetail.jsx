@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -94,6 +94,7 @@ export default function TaskDetail() {
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [showWorkerMap, setShowWorkerMap] = useState(false);
+  const [mediaIdx, setMediaIdx] = useState(0);
   const prevWorkerIdRef = useRef(null);
 
   useEffect(() => {
@@ -607,7 +608,15 @@ export default function TaskDetail() {
 
       <PageHeader
         title={task.title}
-        right={null} />
+        right={
+          isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) ? (
+            <button
+              onClick={() => setShowOwnerMenu(v => !v)}
+              style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(0,0,0,0.07)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#374151' }}>
+              <MoreVertical size={17} />
+            </button>
+          ) : null
+        } />
       
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
@@ -678,24 +687,16 @@ export default function TaskDetail() {
           }
 
           <div style={{ padding: '16px 18px 18px' }}>
-            {/* Top row: 3-dot only (status label removed) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: 10 }}>
-              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN' && !!task.worker_status) &&
-              <button
-                onClick={(e) => {e.stopPropagation();setShowOwnerMenu((v) => !v);}}
-                style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
-                <MoreVertical size={17} />
-              </button>
-              }
-              {/* Non-owner status pill */}
-              {!isOwner && task.status !== 'OPEN' && (
+            {/* Non-owner status pill */}
+            {!isOwner && task.status !== 'OPEN' && (
+              <div style={{ marginBottom: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>{statusLabel}</span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Title + Media row */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-              {/* Right: title + price + description */}
+              {/* Right: title + price */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 {task.title && (
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', marginBottom: 10, lineHeight: 1.25 }}>
@@ -711,34 +712,53 @@ export default function TaskDetail() {
                 </div>
               </div>
 
-              {/* Left: media carousel */}
-              {(task.images?.length > 0 || task.video_url) && (() => {
+              {/* Left: single media tile with prev/next arrows */}
+              {(() => {
                 const allMedia = [
                   ...(task.images || []).map(url => ({ type: 'image', url })),
                   ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
                 ];
+                if (allMedia.length === 0) return null;
+                const cur = allMedia[mediaIdx] || allMedia[0];
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                    {allMedia.slice(0, 3).map((item, i) => (
-                      <button key={i} onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
-                        style={{ width: 72, height: 54, borderRadius: 12, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', background: '#000', padding: 0, cursor: 'pointer', flexShrink: 0, position: 'relative', display: 'block' }}>
-                        {item.type === 'image' ? (
-                          <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                        ) : (
-                          <>
-                            <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
-                              <Play size={16} color="white" fill="white" />
-                            </div>
-                          </>
-                        )}
-                        {i === 2 && allMedia.length > 3 && (
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 13, fontWeight: 800 }}>
-                            +{allMedia.length - 2}
+                  <div style={{ flexShrink: 0, position: 'relative', width: 88, height: 72 }}>
+                    <button onClick={() => { setLightboxIndex(mediaIdx); setLightboxOpen(true); }}
+                      style={{ width: 88, height: 72, borderRadius: 14, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.35)', background: '#000', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      {cur.type === 'image' ? (
+                        <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      ) : (
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                          <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                            <Play size={18} color="white" fill="white" />
                           </div>
+                        </div>
+                      )}
+                    </button>
+                    {/* Dots or counter */}
+                    {allMedia.length > 1 && (
+                      <div style={{ position: 'absolute', bottom: 4, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 3, pointerEvents: 'none' }}>
+                        {allMedia.length <= 5 ? allMedia.map((_, i) => (
+                          <span key={i} style={{ width: i === mediaIdx ? 10 : 5, height: 5, borderRadius: 3, background: i === mediaIdx ? 'white' : 'rgba(255,255,255,0.5)', transition: 'width 0.2s' }} />
+                        )) : (
+                          <span style={{ fontSize: 9, color: 'white', fontWeight: 700, background: 'rgba(0,0,0,0.4)', borderRadius: 6, padding: '1px 5px' }}>{mediaIdx + 1}/{allMedia.length}</span>
                         )}
+                      </div>
+                    )}
+                    {/* Prev arrow */}
+                    {allMedia.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i - 1 + allMedia.length) % allMedia.length); }}
+                        style={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0 }}>
+                        <ChevronRight size={13} color="#1a1a1a" />
                       </button>
-                    ))}
+                    )}
+                    {/* Next arrow */}
+                    {allMedia.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i + 1) % allMedia.length); }}
+                        style={{ position: 'absolute', top: '50%', left: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0 }}>
+                        <ChevronLeft size={13} color="#1a1a1a" />
+                      </button>
+                    )}
                   </div>
                 );
               })()}
