@@ -7,6 +7,18 @@
 @layer base {
   :root {
     --background: 210 20% 97%;
+    /* Semantic surface aliases — light defaults */
+    --sheet-bg: #ffffff;
+    --card-bg: #ffffff;
+    --input-bg: #f4f7fb;
+    --overlay-bg: rgba(5,15,40,0.65);
+    --tag-bg: #f1f5f9;
+    --tag-muted: #e8edf5;
+    --white-text: #0f1e40;
+    --danger-bg: #fff1f2;
+    --danger-border: #fecaca;
+    --success-bg: #f0fdf4;
+    --warning-bg: #fffbeb;
     --foreground: 220 30% 8%;
     --card: 0 0% 100%;
     --card-foreground: 220 30% 8%;
@@ -67,6 +79,18 @@
     --header-bg: rgba(13,21,38,0.97);
     --nav-bg: #0d1526;
     --modal-bg: #152035;
+    /* Semantic surface aliases used in hardcoded components */
+    --sheet-bg: #152035;
+    --card-bg: #152035;
+    --input-bg: #1a2b47;
+    --overlay-bg: rgba(3,9,22,0.80);
+    --tag-bg: #1a2b47;
+    --tag-muted: #243450;
+    --white-text: #e2e8f5;
+    --danger-bg: #2d1010;
+    --danger-border: #7f1d1d;
+    --success-bg: #0d2310;
+    --warning-bg: #2b1e08;
     --foreground: 210 20% 92%;
     --card: 222 25% 13%;
     --card-foreground: 210 20% 92%;
@@ -195,6 +219,109 @@
 
 .font-inter {
   font-family: var(--font-inter);
+}
+
+/* ── Dark mode: override hardcoded background/text colors ─────────────── */
+.dark .mobile-sheet,
+.dark [style*="background: white"],
+.dark [style*="background:white"],
+.dark [style*="background: #ffffff"],
+.dark [style*="background: #fff"],
+.dark [style*="background:#ffffff"],
+.dark [style*="background:#fff"] {
+  background: var(--surface-2) !important;
+  color: var(--text-1) !important;
+}
+
+/* Inputs, textareas, selects in dark */
+.dark input:not([type="range"]),
+.dark textarea,
+.dark select {
+  background: var(--input-bg) !important;
+  color: var(--text-1) !important;
+  border-color: var(--border-1) !important;
+}
+
+/* Cards/panels with light backgrounds */
+.dark [style*="background: #f4f7fb"],
+.dark [style*="background: #f1f5f9"],
+.dark [style*="background: #f8fafc"],
+.dark [style*="background: #eff4fb"],
+.dark [style*="background: #f0f2f7"],
+.dark [style*="background: #f3f4f6"],
+.dark [style*="background: #e8edf5"],
+.dark [style*="background: #f0f4f8"] {
+  background: var(--surface-3) !important;
+}
+
+/* Dark text on white — flip to light */
+.dark [style*="color: #0f1e40"],
+.dark [style*="color: #1f2937"],
+.dark [style*="color: #374151"],
+.dark [style*="color: #1a1a1a"],
+.dark [style*="color: #111827"] {
+  color: var(--text-1) !important;
+}
+.dark [style*="color: #6b7280"],
+.dark [style*="color: #64748b"],
+.dark [style*="color: #475569"],
+.dark [style*="color: #9ca3af"],
+.dark [style*="color: #94a3b8"] {
+  color: var(--text-2) !important;
+}
+
+/* Borders */
+.dark [style*="border: 1px solid #e8edf5"],
+.dark [style*="border: 1.5px solid #e8edf5"],
+.dark [style*="border: 1px solid #dce8f5"],
+.dark [style*="border: 1.5px solid #dce8f5"],
+.dark [style*="border-bottom: 1.5px solid #e8edf5"],
+.dark [style*="border-top: 1px solid #e8edf5"],
+.dark [style*="border-color: #e8edf5"],
+.dark [style*="border-color: #dce8f5"] {
+  border-color: var(--border-1) !important;
+}
+
+/* Sheet overlays */
+.dark .mobile-sheet-overlay,
+.dark [style*="background: rgba(5,15,40"],
+.dark [style*="background: rgba(5, 15, 40"] {
+  background: rgba(3,9,22,0.80) !important;
+}
+
+/* Warning / danger / success tinted boxes */
+.dark [style*="background: #fff7ed"],
+.dark [style*="background: #fffbeb"] {
+  background: var(--warning-bg) !important;
+  border-color: #92400e !important;
+}
+.dark [style*="background: #fee2e2"],
+.dark [style*="background: #fef2f2"] {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+}
+.dark [style*="background: #f0fdf4"],
+.dark [style*="background: #dcfce7"] {
+  background: var(--success-bg) !important;
+}
+
+/* Blue tinted info boxes */
+.dark [style*="background: #eff6ff"],
+.dark [style*="background: #dbeafe"] {
+  background: rgba(30,53,83,0.8) !important;
+  border-color: var(--border-2) !important;
+}
+
+/* Segmented control / tab bars */
+.dark [style*="background: #f1f5f9"] {
+  background: var(--surface-3) !important;
+}
+
+/* BuyCreditsModal non-popular cards in dark */
+.dark .pkg-card:not(.pkg-glow) {
+  background: var(--surface-3) !important;
+  border-color: var(--border-1) !important;
+  color: var(--text-1) !important;
 }
 
 /* Custom scrollbar */

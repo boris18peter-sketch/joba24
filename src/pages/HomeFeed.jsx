@@ -327,7 +327,8 @@ export default function HomeFeed() {
   // Run smart ranking — pass isLoggedIn + behavioralProfile
   const rankedTasks = useMemo(() =>
     rankFeedTasks(candidateTasks, userLocation, workerProfile, { isLoggedIn: !!isAuthenticated, behavioralProfile }),
-    [candidateTasks.length, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated, behavioralProfile]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [candidateTasks, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated, behavioralProfile]
   );
 
   // Override sort if user manually picks one
@@ -407,7 +408,7 @@ export default function HomeFeed() {
       {!isAuthenticated && <LoginBannerCarousel />}
 
       {/* Segmented Control Tabs */}
-      <div dir="rtl" style={{ background: 'white', borderBottom: '1.5px solid #e8edf5', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 40, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+      <div dir="rtl" style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 40, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
         <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
           <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'available' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
           <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>משימות זמינות</button>
@@ -460,11 +461,11 @@ export default function HomeFeed() {
                 <>
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
                   <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 220, overflowY: 'auto' }}>
-                    <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : '#374151', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>הכל</button>
+                    <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>הכל</button>
                     {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length - tasks.filter(t => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length).map(c => {
                       const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
                       if (count === 0) return null;
-                      return (<button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : '#374151', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}><span>{c.label}</span><span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
+                      return (<button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}><span>{c.label}</span><span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
                     })}
                   </div>
                 </>

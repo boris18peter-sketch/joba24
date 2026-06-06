@@ -92,7 +92,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
       <div
         dir="rtl"
         style={{
-          background: 'var(--modal-bg)',
+          background: 'var(--sheet-bg)',
           borderRadius: '28px 28px 0 0',
           width: '100%',
           maxWidth: 480,
@@ -241,7 +241,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           })}
         </div>
 
-        <div style={{ padding: '14px 20px', textAlign: 'center', color: '#bbb', fontSize: 11 }}>
+        <div style={{ padding: '14px 20px', textAlign: 'center', color: 'var(--text-3)', fontSize: 11 }}>
           🔒 קרדיטים משמשים להגשת בקשות למשימות
         </div>
       </div>

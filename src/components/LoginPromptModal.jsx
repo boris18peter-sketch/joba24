@@ -51,7 +51,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     >
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--sheet-bg)',
           borderRadius: '32px 32px 0 0',
           width: '100%', maxWidth: 480,
           boxShadow: '0 -24px 120px rgba(0,0,0,0.3)',
@@ -60,14 +60,14 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         dir="rtl"
       >
         {/* Drag handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 0' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
 
         {/* Close */}
         <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
           <button
             onClick={onClose}
             style={{
-              width: 34, height: 34, borderRadius: 11, background: '#f3f4f6',
+              width: 34, height: 34, borderRadius: 11, background: 'var(--surface-3)',
               border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer',
             }}
@@ -78,7 +78,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
         <div style={{ padding: '12px 20px 0' }}>
           {/* Title */}
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', lineHeight: 1.5, textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.5, textAlign: 'center', marginBottom: 24 }}>
             הצטרפו לאלפי אנשים שמפרסמים ומבצעים משימות
           </div>
 

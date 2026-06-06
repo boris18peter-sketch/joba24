@@ -18,7 +18,7 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
         dir="rtl"
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'white', borderRadius: '28px 28px 0 0',
+          background: 'var(--sheet-bg)', borderRadius: '28px 28px 0 0',
           width: '100%', maxWidth: 480,
           padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
           boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
@@ -28,26 +28,26 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
         }}
       >
         {/* Handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 20px' }} />
 
         {/* Close */}
-        <button onClick={onClose} disabled={isLoading} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 12, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1, zIndex: 10 }}>
-          <X size={18} color="#6b7280" />
+        <button onClick={onClose} disabled={isLoading} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 12, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1, zIndex: 10 }}>
+          <X size={18} color="var(--text-2)" />
         </button>
 
         {/* Icon + Title */}
         <div style={{ textAlign: 'center', marginBottom: 24, marginTop: 8 }}>
-          <div style={{ width: 68, height: 68, borderRadius: 22, background: '#fee2e2', border: '2px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{ width: 68, height: 68, borderRadius: 22, background: 'var(--danger-bg)', border: '2px solid var(--danger-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <Trash2 size={32} color="#dc2626" strokeWidth={1.8} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>בטל משימה?</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>
-            אתה מבטל את המשימה <strong style={{ color: '#1f2937' }}>"{task.title}"</strong>
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', marginBottom: 10 }}>בטל משימה?</div>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
+            אתה מבטל את המשימה <strong style={{ color: 'var(--text-1)' }}>"{task.title}"</strong>
           </div>
         </div>
 
         {/* Warning box */}
-        <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
+        <div style={{ background: 'var(--danger-bg)', border: '1.5px solid var(--danger-border)', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: '#dc2626', lineHeight: 1.6, fontWeight: 600 }}>
             ⚠️ לא ניתן לבטל פעולה זו לאחר האישור
           </div>
@@ -65,7 +65,7 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
           <button
             onClick={onClose}
             disabled={isLoading}
-            style={{ width: '100%', height: 50, borderRadius: 14, background: 'white', border: '1.5px solid #dce8f5', color: '#374151', fontWeight: 700, fontSize: 15, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1 }}
+            style={{ width: '100%', height: 50, borderRadius: 14, background: 'var(--surface-2)', border: '1.5px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 15, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1 }}
           >
             חזור
           </button>
