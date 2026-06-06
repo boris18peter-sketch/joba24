@@ -4,14 +4,13 @@ import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useState } from 'react';
-import CreditBalancePill from '@/components/CreditBalancePill';
+
 import LoginPromptModal from '@/components/LoginPromptModal';
-import BuyCreditsModal from '@/components/BuyCreditsModal';
+
 
 const navItems = [
   { to: '/', icon: Home, label: 'פיד משימות' },
   { to: '/map', icon: Map, label: 'מפת משימות' },
-  { to: '/create-task', icon: Plus, label: 'פרסם משימה' },
   { to: '/chats', icon: MessageCircle, label: "צ'אטים" },
   { to: '/notifications', icon: Bell, label: 'התראות' },
   { to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
@@ -22,7 +21,6 @@ export default function SideMenu({ open, onClose }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
-  const [showBuyCredits, setShowBuyCredits] = useState(false);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -154,15 +152,6 @@ export default function SideMenu({ open, onClose }) {
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          {/* Show credits pill only when authenticated */}
-          {isAuthenticated && (
-            <div style={{ marginBottom: 14 }}>
-              <CreditBalancePill
-                credits={me?.worker_credits ?? 0}
-                onClick={() => { setShowBuyCredits(true); onClose(); }}
-              />
-            </div>
-          )}
           {/* Joba24 yellow CTA button — same as AppHeader */}
           <Link
             to={isAuthenticated ? '/create-task' : '#'}
@@ -176,8 +165,8 @@ export default function SideMenu({ open, onClose }) {
               boxShadow: '0 4px 16px rgba(251,191,36,0.4)',
             }}
           >
-            <span style={{ fontSize: 18 }}>⚡</span>
-            {isAuthenticated ? 'פרסם ג׳וב עכשיו' : 'התחבר עכשיו'}
+            <Plus size={18} />
+            + פרסם משימה
           </Link>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
             <Link to="/faq" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>שאלות ותשובות</Link>
@@ -187,7 +176,6 @@ export default function SideMenu({ open, onClose }) {
         </div>
       </div>
       {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
-      {showBuyCredits && <BuyCreditsModal onClose={() => setShowBuyCredits(false)} />}
     </>
   );
 }
