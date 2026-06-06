@@ -209,7 +209,14 @@ export default function MyTasks() {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'white', padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                <div style={{ background: 'white', padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                  {(task.views_count > 0 || task.clicks_count > 0) && (
+                    <div style={{ fontSize: 10, color: '#94a3b8', display: 'flex', gap: 6, whiteSpace: 'nowrap', alignItems: 'center' }}>
+                      <span>👁 <strong style={{ color: '#64748b' }}>{task.views_count || 0}</strong></span>
+                      <span>·</span>
+                      <span>🖱 <strong style={{ color: '#64748b' }}>{task.clicks_count || 0}</strong></span>
+                    </div>
+                  )}
                   {pendingApps > 0 && task.status === 'OPEN' && (
                     <div style={{ flex: 1, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 5 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pendingPulse 1.5s infinite', flexShrink: 0 }} />

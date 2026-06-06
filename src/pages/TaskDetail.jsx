@@ -605,7 +605,7 @@ export default function TaskDetail() {
         right={null} />
       
 
-      <div style={{ padding: '10px 12px 0' }} className="space-y-3">
+      <div style={{ padding: '8px 12px 0' }} className="space-y-2">
         {/* Expired banner */}
         {isExpired &&
         <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 20, padding: 16 }}>
@@ -686,7 +686,7 @@ export default function TaskDetail() {
                   {task.status === 'OPEN' ?
                   applicationCount > 0 && labelRotIdx === 1 ?
                   `${applicationCount} עובדים הגישו בקשה` :
-                  'מחפש פועל' :
+                  isOwner ? 'ממתין לבקשות' : 'פתוח' :
                   statusLabel}
                 </span>
 
@@ -757,9 +757,13 @@ export default function TaskDetail() {
 
             {/* Owner: waiting for applications */}
             {isOwner && task.status === 'OPEN' && applicationCount === 0 &&
-            <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '7px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
-                <span style={{ fontSize: 13 }}>✋</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.88)' }}>ממתין לאישור · עדיין לא הגיעו בקשות מעובדים</span>
+            <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 14px', marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ position: 'relative', width: 13, height: 13, flexShrink: 0, display: 'inline-flex' }}>
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
+                  <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>סורק עובדים · ממתין לבקשות</span>
               </div>
             }
 
@@ -850,7 +854,7 @@ export default function TaskDetail() {
               </button>
             }
           </div>
-          <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}`}</style>
+          <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
 
         {/* Applicants for owner — above the map */}
