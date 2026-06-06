@@ -106,12 +106,12 @@ export default function TaskDetail() {
   const prevTaskStatusRef = useRef(null);
   const autoRatingShownRef = useRef(false);
 
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+
   // Track unique view — only for non-owners, enabled once task & me are loaded
   const isOwnerForTracking = me?.id ? (me.id === task?.client_id) : false;
   useTrackTaskView(task?.id, !!task?.id && !isOwnerForTracking);
-
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
-  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
   // Check if current user already reviewed this task
   const { data: myReview } = useQuery({
