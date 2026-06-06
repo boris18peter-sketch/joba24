@@ -315,7 +315,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header */}
       <div style={{

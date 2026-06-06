@@ -544,7 +544,7 @@ export default function TaskDetail() {
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
-    <div className="min-h-screen" dir="rtl" style={{ background: 'var(--surface-1)' }}>
+    <div className="min-h-screen" dir="rtl" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(

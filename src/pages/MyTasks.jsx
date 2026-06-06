@@ -137,7 +137,7 @@ export default function MyTasks() {
   const pendingCountForTask = (taskId) => allApps.filter(a => a.task_id === taskId).length;
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }} dir="rtl">
       <PageHeader title="המשימות שלי" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} משימות</span>} />
       {/* Tabs bar */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
