@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import useDarkMode from '@/hooks/useDarkMode';
-import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, ClipboardList, Bell, ShieldCheck } from 'lucide-react';
+import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useState } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -17,8 +16,7 @@ const navItems = [
 
 export default function SideMenu({ open, onClose }) {
   const location = useLocation();
-  const { isAuthenticated, login } = useAuth();
-  const [dark, setDark] = useDarkMode();
+  const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
 
   return (
@@ -145,39 +143,22 @@ export default function SideMenu({ open, onClose }) {
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          {/* Dark mode toggle */}
-          <button
-            onClick={() => setDark(d => !d)}
+          {/* Joba24 yellow CTA button — same as AppHeader */}
+          <Link
+            to={isAuthenticated ? '/create-task' : '#'}
+            onClick={(e) => { if (!isAuthenticated) { e.preventDefault(); setShowLogin(true); } onClose(); }}
             style={{
-              width: '100%', padding: '10px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)',
-              background: dark ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.07)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', marginBottom: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', padding: '13px 16px', borderRadius: 14,
+              background: '#fbbf24', color: '#0a1f5c',
+              border: 'none', fontWeight: 900, fontSize: 15,
+              textDecoration: 'none', marginBottom: 14,
+              boxShadow: '0 4px 16px rgba(251,191,36,0.4)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 17 }}>{dark ? '☀️' : '🌙'}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: dark ? '#fbbf24' : '#bfdbfe' }}>
-                {dark ? 'מצב יום' : 'מצב לילה'}
-              </span>
-            </div>
-            {/* Toggle pill */}
-            <div style={{
-              width: 42, height: 24, borderRadius: 99,
-              background: dark ? '#fbbf24' : 'rgba(255,255,255,0.2)',
-              position: 'relative', transition: 'background 0.25s',
-              flexShrink: 0,
-            }}>
-              <div style={{
-                position: 'absolute', top: 3,
-                left: dark ? 'calc(100% - 21px)' : 3,
-                width: 18, height: 18, borderRadius: '50%',
-                background: 'white',
-                transition: 'left 0.25s cubic-bezier(0.34,1.2,0.64,1)',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-              }} />
-            </div>
-          </button>
+            <span style={{ fontSize: 18 }}>⚡</span>
+            {isAuthenticated ? 'פרסם ג׳וב עכשיו' : 'התחבר עכשיו'}
+          </Link>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
             <Link to="/faq" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>שאלות ותשובות</Link>
             <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 12 }}>|</span>
