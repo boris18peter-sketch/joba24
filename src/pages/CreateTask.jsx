@@ -710,7 +710,7 @@ export default function CreateTask() {
   };
 
   const activeBtn = { background: '#2563EB', color: 'white', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
-  const inactiveBtn = { background: '#F1F5F9', color: '#475569', border: 'none' };
+  const inactiveBtn = { background: 'var(--surface-3)', color: 'var(--text-2)', border: 'none' };
 
   if (searchingTaskId) {
     return (
@@ -864,7 +864,7 @@ export default function CreateTask() {
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null})); }}
             onBlur={() => checkFieldModeration('description', form.description)}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description || moderationErrors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }} rows={4}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={4}
           />
           {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>🔍 בודק תוכן...</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
@@ -875,18 +875,18 @@ export default function CreateTask() {
 
         {/* Images + Video */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: '#0f2b6b' }}>מדיה</Label>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>מדיה</Label>
           <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} />
         </SectionCard>
 
         {/* Price */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מחיר (₪) *</Label>
           <Input ref={fieldRefs.price} type="number" placeholder="100"
             value={form.price}
             onChange={e => { if (hasActiveApplications) return; set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
             disabled={hasActiveApplications}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
           />
           {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
@@ -897,7 +897,7 @@ export default function CreateTask() {
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
-            style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : '#f4f7fb', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : '#dce8f5'}` }}
+            style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : 'var(--surface-3)', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : 'var(--border-1)'}` }}
           >
             <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
@@ -921,7 +921,7 @@ export default function CreateTask() {
 
         {/* Expiry + Urgency */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> תוקף המשימה
           </Label>
           <div style={{ position: 'relative', marginBottom: 4 }}>
@@ -931,7 +931,7 @@ export default function CreateTask() {
                 const v = e.target.value;
                 set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v));
               }}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
+              style={{ width: '100%', height: 48, borderRadius: 12, background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: 'var(--text-1)', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
             >
               {EXPIRY_OPTIONS.map(opt => <option key={String(opt.hours)} value={opt.hours === null ? 'null' : String(opt.hours)}>{opt.label}</option>)}
             </select>
@@ -940,12 +940,12 @@ export default function CreateTask() {
           {form.expiry_hours === 'custom' && (
             <input type="number" min="0.5" step="0.5" placeholder="מספר שעות (לדוגמא: 3)"
               value={form.custom_expiry_hours} onChange={e => set('custom_expiry_hours', e.target.value)}
-              style={{ width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
             />
           )}
 
           {/* Urgency tag */}
-          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #f0f4fb' }}>
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <Zap size={14} color="#94a3b8" strokeWidth={1.8} />
             <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>מתי דרוש עובד?</span>
@@ -959,9 +959,9 @@ export default function CreateTask() {
                     style={{
                       padding: '10px 14px', borderRadius: 14, fontSize: 13, fontWeight: 700,
                       cursor: 'pointer', textAlign: 'center',
-                      background: isActive ? tag.bg : 'white',
-                      color: isActive ? tag.color : '#555',
-                      border: isActive ? `1.5px solid ${tag.border}` : '1px solid #dce8f5',
+                      background: isActive ? tag.bg : 'var(--surface-3)',
+                      color: isActive ? tag.color : 'var(--text-2)',
+                      border: isActive ? `1.5px solid ${tag.border}` : '1px solid var(--border-1)',
                       transition: 'all 0.15s',
                     }}
                   >
@@ -987,8 +987,8 @@ export default function CreateTask() {
             set('is_story', !form.is_story);
           }}
           style={{
-            background: form.is_story ? 'linear-gradient(135deg,#fdf4ff,#f3e8ff)' : 'white',
-            border: `2px solid ${form.is_story ? '#a855f7' : '#dce8f5'}`,
+            background: form.is_story ? 'linear-gradient(135deg,#fdf4ff,#f3e8ff)' : 'var(--card-bg)',
+            border: `2px solid ${form.is_story ? '#a855f7' : 'var(--border-1)'}`,
             borderRadius: 20, padding: '16px', cursor: 'pointer',
             boxShadow: form.is_story ? '0 4px 20px rgba(168,85,247,0.2)' : '0 2px 12px rgba(26,111,212,0.06)',
             transition: 'all 0.2s',
@@ -1005,7 +1005,7 @@ export default function CreateTask() {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : '#f4f7fb', borderRadius: 12, padding: '10px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : 'var(--surface-3)', borderRadius: 12, padding: '10px 12px' }}>
             <Zap size={18} color="#a855f7" />
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>חשיפה גבוהה פי 3 בשורת ה-Stories</div>
@@ -1016,7 +1016,7 @@ export default function CreateTask() {
 
         {/* Location */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <MapPin size={14} /> מיקום *
           </Label>
           <div ref={fieldRefs.location_name}>
@@ -1046,35 +1046,35 @@ export default function CreateTask() {
           {/* Extra address details */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
             <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>בניין / מספר בית</p>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>בניין / מספר בית</p>
               <Input placeholder="לדוגמה: 12"
                 value={form.address_building || ''}
                 onChange={e => set('address_building', e.target.value)}
-                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>קומה</p>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>קומה</p>
               <Input placeholder="לדוגמה: 3"
                 value={form.address_floor || ''}
                 onChange={e => set('address_floor', e.target.value)}
-                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>דירה</p>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>דירה</p>
               <Input placeholder="לדוגמה: 5"
                 value={form.address_apartment || ''}
                 onChange={e => set('address_apartment', e.target.value)}
-                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>הערות ניווט</p>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>הערות ניווט</p>
               <Input placeholder="לדוגמה: כניסה אחורית"
                 value={form.address_notes || ''}
                 onChange={e => set('address_notes', e.target.value)}
-                style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 42 }}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
           </div>
@@ -1082,12 +1082,12 @@ export default function CreateTask() {
 
         {/* Time */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> זמן ביצוע משוער
           </Label>
           <div style={{ position: 'relative' }}>
             <select value={form.estimated_time} onChange={e => set('estimated_time', e.target.value)}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
+              style={{ width: '100%', height: 48, borderRadius: 12, background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: 'var(--text-1)', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
             >
               {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
@@ -1096,7 +1096,7 @@ export default function CreateTask() {
           {form.estimated_time === 'custom' && (
             <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
               value={form.custom_time} onChange={e => set('custom_time', e.target.value)}
-              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 14, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
             />
           )}
         </SectionCard>
@@ -1105,7 +1105,7 @@ export default function CreateTask() {
         <SectionCard>
           <button type="button" onClick={() => setShowRequirements(v => !v)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
-            <Label className="text-sm font-bold flex items-center gap-1" style={{ color: '#0f2b6b', cursor: 'pointer', margin: 0 }}>
+            <Label className="text-sm font-bold flex items-center gap-1" style={{ color: 'var(--text-1)', cursor: 'pointer', margin: 0 }}>
               <CheckSquare size={14} /> דרישות
             </Label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1121,11 +1121,11 @@ export default function CreateTask() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                     {cat.items.map(({ key, label }) => (
                       <button key={key} onClick={() => setReq(key, !form.requirements[key])}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? '#eff6ff' : '#f4f7fb', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : '#dce8f5'}`, transition: 'all 0.15s' }}>
-                        <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : '#cbd5e1'}`, background: form.requirements[key] ? '#1a6fd4' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? 'rgba(59,130,246,0.08)' : 'var(--surface-3)', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : 'var(--border-1)'}`, background: form.requirements[key] ? '#1a6fd4' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           {form.requirements[key] && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : '#555' }}>{label}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : 'var(--text-2)' }}>{label}</span>
                       </button>
                     ))}
                   </div>
@@ -1135,7 +1135,7 @@ export default function CreateTask() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>דרישה חופשית</div>
                 <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
               </div>
             </div>
           )}
@@ -1145,7 +1145,7 @@ export default function CreateTask() {
         <SectionCard>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
           <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
-          <Label className="text-sm font-bold" style={{ color: '#334155', margin: 0 }}>אמצעי תשלום *</Label>
+          <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>אמצעי תשלום *</Label>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
           {PAYMENT_METHODS.map(pm => (
