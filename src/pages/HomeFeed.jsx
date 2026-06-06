@@ -3,6 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Search, SlidersHorizontal, SearchX, X, MapPin, Banknote, Flame, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullToRefreshIndicator from '@/components/PullToRefreshIndicator';
 
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
 import FilterSheet from '@/components/FilterSheet';
@@ -369,6 +371,15 @@ export default function HomeFeed() {
     return base;
   }, [sortedTasks, smartSections, activeSection, filters, search, behavioralProfile]);
 
+  // Pull to refresh — refetch main tasks list
+  const { refreshing, pullProgress } = usePullToRefresh(async () => {
+    await queryClient.refetchQueries({ queryKey: ['allTasks'] });
+    if (me?.id) {
+      queryClient.invalidateQueries({ queryKey: ['myTasks', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
+    }
+  });
+
   const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category || filters.payment_method || filters.forYou;
   const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou);
 
@@ -391,6 +402,7 @@ export default function HomeFeed() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
+      <PullToRefreshIndicator refreshing={refreshing} pullProgress={pullProgress} />
       {/* Login Banner Carousel — show only when not authenticated */}
       {!isAuthenticated && <LoginBannerCarousel />}
 

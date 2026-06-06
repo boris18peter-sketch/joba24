@@ -27,6 +27,20 @@ export default function Layout() {
   const notifActiveRef = useRef(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
+  // Preserve scroll position per tab
+  const scrollPositions = useRef({});
+  const prevPathRef = useRef(location.pathname);
+  useEffect(() => {
+    const el = document.getElementById('main-scroll');
+    if (!el) return;
+    // Save scroll of the tab we're leaving
+    scrollPositions.current[prevPathRef.current] = el.scrollTop;
+    prevPathRef.current = location.pathname;
+    // Restore scroll for the tab we're entering (0 if never visited)
+    const saved = scrollPositions.current[location.pathname] ?? 0;
+    el.scrollTop = saved;
+  }, [location.pathname]);
+
   const prevTasksRef = useRef({});
   const prevApplicationsRef = useRef({});
   const prevCreditsRef = useRef(null);

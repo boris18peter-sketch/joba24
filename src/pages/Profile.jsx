@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X } from 'lucide-react';
+import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2 } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -28,7 +28,15 @@ export default function Profile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const photoInputRef = useRef(null);
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    await base44.auth.deleteAccount();
+    setDeleteLoading(false);
+  };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -296,19 +304,60 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Logout */}
-        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 24 }}>
+        {/* Logout + Delete Account */}
+        <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 8 }}>
           <button
             onClick={() => base44.auth.logout()}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer' }}>
-            
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--border-1)' }}>
             <div style={{ width: 38, height: 38, borderRadius: 11, background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <LogOut size={17} color="#dc2626" />
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', flex: 1, textAlign: 'right' }}>התנתקות</span>
             <ChevronLeft size={16} color="#fca5a5" />
           </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Trash2 size={17} color="#94a3b8" />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#94a3b8', flex: 1, textAlign: 'right' }}>מחיקת חשבון</span>
+            <ChevronLeft size={16} color="#e2e8f0" />
+          </button>
         </div>
+
+        <div style={{ marginBottom: 24 }} />
+
+        {/* Delete Account Confirmation Sheet */}
+        {showDeleteConfirm && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowDeleteConfirm(false); }}>
+            <div dir="rtl" style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 60px rgba(0,0,0,0.25)' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{ width: 60, height: 60, borderRadius: 20, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                  <Trash2 size={28} color="#dc2626" strokeWidth={1.6} />
+                </div>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>מחיקת חשבון</div>
+                <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>
+                  פעולה זו <strong style={{ color: '#dc2626' }}>בלתי הפיכה</strong>.<br />
+                  כל הנתונים, ההיסטוריה והקרדיטים שלך יימחקו לצמיתות.
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button onClick={handleDeleteAccount} disabled={deleteLoading}
+                  style={{ width: '100%', height: 52, borderRadius: 14, background: deleteLoading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: deleteLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  {deleteLoading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> כן, מחק את החשבון שלי</>}
+                </button>
+                <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading}
+                  style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1.5px solid #dce8f5', color: '#374151', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+                  ביטול
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>);
 
