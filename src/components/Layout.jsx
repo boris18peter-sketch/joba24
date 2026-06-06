@@ -1,6 +1,10 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate, matchPath } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
+import HomeFeed from '@/pages/HomeFeed';
+import MapView from '@/pages/MapView';
+import ChatInbox from '@/pages/ChatInbox';
+import Profile from '@/pages/Profile';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -602,16 +606,58 @@ export default function Layout() {
       )}
       
       {/* Scrollable content area — paddingBottom leaves space for bottom nav */}
-      <div id="main-scroll" style={{
-        flex: 1,
-        overflowY: location.pathname === '/map' ? 'hidden' : 'auto',
-        overflowX: 'hidden',
-        paddingBottom: location.pathname === '/map' ? 0 : 'calc(80px + env(safe-area-inset-bottom))',
-        WebkitOverflowScrolling: 'touch',
-        overscrollBehavior: 'contain',
-      }}>
-        <Outlet />
-      </div>
+      {/* Root tabs: always mounted, display toggled for instant tab switching with preserved scroll */}
+      {(() => {
+        const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
+        const isRootTab = ROOT_TAB_PATHS.includes(location.pathname);
+        const isNonRootTab = !isRootTab;
+        return (
+          <>
+            {ROOT_TAB_PATHS.map(tabPath => {
+              const isActive = location.pathname === tabPath;
+              const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
+              return (
+                <div
+                  key={tabPath}
+                  id={tabPath === '/' ? 'main-scroll' : undefined}
+                  style={{
+                    flex: isActive ? 1 : undefined,
+                    display: isActive ? 'flex' : 'none',
+                    flexDirection: 'column',
+                    overflowY: tabPath === '/map' ? 'hidden' : 'auto',
+                    overflowX: 'hidden',
+                    paddingBottom: tabPath === '/map' ? 0 : 'calc(80px + env(safe-area-inset-bottom))',
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehavior: 'contain',
+                    height: isActive ? '100%' : 0,
+                  }}
+                >
+                  <TabComponent />
+                </div>
+              );
+            })}
+            {/* Non-root routes rendered via Outlet (root tabs handle themselves above) */}
+            {isNonRootTab && (
+              <div
+                id="main-scroll"
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  paddingBottom: 'calc(80px + env(safe-area-inset-bottom))',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                  height: '100%',
+                }}
+              >
+                <Outlet />
+              </div>
+            )}
+          </>
+        );
+      })()}
 
 
 

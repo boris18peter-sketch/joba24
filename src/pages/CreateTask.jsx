@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users } from 'lucide-react';
+import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
@@ -809,16 +810,11 @@ export default function CreateTask() {
         {/* Category */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>קטגוריה</Label>
-          <div style={{ position: 'relative' }}>
-            <select
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: 'var(--text-1)', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
-            >
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
-          </div>
+          <SelectionSheet
+            value={form.category}
+            options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
+            onChange={val => set('category', val)}
+          />
         </SectionCard>
 
         {/* Smart Category Extra Fields — right below category picker */}
@@ -924,18 +920,12 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> תוקף המשימה
           </Label>
-          <div style={{ position: 'relative', marginBottom: 4 }}>
-            <select
+          <div style={{ marginBottom: 4 }}>
+            <SelectionSheet
               value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
-              onChange={e => {
-                const v = e.target.value;
-                set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v));
-              }}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: 'var(--text-1)', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
-            >
-              {EXPIRY_OPTIONS.map(opt => <option key={String(opt.hours)} value={opt.hours === null ? 'null' : String(opt.hours)}>{opt.label}</option>)}
-            </select>
-            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
+              options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: opt.label }))}
+              onChange={v => set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v))}
+            />
           </div>
           {form.expiry_hours === 'custom' && (
             <input type="number" min="0.5" step="0.5" placeholder="מספר שעות (לדוגמא: 3)"
@@ -1085,14 +1075,11 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> זמן ביצוע משוער
           </Label>
-          <div style={{ position: 'relative' }}>
-            <select value={form.estimated_time} onChange={e => set('estimated_time', e.target.value)}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: 'var(--text-1)', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
-            >
-              {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
-          </div>
+          <SelectionSheet
+            value={form.estimated_time}
+            options={TIME_OPTIONS}
+            onChange={val => set('estimated_time', val)}
+          />
           {form.estimated_time === 'custom' && (
             <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
               value={form.custom_time} onChange={e => set('custom_time', e.target.value)}

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Clock, Loader2, Save, CheckSquare, Info, MapPin, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import SelectionSheet from '@/components/SelectionSheet';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import { toast } from 'sonner';
 import { CATEGORIES } from '@/lib/categories';
@@ -83,7 +84,7 @@ const PAYMENT_METHODS = [
 
 function SectionCard({ children }) {
   return (
-    <div style={{ background: 'white', borderRadius: 20, padding: '18px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
+    <div style={{ background: 'var(--card-bg)', borderRadius: 20, padding: '18px 16px', border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
       {children}
     </div>
   );
@@ -266,14 +267,12 @@ export default function EditTask() {
 
         {/* Category */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
-          <div style={{ position: 'relative' }}>
-            <select value={form.category} onChange={e => set('category', e.target.value)}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}>
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
-          </div>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>קטגוריה</Label>
+          <SelectionSheet
+            value={form.category}
+            options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
+            onChange={val => set('category', val)}
+          />
         </SectionCard>
 
         {/* Category Extra Fields */}
@@ -359,19 +358,14 @@ export default function EditTask() {
 
         {/* Expiry */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> תוקף המשימה
           </Label>
-          <div style={{ position: 'relative' }}>
-            <select
-              value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
-              onChange={e => { const v = e.target.value; set('expiry_hours', v === 'null' ? null : parseFloat(v)); }}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
-            >
-              {EXPIRY_OPTIONS.map(opt => <option key={String(opt.hours)} value={opt.hours === null ? 'null' : String(opt.hours)}>{opt.label}</option>)}
-            </select>
-            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
-          </div>
+          <SelectionSheet
+            value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
+            options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: opt.label }))}
+            onChange={v => set('expiry_hours', v === 'null' ? null : parseFloat(v))}
+          />
         </SectionCard>
 
         {/* Location */}
@@ -419,20 +413,18 @@ export default function EditTask() {
 
         {/* Time */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
+          <Label className="text-sm font-bold mb-3 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
             <Clock size={14} /> זמן ביצוע משוער
           </Label>
-          <div style={{ position: 'relative' }}>
-            <select value={form.estimated_time} onChange={e => set('estimated_time', e.target.value)}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}>
-              {TIME_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-            <ChevronDown size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none' }} />
-          </div>
+          <SelectionSheet
+            value={form.estimated_time}
+            options={TIME_OPTIONS}
+            onChange={val => set('estimated_time', val)}
+          />
           {form.estimated_time === 'custom' && (
             <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
               value={form.custom_time || ''} onChange={e => set('custom_time', e.target.value)}
-              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: '#f4f7fb', border: '1px solid #dce8f5', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 14, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
             />
           )}
         </SectionCard>
