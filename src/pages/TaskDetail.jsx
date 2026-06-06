@@ -109,10 +109,6 @@ export default function TaskDetail() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
 
-  // Track unique view — only for non-owners, enabled once task & me are loaded
-  const isOwnerForTracking = me?.id ? (me.id === task?.client_id) : false;
-  useTrackTaskView(task?.id, !!task?.id && !isOwnerForTracking);
-
   // Check if current user already reviewed this task
   const { data: myReview } = useQuery({
     queryKey: ['myReview', id, me?.id],
@@ -170,6 +166,10 @@ export default function TaskDetail() {
   });
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
+
+  // Track unique view — only for non-owners, enabled once task & me are loaded
+  const isOwnerForTracking = me?.id ? (me.id === task?.client_id) : false;
+  useTrackTaskView(task?.id, !!task?.id && !isOwnerForTracking);
 
   // Detect when my application just got approved
   useEffect(() => {
