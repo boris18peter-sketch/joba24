@@ -514,19 +514,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               📈 ₪{task.base_price} ← ₪{task.max_price}{liveApplicantCount > 0 ? ' · נעצר (יש בקשה)' : ' · נעצר כאשר יש בקשה'}
             </span>
             )}
-            {isMyPublished && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
-              <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 2 }}>
-                👁 {task.views_count || 0}
-              </span>
-              <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 2 }}>
-                🖱 {task.clicks_count || 0}
-              </span>
-            </div>
-            )}
+
           </div>
           {/* Right: owner controls or apply button */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
             {isMyPublished ? (
               // Owner management controls
               task.status === 'OPEN' ? (
@@ -555,7 +546,15 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                   פרטים
                 </button>
               )
-            ) : (
+            ) : null}
+            {isMyPublished && (
+              <div style={{ fontSize: 10, color: '#94a3b8', display: 'flex', gap: 8, whiteSpace: 'nowrap' }}>
+                <span>צפיות: <strong style={{ color: '#64748b' }}>{task.views_count || 0}</strong></span>
+                <span>|</span>
+                <span>כניסות: <strong style={{ color: '#64748b' }}>{task.clicks_count || 0}</strong></span>
+              </div>
+            )}
+            {!isMyPublished && (
               <>
                 {task.created_by === currentUserId && (
                   <div style={{ position: 'relative' }}>

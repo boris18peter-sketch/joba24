@@ -7,8 +7,8 @@ export function useTrackTaskView(taskId, enabled = true) {
   useEffect(() => {
     if (!taskId || !enabled) return;
     const key = `task_view_${taskId}`;
-    if (localStorage.getItem(key)) return; // already tracked
-    localStorage.setItem(key, '1');
+    if (sessionStorage.getItem(key)) return; // already tracked this session
+    sessionStorage.setItem(key, '1');
     base44.functions.invoke('trackTaskEvent', { taskId, eventType: 'view' }).catch(() => {});
   }, [taskId, enabled]);
 }
@@ -16,7 +16,7 @@ export function useTrackTaskView(taskId, enabled = true) {
 export function trackTaskClick(taskId) {
   if (!taskId) return;
   const key = `task_click_${taskId}`;
-  if (localStorage.getItem(key)) return;
-  localStorage.setItem(key, '1');
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
   base44.functions.invoke('trackTaskEvent', { taskId, eventType: 'click' }).catch(() => {});
 }
