@@ -19,7 +19,7 @@ export default function AppHeader({ onOpenMenu }) {
   const { data: me } = useQuery({
     queryKey: ['me'],
     queryFn: () => base44.auth.me(),
-    enabled: isAuthenticated && isHomePage,
+    enabled: isAuthenticated,
   });
 
   return (
@@ -52,7 +52,7 @@ export default function AppHeader({ onOpenMenu }) {
 
         {/* Left: Credits pill (home only) + Menu button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {isHomePage && isAuthenticated && (
+          {isAuthenticated && (
             <span id="onboarding-credits-pill">
             <CreditBalancePill
               credits={me?.worker_credits ?? 0}
@@ -60,7 +60,7 @@ export default function AppHeader({ onOpenMenu }) {
             />
             </span>
           )}
-          {isHomePage && !isAuthenticated && (
+          {!isAuthenticated && (
             <button
               onClick={() => setShowLogin(true)}
               style={{
