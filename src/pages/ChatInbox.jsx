@@ -118,7 +118,7 @@ export default function ChatInbox() {
   const isLoading = !me;
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader title="הודעות" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{visibleTasks.length} שיחות</span>} />
 
       <div style={{ padding: '16px 16px 100px' }}>
@@ -127,7 +127,7 @@ export default function ChatInbox() {
         ) : visibleTasks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-            <p style={{ fontWeight: 700, color: '#0f2b6b', margin: 0, fontSize: 16 }}>אין שיחות פעילות</p>
+            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>אין שיחות פעילות</p>
             <p style={{ color: '#888', fontSize: 13, marginTop: 6 }}>שיחות יופיעו כאן כשמשימה תתחיל</p>
           </div>
         ) : (
@@ -143,13 +143,13 @@ export default function ChatInbox() {
                   onClick={() => setUnreadCounts(prev => ({ ...prev, [task.id]: 0 }))}
                 >
                   <div style={{
-                    background: 'white',
+                    background: 'var(--card-bg)',
                     borderRadius: 18,
                     padding: '14px 16px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 14,
-                    border: unread > 0 ? '1.5px solid #bfdbfe' : '1px solid #dce8f5',
+                    border: unread > 0 ? '1.5px solid #bfdbfe' : `1px solid var(--border-1)`,
                     boxShadow: unread > 0 ? '0 2px 12px rgba(26,111,212,0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
                     marginBottom: 8,
                   }}>
@@ -176,18 +176,18 @@ export default function ChatInbox() {
                     {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                        <span style={{ fontWeight: unread > 0 ? 900 : 700, color: '#0f2b6b', fontSize: 14 }}>{otherName}</span>
+                        <span style={{ fontWeight: unread > 0 ? 900 : 700, color: 'var(--text-1)', fontSize: 14 }}>{otherName}</span>
                         {lastMsg?.created_date && (
                           <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
                             {formatDistanceToNow(new Date(lastMsg.created_date), { addSuffix: true })}
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span style={{ color: '#bbb', marginLeft: 4 }}>{task.title}</span>
+                      <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ color: 'var(--text-3)', marginLeft: 4 }}>{task.title}</span>
                       </div>
                       {lastMsg && (
-                        <div style={{ fontSize: 12, color: unread > 0 ? '#0f2b6b' : '#999', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
                           {lastMsg.sender_id === me?.id ? '← ' : ''}{lastMsg.content}
                         </div>
                       )}

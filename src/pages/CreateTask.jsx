@@ -126,7 +126,7 @@ function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChan
 
 function SectionCard({ children }) {
   return (
-    <div style={{ background: 'white', borderRadius: 20, padding: '18px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
+    <div style={{ background: 'var(--card-bg)', borderRadius: 20, padding: '18px 16px', border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
       {children}
     </div>
   );
@@ -724,7 +724,7 @@ export default function CreateTask() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       {showVerify && (
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
@@ -808,12 +808,12 @@ export default function CreateTask() {
 
         {/* Category */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>קטגוריה</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>קטגוריה</Label>
           <div style={{ position: 'relative' }}>
             <select
               value={form.category}
               onChange={e => set('category', e.target.value)}
-              style={{ width: '100%', height: 48, borderRadius: 12, background: '#f4f7fb', border: '1.5px solid #dce8f5', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: '#0f1e40', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
+              style={{ width: '100%', height: 48, borderRadius: 12, background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', paddingRight: 14, paddingLeft: 36, fontSize: 14, fontFamily: 'inherit', color: 'var(--text-1)', appearance: 'none', WebkitAppearance: 'none', outline: 'none', cursor: 'pointer', direction: 'rtl' }}
             >
               {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -832,12 +832,12 @@ export default function CreateTask() {
 
         {/* Title + Description */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מה צריך לעשות? *</Label>
           <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
             value={form.title}
             onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); setModerationErrors(p => ({...p, title: null})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
             onBlur={() => checkFieldModeration('title', form.title)}
-            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.title || moderationErrors.title ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: (errors.title || moderationErrors.title) ? 4 : 14 }}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.title || moderationErrors.title ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: (errors.title || moderationErrors.title) ? 4 : 14 }}
           />
           {checkingModeration === 'title' && <p style={{ fontSize: 11, color: '#1a6fd4', marginBottom: 8 }}>🔍 בודק תוכן...</p>}
           {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}

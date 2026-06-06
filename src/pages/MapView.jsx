@@ -297,9 +297,9 @@ export default function MapView() {
         {!navMode && (
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
-            background: 'rgba(255,255,255,0.97)',
+            background: 'var(--header-bg)',
             backdropFilter: 'blur(12px)',
-            borderBottom: '1.5px solid #e8edf5',
+            borderBottom: '1.5px solid var(--border-1)',
             paddingTop: 'max(8px, env(safe-area-inset-top))',
             paddingBottom: 8,
             paddingLeft: 14,
@@ -310,13 +310,13 @@ export default function MapView() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40, marginBottom: 8 }}>
               <button onClick={() => navigate(-1)} style={{
                 width: 34, height: 34, borderRadius: 10,
-                background: 'white', border: '1.5px solid #dce8f5',
+                background: 'var(--surface-2)', border: '1.5px solid var(--border-1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,111,212,0.08)', flexShrink: 0,
               }}>
                 <ArrowRight size={15} color="#1a6fd4" />
               </button>
-              <span style={{ fontWeight: 800, fontSize: 16, color: '#0f1e40', flex: 1 }}>מפת משימות</span>
+              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-1)', flex: 1 }}>מפת משימות</span>
               <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>
                 {displayTasks.length} פתוחות
               </span>
@@ -330,7 +330,7 @@ export default function MapView() {
                 style={{
                   flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                   borderRadius: 10, border: `1px solid ${filters.category ? '#93c5fd' : '#e8edf5'}`,
-                  background: filters.category ? '#eff6ff' : '#f8fafc',
+                  background: filters.category ? '#eff6ff' : 'var(--surface-2)',
                   color: filters.category ? '#1a6fd4' : '#64748b',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
@@ -345,7 +345,7 @@ export default function MapView() {
                 style={{
                   width: 36, height: 36, borderRadius: 8,
                   border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : '#e8edf5'}`,
-                  background: hasSheetFilters ? '#1a6fd4' : '#f8fafc',
+                  background: hasSheetFilters ? '#1a6fd4' : 'var(--surface-2)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', position: 'relative', flexShrink: 0,
                 }}
@@ -360,12 +360,12 @@ export default function MapView() {
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
                   <div style={{
                     position: 'absolute', top: 42, right: 0, left: 0,
-                    background: 'white', borderRadius: 10, border: '1px solid #e8edf5',
+                    background: 'var(--card-bg)', borderRadius: 10, border: '1px solid var(--border-1)',
                     boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100,
                     maxHeight: 220, overflowY: 'auto',
                   }}>
                     <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }}
-                      style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : '#374151', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
+                      style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
                       הכל
                     </button>
                     {CATEGORIES.map(c => {
@@ -373,7 +373,7 @@ export default function MapView() {
                       if (count === 0) return null;
                       return (
                         <button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }}
-                          style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : '#374151', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
+                          style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
                           <span>{c.label}</span>
                           <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
                         </button>
@@ -471,7 +471,7 @@ export default function MapView() {
             {/* BOTTOM ETA bar — Waze-style */}
             <div style={{
               position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 30,
-              background: 'white',
+              background: 'var(--card-bg)',
               borderRadius: '22px 22px 0 0',
               boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
               paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
@@ -480,25 +480,25 @@ export default function MapView() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
                 {/* ETA */}
-                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid #f0f4f8' }}>
-                  <div style={{ fontSize: 26, fontWeight: 900, color: '#0a1a4a', letterSpacing: -1 }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
+                  <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -1 }}>
                     {getETA(remainTime)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginTop: 1 }}>הגעה משוערת</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>הגעה משוערת</div>
                 </div>
                 {/* Remaining distance */}
-                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid #f0f4f8' }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color: '#1a6fd4', letterSpacing: -0.5 }}>
                     {formatDist(remainDist)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginTop: 1 }}>נותר</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>נותר</div>
                 </div>
                 {/* Time */}
-                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid #f0f4f8' }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#374151', letterSpacing: -0.5 }}>
+                <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.5 }}>
                     {formatTime(remainTime)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500, marginTop: 1 }}>זמן נסיעה</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>זמן נסיעה</div>
                 </div>
                 {/* Stop */}
                 <div style={{ paddingRight: 8 }}>
@@ -521,14 +521,14 @@ export default function MapView() {
         {selectedTask && !navMode && (
           <div style={{
             position: 'absolute', bottom: 24, left: 16, right: 16, zIndex: 20,
-            background: 'white', borderRadius: 24,
+            background: 'var(--card-bg)', borderRadius: 24,
             boxShadow: '0 10px 50px rgba(15,43,107,0.22)',
-            padding: '18px 18px 16px', border: '1px solid #dce8f5',
+            padding: '18px 18px 16px', border: '1px solid var(--border-1)',
             animation: 'slideUpCard 0.25s cubic-bezier(0.34,1.3,0.64,1)',
           }} dir="rtl">
             <button onClick={() => setSelectedTask(null)} style={{
               position: 'absolute', top: 14, left: 14, width: 30, height: 30,
-              borderRadius: 9, background: '#f3f4f6', border: 'none',
+              borderRadius: 9, background: 'var(--surface-3)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
             }}>
               <X size={15} color="#6b7280" />
@@ -539,7 +539,7 @@ export default function MapView() {
                 <div style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -1 }}>₪{selectedTask.price}</div>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: 15, color: '#0f2b6b', marginBottom: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-1)', marginBottom: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                   {selectedTask.title}
                 </div>
                 <div style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
@@ -596,8 +596,8 @@ export default function MapView() {
                 {navLoading ? 'מחשב...' : !route ? 'ללא מיקום' : 'התחל ניווט'}
               </button>
               <button onClick={() => window.location.href = `/task/${selectedTask.id}`} style={{
-                flex: 1, height: 46, borderRadius: 14, background: '#f8faff',
-                border: '1.5px solid #dce8f5', color: '#1a6fd4', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+                flex: 1, height: 46, borderRadius: 14, background: 'var(--surface-3)',
+                border: '1.5px solid var(--border-1)', color: '#1a6fd4', fontWeight: 800, fontSize: 13, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               }}>
                 פרטים <ChevronRight size={14} />

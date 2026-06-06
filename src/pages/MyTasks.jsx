@@ -209,12 +209,12 @@ export default function MyTasks() {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'white', padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                <div style={{ background: 'var(--card-bg)', padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', borderTop: '1px solid var(--border-1)' }} onClick={e => e.stopPropagation()}>
                   {(task.views_count > 0 || task.clicks_count > 0) && (
-                    <div style={{ fontSize: 10, color: '#94a3b8', display: 'flex', gap: 6, whiteSpace: 'nowrap', alignItems: 'center' }}>
-                      <span>👁 <strong style={{ color: '#64748b' }}>{task.views_count || 0}</strong></span>
+                    <div style={{ fontSize: 10, color: 'var(--text-3)', display: 'flex', gap: 6, whiteSpace: 'nowrap', alignItems: 'center' }}>
+                      <span>👁 <strong style={{ color: 'var(--text-2)' }}>{task.views_count || 0}</strong></span>
                       <span>·</span>
-                      <span>🖱 <strong style={{ color: '#64748b' }}>{task.clicks_count || 0}</strong></span>
+                      <span>🖱 <strong style={{ color: 'var(--text-2)' }}>{task.clicks_count || 0}</strong></span>
                     </div>
                   )}
                   {pendingApps > 0 && task.status === 'OPEN' && (
