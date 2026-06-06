@@ -15,7 +15,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
-import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
+
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔥', label: 'דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
@@ -349,7 +349,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     <>
       <div
         ref={cardRef}
-        onClick={() => { if (showMenu) { setShowMenu(false); return; } if (!isMyPublished) trackTaskClick(task.id); navigate(`/task/${task.id}`); }}
+        onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
         className="active:scale-[0.982] transition-all"
         style={{
           background: 'var(--surface-2)',

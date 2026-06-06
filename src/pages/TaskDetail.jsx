@@ -41,7 +41,7 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
-import { useTrackTaskView } from '@/hooks/useTrackTaskEvent';
+import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
@@ -167,9 +167,14 @@ export default function TaskDetail() {
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
 
-  // Track unique view — only for non-owners, enabled once task & me are loaded
-  const isOwnerForTracking = me?.id ? (me.id === task?.client_id) : false;
-  useTrackTaskView(task?.id, !!task?.id && !isOwnerForTracking);
+  // Track click (entry into TaskDetail) — only for non-owners, once per session
+  useEffect(() => {
+    if (!task?.id) return;
+    const isOwnerForTracking = me?.id ? (me.id === task.client_id) : false;
+    if (!isOwnerForTracking) {
+      trackTaskClick(task.id);
+    }
+  }, [task?.id, me?.id]);
 
   // Detect when my application just got approved
   useEffect(() => {
