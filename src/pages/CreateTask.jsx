@@ -23,6 +23,7 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
+import { WorkerPoolBanner } from '@/components/WorkerPoolScanner';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -1069,6 +1070,11 @@ export default function CreateTask() {
             </div>
           </div>
         </SectionCard>
+
+        {/* Worker Pool Scanner — appears after location is confirmed */}
+        {form.city && form.category && addressConfirmed && (
+          <WorkerPoolBanner category={form.category} city={form.city} />
+        )}
 
         {/* Time */}
         <SectionCard>
