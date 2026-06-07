@@ -64,6 +64,18 @@ const statusConfig = {
   EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' }
 };
 
+function getRelativeTime(date) {
+  if (!date) return null;
+  const minutes = Math.floor((Date.now() - new Date(date)) / 60000);
+  if (minutes < 1) return 'עכשיו';
+  if (minutes < 60) return `לפני ${minutes} דקות`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `לפני ${hours} שעות`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `לפני ${days} ימים`;
+  return null;
+}
+
 export default function TaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -768,7 +780,7 @@ export default function TaskDetail() {
               </div>
             }
 
-            {/* Publisher + location */}
+            {/* Publisher + location + published time */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
               {task.client_name &&
               <UserBadge
@@ -785,6 +797,11 @@ export default function TaskDetail() {
                   <MapPin size={10} strokeWidth={2} />
                   {task.location_name.split(',')[0]}
                   {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}`}
+                </span>
+              )}
+              {task.created_date && getRelativeTime(task.created_date) && (
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                  פורסם {getRelativeTime(task.created_date)}
                 </span>
               )}
             </div>

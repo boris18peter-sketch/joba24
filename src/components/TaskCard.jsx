@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
@@ -16,6 +16,18 @@ import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
 
+
+function getRelativeTime(date) {
+  if (!date) return null;
+  const minutes = Math.floor((Date.now() - new Date(date)) / 60000);
+  if (minutes < 1) return 'עכשיו';
+  if (minutes < 60) return `לפני ${minutes} דקות`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `לפני ${hours} שעות`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `לפני ${days} ימים`;
+  return null;
+}
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔥', label: 'דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
@@ -174,7 +186,7 @@ function ScanningLabel() {
         </span>
         <span style={{ fontSize: 12, fontWeight: 800 }}>סורק עובדים...</span>
       </span>
-      <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 500 }}>אין עדיין בקשות</span>
+      <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 500 }}>המשימה נחשפת לעובדים באזור</span>
     </span>
   );
 }
@@ -201,6 +213,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const cardRef = useRef(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
+  const [showDetails, setShowDetails] = useState(false);
   // Live applicant count — initialised from TaskApplication entity to avoid stale task.applicants cache
   const [liveApplicantCount, setLiveApplicantCount] = useState(() => {
     // task.applicants may be stale; we'll refetch from DB shortly, but start with best guess
@@ -465,33 +478,73 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Card Body: title + description + meta */}
+        {/* Card Body: title + description + meta + media */}
         <div style={{ marginBottom: 10 }}>
-          <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-            {task.title}
-          </h3>
-          {task.description && (
-            <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-              {parseDescription(task.description).mainDescription}
-            </p>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
-            {task.location_name && (
-              <><MapPin size={10} strokeWidth={1.8} />
-              <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span></>
-            )}
-            {task.client_name && (
-              task.client_id === currentUserId ? (
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
-              ) : (
-                <UserBadge
-                  name={task.client_name}
-                  userId={task.client_id}
-                  verified={task.client_verified}
-                  rating={task.client_rating}
-                />
-              )
-            )}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {task.title}
+              </h3>
+              {task.description && (
+                <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                  {parseDescription(task.description).mainDescription}
+                </p>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
+                {task.location_name && (
+                  <><MapPin size={10} strokeWidth={1.8} />
+                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span></>
+                )}
+                {task.client_name && (
+                  task.client_id === currentUserId ? (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
+                  ) : (
+                    <UserBadge
+                      name={task.client_name}
+                      userId={task.client_id}
+                      verified={task.client_verified}
+                      rating={task.client_rating}
+                    />
+                  )
+                )}
+              </div>
+              {task.created_date && getRelativeTime(task.created_date) && (
+                <div style={{ fontSize: 10, color: '#b0bac8', marginTop: 4 }}>
+                  פורסם {getRelativeTime(task.created_date)}
+                </div>
+              )}
+            </div>
+            {/* Media thumbnail */}
+            {(() => {
+              const allMedia = [
+                ...(task.images || []).map(url => ({ type: 'image', url })),
+                ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+              ];
+              if (!allMedia.length) return null;
+              const cur = allMedia[0];
+              return (
+                <div
+                  onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-1)', position: 'relative', background: '#000', cursor: 'pointer' }}
+                >
+                  {cur.type === 'image' ? (
+                    <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  ) : (
+                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                      <video src={cur.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }}>
+                        <Play size={16} color="white" fill="white" />
+                      </div>
+                    </div>
+                  )}
+                  {allMedia.length > 1 && (
+                    <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '1px 5px', fontSize: 9, color: 'white', fontWeight: 700 }}>
+                      +{allMedia.length - 1}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -600,6 +653,69 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             )}
           </div>
         </div>
+
+        {/* Details dropdown */}
+        {(task.estimated_time || task.category || task.address_building || task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
+          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 8, paddingTop: 4 }}>
+            <button
+              onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#94a3b8', fontWeight: 600, padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}
+            >
+              {showDetails ? 'פחות פרטים' : 'פרטי המשימה'}
+              {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            {showDetails && (
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 7, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
+                {task.estimated_time && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Clock size={12} color="#1a6fd4" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>זמן משוער</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
+                        {task.estimated_time === '15m' ? 'רבע שעה' : task.estimated_time === '30m' ? 'חצי שעה' : task.estimated_time === '1h' ? 'שעה' : task.estimated_time === '2h' ? 'שעתיים' : task.estimated_time}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {task.category && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>🔨</div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>קטגוריה</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
+                    </div>
+                  </div>
+                )}
+                {(task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <MapPin size={12} color="#ea580c" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 1 }}>פרטי כתובת</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
+                        {[task.address_building && `בניין ${task.address_building}`, task.address_floor && `קומה ${task.address_floor}`, task.address_apartment && `דירה ${task.address_apartment}`, task.address_notes].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#16a34a' }}>✓</div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 1 }}>דרישות</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
+                        {[task.requirements.vehicle && 'נדרש רכב', task.requirements.two_people && 'נדרשים שני אנשים', task.requirements.experience && 'נדרש ניסיון'].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showApplyModal && createPortal(
