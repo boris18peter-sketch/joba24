@@ -21,22 +21,22 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, bonus: 0, note: 'Rating < 5, no bonus' });
     }
 
-    // Find the approved application for this worker+task
+    // Find the application for this worker+task (approved OR any status — worker was already assigned)
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({
       task_id: taskId,
       worker_id: workerId,
     });
-    const approvedApp = apps.find(a => a.status === 'approved');
+    // Prefer approved, but fall back to any app that had credits charged (task may be completed now)
+    const approvedApp = apps.find(a => a.status === 'approved') || apps.find(a => (a.credits_charged || 0) > 0) || apps[0];
     if (!approvedApp) {
-      return Response.json({ success: true, bonus: 0, note: 'No approved application found' });
+      return Response.json({ success: true, bonus: 0, note: 'No application found' });
     }
 
     const creditsCharged = approvedApp.credits_charged || 0;
-    if (creditsCharged <= 0) {
-      return Response.json({ success: true, bonus: 0, note: 'No credits were charged' });
-    }
+    // If no credits were charged, grant a minimum flat bonus of 1 for 5-star work
+    const effectiveCharged = creditsCharged > 0 ? creditsCharged : 1;
 
-    const bonus = Math.max(1, Math.round(creditsCharged * 0.1));
+    const bonus = Math.max(1, Math.round(effectiveCharged * 0.1));
 
     // Fetch worker's current balance
     const users = await base44.asServiceRole.entities.User.filter({ id: workerId });
