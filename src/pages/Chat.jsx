@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Send, Loader2, Image, Check, CheckCheck, Info, MapPin, Clock, Star, ShieldAlert } from 'lucide-react';
+import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert } from 'lucide-react';
+import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { toast } from 'sonner';
 import BackButton from '@/components/BackButton';
 import { moderateText } from '@/hooks/useModeration';
@@ -91,32 +92,15 @@ function TypingIndicator() {
 function TaskInfoPopup({ task, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', padding: '24px 20px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
-        <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 20px' }} />
-        <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>{task.title}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-          <div style={{ fontSize: 28, fontWeight: 900, color: '#1a6fd4' }}>₪{task.price}</div>
-          {task.client_rating > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#92400e', background: '#fef3c7', borderRadius: 10, padding: '4px 10px', fontWeight: 700 }}>
-              <Star size={13} fill="#fbbf24" color="#fbbf24" /> {task.client_rating.toFixed(1)} · {task.client_name}
-            </div>
-          )}
-        </div>
-        {task.description && <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.65, marginBottom: 14 }}>{task.description}</p>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {task.location_name && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
-              <MapPin size={14} color="#1a6fd4" /> {task.location_name}
-            </div>
-          )}
-          {task.estimated_time && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
-              <Clock size={14} color="#1a6fd4" /> זמן משוער: {task.estimated_time}
-            </div>
-          )}
-        </div>
+      <div dir="rtl" style={{ background: 'var(--surface-1)', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '85dvh', overflowY: 'auto', padding: '20px 16px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 16px' }} />
+        {/* Title + price */}
+        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>{task.title}</div>
+        <div style={{ fontSize: 26, fontWeight: 900, color: '#1a6fd4', marginBottom: 16 }}>₪{task.price}</div>
+        {/* Shared structured rows */}
+        <TaskDetailsRows task={task} compact={false} />
         <button onClick={() => { onClose(); window.location.href = `/task/${task.id}`; }}
-          style={{ marginTop: 20, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
+          style={{ marginTop: 16, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
           פתח דף המשימה המלא
         </button>
       </div>
@@ -166,8 +150,8 @@ export default function Chat() {
   const { data: fetchedMessages = [] } = useQuery({
     queryKey: ['chatMessages', taskId],
     queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
-    staleTime: 5000,
-    refetchInterval: 10000,
+    staleTime: 0,
+    refetchInterval: 3000,
     initialData: () => {
       try {
         const cached = sessionStorage.getItem(CACHE_KEY);
@@ -315,7 +299,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header */}
       <div style={{

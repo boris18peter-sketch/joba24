@@ -17,6 +17,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
+import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 
 
 function normalizeDate(d) {
@@ -700,120 +701,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             {showDetails ? <ChevronUp size={12} color="#94a3b8" /> : <ChevronDown size={12} color="#94a3b8" />}
           </button>
         </div>
-        <div style={{ display: showDetails ? 'block' : 'none', borderTop: '1px solid #f1f5f9', marginTop: 4, paddingTop: 4 }}>
-          {showDetails && (() => {
-            // Build "פרטי המשימה" rows
-            const detailRows = [];
-            if (task.expires_at) {
-              const expDate = new Date(task.expires_at);
-              const expired = expDate <= new Date();
-              detailRows.push({
-                icon: '🕐',
-                iconBg: '#fff7ed',
-                label: 'תוקף המשימה',
-                value: expired ? 'פג תוקף' : expDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                valueColor: expired ? '#dc2626' : undefined,
-              });
-            }
-            if (task.estimated_time) {
-              const etMap = { '15m': 'רבע שעה', '30m': 'חצי שעה', '1h': 'שעה', '2h': 'שעתיים' };
-              detailRows.push({ icon: '🕒', iconBg: '#eff6ff', label: 'זמן משוער', value: etMap[task.estimated_time] || task.estimated_time });
-            }
-            if (task.category) {
-              detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: 'קטגוריה', value: getCategoryLabel(task.category) });
-            }
-            if (task.payment_method) {
-              detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: 'אמצעי תשלום', value: task.payment_method === 'Cash' ? 'מזומן' : task.payment_method });
-            }
-            if (task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag]) {
-              const t = URGENCY_TAG_CONFIG[task.urgency_tag];
-              detailRows.push({ icon: t.emoji, iconBg: t.bg, label: 'דחיפות', value: t.label, valueColor: t.color });
-            }
-
-            // Build "פרטים נוספים" rows
-            const extraRows = [];
-            if (task.location_name) {
-              extraRows.push({ bullet: '•', label: 'כתובת יעד', value: task.location_name });
-            }
-            if (task.address_floor) extraRows.push({ bullet: '•', label: 'קומת מוצא', value: task.address_floor });
-            if (task.address_building) extraRows.push({ bullet: '•', label: 'בניין', value: task.address_building });
-            if (task.address_apartment) extraRows.push({ bullet: '•', label: 'דירה', value: task.address_apartment });
-            if (task.address_notes) extraRows.push({ bullet: '•', label: 'הערות כתובת', value: task.address_notes });
-            if (task.description) {
-              extraRows.push({ bullet: '•', label: 'תיאור', value: parseDescription(task.description).mainDescription });
-            }
-
-            // Requirements as checkmarks
-            const reqChecks = [];
-            if (task.requirements) {
-              if (task.requirements.vehicle) reqChecks.push('נדרש רכב');
-              if (task.requirements.vehicle_commercial) reqChecks.push('רכב מסחרי');
-              if (task.requirements.truck) reqChecks.push('טנדר / משאית');
-              if (task.requirements.motorcycle) reqChecks.push('קטנוע');
-              if (task.requirements.two_people) reqChecks.push('יש מעלית במוצא');
-              if (task.requirements.three_people) reqChecks.push('יש מעלית ביעד');
-              if (task.requirements.four_plus_people) reqChecks.push('4+ אנשים');
-              if (task.requirements.experience) reqChecks.push('דרושה משאית');
-              if (task.requirements.certified) reqChecks.push('הסמכה / רישיון');
-              if (task.requirements.heavy_lifting) reqChecks.push('נשיאת משאות כבדים');
-              if (typeof task.requirements.custom === 'string' && task.requirements.custom) reqChecks.push(task.requirements.custom);
-            }
-
-            const hasDetails = detailRows.length > 0;
-            const hasExtras = extraRows.length > 0 || reqChecks.length > 0;
-            if (!hasDetails && !hasExtras) return null;
-
-            return (
-              <div style={{ marginTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
-                {/* Section: פרטי המשימה */}
-                {hasDetails && (
-                  <>
-                    <div style={{ fontSize: 9, color: '#b0bac8', fontWeight: 700, letterSpacing: 0.3, marginBottom: 4, paddingRight: 2 }}>פרטי המשימה</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f2f7' }}>
-                      {detailRows.map((row, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-2)', borderBottom: i < detailRows.length - 1 ? '1px solid #f4f6f9' : 'none' }}>
-                          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>{row.label}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <div style={{ fontWeight: 700, fontSize: 11, color: row.valueColor || 'var(--text-1)' }}>{row.value}</div>
-                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: row.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }}>{row.icon}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Section: פרטים נוספים */}
-                {hasExtras && (
-                  <>
-                    <div style={{ fontSize: 9, color: '#b0bac8', fontWeight: 700, letterSpacing: 0.3, margin: '8px 0 4px', paddingRight: 2 }}>פרטים נוספים</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f2f7' }}>
-                      {extraRows.map((row, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-2)', borderBottom: (i < extraRows.length - 1 || reqChecks.length > 0) ? '1px solid #f4f6f9' : 'none' }}>
-                          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>{row.label}</div>
-                          <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--text-1)', textAlign: 'left', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</div>
-                        </div>
-                      ))}
-                      {reqChecks.map((req, i) => (
-                        <div key={`req_${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-2)', borderBottom: i < reqChecks.length - 1 ? '1px solid #f4f6f9' : 'none' }}>
-                          <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--text-1)' }}>{req}</div>
-                          <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 900 }}>✓</div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Worker pool pill */}
-                {isMyPublished && liveApplicantCount === 0 && task.status === 'OPEN' && task.city && task.category && (
-                  <div style={{ marginTop: 8 }}>
-                    <WorkerPoolPill category={task.category} city={task.city} />
-                  </div>
-                )}
+        {showDetails && (
+          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 4, paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
+            <TaskDetailsRows task={task} compact={true} />
+            {isMyPublished && liveApplicantCount === 0 && task.status === 'OPEN' && task.city && task.category && (
+              <div style={{ marginTop: 8 }}>
+                <WorkerPoolPill category={task.category} city={task.city} />
               </div>
-            );
-          })()}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showApplyModal && createPortal(
