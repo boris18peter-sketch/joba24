@@ -313,7 +313,7 @@ export default function HomeFeed() {
   // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
   const candidateTasks = tasks.filter(t => {
     if (t.status !== 'OPEN') return false;
-    if (me?.id && t.client_id === me.id) return false; // Hide own tasks from feed (shown separately)
+    // own tasks stay in the feed — ranked normally alongside others
     if (dismissedTasks.has(t.id)) return false;
     const q = search.toLowerCase();
     if (search && !(
@@ -500,12 +500,6 @@ export default function HomeFeed() {
                 {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-                {/* My own OPEN tasks appear at the top */}
-                {isAuthenticated && myOpenTasks.map((task, index) => (
-                  <div key={`my_${task.id}`} style={{ animation: `slideInStagger 0.45s ease-out both`, animationDelay: `${index * 50}ms` }}>
-                    <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
-                  </div>
-                ))}
                 {displayedTasks.map((task, index) => {
                   const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
                   const isNew = newTaskIds.has(task.id);
