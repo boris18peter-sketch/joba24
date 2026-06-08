@@ -501,12 +501,13 @@ export default function HomeFeed() {
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {displayedTasks.map((task, index) => {
-                  const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
+                  const isOwn = !!me?.id && task.client_id === me.id;
+                  const myApp = !isOwn ? myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved')) : undefined;
                   const isNew = newTaskIds.has(task.id);
                   return (
                     <div key={task.id} style={{ position: 'relative', animation: isNew ? 'slideInFresh 0.4s ease-out' : `slideInStagger 0.45s ease-out both`, animationDelay: isNew ? undefined : `${Math.min(index, 12) * 50}ms` }}>
-                      <TaskCardWithSwipe task={{ ...task, _isFirstCard: index === 0 }} myApp={myApp} isMyTask={false} currentUserId={isAuthenticated ? me?.id : null} workerName={me?.full_name} badges={task._badges}
-                        onDismiss={(taskId) => setDismissedTasks((prev) => new Set([...prev, taskId]))} />
+                      <TaskCardWithSwipe task={{ ...task, _isFirstCard: index === 0 }} myApp={myApp} isMyPublished={isOwn} currentUserId={isAuthenticated ? me?.id : null} workerName={me?.full_name} badges={isOwn ? undefined : task._badges}
+                        onDismiss={isOwn ? undefined : (taskId) => setDismissedTasks((prev) => new Set([...prev, taskId]))} />
                     </div>
                   );
                 })}
