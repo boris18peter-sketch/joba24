@@ -230,11 +230,11 @@ export default function MyTasks() {
                       {pendingApps} בקשות ממתינות
                     </div>
                   )}
-                  {task.status === 'OPEN' || task.status === 'TAKEN' ? (
-                    <Link to={`/task/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                      <button style={{ height: 34, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>פרטים</button>
-                    </Link>
-                  ) : null}
+                  {(task.status === 'COMPLETED' || task.status === 'CANCELLED' || task.status === 'EXPIRED') && (
+                    <button onClick={e => { e.stopPropagation(); handleReopen(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <RefreshCw size={13} /> פרסם שוב
+                    </button>
+                  )}
                   {task.status === 'TAKEN' && (
                     <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                       <button style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -247,11 +247,7 @@ export default function MyTasks() {
                       <X size={13} /> בטל
                     </button>
                   )}
-                  {(task.status === 'EXPIRED' || task.status === 'CANCELLED') && (
-                    <button onClick={e => { e.stopPropagation(); handleReopen(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <RefreshCw size={13} /> פתח שוב
-                    </button>
-                  )}
+
                 </div>
               </div>
             );

@@ -512,6 +512,19 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 ✦ For You
               </span>
             )}
+            {task.status === 'OPEN' && liveApplicantCount > 0 && (
+              <span style={{
+                fontSize: 10, fontWeight: 700,
+                padding: '2px 8px', borderRadius: 20,
+                background: '#fffbeb', border: '1px solid #fde68a',
+                color: '#92400e',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                whiteSpace: 'nowrap',
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+                {liveApplicantCount} מועמדויות
+              </span>
+            )}
 
           </div>
         </div>
