@@ -14,11 +14,14 @@ import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { useNavigate, Link } from 'react-router-dom';
+import PublishTaskBanner from '@/components/PublishTaskBanner';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
 
 export default function HomeFeed() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState(() => {
@@ -301,10 +304,16 @@ export default function HomeFeed() {
   const approvedTaskIds = new Set(approvedApps.map(a => a.task_id));
   const pendingTaskIds  = new Set(pendingApps.map(a => a.task_id));
 
+  // My own OPEN tasks to show in the available feed (same card style, isMyPublished)
+  const myOpenTasks = useMemo(() =>
+    myTasks.filter(t => t.status === 'OPEN'),
+    [myTasks]
+  );
+
   // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
   const candidateTasks = tasks.filter(t => {
     if (t.status !== 'OPEN') return false;
-    if (me?.id && t.client_id === me.id) return false; // Hide own tasks from feed
+    if (me?.id && t.client_id === me.id) return false; // Hide own tasks from feed (shown separately)
     if (dismissedTasks.has(t.id)) return false;
     const q = search.toLowerCase();
     if (search && !(
@@ -491,6 +500,12 @@ export default function HomeFeed() {
                 {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                {/* My own OPEN tasks appear at the top */}
+                {isAuthenticated && myOpenTasks.map((task, index) => (
+                  <div key={`my_${task.id}`} style={{ animation: `slideInStagger 0.45s ease-out both`, animationDelay: `${index * 50}ms` }}>
+                    <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
+                  </div>
+                ))}
                 {displayedTasks.map((task, index) => {
                   const myApp = myApplications.find((a) => a.task_id === task.id && (a.status === 'pending' || a.status === 'approved'));
                   const isNew = newTaskIds.has(task.id);
@@ -538,17 +553,7 @@ export default function HomeFeed() {
               </div>
 
               {filteredPub.length === 0 && myPubTab === 'active' ? (
-                <div style={{ textAlign: 'center', padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-                  <div style={{ fontSize: 40 }}>📭</div>
-                  <p style={{ fontWeight: 800, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>אין משימות פעילות</p>
-                  <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>פרסם משימה וקבל עובד תוך דקות</p>
-                  <a href="/create-task" style={{ textDecoration: 'none' }}>
-                    <button style={{ display: 'flex', alignItems: 'center', gap: 8, height: 50, paddingInline: 28, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
-                      <span style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>+</span>
-                      פרסם משימה
-                    </button>
-                  </a>
-                </div>
+                <PublishTaskBanner navigate={navigate} />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>

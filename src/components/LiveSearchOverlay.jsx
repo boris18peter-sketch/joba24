@@ -3,10 +3,19 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 
 
-export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDismiss }) {
+const CATEGORY_NAME_PLURAL = {
+  plumbing: 'אינסטלטורים', electricity: 'חשמלאים', gardening: 'גננים',
+  cleaning: 'מנקים', moving: 'עוזרי הובלה', painting: 'צבעים',
+  carpentry: 'נגרים', ac: 'טכנאי מזגנים', locksmith: 'מנעולנים',
+  shopping: 'שליחים', delivery: 'שליחים', babysitting: 'מטפלים',
+  tutoring: 'מורים פרטיים', it_support: 'תומכי IT', other: 'עובדים'
+};
+
+export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, taskCategory, onDismiss }) {
   const navigate = useNavigate();
   const [workerCount, setWorkerCount] = useState(0);
   const [pulseWorkers, setPulseWorkers] = useState([]);
@@ -34,6 +43,20 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
       clearTimeout(navigateRef.current);
     };
   }, []);
+
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['workerPool'],
+    queryFn: () => base44.entities.User.list('-last_active_at', 500),
+    staleTime: 5 * 60 * 1000,
+  });
+  const categoryWorkerCount = (() => {
+    if (!taskCategory || !allUsers.length) return 0;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return allUsers.filter(u =>
+      u.preferred_categories?.includes(taskCategory) &&
+      u.last_active_at && new Date(u.last_active_at) >= sevenDaysAgo
+    ).length;
+  })();
 
   // Real application count
   useEffect(() => {
@@ -214,6 +237,16 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, onDism
         )}
         {statusMsg}
       </div>
+
+      {/* Category worker count pill */}
+      {categoryWorkerCount > 0 && phase !== 'found' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 99, padding: '8px 16px', marginBottom: 20, animation: 'slideUpIn 0.5s ease' }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'dotBlink 1.2s 0.1s infinite' }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#4ade80' }}>
+            {categoryWorkerCount} {CATEGORY_NAME_PLURAL[taskCategory] || 'עובדים'} יכולים להגיש בקשה
+          </span>
+        </div>
+      )}
 
       {/* Stats row — only show when there are applications */}
       {workerCount > 0 && (

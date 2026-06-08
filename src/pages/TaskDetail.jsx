@@ -320,7 +320,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       toast.success('המשימה בוטלה');
-      navigate('/my-tasks');
+      navigate('/');
     }
   });
 

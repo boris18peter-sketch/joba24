@@ -23,7 +23,7 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
-import { WorkerPoolBanner } from '@/components/WorkerPoolScanner';
+import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -374,6 +374,7 @@ export default function CreateTask() {
   const [searchingTaskId, setSearchingTaskId] = useState(null);
   const [searchingTaskTitle, setSearchingTaskTitle] = useState('');
   const [searchingTaskPrice, setSearchingTaskPrice] = useState(null);
+  const [searchingTaskCategory, setSearchingTaskCategory] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const mediaRecorderRef = useRef(null);
@@ -706,6 +707,7 @@ export default function CreateTask() {
       setSearchingTaskId(created.id);
       setSearchingTaskTitle(form.title);
       setSearchingTaskPrice(Number(form.price));
+      setSearchingTaskCategory(form.category);
     } else {
       navigate('/');
     }
@@ -720,6 +722,7 @@ export default function CreateTask() {
         taskId={searchingTaskId}
         taskTitle={searchingTaskTitle}
         taskPrice={searchingTaskPrice}
+        taskCategory={searchingTaskCategory}
         onDismiss={() => setSearchingTaskId(null)}
       />
     );
@@ -817,6 +820,9 @@ export default function CreateTask() {
             onChange={val => set('category', val)}
           />
         </SectionCard>
+
+        {/* Worker count hint for selected category */}
+        <CategoryWorkerHint category={form.category} />
 
         {/* Smart Category Extra Fields — right below category picker */}
         <CategoryExtraFields

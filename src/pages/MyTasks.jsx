@@ -97,6 +97,7 @@ export default function MyTasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('המשימה בוטלה');
       setCancelTask(null);
+      navigate('/');
     },
     onError: () => {
       queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
@@ -229,9 +230,11 @@ export default function MyTasks() {
                       {pendingApps} בקשות ממתינות
                     </div>
                   )}
-                  <Link to={`/task/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
-                    <button style={{ height: 34, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>פרטים</button>
-                  </Link>
+                  {task.status === 'OPEN' || task.status === 'TAKEN' ? (
+                    <Link to={`/task/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                      <button style={{ height: 34, paddingInline: 14, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>פרטים</button>
+                    </Link>
+                  ) : null}
                   {task.status === 'TAKEN' && (
                     <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                       <button style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>

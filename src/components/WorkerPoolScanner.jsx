@@ -119,4 +119,41 @@ export function WorkerPoolPill({ category, city }) {
   );
 }
 
+// ── Category-only hint — shown right after category selection ────────────────
+export function CategoryWorkerHint({ category }) {
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['workerPool'],
+    queryFn: () => base44.entities.User.list('-last_active_at', 500),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  if (!category || !allUsers.length) return null;
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const count = allUsers.filter(u =>
+    u.preferred_categories?.includes(category) &&
+    u.last_active_at &&
+    new Date(u.last_active_at) >= sevenDaysAgo
+  ).length;
+
+  if (!count) return null;
+
+  const emoji = CATEGORY_EMOJI[category] || '👷';
+  const name = CATEGORY_NAME_PLURAL[category] || 'עובדים';
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8,
+      background: '#f0fdf4', border: '1px solid #bbf7d0',
+      borderRadius: 10, padding: '8px 12px', marginTop: 10,
+    }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', flexShrink: 0, animation: 'liveDot 1.3s ease-in-out infinite', display: 'inline-block' }} />
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>
+        הערכה: {count} {name} יכולים להגיש בקשה {emoji}
+      </span>
+    </div>
+  );
+}
+
 export default WorkerPoolBanner;
