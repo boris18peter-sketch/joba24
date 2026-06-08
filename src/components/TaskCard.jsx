@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import { getCategoryLabel } from '@/lib/categories';
@@ -646,8 +646,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                   </span>
                 </div>
               ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#f1f5f9', border: '1.5px solid #e2e8f0', color: '#64748b', fontSize: 11, fontWeight: 700, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-                  פרטים
+                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&estimated_time=${task.estimated_time||''}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#eff6ff', border: '1.5px solid #bfdbfe', color: '#1d4ed8', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                  <RefreshCw size={11} /> פרסם שוב
                 </button>
               )
             ) : null}
