@@ -25,7 +25,7 @@ export default function PublishTaskBanner() {
         textAlign: 'center',
         boxShadow: '0 4px 20px rgba(26,111,212,0.1)'
       }}>
-        <div style={{ fontSize: 36, marginBottom: 12 }} className="hidden">🔧</div>
+        
         <div style={{ fontSize: 20, fontWeight: 900, color: '#0f2b6b', marginBottom: 8, lineHeight: 1.3 }}>
           צריכים עזרה?
         </div>
