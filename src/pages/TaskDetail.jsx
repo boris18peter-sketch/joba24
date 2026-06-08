@@ -66,7 +66,11 @@ const statusConfig = {
 
 function getRelativeTime(date) {
   if (!date) return null;
-  const minutes = Math.floor((Date.now() - new Date(date)) / 60000);
+  const s = String(date);
+  const normalized = s.includes('T') && !s.endsWith('Z') && !s.includes('+') ? s + 'Z' : s;
+  const ms = Date.now() - new Date(normalized).getTime();
+  if (ms < 0) return 'עכשיו';
+  const minutes = Math.floor(ms / 60000);
   if (minutes < 1) return 'עכשיו';
   if (minutes < 60) return `לפני ${minutes} דקות`;
   const hours = Math.floor(minutes / 60);

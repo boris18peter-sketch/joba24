@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench } from 'lucide-react';
+import MediaLightbox from '@/components/MediaLightbox';
+import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
@@ -17,9 +19,18 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
 
 
+function normalizeDate(d) {
+  const s = String(d);
+  // If ISO string has no timezone info, treat as UTC
+  if (s.includes('T') && !s.endsWith('Z') && !s.includes('+') && !/[0-9]{2}:[0-9]{2}$/.test(s.slice(-5))) return s + 'Z';
+  return s;
+}
+
 function getRelativeTime(date) {
   if (!date) return null;
-  const minutes = Math.floor((Date.now() - new Date(date)) / 60000);
+  const ms = Date.now() - new Date(normalizeDate(date)).getTime();
+  if (ms < 0) return 'עכשיו';
+  const minutes = Math.floor(ms / 60000);
   if (minutes < 1) return 'עכשיו';
   if (minutes < 60) return `לפני ${minutes} דקות`;
   const hours = Math.floor(minutes / 60);
@@ -214,6 +225,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   // Live applicant count — initialised from TaskApplication entity to avoid stale task.applicants cache
   const [liveApplicantCount, setLiveApplicantCount] = useState(() => {
     // task.applicants may be stale; we'll refetch from DB shortly, but start with best guess
@@ -514,7 +527,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 </div>
               )}
             </div>
-            {/* Media thumbnail */}
+            {/* Media thumbnail — opens lightbox */}
             {(() => {
               const allMedia = [
                 ...(task.images || []).map(url => ({ type: 'image', url })),
@@ -524,7 +537,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               const cur = allMedia[0];
               return (
                 <div
-                  onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                  onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }}
                   style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-1)', position: 'relative', background: '#000', cursor: 'pointer' }}
                 >
                   {cur.type === 'image' ? (
@@ -654,68 +667,131 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Details dropdown */}
-        {(task.estimated_time || task.category || task.address_building || task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 8, paddingTop: 4 }}>
-            <button
-              onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#94a3b8', fontWeight: 600, padding: '2px 0', WebkitTapHighlightColor: 'transparent' }}
-            >
-              {showDetails ? 'פחות פרטים' : 'פרטי המשימה'}
-              {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            </button>
-            {showDetails && (
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 7, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
-                {task.estimated_time && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Clock size={12} color="#1a6fd4" />
-                    </div>
+        {/* Details dropdown — always shown */}
+        <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 8, paddingTop: 4 }}>
+          <button
+            onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#94a3b8', fontWeight: 600, padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+          >
+            {showDetails ? 'פחות פרטים' : 'כל פרטי המשימה'}
+            {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+          {showDetails && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
+              {/* Description */}
+              {task.description && (
+                <div style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px' }}>
+                  <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 4 }}>תיאור מלא</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {parseDescription(task.description).mainDescription}
+                  </div>
+                </div>
+              )}
+              {/* Category + Time row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {task.category && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#f8f9fb', borderRadius: 10, padding: '8px 10px' }}>
+                    <span style={{ fontSize: 15, flexShrink: 0 }}>🔨</span>
                     <div>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>זמן משוער</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
+                      <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600 }}>קטגוריה</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
+                    </div>
+                  </div>
+                )}
+                {task.estimated_time && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#eff6ff', borderRadius: 10, padding: '8px 10px' }}>
+                    <Clock size={13} color="#1a6fd4" style={{ flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600 }}>זמן משוער</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
                         {task.estimated_time === '15m' ? 'רבע שעה' : task.estimated_time === '30m' ? 'חצי שעה' : task.estimated_time === '1h' ? 'שעה' : task.estimated_time === '2h' ? 'שעתיים' : task.estimated_time}
                       </div>
                     </div>
                   </div>
                 )}
-                {task.category && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>🔨</div>
+              </div>
+              {/* Payment + Urgency row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {task.payment_method && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#f0fdf4', borderRadius: 10, padding: '8px 10px' }}>
+                    <Banknote size={13} color="#16a34a" style={{ flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>קטגוריה</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
+                      <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600 }}>תשלום</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>
                     </div>
                   </div>
                 )}
-                {(task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <MapPin size={12} color="#ea580c" />
-                    </div>
+                {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: URGENCY_TAG_CONFIG[task.urgency_tag].bg, borderRadius: 10, padding: '8px 10px', border: `1px solid ${URGENCY_TAG_CONFIG[task.urgency_tag].border}` }}>
+                    <span style={{ fontSize: 13, flexShrink: 0 }}>{URGENCY_TAG_CONFIG[task.urgency_tag].emoji}</span>
                     <div>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 1 }}>פרטי כתובת</div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
-                        {[task.address_building && `בניין ${task.address_building}`, task.address_floor && `קומה ${task.address_floor}`, task.address_apartment && `דירה ${task.address_apartment}`, task.address_notes].filter(Boolean).join(' · ')}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <div style={{ width: 26, height: 26, borderRadius: 8, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#16a34a' }}>✓</div>
-                    <div>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 1 }}>דרישות</div>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
-                        {[task.requirements.vehicle && 'נדרש רכב', task.requirements.two_people && 'נדרשים שני אנשים', task.requirements.experience && 'נדרש ניסיון'].filter(Boolean).join(' · ')}
-                      </div>
+                      <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600 }}>דחיפות</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: URGENCY_TAG_CONFIG[task.urgency_tag].color }}>{URGENCY_TAG_CONFIG[task.urgency_tag].label}</div>
                     </div>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        )}
+              {/* Full address */}
+              {(task.location_name || task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fff7ed', borderRadius: 10, padding: '8px 10px' }}>
+                  <MapPin size={13} color="#ea580c" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div>
+                    <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>כתובת</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
+                      {task.location_name && <div>{task.location_name}</div>}
+                      {[task.address_building && `בניין ${task.address_building}`, task.address_floor && `קומה ${task.address_floor}`, task.address_apartment && `דירה ${task.address_apartment}`, task.address_notes].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Requirements */}
+              {task.requirements && Object.entries(task.requirements).some(([k, v]) => v && k !== 'custom') && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#f0fdf4', borderRadius: 10, padding: '8px 10px' }}>
+                  <Wrench size={13} color="#16a34a" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div>
+                    <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>דרישות</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
+                      {[
+                        task.requirements.vehicle && 'נדרש רכב',
+                        task.requirements.vehicle_commercial && 'רכב מסחרי',
+                        task.requirements.truck && 'טנדר / משאית',
+                        task.requirements.motorcycle && 'קטנוע',
+                        task.requirements.two_people && '2 אנשים',
+                        task.requirements.three_people && '3 אנשים',
+                        task.requirements.four_plus_people && '4+ אנשים',
+                        task.requirements.experience && 'ניסיון בתחום',
+                        task.requirements.certified && 'הסמכה / רישיון',
+                        task.requirements.driver && 'נהג מקצועי',
+                        task.requirements.ladder && 'סולם',
+                        task.requirements.drill && 'מקדחה',
+                        task.requirements.heavy_lifting && 'נשיאת משאות כבדים',
+                        typeof task.requirements.custom === 'string' && task.requirements.custom,
+                      ].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Expiry */}
+              {task.expires_at && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff7ed', borderRadius: 10, padding: '8px 10px' }}>
+                  <Calendar size={13} color="#ea580c" style={{ flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 600 }}>תוקף המשימה</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#ea580c' }}>
+                      {new Date(task.expires_at) > new Date()
+                        ? `עד ${new Date(task.expires_at).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                        : 'פג תוקף'}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Worker pool pill for my published tasks with no apps */}
+              {isMyPublished && liveApplicantCount === 0 && task.status === 'OPEN' && task.city && task.category && (
+                <WorkerPoolPill category={task.category} city={task.city} />
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {showApplyModal && createPortal(
@@ -755,6 +831,21 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           onClose={() => setShowBuyCredits(false)}
         />
       )}
+
+      {lightboxOpen && (() => {
+        const allMedia = [
+          ...(task.images || []).map(url => ({ type: 'image', url })),
+          ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])
+        ];
+        return (
+          <MediaLightbox
+            isOpen={lightboxOpen}
+            items={allMedia}
+            initialIndex={lightboxIndex}
+            onClose={() => setLightboxOpen(false)}
+          />
+        );
+      })()}
 
       <CoinFlyAnimation
         trigger={coinFlyActive}
