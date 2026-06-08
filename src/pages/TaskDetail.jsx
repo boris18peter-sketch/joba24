@@ -140,8 +140,7 @@ export default function TaskDetail() {
     queryKey: ['applications-pulse', id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
     enabled: !!id,
-    staleTime: 0,
-    refetchInterval: 15000
+    staleTime: 30000,
   });
   const applicationCount = taskApplications.filter((a) => a.status === 'pending' || a.status === 'approved').length;
 
@@ -149,7 +148,7 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: (data) => data[0],
-    staleTime: 0,
+    staleTime: 15000,
     refetchOnMount: true,
     refetchOnWindowFocus: false
   });
@@ -181,7 +180,7 @@ export default function TaskDetail() {
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
     select: (data) => data.find((a) => a.status === 'pending' || a.status === 'approved') || null,
     enabled: !!me?.id,
-    staleTime: 0
+    staleTime: 30000,
   });
   const isApproved = myApp?.status === 'approved';
   const hasPendingApp = myApp?.status === 'pending' && myApp?.status !== 'cancelled';
