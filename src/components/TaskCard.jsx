@@ -259,25 +259,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   });
   const prevCountRef = useRef(liveApplicantCount);
 
-  // Fetch accurate count on mount (bypasses stale task.applicants cache)
+  // Sync count when task.applicants prop updates (from real-time cache updates in HomeFeed)
   useEffect(() => {
-    base44.entities.TaskApplication.filter({ task_id: task.id }).then(apps => {
-      const activeCount = apps.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length;
-      setLiveApplicantCount(activeCount);
-    }).catch(() => {});
-  }, [task.id]);
-
-  useEffect(() => {
-    // Subscribe to live application changes for this task
-    const unsub = base44.entities.TaskApplication.subscribe(event => {
-      if (event.data?.task_id !== task.id) return;
-      base44.entities.TaskApplication.filter({ task_id: task.id }).then(apps => {
-        const activeCount = apps.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length;
-        setLiveApplicantCount(activeCount);
-      }).catch(() => {});
-    });
-    return unsub;
-  }, [task.id]);
+    setLiveApplicantCount(task.applicants?.length || 0);
+  }, [task.applicants?.length]);
 
   useEffect(() => {
     prevCountRef.current = liveApplicantCount;
