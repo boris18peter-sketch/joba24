@@ -5,11 +5,14 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X } from 'lucide-react';
 import { toast } from 'sonner';
+import QuickChatDrawer from '@/components/QuickChatDrawer';
 
 export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   // Track which application IDs are currently being declined (prevents double-click)
   const decliningRef = useRef(new Set());
   const [decliningIds, setDecliningIds] = useState(new Set());
@@ -256,7 +259,7 @@ export default function TaskApplicants({ task, onApprove }) {
 
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                 <button
-                  onClick={() => navigate(`/chat/${task.id}`)}
+                  onClick={() => setShowChat(true)}
                   style={{ width: 32, height: 32, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                 >
                   <MessageCircle size={14} color="#1a6fd4" />
@@ -308,8 +311,9 @@ export default function TaskApplicants({ task, onApprove }) {
                 )}
 
                 {isApproved && (
-                  <div style={{ height: 32, padding: '0 10px', borderRadius: 10, background: '#dcfce7', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#166534' }}>
-                    <CheckCircle2 size={12} /> {workerStarted ? 'יצא ✓' : 'אושר'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#166534' }}>
+                    <CheckCircle2 size={14} color="#16a34a" />
+                    <span>{workerStarted ? 'יצא לדרך' : 'עובד אושר'}</span>
                   </div>
                 )}
               </div>
@@ -317,6 +321,7 @@ export default function TaskApplicants({ task, onApprove }) {
           </div>
         );
       })}
+      {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
     </div>
   );
 }

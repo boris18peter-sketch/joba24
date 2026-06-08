@@ -55,15 +55,16 @@ function getDepth(pathname) {
 // Pop:  new screen slides in from left, old slides out right
 // Tab switch: no slide — just instant swap (handled by key='root')
 const PUSH_VARIANTS = {
-  enter: (dir) => ({
-    x: dir > 0 ? '100%' : '-100%',
-    opacity: 0,
-  }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir) => ({
-    x: dir > 0 ? '-30%' : '30%',
-    opacity: 0,
-  }),
+enter: (dir) => ({
+  x: dir > 0 ? '100%' : '-100%',
+  opacity: 0,
+}),
+center: { x: 0, opacity: 1 },
+exit: (dir) => ({
+  x: dir > 0 ? '-20%' : '20%',
+  opacity: 0,
+  pointerEvents: 'none',
+}),
 };
 
 const AuthenticatedApp = () => {
@@ -102,9 +103,10 @@ const AuthenticatedApp = () => {
           transition={
             isRootTab
               ? { duration: 0.18, ease: 'easeOut' }
-              : { type: 'tween', ease: [0.25, 0.46, 0.45, 0.94], duration: 0.32 }
+              : { type: 'tween', ease: [0.25, 0.46, 0.45, 0.94], duration: 0.28 }
           }
-          style={{ position: 'absolute', inset: 0 }}
+          style={{ position: 'absolute', inset: 0, willChange: 'transform' }}
+          style={{ position: 'absolute', inset: 0, isolation: 'isolate' }}
         >
           <Routes location={location}>
             <Route path="/lp" element={<Landing />} />

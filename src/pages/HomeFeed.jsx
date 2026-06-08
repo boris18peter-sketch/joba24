@@ -472,8 +472,8 @@ export default function HomeFeed() {
               )}
             </div>
 
-            {/* Stories Bar — only in available tab, below search */}
-            <StoriesBar />
+            {/* Stories Bar — filtered by active category; 'all' shows all stories */}
+            <StoriesBar filterCategory={filters.category || null} />
 
             {isLoading ?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>

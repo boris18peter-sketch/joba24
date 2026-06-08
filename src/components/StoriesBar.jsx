@@ -306,7 +306,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
   );
 }
 
-export default function StoriesBar() {
+export default function StoriesBar({ filterCategory = null }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [viewedIds, setViewedIds] = useState(() => getViewedIds());
@@ -344,8 +344,13 @@ export default function StoriesBar() {
     refetchOnWindowFocus: false,
   });
 
+  // Filter by category if specified; for 'all' (null), show stories matching user's context
+  const filteredRaw = filterCategory
+    ? rawStories.filter(t => t.category === filterCategory)
+    : rawStories;
+
   // Sort: unviewed first
-  const stories = sortStories(rawStories);
+  const stories = sortStories(filteredRaw);
 
   const handleOpen = (index) => {
     setSelectedIndex(index);

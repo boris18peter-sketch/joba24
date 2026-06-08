@@ -46,6 +46,7 @@ import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 import ApplySheet from '@/components/ApplySheet';
+import QuickChatDrawer from '@/components/QuickChatDrawer';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner) => {
@@ -107,6 +108,7 @@ export default function TaskDetail() {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [creditsNeeded, setCreditsNeeded] = useState(null);
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
+  const [showQuickChat, setShowQuickChat] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [showWorkerMap, setShowWorkerMap] = useState(false);
@@ -560,7 +562,7 @@ export default function TaskDetail() {
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
-    <div className="min-h-screen" dir="rtl" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen" dir="rtl" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(
@@ -874,7 +876,7 @@ export default function TaskDetail() {
             {!isOwner && (hasPendingApp || isApproved) &&
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                 <button
-                onClick={() => navigate(`/chat/${id}`)}
+                onClick={() => setShowQuickChat(true)}
                 style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                 
                   <MessageCircle size={13} /> הודעה למפרסם
@@ -1176,6 +1178,8 @@ export default function TaskDetail() {
         </div>,
         document.body
       )}
+
+      {showQuickChat && task && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowQuickChat(false)} />}
 
       {showCancelConfirm && task && createPortal(
         <CancelTaskConfirmModal

@@ -291,12 +291,9 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
     if (!isWorker) return null;
     if (stepIdx < 0 || localStatus === null) return { label: 'צא לדרך!', Icon: Navigation, nextKey: 'on_the_way', color: '#059669' };
     if (stepIdx === 0) return { label: 'הגעתי למיקום', Icon: MapPin, nextKey: 'arrived', color: '#059669' };
-    // When at site — show "Done" only after uploading proof photo/video
+    // When at site — always show "Done" button, photo upload is optional
     if (stepIdx === 1) {
-      if (completionPhotos.length > 0 || completionVideo) {
-        return { label: 'סיימתי את המשימה ✓', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
-      }
-      return null; // show photo upload prompt instead
+      return { label: 'סיימתי את המשימה ✓', Icon: CheckCircle, nextKey: 'done', color: '#059669' };
     }
     return null;
   })();
@@ -364,8 +361,8 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
         </div>
       )}
 
-      {/* Worker at site (step 1) — show photo upload before "Done" CTA */}
-      {isWorker && stepIdx === 1 && !mainCTA && (
+      {/* Worker at site (step 1) — show photo upload + Done button always */}
+      {isWorker && stepIdx === 1 && (
         <div style={{ margin: '0 16px 14px' }}>
           <WorkerCompletionPhoto
             photos={completionPhotos}
@@ -379,9 +376,11 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
               onUpdate({ completion_video_url: url });
             }}
           />
-          <div style={{ marginTop: 8, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
-            📸 הוסף תמונה/סרטון כדי לאשר סיום
-          </div>
+          {completionPhotos.length === 0 && !completionVideo && (
+            <div style={{ marginTop: 6, fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>
+              📸 ניתן להוסיף תמונה/סרטון (לא חובה)
+            </div>
+          )}
         </div>
       )}
 

@@ -406,7 +406,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           borderRadius: 16,
           border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : showCardSuccess ? '1.5px solid #16a34a' : '1px solid #e8edf5',
           boxShadow: '0 1px 6px rgba(15,43,107,0.06)',
-          padding: '16px',
+          padding: '16px 16px 24px',
           cursor: 'pointer',
           position: 'relative',
           overflow: 'hidden',
@@ -691,15 +691,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Details dropdown — always shown */}
-        <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 8, paddingTop: 4 }}>
+        {/* Details dropdown — compact arrow only */}
+        <div style={{ position: 'absolute', bottom: 8, left: 8 }}>
           <button
             onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#94a3b8', fontWeight: 600, padding: '4px 0', WebkitTapHighlightColor: 'transparent' }}
+            style={{ width: 24, height: 24, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
           >
-            {showDetails ? 'פחות פרטים' : 'כל פרטי המשימה'}
-            {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {showDetails ? <ChevronUp size={12} color="#94a3b8" /> : <ChevronDown size={12} color="#94a3b8" />}
           </button>
+        </div>
+        <div style={{ display: showDetails ? 'block' : 'none', borderTop: '1px solid #f1f5f9', marginTop: 4, paddingTop: 4 }}>
           {showDetails && (() => {
             // Build "פרטי המשימה" rows
             const detailRows = [];
@@ -767,14 +768,14 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 {/* Section: פרטי המשימה */}
                 {hasDetails && (
                   <>
-                    <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: 0.3, marginBottom: 6, paddingRight: 2 }}>פרטי המשימה</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 12, overflow: 'hidden', border: '1px solid #f0f2f7' }}>
+                    <div style={{ fontSize: 9, color: '#b0bac8', fontWeight: 700, letterSpacing: 0.3, marginBottom: 4, paddingRight: 2 }}>פרטי המשימה</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f2f7' }}>
                       {detailRows.map((row, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'var(--surface-2)', borderBottom: i < detailRows.length - 1 ? '1px solid #f0f2f7' : 'none' }}>
-                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{row.label}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13, color: row.valueColor || 'var(--text-1)' }}>{row.value}</div>
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: row.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>{row.icon}</div>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-2)', borderBottom: i < detailRows.length - 1 ? '1px solid #f4f6f9' : 'none' }}>
+                          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>{row.label}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <div style={{ fontWeight: 700, fontSize: 11, color: row.valueColor || 'var(--text-1)' }}>{row.value}</div>
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: row.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }}>{row.icon}</div>
                           </div>
                         </div>
                       ))}
@@ -785,21 +786,18 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 {/* Section: פרטים נוספים */}
                 {hasExtras && (
                   <>
-                    <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: 0.3, margin: '10px 0 6px', paddingRight: 2 }}>פרטים נוספים</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 12, overflow: 'hidden', border: '1px solid #f0f2f7' }}>
+                    <div style={{ fontSize: 9, color: '#b0bac8', fontWeight: 700, letterSpacing: 0.3, margin: '8px 0 4px', paddingRight: 2 }}>פרטים נוספים</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f2f7' }}>
                       {extraRows.map((row, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '9px 12px', background: 'var(--surface-2)', borderBottom: (i < extraRows.length - 1 || reqChecks.length > 0) ? '1px solid #f0f2f7' : 'none' }}>
-                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500, flexShrink: 0, paddingTop: 1 }}>{row.label}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-1)', textAlign: 'left', maxWidth: 160 }}>{row.value}</div>
-                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#64748b', fontWeight: 700, flexShrink: 0 }}>•</div>
-                          </div>
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-2)', borderBottom: (i < extraRows.length - 1 || reqChecks.length > 0) ? '1px solid #f4f6f9' : 'none' }}>
+                          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>{row.label}</div>
+                          <div style={{ fontWeight: 700, fontSize: 11, color: 'var(--text-1)', textAlign: 'left', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</div>
                         </div>
                       ))}
                       {reqChecks.map((req, i) => (
-                        <div key={`req_${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'var(--surface-2)', borderBottom: i < reqChecks.length - 1 ? '1px solid #f0f2f7' : 'none' }}>
-                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-1)' }}>{req}</div>
-                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#16a34a', fontWeight: 900, flexShrink: 0 }}>✓</div>
+                        <div key={`req_${i}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-2)', borderBottom: i < reqChecks.length - 1 ? '1px solid #f4f6f9' : 'none' }}>
+                          <div style={{ fontWeight: 600, fontSize: 11, color: 'var(--text-1)' }}>{req}</div>
+                          <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 900 }}>✓</div>
                         </div>
                       ))}
                     </div>

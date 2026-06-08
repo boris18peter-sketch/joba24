@@ -212,7 +212,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 {/* Fill */}
                 <div style={{
                   position: 'absolute', top: 16, right: 8, height: 3,
-                  width: tStepIdx <= 0 ? '16%' : tStepIdx === 1 ? '50%' : '84%',
+                  width: tStepIdx < 0 ? '0%' : tStepIdx === 0 ? '16%' : tStepIdx === 1 ? '50%' : '84%',
                   background: 'rgba(255,255,255,0.9)', borderRadius: 2,
                   transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 }} />
@@ -221,8 +221,8 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                   { Icon: MapPin,     label: 'הגיע' },
                   { Icon: CheckCircle,label: 'סיים'  },
                 ].map(({ Icon, label }, i) => {
-                  const done   = i <= tStepIdx;
-                  const active = i === tStepIdx;
+                  const done   = tStepIdx >= 0 && i <= tStepIdx;
+                  const active = tStepIdx >= 0 && i === tStepIdx;
                   return (
                     <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
                       <div style={{
