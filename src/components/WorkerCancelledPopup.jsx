@@ -44,8 +44,8 @@ export default function WorkerCancelledPopup({ task, onClose }) {
           <div style={{ width: 68, height: 68, borderRadius: 22, background: '#fff7ed', border: '2px solid #fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <AlertTriangle size={32} color="#f97316" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>המשימה בוטלה</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>בעל המשימה ביטל לאחר שיצאת לדרך</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>המשימה בוטלה על ידי המפרסם</div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>המפרסם ביטל את המשימה</div>
         </div>
 
         {/* Task */}

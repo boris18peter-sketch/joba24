@@ -16,6 +16,7 @@ import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
+import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
 
 export default function HomeFeed() {
   const [search, setSearch] = useState('');
@@ -472,8 +473,11 @@ export default function HomeFeed() {
               )}
             </div>
 
+            {/* Profile completion banner — only for new logged-in users */}
+            {isAuthenticated && me && <ProfileCompletionBanner me={me} />}
+
             {/* Stories Bar — filtered by active category; 'all' shows all stories */}
-            <StoriesBar filterCategory={filters.category || null} />
+            <StoriesBar filterCategory={filters.category || null} currentUserId={me?.id} />
 
             {isLoading ?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>

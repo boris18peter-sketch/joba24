@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { getCategoryLabel } from '@/lib/categories';
-import { X, MapPin, Navigation } from 'lucide-react';
+import { X, MapPin, Navigation, Eye, MousePointerClick } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { parseDescription } from '@/lib/descriptionParser';
@@ -38,10 +38,15 @@ function sortStories(stories) {
   });
 }
 
-function StoryCard({ task, isViewed, onClick }) {
+function StoryCard({ task, isViewed, isOwn, onClick }) {
   const label = getCategoryLabel(task.category);
   const emoji = label.split(' ')[0];
   const currentPrice = calculateCurrentPrice(task);
+  const ringGradient = isOwn
+    ? 'linear-gradient(135deg, #fbbf24, #f97316)'
+    : isViewed
+      ? 'linear-gradient(135deg, #9ca3af, #d1d5db)'
+      : 'linear-gradient(135deg, #f97316, #ec4899, #1a6fd4)';
   return (
     <button
       onClick={onClick}
@@ -51,38 +56,42 @@ function StoryCard({ task, isViewed, onClick }) {
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <div style={{
-        width: 64, height: 64, borderRadius: '50%',
-        background: isViewed
-          ? 'linear-gradient(135deg, #9ca3af, #d1d5db)'
-          : 'linear-gradient(135deg, #f97316, #ec4899, #1a6fd4)',
-        padding: 2.5,
-        boxShadow: isViewed ? 'none' : '0 2px 12px rgba(26,111,212,0.3)',
-        transition: 'opacity 0.2s',
-      }}>
-        <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '2px solid white', overflow: 'hidden', background: '#1a3a6b' }}>
-          {task.images?.[0] ? (
-            <img src={task.images[0]} alt={task.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
-              <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
-            </div>
-          )}
+      <div style={{ position: 'relative' }}>
+        <div style={{
+          width: 64, height: 64, borderRadius: '50%',
+          background: ringGradient,
+          padding: 2.5,
+          boxShadow: isViewed && !isOwn ? 'none' : '0 2px 12px rgba(26,111,212,0.3)',
+          transition: 'opacity 0.2s',
+        }}>
+          <div style={{ width: '100%', height: '100%', borderRadius: '50%', border: '2px solid white', overflow: 'hidden', background: '#1a3a6b' }}>
+            {task.images?.[0] ? (
+              <img src={task.images[0]} alt={task.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
+              </div>
+            )}
+          </div>
         </div>
+        {isOwn && (
+          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#fbbf24', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#7c2d12' }}>אני</div>
+        )}
       </div>
-      <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 800, color: 'white' }}>₪{Math.round(currentPrice)}</div>
-      <span style={{ fontSize: 10, color: isViewed ? '#94a3b8' : '#475569', fontWeight: 600, textAlign: 'center', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ background: isOwn ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 800, color: 'white' }}>₪{Math.round(currentPrice)}</div>
+      <span style={{ fontSize: 10, color: isViewed && !isOwn ? '#94a3b8' : '#475569', fontWeight: 600, textAlign: 'center', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {task.title}
       </span>
     </button>
   );
 }
 
-function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
+function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUserId }) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
   const progressRef = useRef(null);
+  const viewedInSessionRef = useRef(new Set());
 
   // Touch tracking
   const touchStartX = useRef(null);
@@ -93,10 +102,17 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
 
   const task = stories[currentIndex];
 
-  // Mark as viewed when story changes
+  // Mark as viewed when story changes + increment views_count
   useEffect(() => {
-    if (task) markViewed(task.id);
-  }, [currentIndex, task]);
+    if (!task) return;
+    markViewed(task.id);
+    // Track story view (increment views_count) — only once per session per story
+    if (!viewedInSessionRef.current.has(task.id)) {
+      viewedInSessionRef.current.add(task.id);
+      const newViews = (task.views_count || 0) + 1;
+      base44.entities.Task.update(task.id, { views_count: newViews }).catch(() => {});
+    }
+  }, [currentIndex, task?.id]);
 
   const goNext = useCallback(() => {
     if (currentIndex < stories.length - 1) {
@@ -213,6 +229,14 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
   const applyCost = Math.max(1, Math.round((currentPrice || 0) * 0.05));
   const distKm = calcDistKm(userLocation, task);
   const { mainDescription } = parseDescription(task.description);
+  const isOwnerStory = currentUserId && task.client_id === currentUserId;
+
+  const handleTaskClick = (e) => {
+    e.stopPropagation();
+    // Track story click (increment clicks_count)
+    const newClicks = (task.clicks_count || 0) + 1;
+    base44.entities.Task.update(task.id, { clicks_count: newClicks }).catch(() => {});
+  };
 
   return (
     <div
@@ -287,18 +311,39 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
           )}
         </div>
         <div style={{ padding: '0 16px' }}>
+          {/* Owner stats row */}
+          {isOwnerStory && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Eye size={14} color="rgba(255,255,255,0.9)" />
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>צפיות בסטורי</div>
+                </div>
+              </div>
+              <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <MousePointerClick size={14} color="rgba(255,255,255,0.9)" />
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>כניסות למשימה</div>
+                </div>
+              </div>
+            </div>
+          )}
           <Link
             to={`/task/${task.id}`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleTaskClick}
             onMouseDown={e => e.stopPropagation()}
             onTouchStart={e => e.stopPropagation()}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none' }}
           >
             🔍 בדוק את המשימה
-            <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 9px', fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 3 }}>
-              {applyCost}
-              <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
-            </span>
+            {!isOwnerStory && (
+              <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 9px', fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 3 }}>
+                {applyCost}
+                <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
+              </span>
+            )}
           </Link>
         </div>
       </div>
@@ -306,7 +351,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation }) {
   );
 }
 
-export default function StoriesBar({ filterCategory = null }) {
+export default function StoriesBar({ filterCategory = null, currentUserId = null }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [viewedIds, setViewedIds] = useState(() => getViewedIds());
@@ -349,8 +394,12 @@ export default function StoriesBar({ filterCategory = null }) {
     ? rawStories.filter(t => t.category === filterCategory)
     : rawStories;
 
-  // Sort: unviewed first
-  const stories = sortStories(filteredRaw);
+  // Sort: own stories always first (with gold ring), then unviewed, then viewed
+  const stories = (() => {
+    const ownStories = currentUserId ? filteredRaw.filter(t => t.client_id === currentUserId) : [];
+    const otherStories = currentUserId ? filteredRaw.filter(t => t.client_id !== currentUserId) : filteredRaw;
+    return [...ownStories, ...sortStories(otherStories)];
+  })();
 
   const handleOpen = (index) => {
     setSelectedIndex(index);
@@ -383,6 +432,7 @@ export default function StoriesBar({ filterCategory = null }) {
               key={task.id}
               task={task}
               isViewed={viewedIds.has(task.id)}
+              isOwn={!!currentUserId && task.client_id === currentUserId}
               onClick={() => handleOpen(i)}
             />
           ))}
@@ -393,6 +443,7 @@ export default function StoriesBar({ filterCategory = null }) {
           stories={stories}
           startIndex={selectedIndex}
           userLocation={userLocation}
+          currentUserId={currentUserId}
           onClose={handleClose}
         />
       )}
