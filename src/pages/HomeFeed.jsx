@@ -349,14 +349,16 @@ export default function HomeFeed() {
     return rankedTasks;
   }, [rankedTasks, filters.sortBy]);
 
-  // Pin approved/pending tasks to top
+  // Pin approved/pending tasks to top (but NOT own published tasks — those stay in natural rank)
   const sortedTasks = useMemo(() => {
     return [...sortedByFilter].sort((a, b) => {
-      const rankA = approvedTaskIds.has(a.id) ? 0 : pendingTaskIds.has(a.id) ? 1 : 2;
-      const rankB = approvedTaskIds.has(b.id) ? 0 : pendingTaskIds.has(b.id) ? 1 : 2;
+      const isOwnA = me?.id && a.client_id === me.id;
+      const isOwnB = me?.id && b.client_id === me.id;
+      const rankA = isOwnA ? 2 : approvedTaskIds.has(a.id) ? 0 : pendingTaskIds.has(a.id) ? 1 : 2;
+      const rankB = isOwnB ? 2 : approvedTaskIds.has(b.id) ? 0 : pendingTaskIds.has(b.id) ? 1 : 2;
       return rankA - rankB;
     });
-  }, [sortedByFilter, approvedTaskIds, pendingTaskIds]);
+  }, [sortedByFilter, approvedTaskIds, pendingTaskIds, me?.id]);
 
   // Smart sections (only when not filtering/searching)
   const smartSections = useMemo(() =>
@@ -472,8 +474,8 @@ export default function HomeFeed() {
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
                   <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 220, overflowY: 'auto' }}>
                     <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>הכל</button>
-                    {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN' && t.client_id !== me?.id).length - tasks.filter(t => t.category === a.value && t.status === 'OPEN' && t.client_id !== me?.id).length).map(c => {
-                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN' && t.client_id !== me?.id).length;
+                    {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN').length - tasks.filter(t => t.category === a.value && t.status === 'OPEN').length).map(c => {
+                     const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
                       if (count === 0) return null;
                       return (<button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}><span>{c.label}</span><span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
                     })}
