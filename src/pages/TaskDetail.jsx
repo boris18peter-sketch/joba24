@@ -43,6 +43,52 @@ import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
 import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 
+const SCANNING_TEXTS_DETAIL = [
+  'מאותת לעובדים',
+  'סורק עובדים',
+  'מחפש התאמות',
+  'מגביר חשיפה',
+  'מפיץ את המשימה',
+  'מרחיב חשיפה',
+];
+
+function ScanningLabelDetail() {
+  const [textIdx, setTextIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setTextIdx(i => (i + 1) % SCANNING_TEXTS_DETAIL.length);
+        setVisible(true);
+      }, 400);
+    }, 25000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.15)',
+      borderRadius: 12, padding: '9px 14px',
+      display: 'flex', alignItems: 'center', gap: 10,
+      marginBottom: 8,
+    }}>
+      <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
+        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
+        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
+        <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
+      </span>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'white', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+          {SCANNING_TEXTS_DETAIL[textIdx]}
+        </div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>המשימה נחשפת לעובדים באזור</div>
+      </div>
+    </div>
+  );
+}
+
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 import ApplySheet from '@/components/ApplySheet';
@@ -814,6 +860,11 @@ export default function TaskDetail() {
 
 
 
+
+            {/* Owner scanning label — when OPEN and no applicants yet */}
+            {isOwner && task.status === 'OPEN' && applicationCount === 0 && (
+              <ScanningLabelDetail />
+            )}
 
             {/* Owner Analytics — views & clicks (no emojis) */}
             {isOwner && (

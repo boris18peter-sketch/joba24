@@ -821,8 +821,7 @@ export default function CreateTask() {
           />
         </SectionCard>
 
-        {/* Worker count hint for selected category */}
-        <CategoryWorkerHint category={form.category} />
+        {/* Worker count hint — removed per design decision */}
 
         {/* Smart Category Extra Fields — right below category picker */}
         <CategoryExtraFields
@@ -1077,10 +1076,7 @@ export default function CreateTask() {
           </div>
         </SectionCard>
 
-        {/* Worker Pool Scanner — appears after location is confirmed */}
-        {form.city && form.category && addressConfirmed && (
-          <WorkerPoolBanner category={form.category} city={form.city} />
-        )}
+        {/* Worker Pool Scanner banners removed */}
 
         {/* Time */}
         <SectionCard>

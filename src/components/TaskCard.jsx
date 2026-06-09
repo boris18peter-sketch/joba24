@@ -186,29 +186,30 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
   );
 }
 
+const SCANNING_TEXTS = [
+  'מאותת לעובדים',
+  'סורק עובדים',
+  'מחפש התאמות',
+  'מגביר חשיפה',
+  'מפיץ את המשימה',
+  'מרחיב חשיפה',
+];
+
 // ── Scanning Label (no applicants state) ─────────────────────────────────────
 function ScanningLabel({ taskId }) {
-  const [phase, setPhase] = useState(0); // 0 = סורק, 1 = שולח התראות
+  const [textIdx, setTextIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    // Per-task: remember when scanning started
-    const key = `scan_start_${taskId}`;
-    const stored = localStorage.getItem(key);
-    const now = Date.now();
-    if (!stored) {
-      localStorage.setItem(key, String(now));
-    }
-    const startTime = stored ? parseInt(stored) : now;
-    const elapsed = now - startTime;
-    if (elapsed >= 20000) {
-      setPhase(1);
-      return;
-    }
-    setPhase(0);
-    const remaining = 20000 - elapsed;
-    const t = setTimeout(() => setPhase(1), remaining);
-    return () => clearTimeout(t);
-  }, [taskId]);
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setTextIdx(i => (i + 1) % SCANNING_TEXTS.length);
+        setVisible(true);
+      }, 400);
+    }, 25000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -218,8 +219,8 @@ function ScanningLabel({ taskId }) {
           <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
           <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
         </span>
-        <span style={{ fontSize: 12, fontWeight: 800 }}>
-          {phase === 0 ? 'סורק עובדים...' : 'שולח התראות לעובדים בסביבה'}
+        <span style={{ fontSize: 12, fontWeight: 800, opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+          {SCANNING_TEXTS[textIdx]}
         </span>
       </span>
       <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 500 }}>המשימה נחשפת לעובדים באזור</span>
@@ -378,7 +379,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     if (badges.isHighPay) badgeLabels.push('שכר גבוה');
     if (badges.isFunded)  badgeLabels.push('ממומן');
     if (badges.isNearby)  badgeLabels.push('קרוב אליך');
-    if (badges.isLowComp && !badges.isNew && liveApplicantCount === 0) badgeLabels.push('ללא מגישים');
   }
 
   return (
@@ -588,12 +588,12 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
           {/* Price + payment + distance */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5 }}>₪{Math.round(currentPrice)}</span>
-              {task.payment_method && <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
+              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: dist != null && !isNaN(dist) ? 17 : 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
+              {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
               {dist != null && !isNaN(dist) && (
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 7px' }}>
-                  <Navigation size={10} strokeWidth={2} color="#1a6fd4" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                  <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
                   {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
                 </span>
               )}
