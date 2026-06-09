@@ -23,7 +23,7 @@ import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
-import { WorkerPoolBanner } from '@/components/WorkerPoolScanner';
+import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -748,49 +748,26 @@ export default function CreateTask() {
       )}
       {/* Sticky header + progress bar combined */}
       {(() => {
-        const steps = [
-          { label: 'קטגוריה', done: !!form.category && form.category !== 'other' },
-          { label: 'תיאור', done: !!(form.title && form.description && form.description.length > 20) },
-          { label: 'מחיר', done: !!form.price },
-          { label: 'מיקום', done: !!(form.location_name && addressConfirmed) },
-          { label: 'תשלום', done: !!form.payment_method },
-        ];
-        const doneCount = steps.filter(s => s.done).length;
-        const pct = Math.round((doneCount / steps.length) * 100);
-        const allDone = doneCount === steps.length;
+        const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
+        const pct = Math.round((filled / 5) * 100);
         return (
-          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: allDone ? 'linear-gradient(135deg,#065f46,#047857)' : 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', transition: 'background 0.5s ease' }}>
+          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
             {/* Header row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
               <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
-                {isRepostMode ? 'פרסם שוב' : isEditMode ? 'עריכת משימה' : isRepost ? 'פרסם שוב' : allDone ? '✅ מוכן לפרסום!' : 'פרסום משימה חדשה'}
-              </span>
+        {isRepostMode ? 'פרסם שוב' : isEditMode ? 'עריכת משימה' : isRepost ? 'פרסם שוב' : 'פרסום משימה חדשה'}
+      </span>
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> נשמר</div>}
             </div>
-            {/* Steps */}
-            <div style={{ display: 'flex', gap: 6, padding: '0 16px 6px', overflowX: 'auto' }}>
-              {steps.map((step, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-                  padding: '4px 10px', borderRadius: 20,
-                  background: step.done ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                  border: `1px solid ${step.done ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)'}`,
-                  transition: 'all 0.3s ease',
-                }}>
-                  <span style={{ fontSize: 10, color: step.done ? '#4ade80' : 'rgba(255,255,255,0.5)' }}>
-                    {step.done ? '✓' : `${i + 1}`}
-                  </span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: step.done ? 'white' : 'rgba(255,255,255,0.5)', transition: 'color 0.3s' }}>
-                    {step.label}
-                  </span>
-                </div>
-              ))}
-            </div>
             {/* Progress bar */}
-            <div style={{ padding: '0 16px 10px' }}>
-              <div style={{ height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: allDone ? '#4ade80' : 'rgba(255,255,255,0.8)', borderRadius: 99, transition: 'width 0.5s cubic-bezier(0.34,1.56,0.64,1)' }} />
+            <div style={{ padding: '0 16px 12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>השלמת הטופס</span>
+                <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ מוכן לפרסום!' : ''}</span>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
               </div>
             </div>
           </div>
@@ -826,29 +803,13 @@ export default function CreateTask() {
           </div>
         )}
 
-        {/* Live workers scanning banner */}
-        {!isEditMode && (
-          <div style={{
-            background: 'linear-gradient(135deg,#0f2b6b,#1a6fd4)',
-            borderRadius: 18, padding: '14px 16px',
-            display: 'flex', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{
-              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-              background: 'rgba(255,255,255,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, animation: 'scannerPulse 2s ease-in-out infinite',
-            }}>⚡</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 900, color: 'white', marginBottom: 2 }}>
-                עובדים ממתינים למשימות כרגע
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-                ככל שהמשימה מפורטת יותר — כך ההתאמה מדויקת יותר ותקבל בקשות מהר יותר
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Info banner */}
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
+          <p style={{ fontSize: 13, color: '#1e40af', margin: 0, lineHeight: 1.6 }}>
+            <strong>חשוב!</strong> ככל שהמשימה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים.
+          </p>
+        </div>
 
         {/* Category */}
         <SectionCard>
@@ -860,7 +821,8 @@ export default function CreateTask() {
           />
         </SectionCard>
 
-        {/* (worker hint removed) */}
+        {/* Worker count hint for selected category */}
+        <CategoryWorkerHint category={form.category} />
 
         {/* Smart Category Extra Fields — right below category picker */}
         <CategoryExtraFields
@@ -934,7 +896,7 @@ export default function CreateTask() {
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
           </div>
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} city={form.city} onAccept={p => set('price', String(p))} />
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
@@ -1115,7 +1077,10 @@ export default function CreateTask() {
           </div>
         </SectionCard>
 
-        {/* (worker pool banner removed) */}
+        {/* Worker Pool Scanner — appears after location is confirmed */}
+        {form.city && form.category && addressConfirmed && (
+          <WorkerPoolBanner category={form.category} city={form.city} />
+        )}
 
         {/* Time */}
         <SectionCard>
@@ -1196,54 +1161,29 @@ export default function CreateTask() {
           const isReady = !!(form.title && form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
           return (
             <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
-              {/* Readiness indicator */}
-              {!isEditMode && !isReady && (
-                <div style={{ marginBottom: 12, background: 'var(--surface-2)', borderRadius: 14, padding: '12px 14px', border: '1px solid var(--border-1)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8 }}>השלם כדי לפרסם:</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {[
-                      { label: 'כותרת', done: !!form.title },
-                      { label: 'תיאור', done: !!(form.description && form.description.length > 10) },
-                      { label: 'מחיר', done: !!form.price },
-                      { label: 'מיקום', done: !!(form.location_name && addressConfirmed) },
-                      { label: 'תשלום', done: !!form.payment_method },
-                    ].map((s, i) => (
-                      <span key={i} style={{
-                        fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
-                        background: s.done ? '#dcfce7' : '#fef2f2',
-                        color: s.done ? '#15803d' : '#dc2626',
-                        border: `1px solid ${s.done ? '#86efac' : '#fca5a5'}`,
-                      }}>
-                        {s.done ? '✓' : '○'} {s.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
               <button
                 onClick={handleSubmit}
                 disabled={loading || !!checkingModeration}
                 className="btn-tap"
                 style={{
-                  width: '100%', height: 62, borderRadius: 20, fontSize: 18, fontWeight: 900,
+                  width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
                   color: 'white', border: 'none',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   background: isReady
                     ? 'linear-gradient(135deg, #059669, #047857)'
                     : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
                   boxShadow: isReady
-                    ? '0 8px 32px rgba(5,150,105,0.45)'
-                    : '0 6px 24px rgba(26,111,212,0.35)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  marginBottom: 12, transition: 'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                    ? '0 8px 28px rgba(5,150,105,0.4)'
+                    : '0 8px 28px rgba(26,111,212,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  marginBottom: 10, transition: 'background 0.35s ease, box-shadow 0.35s ease',
                   WebkitTapHighlightColor: 'transparent',
-                  animation: isReady && !loading ? 'giftCTAPulse 2s ease-in-out infinite' : 'none',
                 }}
               >
                 {loading
-                  ? <><Loader2 size={22} className="animate-spin" /> מפרסם ומחפש עובדים...</>
+                  ? <><Loader2 size={22} className="animate-spin" /> מפרסם...</>
                   : isReady
-                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם עכשיו — קבל בקשות תוך דקות!</>)
+                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם משימה עכשיו ✓</>)
                     : (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם משימה חדשה</>)
                 }
               </button>
