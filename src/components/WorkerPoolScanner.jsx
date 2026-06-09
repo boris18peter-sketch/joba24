@@ -144,14 +144,30 @@ export function CategoryWorkerHint({ category }) {
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      background: '#f0fdf4', border: '1px solid #bbf7d0',
-      borderRadius: 10, padding: '8px 12px', marginTop: 10,
+      background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+      border: '1.5px solid #86efac',
+      borderRadius: 16, padding: '14px 16px',
+      display: 'flex', gap: 12, alignItems: 'center',
+      animation: 'scannerPulse 2.5s ease-in-out infinite',
     }}>
-      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', flexShrink: 0, animation: 'liveDot 1.3s ease-in-out infinite', display: 'inline-block' }} />
-      <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>
-        הערכה: {count} {name} יכולים להגיש בקשה {emoji}
-      </span>
+      <div style={{
+        width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+        background: 'linear-gradient(135deg, #16a34a, #15803d)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 18,
+        boxShadow: '0 0 0 4px rgba(22,163,74,0.15)',
+      }}>
+        {emoji}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 900, color: '#14532d', lineHeight: 1.3, marginBottom: 2 }}>
+          {count} {name} פעילים בפלטפורמה
+        </div>
+        <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', display: 'inline-block', animation: 'liveDot 1.3s ease-in-out infinite' }} />
+          יכולים להגיש בקשה למשימה שלך
+        </div>
+      </div>
     </div>
   );
 }

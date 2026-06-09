@@ -19,6 +19,14 @@ Deno.serve(async (req) => {
     const task = tasks[0];
     if (!task) return Response.json({ ok: false, error: 'task not found' });
 
+    // Don't count views/clicks from the task owner themselves
+    try {
+      const user = await base44.auth.me();
+      if (user && task.client_id && user.id === task.client_id) {
+        return Response.json({ ok: true, skipped: true, views_count: task.views_count, clicks_count: task.clicks_count });
+      }
+    } catch (_) { /* unauthenticated users are fine — count them */ }
+
     const newCount = (task[countField] || 0) + 1;
     await base44.asServiceRole.entities.Task.update(taskId, { [countField]: newCount });
 
