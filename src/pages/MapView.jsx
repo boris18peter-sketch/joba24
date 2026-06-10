@@ -110,7 +110,7 @@ export default function MapView() {
 
   const [viewState, setViewState] = useState({
     longitude: CENTER.longitude, latitude: CENTER.latitude,
-    zoom: 13.5, pitch: 52, bearing: 0,
+    zoom: 11, pitch: 30, bearing: 0,
   });
 
   useEffect(() => {
@@ -127,7 +127,10 @@ export default function MapView() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(loc);
+        // Center map on user immediately
+        setViewState(v => ({ ...v, longitude: loc.lng, latitude: loc.lat, zoom: 11, pitch: 30 }));
       });
     }
   }, []);
@@ -199,7 +202,7 @@ export default function MapView() {
     }
   }, [selectedTask?.id]);
 
-  // Auto-fit map to all tasks on first load (or when tasks change and none selected)
+  // Auto-fit map to show user location + all tasks on first load
   const fittedRef = useRef(false);
   useEffect(() => {
     if (!mapRef.current || !displayTasks.length || fittedRef.current) return;
@@ -207,25 +210,27 @@ export default function MapView() {
     if (!map) return;
     fittedRef.current = true;
 
-    // Prioritise publisher's own tasks if available
-    const myTasks = me?.id ? displayTasks.filter(t => t.client_id === me.id) : [];
-    const tasksToFit = myTasks.length > 0 ? myTasks : displayTasks;
+    // Build list of points: all tasks + user location
+    const points = displayTasks.map(t => ({ lat: t.lat, lng: t.lng }));
+    if (userLocation) points.push(userLocation);
 
-    if (tasksToFit.length === 1) {
-      map.flyTo({ center: [tasksToFit[0].lng, tasksToFit[0].lat], zoom: 15, pitch: 52, duration: 1000 });
+    if (points.length === 1) {
+      map.flyTo({ center: [points[0].lng, points[0].lat], zoom: 14, pitch: 40, duration: 1000 });
       return;
     }
 
-    const lngs = tasksToFit.map(t => t.lng);
-    const lats = tasksToFit.map(t => t.lat);
+    const lngs = points.map(p => p.lng);
+    const lats = points.map(p => p.lat);
     const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
     const minLat = Math.min(...lats), maxLat = Math.max(...lats);
     map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-      padding: { top: 120, bottom: 160, left: 40, right: 40 },
-      maxZoom: myTasks.length > 0 ? 14 : 13,
-      duration: 1200,
+      padding: { top: 130, bottom: 80, left: 60, right: 60 },
+      maxZoom: 13,
+      minZoom: 9,
+      duration: 1400,
+      pitch: 30,
     });
-  }, [displayTasks.length, mapRef.current, me?.id]);
+  }, [displayTasks.length, !!mapRef.current, !!userLocation]);
 
   // Reset fit flag when filters change so re-fit happens
   useEffect(() => { fittedRef.current = false; }, [filters]);
