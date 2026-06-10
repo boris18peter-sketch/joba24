@@ -170,7 +170,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
           animation: shakeActive ? 'lsoShake 0.38s ease' : 'none',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           position: 'relative', width: 260, height: 280,
-          alignSelf: 'center', marginLeft: 'auto', marginRight: 'auto',
+          left: '50%', transform: 'translateX(-50%)',
         }}>
 
           {/* Logo — animates down onto map */}
@@ -577,6 +577,12 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
     });
     return () => unsub();
   }, [taskId]);
+
+  // Auto-navigate to task detail after 8 seconds
+  useEffect(() => {
+    const t = setTimeout(() => goToTask(), 8000);
+    return () => clearTimeout(t);
+  }, []);
 
   const dotX = (a, d) => 50 + d * Math.cos((a * Math.PI) / 180);
   const dotY = (a, d) => 50 + d * Math.sin((a * Math.PI) / 180);
