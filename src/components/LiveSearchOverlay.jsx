@@ -47,6 +47,43 @@ function injectCSS() {
   document.head.appendChild(s);
 }
 
+const CELEBRATION_STATUS_MSGS = [
+  'מאותת לעובדים',
+  'סורק עובדים בקרבת מקום',
+  'מחפש התאמות',
+  'מגביר חשיפה',
+  'מפיץ את המשימה',
+  'מרחיב חשיפה',
+];
+
+function RotatingStatusMsgs() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setIdx(i => (i + 1) % CELEBRATION_STATUS_MSGS.length), 2800);
+    return () => clearInterval(iv);
+  }, []);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.3 }}
+          style={{
+            fontSize: 13, color: 'rgba(255,255,255,.6)', fontWeight: 600,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'lsoBlink 1.2s .1s infinite', flexShrink: 0 }} />
+          {CELEBRATION_STATUS_MSGS[idx]}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STEP 1 — Celebration
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,6 +170,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
           animation: shakeActive ? 'lsoShake 0.38s ease' : 'none',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           position: 'relative', width: 260, height: 280,
+          alignSelf: 'center', marginLeft: 'auto', marginRight: 'auto',
         }}>
 
           {/* Logo — animates down onto map */}
@@ -429,18 +467,8 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 </div>
               )}
 
-              {/* Live dot line */}
-              <div style={{
-                fontSize: 13, color: 'rgba(255,255,255,.6)', fontWeight: 600,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 6,
-              }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'lsoBlink 1.2s .1s infinite', flexShrink: 0 }} />
-                עובדים באזור כבר רואים אותה
-              </div>
-
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.32)', fontWeight: 500 }}>
-                מחפשים את העובד המושלם...
-              </div>
+              {/* Rotating status messages */}
+              <RotatingStatusMsgs />
             </motion.div>
           )}
         </AnimatePresence>
@@ -512,16 +540,18 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
 
   useEffect(() => {
     const msgs = [
-      'שולח התראות לעובדים...',
-      'עובדים בקרבת מקום נמצאו',
-      'ממתין לתגובות ראשונות...',
-      'המשימה שלך חיה',
+      'מאותת לעובדים...',
+      'סורק עובדים בקרבת מקום',
+      'מחפש התאמות',
+      'מגביר חשיפה',
+      'מפיץ את המשימה',
+      'מרחיב חשיפה',
     ];
     let i = 0;
     const iv = setInterval(() => {
       if (i < msgs.length) { setStatusMsg(msgs[i]); i++; }
       else clearInterval(iv);
-    }, 3500);
+    }, 3200);
     return () => clearInterval(iv);
   }, []);
 
@@ -727,7 +757,7 @@ export default function LiveSearchOverlay({
             key="celebration"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, x: -30 }}
+            exit={{ opacity: 0, x: 30 }}
             transition={{ duration: 0.32, ease: 'easeInOut' }}
             style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
           >
@@ -741,7 +771,7 @@ export default function LiveSearchOverlay({
         ) : (
           <motion.div
             key="scanner"
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.32, ease: 'easeInOut' }}
