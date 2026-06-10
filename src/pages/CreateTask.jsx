@@ -517,6 +517,37 @@ export default function CreateTask() {
     return () => clearTimeout(draftTimerRef.current);
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
 
+  // Category-description mismatch keywords
+  const CATEGORY_KEYWORDS = {
+    plumbing: ['אינסטלטור', 'צנרת', 'ברז', 'צינור', 'מים', 'כיור', 'שירותים', 'אסלה', 'דוד', 'נזילה', 'ניקוז', 'ביוב'],
+    electricity: ['חשמל', 'חשמלאי', 'שקע', 'מתג', 'לוח', 'נורה', 'חיווט', 'מאמ', 'מפסק', 'תקע', 'מחשב'],
+    gardening: ['גינה', 'גינון', 'צמחים', 'עשב', 'גז', 'גזם', 'עץ', 'שיח', 'עשבייה', 'השקיה', 'דשא', 'זבל'],
+    cleaning: ['ניקיון', 'לנקות', 'ניקוי', 'שואב', 'מגב', 'חלונות', 'ניקוי עמוק', 'בית', 'משרד', 'דירה'],
+    moving: ['הובלה', 'להוביל', 'ארגזים', 'רהיטים', 'מעבר דירה', 'משאית', 'ואן', 'עזרה בהובלה', 'נשיאה'],
+    painting: ['צביעה', 'צבע', 'לצבוע', 'קיר', 'גג', 'גדר', 'רולר', 'מברשת'],
+    carpentry: ['נגרות', 'נגר', 'עץ', 'ארון', 'מדף', 'דלת', 'ריהוט', 'הרכבה'],
+    ac: ['מזגן', 'מזגנים', 'מיזוג', 'התקנה', 'תיקון מזגן', 'ניקוי מזגן', 'טכנאי'],
+    locksmith: ['מנעול', 'מנעולן', 'פריצה', 'מפתח', 'דלת', 'כספת', 'החלפת מנעול'],
+    shopping: ['קניות', 'לקנות', 'סופר', 'מוצרים', 'רשימת קניות', 'שליח', 'רכישה'],
+    delivery: ['משלוח', 'לשלוח', 'להביא', 'שליח', 'חבילה', 'פריט', 'מסירה', 'אספקה'],
+    babysitting: ['ילדים', 'ילד', 'ילדה', 'בייביסיטר', 'שמירה', 'גן', 'פעוט', 'תינוק', 'טיפול בילדים', 'לשמור'],
+    tutoring: ['שיעורים', 'שיעור', 'מורה', 'לימוד', 'חונך', 'מתמטיקה', 'אנגלית', 'עברית', 'פיזיקה', 'כימיה'],
+    it_support: ['מחשב', 'רשת', 'תמיכה', 'תוכנה', 'חומרה', 'אינטרנט', 'wifi', 'ווייפיי', 'טלפון', 'אפליקציה'],
+  };
+
+  const checkCategoryDescriptionMatch = (category, description) => {
+    if (!description || !category || category === 'other') return null;
+    const keywords = CATEGORY_KEYWORDS[category];
+    if (!keywords) return null;
+    const desc = description.toLowerCase();
+    const hasMatch = keywords.some(kw => desc.includes(kw.toLowerCase()));
+    if (!hasMatch && description.trim().length > 20) {
+      const catLabel = CATEGORIES.find(c => c.value === category)?.label || category;
+      return `נראה שהתיאור לא תואם לקטגוריה "${catLabel}". כדי שנמצא לך עובד מתאים, אנא תאר את המשימה בהתאם לקטגוריה שבחרת.`;
+    }
+    return null;
+  };
+
   const checkFieldModeration = async (field, text) => {
     if (!text || text.trim().length < 4) {
       setModerationErrors(p => ({ ...p, [field]: null }));
@@ -616,6 +647,15 @@ export default function CreateTask() {
       form.description ? moderateText(form.description) : Promise.resolve({ flagged: false }),
     ]);
     setCheckingModeration('');
+    // Check category-description mismatch
+    const mismatch = checkCategoryDescriptionMatch(form.category, form.description);
+    if (mismatch) {
+      setModerationErrors({ categoryMismatch: mismatch });
+      setShowErrorBanner(true);
+      setLoading(false);
+      return;
+    }
+
     if (titleCheck.flagged || descCheck.flagged) {
       const newModerationErrors = {};
       if (titleCheck.flagged) newModerationErrors.title = 'הכותרת מכילה תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
@@ -864,13 +904,23 @@ export default function CreateTask() {
           )}
           <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description}
-            onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null})); }}
-            onBlur={() => checkFieldModeration('description', form.description)}
-            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={4}
+            onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
+            onBlur={() => {
+              checkFieldModeration('description', form.description);
+              const mismatch = checkCategoryDescriptionMatch(form.category, form.description);
+              setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
+            }}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={4}
           />
           {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>🔍 בודק תוכן...</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
+          {moderationErrors.categoryMismatch && !moderationErrors.description && (
+            <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginTop: 6, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <AlertTriangle size={14} color="#f97316" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 12, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>✏️ {moderationErrors.categoryMismatch}</p>
+            </div>
+          )}
         </SectionCard>
 
 

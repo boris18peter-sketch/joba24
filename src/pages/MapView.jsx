@@ -199,6 +199,37 @@ export default function MapView() {
     }
   }, [selectedTask?.id]);
 
+  // Auto-fit map to all tasks on first load (or when tasks change and none selected)
+  const fittedRef = useRef(false);
+  useEffect(() => {
+    if (!mapRef.current || !displayTasks.length || fittedRef.current) return;
+    const map = mapRef.current.getMap();
+    if (!map) return;
+    fittedRef.current = true;
+
+    // Prioritise publisher's own tasks if available
+    const myTasks = me?.id ? displayTasks.filter(t => t.client_id === me.id) : [];
+    const tasksToFit = myTasks.length > 0 ? myTasks : displayTasks;
+
+    if (tasksToFit.length === 1) {
+      map.flyTo({ center: [tasksToFit[0].lng, tasksToFit[0].lat], zoom: 15, pitch: 52, duration: 1000 });
+      return;
+    }
+
+    const lngs = tasksToFit.map(t => t.lng);
+    const lats = tasksToFit.map(t => t.lat);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+      padding: { top: 120, bottom: 160, left: 40, right: 40 },
+      maxZoom: myTasks.length > 0 ? 14 : 13,
+      duration: 1200,
+    });
+  }, [displayTasks.length, mapRef.current, me?.id]);
+
+  // Reset fit flag when filters change so re-fit happens
+  useEffect(() => { fittedRef.current = false; }, [filters]);
+
   // Fly to task when selected
   useEffect(() => {
     if (!selectedTask || !mapRef.current) return;

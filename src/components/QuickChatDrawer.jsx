@@ -4,12 +4,14 @@ import { Send, X, ExternalLink, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { moderateText } from '@/hooks/useModeration';
 
 export default function QuickChatDrawer({ task, me, onClose }) {
    const navigate = useNavigate();
    const queryClient = useQueryClient();
    const [msg, setMsg] = useState('');
    const [sending, setSending] = useState(false);
+   const [blocked, setBlocked] = useState(false);
    const [keyboardHeight, setKeyboardHeight] = useState(0);
    const bottomRef = useRef(null);
    const inputRef = useRef(null);
@@ -47,6 +49,14 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
   const send = async () => {
     if (!msg.trim() || sending) return;
+    if (msg.trim().length > 3) {
+      const mod = await moderateText(msg.trim());
+      if (mod.flagged) {
+        setBlocked(true);
+        setTimeout(() => setBlocked(false), 4000);
+        return;
+      }
+    }
     setSending(true);
     await base44.entities.ChatMessage.create({
       task_id: task.id,
@@ -137,11 +147,16 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
         {/* Input */}
          <div style={{ padding: '10px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0, position: 'sticky', bottom: 0, background: 'white', zIndex: 10 }} ref={inputRef}>
+          {blocked && (
+            <div style={{ width: '100%', marginBottom: 6, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 10px', fontSize: 12, color: '#dc2626', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+              🛡️ הודעה נחסמה — שמור על שיח מכבד
+            </div>
+          )}
           <input
-            autoFocus
-            value={msg}
-            onChange={e => setMsg(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+           autoFocus
+           value={msg}
+           onChange={e => { setMsg(e.target.value); setBlocked(false); }}
+           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
             onFocus={() => {
               setTimeout(() => {
                 inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

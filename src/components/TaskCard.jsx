@@ -52,11 +52,22 @@ const URGENCY_TAG_CONFIG = {
 function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [msgBlocked, setMsgBlocked] = useState(false);
   const submitBtnRef = useRef(null);
   const submittedRef = useRef(false);
 
   const handleSubmit = async () => {
     if (loading || submittedRef.current) return;
+    // Moderation check on message
+    if (message.trim().length > 3) {
+      const { moderateText } = await import('@/hooks/useModeration');
+      const mod = await moderateText(message.trim());
+      if (mod.flagged) {
+        setMsgBlocked(true);
+        setTimeout(() => setMsgBlocked(false), 4000);
+        return;
+      }
+    }
     submittedRef.current = true;
     setLoading(true);
     try {
@@ -139,16 +150,22 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>הוסף הודעה (לא חובה)</p>
           <textarea
             value={message}
-            onChange={e => setMessage(e.target.value)}
+            onChange={e => { setMessage(e.target.value); setMsgBlocked(false); }}
             placeholder="לדוגמה: יש לי ניסיון, אני זמין להגיע מיד..."
             rows={3}
             style={{
-              width: '100%', borderRadius: 10, border: '1px solid #bfdbfe',
+              width: '100%', borderRadius: 10, border: `1px solid ${msgBlocked ? '#fca5a5' : '#bfdbfe'}`,
               padding: '10px 12px', fontSize: 16, fontFamily: 'inherit', resize: 'none',
               outline: 'none', color: '#1a2540', background: 'white', boxSizing: 'border-box',
               lineHeight: 1.5,
             }}
           />
+          {msgBlocked && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 10px' }}>
+              <span style={{ fontSize: 13 }}>🛡️</span>
+              <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>הודעה זו נחסמה — אנא שמור על שיח מכבד</span>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
