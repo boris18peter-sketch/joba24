@@ -1,46 +1,120 @@
 /**
- * 🎮 TaskPublishedCelebration — Mobile Game Cinematic
- * סרט אנימציה קולנועי: האווטאר יורד מהשמים, נוחת על המפה, נועץ דגל.
+ * 🎮 TaskPublishedCelebration — Coin Master Level Cinematic
+ * סגנון אחיד עם Scanner. ללא ניווט אוטומטי — רק כפתור.
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { CELEBRATION_CONFIG as C } from './celebrationConfig';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// ── Coin particle ─────────────────────────────────────────────────────────────
-function CoinBurst({ active }) {
+const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+
+// ── Palette (same as scanner) ─────────────────────────────────────────────────
+const P = {
+  bg0: '#05112e',
+  bg1: '#0a1f4e',
+  bg2: '#0d2a60',
+  blue:  '#60a5fa',
+  green: '#4ade80',
+  gold:  '#fbbf24',
+  goldD: '#f59e0b',
+  white: '#ffffff',
+};
+
+// ── Keyframe injector (once) ──────────────────────────────────────────────────
+const STYLES = `
+  @keyframes celebRingSpin  { to { transform: rotate(360deg); } }
+  @keyframes celebPulse     { 0%,100%{opacity:.15;transform:scale(1);}50%{opacity:.3;transform:scale(1.07);} }
+  @keyframes celebBlink     { 0%,80%,100%{opacity:0;}40%{opacity:1;} }
+  @keyframes celebSlideUp   { from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);} }
+  @keyframes celebGlowPulse { 0%,100%{box-shadow:0 0 18px 4px rgba(96,165,250,.4);} 50%{box-shadow:0 0 38px 12px rgba(96,165,250,.7);} }
+  @keyframes celebLogoFloat { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-6px) scale(1.04);} }
+  @keyframes celebSweep     { to{transform:rotate(360deg);} }
+  @keyframes celebTrail     { 0%{opacity:.8;scaleY:1;}100%{opacity:0;scaleY:0;} }
+  @keyframes celebBounce    { 0%{transform:scaleY(1);}40%{transform:scaleY(.8) scaleX(1.15);}65%{transform:scaleY(1.1) scaleX(.93);}80%{transform:scaleY(.97);}100%{transform:scaleY(1);} }
+  @keyframes celebTada      { 0%{transform:scale(1);}10%{transform:scale(.95) rotate(-3deg);}20%{transform:scale(.95) rotate(-3deg);}30%{transform:scale(1.05) rotate(3deg);}40%{transform:scale(1.05) rotate(-3deg);}50%{transform:scale(1.05) rotate(3deg);}60%{transform:scale(1.05) rotate(-3deg);}70%{transform:scale(1.05) rotate(3deg);}80%{transform:scale(1) rotate(0);}100%{transform:scale(1) rotate(0);} }
+  @keyframes celebRipple    { 0%{transform:scale(0.1);opacity:1;}100%{transform:scale(4.5);opacity:0;} }
+  @keyframes celebStarSpin  { to{transform:rotate(360deg) scale(1.2);} }
+`;
+
+function injectStyles() {
+  if (document.getElementById('celeb-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'celeb-styles';
+  s.textContent = STYLES;
+  document.head.appendChild(s);
+}
+
+// ── Radar rings (scanner aesthetic) ──────────────────────────────────────────
+function RadarRings() {
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {[1, 0.72, 0.48, 0.28].map((r, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          inset: `${(1 - r) / 2 * 100}%`,
+          borderRadius: '50%',
+          border: `1px solid rgba(96,165,250,${0.06 + i * 0.04})`,
+          animation: `celebPulse ${2.4 + i * 0.45}s ease-in-out infinite`,
+          animationDelay: `${i * 0.28}s`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ── Radar sweep ───────────────────────────────────────────────────────────────
+function RadarSweep({ active }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden',
+      opacity: active ? 1 : 0, transition: 'opacity 0.5s',
+    }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'conic-gradient(from 0deg, transparent 70%, rgba(96,165,250,0.4) 100%)',
+        animation: 'celebRingSpin 2.6s linear infinite',
+        borderRadius: '50%',
+      }} />
+    </div>
+  );
+}
+
+// ── Gold particle burst ───────────────────────────────────────────────────────
+function ParticleBurst({ active, count = 32 }) {
   if (!active) return null;
   return (
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 20 }}>
-      {Array.from({ length: 18 }).map((_, i) => {
-        const angle = (i / 18) * 360;
-        const dist = 60 + Math.random() * 80;
-        const tx = Math.cos((angle * Math.PI) / 180) * dist;
-        const ty = Math.sin((angle * Math.PI) / 180) * dist * 0.7 - 40;
-        const isCoin = i < 10;
-        const size = isCoin ? 18 + Math.random() * 8 : 7 + Math.random() * 6;
-        const colors = ['#fbbf24','#f59e0b','#10b981','#3b82f6','#a855f7','#ef4444'];
-        const color = colors[i % colors.length];
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 30 }}>
+      {Array.from({ length: count }).map((_, i) => {
+        const angle = (i / count) * 360 + Math.random() * 12;
+        const dist  = 55 + Math.random() * 95;
+        const tx    = Math.cos((angle * Math.PI) / 180) * dist;
+        const ty    = Math.sin((angle * Math.PI) / 180) * dist * 0.75 - 30;
+        const isCoin = i < Math.floor(count * 0.45);
+        const colors = [P.gold, P.goldD, P.blue, P.green, '#a855f7', '#ef4444', '#06b6d4', '#fde68a'];
+        const color  = colors[i % colors.length];
+        const size   = isCoin ? 16 + Math.random() * 8 : 6 + Math.random() * 7;
         return (
           <motion.div
             key={i}
-            initial={{ x: 0, y: 0, scale: 0.2, opacity: 1 }}
-            animate={{ x: tx, y: [ty - 10, ty + dist * 1.2], scale: [1.2, 0.6], opacity: [1, 1, 0] }}
-            transition={{ duration: 1.1 + Math.random() * 0.5, delay: Math.random() * 0.12, ease: 'easeOut' }}
+            initial={{ x: 0, y: 0, scale: 0.2, opacity: 1, rotate: 0 }}
+            animate={{
+              x: tx, y: [ty * 0.3, ty + dist * 1.4],
+              scale: [1.3, 0.5], opacity: [1, 1, 0],
+              rotate: Math.random() * 720 - 360,
+            }}
+            transition={{ duration: 1.1 + Math.random() * 0.6, delay: Math.random() * 0.14, ease: 'easeOut' }}
             style={{
               position: 'absolute', top: '50%', left: '50%',
               width: size, height: size,
-              borderRadius: isCoin ? '50%' : 2,
+              borderRadius: isCoin ? '50%' : Math.random() > 0.5 ? 2 : '50%',
               background: isCoin
                 ? `radial-gradient(circle at 35% 35%, #fde68a, ${color})`
                 : color,
-              boxShadow: isCoin ? `0 0 8px ${color}88` : 'none',
-              fontSize: isCoin ? 11 : undefined,
-              display: isCoin ? 'flex' : undefined,
-              alignItems: isCoin ? 'center' : undefined,
-              justifyContent: isCoin ? 'center' : undefined,
-              fontWeight: 900, color: '#7c2d00',
+              boxShadow: isCoin ? `0 0 8px ${color}99` : 'none',
               transform: 'translate(-50%,-50%)',
+              display: isCoin ? 'flex' : undefined,
+              alignItems: 'center', justifyContent: 'center',
+              fontSize: 9, fontWeight: 900, color: '#7c2d00',
             }}
           >
             {isCoin && '₪'}
@@ -51,109 +125,171 @@ function CoinBurst({ active }) {
   );
 }
 
-// ── Shockwave ring ────────────────────────────────────────────────────────────
+// ── Shockwave ─────────────────────────────────────────────────────────────────
 function Shockwave({ trigger }) {
-  const [key, setKey] = useState(0);
-  useEffect(() => { if (trigger) setKey(k => k + 1); }, [trigger]);
-  if (!trigger) return null;
+  const [waves, setWaves] = useState([]);
+  useEffect(() => {
+    if (!trigger) return;
+    const id = Date.now();
+    setWaves(w => [...w, id]);
+    setTimeout(() => setWaves(w => w.filter(x => x !== id)), 800);
+  }, [trigger]);
+
   return (
-    <motion.div
-      key={key}
-      initial={{ scale: 0.1, opacity: 1 }}
-      animate={{ scale: 5, opacity: 0 }}
-      transition={{ duration: 0.65, ease: 'easeOut' }}
-      style={{
-        position: 'absolute', width: 100, height: 100,
-        borderRadius: '50%',
-        border: '4px solid #fbbf24',
-        boxShadow: '0 0 30px #fbbf2488',
-        pointerEvents: 'none', zIndex: 8,
-      }}
-    />
+    <>
+      {waves.map(id => (
+        <motion.div key={id}
+          initial={{ scale: 0.1, opacity: 1 }}
+          animate={{ scale: 5.5, opacity: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+          style={{
+            position: 'absolute', width: 100, height: 100,
+            borderRadius: '50%',
+            border: `3px solid ${P.gold}`,
+            boxShadow: `0 0 24px ${P.gold}88`,
+            pointerEvents: 'none', zIndex: 8,
+          }}
+        />
+      ))}
+    </>
   );
 }
 
-// ── Map mini card ─────────────────────────────────────────────────────────────
-function MapCard({ visible, locationName, lat, lng }) {
-  // Static map tile from OpenStreetMap
-  const zoom = 15;
-  const tileUrl = lat && lng
-    ? `https://tile.openstreetmap.org/${zoom}/${Math.floor((lng + 180) / 360 * Math.pow(2, zoom))}/${Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom))}.png`
-    : null;
+// ── Floating stars ────────────────────────────────────────────────────────────
+function StarField() {
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      {Array.from({ length: 35 }).map((_, i) => (
+        <motion.div key={i}
+          animate={{ opacity: [0.15, 0.7, 0.15] }}
+          transition={{ duration: 1.6 + Math.random() * 2.5, repeat: Infinity, delay: Math.random() * 4 }}
+          style={{
+            position: 'absolute',
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            width: 1.5 + Math.random() * 2, height: 1.5 + Math.random() * 2,
+            borderRadius: '50%', background: P.blue,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
-  // Use a simple placeholder map visual when no coords
+// ── Rotating gold ring around logo ───────────────────────────────────────────
+function GoldOrbit({ active }) {
+  if (!active) return null;
+  return (
+    <>
+      {/* Outer orbit */}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+        style={{
+          position: 'absolute', inset: -18,
+          borderRadius: '50%',
+          border: '2px dashed rgba(251,191,36,0.5)',
+          pointerEvents: 'none',
+        }}
+      >
+        {/* Orbit dot */}
+        <div style={{
+          position: 'absolute', top: -5, left: '50%',
+          transform: 'translateX(-50%)',
+          width: 10, height: 10, borderRadius: '50%',
+          background: P.gold, boxShadow: `0 0 10px ${P.gold}`,
+        }} />
+      </motion.div>
+      {/* Inner orbit (reverse) */}
+      <motion.div
+        animate={{ rotate: -360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+        style={{
+          position: 'absolute', inset: -28,
+          borderRadius: '50%',
+          border: '1px solid rgba(96,165,250,0.3)',
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{
+          position: 'absolute', bottom: -4, left: '50%',
+          transform: 'translateX(-50%)',
+          width: 7, height: 7, borderRadius: '50%',
+          background: P.blue, boxShadow: `0 0 8px ${P.blue}`,
+        }} />
+      </motion.div>
+    </>
+  );
+}
+
+// ── Map landing pad ───────────────────────────────────────────────────────────
+function MapPad({ visible, locationName }) {
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          key="mapcard"
-          initial={{ scale: 0.5, opacity: 0, y: 30 }}
+          initial={{ scale: 0.4, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          transition={{ type: 'spring', damping: 14, stiffness: 160, delay: 0.1 }}
+          exit={{ scale: 0.6, opacity: 0 }}
+          transition={{ type: 'spring', damping: 14, stiffness: 150 }}
           style={{
-            width: 220, height: 130,
-            borderRadius: 22,
-            overflow: 'hidden',
-            border: '3px solid #fbbf24',
-            boxShadow: '0 0 0 4px rgba(251,191,36,0.25), 0 16px 48px rgba(0,0,0,0.55)',
-            position: 'relative',
-            background: '#1a3a2a',
+            width: 210, height: 110,
+            borderRadius: 20,
+            background: 'linear-gradient(145deg, #071a42, #0d2860)',
+            border: `2px solid ${P.gold}`,
+            boxShadow: `0 0 0 3px rgba(251,191,36,0.18), 0 14px 40px rgba(0,0,0,0.6)`,
+            position: 'relative', overflow: 'hidden',
           }}
         >
-          {/* Grid lines — fake map look */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.15 }}>
-            {[20,40,60,80,100,120].map(y => <line key={y} x1="0" y1={y} x2="220" y2={y} stroke="#4ade80" strokeWidth="1" />)}
-            {[20,50,80,110,140,170,200].map(x => <line key={x} x1={x} y1="0" x2={x} y2="130" stroke="#4ade80" strokeWidth="1" />)}
+          {/* Grid */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
+            {[22,44,66,88].map(y => <line key={y} x1="0" y1={y} x2="210" y2={y} stroke={P.blue} strokeWidth="1" />)}
+            {[26,52,78,104,132,158,184].map(x => <line key={x} x1={x} y1="0" x2={x} y2="110" stroke={P.blue} strokeWidth="1" />)}
           </svg>
 
-          {/* Road shapes */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.4 }}>
-            <path d="M0 65 Q55 55 110 65 Q165 75 220 65" stroke="#6ee7b7" strokeWidth="8" fill="none" />
-            <path d="M110 0 Q105 35 110 65 Q115 95 110 130" stroke="#6ee7b7" strokeWidth="6" fill="none" />
-            <path d="M0 95 Q70 88 140 95 Q180 100 220 92" stroke="#34d399" strokeWidth="4" fill="none" />
+          {/* Road strokes */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.45 }}>
+            <path d="M0 55 Q52 44 105 55 Q158 66 210 55" stroke={P.green} strokeWidth="7" fill="none" strokeLinecap="round"/>
+            <path d="M105 0 Q100 28 105 55 Q110 82 105 110"  stroke={P.green} strokeWidth="5" fill="none" strokeLinecap="round"/>
+            <path d="M0 82 Q65 74 130 82 Q170 88 210 80"   stroke="#34d399" strokeWidth="3" fill="none" strokeLinecap="round"/>
           </svg>
 
-          {/* Block shapes */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.25 }}>
-            <rect x="20" y="15" width="55" height="35" rx="4" fill="#4ade80" />
-            <rect x="90" y="20" width="40" height="30" rx="4" fill="#34d399" />
-            <rect x="145" y="10" width="55" height="42" rx="4" fill="#4ade80" />
-            <rect x="15" y="75" width="70" height="40" rx="4" fill="#34d399" />
-            <rect x="140" y="80" width="65" height="38" rx="4" fill="#4ade80" />
+          {/* Blocks */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.2 }}>
+            <rect x="18" y="10" width="52" height="30" rx="4" fill={P.green} />
+            <rect x="88" y="14" width="36" height="26" rx="4" fill="#34d399" />
+            <rect x="140" y="8" width="54" height="36" rx="4" fill={P.green} />
+            <rect x="14" y="68" width="66" height="32" rx="4" fill="#34d399" />
+            <rect x="138" y="72" width="60" height="30" rx="4" fill={P.green} />
           </svg>
 
-          {/* Center pin pulse */}
+          {/* Ping circle */}
           <motion.div
-            animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0.2, 0.6] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{ scale: [1, 1.7, 1], opacity: [0.5, 0.1, 0.5] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(251,191,36,0.35)',
-              border: '2px solid rgba(251,191,36,0.5)',
+              transform: 'translate(-50%,-50%)',
+              width: 34, height: 34, borderRadius: '50%',
+              background: `rgba(251,191,36,0.3)`,
+              border: `2px solid rgba(251,191,36,0.5)`,
             }}
           />
-
-          {/* Pin dot */}
           <div style={{
             position: 'absolute', top: '50%', left: '50%',
             transform: 'translate(-50%,-50%)',
-            width: 12, height: 12, borderRadius: '50%',
-            background: '#fbbf24',
-            boxShadow: '0 0 12px #fbbf24',
+            width: 11, height: 11, borderRadius: '50%',
+            background: P.gold, boxShadow: `0 0 14px ${P.gold}`,
           }} />
 
-          {/* Location label */}
+          {/* Label */}
           {locationName && (
             <div style={{
-              position: 'absolute', bottom: 8, left: 0, right: 0,
-              textAlign: 'center',
-              fontSize: 10, fontWeight: 800, color: '#fde68a',
-              background: 'rgba(0,0,0,0.55)',
-              padding: '3px 8px',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              textAlign: 'center', fontSize: 10, fontWeight: 800,
+              color: P.gold, background: 'rgba(5,17,46,0.75)',
+              padding: '4px 8px', overflow: 'hidden',
+              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               📍 {locationName}
             </div>
@@ -164,154 +300,143 @@ function MapCard({ visible, locationName, lat, lng }) {
   );
 }
 
-// ── Sunburst ──────────────────────────────────────────────────────────────────
-function Sunburst({ visible }) {
+// ── Dot trail (speed-lines during descent) ────────────────────────────────────
+function DescentTrail({ active }) {
+  if (!active) return null;
+  return (
+    <motion.div
+      initial={{ scaleY: 0.2, opacity: 0.9 }}
+      animate={{ scaleY: [0.3, 1, 0.2], opacity: [0.8, 0.6, 0] }}
+      transition={{ duration: 0.55, repeat: 2, ease: 'easeOut' }}
+      style={{
+        position: 'absolute', top: '100%', left: '50%',
+        transform: 'translateX(-50%)',
+        width: 6, height: 55,
+        background: `linear-gradient(to bottom, ${P.gold}cc, transparent)`,
+        borderRadius: 3, pointerEvents: 'none', originY: 0,
+      }}
+    />
+  );
+}
+
+// ── Flag pole slam ────────────────────────────────────────────────────────────
+function FlagSlam({ active }) {
   return (
     <AnimatePresence>
-      {visible && (
+      {active && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.3, rotate: 0 }}
-          animate={{ opacity: [0, 0.5, 0.4, 0], scale: [0.3, 2, 2.2, 2.4], rotate: 90 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 3, ease: 'easeOut' }}
+          key="flag"
+          initial={{ scale: 0, y: 20, rotate: -50, opacity: 0 }}
+          animate={{ scale: [0, 1.5, 1], y: [20, -12, 0], rotate: [-50, 8, 0], opacity: 1 }}
+          transition={{ type: 'spring', damping: 6, stiffness: 260 }}
           style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            background: `conic-gradient(${
-              ['#f59e0b','#fbbf24','#fcd34d','#fde68a'].map((c, i) =>
-                `${c}44 ${i * 25}%, transparent ${i * 25 + 12.5}%`).join(', ')
-            })`,
-            borderRadius: '50%',
-            width: '180vw', height: '180vw',
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
+            position: 'absolute', top: -16, right: -14, fontSize: 38,
+            filter: `drop-shadow(0 0 12px ${P.gold})`,
+            zIndex: 20,
           }}
-        />
+        >
+          🚩
+        </motion.div>
       )}
     </AnimatePresence>
   );
 }
 
-// ── Stars burst ───────────────────────────────────────────────────────────────
-function StarsBurst({ active }) {
-  if (!active) return null;
-  return (
-    <>
-      {['✨','⭐','💫','✨','⭐','💫','✨','⭐'].map((s, i) => {
-        const angle = (i / 8) * 360;
-        const dist = 90 + Math.random() * 50;
-        const tx = Math.cos((angle * Math.PI) / 180) * dist;
-        const ty = Math.sin((angle * Math.PI) / 180) * dist * 0.8 - 20;
-        return (
-          <motion.div
-            key={i}
-            initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
-            animate={{ x: tx, y: ty, scale: [0, 1.4, 0.8], opacity: [1, 1, 0] }}
-            transition={{ duration: 0.9 + Math.random() * 0.4, delay: i * 0.04, ease: 'easeOut' }}
-            style={{
-              position: 'absolute', top: '50%', left: '50%',
-              transform: 'translate(-50%,-50%)',
-              fontSize: 20, pointerEvents: 'none', zIndex: 25,
-            }}
-          >
-            {s}
-          </motion.div>
-        );
-      })}
-    </>
-  );
-}
-
-// ── MAIN ──────────────────────────────────────────────────────────────────────
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function TaskPublishedCelebration({
   visible, taskTitle, taskPrice, taskLocation, onNavigate
 }) {
-  // Cinematic phases:
-  // idle → zoom_out → descend → land → plant_flag → explode → reveal → done
   const [phase, setPhase] = useState('idle');
-  const [showMap, setShowMap] = useState(false);
+  // idle → enter → descend → land → slam → explode → reveal
+  const [showMap, setShowMap]           = useState(false);
+  const [showFlag, setShowFlag]         = useState(false);
   const [showShockwave, setShowShockwave] = useState(false);
-  const [showCoins, setShowCoins] = useState(false);
-  const [showStars, setShowStars] = useState(false);
-  const [shakeActive, setShakeActive] = useState(false);
-  const autoNavRef = useRef(null);
+  const [showParticles, setShowParticles] = useState(false);
+  const [shakeActive, setShakeActive]   = useState(false);
+  const [orbitActive, setOrbitActive]   = useState(false);
+  const [descending, setDescending]     = useState(false);
 
   useEffect(() => {
-    if (!visible) { setPhase('idle'); setShowMap(false); return; }
+    if (!visible) {
+      setPhase('idle');
+      setShowMap(false); setShowFlag(false);
+      setShowShockwave(false); setShowParticles(false);
+      setShakeActive(false); setOrbitActive(false);
+      setDescending(false);
+      return;
+    }
 
-    // Haptic: entry
+    injectStyles();
     try { navigator.vibrate?.(30); } catch (_) {}
 
+    const T = (fn, ms) => setTimeout(fn, ms);
     const timers = [];
-    const T = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); return id; };
+    const sched = (fn, ms) => { timers.push(T(fn, ms)); };
 
-    // Phase timeline (cinematic)
-    setPhase('zoom_out');          // bg zooms out, map card appears
+    // ── Timeline ──────────────────────────────────────────
+    setPhase('enter');                               // 0ms — logo zooms in from center
 
-    T(() => setShowMap(true), 200);
+    sched(() => { setOrbitActive(true); }, 400);    // 400ms — orbits appear
 
-    T(() => {
-      setPhase('descend');         // avatar enters from top
-    }, 400);
+    sched(() => {                                    // 700ms — descent begins
+      setPhase('descend');
+      setDescending(true);
+    }, 700);
 
-    T(() => {
-      setPhase('land');            // avatar reaches map
-      try { navigator.vibrate?.([60]); } catch (_) {}
-    }, 1400);
+    sched(() => {                                    // 1400ms — map pad appears
+      setShowMap(true);
+    }, 1300);
 
-    T(() => {
-      setPhase('plant_flag');      // flag slams down
+    sched(() => {                                    // 1700ms — land on map
+      setPhase('land');
+      setDescending(false);
+      try { navigator.vibrate?.([70]); } catch (_) {}
+    }, 1700);
+
+    sched(() => {                                    // 2100ms — SLAM flag + shake + boom
+      setPhase('slam');
+      setShowFlag(true);
       setShakeActive(true);
       setShowShockwave(true);
-      // Heavy haptic on slam
-      try { navigator.vibrate?.([150, 30, 100, 20, 60]); } catch (_) {}
-      T(() => setShakeActive(false), 350);
-    }, 1900);
+      try { navigator.vibrate?.([180, 25, 100, 15, 60]); } catch (_) {}
+    }, 2100);
 
-    T(() => {
-      setShowCoins(true);
-      setShowStars(true);
-      T(() => setShowCoins(false), 1400);
-      T(() => setShowStars(false), 1000);
-    }, 2050);
+    sched(() => {                                    // 2200ms — coins + particles
+      setShowParticles(true);
+    }, 2200);
 
-    T(() => {
-      setPhase('reveal');          // text reveal
-    }, 2300);
+    sched(() => { setShakeActive(false); }, 2450);  // shake off
 
-    autoNavRef.current = T(() => onNavigate?.(), 5200);
+    sched(() => { setShowParticles(false); }, 3600); // particles done
 
-    return () => {
-      timers.forEach(clearTimeout);
-      clearTimeout(autoNavRef.current);
-    };
+    sched(() => { setPhase('reveal'); }, 2600);      // 2600ms — title text reveals
+
+    return () => timers.forEach(clearTimeout);
   }, [visible]);
-
-  const handleSkip = () => {
-    clearTimeout(autoNavRef.current);
-    onNavigate?.();
-  };
 
   if (!visible) return null;
 
-  // Avatar Y position: starts above screen (-280), descends to hover above map (-30), then lands (0)
-  const avatarY = phase === 'idle' || phase === 'zoom_out'
-    ? -300
-    : phase === 'descend'
-    ? -40
-    : 0;
+  // ── Avatar vertical position ──────────────────────────────────────────────
+  const logoY       = phase === 'idle'                   ? 0
+                    : phase === 'enter'                  ? 0
+                    : phase === 'descend'                ? 0
+                    : 0; // stays at 0 in scene coords; scene itself moves
 
-  const avatarScale = phase === 'land' || phase === 'plant_flag' || phase === 'reveal'
-    ? 1
-    : phase === 'descend'
-    ? 1
-    : 0.6;
+  // Whole scene: logo starts in center, then moves up to make room for map
+  const sceneY = (phase === 'land' || phase === 'slam' || phase === 'reveal') ? -30 : 0;
+
+  // Logo pos inside scene: starts center (y=0), descends to land on map
+  const logoAnimY = phase === 'idle'    ? 0
+                  : phase === 'enter'   ? 0
+                  : phase === 'descend' ? 0   // animates to ~130 below
+                  : 110; // landed
 
   return createPortal(
     <div
       dir="rtl"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999999,
-        background: 'radial-gradient(ellipse at 50% 60%, #0a1f4e 0%, #020c20 100%)',
+        background: `linear-gradient(160deg, ${P.bg0} 0%, ${P.bg1} 55%, ${P.bg2} 100%)`,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         overflow: 'hidden',
@@ -319,216 +444,220 @@ export default function TaskPublishedCelebration({
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {/* Animated stars bg */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        {Array.from({ length: 30 }).map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{ opacity: [0.2, 0.8, 0.2] }}
-            transition={{ duration: 1.5 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 3 }}
-            style={{
-              position: 'absolute',
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: 2 + Math.random() * 2, height: 2 + Math.random() * 2,
-              borderRadius: '50%', background: 'white',
-            }}
-          />
-        ))}
+      <StarField />
+
+      {/* Radar rings (decorative, scanner feel) */}
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        <div style={{ position: 'relative', width: 320, height: 320 }}>
+          <RadarRings />
+          <RadarSweep active={phase === 'enter' || phase === 'descend'} />
+        </div>
       </div>
 
-      {/* Sunburst */}
-      <Sunburst visible={phase !== 'idle' && phase !== 'zoom_out'} />
+      {/* Rotating conic glow — replaces sunburst, same color as scanner */}
+      <AnimatePresence>
+        {(phase === 'slam' || phase === 'explode' || phase === 'reveal') && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.4 }}
+            animate={{ opacity: [0, 0.4, 0.3, 0], scale: [0.4, 2, 2.2] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2.5, ease: 'easeOut' }}
+            style={{
+              position: 'absolute', pointerEvents: 'none',
+              width: '170vw', height: '170vw',
+              background: `conic-gradient(${P.gold}33 0%, transparent 18%, ${P.blue}22 36%, transparent 54%, ${P.gold}22 72%, transparent 90%, ${P.blue}22 100%)`,
+              borderRadius: '50%',
+              top: '50%', left: '50%',
+              transform: 'translate(-50%,-50%)',
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Camera shake wrapper */}
+      {/* ── CAMERA SHAKE ── */}
       <motion.div
         animate={shakeActive ? {
-          x: [0,-8,8,-8,8,-5,5,0],
-          y: [0,4,-4,3,-3,2,-2,0],
-          transition: { duration: 0.35, ease: 'linear' }
+          x: [0, -10, 10, -9, 9, -6, 6, -3, 3, 0],
+          y: [0,   5, -5,  4,-4,  3,-3,  1,-1, 0],
+          transition: { duration: 0.38, ease: 'linear' },
         } : { x: 0, y: 0 }}
         style={{
           display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          position: 'relative', width: '100%',
-          gap: 0,
+          alignItems: 'center', position: 'relative',
+          width: '100%', zIndex: 5,
         }}
       >
-        {/* ── CINEMATIC SCENE ── */}
-        <div style={{
-          position: 'relative',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center',
-          width: 260,
-          height: 280,
-        }}>
+        {/* ── SCENE (logo + map together) ── */}
+        <motion.div
+          animate={{ y: sceneY }}
+          transition={{ type: 'spring', damping: 16, stiffness: 140 }}
+          style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', width: 280, height: 320 }}
+        >
+          {/* Logo container — moves from center down onto map */}
+          <motion.div
+            animate={{ y: logoAnimY }}
+            transition={
+              phase === 'descend'
+                ? { type: 'spring', damping: 5.5, stiffness: 55 }
+                : phase === 'land'
+                ? { type: 'spring', damping: 9, stiffness: 260 }
+                : phase === 'slam'
+                ? { type: 'spring', damping: 6, stiffness: 320 }
+                : { duration: 0 }
+            }
+            style={{
+              position: 'absolute', top: 40, left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 15,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {/* Glow ring */}
+            <motion.div
+              animate={phase === 'enter' || phase === 'descend'
+                ? { scale: [1, 1.3, 1], opacity: [0.4, 0.7, 0.4] }
+                : { scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }
+              }
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute', width: 108, height: 108, borderRadius: '50%',
+                background: `radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 70%)`,
+                pointerEvents: 'none',
+              }}
+            />
 
-          {/* Speed lines — visible during descent */}
-          <AnimatePresence>
+            {/* Descent trail */}
+            <DescentTrail active={phase === 'descend'} />
+
+            {/* Speed lines during descent */}
             {phase === 'descend' && (
               <motion.div
-                key="speedlines"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.6, 0] }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8 }}
+                animate={{ opacity: [0, 0.55, 0] }}
+                transition={{ duration: 0.8, repeat: 1 }}
                 style={{
-                  position: 'absolute', inset: -60,
-                  pointerEvents: 'none', zIndex: 1,
-                  background: 'repeating-conic-gradient(rgba(255,255,255,0.06) 0deg 3deg, transparent 3deg 18deg)',
+                  position: 'absolute', inset: -50, pointerEvents: 'none',
+                  background: 'repeating-conic-gradient(rgba(96,165,250,0.07) 0deg 4deg, transparent 4deg 22deg)',
                   borderRadius: '50%',
                 }}
               />
             )}
-          </AnimatePresence>
 
-          {/* Avatar — animated entry + landing */}
-          <motion.div
-            animate={{
-              y: avatarY,
-              scale: avatarScale,
-              rotate: phase === 'descend' ? [0, -8, 8, -4, 0] : 0,
-            }}
-            transition={
-              phase === 'descend'
-                ? { type: 'spring', damping: 6, stiffness: 60, duration: 1 }
-                : phase === 'land'
-                ? { type: 'spring', damping: 12, stiffness: 200 }
-                : phase === 'plant_flag'
-                ? { type: 'spring', damping: 6, stiffness: 300 }
-                : { duration: 0 }
-            }
-            style={{
-              fontSize: 72,
-              lineHeight: 1,
-              position: 'absolute',
-              top: '30%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 15,
-              filter: phase === 'descend'
-                ? 'drop-shadow(0 12px 30px rgba(251,191,36,0.9))'
-                : 'drop-shadow(0 4px 16px rgba(251,191,36,0.6))',
-              willChange: 'transform',
-            }}
-          >
-            {/* Descent trail */}
-            {phase === 'descend' && (
-              <motion.div
-                animate={{ scaleY: [0.2, 1, 0.2], opacity: [0, 0.5, 0] }}
-                transition={{ duration: 0.6, repeat: 2 }}
-                style={{
-                  position: 'absolute', top: '100%', left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 8, height: 50,
-                  background: 'linear-gradient(to bottom, rgba(251,191,36,0.8), transparent)',
-                  borderRadius: 4, pointerEvents: 'none',
-                }}
+            {/* Orbit rings */}
+            <GoldOrbit active={orbitActive && phase !== 'descend'} />
+
+            {/* Logo image */}
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={
+                phase === 'enter'
+                  ? { scale: [0, 1.35, 1], rotate: [-20, 6, 0] }
+                  : phase === 'land'
+                  ? { scale: [1, 1.2, 0.92, 1], rotate: 0 }
+                  : phase === 'slam'
+                  ? { scale: [1, 1.35, 0.88, 1.05, 1], rotate: 0 }
+                  : { scale: 1, rotate: 0 }
+              }
+              transition={
+                phase === 'enter'
+                  ? { type: 'spring', damping: 7, stiffness: 130 }
+                  : { type: 'spring', damping: 6, stiffness: 280 }
+              }
+              style={{
+                width: 86, height: 86, borderRadius: '50%',
+                overflow: 'hidden',
+                border: `3px solid ${P.gold}`,
+                boxShadow: `0 0 0 4px rgba(251,191,36,0.25), 0 0 30px rgba(251,191,36,0.5)`,
+                position: 'relative',
+                animation: phase === 'reveal' ? 'celebLogoFloat 2.2s ease-in-out infinite' : 'none',
+              }}
+            >
+              <img
+                src={LOGO}
+                alt="Joba24"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-            )}
+            </motion.div>
 
-            {C.avatar.emoji}
-
-            {/* Flag — appears on plant_flag */}
-            <AnimatePresence>
-              {(phase === 'plant_flag' || phase === 'reveal') && (
-                <motion.span
-                  key="flag"
-                  initial={{ scale: 0, y: 20, rotate: -45 }}
-                  animate={{ scale: [0, 1.4, 1], y: [20, -8, 0], rotate: [-45, 5, 0] }}
-                  transition={{ type: 'spring', damping: 7, stiffness: 280 }}
-                  style={{
-                    fontSize: C.avatar.flagSize,
-                    position: 'absolute',
-                    top: -14, left: -12,
-                    filter: 'drop-shadow(0 2px 10px rgba(251,191,36,0.9))',
-                    zIndex: 16,
-                  }}
-                >
-                  {C.avatar.flagEmoji}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {/* Flag */}
+            <FlagSlam active={showFlag} />
           </motion.div>
 
-          {/* Map card — the landing target */}
+          {/* Shockwave + particles — positioned at map landing zone */}
           <div style={{
-            position: 'absolute', bottom: 0, left: '50%',
+            position: 'absolute', bottom: 55, left: '50%',
             transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {/* Impact dust cloud on land */}
+            <Shockwave trigger={showShockwave} />
+            <ParticleBurst active={showParticles} count={36} />
+
+            {/* Dust puff on land */}
             <AnimatePresence>
-              {(phase === 'plant_flag' || phase === 'reveal') && (
+              {(phase === 'land' || phase === 'slam') && (
                 <motion.div
                   key="dust"
-                  initial={{ scaleX: 0.2, opacity: 0.8 }}
-                  animate={{ scaleX: [0.2, 2.5, 3], opacity: [0.8, 0.4, 0] }}
+                  initial={{ scaleX: 0.1, opacity: 0.9 }}
+                  animate={{ scaleX: [0.1, 3, 3.5], opacity: [0.9, 0.5, 0] }}
                   exit={{}}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  transition={{ duration: 0.55, ease: 'easeOut' }}
                   style={{
-                    position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)',
-                    width: 180, height: 20,
-                    background: 'radial-gradient(ellipse, rgba(251,191,36,0.4) 0%, transparent 70%)',
-                    borderRadius: '50%', pointerEvents: 'none', zIndex: 12,
+                    position: 'absolute',
+                    width: 160, height: 18,
+                    background: `radial-gradient(ellipse, rgba(251,191,36,0.45) 0%, transparent 70%)`,
+                    borderRadius: '50%', pointerEvents: 'none', top: 0,
                   }}
                 />
               )}
             </AnimatePresence>
-
-            {/* Shockwave + coins origin */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 0 }}>
-              <Shockwave trigger={showShockwave} />
-              <CoinBurst active={showCoins} />
-              <div style={{ position: 'relative' }}>
-                <StarsBurst active={showStars} />
-              </div>
-            </div>
-
-            <MapCard
-              visible={showMap}
-              locationName={taskLocation}
-            />
           </div>
-        </div>
+
+          {/* Map pad — landing target */}
+          <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)' }}>
+            <MapPad visible={showMap} locationName={taskLocation} />
+          </div>
+        </motion.div>
 
         {/* ── TEXT REVEAL ── */}
         <AnimatePresence>
           {phase === 'reveal' && (
             <motion.div
               key="text"
-              initial={{ opacity: 0, y: 28, scale: 0.88 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ type: 'spring', damping: 14, stiffness: 160 }}
-              style={{ textAlign: 'center', padding: '0 28px', marginTop: 24, position: 'relative', zIndex: 20 }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', damping: 14, stiffness: 150 }}
+              style={{
+                textAlign: 'center', padding: '0 28px',
+                marginTop: 12, position: 'relative', zIndex: 20,
+              }}
             >
-              {/* Main headline */}
+              {/* Main title — scanner style */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.7 }}
+                initial={{ opacity: 0, scale: 0.65 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', damping: 9, stiffness: 200 }}
+                transition={{ type: 'spring', damping: 8, stiffness: 200 }}
                 style={{
-                  fontSize: 30, fontWeight: 900,
-                  color: '#ffffff',
-                  letterSpacing: -0.5, lineHeight: 1.2,
-                  marginBottom: 10,
-                  textShadow: '0 2px 20px rgba(251,191,36,0.6)',
+                  fontSize: 28, fontWeight: 900,
+                  color: P.white,
+                  letterSpacing: -0.5, lineHeight: 1.25,
+                  marginBottom: 8,
+                  textShadow: `0 0 28px ${P.gold}88`,
+                  animation: 'celebTada 0.9s ease',
                 }}
               >
-                {C.texts.line1}
+                🚀 המשימה שלך באוויר!
               </motion.div>
 
-              {/* Task pill */}
+              {/* Task pill — same bkg as scanner pills */}
               {(taskTitle || taskPrice) && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
+                  transition={{ delay: 0.18 }}
                   style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    backdropFilter: 'blur(10px)',
+                    background: `rgba(96,165,250,0.10)`,
                     borderRadius: 14, padding: '8px 16px',
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    border: `1px solid rgba(96,165,250,0.25)`,
                     display: 'inline-flex', alignItems: 'center', gap: 8,
                     fontSize: 14, color: 'rgba(255,255,255,0.9)',
                     fontWeight: 700, marginBottom: 10,
@@ -536,12 +665,12 @@ export default function TaskPublishedCelebration({
                   }}
                 >
                   {taskTitle && (
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 190 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 195 }}>
                       "{taskTitle}"
                     </span>
                   )}
                   {taskPrice && (
-                    <span style={{ color: '#4ade80', fontWeight: 900, flexShrink: 0 }}>
+                    <span style={{ color: P.green, fontWeight: 900, flexShrink: 0 }}>
                       ₪{taskPrice}
                     </span>
                   )}
@@ -551,48 +680,54 @@ export default function TaskPublishedCelebration({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginBottom: 4 }}
+                transition={{ delay: 0.32 }}
+                style={{
+                  fontSize: 14, color: 'rgba(255,255,255,0.6)',
+                  fontWeight: 600, marginBottom: 4,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
               >
-                {C.texts.line2}
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: P.green, display: 'inline-block', animation: 'celebBlink 1.2s 0.1s infinite' }} />
+                עובדים באזור כבר רואים אותה
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}
+                style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}
               >
-                {C.texts.line3}
+                🔍 מחפשים את הבנאדם המושלם...
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
 
-      {/* Skip CTA */}
+      {/* ── CTA BUTTON (no auto-nav) ── */}
       <AnimatePresence>
         {phase === 'reveal' && (
           <motion.button
-            key="skip"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            onClick={handleSkip}
+            key="cta"
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.65, type: 'spring', damping: 12, stiffness: 180 }}
+            onClick={() => onNavigate?.()}
             style={{
               position: 'absolute',
               bottom: 'max(32px, env(safe-area-inset-bottom))',
-              background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+              background: `linear-gradient(135deg, ${P.gold}, ${P.goldD})`,
               border: 'none',
-              borderRadius: 99, padding: '14px 32px',
-              color: '#7c2d00', fontSize: 16, fontWeight: 900,
+              borderRadius: 99, padding: '15px 36px',
+              color: '#5a1800', fontSize: 16, fontWeight: 900,
               cursor: 'pointer', zIndex: 30,
-              boxShadow: '0 8px 28px rgba(251,191,36,0.5)',
+              boxShadow: `0 8px 32px rgba(251,191,36,0.55)`,
               WebkitTapHighlightColor: 'transparent',
-              letterSpacing: 0.2,
+              letterSpacing: 0.3,
+              animation: 'celebGlowPulse 2s ease-in-out infinite',
             }}
           >
-            {C.texts.skipLabel} ›
+            📋 לפרטי המשימה ›
           </motion.button>
         )}
       </AnimatePresence>

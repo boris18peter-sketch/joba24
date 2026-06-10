@@ -8,9 +8,8 @@
 export const CELEBRATION_CONFIG = {
 
   // ─── TIMING (in ms) ────────────────────────────────────
-  timing: {
-    autoNavigateDelay: 5200,   // ניווט אוטומטי לטאסק (ms)
-  },
+  // (no auto-navigate — user must tap the CTA button)
+  timing: {},
 
   // ─── PHYSICS — spring animation ────────────────────────
   physics: {
