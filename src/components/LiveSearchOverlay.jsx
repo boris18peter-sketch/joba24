@@ -18,7 +18,7 @@ const CATEGORY_NAME_PLURAL = {
   tutoring: 'מורים פרטיים', it_support: 'תומכי IT', other: 'עובדים'
 };
 
-export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, taskCategory, onDismiss }) {
+export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, taskCategory, taskLocation, onDismiss }) {
   const navigate = useNavigate();
   const [workerCount, setWorkerCount] = useState(0);
   const [pulseWorkers, setPulseWorkers] = useState([]);
@@ -137,6 +137,7 @@ export default function LiveSearchOverlay({ taskId, taskTitle, taskPrice, taskCa
         visible={celebrationVisible}
         taskTitle={taskTitle}
         taskPrice={taskPrice}
+        taskLocation={taskLocation}
         onNavigate={goToTask}
       />
 

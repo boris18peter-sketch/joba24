@@ -375,6 +375,7 @@ export default function CreateTask() {
   const [searchingTaskTitle, setSearchingTaskTitle] = useState('');
   const [searchingTaskPrice, setSearchingTaskPrice] = useState(null);
   const [searchingTaskCategory, setSearchingTaskCategory] = useState('');
+  const [searchingTaskLocation, setSearchingTaskLocation] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const mediaRecorderRef = useRef(null);
@@ -773,6 +774,7 @@ export default function CreateTask() {
       setSearchingTaskTitle(form.title);
       setSearchingTaskPrice(Number(form.price));
       setSearchingTaskCategory(form.category);
+      setSearchingTaskLocation(form.location_name);
     } else {
       navigate('/');
     }
@@ -788,6 +790,7 @@ export default function CreateTask() {
         taskTitle={searchingTaskTitle}
         taskPrice={searchingTaskPrice}
         taskCategory={searchingTaskCategory}
+        taskLocation={searchingTaskLocation}
         onDismiss={() => setSearchingTaskId(null)}
       />
     );

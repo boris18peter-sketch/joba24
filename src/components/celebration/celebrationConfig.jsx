@@ -9,14 +9,7 @@ export const CELEBRATION_CONFIG = {
 
   // ─── TIMING (in ms) ────────────────────────────────────
   timing: {
-    sunburstDelay: 0,          // כניסת קרני האור
-    avatarDelay: 300,          // כניסת האווטאר
-    slamDelay: 1000,           // רגע תקיעת הדגל + Shake + פיצוץ
-    shockwaveDelay: 1050,      // גל ההדף
-    confettiDelay: 1100,       // פיצוץ קונפטי + מטבעות
-    titleDelay: 1400,          // כניסת הטקסט הגדול
-    subtitleDelay: 1700,       // כניסת הטקסט הקטן
-    autoNavigateDelay: 3200,   // ניווט אוטומטי לטאסק (ms)
+    autoNavigateDelay: 5200,   // ניווט אוטומטי לטאסק (ms)
   },
 
   // ─── PHYSICS — spring animation ────────────────────────
