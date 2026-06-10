@@ -163,14 +163,13 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
       </div>
 
       {/* ── Scene ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
 
         {/* Camera shake wrapper */}
         <div style={{
           animation: shakeActive ? 'lsoShake 0.38s ease' : 'none',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
           width: 260, height: 280,
-          margin: '0 auto',
         }}>
 
           {/* Logo — animates down onto map */}

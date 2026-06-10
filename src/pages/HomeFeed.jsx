@@ -420,7 +420,7 @@ export default function HomeFeed() {
       {!isAuthenticated && <LoginBannerCarousel />}
 
       {/* Segmented Control Tabs */}
-      <div dir="rtl" style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 51, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
+      <div dir="rtl" style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
         <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
           <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'available' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
           <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>משימות זמינות</button>
@@ -449,7 +449,7 @@ export default function HomeFeed() {
         {activeTab === 'available' && (
           <>
             {/* Search bar — sticky below tabs */}
-            <div style={{ position: 'sticky', top: 50, zIndex: 50, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 4, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
+            <div style={{ position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 4, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
             <div style={{ position: 'relative' }}>
               <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Search size={12} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0, pointerEvents: 'none' }} />
@@ -528,7 +528,7 @@ export default function HomeFeed() {
           return (
             <div>
               {/* Sub-tabs bar — sticky below tabs bar */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'sticky', top: 50, zIndex: 50, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 8, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
+              <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 8, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
                 {MY_PUB_TABS.map(t => {
                   const count = myTasks.filter(x => t.statuses.includes(x.status)).length;
                   const active = myPubTab === t.key;
