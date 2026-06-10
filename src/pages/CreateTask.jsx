@@ -519,31 +519,56 @@ export default function CreateTask() {
 
   // Category-description mismatch keywords
   const CATEGORY_KEYWORDS = {
-    plumbing: ['אינסטלטור', 'צנרת', 'ברז', 'צינור', 'מים', 'כיור', 'שירותים', 'אסלה', 'דוד', 'נזילה', 'ניקוז', 'ביוב'],
-    electricity: ['חשמל', 'חשמלאי', 'שקע', 'מתג', 'לוח', 'נורה', 'חיווט', 'מאמ', 'מפסק', 'תקע', 'מחשב'],
-    gardening: ['גינה', 'גינון', 'צמחים', 'עשב', 'גז', 'גזם', 'עץ', 'שיח', 'עשבייה', 'השקיה', 'דשא', 'זבל'],
-    cleaning: ['ניקיון', 'לנקות', 'ניקוי', 'שואב', 'מגב', 'חלונות', 'ניקוי עמוק', 'בית', 'משרד', 'דירה'],
-    moving: ['הובלה', 'להוביל', 'ארגזים', 'רהיטים', 'מעבר דירה', 'משאית', 'ואן', 'עזרה בהובלה', 'נשיאה'],
-    painting: ['צביעה', 'צבע', 'לצבוע', 'קיר', 'גג', 'גדר', 'רולר', 'מברשת'],
-    carpentry: ['נגרות', 'נגר', 'עץ', 'ארון', 'מדף', 'דלת', 'ריהוט', 'הרכבה'],
-    ac: ['מזגן', 'מזגנים', 'מיזוג', 'התקנה', 'תיקון מזגן', 'ניקוי מזגן', 'טכנאי'],
-    locksmith: ['מנעול', 'מנעולן', 'פריצה', 'מפתח', 'דלת', 'כספת', 'החלפת מנעול'],
-    shopping: ['קניות', 'לקנות', 'סופר', 'מוצרים', 'רשימת קניות', 'שליח', 'רכישה'],
-    delivery: ['משלוח', 'לשלוח', 'להביא', 'שליח', 'חבילה', 'פריט', 'מסירה', 'אספקה'],
-    babysitting: ['ילדים', 'ילד', 'ילדה', 'בייביסיטר', 'שמירה', 'גן', 'פעוט', 'תינוק', 'טיפול בילדים', 'לשמור'],
-    tutoring: ['שיעורים', 'שיעור', 'מורה', 'לימוד', 'חונך', 'מתמטיקה', 'אנגלית', 'עברית', 'פיזיקה', 'כימיה'],
-    it_support: ['מחשב', 'רשת', 'תמיכה', 'תוכנה', 'חומרה', 'אינטרנט', 'wifi', 'ווייפיי', 'טלפון', 'אפליקציה'],
+    plumbing: ['אינסטלטור', 'צנרת', 'ברז', 'צינור', 'מים', 'כיור', 'שירותים', 'אסלה', 'דוד', 'נזילה', 'ניקוז', 'ביוב', 'אינסטלציה', 'צינורות', 'קולנית'],
+    electricity: ['חשמל', 'חשמלאי', 'שקע', 'מתג', 'לוח חשמל', 'נורה', 'חיווט', 'מפסק', 'תקע', 'חוט חשמל', 'התקנת שקע', 'לוח ראשי', 'מפל מתח'],
+    gardening: ['גינה', 'גינון', 'צמחים', 'עשב', 'גזם', 'גיזום', 'שיח', 'עשבייה', 'השקיה', 'דשא', 'זבל גינה', 'ערוגה', 'עץ', 'עצים', 'גינת'],
+    cleaning: ['ניקיון', 'לנקות', 'ניקוי', 'שואב אבק', 'מגב', 'חלונות', 'ניקוי עמוק', 'ניקוי בית', 'ניקוי משרד', 'ניקוי דירה', 'מגבון', 'אבק', 'רצפה'],
+    moving: ['הובלה', 'להוביל', 'ארגזים', 'רהיטים', 'מעבר דירה', 'משאית', 'ואן', 'עזרה בהובלה', 'נשיאה', 'לפרק', 'להרכיב', 'להעביר ריהוט'],
+    painting: ['צביעה', 'לצבוע', 'צבע קיר', 'קירות', 'רולר', 'מברשת צבע', 'גג', 'גדר', 'סיוד', 'צבעי', 'ניקוז צבע'],
+    carpentry: ['נגרות', 'נגר', 'ארון', 'מדף', 'ריהוט עץ', 'הרכבת ריהוט', 'תיקון ריהוט', 'דלת עץ', 'מטבח', 'ארונות', 'חיבור עץ'],
+    ac: ['מזגן', 'מיזוג', 'התקנת מזגן', 'תיקון מזגן', 'ניקוי מזגן', 'טכנאי מזגנים', 'קולר', 'מאוורר', 'מזגן מפוצל'],
+    locksmith: ['מנעול', 'מנעולן', 'פריצת מנעול', 'מפתח', 'כספת', 'החלפת מנעול', 'נעילה', 'פריצה', 'ידית דלת'],
+    shopping: ['קניות', 'לקנות', 'סופרמרקט', 'מוצרים', 'רשימת קניות', 'שליח קניות', 'רכישה', 'מכולת', 'קנייה'],
+    delivery: ['משלוח', 'לשלוח', 'להביא חבילה', 'שליח', 'חבילה', 'מסירה', 'אספקה', 'הגעה לכתובת', 'הסעת חבילה'],
+    babysitting: ['ילדים', 'ילד', 'ילדה', 'בייביסיטר', 'שמירה על ילד', 'גן ילדים', 'פעוט', 'תינוק', 'טיפול בילדים', 'לשמור על', 'בבייסיטינג', 'ביביסיטר'],
+    tutoring: ['שיעורים פרטיים', 'שיעור פרטי', 'מורה פרטי', 'לימוד', 'חונך', 'מתמטיקה', 'פיזיקה', 'כימיה', 'תגבור', 'הכנה לבגרות', 'עזרה בשיעורים'],
+    it_support: ['מחשב', 'רשת', 'תמיכה טכנית', 'תוכנה', 'חומרה', 'אינטרנט', 'ווייפיי', 'wifi', 'התקנת תוכנה', 'וירוס', 'טלפון תקוע', 'אפליקציה'],
   };
 
-  const checkCategoryDescriptionMatch = (category, description) => {
-    if (!description || !category || category === 'other') return null;
+  // Check if the combined title+description matches the selected category
+  // Returns error string if mismatch, null if ok
+  const checkCategoryDescriptionMatch = (category, description, title = '') => {
+    if (!category || category === 'other') return null;
     const keywords = CATEGORY_KEYWORDS[category];
     if (!keywords) return null;
-    const desc = description.toLowerCase();
-    const hasMatch = keywords.some(kw => desc.includes(kw.toLowerCase()));
-    if (!hasMatch && description.trim().length > 20) {
+
+    const combined = `${title} ${description}`.toLowerCase();
+    // Must have some meaningful content
+    if (combined.trim().length < 15) return null;
+
+    // 1. Check if the combined text has ANY keyword from the chosen category
+    const hasMatch = keywords.some(kw => combined.includes(kw.toLowerCase()));
+
+    // 2. Check if the combined text strongly matches a DIFFERENT category (cross-category pollution)
+    let detectedOtherCategory = null;
+    if (!hasMatch) {
+      for (const [otherCat, otherKws] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (otherCat === category) continue;
+        const otherMatchCount = otherKws.filter(kw => combined.includes(kw.toLowerCase())).length;
+        if (otherMatchCount >= 1) {
+          detectedOtherCategory = otherCat;
+          break;
+        }
+      }
+    }
+
+    if (!hasMatch) {
       const catLabel = CATEGORIES.find(c => c.value === category)?.label || category;
-      return `נראה שהתיאור לא תואם לקטגוריה "${catLabel}". כדי שנמצא לך עובד מתאים, אנא תאר את המשימה בהתאם לקטגוריה שבחרת.`;
+      if (detectedOtherCategory) {
+        const detectedLabel = CATEGORIES.find(c => c.value === detectedOtherCategory)?.label || detectedOtherCategory;
+        return `הכותרת והתיאור נראים כמו "${detectedLabel}", אבל הקטגוריה שנבחרה היא "${catLabel}". שנה את הקטגוריה לקטגוריה המתאימה, או עדכן את הכותרת והתיאור.`;
+      }
+      return `הכותרת והתיאור לא תואמים לקטגוריה "${catLabel}". כדי שנמצא לך עובד מתאים, אנא תאר את המשימה בהתאם לקטגוריה שבחרת.`;
     }
     return null;
   };
@@ -647,8 +672,8 @@ export default function CreateTask() {
       form.description ? moderateText(form.description) : Promise.resolve({ flagged: false }),
     ]);
     setCheckingModeration('');
-    // Check category-description mismatch
-    const mismatch = checkCategoryDescriptionMatch(form.category, form.description);
+    // Check category-description mismatch (title + description vs category)
+    const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
     if (mismatch) {
       setModerationErrors({ categoryMismatch: mismatch });
       setShowErrorBanner(true);
@@ -857,9 +882,24 @@ export default function CreateTask() {
           <SelectionSheet
             value={form.category}
             options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
-            onChange={val => set('category', val)}
+            onChange={val => {
+              set('category', val);
+              // Re-validate mismatch immediately when category changes
+              if (form.title || form.description) {
+                const mismatch = checkCategoryDescriptionMatch(val, form.description, form.title);
+                setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
+              }
+            }}
           />
         </SectionCard>
+
+        {/* Category mismatch warning — shown right below category picker */}
+        {moderationErrors.categoryMismatch && (
+          <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 14, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <AlertTriangle size={15} color="#f97316" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>{moderationErrors.categoryMismatch}</p>
+          </div>
+        )}
 
         {/* Worker count hint — removed per design decision */}
 
@@ -907,7 +947,7 @@ export default function CreateTask() {
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
               checkFieldModeration('description', form.description);
-              const mismatch = checkCategoryDescriptionMatch(form.category, form.description);
+              const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
               setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
             }}
             style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={4}
