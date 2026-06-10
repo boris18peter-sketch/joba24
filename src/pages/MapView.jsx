@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
@@ -202,38 +202,76 @@ export default function MapView() {
     }
   }, [selectedTask?.id]);
 
-  // Auto-fit map to show user location + all tasks on first load
-  const fittedRef = useRef(false);
-  useEffect(() => {
-    if (!mapRef.current || !displayTasks.length || fittedRef.current) return;
-    const map = mapRef.current.getMap();
-    if (!map) return;
-    fittedRef.current = true;
+  // Helper: haversine distance in km
+  const distKm = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
 
-    // Build list of points: all tasks + user location
-    const points = displayTasks.map(t => ({ lat: t.lat, lng: t.lng }));
-    if (userLocation) points.push(userLocation);
+  // Smart fit: focus on closest tasks to user, zoom out only as needed
+  const fitToClosestTasks = useCallback((tasks) => {
+    const map = mapRef.current?.getMap();
+    if (!map || !tasks.length) return;
+
+    // If no user location, fit to all tasks
+    if (!userLocation) {
+      const lngs = tasks.map(t => t.lng), lats = tasks.map(t => t.lat);
+      map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], {
+        padding: { top: 130, bottom: 80, left: 60, right: 60 }, maxZoom: 14, duration: 1200,
+      });
+      return;
+    }
+
+    // Sort tasks by distance from user
+    const sorted = [...tasks].sort((a, b) =>
+      distKm(userLocation.lat, userLocation.lng, a.lat, a.lng) -
+      distKm(userLocation.lat, userLocation.lng, b.lat, b.lng)
+    );
+
+    // Pick nearby tasks: all within 2x the closest task's distance, max 10
+    const closestDist = distKm(userLocation.lat, userLocation.lng, sorted[0].lat, sorted[0].lng);
+    const threshold = Math.max(closestDist * 2.5, 1); // at least 1km radius
+    const nearbyTasks = sorted.filter(t => distKm(userLocation.lat, userLocation.lng, t.lat, t.lng) <= threshold).slice(0, 10);
+
+    // Fit bounds to user + nearby tasks
+    const points = nearbyTasks.map(t => ({ lat: t.lat, lng: t.lng }));
+    points.push(userLocation);
 
     if (points.length === 1) {
       map.flyTo({ center: [points[0].lng, points[0].lat], zoom: 14, pitch: 40, duration: 1000 });
       return;
     }
 
-    const lngs = points.map(p => p.lng);
-    const lats = points.map(p => p.lat);
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-      padding: { top: 130, bottom: 80, left: 60, right: 60 },
-      maxZoom: 13,
+    const lngs = points.map(p => p.lng), lats = points.map(p => p.lat);
+    map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], {
+      padding: { top: 130, bottom: 90, left: 60, right: 60 },
+      maxZoom: 15,
       minZoom: 9,
-      duration: 1400,
+      duration: 1300,
       pitch: 30,
     });
-  }, [displayTasks.length, !!mapRef.current, !!userLocation]);
+  }, [userLocation]);
 
-  // Reset fit flag when filters change so re-fit happens
-  useEffect(() => { fittedRef.current = false; }, [filters]);
+  // Auto-fit on first load and when tasks/userLocation become available
+  const fittedRef = useRef(false);
+  useEffect(() => {
+    if (!mapRef.current || !displayTasks.length || fittedRef.current) return;
+    // Wait until we have userLocation (or a short timeout)
+    fittedRef.current = true;
+    fitToClosestTasks(displayTasks);
+  }, [displayTasks.length, !!mapRef.current, !!userLocation, fitToClosestTasks]);
+
+  // Re-fit when filters change (category, etc.)
+  useEffect(() => {
+    fittedRef.current = false;
+    if (mapRef.current && displayTasks.length) {
+      fittedRef.current = true;
+      fitToClosestTasks(displayTasks);
+    }
+  }, [filters]);
 
   // Fly to task when selected
   useEffect(() => {
