@@ -637,8 +637,7 @@ export default function Layout() {
                   id={tabPath === '/' ? 'main-scroll' : undefined}
                   style={{
                     flex: isActive ? 1 : undefined,
-                    display: isActive ? 'flex' : 'none',
-                    flexDirection: 'column',
+                    display: isActive ? 'block' : 'none',
                     overflowY: tabPath === '/map' ? 'hidden' : 'auto',
                     overflowX: 'hidden',
                     paddingBottom: tabPath === '/map' ? 0 : 'calc(100px + env(safe-area-inset-bottom))',
@@ -647,8 +646,8 @@ export default function Layout() {
                     height: isActive ? '100%' : 0,
                   }}
                 >
-                  <TabComponent />
-                </div>
+                  {tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
+                  </div>
               );
             })}
             {/* Non-root routes rendered via Outlet */}
