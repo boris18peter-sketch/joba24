@@ -124,7 +124,11 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
     return () => T.forEach(clearTimeout);
   }, []);
 
-  const logoY = (phase === 'land' || phase === 'slam' || phase === 'reveal') ? 105 : 0;
+  // logoY: above map when not landed, on map when landed
+  const mapHeight = 115;
+  const logoRadius = 46; // half of 92px logo
+  // When landed: logo sits centered on top edge of map => y offset = (containerHeight - mapHeight - logoRadius)
+  // Container is 260 wide, we use a column layout now — no fixed height needed
 
   return (
     <div style={{
@@ -162,28 +166,25 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
         ))}
       </div>
 
-      {/* ── Scene ── */}
+      {/* ── Scene: logo + map as ONE centered composite ── */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-
-        {/* Camera shake wrapper */}
         <div style={{
           animation: shakeActive ? 'lsoShake 0.38s ease' : 'none',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
           position: 'relative',
-          width: 260, height: 280,
         }}>
 
-          {/* Logo — animates down onto map */}
+          {/* ── LOGO (floats above map, then lands onto it) ── */}
           <motion.div
-            animate={{ y: logoY }}
+            animate={{
+              y: (phase === 'land' || phase === 'slam' || phase === 'reveal') ? 46 : 0,
+            }}
             transition={
               phase === 'descend' ? { type: 'spring', damping: 5.5, stiffness: 52 }
                 : (phase === 'land' || phase === 'slam') ? { type: 'spring', damping: 7, stiffness: 280 }
                 : { duration: 0 }
             }
-            style={{
-              position: 'absolute', top: 28, left: '50%', transform: 'translateX(-50%)',
-              zIndex: 15,
-            }}
+            style={{ position: 'relative', zIndex: 15, display: 'flex', justifyContent: 'center' }}
           >
             {/* Descent trail */}
             {phase === 'descend' && (
@@ -254,7 +255,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
               }
               transition={{ type: 'spring', damping: 7, stiffness: 140 }}
               style={{
-                width: 82, height: 82, borderRadius: '50%', overflow: 'hidden',
+                width: 92, height: 92, borderRadius: '50%', overflow: 'hidden',
                 border: '2.5px solid #fbbf24',
                 boxShadow: '0 0 0 4px rgba(251,191,36,.22), 0 0 28px rgba(251,191,36,.5)',
                 animation: phase === 'reveal' ? 'lsoLogoFloat 2.2s ease-in-out infinite' : 'none',
@@ -284,7 +285,74 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
             </AnimatePresence>
           </motion.div>
 
-          {/* Shockwave */}
+          {/* ── MAP (always below logo) ── */}
+          <AnimatePresence>
+            {showMap && (
+              <motion.div
+                key="map"
+                initial={{ scale: 0.5, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.7, opacity: 0 }}
+                transition={{ type: 'spring', damping: 14, stiffness: 150 }}
+                style={{
+                  width: 220, height: mapHeight, borderRadius: 18,
+                  background: 'linear-gradient(145deg, #071a42, #0d2860)',
+                  border: '2px solid #fbbf24',
+                  boxShadow: '0 0 0 3px rgba(251,191,36,.15), 0 12px 36px rgba(0,0,0,.55)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  zIndex: 10,
+                  marginTop: -8,
+                }}
+              >
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
+                  {[22,44,66,88].map(y => <line key={y} x1="0" y1={y} x2="220" y2={y} stroke="#60a5fa" strokeWidth="1" />)}
+                  {[25,50,75,100,125,150,175,200].map(x => <line key={x} x1={x} y1="0" x2={x} y2={mapHeight} stroke="#60a5fa" strokeWidth="1" />)}
+                </svg>
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.42 }}>
+                  <path d="M0 57 Q55 45 110 57 Q165 69 220 57" stroke="#4ade80" strokeWidth="7" fill="none" strokeLinecap="round" />
+                  <path d="M110 0 Q106 28 110 57 Q114 86 110 115" stroke="#4ade80" strokeWidth="5" fill="none" strokeLinecap="round" />
+                  <path d="M0 85 Q65 76 138 85 Q180 91 220 83" stroke="#34d399" strokeWidth="3" fill="none" strokeLinecap="round" />
+                </svg>
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.2 }}>
+                  <rect x="14" y="8"  width="48" height="28" rx="4" fill="#4ade80" />
+                  <rect x="82" y="12" width="34" height="24" rx="4" fill="#34d399" />
+                  <rect x="140" y="6" width="58" height="34" rx="4" fill="#4ade80" />
+                  <rect x="12" y="68" width="62" height="30" rx="4" fill="#34d399" />
+                  <rect x="140" y="70" width="62" height="28" rx="4" fill="#4ade80" />
+                </svg>
+                {/* Ping dot */}
+                <motion.div
+                  animate={{ scale: [1, 1.8, 1], opacity: [0.5, 0.1, 0.5] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                  style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    transform: 'translate(-50%,-50%)',
+                    width: 30, height: 30, borderRadius: '50%',
+                    background: 'rgba(251,191,36,.28)', border: '1.5px solid rgba(251,191,36,.5)',
+                  }}
+                />
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%',
+                  transform: 'translate(-50%,-50%)',
+                  width: 10, height: 10, borderRadius: '50%',
+                  background: '#fbbf24', boxShadow: '0 0 12px #fbbf24',
+                }} />
+                {taskLocation && (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    textAlign: 'center', fontSize: 10, fontWeight: 800, color: '#fbbf24',
+                    background: 'rgba(5,17,46,.72)', padding: '3px 8px',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    📍 {taskLocation}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Shockwave — centered on logo-map junction */}
           <AnimatePresence>
             {showShockwave && (
               <motion.div
@@ -294,7 +362,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 exit={{}}
                 transition={{ duration: 0.7, ease: 'easeOut' }}
                 style={{
-                  position: 'absolute', bottom: 72, left: '50%', transform: 'translateX(-50%)',
+                  position: 'absolute', top: 92, left: '50%', transform: 'translateX(-50%)',
                   width: 90, height: 90, borderRadius: '50%',
                   border: '2.5px solid rgba(251,191,36,.85)',
                   pointerEvents: 'none', zIndex: 8,
@@ -305,7 +373,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
 
           {/* Particles burst */}
           {showParticles && (
-            <div style={{ position: 'absolute', bottom: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 30 }}>
+            <div style={{ position: 'absolute', top: 92, left: '50%', transform: 'translateX(-50%)', zIndex: 30 }}>
               {Array.from({ length: 30 }).map((_, i) => {
                 const angle = (i / 30) * 360;
                 const dist  = 40 + Math.random() * 80;
@@ -349,7 +417,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
                 exit={{}}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
                 style={{
-                  position: 'absolute', bottom: 74, left: '50%', transform: 'translateX(-50%)',
+                  position: 'absolute', top: 88, left: '50%', transform: 'translateX(-50%)',
                   width: 140, height: 16, borderRadius: '50%',
                   background: 'radial-gradient(ellipse, rgba(251,191,36,.4) 0%, transparent 70%)',
                   pointerEvents: 'none',
@@ -357,121 +425,56 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
               />
             )}
           </AnimatePresence>
-
-          {/* Map pad */}
-          <AnimatePresence>
-            {showMap && (
-              <motion.div
-                key="map"
-                initial={{ scale: 0.5, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.7, opacity: 0 }}
-                transition={{ type: 'spring', damping: 14, stiffness: 150 }}
-                style={{
-                  position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-                  width: 200, height: 105, borderRadius: 18,
-                  background: 'linear-gradient(145deg, #071a42, #0d2860)',
-                  border: '2px solid #fbbf24',
-                  boxShadow: '0 0 0 3px rgba(251,191,36,.15), 0 12px 36px rgba(0,0,0,.55)',
-                  overflow: 'hidden', position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-                }}
-              >
-                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.12 }}>
-                  {[22,44,66,88].map(y => <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="#60a5fa" strokeWidth="1" />)}
-                  {[25,50,75,100,125,150,175].map(x => <line key={x} x1={x} y1="0" x2={x} y2="105" stroke="#60a5fa" strokeWidth="1" />)}
-                </svg>
-                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.42 }}>
-                  <path d="M0 52 Q50 42 100 52 Q150 62 200 52" stroke="#4ade80" strokeWidth="7" fill="none" strokeLinecap="round" />
-                  <path d="M100 0 Q96 26 100 52 Q104 78 100 105" stroke="#4ade80" strokeWidth="5" fill="none" strokeLinecap="round" />
-                  <path d="M0 78 Q60 70 125 78 Q165 84 200 76" stroke="#34d399" strokeWidth="3" fill="none" strokeLinecap="round" />
-                </svg>
-                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.2 }}>
-                  <rect x="14" y="8"  width="48" height="28" rx="4" fill="#4ade80" />
-                  <rect x="82" y="12" width="34" height="24" rx="4" fill="#34d399" />
-                  <rect x="132" y="6" width="52" height="34" rx="4" fill="#4ade80" />
-                  <rect x="12" y="64" width="62" height="30" rx="4" fill="#34d399" />
-                  <rect x="132" y="68" width="58" height="28" rx="4" fill="#4ade80" />
-                </svg>
-                {/* Ping dot */}
-                <motion.div
-                  animate={{ scale: [1, 1.8, 1], opacity: [0.5, 0.1, 0.5] }}
-                  transition={{ duration: 1.4, repeat: Infinity }}
-                  style={{
-                    position: 'absolute', top: '50%', left: '50%',
-                    transform: 'translate(-50%,-50%)',
-                    width: 30, height: 30, borderRadius: '50%',
-                    background: 'rgba(251,191,36,.28)', border: '1.5px solid rgba(251,191,36,.5)',
-                  }}
-                />
-                <div style={{
-                  position: 'absolute', top: '50%', left: '50%',
-                  transform: 'translate(-50%,-50%)',
-                  width: 10, height: 10, borderRadius: '50%',
-                  background: '#fbbf24', boxShadow: '0 0 12px #fbbf24',
-                }} />
-                {taskLocation && (
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    textAlign: 'center', fontSize: 10, fontWeight: 800, color: '#fbbf24',
-                    background: 'rgba(5,17,46,.72)', padding: '3px 8px',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {taskLocation}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
-
-        {/* ── Text block ── */}
-        <AnimatePresence>
-          {phase === 'reveal' && (
-            <motion.div
-              key="text"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: 'spring', damping: 14, stiffness: 150 }}
-              style={{ textAlign: 'center', padding: '0 28px', marginTop: 20, width: '100%' }}
-            >
-              {/* Title */}
-              <div style={{
-                fontSize: 26, fontWeight: 900, color: '#ffffff',
-                letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 10,
-                textShadow: '0 0 24px rgba(251,191,36,.6)',
-              }}>
-                המשימה שלך באוויר
-              </div>
-
-              {/* Task pill */}
-              {(taskTitle || taskPrice) && (
-                <div style={{
-                  background: 'rgba(96,165,250,.1)',
-                  border: '1px solid rgba(96,165,250,.25)',
-                  borderRadius: 12, padding: '7px 16px',
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  fontSize: 14, color: 'rgba(255,255,255,.88)', fontWeight: 700,
-                  marginBottom: 14, maxWidth: 280,
-                }}>
-                  {taskTitle && (
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 188 }}>
-                      "{taskTitle}"
-                    </span>
-                  )}
-                  {taskPrice && (
-                    <span style={{ color: '#4ade80', fontWeight: 900, flexShrink: 0 }}>
-                      ₪{taskPrice}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Rotating status messages */}
-              <RotatingStatusMsgs />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* ── Text block ── */}
+      <AnimatePresence>
+        {phase === 'reveal' && (
+          <motion.div
+            key="text"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', damping: 14, stiffness: 150 }}
+            style={{ textAlign: 'center', padding: '0 28px', width: '100%', marginBottom: 16 }}
+          >
+            {/* Title */}
+            <div style={{
+              fontSize: 28, fontWeight: 900, color: '#ffffff',
+              letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 12,
+              textShadow: '0 0 24px rgba(251,191,36,.6)',
+            }}>
+              המשימה שלך באוויר! 🚀
+            </div>
+
+            {/* Task pill */}
+            {(taskTitle || taskPrice) && (
+              <div style={{
+                background: 'rgba(96,165,250,.1)',
+                border: '1px solid rgba(96,165,250,.25)',
+                borderRadius: 12, padding: '7px 16px',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                fontSize: 14, color: 'rgba(255,255,255,.88)', fontWeight: 700,
+                marginBottom: 14, maxWidth: 280,
+              }}>
+                {taskTitle && (
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 188 }}>
+                    "{taskTitle}"
+                  </span>
+                )}
+                {taskPrice && (
+                  <span style={{ color: '#4ade80', fontWeight: 900, flexShrink: 0 }}>
+                    ₪{taskPrice}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Rotating status messages */}
+            <RotatingStatusMsgs />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── CTA ── */}
       <AnimatePresence>
@@ -493,7 +496,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            המשך
+            לפרטי המשימה ›
           </motion.button>
         )}
       </AnimatePresence>
