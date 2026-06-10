@@ -329,6 +329,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['creditTxns', currentUserId] });
       if (cardRef.current) {
@@ -363,6 +364,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
     queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+    queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
   };
 
   const handleCancelTask = async () => {
