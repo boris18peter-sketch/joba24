@@ -770,6 +770,8 @@ export default function CreateTask() {
     localStorage.removeItem(DRAFT_KEY);
     toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {
+      // Fire Smart Matching in background — don't block the UI
+      base44.functions.invoke('smartMatchWorkers', { taskId: created.id }).catch(() => {});
       setSearchingTaskId(created.id);
       setSearchingTaskTitle(form.title);
       setSearchingTaskPrice(Number(form.price));
