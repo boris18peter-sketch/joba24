@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
-import TaskLiveEngine from '@/components/TaskLiveEngine';
-import SignalModal from '@/components/SignalModal';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import { getCategoryLabel } from '@/lib/categories';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -272,7 +270,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showDetails, setShowDetails] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [showSignalModal, setShowSignalModal] = useState(false);
   // Live applicant count — initialised from TaskApplication entity to avoid stale task.applicants cache
   const [liveApplicantCount, setLiveApplicantCount] = useState(() => {
     // task.applicants may be stale; we'll refetch from DB shortly, but start with best guess
@@ -449,15 +446,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
             )}
             <div style={{ fontSize: 11, color: '#16a34a' }}>ממתין לאישור</div>
           </div>
-        )}
-
-        {/* ── Live Engine (owner, OPEN, no applicants yet) ── */}
-        {isMyPublished && task.status === 'OPEN' && (
-          <TaskLiveEngine
-            task={task}
-            onSignal={() => setShowSignalModal(true)}
-            onEdit={() => navigate(`/edit-task/${task.id}`)}
-          />
         )}
 
         {/* Approved banner */}
@@ -652,7 +640,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                       <span style={{ background: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 900, borderRadius: 8, padding: '1px 7px' }}>{liveApplicantCount}</span>
                     </>
                   ) : (
-                    <span style={{ fontSize: 12, fontWeight: 700 }}>צפה במשימה</span>
+                    <ScanningLabel taskId={task.id} />
                   )}
                 </button>
               ) : task.status === 'TAKEN' ? (
@@ -804,10 +792,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         fromPos={coinFlyDir === 'credit' ? applyBtnPos : undefined}
         onDone={() => setCoinFlyActive(false)}
       />
-
-      {showSignalModal && (
-        <SignalModal task={task} onClose={() => setShowSignalModal(false)} />
-      )}
 
       <style>{`
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }
