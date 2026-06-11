@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap } from 'lucide-react';
+import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import { getCategoryLabel } from '@/lib/categories';
@@ -268,6 +269,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
+  const [showBoostOverlay, setShowBoostOverlay] = useState(false);
+  const [boostLoading, setBoostLoading] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   // Live applicant count — initialised from TaskApplication entity to avoid stale task.applicants cache
@@ -390,6 +393,38 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const isApproved  = appStatus === 'approved';
   const isPending   = appStatus === 'pending';
   const currentPrice = calculateCurrentPrice(task);
+
+  // Boost availability check for card
+  const boostAvailableCard = (() => {
+    if (!isMyPublished || task.status !== 'OPEN') return false;
+    const ageMs = Date.now() - new Date(task.created_date).getTime();
+    if (ageMs < 60 * 60 * 1000) return false;
+    if (task.worker_id) return false;
+    if (task.last_boost_at) {
+      const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
+      if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
+    }
+    return liveApplicantCount === 0;
+  })();
+
+  const handleBoostCard = async (e) => {
+    e.stopPropagation();
+    if (boostLoading) return;
+    const freshMe = await base44.auth.me();
+    const currentCredits = freshMe?.worker_credits ?? 0;
+    if (currentCredits < 5) {
+      toast.error('אין מספיק ג\'ובות — נדרשות 5');
+      return;
+    }
+    setBoostLoading(true);
+    const newBalance = currentCredits - 5;
+    await base44.auth.updateMe({ worker_credits: newBalance });
+    await base44.entities.CreditTransaction.create({ user_id: currentUserId, amount: -5, type: 'Application_Fee', task_id: task.id, task_title: task.title, balance_after: newBalance, note: 'Boost — איתות נוסף' });
+    await base44.entities.Task.update(task.id, { last_boost_at: new Date().toISOString(), boost_count: (task.boost_count || 0) + 1 });
+    queryClient.invalidateQueries({ queryKey: ['me'] });
+    setBoostLoading(false);
+    setShowBoostOverlay(true);
+  };
 
   // Build badge labels (urgency handled separately)
   const badgeLabels = [];
@@ -656,6 +691,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 </button>
               )
             ) : null}
+            {/* Boost button on card — purple, only when eligible */}
+            {boostAvailableCard && (
+              <button
+                onClick={handleBoostCard}
+                disabled={boostLoading}
+                style={{ minWidth: 120, height: 30, borderRadius: 8, background: boostLoading ? '#a78bfa' : 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontSize: 11, fontWeight: 800, cursor: boostLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, boxShadow: '0 2px 10px rgba(124,58,237,0.4)', WebkitTapHighlightColor: 'transparent' }}>
+                {boostLoading ? <Loader2 size={10} className="animate-spin" /> : <><Zap size={10} /> שגר איתות · 5 ג'ובות</>}
+              </button>
+            )}
+
             {isMyPublished && (
               <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: '#94a3b8', whiteSpace: 'nowrap', paddingTop: 2 }}>
                 <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
@@ -766,6 +811,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         <BuyCreditsModal
           creditsNeeded={neededCredits}
           onClose={() => setShowBuyCredits(false)}
+        />
+      )}
+
+      {showBoostOverlay && (
+        <BoostOverlay
+          taskId={task.id}
+          taskTitle={task.title}
+          taskPrice={task.price}
+          taskCategory={task.category}
+          onDismiss={() => setShowBoostOverlay(false)}
         />
       )}
 

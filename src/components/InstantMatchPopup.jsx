@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Zap, X } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
+import { useQuery } from '@tanstack/react-query';
 
 function getDistanceKm(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -15,11 +16,62 @@ function getDistanceKm(lat1, lng1, lat2, lng2) {
 
 const DURATION = 18;
 
-export default function InstantMatchPopup({ userLocation, currentUserId }) {
+// Returns a relevance score for showing a popup to a worker
+function calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory }) {
+  if (!task || !currentUser) return 0;
+  let score = 0;
+
+  // 1. Category match with preferred_categories
+  if (currentUser.preferred_categories?.includes(task.category)) score += 40;
+
+  // 2. Category match with past applications
+  const appliedCategories = myApplications.map(a => a._category).filter(Boolean);
+  if (appliedCategories.includes(task.category)) score += 30;
+
+  // 3. Category match with completed tasks
+  const completedCategories = myCompletedTasks.map(t => t.category).filter(Boolean);
+  if (completedCategories.includes(task.category)) score += 35;
+
+  // 4. Currently browsing same category
+  if (activeCategory && activeCategory === task.category) score += 50;
+
+  // 5. Distance score (< 3km = full score, 3-8km = partial)
+  if (userLocation && task.lat && task.lng) {
+    const dist = getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng);
+    if (dist !== null) {
+      if (dist <= 3) score += 25;
+      else if (dist <= 8) score += 10;
+      else return 0; // too far — never show
+    }
+  }
+
+  return score;
+}
+
+export default function InstantMatchPopup({ userLocation, currentUserId, activeCategory }) {
   const [popup, setPopup] = useState(null);
   const [countdown, setCountdown] = useState(DURATION);
   const timerRef = useRef(null);
   const navigate = useNavigate();
+
+  // Fetch current user profile + past activity for smart matching
+  const { data: currentUser } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => base44.auth.me(),
+    enabled: !!currentUserId,
+    staleTime: 120000,
+  });
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myApplicationsFeed', currentUserId],
+    enabled: !!currentUserId,
+    staleTime: 120000,
+  });
+  const { data: myCompletedTasks = [] } = useQuery({
+    queryKey: ['myCompletedTasks', currentUserId],
+    queryFn: () => base44.entities.Task.filter({ worker_id: currentUserId, status: 'COMPLETED' }, '-created_date', 30),
+    enabled: !!currentUserId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     const unsub = base44.entities.Task.subscribe(event => {
@@ -32,13 +84,22 @@ export default function InstantMatchPopup({ userLocation, currentUserId }) {
         ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
         : null;
 
-      if (dist !== null && dist > 5) return;
+      // Smart filtering: must be relevant
+      const score = calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory });
+
+      // If not logged in — show only nearby (within 5km), no profile check
+      if (!currentUserId) {
+        if (dist !== null && dist > 5) return;
+      } else {
+        // Logged in — require a minimum relevance score
+        if (score < 25) return;
+      }
 
       setPopup({ task, dist });
       setCountdown(DURATION);
     });
     return unsub;
-  }, [userLocation, currentUserId]);
+  }, [userLocation, currentUserId, currentUser, myApplications, myCompletedTasks, activeCategory]);
 
   useEffect(() => {
     if (!popup) return;

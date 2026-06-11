@@ -5,11 +5,13 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
 import RatingModal from '@/components/RatingModal';
+import InvoiceModal from '@/components/InvoiceModal';
+import BoostOverlay from '@/components/BoostOverlay';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
@@ -155,6 +157,9 @@ export default function TaskDetail() {
   const [creditsNeeded, setCreditsNeeded] = useState(null);
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
   const [showQuickChat, setShowQuickChat] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [showBoostOverlay, setShowBoostOverlay] = useState(false);
+  const [boostLoading, setBoostLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [showWorkerMap, setShowWorkerMap] = useState(false);
@@ -519,6 +524,50 @@ export default function TaskDetail() {
     }
   };
 
+  // Boost — deduct 5 credits + update task + show animation
+  const handleBoost = async () => {
+    if (boostLoading) return;
+    const currentCredits = me?.worker_credits ?? 0;
+    if (currentCredits < 5) {
+      toast.error('אין מספיק ג\'ובות — נדרשות 5 ג\'ובות לאיתות נוסף');
+      return;
+    }
+    setBoostLoading(true);
+    const newBalance = currentCredits - 5;
+    await base44.auth.updateMe({ worker_credits: newBalance });
+    await base44.entities.CreditTransaction.create({
+      user_id: me.id,
+      amount: -5,
+      type: 'Application_Fee',
+      task_id: id,
+      task_title: task.title,
+      balance_after: newBalance,
+      note: 'Boost — איתות נוסף',
+    });
+    await base44.entities.Task.update(id, {
+      last_boost_at: new Date().toISOString(),
+      boost_count: (task.boost_count || 0) + 1,
+    });
+    queryClient.invalidateQueries({ queryKey: ['me'] });
+    queryClient.invalidateQueries({ queryKey: ['task', id] });
+    setBoostLoading(false);
+    setShowBoostOverlay(true);
+  };
+
+  // Check if boost is available: owner, OPEN, >1h old, no approved workers, no pending apps
+  const boostAvailable = (() => {
+    if (!isOwner || !task || task.status !== 'OPEN') return false;
+    const ageMs = Date.now() - new Date(task.created_date).getTime();
+    if (ageMs < 60 * 60 * 1000) return false; // less than 1 hour
+    if (task.worker_id) return false;
+    // Check 3h cooldown since last boost
+    if (task.last_boost_at) {
+      const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
+      if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
+    }
+    return applicationCount === 0;
+  })();
+
   // Signal reopen - sends a chat message + creates a notification for task owner
   const handleSignalReopen = async () => {
     if (!me || !task?.client_id || signalSent) return;
@@ -866,6 +915,17 @@ export default function TaskDetail() {
               <ScanningLabelDetail />
             )}
 
+            {/* ⚡ Boost button — purple, exclusive, after 1h with no applicants */}
+            {boostAvailable && (
+              <button
+                onClick={handleBoost}
+                disabled={boostLoading}
+                style={{ width: '100%', height: 44, borderRadius: 12, background: boostLoading ? '#a78bfa' : 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 14, cursor: boostLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 8, boxShadow: '0 4px 18px rgba(124,58,237,0.45)', WebkitTapHighlightColor: 'transparent' }}
+              >
+                {boostLoading ? <Loader2 size={16} className="animate-spin" /> : <>⚡ שגר איתות נוסף <span style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '2px 8px', fontSize: 11 }}>5 ג'ובות</span></>}
+              </button>
+            )}
+
             {/* Owner Analytics — views & clicks (no emojis) */}
             {isOwner && (
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -1120,6 +1180,16 @@ export default function TaskDetail() {
             document.body
           )}
 
+          {/* Invoice button — for worker after completion */}
+          {task.status === 'COMPLETED' && me?.id === task.worker_id && (
+            <button
+              onClick={() => setShowInvoice(true)}
+              style={{ width: '100%', height: 48, borderRadius: 14, background: task.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#faf5ff', border: task.requires_invoice ? 'none' : '1.5px solid #e9d5ff', color: task.requires_invoice ? 'white' : '#7c3aed', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: task.requires_invoice ? '0 4px 14px rgba(124,58,237,0.3)' : 'none' }}>
+              <FileText size={16} />
+              {task.requires_invoice ? '📄 הפק חשבונית מס (נדרש על ידי הלקוח)' : 'הפק חשבונית מס'}
+            </button>
+          )}
+
           {/* Rating CTA for completed tasks */}
           {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview && !hasRated &&
           <button onClick={() => setShowRating(true)}
@@ -1230,6 +1300,21 @@ export default function TaskDetail() {
       )}
 
       {showQuickChat && task && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowQuickChat(false)} />}
+
+      {showInvoice && task && me && createPortal(
+        <InvoiceModal task={task} me={me} onClose={() => setShowInvoice(false)} />,
+        document.body
+      )}
+
+      {showBoostOverlay && task && (
+        <BoostOverlay
+          taskId={task.id}
+          taskTitle={task.title}
+          taskPrice={task.price}
+          taskCategory={task.category}
+          onDismiss={() => setShowBoostOverlay(false)}
+        />
+      )}
 
       {showCancelConfirm && task && createPortal(
         <CancelTaskConfirmModal

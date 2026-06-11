@@ -577,7 +577,7 @@ export default function HomeFeed() {
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} hasForYou={behavioralProfile?.hasStrongPattern} />
 
-      <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} />
+      <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.category || null} />
       <style>{`
         @keyframes slideInFresh {
           from { opacity: 0; transform: translateY(-10px); }
