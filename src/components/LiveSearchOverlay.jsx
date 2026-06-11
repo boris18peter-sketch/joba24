@@ -689,7 +689,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           {statusMsg}
         </div>
 
-        {categoryWorkerCount > 0 && !firstAppReceived && (
+        {!firstAppReceived && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
             background: 'rgba(74,222,128,.1)', border: '1px solid rgba(74,222,128,.28)',
@@ -697,15 +697,8 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'dotBlink2 1.2s .1s infinite' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-              {categoryWorkerCount} {CATEGORY_NAME_PLURAL[taskCategory] || 'עובדים'} יכולים להגיש בקשה
+              {CATEGORY_NAME_PLURAL[taskCategory] || 'עובדים'} מקבלים עדכון
             </span>
-          </div>
-        )}
-
-        {workerCount > 0 && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 36, fontWeight: 900, color: '#60a5fa', letterSpacing: -2 }}>{workerCount}</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', fontWeight: 600 }}>מועמדויות שהתקבלו</div>
           </div>
         )}
       </motion.div>

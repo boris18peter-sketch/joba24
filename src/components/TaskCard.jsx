@@ -213,6 +213,87 @@ const SCANNING_TEXTS = [
   'מרחיב חשיפה',
 ];
 
+// ── Boost Charge Pill ────────────────────────────────────────────────────────
+function BoostChargePill({ onBoost, loading }) {
+  const [charged, setCharged] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setCharged(true), 3200);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (!charged || loading) return;
+    setShowConfirm(true);
+  };
+
+  return (
+    <>
+      <div
+        onClick={handleClick}
+        title={charged ? 'שגר איתות — 5 ג\'ובות' : 'האיתות מתטען...'}
+        style={{
+          height: 30, borderRadius: 8, display: 'flex', alignItems: 'center',
+          overflow: 'hidden', position: 'relative',
+          border: `1.5px solid ${charged ? '#7c3aed' : '#c4b5fd'}`,
+          background: '#f5f3ff',
+          cursor: charged ? 'pointer' : 'default',
+          minWidth: 36, width: 36,
+          transition: 'min-width 0.35s ease, background 0.25s',
+        }}
+      >
+        {/* fill bar */}
+        <div style={{
+          position: 'absolute', inset: 0, right: 'auto',
+          background: charged ? 'linear-gradient(90deg,#7c3aed,#a855f7)' : 'linear-gradient(90deg,#c084fc,#d8b4fe)',
+          width: charged ? '100%' : '0%',
+          transition: charged ? 'none' : 'width 3.2s linear',
+          borderRadius: 6,
+        }} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: 4, padding: '0 8px' }}>
+          {loading
+            ? <Loader2 size={10} color="white" className="animate-spin" />
+            : <Zap size={11} color={charged ? 'white' : '#7c3aed'} fill={charged ? 'white' : 'none'} />
+          }
+        </div>
+      </div>
+
+      {showConfirm && createPortal(
+        <div className="mobile-sheet-overlay" onClick={() => setShowConfirm(false)}>
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 50, marginBottom: 10, animation: 'chickFloat 2.4s ease-in-out infinite', display: 'inline-block' }}>🐥</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>שגר איתות נוסף</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
+                האיתות ישלח לכל העובדים הרלוונטיים באזור שלך — על בסיס קטגוריה, ניסיון והיסטוריית פעילות — כדי להגביר חשיפה ולמשוך בקשות נוספות.
+              </div>
+              <div style={{ background: '#faf5ff', border: '1.5px solid #d8b4fe', borderRadius: 14, padding: '12px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>עלות: 5 ג'ובות</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowConfirm(false); onBoost(e); }}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                <Zap size={16} fill="white" /> שגר עכשיו — 5 ג'ובות
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}
+                style={{ width: '100%', height: 46, borderRadius: 16, background: 'none', border: '1px solid #e8edf5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                ביטול
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      <style>{`@keyframes chickFloat{0%,100%{transform:translateY(0) rotate(-4deg) scale(1);}50%{transform:translateY(-10px) rotate(4deg) scale(1.06);}}`}</style>
+    </>
+  );
+}
+
 // ── Scanning Label (no applicants state) ─────────────────────────────────────
 function ScanningLabel({ taskId }) {
   const [textIdx, setTextIdx] = useState(0);
@@ -404,7 +485,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
       if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
     }
-    return liveApplicantCount === 0;
+    return true;
   })();
 
   const handleBoostCard = async (e) => {
@@ -691,14 +772,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 </button>
               )
             ) : null}
-            {/* Boost button on card — purple, only when eligible */}
+            {/* Charging bolt boost — fills over 3s then becomes clickable */}
             {boostAvailableCard && (
-              <button
-                onClick={handleBoostCard}
-                disabled={boostLoading}
-                style={{ minWidth: 120, height: 30, borderRadius: 8, background: boostLoading ? '#a78bfa' : 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontSize: 11, fontWeight: 800, cursor: boostLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, boxShadow: '0 2px 10px rgba(124,58,237,0.4)', WebkitTapHighlightColor: 'transparent' }}>
-                {boostLoading ? <Loader2 size={10} className="animate-spin" /> : <><Zap size={10} /> שגר איתות · 5 ג'ובות</>}
-              </button>
+              <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} />
             )}
 
             {isMyPublished && (

@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CompletionModal from '@/components/CompletionModal';
@@ -93,6 +93,51 @@ function ScanningLabelDetail() {
 
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
+
+// Charging bolt pill — fills over 3.5s then becomes tappable
+function BoostChargeDetail({ onBoost, loading }) {
+  const [charged, setCharged] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setCharged(true), 3500);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+        {charged ? 'האיתות מוכן לשיגור' : 'האיתות מתטען...'}
+      </div>
+      <div
+        onClick={charged && !loading ? onBoost : undefined}
+        title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : 'מתטען...'}
+        style={{
+          height: 38, borderRadius: 11, display: 'flex', alignItems: 'center',
+          overflow: 'hidden', position: 'relative',
+          border: `1.5px solid ${charged ? '#c084fc' : 'rgba(192,132,252,0.45)'}`,
+          background: 'rgba(255,255,255,0.08)',
+          cursor: charged ? 'pointer' : 'default',
+          minWidth: 48, width: 48,
+          transition: 'border-color 0.3s',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{
+          position: 'absolute', inset: 0, right: 'auto',
+          background: 'linear-gradient(90deg,#7c3aed,#c084fc)',
+          width: charged ? '100%' : '0%',
+          transition: charged ? 'none' : 'width 3.5s linear',
+          borderRadius: 9,
+        }} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          {loading
+            ? <Loader2 size={14} color="white" className="animate-spin" />
+            : <Zap size={15} color={charged ? 'white' : 'rgba(192,132,252,0.8)'} fill={charged ? 'white' : 'none'} />
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
 import ApplySheet from '@/components/ApplySheet';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 
@@ -635,7 +680,7 @@ export default function TaskDetail() {
 
   const isOwner = me?.id === task.client_id;
 
-  // Check if boost is available: owner, OPEN, >1h old, no approved workers, no pending apps
+  // Check if boost is available: owner, OPEN, >1h old, no approved worker, no last_boost_at within 3h
   const boostAvailable = (() => {
     if (!isOwner || task.status !== 'OPEN') return false;
     const ageMs = Date.now() - new Date(task.created_date).getTime();
@@ -645,7 +690,7 @@ export default function TaskDetail() {
       const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
       if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
     }
-    return applicationCount === 0;
+    return true;
   })();
 
   const hasWorker = !!task.worker_id;
@@ -916,16 +961,8 @@ export default function TaskDetail() {
               <ScanningLabelDetail />
             )}
 
-            {/* ⚡ Boost button — purple, exclusive, after 1h with no applicants */}
-            {boostAvailable && (
-              <button
-                onClick={() => setShowBoostConfirm(true)}
-                disabled={boostLoading}
-                style={{ width: '100%', height: 44, borderRadius: 12, background: boostLoading ? '#a78bfa' : 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 14, cursor: boostLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 8, boxShadow: '0 4px 18px rgba(124,58,237,0.45)', WebkitTapHighlightColor: 'transparent' }}
-              >
-                {boostLoading ? <Loader2 size={16} className="animate-spin" /> : <>⚡ שגר איתות נוסף <span style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '2px 8px', fontSize: 11 }}>5 ג'ובות</span></>}
-              </button>
-            )}
+            {/* ⚡ Boost button — charging bolt pill beside content */}
+            {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} />}
 
             {/* Owner Analytics — views & clicks (no emojis) */}
             {isOwner && (
@@ -1168,7 +1205,7 @@ export default function TaskDetail() {
         )}
 
         {/* Actions */}
-        {(canApplyManual || task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) || isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) || isWorker && task.status === 'TAKEN') && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* Apply sheet portal */}
           {canApplyManual && showApplyForm && createPortal(
@@ -1192,10 +1229,9 @@ export default function TaskDetail() {
           )}
 
           {/* Rating CTA for completed tasks */}
-          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && !myReview && !hasRated &&
+          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview === null && !hasRated &&
           <button onClick={() => setShowRating(true)}
           style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
-            
               <Star size={16} className="fill-white" /> דרג את {me?.id === task.client_id ? task.worker_name : task.client_name}
             </button>
           }
