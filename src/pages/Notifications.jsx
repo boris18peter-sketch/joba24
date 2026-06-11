@@ -18,6 +18,7 @@ const TYPE_CONFIG = {
   new_message: { emoji: '💬', color: '#1a6fd4', bg: '#eff6ff', label: 'הודעה חדשה' },
   new_review: { emoji: '⭐', color: '#d97706', bg: '#fffbeb', label: 'ביקורת חדשה' },
   task_cancelled_worker: { emoji: '⚠️', color: '#dc2626', bg: '#fef2f2', label: 'משימה בוטלה' },
+  boost_signal: { emoji: '⚡', color: '#7c3aed', bg: '#f5f3ff', label: 'משימה מתאימה לך' },
 };
 
 export default function Notifications() {

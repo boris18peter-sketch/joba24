@@ -94,7 +94,7 @@ function ScanningLabelDetail() {
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
-// Charging bolt pill — fills over 1 hour, wave + bubbles animation
+// Charging bolt pill — fills over 1 hour, smooth liquid wave animation
 const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000;
 
 function BoostChargeDetail({ onBoost, loading, lastBoostAt }) {
@@ -118,69 +118,60 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt }) {
     return () => clearInterval(iv);
   }, [lastBoostAt, charged]);
 
+  const iconColor = pct > 50 ? 'white' : 'rgba(255,255,255,0.9)';
+
   return (
     <>
       <div
         onClick={charged && !loading ? onBoost : undefined}
         title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : `מתטען... ${pct}%`}
         style={{
-          height: 38, borderRadius: 11, display: 'flex', alignItems: 'center',
+          height: 38, width: 42, borderRadius: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', position: 'relative',
-          border: `1.5px solid ${charged ? '#7c3aed' : 'rgba(192,132,252,0.6)'}`,
-          background: 'rgba(255,255,255,0.06)',
+          border: `1.5px solid ${charged ? 'rgba(192,132,252,0.9)' : 'rgba(192,132,252,0.45)'}`,
+          background: 'rgba(255,255,255,0.07)',
           cursor: charged ? 'pointer' : 'default',
-          minWidth: 110, width: 110,
           flexShrink: 0,
         }}
       >
-        {/* Wave fill */}
+        {/* Liquid fill */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           height: `${pct}%`,
           background: charged
-            ? 'linear-gradient(180deg,rgba(168,85,247,0.9),rgba(124,58,237,0.95))'
-            : 'linear-gradient(180deg,rgba(192,132,252,0.7),rgba(168,85,247,0.8))',
-          transition: 'height 1s linear',
-          borderRadius: charged ? 9 : '0 0 9px 9px',
+            ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
+            : 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))',
+          transition: 'height 1.2s cubic-bezier(0.22,1,0.36,1)',
+          borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
         }}>
-          {!charged && (
-            <div style={{
-              position: 'absolute', top: -6, left: '-100%',
-              width: '300%', height: 12,
-              background: 'rgba(255,255,255,0.3)',
-              borderRadius: '50%',
-              animation: 'boostWaveD 2s linear infinite',
-            }} />
-          )}
-          {!charged && [0,1,2].map(i => (
-            <div key={i} style={{
-              position: 'absolute',
-              width: 4 + i * 2, height: 4 + i * 2,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.55)',
-              left: `${20 + i * 30}%`,
-              bottom: `${10 + i * 20}%`,
-              animation: `boostBubbleD ${1.4 + i * 0.4}s ease-in-out infinite`,
-              animationDelay: `${i * 0.3}s`,
-            }} />
+          {!charged && <>
+            <div style={{ position: 'absolute', top: -5, left: 0, right: 0, height: 10, background: 'rgba(255,255,255,0.22)', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', animation: 'bdWave1 1.6s ease-in-out infinite' }} />
+            <div style={{ position: 'absolute', top: -4, left: 0, right: 0, height: 8, background: 'rgba(255,255,255,0.15)', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', animation: 'bdWave2 2.1s ease-in-out infinite reverse' }} />
+          </>}
+          {!charged && [
+            { size: 3, left: '25%', delay: '0s', dur: '1.8s' },
+            { size: 2, left: '65%', delay: '0.7s', dur: '2.3s' },
+          ].map((b, i) => (
+            <div key={i} style={{ position: 'absolute', bottom: '5%', width: b.size, height: b.size, borderRadius: '50%', background: 'rgba(255,255,255,0.7)', left: b.left, animation: `bdRise ${b.dur} ease-in infinite`, animationDelay: b.delay }} />
           ))}
         </div>
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: 5 }}>
+
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
           {loading
             ? <Loader2 size={13} color="white" className="animate-spin" />
-            : <>
-                <Zap size={13} color="white" fill={charged ? 'white' : 'none'} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'white' }}>
-                  {charged ? 'שגר איתות' : `${pct}%`}
-                </span>
-              </>
+            : <Zap size={14} color={iconColor} fill={charged ? iconColor : 'none'} strokeWidth={charged ? 0 : 2} />
           }
+          {!charged && !loading && (
+            <span style={{ fontSize: 8, fontWeight: 900, color: iconColor, lineHeight: 1 }}>{pct}%</span>
+          )}
         </div>
       </div>
       <style>{`
-        @keyframes boostWaveD { from{left:-100%} to{left:100%} }
-        @keyframes boostBubbleD { 0%,100%{transform:translateY(0) scale(1);opacity:0.5} 50%{transform:translateY(-8px) scale(1.2);opacity:1} }
+        @keyframes bdWave1 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(-8%) scaleY(1.4)}100%{transform:translateX(0%) scaleY(1)} }
+        @keyframes bdWave2 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(8%) scaleY(1.6)}100%{transform:translateX(0%) scaleY(1)} }
+        @keyframes bdRise { 0%{transform:translateY(0) scale(1);opacity:0.8} 80%{opacity:0.6} 100%{transform:translateY(-80px) scale(0.4);opacity:0} }
       `}</style>
     </>
   );

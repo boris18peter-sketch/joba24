@@ -74,28 +74,57 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   });
 
   useEffect(() => {
+    const shown = new Set();
     const unsub = base44.entities.Task.subscribe(event => {
-      if (event.type !== 'create') return;
       const task = event.data;
       if (!task || task.status !== 'OPEN') return;
       if (task.client_id === currentUserId) return;
+
+      const isNewTask = event.type === 'create';
+      const isBoosted = event.type === 'update' && task.last_boost_at &&
+        (Date.now() - new Date(task.last_boost_at).getTime()) < 15000; // boosted within last 15s
+
+      if (!isNewTask && !isBoosted) return;
+
+      // Deduplicate — don't show same task twice quickly
+      const dedupKey = `${task.id}_${isNewTask ? 'new' : task.last_boost_at}`;
+      if (shown.has(dedupKey)) return;
+      shown.add(dedupKey);
 
       const dist = userLocation
         ? getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
         : null;
 
-      // Smart filtering: must be relevant
       const score = calcRelevanceScore({ task, currentUser, userLocation, myApplications, myCompletedTasks, activeCategory });
 
-      // If not logged in — show only nearby (within 5km), no profile check
       if (!currentUserId) {
         if (dist !== null && dist > 5) return;
       } else {
-        // Logged in — require a minimum relevance score
-        if (score < 25) return;
+        if (score < 25 && !isBoosted) return;
+        // Boosted tasks get a lower threshold — show to relevant workers
+        if (isBoosted && score < 10) return;
       }
 
-      setPopup({ task, dist });
+      // For boosted tasks — also persist to localStorage notifications
+      if (isBoosted && currentUserId) {
+        const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
+        const alreadyStored = stored.some(n => n.taskId === task.id && n.type === 'boost_signal' &&
+          Math.abs(Date.now() - new Date(n.timestamp).getTime()) < 60000);
+        if (!alreadyStored) {
+          const notif = {
+            type: 'boost_signal',
+            taskId: task.id,
+            taskTitle: task.title,
+            preview: `${task.location_name ? task.location_name.split(',')[0] + ' · ' : ''}₪${Math.round(task.price || 0)}`,
+            timestamp: new Date().toISOString(),
+            read: false,
+          };
+          localStorage.setItem('joba24_notifications', JSON.stringify([notif, ...stored].slice(0, 50)));
+          window.dispatchEvent(new Event('joba24_notif_update'));
+        }
+      }
+
+      setPopup({ task, dist, isBoosted });
       setCountdown(DURATION);
     });
     return unsub;
@@ -114,7 +143,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
 
   if (!popup) return null;
 
-  const { task, dist } = popup;
+  const { task, dist, isBoosted } = popup;
   const progress = (countdown / DURATION) * 100;
   const isUrgent = countdown <= 6;
 
@@ -165,8 +194,8 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
 
           {/* Middle: info */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: isUrgent ? '#ef4444' : '#f59e0b', marginBottom: 3 }}>
-              משימה חדשה בקרבתך • {countdown}s
+            <div style={{ fontSize: 11, fontWeight: 700, color: isUrgent ? '#ef4444' : isBoosted ? '#7c3aed' : '#f59e0b', marginBottom: 3 }}>
+              {isBoosted ? '⚡ איתות חדש — משימה מתאימה לך' : 'משימה חדשה בקרבתך'} • {countdown}s
             </div>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
               {task.title}
