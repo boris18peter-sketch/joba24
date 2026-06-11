@@ -94,46 +94,41 @@ function ScanningLabelDetail() {
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
-// Charging bolt pill — fills over 3.5s then becomes tappable
+// Charging bolt pill — fills over 3.2s then becomes tappable (same as card pill)
 function BoostChargeDetail({ onBoost, loading }) {
   const [charged, setCharged] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setCharged(true), 3500);
+    const t = setTimeout(() => setCharged(true), 3200);
     return () => clearTimeout(t);
   }, []);
 
   return (
-    <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-        {charged ? 'האיתות מוכן לשיגור' : 'האיתות מתטען...'}
-      </div>
-      <div
-        onClick={charged && !loading ? onBoost : undefined}
-        title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : 'מתטען...'}
-        style={{
-          height: 38, borderRadius: 11, display: 'flex', alignItems: 'center',
-          overflow: 'hidden', position: 'relative',
-          border: `1.5px solid ${charged ? '#c084fc' : 'rgba(192,132,252,0.45)'}`,
-          background: 'rgba(255,255,255,0.08)',
-          cursor: charged ? 'pointer' : 'default',
-          minWidth: 48, width: 48,
-          transition: 'border-color 0.3s',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{
-          position: 'absolute', inset: 0, right: 'auto',
-          background: 'linear-gradient(90deg,#7c3aed,#c084fc)',
-          width: charged ? '100%' : '0%',
-          transition: charged ? 'none' : 'width 3.5s linear',
-          borderRadius: 9,
-        }} />
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          {loading
-            ? <Loader2 size={14} color="white" className="animate-spin" />
-            : <Zap size={15} color={charged ? 'white' : 'rgba(192,132,252,0.8)'} fill={charged ? 'white' : 'none'} />
-          }
-        </div>
+    <div
+      onClick={charged && !loading ? onBoost : undefined}
+      title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : 'מתטען...'}
+      style={{
+        height: 38, borderRadius: 11, display: 'flex', alignItems: 'center',
+        overflow: 'hidden', position: 'relative',
+        border: `1.5px solid ${charged ? '#7c3aed' : '#c4b5fd'}`,
+        background: charged ? 'transparent' : 'rgba(255,255,255,0.08)',
+        cursor: charged ? 'pointer' : 'default',
+        minWidth: 40, width: 40,
+        transition: 'border-color 0.3s',
+        flexShrink: 0,
+      }}
+    >
+      <div style={{
+        position: 'absolute', inset: 0, right: 'auto',
+        background: charged ? 'linear-gradient(90deg,#7c3aed,#a855f7)' : 'linear-gradient(90deg,#c084fc,#d8b4fe)',
+        width: charged ? '100%' : '0%',
+        transition: charged ? 'none' : 'width 3.2s linear',
+        borderRadius: 9,
+      }} />
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        {loading
+          ? <Loader2 size={13} color="white" className="animate-spin" />
+          : <Zap size={14} color={charged ? 'white' : '#7c3aed'} fill={charged ? 'white' : 'none'} />
+        }
       </div>
     </div>
   );
@@ -956,13 +951,21 @@ export default function TaskDetail() {
 
 
 
-            {/* Owner scanning label — when OPEN and no applicants yet */}
+            {/* Owner scanning label — when OPEN and no applicants yet, with boost pill inline */}
             {isOwner && task.status === 'OPEN' && applicationCount === 0 && (
-              <ScanningLabelDetail />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ flex: 1 }}>
+                  <ScanningLabelDetail />
+                </div>
+                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} />}
+              </div>
             )}
-
-            {/* ⚡ Boost button — charging bolt pill beside content */}
-            {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} />}
+            {/* Boost pill when there are applicants (no scanning label shown) */}
+            {isOwner && task.status === 'OPEN' && applicationCount > 0 && boostAvailable && (
+              <div style={{ marginBottom: 4 }}>
+                <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} />
+              </div>
+            )}
 
             {/* Owner Analytics — views & clicks (no emojis) */}
             {isOwner && (

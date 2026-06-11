@@ -265,8 +265,7 @@ function BoostChargePill({ onBoost, loading }) {
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 50, marginBottom: 10, animation: 'chickFloat 2.4s ease-in-out infinite', display: 'inline-block' }}>🐥</div>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>שגר איתות נוסף</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>⚡ שגר איתות נוסף</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
                 האיתות ישלח לכל העובדים הרלוונטיים באזור שלך — על בסיס קטגוריה, ניסיון והיסטוריית פעילות — כדי להגביר חשיפה ולמשוך בקשות נוספות.
               </div>
@@ -744,21 +743,24 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           {/* Right: owner controls or apply button */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
             {isMyPublished ? (
-              // Owner management controls
+              // Owner management controls — boost pill inline with button
               task.status === 'OPEN' ? (
-                <button
-                  onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-                  style={{ minWidth: 120, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
-                >
-                  {liveApplicantCount > 0 ? (
-                    <>
-                      <span>צפה במועמדים</span>
-                      <span style={{ background: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 900, borderRadius: 8, padding: '1px 7px' }}>{liveApplicantCount}</span>
-                    </>
-                  ) : (
-                    <ScanningLabel taskId={task.id} />
-                  )}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} />}
+                  <button
+                    onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                    style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
+                  >
+                    {liveApplicantCount > 0 ? (
+                      <>
+                        <span>צפה במועמדים</span>
+                        <span style={{ background: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 900, borderRadius: 8, padding: '1px 7px' }}>{liveApplicantCount}</span>
+                      </>
+                    ) : (
+                      <ScanningLabel taskId={task.id} />
+                    )}
+                  </button>
+                </div>
               ) : task.status === 'TAKEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
@@ -772,10 +774,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 </button>
               )
             ) : null}
-            {/* Charging bolt boost — fills over 3s then becomes clickable */}
-            {boostAvailableCard && (
-              <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} />
-            )}
 
             {isMyPublished && (
               <div style={{ minWidth: 120, display: 'flex', justifyContent: 'space-around', fontSize: 10, color: '#94a3b8', whiteSpace: 'nowrap', paddingTop: 2 }}>

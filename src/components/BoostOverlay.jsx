@@ -21,11 +21,6 @@ const CATEGORY_NAME_PLURAL = {
 };
 
 const BOOST_CSS = `
-  @keyframes boostLaunch { 0%{transform:translateY(0) scale(1);} 30%{transform:translateY(-40px) scale(1.18) rotate(-8deg);} 60%{transform:translateY(-90px) scale(0.85) rotate(5deg);} 100%{transform:translateY(-200px) scale(0.6) rotate(-3deg);opacity:0;} }
-  @keyframes boostPulse  { 0%,100%{box-shadow:0 0 0 0 rgba(168,85,247,0);} 50%{box-shadow:0 0 28px 8px rgba(168,85,247,0.55);} }
-  @keyframes boostRing   { to{transform:rotate(360deg);} }
-  @keyframes boostOrbit1 { to{transform:rotate(360deg);} }
-  @keyframes boostOrbit2 { to{transform:rotate(-360deg);} }
   @keyframes boostGlow   { 0%,100%{box-shadow:0 6px 28px rgba(168,85,247,0.45);}50%{box-shadow:0 10px 44px rgba(168,85,247,0.82);} }
   @keyframes boostFloat  { 0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-6px) scale(1.04);} }
   @keyframes boostStar   { 0%,100%{opacity:.12;}50%{opacity:.55;} }
@@ -33,8 +28,8 @@ const BOOST_CSS = `
   @keyframes radarPulseB { 0%,100%{transform:scale(1);opacity:.15;}50%{transform:scale(1.06);opacity:.28;} }
   @keyframes workerDot   { 0%{transform:scale(.4);opacity:0;}40%{transform:scale(1.4);opacity:1;}100%{transform:scale(1);opacity:.9;} }
   @keyframes dotBlinkB   { 0%,80%,100%{opacity:0;}40%{opacity:1;} }
-  @keyframes chickRise   { 0%{transform:translateY(0) scale(1) rotate(0deg);opacity:1;} 25%{transform:translateY(-55px) scale(1.22) rotate(-10deg);opacity:1;} 60%{transform:translateY(-140px) scale(1.08) rotate(7deg);opacity:1;} 85%{transform:translateY(-240px) scale(0.85) rotate(-4deg);opacity:0.7;} 100%{transform:translateY(-320px) scale(0.6) rotate(3deg);opacity:0;} }
-  @keyframes chickFloat  { 0%,100%{transform:translateY(0) rotate(-4deg) scale(1);} 50%{transform:translateY(-14px) rotate(4deg) scale(1.06);} }
+  @keyframes boostOrbit1 { to{transform:rotate(360deg);} }
+  @keyframes boostOrbit2 { to{transform:rotate(-360deg);} }
 `;
 
 function injectBoostCSS() {
@@ -48,23 +43,17 @@ function injectBoostCSS() {
 // ── Launch Scene ──────────────────────────────────────────────────────────────
 function LaunchScene({ taskTitle, taskPrice, onContinue }) {
   const [phase, setPhase] = useState('idle');
-  const [launched, setLaunched] = useState(false);
-  const [showReturn, setShowReturn] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
   useEffect(() => {
     injectBoostCSS();
     try { navigator.vibrate?.([80, 30, 120, 20, 60]); } catch (_) {}
-
     const T = [];
     const s = (fn, ms) => { const id = setTimeout(fn, ms); T.push(id); };
-
     setPhase('enter');
-    s(() => { setLaunched(true); setShowParticles(true); }, 700);
-    s(() => setShowParticles(false), 2000);
-    s(() => setShowReturn(true), 1800);
-    s(() => setPhase('reveal'), 2000);
-
+    s(() => setShowParticles(true), 400);
+    s(() => setShowParticles(false), 1800);
+    s(() => setPhase('reveal'), 900);
     return () => T.forEach(clearTimeout);
   }, []);
 
@@ -84,61 +73,38 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
         ))}
       </div>
 
-      {/* Chick launch animation */}
+      {/* Logo + orbits */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {/* Orbit rings — shown before launch */}
-          {!launched && (
-            <div style={{ position: 'absolute', inset: -22, borderRadius: '50%', border: '1.5px dashed rgba(168,85,247,.45)', animation: 'boostOrbit1 3s linear infinite', pointerEvents: 'none' }}>
-              <div style={{ position: 'absolute', top: -5, left: '50%', transform: 'translateX(-50%)', width: 9, height: 9, borderRadius: '50%', background: '#c084fc', boxShadow: '0 0 8px #c084fc' }} />
-            </div>
-          )}
-          {!launched && (
-            <div style={{ position: 'absolute', inset: -34, borderRadius: '50%', border: '1px solid rgba(192,132,252,.28)', animation: 'boostOrbit2 2.4s linear infinite', pointerEvents: 'none' }}>
-              <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: '#a855f7', boxShadow: '0 0 7px #a855f7' }} />
-            </div>
-          )}
-
-          {/* Chick — rises up when launched */}
-          <motion.div
-            animate={launched
-              ? { y: [0, -55, -140, -280], scale: [1, 1.22, 1.08, 0.6], rotate: [0, -10, 7, 3], opacity: [1, 1, 1, 0] }
-              : {}}
-            transition={launched
-              ? { duration: 1.6, ease: [0.2, 0, 0.4, 1], times: [0, 0.25, 0.6, 1] }
-              : {}}
-            style={{ zIndex: 15, fontSize: 80, lineHeight: 1, filter: launched ? 'drop-shadow(0 0 22px rgba(168,85,247,.85))' : 'none', animation: !launched ? 'chickFloat 2.8s ease-in-out infinite' : 'none', userSelect: 'none' }}
-          >
-            🐥
-          </motion.div>
-
+        <motion.div initial={{ scale: 0, rotate: -18 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 8, stiffness: 140 }} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Orbit 1 */}
+          <div style={{ position: 'absolute', inset: -22, borderRadius: '50%', border: '1.5px dashed rgba(168,85,247,.45)', animation: 'boostOrbit1 3s linear infinite', pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', top: -5, left: '50%', transform: 'translateX(-50%)', width: 9, height: 9, borderRadius: '50%', background: '#c084fc', boxShadow: '0 0 8px #c084fc' }} />
+          </div>
+          {/* Orbit 2 */}
+          <div style={{ position: 'absolute', inset: -34, borderRadius: '50%', border: '1px solid rgba(192,132,252,.28)', animation: 'boostOrbit2 2.4s linear infinite', pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', background: '#a855f7', boxShadow: '0 0 7px #a855f7' }} />
+          </div>
+          {/* Logo */}
+          <div style={{ width: 92, height: 92, borderRadius: '50%', overflow: 'hidden', border: '2.5px solid #c084fc', boxShadow: '0 0 0 4px rgba(192,132,252,.22), 0 0 28px rgba(168,85,247,.55)', animation: 'boostFloat 2.2s ease-in-out infinite' }}>
+            <img src={LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
           {/* Particles burst */}
           {showParticles && (
-            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', zIndex: 30 }}>
-              {Array.from({ length: 28 }).map((_, i) => {
-                const angle = (i / 28) * 360;
-                const dist = 35 + Math.random() * 75;
+            <div style={{ position: 'absolute', top: '50%', left: '50%', zIndex: 30 }}>
+              {Array.from({ length: 24 }).map((_, i) => {
+                const angle = (i / 24) * 360;
+                const dist = 40 + Math.random() * 65;
                 const tx = Math.cos((angle * Math.PI) / 180) * dist;
-                const ty = Math.sin((angle * Math.PI) / 180) * dist * 0.65 - 25;
-                const colors = ['#c084fc', '#a855f7', '#e879f9', '#7c3aed', '#f0abfc', '#ddd6fe', '#fbbf24', '#fde68a'];
+                const ty = Math.sin((angle * Math.PI) / 180) * dist * 0.7;
+                const colors = ['#c084fc', '#a855f7', '#e879f9', '#7c3aed', '#f0abfc', '#ddd6fe'];
                 return (
-                  <motion.div key={i} initial={{ x: 0, y: 0, scale: 0.2, opacity: 1 }} animate={{ x: tx, y: [ty * 0.3, ty + dist * 0.55], scale: [1.1, 0.3], opacity: [1, 0] }} transition={{ duration: 1.0 + Math.random() * 0.5, delay: Math.random() * 0.12 }}
-                    style={{ position: 'absolute', width: 7 + Math.random() * 6, height: 7 + Math.random() * 6, borderRadius: '50%', background: colors[i % colors.length], top: 0, left: 0 }} />
+                  <motion.div key={i} initial={{ x: 0, y: 0, scale: 0.2, opacity: 1 }} animate={{ x: tx, y: ty, scale: [1.1, 0.3], opacity: [1, 0] }} transition={{ duration: 1.0 + Math.random() * 0.4, delay: Math.random() * 0.1 }}
+                    style={{ position: 'absolute', width: 6 + Math.random() * 5, height: 6 + Math.random() * 5, borderRadius: '50%', background: colors[i % colors.length], transform: 'translate(-50%,-50%)' }} />
                 );
               })}
             </div>
           )}
-
-          {/* Chick returns with glow after launch */}
-          <AnimatePresence>
-            {showReturn && (
-              <motion.div key="return-chick" initial={{ opacity: 0, scale: 0.5, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ type: 'spring', damping: 9, stiffness: 170 }}
-                style={{ zIndex: 15, fontSize: 90, lineHeight: 1, filter: 'drop-shadow(0 0 28px rgba(168,85,247,.9)) drop-shadow(0 4px 18px rgba(192,132,252,.6))', animation: 'chickFloat 2.6s ease-in-out infinite', userSelect: 'none' }}>
-                🐥
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        </motion.div>
       </div>
 
       {/* Text block */}
@@ -162,7 +128,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
       {/* CTA */}
       <AnimatePresence>
         {phase === 'reveal' && (
-          <motion.button key="cta" initial={{ opacity: 0, y: 18, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.55, type: 'spring', damping: 12, stiffness: 180 }}
+          <motion.button key="cta" initial={{ opacity: 0, y: 18, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.3, type: 'spring', damping: 12, stiffness: 180 }}
             onClick={onContinue}
             style={{ background: 'linear-gradient(135deg,#c084fc,#a855f7)', border: 'none', borderRadius: 14, padding: '15px 0', width: 'calc(100% - 48px)', color: 'white', fontSize: 16, fontWeight: 900, cursor: 'pointer', zIndex: 30, animation: 'boostGlow 2s ease-in-out infinite', WebkitTapHighlightColor: 'transparent' }}>
             צפה בפרטי המשימה ›
