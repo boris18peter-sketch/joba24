@@ -159,6 +159,7 @@ export default function TaskDetail() {
   const [showQuickChat, setShowQuickChat] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
+  const [showBoostConfirm, setShowBoostConfirm] = useState(false);
   const [boostLoading, setBoostLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
@@ -918,7 +919,7 @@ export default function TaskDetail() {
             {/* ⚡ Boost button — purple, exclusive, after 1h with no applicants */}
             {boostAvailable && (
               <button
-                onClick={handleBoost}
+                onClick={() => setShowBoostConfirm(true)}
                 disabled={boostLoading}
                 style={{ width: '100%', height: 44, borderRadius: 12, background: boostLoading ? '#a78bfa' : 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 14, cursor: boostLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 8, boxShadow: '0 4px 18px rgba(124,58,237,0.45)', WebkitTapHighlightColor: 'transparent' }}
               >
@@ -1294,6 +1295,39 @@ export default function TaskDetail() {
               </div>
             </div>
             <div style={{ height: 24 }} />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Boost confirmation popup */}
+      {showBoostConfirm && createPortal(
+        <div className="mobile-sheet-overlay" onClick={() => setShowBoostConfirm(false)}>
+          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 44, marginBottom: 12 }}>⚡</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>שגר איתות נוסף</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
+                האיתות ישלח לכל העובדים הרלוונטיים באזור שלך — על בסיס קטגוריה, ניסיון והיסטוריית פעילות — כדי להגביר חשיפה ולמשוך בקשות חדשות.
+              </div>
+              <div style={{ background: '#faf5ff', border: '1.5px solid #d8b4fe', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>עלות: 5 ג'ובות מיתרתך</span>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>·</span>
+                <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>יתרה: {me?.worker_credits ?? 0} ג'ובות</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
+              <button
+                onClick={() => { setShowBoostConfirm(false); handleBoost(); }}
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.35)' }}>
+                ⚡ שגר עכשיו — 5 ג'ובות
+              </button>
+              <button onClick={() => setShowBoostConfirm(false)}
+                style={{ width: '100%', height: 46, borderRadius: 16, background: 'none', border: '1px solid #e8edf5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                ביטול
+              </button>
+            </div>
           </div>
         </div>,
         document.body

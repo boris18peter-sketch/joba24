@@ -1233,7 +1233,7 @@ export default function CreateTask() {
           )}
         </SectionCard>
 
-        {/* Payment Method */}
+        {/* Payment Method + Requires Invoice */}
         <SectionCard>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
           <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
@@ -1247,20 +1247,15 @@ export default function CreateTask() {
           ))}
         </div>
         {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
-        </SectionCard>
 
-        {/* Requires Invoice checkbox */}
-        <SectionCard>
-          <button type="button" onClick={() => set('requires_invoice', !form.requires_invoice)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', textAlign: 'right', cursor: 'pointer', background: 'none', border: 'none' }}>
-            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requires_invoice ? '#7c3aed' : '#cbd5e1'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {form.requires_invoice && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
-            </div>
-            <div style={{ flex: 1, textAlign: 'right' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: form.requires_invoice ? '#7c3aed' : 'var(--text-1)' }}>📄 דורש חשבונית מס</div>
-              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>מותאם לבעלי עסקים — העובד יוכל להפיק חשבונית לאחר ביצוע המשימה</div>
-            </div>
-          </button>
+        {/* Requires Invoice — inline, compact */}
+        <button type="button" onClick={() => set('requires_invoice', !form.requires_invoice)}
+          style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, textAlign: 'right', cursor: 'pointer', background: form.requires_invoice ? '#faf5ff' : 'var(--surface-3)', border: `1px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
+          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${form.requires_invoice ? '#7c3aed' : '#cbd5e1'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {form.requires_invoice && <span style={{ color: 'white', fontSize: 9 }}>✓</span>}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: form.requires_invoice ? '#7c3aed' : 'var(--text-2)' }}>📄 דורש חשבונית מס מהעובד</span>
+        </button>
         </SectionCard>
 
         {/* Submit */}

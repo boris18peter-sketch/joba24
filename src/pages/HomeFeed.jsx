@@ -27,7 +27,9 @@ export default function HomeFeed() {
   const [recentSearches, setRecentSearches] = useState(() => {
     try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false });
+  // Keep backward compat: single-category filter reads from categories[0]
+  const filterCategory = filters.categories?.[0] || filters.category || '';
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -327,7 +329,7 @@ export default function HomeFeed() {
     if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
     if (filters.time && t.estimated_time !== filters.time) return false;
     if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-    if (filters.category && t.category !== filters.category) return false;
+    if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
     if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
     if (filters.payment_method && t.payment_method !== filters.payment_method) return false;
@@ -362,15 +364,15 @@ export default function HomeFeed() {
 
   // Smart sections (only when not filtering/searching)
   const smartSections = useMemo(() =>
-    (!search && !filters.category && !filters.sortBy) ? buildSmartSections(rankedTasks) : null,
-    [rankedTasks, search, filters.category, filters.sortBy]
+    (!search && !(filters.categories?.length > 0) && !filters.sortBy) ? buildSmartSections(rankedTasks) : null,
+    [rankedTasks, search, filters.categories, filters.sortBy]
   );
 
   // Which tasks to show in the feed based on active section tab + forYou filter
   const displayedTasks = useMemo(() => {
     let base;
     // When any filter/search is active, always use sortedTasks (already filtered)
-    const hasActiveFilter = search || filters.category || filters.sortBy || filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.urgency_tag || filters.payment_method || filters.forYou;
+    const hasActiveFilter = search || (filters.categories?.length > 0) || filters.sortBy || filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.urgency_tag || filters.payment_method || filters.forYou;
     if (!smartSections || activeSection === 'all' || hasActiveFilter) base = sortedTasks;
     else if (activeSection === 'nearby')  base = smartSections.nearby.length  ? smartSections.nearby  : sortedTasks;
     else if (activeSection === 'highpay') base = smartSections.highPaying.length ? smartSections.highPaying : sortedTasks;
@@ -393,7 +395,7 @@ export default function HomeFeed() {
     }
   });
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.category || filters.payment_method || filters.forYou;
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.categories?.length > 0 || filters.payment_method || filters.forYou;
   const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou);
 
   // Red dot: any OPEN published task has pending applicants
@@ -456,8 +458,15 @@ export default function HomeFeed() {
                 <input placeholder="חיפוש משימות..." value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 150)} onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
                   style={{ flex: 1, height: 28, border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)' }} />
                 {search && (<button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><X size={11} color="#94a3b8" /></button>)}
-                <button onClick={() => setShowCategoryDropdown(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 8, border: `1px solid ${filters.category ? '#93c5fd' : 'var(--border-1)'}`, background: filters.category ? '#eff6ff' : 'var(--surface-3)', cursor: 'pointer', flexShrink: 0, fontSize: 11, color: filters.category ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {filters.category ? getCategoryLabel(filters.category) : 'קטגוריה'}
+                {/* Category tags inside search bar */}
+                {(filters.categories || []).map(cat => (
+                  <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px 3px 5px', borderRadius: 8, background: '#eff6ff', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1a6fd4', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    {getCategoryLabel(cat)}
+                    <button onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#60a5fa', marginRight: 1 }}><X size={9} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setShowCategoryDropdown(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 8, border: `1px solid ${(filters.categories?.length > 0) ? '#93c5fd' : 'var(--border-1)'}`, background: (filters.categories?.length > 0) ? '#eff6ff' : 'var(--surface-3)', cursor: 'pointer', flexShrink: 0, fontSize: 11, color: (filters.categories?.length > 0) ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {(filters.categories?.length > 0) ? '+ קטגוריה' : 'קטגוריה'}
                   {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
                 </button>
                 <button onClick={() => setShowFilters(true)} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 6, border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}`, background: hasSheetFilters ? '#1a6fd4' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' }}>
@@ -474,11 +483,12 @@ export default function HomeFeed() {
                 <>
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
                   <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 220, overflowY: 'auto' }}>
-                    <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>הכל</button>
+                    {(filters.categories?.length > 0) && <button onClick={() => { setFilters(f => ({ ...f, categories: [] })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>נקה קטגוריות</button>}
                     {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN').length - tasks.filter(t => t.category === a.value && t.status === 'OPEN').length).map(c => {
                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
                       if (count === 0) return null;
-                      return (<button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}><span>{c.label}</span><span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
+                      const isSelected = (filters.categories || []).includes(c.value);
+                      return (<button key={c.value} onClick={() => { setFilters(f => { const cats = f.categories || []; return { ...f, categories: isSelected ? cats.filter(x => x !== c.value) : [...cats, c.value] }; }); }} style={{ width: '100%', padding: '8px 14px', background: isSelected ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: isSelected ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: isSelected ? 700 : 500 }}><span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{isSelected && <span style={{ fontSize: 9, color: '#1a6fd4' }}>✓</span>}{c.label}</span><span style={{ fontSize: 10, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 20, padding: '1px 6px' }}>{count}</span></button>);
                     })}
                   </div>
                 </>
@@ -491,7 +501,7 @@ export default function HomeFeed() {
             {isAuthenticated && me && <ProfileCompletionBanner me={me} />}
 
             {/* Stories Bar — filtered by active category; 'all' shows all stories */}
-            <StoriesBar filterCategory={filters.category || null} currentUserId={me?.id} />
+            <StoriesBar filterCategory={filters.categories?.[0] || null} currentUserId={me?.id} />
 
             {isLoading ?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
@@ -502,7 +512,7 @@ export default function HomeFeed() {
                 <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
                 <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
                 <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
+                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {displayedTasks.map((task, index) => {
@@ -577,7 +587,7 @@ export default function HomeFeed() {
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} hasForYou={behavioralProfile?.hasStrongPattern} />
 
-      <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.category || null} />
+      <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.categories?.[0] || null} />
       <style>{`
         @keyframes slideInFresh {
           from { opacity: 0; transform: translateY(-10px); }
