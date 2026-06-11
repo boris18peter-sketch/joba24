@@ -94,43 +94,95 @@ function ScanningLabelDetail() {
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
-// Charging bolt pill — fills over 3.2s then becomes tappable (same as card pill)
-function BoostChargeDetail({ onBoost, loading }) {
-  const [charged, setCharged] = useState(false);
+// Charging bolt pill — fills over 1 hour, wave + bubbles animation
+const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000;
+
+function BoostChargeDetail({ onBoost, loading, lastBoostAt }) {
+  const getProgress = () => {
+    if (!lastBoostAt) return 1;
+    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
+    return Math.min(1, elapsed / BOOST_FILL_MS_DETAIL);
+  };
+
+  const [progress, setProgress] = useState(getProgress);
+  const charged = progress >= 1;
+  const pct = Math.round(progress * 100);
+
   useEffect(() => {
-    const t = setTimeout(() => setCharged(true), 3200);
-    return () => clearTimeout(t);
-  }, []);
+    if (charged) return;
+    const iv = setInterval(() => {
+      const p = getProgress();
+      setProgress(p);
+      if (p >= 1) clearInterval(iv);
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [lastBoostAt, charged]);
 
   return (
-    <div
-      onClick={charged && !loading ? onBoost : undefined}
-      title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : 'מתטען...'}
-      style={{
-        height: 38, borderRadius: 11, display: 'flex', alignItems: 'center',
-        overflow: 'hidden', position: 'relative',
-        border: `1.5px solid ${charged ? '#7c3aed' : '#c4b5fd'}`,
-        background: charged ? 'transparent' : 'rgba(255,255,255,0.08)',
-        cursor: charged ? 'pointer' : 'default',
-        minWidth: 40, width: 40,
-        transition: 'border-color 0.3s',
-        flexShrink: 0,
-      }}
-    >
-      <div style={{
-        position: 'absolute', inset: 0, right: 'auto',
-        background: charged ? 'linear-gradient(90deg,#7c3aed,#a855f7)' : 'linear-gradient(90deg,#c084fc,#d8b4fe)',
-        width: charged ? '100%' : '0%',
-        transition: charged ? 'none' : 'width 3.2s linear',
-        borderRadius: 9,
-      }} />
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-        {loading
-          ? <Loader2 size={13} color="white" className="animate-spin" />
-          : <Zap size={14} color={charged ? 'white' : '#7c3aed'} fill={charged ? 'white' : 'none'} />
-        }
+    <>
+      <div
+        onClick={charged && !loading ? onBoost : undefined}
+        title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : `מתטען... ${pct}%`}
+        style={{
+          height: 38, borderRadius: 11, display: 'flex', alignItems: 'center',
+          overflow: 'hidden', position: 'relative',
+          border: `1.5px solid ${charged ? '#7c3aed' : 'rgba(192,132,252,0.6)'}`,
+          background: 'rgba(255,255,255,0.06)',
+          cursor: charged ? 'pointer' : 'default',
+          minWidth: 110, width: 110,
+          flexShrink: 0,
+        }}
+      >
+        {/* Wave fill */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          height: `${pct}%`,
+          background: charged
+            ? 'linear-gradient(180deg,rgba(168,85,247,0.9),rgba(124,58,237,0.95))'
+            : 'linear-gradient(180deg,rgba(192,132,252,0.7),rgba(168,85,247,0.8))',
+          transition: 'height 1s linear',
+          borderRadius: charged ? 9 : '0 0 9px 9px',
+          overflow: 'hidden',
+        }}>
+          {!charged && (
+            <div style={{
+              position: 'absolute', top: -6, left: '-100%',
+              width: '300%', height: 12,
+              background: 'rgba(255,255,255,0.3)',
+              borderRadius: '50%',
+              animation: 'boostWaveD 2s linear infinite',
+            }} />
+          )}
+          {!charged && [0,1,2].map(i => (
+            <div key={i} style={{
+              position: 'absolute',
+              width: 4 + i * 2, height: 4 + i * 2,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.55)',
+              left: `${20 + i * 30}%`,
+              bottom: `${10 + i * 20}%`,
+              animation: `boostBubbleD ${1.4 + i * 0.4}s ease-in-out infinite`,
+              animationDelay: `${i * 0.3}s`,
+            }} />
+          ))}
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: 5 }}>
+          {loading
+            ? <Loader2 size={13} color="white" className="animate-spin" />
+            : <>
+                <Zap size={13} color="white" fill={charged ? 'white' : 'none'} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'white' }}>
+                  {charged ? 'שגר איתות' : `${pct}%`}
+                </span>
+              </>
+          }
+        </div>
       </div>
-    </div>
+      <style>{`
+        @keyframes boostWaveD { from{left:-100%} to{left:100%} }
+        @keyframes boostBubbleD { 0%,100%{transform:translateY(0) scale(1);opacity:0.5} 50%{transform:translateY(-8px) scale(1.2);opacity:1} }
+      `}</style>
+    </>
   );
 }
 import ApplySheet from '@/components/ApplySheet';
@@ -675,18 +727,8 @@ export default function TaskDetail() {
 
   const isOwner = me?.id === task.client_id;
 
-  // Check if boost is available: owner, OPEN, >1h old, no approved worker, no last_boost_at within 3h
-  const boostAvailable = (() => {
-    if (!isOwner || task.status !== 'OPEN') return false;
-    const ageMs = Date.now() - new Date(task.created_date).getTime();
-    if (ageMs < 60 * 60 * 1000) return false;
-    if (task.worker_id) return false;
-    if (task.last_boost_at) {
-      const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
-      if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
-    }
-    return true;
-  })();
+  // Show boost pill for all open owner tasks — the pill itself handles charge state
+  const boostAvailable = isOwner && task.status === 'OPEN' && !task.worker_id;
 
   const hasWorker = !!task.worker_id;
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
@@ -957,13 +999,13 @@ export default function TaskDetail() {
                 <div style={{ flex: 1 }}>
                   <ScanningLabelDetail />
                 </div>
-                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} />}
+                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} />}
               </div>
             )}
             {/* Boost pill when there are applicants (no scanning label shown) */}
             {isOwner && task.status === 'OPEN' && applicationCount > 0 && boostAvailable && (
               <div style={{ marginBottom: 4 }}>
-                <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} />
+                <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} />
               </div>
             )}
 

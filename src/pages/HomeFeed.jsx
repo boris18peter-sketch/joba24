@@ -453,18 +453,23 @@ export default function HomeFeed() {
             {/* Search bar — sticky below tabs */}
             <div style={{ position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 4, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
             <div style={{ position: 'relative' }}>
-              <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                 <Search size={12} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0, pointerEvents: 'none' }} />
-                <input placeholder="חיפוש משימות..." value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 150)} onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
-                  style={{ flex: 1, height: 28, border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)' }} />
-                {search && (<button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><X size={11} color="#94a3b8" /></button>)}
-                {/* Category tags inside search bar */}
-                {(filters.categories || []).map(cat => (
-                  <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px 3px 5px', borderRadius: 8, background: '#eff6ff', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1a6fd4', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                    {getCategoryLabel(cat)}
-                    <button onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#60a5fa', marginRight: 1 }}><X size={9} /></button>
+                {/* Scrollable row: input + category chips */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', minWidth: 0 }}>
+                  <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
+                  <div className="cat-scroll" style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, overflowX: 'auto', scrollbarWidth: 'none' }}>
+                    <input placeholder="חיפוש משימות..." value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 150)} onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+                      style={{ flexShrink: 0, minWidth: (filters.categories?.length > 0) ? 60 : 120, height: 28, border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)' }} />
+                    {(filters.categories || []).map(cat => (
+                      <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px 3px 5px', borderRadius: 8, background: '#eff6ff', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1a6fd4', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        {getCategoryLabel(cat)}
+                        <button onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#60a5fa', marginRight: 1 }}><X size={9} /></button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                {search && (<button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><X size={11} color="#94a3b8" /></button>)}
                 <button onClick={() => setShowCategoryDropdown(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 8, border: `1px solid ${(filters.categories?.length > 0) ? '#93c5fd' : 'var(--border-1)'}`, background: (filters.categories?.length > 0) ? '#eff6ff' : 'var(--surface-3)', cursor: 'pointer', flexShrink: 0, fontSize: 11, color: (filters.categories?.length > 0) ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                   {(filters.categories?.length > 0) ? '+ קטגוריה' : 'קטגוריה'}
                   {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}

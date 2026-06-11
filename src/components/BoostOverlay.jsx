@@ -131,7 +131,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
           <motion.button key="cta" initial={{ opacity: 0, y: 18, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.3, type: 'spring', damping: 12, stiffness: 180 }}
             onClick={onContinue}
             style={{ background: 'linear-gradient(135deg,#c084fc,#a855f7)', border: 'none', borderRadius: 14, padding: '15px 0', width: 'calc(100% - 48px)', color: 'white', fontSize: 16, fontWeight: 900, cursor: 'pointer', zIndex: 30, animation: 'boostGlow 2s ease-in-out infinite', WebkitTapHighlightColor: 'transparent' }}>
-            צפה בפרטי המשימה ›
+            המשך ›
           </motion.button>
         )}
       </AnimatePresence>
@@ -244,7 +244,7 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
       <motion.button initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
         onClick={goToTask}
         style={{ background: 'rgba(192,132,252,.12)', border: '1px solid rgba(192,132,252,.35)', borderRadius: 14, padding: '14px 0', width: 'calc(100% - 48px)', color: '#ffffff', fontSize: 15, fontWeight: 700, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-        עבור לפרטי המשימה
+        המשך
       </motion.button>
     </div>
   );

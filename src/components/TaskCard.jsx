@@ -214,14 +214,28 @@ const SCANNING_TEXTS = [
 ];
 
 // ── Boost Charge Pill ────────────────────────────────────────────────────────
-function BoostChargePill({ onBoost, loading }) {
-  const [charged, setCharged] = useState(false);
+const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
+
+function BoostChargePill({ onBoost, loading, lastBoostAt }) {
+  const getProgress = () => {
+    if (!lastBoostAt) return 1; // never boosted = fully charged
+    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
+    return Math.min(1, elapsed / BOOST_FILL_MS);
+  };
+
+  const [progress, setProgress] = useState(getProgress);
   const [showConfirm, setShowConfirm] = useState(false);
+  const charged = progress >= 1;
 
   useEffect(() => {
-    const t = setTimeout(() => setCharged(true), 3200);
-    return () => clearTimeout(t);
-  }, []);
+    if (charged) return;
+    const iv = setInterval(() => {
+      const p = getProgress();
+      setProgress(p);
+      if (p >= 1) clearInterval(iv);
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [lastBoostAt, charged]);
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -229,33 +243,67 @@ function BoostChargePill({ onBoost, loading }) {
     setShowConfirm(true);
   };
 
+  const pct = Math.round(progress * 100);
+
   return (
     <>
       <div
         onClick={handleClick}
-        title={charged ? 'שגר איתות — 5 ג\'ובות' : 'האיתות מתטען...'}
+        title={charged ? 'שגר איתות — 5 ג\'ובות' : `טוען... ${pct}%`}
         style={{
-          height: 30, borderRadius: 8, display: 'flex', alignItems: 'center',
+          height: 42, borderRadius: 10, display: 'flex', alignItems: 'center',
           overflow: 'hidden', position: 'relative',
           border: `1.5px solid ${charged ? '#7c3aed' : '#c4b5fd'}`,
-          background: '#f5f3ff',
+          background: charged ? 'transparent' : '#f5f3ff',
           cursor: charged ? 'pointer' : 'default',
-          minWidth: 36, width: 36,
-          transition: 'min-width 0.35s ease, background 0.25s',
+          width: 110, minWidth: 110,
+          flexShrink: 0,
         }}
       >
-        {/* fill bar */}
+        {/* Wave fill */}
         <div style={{
-          position: 'absolute', inset: 0, right: 'auto',
-          background: charged ? 'linear-gradient(90deg,#7c3aed,#a855f7)' : 'linear-gradient(90deg,#c084fc,#d8b4fe)',
-          width: charged ? '100%' : '0%',
-          transition: charged ? 'none' : 'width 3.2s linear',
-          borderRadius: 6,
-        }} />
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: 4, padding: '0 8px' }}>
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          height: `${pct}%`,
+          background: charged
+            ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
+            : 'linear-gradient(180deg,#c084fc,#a855f7)',
+          transition: 'height 1s linear',
+          borderRadius: charged ? 8 : '0 0 8px 8px',
+          overflow: 'hidden',
+        }}>
+          {/* Wave effect */}
+          {!charged && (
+            <div style={{
+              position: 'absolute', top: -6, left: '-100%',
+              width: '300%', height: 12,
+              background: 'rgba(255,255,255,0.35)',
+              borderRadius: '50%',
+              animation: 'boostWave 2s linear infinite',
+            }} />
+          )}
+          {/* Bubbles */}
+          {!charged && [0,1,2].map(i => (
+            <div key={i} style={{
+              position: 'absolute',
+              width: 4 + i * 2, height: 4 + i * 2,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.5)',
+              left: `${20 + i * 30}%`,
+              bottom: `${10 + i * 20}%`,
+              animation: `boostBubble ${1.4 + i * 0.4}s ease-in-out infinite`,
+              animationDelay: `${i * 0.3}s`,
+            }} />
+          ))}
+        </div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', gap: 5 }}>
           {loading
-            ? <Loader2 size={10} color="white" className="animate-spin" />
-            : <Zap size={11} color={charged ? 'white' : '#7c3aed'} fill={charged ? 'white' : 'none'} />
+            ? <Loader2 size={13} color="white" className="animate-spin" />
+            : <>
+                <Zap size={13} color={pct > 40 ? 'white' : '#7c3aed'} fill={charged ? 'white' : 'none'} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: pct > 40 ? 'white' : '#7c3aed' }}>
+                  {charged ? 'שגר איתות' : `${pct}%`}
+                </span>
+              </>
           }
         </div>
       </div>
@@ -288,7 +336,10 @@ function BoostChargePill({ onBoost, loading }) {
         </div>,
         document.body
       )}
-      <style>{`@keyframes chickFloat{0%,100%{transform:translateY(0) rotate(-4deg) scale(1);}50%{transform:translateY(-10px) rotate(4deg) scale(1.06);}}`}</style>
+      <style>{`
+        @keyframes boostWave { from{left:-100%} to{left:100%} }
+        @keyframes boostBubble { 0%,100%{transform:translateY(0) scale(1);opacity:0.5} 50%{transform:translateY(-8px) scale(1.2);opacity:1} }
+      `}</style>
     </>
   );
 }
@@ -474,18 +525,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const isPending   = appStatus === 'pending';
   const currentPrice = calculateCurrentPrice(task);
 
-  // Boost availability check for card
-  const boostAvailableCard = (() => {
-    if (!isMyPublished || task.status !== 'OPEN') return false;
-    const ageMs = Date.now() - new Date(task.created_date).getTime();
-    if (ageMs < 60 * 60 * 1000) return false;
-    if (task.worker_id) return false;
-    if (task.last_boost_at) {
-      const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
-      if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
-    }
-    return true;
-  })();
+  // Boost availability check for card — show pill for all open owned tasks (pill handles charge state)
+  const boostAvailableCard = isMyPublished && task.status === 'OPEN' && !task.worker_id;
 
   const handleBoostCard = async (e) => {
     e.stopPropagation();
@@ -746,7 +787,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               // Owner management controls — boost pill inline with button
               task.status === 'OPEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} />}
+                  {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} lastBoostAt={task.last_boost_at} />}
                   <button
                     onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
                     style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
