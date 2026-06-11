@@ -554,20 +554,6 @@ export default function TaskDetail() {
     setShowBoostOverlay(true);
   };
 
-  // Check if boost is available: owner, OPEN, >1h old, no approved workers, no pending apps
-  const boostAvailable = (() => {
-    if (!isOwner || !task || task.status !== 'OPEN') return false;
-    const ageMs = Date.now() - new Date(task.created_date).getTime();
-    if (ageMs < 60 * 60 * 1000) return false; // less than 1 hour
-    if (task.worker_id) return false;
-    // Check 3h cooldown since last boost
-    if (task.last_boost_at) {
-      const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
-      if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
-    }
-    return applicationCount === 0;
-  })();
-
   // Signal reopen - sends a chat message + creates a notification for task owner
   const handleSignalReopen = async () => {
     if (!me || !task?.client_id || signalSent) return;
@@ -647,6 +633,20 @@ export default function TaskDetail() {
   const { mainDescription, extraLines } = parseDescription(task.description);
 
   const isOwner = me?.id === task.client_id;
+
+  // Check if boost is available: owner, OPEN, >1h old, no approved workers, no pending apps
+  const boostAvailable = (() => {
+    if (!isOwner || task.status !== 'OPEN') return false;
+    const ageMs = Date.now() - new Date(task.created_date).getTime();
+    if (ageMs < 60 * 60 * 1000) return false;
+    if (task.worker_id) return false;
+    if (task.last_boost_at) {
+      const msSinceBoost = Date.now() - new Date(task.last_boost_at).getTime();
+      if (msSinceBoost < 3 * 60 * 60 * 1000) return false;
+    }
+    return applicationCount === 0;
+  })();
+
   const hasWorker = !!task.worker_id;
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
   const statusLabel = getStatusLabel(task.status, isOwner);
