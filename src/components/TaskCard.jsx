@@ -430,17 +430,38 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [boostLoading, setBoostLoading] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  // Live applicant count — initialised from TaskApplication entity to avoid stale task.applicants cache
-  const [liveApplicantCount, setLiveApplicantCount] = useState(() => {
-    // task.applicants may be stale; we'll refetch from DB shortly, but start with best guess
-    return task.applicants?.length || 0;
-  });
+  // Live applicant count — fetch directly from TaskApplication entity for accuracy
+  const [liveApplicantCount, setLiveApplicantCount] = useState(task.applicants?.length || 0);
   const prevCountRef = useRef(liveApplicantCount);
 
-  // Sync count when task.applicants prop updates (from real-time cache updates in HomeFeed)
+  // Fetch real count from DB on mount (task.applicants field is often stale)
   useEffect(() => {
-    setLiveApplicantCount(task.applicants?.length || 0);
+    if (!task.id || !isMyPublished) return;
+    base44.entities.TaskApplication.filter({ task_id: task.id, status: 'pending' })
+      .then(apps => setLiveApplicantCount(apps.length))
+      .catch(() => {});
+  }, [task.id, isMyPublished]);
+
+  // Keep in sync when task.applicants prop updates (real-time from HomeFeed)
+  useEffect(() => {
+    const fromProp = task.applicants?.length || 0;
+    setLiveApplicantCount(prev => Math.max(prev, fromProp));
   }, [task.applicants?.length]);
+
+  // Real-time subscription to new applications for this task
+  useEffect(() => {
+    if (!task.id || !isMyPublished) return;
+    const unsub = base44.entities.TaskApplication.subscribe((event) => {
+      if (event.data?.task_id !== task.id) return;
+      if (event.type === 'create' && event.data?.status === 'pending') {
+        setLiveApplicantCount(c => c + 1);
+      }
+      if (event.type === 'update' && (event.data?.status === 'cancelled' || event.data?.status === 'rejected')) {
+        setLiveApplicantCount(c => Math.max(0, c - 1));
+      }
+    });
+    return unsub;
+  }, [task.id, isMyPublished]);
 
   useEffect(() => {
     prevCountRef.current = liveApplicantCount;
