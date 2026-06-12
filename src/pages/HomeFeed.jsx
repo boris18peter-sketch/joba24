@@ -104,11 +104,13 @@ export default function HomeFeed() {
     retry: 1,
   });
 
-  // Force refetch when auth state changes (e.g. user logs in)
+  // Force refetch when auth state changes (e.g. user logs in) — only on actual login transition
+  const prevAuthRef = useRef(null);
   useEffect(() => {
-    if (isAuthenticated === true) {
+    if (prevAuthRef.current === false && isAuthenticated === true) {
       queryClient.invalidateQueries({ queryKey: ['allTasks'] });
     }
+    if (isAuthenticated !== null) prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated]);
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
@@ -226,7 +228,14 @@ export default function HomeFeed() {
 
       // If it's an application for one of MY published tasks — sync the applicants panel + update task applicant count
       if (isForMyTask) {
-        queryClient.invalidateQueries({ queryKey: ['applications', appData.task_id] });
+        // Use setQueryData instead of invalidate to avoid extra API calls
+        queryClient.setQueryData(['applications', appData.task_id], (old = []) => {
+          if (!old) return old;
+          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
+          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
+          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
+          return old;
+        });
         // Also bump the task.applicants array so liveApplicantCount in TaskCard updates immediately
         if (event.type === 'create' && (appData.status === 'pending' || appData.status === 'approved')) {
           queryClient.setQueryData(['myTasks', me.id], (old = []) =>
