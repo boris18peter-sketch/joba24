@@ -28,52 +28,17 @@ const banners = [
   },
 ];
 
-export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCredits }) {
-  const [active, setActive] = useState(0);
+export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCredits, activeTab }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const timerRef = useRef(null);
-  const touchStartRef = useRef(0);
-  const autoPlayedRef = useRef(false);
 
-  const go = (idx) => {
-    setActive(idx);
-    // Stop auto-play once user manually swipes or clicks dots
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    // Auto-play only once on first load
-    if (!autoPlayedRef.current) {
-      autoPlayedRef.current = true;
-      const timer = setInterval(() => setActive(v => (v + 1) % banners.length), 7000);
-      timerRef.current = timer;
-      return () => clearInterval(timer);
-    }
-  }, []);
-
-  const handleTouchStart = (e) => {
-    touchStartRef.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e) => {
-    const diff = touchStartRef.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      const newIdx = diff > 0 ? (active + 1) % banners.length : (active - 1 + banners.length) % banners.length;
-      go(newIdx);
-    }
-  };
-
+  // Banner index: 0 = blue (my_published), 1 = green (available)
+  const active = activeTab === 'available' ? 1 : 0;
   const b = banners[active];
 
   return (
     <>
     <div 
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', cursor: 'grab', userSelect: 'none', height: 220, boxSizing: 'border-box' }}>
+      style={{ background: b.bg, padding: '18px 20px 16px', textAlign: 'center', color: 'white', transition: 'background 0.5s', position: 'relative', overflow: 'hidden', height: 220, boxSizing: 'border-box' }}>
       {/* Decorative circles */}
       <div style={{ position: 'absolute', top: -30, left: -30, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -20, right: -20, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
@@ -131,19 +96,10 @@ export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCr
           משתמשים מאומתים • דירוגים • חוויה בטוחה
         </div>
 
-        {/* Dots */}
+        {/* Tab indicator dots */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 10 }}>
           {banners.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => go(i)}
-              style={{
-                width: i === active ? 18 : 5, height: 5, borderRadius: 99,
-                background: i === active ? 'white' : 'rgba(255,255,255,0.35)',
-                border: 'none', cursor: 'pointer', padding: 0,
-                transition: 'all 0.3s',
-              }}
-            />
+            <div key={i} style={{ width: i === active ? 18 : 5, height: 5, borderRadius: 99, background: i === active ? 'white' : 'rgba(255,255,255,0.35)', transition: 'all 0.3s' }} />
           ))}
         </div>
       </div>

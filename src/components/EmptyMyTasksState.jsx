@@ -76,9 +76,8 @@ export default function EmptyMyTasksState() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-        <div style={{ fontSize: 44 }}>📭</div>
-        <p style={{ fontWeight: 800, color: '#0f1e40', margin: 0, fontSize: 16 }}>אין משימות פעילות</p>
-        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>פרסם משימה חדשה וקבל עובד תוך דקות</p>
+        <p style={{ fontWeight: 900, color: '#0f1e40', margin: 0, fontSize: 22, lineHeight: 1.35 }}>צריך עזרה?<br/>פרסם משימה וקבל בקשות<br/>מעובדים תוך כמה דקות</p>
+        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>כאן אתה מגדיר את התנאים ומי שרוצה יכול לבוא ולבצע את המשימה</p>
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
           <button style={{
             display: 'flex', alignItems: 'center', gap: 8, height: 50, paddingInline: 28,
