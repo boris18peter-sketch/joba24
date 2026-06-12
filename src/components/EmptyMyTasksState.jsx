@@ -26,33 +26,37 @@ const EXAMPLES = [
 
 let tagIdCounter = 0;
 
+// Pre-assigned horizontal lanes so tags don't overlap
+const LANES = [8, 28, 50, 68];
+
 export default function EmptyMyTasksState() {
   const [tags, setTags] = useState([]);
   const exampleIndexRef = useRef(0);
+  const laneIndexRef = useRef(0);
 
   const spawnTag = () => {
     const text = EXAMPLES[exampleIndexRef.current % EXAMPLES.length];
     exampleIndexRef.current += 1;
 
     const id = ++tagIdCounter;
-    const left = 5 + Math.random() * 65; // 5% – 70%
-    const duration = 8 + Math.random() * 4; // 8s – 12s
+    // cycle through lanes so tags spread across the width
+    const left = LANES[laneIndexRef.current % LANES.length];
+    laneIndexRef.current += 1;
+
+    const duration = 9 + Math.random() * 3; // 9s – 12s
 
     setTags(prev => [...prev, { id, text, left, duration }]);
 
-    // Remove after animation completes
     setTimeout(() => {
       setTags(prev => prev.filter(t => t.id !== id));
-    }, duration * 1000 + 200);
+    }, duration * 1000 + 300);
   };
 
   useEffect(() => {
-    // Spawn a few immediately with staggered starts
-    const initial = [0, 700, 1400, 2100];
-    const initialTimers = initial.map(delay => setTimeout(spawnTag, delay));
-
-    // Then spawn every 2.5s
-    const interval = setInterval(spawnTag, 2500);
+    // Spawn 4 tags immediately spread across lanes, then keep going
+    const initialDelays = [0, 600, 1200, 1800];
+    const initialTimers = initialDelays.map(delay => setTimeout(spawnTag, delay));
+    const interval = setInterval(spawnTag, 1800);
 
     return () => {
       initialTimers.forEach(clearTimeout);
@@ -62,48 +66,6 @@ export default function EmptyMyTasksState() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
-      {/* Floating tags area */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        height: 120,
-        overflow: 'hidden',
-        marginBottom: 8,
-      }}>
-        <style>{`
-          @keyframes floatUp {
-            0%   { transform: translateY(0);    opacity: 0; }
-            8%   { opacity: 1; }
-            85%  { opacity: 1; }
-            100% { transform: translateY(-140px); opacity: 0; }
-          }
-        `}</style>
-
-        {tags.map(tag => (
-          <span
-            key={tag.id}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: `${tag.left}%`,
-              background: '#ffffff',
-              border: '1.5px solid #e2e8f0',
-              borderRadius: 20,
-              padding: '7px 13px',
-              fontSize: 12,
-              fontWeight: 700,
-              color: '#1e293b',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              animation: `floatUp ${tag.duration}s ease-in-out forwards`,
-              pointerEvents: 'none',
-            }}
-          >
-            {tag.text}
-          </span>
-        ))}
-      </div>
-
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <div style={{ fontSize: 44 }}>📭</div>
@@ -120,6 +82,47 @@ export default function EmptyMyTasksState() {
             פרסם משימה
           </button>
         </Link>
+      </div>
+
+      {/* Floating tags area — below hero */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: 130,
+        overflow: 'hidden',
+      }}>
+        <style>{`
+          @keyframes floatUp {
+            0%   { transform: translateY(0px);    opacity: 0; }
+            6%   { opacity: 1; }
+            88%  { opacity: 1; }
+            100% { transform: translateY(-150px); opacity: 0; }
+          }
+        `}</style>
+
+        {tags.map(tag => (
+          <span
+            key={tag.id}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: `${tag.left}%`,
+              background: '#ffffff',
+              border: '1.5px solid #dce8f5',
+              borderRadius: 22,
+              padding: '8px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#1e3a5f',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 10px rgba(26,111,212,0.1)',
+              animation: `floatUp ${tag.duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+              pointerEvents: 'none',
+            }}
+          >
+            {tag.text}
+          </span>
+        ))}
       </div>
 
       <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 4, fontWeight: 600 }}>
