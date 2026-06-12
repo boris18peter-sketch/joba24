@@ -46,33 +46,14 @@ export default function EmptyMyTasksState() {
       </div>
 
       {/* Scrolling ticker */}
-      <div style={{ width: '100%', overflow: 'hidden', position: 'relative', marginTop: 4 }}>
+      <div style={{ width: '100vw', overflow: 'hidden', position: 'relative', marginTop: 4 }}>
         {/* Fade edges */}
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 40, background: 'linear-gradient(to left, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 40, background: 'linear-gradient(to right, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 48, background: 'linear-gradient(to left, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 48, background: 'linear-gradient(to right, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
 
-        <div
-          className="tasks-ticker-track"
-          style={{
-            display: 'flex',
-            gap: 10,
-            width: 'max-content',
-            padding: '6px 0 10px',
-          }}
-        >
+        <div className="tasks-ticker-track">
           {items.map((text, i) => (
-            <div key={i} style={{
-              flexShrink: 0,
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border-1)',
-              borderRadius: 14,
-              padding: '9px 14px',
-              fontSize: 13,
-              fontWeight: 700,
-              color: 'var(--text-1)',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            }}>
+            <div key={i} className="tasks-ticker-item">
               {text}
             </div>
           ))}
@@ -87,8 +68,23 @@ export default function EmptyMyTasksState() {
           100% { transform: translateX(-50%); }
         }
         .tasks-ticker-track {
-          animation: tasksTicker 38s linear infinite !important;
-          will-change: transform;
+          display: flex;
+          gap: 10px;
+          width: max-content;
+          padding: 6px 0 10px;
+          animation: tasksTicker 38s linear infinite;
+        }
+        .tasks-ticker-item {
+          flex-shrink: 0;
+          background: var(--surface-2);
+          border: 1px solid var(--border-1);
+          border-radius: 14px;
+          padding: 9px 14px;
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-1);
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
       `}</style>
     </div>
