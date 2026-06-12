@@ -127,7 +127,7 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
         onClick={charged && !loading ? onBoost : undefined}
         title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : `מתטען... ${pct}%`}
         style={{
-          height: 38, width: 42, borderRadius: 10,
+          height: '100%', width: '100%', borderRadius: 14,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', position: 'relative',
           border: `1.5px solid ${charged ? 'rgba(192,132,252,0.9)' : 'rgba(192,132,252,0.45)'}`,
@@ -973,32 +973,57 @@ export default function TaskDetail() {
 
 
 
-            {/* Owner scanning label — when OPEN and no applicants yet, with boost pill inline */}
-            {isOwner && task.status === 'OPEN' && applicationCount === 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <div style={{ flex: 1 }}>
-                  <ScanningLabelDetail />
-                </div>
-                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
-              </div>
-            )}
-            {/* Boost pill + applicants button when there are applicants */}
-            {isOwner && task.status === 'OPEN' && applicationCount > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <button
-                  onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  style={{
-                    flex: 1, height: 38, borderRadius: 12,
+            {/* Owner scanning/applicants bar + boost button — always same height, symmetric */}
+            {isOwner && task.status === 'OPEN' && (
+              <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginBottom: 4, height: 54 }}>
+                {/* Bar — scanning or applicants */}
+                {applicationCount === 0 ? (
+                  <div style={{
+                    flex: 1,
                     background: 'rgba(255,255,255,0.15)',
-                    border: '1.5px solid rgba(255,165,0,0.7)',
-                    color: 'white', fontWeight: 800, fontSize: 13,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    cursor: 'pointer',
-                  }}
-                >
-                  🟠 {applicationCount} בקשות — לחץ לצפייה
-                </button>
-                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
+                    borderRadius: 14,
+                    border: '1.5px solid rgba(255,255,255,0.25)',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '0 14px',
+                  }}>
+                    <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
+                      <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
+                      <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
+                    </span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>מאותת לעובדים</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>המשימה נחשפת לעובדים באזור</div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255,165,0,0.22)',
+                      borderRadius: 14,
+                      border: '1.5px solid rgba(255,165,0,0.75)',
+                      color: 'white', fontWeight: 800, fontSize: 13,
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '0 14px',
+                      cursor: 'pointer',
+                      textAlign: 'right',
+                    }}
+                  >
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>🟠</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{applicationCount} בקשות</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>לחץ לצפייה ואישור</div>
+                    </div>
+                  </button>
+                )}
+                {/* Boost button — symmetric fixed width */}
+                {boostAvailable && (
+                  <div style={{ width: 54, flexShrink: 0 }}>
+                    <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />
+                  </div>
+                )}
               </div>
             )}
 
