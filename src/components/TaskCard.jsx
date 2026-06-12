@@ -835,22 +835,19 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               task.status === 'OPEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
-                  {liveApplicantCount > 0 ? (
-                    <button
-                      onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-                      style={{ height: 42, width: 42, borderRadius: 10, background: '#fbbf24', border: 'none', color: '#1a3a6b', fontSize: 11, fontWeight: 900, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, boxShadow: '0 3px 12px rgba(251,191,36,0.5)', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
-                    >
-                      <span style={{ fontSize: 16, lineHeight: 1, fontWeight: 900 }}>{liveApplicantCount}</span>
-                      <span style={{ fontSize: 8, fontWeight: 700, lineHeight: 1 }}>בקשות</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-                      style={{ height: 42, width: 42, borderRadius: 10, background: '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
-                    >
+                  <button
+                    onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                    style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
+                  >
+                    {liveApplicantCount > 0 ? (
+                      <>
+                        <span>צפה במועמדים</span>
+                        <span style={{ background: 'rgba(255,255,255,0.25)', fontSize: 11, fontWeight: 900, borderRadius: 8, padding: '1px 7px' }}>{liveApplicantCount}</span>
+                      </>
+                    ) : (
                       <ScanningLabel taskId={task.id} />
-                    </button>
-                  )}
+                    )}
+                  </button>
                 </div>
               ) : task.status === 'TAKEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>

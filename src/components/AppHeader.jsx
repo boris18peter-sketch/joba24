@@ -50,48 +50,41 @@ export default function AppHeader({ onOpenMenu }) {
           </span>
         </Link>
 
-        {/* Left: Credits pill (home only) + Applicants bar + Menu button */}
-         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-           {isAuthenticated && me && (() => {
-             // Count pending applications for user's published tasks
-             const publishedTasks = me.id ? [] : [];
-             const pendingAppsCount = 0;
-             return (
-               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                 <span id="onboarding-credits-pill">
-                 <CreditBalancePill
-                   credits={me?.worker_credits ?? 0}
-                   onClick={() => setShowBuyCredits(true)}
-                 />
-                 </span>
-               </div>
-             );
-           })()}
-           {!isAuthenticated && (
-             <button
-               onClick={() => setShowLogin(true)}
-               style={{
-                 background: '#fbbf24', color: '#1a3a6b', border: 'none',
-                 height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
-                 fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
-                 boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
-               }}
-             >
-               התחבר עכשיו
-             </button>
-           )}
-           <button
-             onClick={onOpenMenu}
-             style={{
-               width: 40, height: 40, borderRadius: 12,
-               background: '#1a6fd4', border: 'none', cursor: 'pointer',
-               display: 'flex', alignItems: 'center', justifyContent: 'center',
-               flexShrink: 0,
-             }}
-           >
-             <Menu size={20} color="white" strokeWidth={2.5} />
-           </button>
-         </div>
+        {/* Left: Credits pill (home only) + Menu button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {isAuthenticated && (
+            <span id="onboarding-credits-pill">
+            <CreditBalancePill
+              credits={me?.worker_credits ?? 0}
+              onClick={() => setShowBuyCredits(true)}
+            />
+            </span>
+          )}
+          {!isAuthenticated && (
+            <button
+              onClick={() => setShowLogin(true)}
+              style={{
+                background: '#fbbf24', color: '#1a3a6b', border: 'none',
+                height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
+                fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
+                boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
+              }}
+            >
+              התחבר עכשיו
+            </button>
+          )}
+          <button
+            onClick={onOpenMenu}
+            style={{
+              width: 40, height: 40, borderRadius: 12,
+              background: '#1a6fd4', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Menu size={20} color="white" strokeWidth={2.5} />
+          </button>
+        </div>
       </div>
 
       {showBuyCredits && (

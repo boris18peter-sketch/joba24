@@ -16,7 +16,6 @@ import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link } from 'react-router-dom';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
-import ApplicantsBar from '@/components/ApplicantsBar';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
@@ -577,23 +576,13 @@ export default function HomeFeed() {
         )}
 
         {/* ── My Published Tasks Tab ───────────────────────────── */}
-         {activeTab === 'my_published' && (() => {
-           const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
-           const filteredPub = myTasks.filter(t => pubTab?.statuses.includes(t.status));
-           // Count pending applications across all published tasks
-           const totalPendingApps = myTasks.reduce((sum, task) => {
-             const pending = (task.applicants || []).length;
-             return sum + pending;
-           }, 0);
-           return (
-             <div>
-               {/* Applicants bar — show when there are pending applications on active tab */}
-               {myPubTab === 'active' && totalPendingApps > 0 && (
-                 <ApplicantsBar pendingCount={totalPendingApps} />
-               )}
-
-               {/* Sub-tabs bar — sticky below tabs bar */}
-               <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 8, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
+        {activeTab === 'my_published' && (() => {
+          const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
+          const filteredPub = myTasks.filter(t => pubTab?.statuses.includes(t.status));
+          return (
+            <div>
+              {/* Sub-tabs bar — sticky below tabs bar */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 8, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
                 {MY_PUB_TABS.map(t => {
                   const count = myTasks.filter(x => t.statuses.includes(x.status)).length;
                   const active = myPubTab === t.key;
