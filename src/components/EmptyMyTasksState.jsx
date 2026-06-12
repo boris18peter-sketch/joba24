@@ -14,62 +14,20 @@ const EXAMPLES = [
   '📺 תליית טלוויזיה',
   '🚚 הובלת ספה קטנה',
   '💻 עזרה בהתקנת מחשב',
-  '📱 העברת מידע לטלפון חדש',
-  '🎂 איסוף עוגה מהקונדיטוריה',
-  '🛠️ תיקון דלת שלא נסגרת',
-  '🌿 גיזום גינה קטנה',
-  '📸 צלם לשעה אחת',
-  '🎁 איסוף חבילה דחוף',
+  '📱 העברת מידע לטלפון',
+  '🎂 איסוף עוגה דחוף',
+  '🛠️ תיקון דלת',
+  '🌿 גיזום גינה',
+  '📸 צלם לשעה',
+  '🎁 איסוף חבילה',
 ];
 
-// Duplicate twice for seamless loop
-const ROW1 = [...EXAMPLES, ...EXAMPLES];
-const ROW2 = [...EXAMPLES.slice(9), ...EXAMPLES.slice(0, 9), ...EXAMPLES.slice(9), ...EXAMPLES.slice(0, 9)];
-
-function Tag({ text }) {
-  return (
-    <span style={{
-      display: 'inline-block',
-      flexShrink: 0,
-      background: '#fff',
-      border: '1.5px solid #e8edf5',
-      borderRadius: 20,
-      padding: '7px 14px',
-      fontSize: 13,
-      fontWeight: 700,
-      color: '#0f1e40',
-      whiteSpace: 'nowrap',
-      marginLeft: 8,
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    }}>
-      {text}
-    </span>
-  );
-}
-
 export default function EmptyMyTasksState() {
+  // Render items 3x for seamless loop
+  const items = [...EXAMPLES, ...EXAMPLES, ...EXAMPLES];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
-      <style>{`
-        @keyframes ticker-ltr {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes ticker-rtl {
-          0%   { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-        .ticker-track-ltr {
-          display: flex;
-          width: max-content;
-          animation: ticker-ltr 22s linear infinite;
-        }
-        .ticker-track-rtl {
-          display: flex;
-          width: max-content;
-          animation: ticker-rtl 26s linear infinite;
-        }
-      `}</style>
 
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
@@ -89,27 +47,62 @@ export default function EmptyMyTasksState() {
         </Link>
       </div>
 
-      {/* Row 1 — scrolls left */}
-      <div style={{ width: '100%', overflow: 'hidden', position: 'relative', paddingBlock: 4 }}>
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 40, background: 'linear-gradient(to left, var(--surface-1,#f4f7fb), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 40, background: 'linear-gradient(to right, var(--surface-1,#f4f7fb), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div className="ticker-track-ltr">
-          {ROW1.map((text, i) => <Tag key={i} text={text} />)}
+      {/* Marquee ticker */}
+      <style>{`
+        .joba-marquee-wrap {
+          width: 100%;
+          overflow: hidden;
+          position: relative;
+          padding: 4px 0 8px;
+        }
+        .joba-marquee-wrap::before,
+        .joba-marquee-wrap::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0;
+          width: 40px;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .joba-marquee-wrap::before { left: 0; background: linear-gradient(to right, #f4f7fb, transparent); }
+        .joba-marquee-wrap::after  { right: 0; background: linear-gradient(to left, #f4f7fb, transparent); }
+
+        .joba-marquee-track {
+          display: flex;
+          flex-direction: row;
+          width: max-content;
+          animation: joba-scroll 28s linear infinite;
+        }
+
+        @keyframes joba-scroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
+        }
+
+        .joba-tag {
+          flex-shrink: 0;
+          background: #ffffff;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 20px;
+          padding: 8px 14px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #1e293b;
+          white-space: nowrap;
+          margin-left: 10px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+        }
+      `}</style>
+
+      <div className="joba-marquee-wrap">
+        <div className="joba-marquee-track">
+          {items.map((text, i) => (
+            <span key={i} className="joba-tag">{text}</span>
+          ))}
         </div>
       </div>
 
-      {/* Row 2 — scrolls right */}
-      <div style={{ width: '100%', overflow: 'hidden', position: 'relative', paddingBlock: 4 }}>
-        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 40, background: 'linear-gradient(to left, var(--surface-1,#f4f7fb), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 40, background: 'linear-gradient(to right, var(--surface-1,#f4f7fb), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-        <div className="ticker-rtl">
-          <div className="ticker-track-rtl">
-            {ROW2.map((text, i) => <Tag key={i} text={text} />)}
-          </div>
-        </div>
-      </div>
-
-      <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 10, fontWeight: 600 }}>
+      <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 8, fontWeight: 600 }}>
         אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪
       </p>
     </div>
