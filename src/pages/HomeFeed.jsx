@@ -27,7 +27,7 @@ export default function HomeFeed() {
   const [recentSearches, setRecentSearches] = useState(() => {
     try {return JSON.parse(localStorage.getItem('joba_searches') || '[]');} catch {return [];}
   });
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false });
   // Keep backward compat: single-category filter reads from categories[0]
   const filterCategory = filters.categories?.[0] || filters.category || '';
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'nearby' | 'highpay' | 'urgent' | 'new'
@@ -374,6 +374,7 @@ export default function HomeFeed() {
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
     if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
     if (filters.payment_method && t.payment_method !== filters.payment_method) return false;
+    if (filters.requires_invoice && !t.requires_invoice) return false;
     return true;
   });
 
@@ -436,8 +437,8 @@ export default function HomeFeed() {
     }
   });
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.categories?.length > 0 || filters.payment_method || filters.forYou;
-  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou);
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.categories?.length > 0 || filters.payment_method || filters.forYou || filters.requires_invoice;
+  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou || filters.requires_invoice);
 
   // Red dot: any OPEN published task has pending applicants
   const hasNewApplicants = useMemo(() =>
@@ -556,7 +557,7 @@ export default function HomeFeed() {
                 <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
                 <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
                 <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
+                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {displayedTasks.map((task, index) => {

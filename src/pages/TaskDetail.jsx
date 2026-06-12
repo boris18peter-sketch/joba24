@@ -1127,7 +1127,10 @@ export default function TaskDetail() {
 
         {/* Task location map — shown for non-TAKEN tasks with location */}
         {task.status !== 'TAKEN' && task.lat && task.lng &&
-        <TaskLocationMap task={task} />
+        <TaskLocationMap
+          task={task}
+          onGenerateInvoice={task.status === 'COMPLETED' && me?.id === task.worker_id ? () => setShowInvoice(true) : undefined}
+        />
         }
 
         {/* Live worker map */}
@@ -1294,8 +1297,8 @@ export default function TaskDetail() {
             document.body
           )}
 
-          {/* Invoice button — for worker after completion */}
-          {task.status === 'COMPLETED' && me?.id === task.worker_id && (
+          {/* Invoice button — for worker after completion (only when no location map shown) */}
+          {task.status === 'COMPLETED' && me?.id === task.worker_id && !(task.lat && task.lng) && (
             <button
               onClick={() => setShowInvoice(true)}
               style={{ width: '100%', height: 48, borderRadius: 14, background: task.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#faf5ff', border: task.requires_invoice ? 'none' : '1.5px solid #e9d5ff', color: task.requires_invoice ? 'white' : '#7c3aed', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: task.requires_invoice ? '0 4px 14px rgba(124,58,237,0.3)' : 'none' }}>

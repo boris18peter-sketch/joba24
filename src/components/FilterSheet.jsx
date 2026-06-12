@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Sparkles, Clock, DollarSign, Zap, ArrowUpDown, CreditCard } from 'lucide-react';
+import { X, MapPin, Sparkles, Clock, DollarSign, Zap, ArrowUpDown, CreditCard, FileText } from 'lucide-react';
 
 const URGENCY_FILTER_TAGS = [
   { value: 'immediate', label: 'דחוף עכשיו' },
@@ -80,7 +80,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
   const [local, setLocal] = useState({
     minPrice: '', maxPrice: '', time: '', city: '',
     approvalMode: '', sortBy: '', urgency_tag: '',
-    payment_method: '', forYou: false,
+    payment_method: '', forYou: false, requires_invoice: false,
     ...filters,
   });
 
@@ -88,7 +88,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
   const handleApply = () => { onApply(local); onClose(); };
   const handleReset = () => {
-    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', category: '', urgency_tag: '', payment_method: '', forYou: false };
+    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', category: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false };
     setLocal(reset); onApply(reset); onClose();
   };
 
@@ -205,6 +205,36 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
                   onClick={() => setLocal(p => ({ ...p, urgency_tag: p.urgency_tag === tag.value ? '' : tag.value }))}
                 />
               ))}
+            </div>
+          </div>
+
+          {/* Requires invoice toggle */}
+          <div
+            style={{
+              background: local.requires_invoice ? '#faf5ff' : '#fafafa',
+              border: `1.5px solid ${local.requires_invoice ? '#a855f7' : '#e2e8f0'}`,
+              borderRadius: 14, padding: '13px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer',
+            }}
+            onClick={() => setLocal(p => ({ ...p, requires_invoice: !p.requires_invoice }))}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: local.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FileText size={16} color={local.requires_invoice ? 'white' : '#94a3b8'} strokeWidth={1.8} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: local.requires_invoice ? '#6d28d9' : '#334155' }}>דורש חשבונית מס</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>הצג רק משימות שמפרסמן דורש חשבונית</div>
+              </div>
+            </div>
+            <div style={{
+              width: 22, height: 22, borderRadius: '50%',
+              background: local.requires_invoice ? '#7c3aed' : '#e2e8f0',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}>
+              {local.requires_invoice && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white' }} />}
             </div>
           </div>
 
