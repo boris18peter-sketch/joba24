@@ -40,9 +40,7 @@ export default function TaskApplicants({ task, onApprove }) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      queryClient.refetchQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      queryClient.refetchQueries({ queryKey: ['applications', task.id] });
       toast.success(`${data.task.worker_name} אושר! ✨`);
       onApprove?.();
     },
@@ -53,8 +51,14 @@ export default function TaskApplicants({ task, onApprove }) {
 
   useEffect(() => {
     const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === task.id) {
-        queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
+      const appData = event.data;
+      if (appData?.task_id === task.id) {
+        queryClient.setQueryData(['applications', task.id], (old = []) => {
+          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
+          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
+          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
+          return old;
+        });
       }
     });
     return unsubscribe;
@@ -68,10 +72,8 @@ export default function TaskApplicants({ task, onApprove }) {
     },
     onSuccess: async () => {
       setShowCancelWorkerConfirm(false);
-      await queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-      await queryClient.refetchQueries({ queryKey: ['task', task.id] });
-      await queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      await queryClient.refetchQueries({ queryKey: ['applications', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
