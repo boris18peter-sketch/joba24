@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const EXAMPLES = [
   '🚗 צריך טרמפ לאילת',
@@ -23,86 +23,30 @@ const EXAMPLES = [
   '🎁 איסוף חבילה דחוף',
 ];
 
-// Ticker using requestAnimationFrame — guaranteed to work regardless of CSS environment
-function Ticker() {
-  const trackRef = useRef(null);
-  const posRef = useRef(0);
-  const rafRef = useRef(null);
-  const halfWidthRef = useRef(0);
-
-  // We render items twice so the second copy fills in as the first scrolls out
-  const items = [...EXAMPLES, ...EXAMPLES];
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    // Wait one frame so the DOM has painted and we can measure
-    const init = () => {
-      halfWidthRef.current = track.scrollWidth / 2;
-      posRef.current = 0;
-
-      const tick = () => {
-        posRef.current -= 1; // px per frame ~60fps => ~60px/s
-        if (Math.abs(posRef.current) >= halfWidthRef.current) {
-          posRef.current = 0;
-        }
-        track.style.transform = `translateX(${posRef.current}px)`;
-        rafRef.current = requestAnimationFrame(tick);
-      };
-
-      rafRef.current = requestAnimationFrame(tick);
-    };
-
-    // Small delay to ensure layout is complete
-    const timeout = setTimeout(init, 50);
-
-    return () => {
-      clearTimeout(timeout);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
+function TickerItem({ text }) {
   return (
-    <div style={{ width: '100vw', overflow: 'hidden', position: 'relative', marginTop: 4 }}>
-      {/* Fade edges */}
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 48, background: 'linear-gradient(to left, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 48, background: 'linear-gradient(to right, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
-
-      <div
-        ref={trackRef}
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: 10,
-          width: 'max-content',
-          padding: '6px 0 10px',
-          willChange: 'transform',
-        }}
-      >
-        {items.map((text, i) => (
-          <div
-            key={i}
-            style={{
-              flexShrink: 0,
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border-1)',
-              borderRadius: 14,
-              padding: '9px 14px',
-              fontSize: 13,
-              fontWeight: 700,
-              color: 'var(--text-1)',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            }}
-          >
-            {text}
-          </div>
-        ))}
-      </div>
+    <div style={{
+      flexShrink: 0,
+      background: 'var(--surface-2)',
+      border: '1px solid var(--border-1)',
+      borderRadius: 14,
+      padding: '9px 14px',
+      fontSize: 13,
+      fontWeight: 700,
+      color: 'var(--text-1)',
+      whiteSpace: 'nowrap',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+      marginRight: 10,
+    }}>
+      {text}
     </div>
   );
 }
+
+// Render 4 copies so there's always content visible during the loop
+const ALL_ITEMS = [...EXAMPLES, ...EXAMPLES, ...EXAMPLES, ...EXAMPLES];
+// Each item is approximately 160px wide — total width of one set
+const SINGLE_SET_WIDTH = EXAMPLES.length * 160;
 
 export default function EmptyMyTasksState() {
   return (
@@ -120,7 +64,29 @@ export default function EmptyMyTasksState() {
         </Link>
       </div>
 
-      <Ticker />
+      {/* Infinite scrolling ticker using framer-motion */}
+      <div style={{ width: '100%', overflow: 'hidden', position: 'relative', marginTop: 4 }}>
+        {/* Fade edges */}
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 48, background: 'linear-gradient(to left, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 48, background: 'linear-gradient(to right, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+
+        <motion.div
+          style={{ display: 'flex', flexDirection: 'row', padding: '6px 0 10px', width: 'max-content' }}
+          animate={{ x: [0, -SINGLE_SET_WIDTH] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: 'loop',
+              duration: 30,
+              ease: 'linear',
+            },
+          }}
+        >
+          {ALL_ITEMS.map((text, i) => (
+            <TickerItem key={i} text={text} />
+          ))}
+        </motion.div>
+      </div>
 
       <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 8, fontWeight: 600 }}>אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪</p>
     </div>
