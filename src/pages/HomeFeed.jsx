@@ -15,7 +15,7 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link } from 'react-router-dom';
-import PublishTaskBanner from '@/components/PublishTaskBanner';
+import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
@@ -224,9 +224,39 @@ export default function HomeFeed() {
         // Data already updated via setQueryData above — no extra network call needed
       }
 
-      // If it's an application for one of MY published tasks — sync the applicants panel
+      // If it's an application for one of MY published tasks — sync the applicants panel + update task applicant count
       if (isForMyTask) {
         queryClient.invalidateQueries({ queryKey: ['applications', appData.task_id] });
+        // Also bump the task.applicants array so liveApplicantCount in TaskCard updates immediately
+        if (event.type === 'create' && (appData.status === 'pending' || appData.status === 'approved')) {
+          queryClient.setQueryData(['myTasks', me.id], (old = []) =>
+            old.map(t => t.id === appData.task_id
+              ? { ...t, applicants: [...(t.applicants || []), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
+              : t
+            )
+          );
+          queryClient.setQueryData(['allTasks'], (old = []) =>
+            old.map(t => t.id === appData.task_id
+              ? { ...t, applicants: [...(t.applicants || []), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
+              : t
+            )
+          );
+        }
+        if (event.type === 'update' && (appData.status === 'cancelled' || appData.status === 'rejected')) {
+          // Remove from applicants array
+          queryClient.setQueryData(['myTasks', me.id], (old = []) =>
+            old.map(t => t.id === appData.task_id
+              ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== appData.worker_id) }
+              : t
+            )
+          );
+          queryClient.setQueryData(['allTasks'], (old = []) =>
+            old.map(t => t.id === appData.task_id
+              ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== appData.worker_id) }
+              : t
+            )
+          );
+        }
       }
     });
 
@@ -566,7 +596,7 @@ export default function HomeFeed() {
               </div>
 
               {filteredPub.length === 0 && myPubTab === 'active' ? (
-                <PublishTaskBanner navigate={navigate} />
+                <EmptyMyTasksState />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
