@@ -124,7 +124,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
         </div>
       )}
 
-      {/* Bottom bar: Invoice (if exists) + Waze + GPS */}
+      {/* Bottom bar: Waze + GPS + Invoice (if exists) */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
         background: 'rgba(255,255,255,0.97)',
@@ -133,21 +133,6 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
         paddingBottom: isExpanded ? 'max(8px, env(safe-area-inset-bottom))' : '8px',
         display: 'flex', flexDirection: 'column', gap: 6,
       }}>
-        {/* Invoice button — only if invoice exists */}
-        {task.invoice_html && (
-          <button
-            onClick={onInvoiceClick}
-            style={{
-              width: '100%', height: 38, borderRadius: 12,
-              background: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
-              color: 'white', fontWeight: 800, fontSize: 13,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
-            }}
-          >
-            <FileText size={15} /> חשבונית מס — לחץ לצפייה והורדה
-          </button>
-        )}
         <div style={{ display: 'flex', gap: 8 }}>
           <a
             href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
@@ -176,6 +161,21 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
             GPS
           </a>
         </div>
+        {/* Invoice button — only if invoice exists */}
+        {task.invoice_html && (
+          <button
+            onClick={onInvoiceClick}
+            style={{
+              width: '100%', height: 38, borderRadius: 12,
+              background: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+              color: 'white', fontWeight: 800, fontSize: 13,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
+            }}
+          >
+            <FileText size={15} /> חשבונית מס — לחץ לצפייה והורדה
+          </button>
+        )}
       </div>
     </div>
   );
