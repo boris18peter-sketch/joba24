@@ -1130,7 +1130,12 @@ export default function TaskDetail() {
               </div>
             )}
 
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#cbd5e1', fontFamily: 'monospace', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3 }}>
+                #{task.id?.slice(-8)}
+              </div>
+            </div>
 
             {/* Expiry — moved from banner */}
             {task.expires_at && task.status === 'OPEN' && (

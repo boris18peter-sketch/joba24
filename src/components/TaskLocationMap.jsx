@@ -143,7 +143,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
             textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,178,217,0.3)',
           }}
         >
-          🗺 Waze
+          Waze
         </a>
         <a
           href={`https://maps.google.com/maps?daddr=${task.lat},${task.lng}`}
@@ -156,7 +156,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
             textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)',
           }}
         >
-          📍 GPS
+          GPS
         </a>
       </div>
     </div>

@@ -210,8 +210,14 @@ export default function AdminDashboard() {
   };
 
   const filteredTasks = allTasks.filter(t => {
-    const q = taskSearch.toLowerCase();
-    const matchQ = !q || t.title?.toLowerCase().includes(q) || t.client_name?.toLowerCase().includes(q);
+    const q = taskSearch.toLowerCase().replace('#', '');
+    const matchQ = !q ||
+      t.title?.toLowerCase().includes(q) ||
+      t.client_name?.toLowerCase().includes(q) ||
+      t.worker_name?.toLowerCase().includes(q) ||
+      t.location_name?.toLowerCase().includes(q) ||
+      t.id?.toLowerCase().includes(q) ||
+      t.id?.slice(-8).toLowerCase() === q;
     const matchStatus = !taskStatusFilter || t.status === taskStatusFilter;
     return matchQ && matchStatus;
   });
@@ -278,7 +284,7 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <div style={{ flex: 1, position: 'relative' }}>
                 <Search size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input value={taskSearch} onChange={e => setTaskSearch(e.target.value)} placeholder="חיפוש..."
+                <input value={taskSearch} onChange={e => setTaskSearch(e.target.value)} placeholder="חיפוש לפי שם, ID, עובד..."
                   style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-2)', color: 'var(--text-1)' }} />
               </div>
               <select value={taskStatusFilter} onChange={e => setTaskStatusFilter(e.target.value)}
