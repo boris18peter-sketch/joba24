@@ -52,12 +52,10 @@ export default function EmptyMyTasksState() {
         <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 40, background: 'linear-gradient(to right, var(--surface-1), transparent)', zIndex: 2, pointerEvents: 'none' }} />
 
         <div
-          ref={trackRef}
+          className="tasks-ticker-track"
           style={{
             display: 'flex',
             gap: 10,
-            // RTL: scroll right-to-left = animate translateX from 0 → -50%
-            animation: 'tasksTicker 38s linear infinite',
             width: 'max-content',
             padding: '6px 0 10px',
           }}
@@ -87,6 +85,10 @@ export default function EmptyMyTasksState() {
         @keyframes tasksTicker {
           0%   { transform: translateX(0); }
           100% { transform: translateX(-50%); }
+        }
+        .tasks-ticker-track {
+          animation: tasksTicker 38s linear infinite !important;
+          will-change: transform;
         }
       `}</style>
     </div>
