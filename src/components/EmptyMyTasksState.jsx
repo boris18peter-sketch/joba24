@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const EXAMPLES = [
@@ -22,13 +23,77 @@ const EXAMPLES = [
   '🎁 איסוף חבילה',
 ];
 
-export default function EmptyMyTasksState() {
-  // Render items 2x for seamless loop
-  const items = [...EXAMPLES, ...EXAMPLES];
+function InfiniteTicker() {
+  const containerRef = useRef(null);
+  const posRef = useRef(0);
+  const rafRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  // duplicate items so there's always a full screen visible
+  const items = [...EXAMPLES, ...EXAMPLES, ...EXAMPLES];
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    // single copy width = total / 3
+    const singleWidth = el.scrollWidth / 3;
+
+    const step = () => {
+      posRef.current -= 0.6;
+      if (Math.abs(posRef.current) >= singleWidth) {
+        posRef.current = 0;
+      }
+      el.style.transform = `translateX(${posRef.current}px)`;
+      rafRef.current = requestAnimationFrame(step);
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [ready]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
+    <div style={{ width: '100%', overflow: 'hidden', position: 'relative', padding: '6px 0 10px' }}>
+      {/* fade edges */}
+      <div style={{ position: 'absolute', inset: 0, right: 'auto', width: 40, background: 'linear-gradient(to right, #f4f7fb, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', inset: 0, left: 'auto', width: 40, background: 'linear-gradient(to left, #f4f7fb, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+      <div
+        ref={containerRef}
+        style={{ display: 'flex', flexDirection: 'row', width: 'max-content', willChange: 'transform' }}
+      >
+        {items.map((text, i) => (
+          <span key={i} style={{
+            flexShrink: 0,
+            display: 'inline-block',
+            background: '#ffffff',
+            border: '1.5px solid #e2e8f0',
+            borderRadius: 20,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 700,
+            color: '#1e293b',
+            whiteSpace: 'nowrap',
+            marginLeft: 10,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+          }}>
+            {text}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
+export default function EmptyMyTasksState() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <div style={{ fontSize: 44 }}>📭</div>
@@ -47,60 +112,7 @@ export default function EmptyMyTasksState() {
         </Link>
       </div>
 
-      {/* Marquee ticker */}
-      <style>{`
-        .joba-marquee-wrap {
-          width: 100%;
-          overflow: hidden;
-          position: relative;
-          padding: 4px 0 8px;
-        }
-        .joba-marquee-wrap::before,
-        .joba-marquee-wrap::after {
-          content: '';
-          position: absolute;
-          top: 0; bottom: 0;
-          width: 40px;
-          z-index: 2;
-          pointer-events: none;
-        }
-        .joba-marquee-wrap::before { left: 0; background: linear-gradient(to right, #f4f7fb, transparent); }
-        .joba-marquee-wrap::after  { right: 0; background: linear-gradient(to left, #f4f7fb, transparent); }
-
-        .joba-marquee-track {
-          display: flex;
-          flex-direction: row;
-          width: max-content;
-          animation: joba-scroll 28s linear infinite;
-        }
-
-        @keyframes joba-scroll {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-
-        .joba-tag {
-          flex-shrink: 0;
-          background: #ffffff;
-          border: 1.5px solid #e2e8f0;
-          border-radius: 20px;
-          padding: 8px 14px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #1e293b;
-          white-space: nowrap;
-          margin-left: 10px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-        }
-      `}</style>
-
-      <div className="joba-marquee-wrap">
-        <div className="joba-marquee-track">
-          {items.map((text, i) => (
-            <span key={i} className="joba-tag">{text}</span>
-          ))}
-        </div>
-      </div>
+      <InfiniteTicker />
 
       <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 8, fontWeight: 600 }}>
         אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪
