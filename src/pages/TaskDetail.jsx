@@ -346,7 +346,6 @@ export default function TaskDetail() {
   useEffect(() => {
     const handleReset = () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      queryClient.refetchQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
     };
     window.addEventListener('task_reset_to_open', handleReset);
@@ -358,12 +357,11 @@ export default function TaskDetail() {
     const unsubscribe1 = base44.entities.Task.subscribe((event) => {
       if (event.id === id) {
         queryClient.invalidateQueries({ queryKey: ['task', id] });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        // Don't invalidate global tasks list on every update to avoid rate limits
       }
     });
     const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
       if (event.data?.task_id === id) {
-        // When approval happens, refetch both myApp AND the task immediately
         queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
         queryClient.invalidateQueries({ queryKey: ['task', id] });
         queryClient.invalidateQueries({ queryKey: ['applications', id] });
@@ -378,12 +376,7 @@ export default function TaskDetail() {
 
   const handleWorkerUpdate = async (data) => {
     await base44.entities.Task.update(id, data);
-    // CRITICAL: Invalidate BEFORE refetch to clear stale cache
-    await queryClient.invalidateQueries({ queryKey: ['task', id] });
-    // CRITICAL: Force immediate fresh fetch
-    await queryClient.refetchQueries({ queryKey: ['task', id] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    console.log('✅ WORKER UPDATE COMPLETE - Task refetched');
+    queryClient.invalidateQueries({ queryKey: ['task', id] });
   };
 
   // Auto-open rating popup when task just became COMPLETED (for both sides)
@@ -430,16 +423,11 @@ export default function TaskDetail() {
       worker_name: me?.full_name,
       worker_status: 'on_the_way'
     }),
-    onSuccess: async () => {
+    onSuccess: () => {
       setTaskTaken(true);
-      // CRITICAL: Invalidate BEFORE refetch to clear stale cache
-      await queryClient.invalidateQueries({ queryKey: ['task', id] });
-      // CRITICAL: Force immediate fresh fetch
-      await queryClient.refetchQueries({ queryKey: ['task', id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['task', id] });
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
-      console.log('✅ TAKE TASK MUTATION COMPLETE - Task refetched');
       toast.success('קחת את המשימה! 🎉');
     }
   });
