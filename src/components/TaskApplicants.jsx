@@ -22,20 +22,10 @@ export default function TaskApplicants({ task, onApprove }) {
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
-    staleTime: 30000,
+    staleTime: 60000,
   });
 
   const workerIds = [...new Set(applications.map(a => a.worker_id).filter(Boolean))];
-  const { data: workerUsers = [] } = useQuery({
-    queryKey: ['applicantUsers', workerIds.join(',')],
-    queryFn: async () => {
-      if (!workerIds.length) return [];
-      const all = await base44.entities.User.list();
-      return all.filter(u => workerIds.includes(u.id));
-    },
-    enabled: workerIds.length > 0,
-    staleTime: 60000,
-  });
 
   const approveMutation = useMutation({
     mutationFn: async (app) => {
