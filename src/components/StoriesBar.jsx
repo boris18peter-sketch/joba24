@@ -102,17 +102,23 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 
   const task = stories[currentIndex];
 
-  // Mark as viewed when story changes + increment views_count
+  // Mark as viewed when story changes + debounced increment views_count
+  const viewUpdateTimerRef = useRef(null);
   useEffect(() => {
     if (!task) return;
     markViewed(task.id);
-    // Don't count views for the task owner
     const isOwner = currentUserId && task.client_id === currentUserId;
     if (!isOwner && !viewedInSessionRef.current.has(task.id)) {
       viewedInSessionRef.current.add(task.id);
+      // Debounce: only write after user stays on story for 1s
+      clearTimeout(viewUpdateTimerRef.current);
+      const taskId = task.id;
       const newViews = (task.views_count || 0) + 1;
-      base44.entities.Task.update(task.id, { views_count: newViews }).catch(() => {});
+      viewUpdateTimerRef.current = setTimeout(() => {
+        base44.entities.Task.update(taskId, { views_count: newViews }).catch(() => {});
+      }, 1000);
     }
+    return () => clearTimeout(viewUpdateTimerRef.current);
   }, [currentIndex, task?.id]);
 
   const goNext = useCallback(() => {
@@ -223,6 +229,8 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
     }
   };
 
+  const clickTrackedRef = useRef(new Set());
+
   if (!task) return null;
 
   const label = getCategoryLabel(task.category);
@@ -231,11 +239,12 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
   const distKm = calcDistKm(userLocation, task);
   const { mainDescription } = parseDescription(task.description);
   const isOwnerStory = currentUserId && task.client_id === currentUserId;
-
   const handleTaskClick = (e) => {
     e.stopPropagation();
-    // Don't count clicks/views for the task owner
     if (isOwnerStory) return;
+    // Only track once per task per session
+    if (clickTrackedRef.current.has(task.id)) return;
+    clickTrackedRef.current.add(task.id);
     const newClicks = (task.clicks_count || 0) + 1;
     base44.entities.Task.update(task.id, { clicks_count: newClicks }).catch(() => {});
   };

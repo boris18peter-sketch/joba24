@@ -70,7 +70,9 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     queryKey: ['myCompletedTasks', currentUserId],
     queryFn: () => base44.entities.Task.filter({ worker_id: currentUserId, status: 'COMPLETED' }, '-created_date', 30),
     enabled: !!currentUserId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
