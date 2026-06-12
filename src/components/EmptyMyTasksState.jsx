@@ -45,7 +45,10 @@ export default function EmptyMyTasksState() {
     exampleIndexRef.current += 1;
 
     const id = ++tagIdCounter;
-    const left = 4 + Math.random() * 62; // 4% – 66%
+    // Keep tags away from the edges so they don't clip
+    // max left = 100% - estimated tag width (~160px) / container width
+    // Use 5%–55% to leave room for text on the right side (RTL layout)
+    const left = 5 + Math.random() * 50; // 5% – 55%
     const duration = 10 + Math.random() * 5; // 10s – 15s
 
     setTags(prev => [...prev, { id, text, left, duration }]);

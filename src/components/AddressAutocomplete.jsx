@@ -3,32 +3,65 @@ import { MapPin, CheckCircle, Loader2 } from 'lucide-react';
 
 /**
  * AddressAutocomplete — uses Nominatim (OpenStreetMap) — no API key needed.
- * Props:
- *   value: string (display text)
- *   onSelect: ({ location_name, city, lat, lng }) => void
- *   error: bool
- *   onBlur: () => void
+ * Prioritizes results near the user's location (if available).
+ * Allows free-text input and confirms via selection.
  */
 export default function AddressAutocomplete({ value, onSelect, error, onBlur }) {
   const [query, setQuery] = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
+
+  // Try to get user location once for prioritization
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { timeout: 5000 }
+      );
+    }
+  }, []);
 
   // Sync if parent resets value
   useEffect(() => {
     if (!value) { setQuery(''); setConfirmed(false); }
+    else if (value !== query && !confirmed) { setQuery(value); }
   }, [value]);
 
   const search = async (q) => {
-    if (q.length < 3) { setSuggestions([]); return; }
+    if (q.length < 2) { setSuggestions([]); return; }
     setLoading(true);
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=6&accept-language=he`;
+
+    // Build URL — add viewbox around user location for prioritization
+    let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=8&accept-language=he&countrycodes=il`;
+    if (userLocation) {
+      // viewbox: 0.5 degree radius around user (~55km)
+      const delta = 0.5;
+      const minLng = userLocation.lng - delta;
+      const maxLng = userLocation.lng + delta;
+      const minLat = userLocation.lat - delta;
+      const maxLat = userLocation.lat + delta;
+      url += `&viewbox=${minLng},${maxLat},${maxLng},${minLat}&bounded=0`;
+    }
+
     const res = await fetch(url, { headers: { 'Accept-Language': 'he' } });
     const data = await res.json();
-    setSuggestions(data);
+
+    // Sort: results in user's city first
+    let sorted = data;
+    if (userLocation && data.length > 1) {
+      sorted = [...data].sort((a, b) => {
+        const distA = Math.hypot(parseFloat(a.lat) - userLocation.lat, parseFloat(a.lon) - userLocation.lng);
+        const distB = Math.hypot(parseFloat(b.lat) - userLocation.lat, parseFloat(b.lon) - userLocation.lng);
+        return distA - distB;
+      });
+    }
+
+    setSuggestions(sorted);
     setLoading(false);
   };
 
@@ -36,23 +69,40 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur }) 
     const v = e.target.value;
     setQuery(v);
     setConfirmed(false);
-    onSelect({ location_name: '', city: '', lat: null, lng: null }); // reset
+    // Don't reset parent — allow free typing; only reset coordinates
+    onSelect({ location_name: v, city: '', lat: null, lng: null });
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(v), 400);
+    debounceRef.current = setTimeout(() => search(v), 300);
   };
 
   const handleSelect = (item) => {
     const addr = item.address || {};
     const city = addr.city || addr.town || addr.village || addr.county || '';
-    const road = addr.road || '';
+    const road = addr.road || addr.pedestrian || addr.neighbourhood || '';
     const houseNumber = addr.house_number || '';
     const street = road + (houseNumber ? ` ${houseNumber}` : '');
-    const display = street ? `${street}, ${city}` : item.display_name.split(',').slice(0, 3).join(',');
+    const display = street ? `${street}, ${city}` : item.display_name.split(',').slice(0, 3).join(',').trim();
 
     setQuery(display);
     setSuggestions([]);
     setConfirmed(true);
     onSelect({ location_name: display, city, lat: parseFloat(item.lat), lng: parseFloat(item.lon) });
+  };
+
+  // Allow confirming typed free text (press Enter or blur)
+  const handleBlur = () => {
+    if (query && !confirmed) {
+      // Allow free text — mark as confirmed with no coords
+      // The parent can decide whether to enforce coordinate selection
+    }
+    setTimeout(() => setSuggestions([]), 150);
+    onBlur?.();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && suggestions.length > 0) {
+      handleSelect(suggestions[0]);
+    }
   };
 
   // Close dropdown on outside click
@@ -76,8 +126,9 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur }) 
           type="text"
           value={query}
           onChange={handleChange}
-          onBlur={onBlur}
-          placeholder="הקלד כתובת מלאה (רחוב + מספר + עיר)..."
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder="הקלד רחוב, מספר בית ועיר..."
           dir="rtl"
           style={{
             width: '100%',
@@ -91,6 +142,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur }) 
             fontFamily: 'inherit',
             boxSizing: 'border-box',
             transition: 'border-color 0.2s',
+            color: 'var(--text-1)',
           }}
         />
         <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}>
@@ -127,7 +179,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur }) 
           {suggestions.map((item, i) => {
             const addr = item.address || {};
             const city = addr.city || addr.town || addr.village || addr.county || '';
-            const road = addr.road || '';
+            const road = addr.road || addr.pedestrian || addr.neighbourhood || '';
             const houseNumber = addr.house_number || '';
             const label = road ? `${road}${houseNumber ? ` ${houseNumber}` : ''}` : item.display_name.split(',')[0];
             return (

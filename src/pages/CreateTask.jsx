@@ -1180,11 +1180,13 @@ export default function CreateTask() {
               onSelect={({ location_name, city, lat, lng }) => {
                 if (location_name) {
                   set('location_name', location_name);
-                  set('city', city);
+                  set('city', city || '');
                   set('lat', lat);
                   set('lng', lng);
-                  setAddressConfirmed(true);
-                  setErrors(p => ({ ...p, location_name: false }));
+                  // Confirm address even for free-text (lat/lng may be null for free text)
+                  const hasCoords = !!(lat && lng);
+                  setAddressConfirmed(hasCoords);
+                  if (hasCoords) setErrors(p => ({ ...p, location_name: false }));
                 } else {
                   setAddressConfirmed(false);
                 }
@@ -1253,9 +1255,12 @@ export default function CreateTask() {
         <SectionCard>
           <button type="button" onClick={() => setShowRequirements(v => !v)}
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
-            <Label className="text-sm font-bold flex items-center gap-1" style={{ color: 'var(--text-1)', cursor: 'pointer', margin: 0 }}>
-              <CheckSquare size={14} /> דרישות
-            </Label>
+            <div>
+              <Label className="text-sm font-bold flex items-center gap-1" style={{ color: 'var(--text-1)', cursor: 'pointer', margin: 0 }}>
+                <CheckSquare size={14} /> דרישות נוספות (לא חובה)
+              </Label>
+              <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>⚠️ ככל שתוסיף יותר דרישות, פחות עובדים יוכלו להגיש בקשה</div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{count} נבחרו</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>לחץ להוספה</span>; })()}
               {showRequirements ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
@@ -1291,9 +1296,14 @@ export default function CreateTask() {
 
         {/* Payment Method + Requires Invoice */}
         <SectionCard>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-          <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
-          <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>אמצעי תשלום *</Label>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+            <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>איך תרצה לשלם על המשימה? *</Label>
+          </div>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
+            💡 אין צורך להזין פרטי תשלום — רק בחר את השיטה בה תשלם לעובד בסיום המשימה
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
           {PAYMENT_METHODS.map(pm => (

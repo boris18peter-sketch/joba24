@@ -95,13 +95,14 @@ import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
 // Charging bolt pill — fills over 1 hour, smooth liquid wave animation
-const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000;
+const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000; // 1 hour to recharge after last boost
+// On first open (no last_boost_at), use created_date. Only charge based on elapsed time.
 
 function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    const refTime = lastBoostAt || createdDate;
-    if (!refTime) return 0;
-    const elapsed = Date.now() - new Date(refTime).getTime();
+    // Only count progress from last boost — if never boosted, start from 0
+    if (!lastBoostAt) return 0;
+    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS_DETAIL);
   };
 

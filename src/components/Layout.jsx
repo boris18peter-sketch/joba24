@@ -675,8 +675,8 @@ export default function Layout() {
 
 
 
-      {/* Bottom Nav — hidden on map page */}
-      {location.pathname !== '/map' && <div style={{
+      {/* Bottom Nav — hidden on map, create-task, edit-task pages */}
+      {!['/map', '/create-task'].includes(location.pathname) && !location.pathname.startsWith('/edit-task') && <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
         background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
