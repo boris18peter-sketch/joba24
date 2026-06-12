@@ -115,7 +115,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
       const taskId = task.id;
       const newViews = (task.views_count || 0) + 1;
       viewUpdateTimerRef.current = setTimeout(() => {
-        base44.entities.Task.update(taskId, { views_count: newViews }).catch(() => {});
+        base44.entities.Task.update(taskId, { views_count: newViews }).catch(() => {});  // eslint-disable-line
       }, 1000);
     }
     return () => clearTimeout(viewUpdateTimerRef.current);
@@ -246,7 +246,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
     if (clickTrackedRef.current.has(task.id)) return;
     clickTrackedRef.current.add(task.id);
     const newClicks = (task.clicks_count || 0) + 1;
-    base44.entities.Task.update(task.id, { clicks_count: newClicks }).catch(() => {});
+    base44.entities.Task.update(task.id, { clicks_count: newClicks }).catch(() => {}); // eslint-disable-line
   };
 
   return (

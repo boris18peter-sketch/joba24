@@ -115,17 +115,19 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     // Fire & forget geolocation + DB write in background
     try {
       if (action.nextKey === 'on_the_way' && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            base44.entities.Task.update(task.id, { ...update, worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude })
-              .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }));
-          },
-          () => {
-            base44.entities.Task.update(task.id, update)
-              .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }));
-          },
-          { timeout: 4000 }
-        );
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          base44.entities.Task.update(task.id, { ...update, worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude })
+            .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }))
+            .catch(() => {});
+        },
+        () => {
+          base44.entities.Task.update(task.id, update)
+            .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }))
+            .catch(() => {});
+        },
+        { timeout: 4000 }
+      );
       } else {
         await base44.entities.Task.update(task.id, update);
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
