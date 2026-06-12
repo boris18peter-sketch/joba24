@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback, memo } from 'react';
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Maximize2, Minimize2, Navigation, X, Clock, MapPin, Flag, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw } from 'lucide-react';
+import { Maximize2, Minimize2, Flag, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Navigation, Clock, X } from 'lucide-react';
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { base44 } from '@/api/base44Client';
@@ -21,12 +21,11 @@ function getETA(seconds) {
 }
 
 function ManeuverArrow({ type, modifier, size = 28 }) {
-  const color = 'white';
-  if (type === 'arrive') return <Flag size={size} color={color} />;
-  if (modifier?.includes('right')) return <ArrowUpRight size={size} color={color} />;
-  if (modifier?.includes('left')) return <ArrowUpLeft size={size} color={color} />;
-  if (modifier?.includes('uturn')) return <RotateCcw size={size} color={color} />;
-  return <ArrowUp size={size} color={color} />;
+  if (type === 'arrive') return <Flag size={size} color="white" />;
+  if (modifier?.includes('right')) return <ArrowUpRight size={size} color="white" />;
+  if (modifier?.includes('left')) return <ArrowUpLeft size={size} color="white" />;
+  if (modifier?.includes('uturn')) return <RotateCcw size={size} color="white" />;
+  return <ArrowUp size={size} color="white" />;
 }
 
 function UserDot() {
@@ -39,8 +38,8 @@ function UserDot() {
   );
 }
 
-const TaskPin = memo(({ task }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+const TaskPin = memo(({ task, onClick }) => (
+  <div onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
     <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: '3px solid white', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(26,111,212,0.55)', fontSize: 17 }}>📍</div>
     {task?.location_name && (
       <div style={{ background: '#1a6fd4', color: 'white', fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 8, marginTop: 3, whiteSpace: 'nowrap', maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
@@ -50,7 +49,9 @@ const TaskPin = memo(({ task }) => (
   </div>
 ));
 
-function MapBody({ mapToken, task, userLocation, height }) {
+// compact=true → no bottom bar, pin click starts nav
+// compact=false (expanded) → full nav UI with bottom bar
+function MapBody({ mapToken, task, userLocation, height, compact }) {
   const mapRef = useRef(null);
   const [route, setRoute] = useState(null);
   const [navSteps, setNavSteps] = useState([]);
@@ -80,16 +81,12 @@ function MapBody({ mapToken, task, userLocation, height }) {
     setNavLoading(false);
   }, [userLocation, mapToken, task.lat, task.lng]);
 
-  // Auto-fetch route on mount if user location is available
-  useEffect(() => {
-    if (userLocation) fetchRoute();
-  }, []);
-
-  const startNav = () => {
+  const startNav = useCallback(async () => {
+    if (!route) await fetchRoute();
     setNavMode(true);
     setCurrentStep(0);
     mapRef.current?.getMap()?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 17, pitch: 75, bearing: 0, duration: 1200 });
-  };
+  }, [route, fetchRoute, userLocation]);
 
   const stopNav = () => {
     setNavMode(false);
@@ -98,6 +95,11 @@ function MapBody({ mapToken, task, userLocation, height }) {
     setRouteMeta(null);
     mapRef.current?.getMap()?.easeTo({ center: [task.lng, task.lat], pitch: 30, bearing: 0, zoom: 14, duration: 900 });
   };
+
+  // In expanded mode, auto-fetch route when userLocation is available
+  useEffect(() => {
+    if (!compact && userLocation) fetchRoute();
+  }, [compact, !!userLocation]);
 
   const step = navSteps[currentStep];
   const nextStep = navSteps[currentStep + 1];
@@ -129,7 +131,7 @@ function MapBody({ mapToken, task, userLocation, height }) {
             <UserDot />
           </Marker>
         )}
-        {/* Task pin / destination */}
+        {/* Task pin — click starts nav */}
         {navMode ? (
           <Marker longitude={task.lng} latitude={task.lat} anchor="bottom">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -140,14 +142,15 @@ function MapBody({ mapToken, task, userLocation, height }) {
             </div>
           </Marker>
         ) : (
-          <Marker longitude={task.lng} latitude={task.lat} anchor="bottom">
+          <Marker longitude={task.lng} latitude={task.lat} anchor="bottom"
+            onClick={e => { e.originalEvent?.stopPropagation(); if (userLocation) startNav(); }}>
             <TaskPin task={task} />
           </Marker>
         )}
         {!navMode && <NavigationControl position="bottom-left" showCompass visualizePitch />}
       </Map>
 
-      {/* Nav HUD — top instruction bar */}
+      {/* Nav HUD — top instruction bar (shown in both compact and expanded when navMode) */}
       {navMode && step && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, background: 'linear-gradient(160deg,#0a1a4a,#1a3a8f)', padding: '14px 16px 12px', boxShadow: '0 4px 20px rgba(10,26,74,0.5)' }} dir="rtl">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -180,10 +183,10 @@ function MapBody({ mapToken, task, userLocation, height }) {
         </div>
       )}
 
-      {/* Nav ETA bar — bottom */}
-      {navMode && routeMeta && (
+      {/* ETA bar + full controls — only in expanded mode */}
+      {!compact && navMode && routeMeta && (
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--card-bg)', borderRadius: '18px 18px 0 0', boxShadow: '0 -6px 30px rgba(0,0,0,0.15)', padding: '14px 16px', paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }} dir="rtl">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <div style={{ flex: 1, textAlign: 'center', borderLeft: '1px solid var(--border-1)' }}>
               <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{getETA(remainTime)}</div>
               <div style={{ fontSize: 10, color: 'var(--text-2)' }}>הגעה</div>
@@ -200,8 +203,8 @@ function MapBody({ mapToken, task, userLocation, height }) {
         </div>
       )}
 
-      {/* Non-nav: route info + navigate button */}
-      {!navMode && (
+      {/* Bottom bar with Waze/GPS/Nav — only in expanded mode, non-nav */}
+      {!compact && !navMode && (
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20, background: 'var(--card-bg)', borderTop: '1px solid var(--border-1)', padding: '10px 12px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }} dir="rtl">
           {routeMeta && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -227,9 +230,7 @@ function MapBody({ mapToken, task, userLocation, height }) {
             <a href={`https://maps.google.com/maps?daddr=${task.lat},${task.lng}`} target="_blank" rel="noopener noreferrer"
               style={{ flex: 1, height: 38, borderRadius: 12, background: 'linear-gradient(135deg,#4285f4,#1967d2)', color: 'white', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)' }}>GPS</a>
             {userLocation && (
-              <button
-                onClick={route ? startNav : fetchRoute}
-                disabled={navLoading}
+              <button onClick={route ? startNav : fetchRoute} disabled={navLoading}
                 style={{ flex: 1.5, height: 38, borderRadius: 12, background: navLoading ? '#93c5fd' : 'linear-gradient(135deg,#0a1a4a,#1a6fd4)', border: 'none', color: 'white', fontWeight: 800, fontSize: 12, cursor: navLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 8px rgba(26,111,212,0.4)' }}>
                 <Navigation size={13} />
                 {navLoading ? 'מחשב...' : route ? 'התחל ניווט' : 'חשב מסלול'}
@@ -269,34 +270,32 @@ export default function TaskLocationMap({ task }) {
 
   return (
     <>
+      {/* Compact inline map — no bottom bar, pin click = nav */}
       <div dir="rtl" style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border-1)', position: 'relative' }}>
-        <button
-          onClick={() => setExpanded(true)}
-          style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, width: 34, height: 34, borderRadius: 10, background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-        >
+        <button onClick={() => setExpanded(true)}
+          style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, width: 34, height: 34, borderRadius: 10, background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <Maximize2 size={15} color="#334155" />
         </button>
         {mapToken ? (
-          <MapBody mapToken={mapToken} task={enrichedTask} userLocation={userLocation} height={240} />
+          <MapBody mapToken={mapToken} task={enrichedTask} userLocation={userLocation} height={220} compact={true} />
         ) : (
-          <div style={{ height: 240, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ height: 220, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
           </div>
         )}
       </div>
 
+      {/* Expanded full-screen map — full controls */}
       {expanded && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, display: 'flex', flexDirection: 'column' }} dir="rtl">
-          <button
-            onClick={() => setExpanded(false)}
-            style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 12, background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999 }} dir="rtl">
+          <button onClick={() => setExpanded(false)}
+            style={{ position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 12, background: 'white', border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <Minimize2 size={17} color="#334155" />
           </button>
           {mapToken ? (
-            <MapBody mapToken={mapToken} task={enrichedTask} userLocation={userLocation} height="100dvh" />
+            <MapBody mapToken={mapToken} task={enrichedTask} userLocation={userLocation} height="100dvh" compact={false} />
           ) : (
-            <div style={{ flex: 1, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ height: '100dvh', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
             </div>
           )}
