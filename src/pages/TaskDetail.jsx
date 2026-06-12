@@ -992,12 +992,25 @@ export default function TaskDetail() {
                   <ScanningLabelDetail />
                 </div>
                 {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
-                </div>
-                )}
-                {/* Boost pill when there are applicants (no scanning label shown) */}
-                {isOwner && task.status === 'OPEN' && applicationCount > 0 && boostAvailable && (
-                <div style={{ marginBottom: 4 }}>
-                  <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />
+              </div>
+            )}
+            {/* Boost pill + applicants button when there are applicants */}
+            {isOwner && task.status === 'OPEN' && applicationCount > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <button
+                  onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  style={{
+                    flex: 1, height: 38, borderRadius: 12,
+                    background: 'rgba(255,255,255,0.15)',
+                    border: '1.5px solid rgba(255,165,0,0.7)',
+                    color: 'white', fontWeight: 800, fontSize: 13,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    cursor: 'pointer',
+                  }}
+                >
+                  🟠 {applicationCount} בקשות — לחץ לצפייה
+                </button>
+                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
               </div>
             )}
 
@@ -1093,7 +1106,9 @@ export default function TaskDetail() {
 
         {/* Applicants for owner — above the map */}
         {isOwner && applicationCount > 0 && (task.status === 'OPEN' || task.status === 'TAKEN' && !task.worker_status) &&
-        <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
+        <div id="task-applicants-section">
+          <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
+        </div>
         }
 
         {/* Task location map — shown for non-TAKEN tasks with location */}
@@ -1132,9 +1147,14 @@ export default function TaskDetail() {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#cbd5e1', fontFamily: 'monospace', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3 }}>
+              <button
+                onClick={() => { navigator.clipboard.writeText(task.id); toast('ID הועתק'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: 'none', cursor: 'pointer' }}
+                title="העתק ID"
+              >
                 #{task.id?.slice(-8)}
-              </div>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
             </div>
 
             {/* Expiry — moved from banner */}

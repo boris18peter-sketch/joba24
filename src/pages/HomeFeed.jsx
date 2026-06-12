@@ -347,13 +347,15 @@ export default function HomeFeed() {
     if (t.status !== 'OPEN') return false;
     // own tasks stay in the feed — ranked normally alongside others
     if (dismissedTasks.has(t.id)) return false;
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().replace('#', '');
     if (search && !(
       t.title?.toLowerCase().includes(q) ||
       t.description?.toLowerCase().includes(q) ||
       t.city?.toLowerCase().includes(q) ||
       t.location_name?.toLowerCase().includes(q) ||
-      String(t.price).includes(search.trim())
+      String(t.price).includes(search.trim()) ||
+      t.id?.toLowerCase().includes(q) ||
+      t.id?.slice(-8).toLowerCase() === q
     )) return false;
     if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
     if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
