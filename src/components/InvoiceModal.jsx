@@ -35,7 +35,7 @@ export default function InvoiceModal({ task, me, onClose }) {
         business_address: form.address,
       });
 
-      // Send email invoice to both parties
+      // Build invoice HTML
       const invoiceHtml = `
         <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
           <h2 style="color:#7c3aed;border-bottom:2px solid #7c3aed;padding-bottom:10px">חשבונית מס / קבלה</h2>
@@ -52,36 +52,13 @@ export default function InvoiceModal({ task, me, onClose }) {
           <p style="color:#999;font-size:12px;margin-top:30px">הופק דרך Joba24 · joba24.com</p>
         </div>`;
 
-      const promises = [
-        // Send to worker
-        base44.integrations.Core.SendEmail({
-          to: form.email || me?.email || '',
-          subject: `חשבונית מס - ${task.title} · ₪${task.price}`,
-          body: invoiceHtml,
-          from_name: 'Joba24 Invoices',
-        }),
-      ];
+      // Save invoice HTML on the task — both parties can view & download from TaskDetail
+      await base44.entities.Task.update(task.id, { invoice_html: invoiceHtml });
 
-      // Send to client if we have their email
-      if (task.client_id) {
-        const clientUsers = await base44.entities.User.filter({ id: task.client_id });
-        if (clientUsers?.[0]?.email) {
-          promises.push(
-            base44.integrations.Core.SendEmail({
-              to: clientUsers[0].email,
-              subject: `קבלה עבור "${task.title}" - ${form.business_name}`,
-              body: invoiceHtml,
-              from_name: 'Joba24 Invoices',
-            })
-          );
-        }
-      }
-
-      await Promise.all(promises.filter(p => p));
       setDone(true);
       setTimeout(() => onClose(), 2400);
     } catch {
-      toast.error('שגיאה בשליחת החשבונית, נסה שוב');
+      toast.error('שגיאה בהפקת החשבונית, נסה שוב');
     } finally {
       setLoading(false);
     }
@@ -106,8 +83,8 @@ export default function InvoiceModal({ task, me, onClose }) {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg,#e9d5ff,#c4b5fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 0 8px rgba(168,85,247,.1)' }}>
               <CheckCircle size={30} color="#7c3aed" />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: '#0f2b6b', marginBottom: 8 }}>החשבונית נשלחה! 📧</div>
-            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>נשלחה לאימייל שלך ולמפרסם המשימה</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#0f2b6b', marginBottom: 8 }}>החשבונית הופקה! 📄</div>
+            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>החשבונית זמינה להורדה בתוך המשימה עבורך ועבור המפרסם</div>
           </div>
         ) : (
           <>
@@ -144,14 +121,14 @@ export default function InvoiceModal({ task, me, onClose }) {
             </div>
 
             <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#7c3aed', lineHeight: 1.6 }}>
-              📧 החשבונית תישלח לאימייל שלך ולמפרסם המשימה בצורה אוטומטית
+              📄 החשבונית תוצג בתוך המשימה — אתה והמפרסם תוכלו להוריד אותה
             </div>
 
             <button
               onClick={handleSubmit}
               disabled={loading}
               style={{ width: '100%', height: 52, borderRadius: 16, background: loading ? '#a78bfa' : 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(124,58,237,0.3)' }}>
-              {loading ? <Loader2 size={20} className="animate-spin" /> : <><FileText size={18} /> שלח חשבונית</>}
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <><FileText size={18} /> הפק חשבונית</>}
             </button>
           </>
         )}

@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Maximize2, Minimize2, Navigation, X } from 'lucide-react';
+import { Maximize2, Minimize2, Navigation, X, FileText } from 'lucide-react';
 import Map, { Marker, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { base44 } from '@/api/base44Client';
+import InvoiceViewModal from '@/components/InvoiceViewModal';
 
 function calcDistKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -60,7 +61,7 @@ function TaskPin({ task, onClick }) {
   );
 }
 
-function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, isExpanded }) {
+function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, isExpanded, onInvoiceClick }) {
   const distKm = (userLocation && task.lat && task.lng)
     ? calcDistKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
     : null;
@@ -123,41 +124,58 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
         </div>
       )}
 
-      {/* Bottom bar: Waze + GPS always visible */}
+      {/* Bottom bar: Invoice (if exists) + Waze + GPS */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
         background: 'rgba(255,255,255,0.97)',
         borderTop: '1px solid #e2e8f0',
         padding: '8px 10px',
         paddingBottom: isExpanded ? 'max(8px, env(safe-area-inset-bottom))' : '8px',
-        display: 'flex', gap: 8,
+        display: 'flex', flexDirection: 'column', gap: 6,
       }}>
-        <a
-          href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
-          target="_blank" rel="noopener noreferrer"
-          style={{
-            flex: 1, height: 38, borderRadius: 12,
-            background: 'linear-gradient(135deg,#33ccff,#00b2d9)',
-            color: 'white', fontWeight: 800, fontSize: 13,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-            textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,178,217,0.3)',
-          }}
-        >
-          Waze
-        </a>
-        <a
-          href={`https://maps.google.com/maps?daddr=${task.lat},${task.lng}`}
-          target="_blank" rel="noopener noreferrer"
-          style={{
-            flex: 1, height: 38, borderRadius: 12,
-            background: 'linear-gradient(135deg,#4285f4,#1967d2)',
-            color: 'white', fontWeight: 800, fontSize: 13,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-            textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)',
-          }}
-        >
-          GPS
-        </a>
+        {/* Invoice button — only if invoice exists */}
+        {task.invoice_html && (
+          <button
+            onClick={onInvoiceClick}
+            style={{
+              width: '100%', height: 38, borderRadius: 12,
+              background: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+              color: 'white', fontWeight: 800, fontSize: 13,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
+            }}
+          >
+            <FileText size={15} /> חשבונית מס — לחץ לצפייה והורדה
+          </button>
+        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a
+            href={`https://waze.com/ul?ll=${task.lat},${task.lng}&navigate=yes`}
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              flex: 1, height: 38, borderRadius: 12,
+              background: 'linear-gradient(135deg,#33ccff,#00b2d9)',
+              color: 'white', fontWeight: 800, fontSize: 13,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,178,217,0.3)',
+            }}
+          >
+            Waze
+          </a>
+          <a
+            href={`https://maps.google.com/maps?daddr=${task.lat},${task.lng}`}
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              flex: 1, height: 38, borderRadius: 12,
+              background: 'linear-gradient(135deg,#4285f4,#1967d2)',
+              color: 'white', fontWeight: 800, fontSize: 13,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              textDecoration: 'none', boxShadow: '0 2px 8px rgba(66,133,244,0.3)',
+            }}
+          >
+            GPS
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -167,6 +185,7 @@ export default function TaskLocationMap({ task }) {
   const [mapToken, setMapToken] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [expanded, setExpanded] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
 
   const taskLat = parseFloat(task?.lat);
   const taskLng = parseFloat(task?.lng);
@@ -198,10 +217,11 @@ export default function TaskLocationMap({ task }) {
             mapToken={mapToken}
             task={enrichedTask}
             userLocation={userLocation}
-            height={220}
+            height={enrichedTask.invoice_html ? 258 : 220}
             onExpand={() => setExpanded(true)}
             onCollapse={() => setExpanded(false)}
             isExpanded={false}
+            onInvoiceClick={() => setShowInvoice(true)}
           />
         ) : (
           <div style={{ height: 220, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -222,6 +242,7 @@ export default function TaskLocationMap({ task }) {
               onExpand={() => {}}
               onCollapse={() => setExpanded(false)}
               isExpanded={true}
+              onInvoiceClick={() => setShowInvoice(true)}
             />
           ) : (
             <div style={{ height: '100dvh', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -230,6 +251,10 @@ export default function TaskLocationMap({ task }) {
           )}
         </div>,
         document.body
+      )}
+
+      {showInvoice && enrichedTask.invoice_html && (
+        <InvoiceViewModal invoiceHtml={enrichedTask.invoice_html} onClose={() => setShowInvoice(false)} />
       )}
     </>
   );
