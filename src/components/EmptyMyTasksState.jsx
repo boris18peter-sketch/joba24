@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const EXAMPLES = [
@@ -21,79 +21,89 @@ const EXAMPLES = [
   '🌿 גיזום גינה',
   '📸 צלם לשעה',
   '🎁 איסוף חבילה',
+  '🏋️ מדריך כושר לבית',
 ];
 
-function InfiniteTicker() {
-  const containerRef = useRef(null);
-  const posRef = useRef(0);
-  const rafRef = useRef(null);
-  const [ready, setReady] = useState(false);
+let tagIdCounter = 0;
 
-  // duplicate items so there's always a full screen visible
-  const items = [...EXAMPLES, ...EXAMPLES, ...EXAMPLES];
+export default function EmptyMyTasksState() {
+  const [tags, setTags] = useState([]);
+  const exampleIndexRef = useRef(0);
+
+  const spawnTag = () => {
+    const text = EXAMPLES[exampleIndexRef.current % EXAMPLES.length];
+    exampleIndexRef.current += 1;
+
+    const id = ++tagIdCounter;
+    const left = 5 + Math.random() * 65; // 5% – 70%
+    const duration = 8 + Math.random() * 4; // 8s – 12s
+
+    setTags(prev => [...prev, { id, text, left, duration }]);
+
+    // Remove after animation completes
+    setTimeout(() => {
+      setTags(prev => prev.filter(t => t.id !== id));
+    }, duration * 1000 + 200);
+  };
 
   useEffect(() => {
-    setReady(true);
+    // Spawn a few immediately with staggered starts
+    const initial = [0, 700, 1400, 2100];
+    const initialTimers = initial.map(delay => setTimeout(spawnTag, delay));
+
+    // Then spawn every 2.5s
+    const interval = setInterval(spawnTag, 2500);
+
+    return () => {
+      initialTimers.forEach(clearTimeout);
+      clearInterval(interval);
+    };
   }, []);
 
-  useEffect(() => {
-    if (!ready) return;
-    const el = containerRef.current;
-    if (!el) return;
-
-    // single copy width = total / 3
-    const singleWidth = el.scrollWidth / 3;
-
-    const step = () => {
-      posRef.current -= 0.6;
-      if (Math.abs(posRef.current) >= singleWidth) {
-        posRef.current = 0;
-      }
-      el.style.transform = `translateX(${posRef.current}px)`;
-      rafRef.current = requestAnimationFrame(step);
-    };
-
-    rafRef.current = requestAnimationFrame(step);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [ready]);
-
   return (
-    <div style={{ width: '100%', overflow: 'hidden', position: 'relative', padding: '6px 0 10px' }}>
-      {/* fade edges */}
-      <div style={{ position: 'absolute', inset: 0, right: 'auto', width: 40, background: 'linear-gradient(to right, #f4f7fb, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, left: 'auto', width: 40, background: 'linear-gradient(to left, #f4f7fb, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-      <div
-        ref={containerRef}
-        style={{ display: 'flex', flexDirection: 'row', width: 'max-content', willChange: 'transform' }}
-      >
-        {items.map((text, i) => (
-          <span key={i} style={{
-            flexShrink: 0,
-            display: 'inline-block',
-            background: '#ffffff',
-            border: '1.5px solid #e2e8f0',
-            borderRadius: 20,
-            padding: '8px 14px',
-            fontSize: 13,
-            fontWeight: 700,
-            color: '#1e293b',
-            whiteSpace: 'nowrap',
-            marginLeft: 10,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-          }}>
-            {text}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
+      {/* Floating tags area */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        height: 120,
+        overflow: 'hidden',
+        marginBottom: 8,
+      }}>
+        <style>{`
+          @keyframes floatUp {
+            0%   { transform: translateY(0);    opacity: 0; }
+            8%   { opacity: 1; }
+            85%  { opacity: 1; }
+            100% { transform: translateY(-140px); opacity: 0; }
+          }
+        `}</style>
+
+        {tags.map(tag => (
+          <span
+            key={tag.id}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: `${tag.left}%`,
+              background: '#ffffff',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: 20,
+              padding: '7px 13px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#1e293b',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              animation: `floatUp ${tag.duration}s ease-in-out forwards`,
+              pointerEvents: 'none',
+            }}
+          >
+            {tag.text}
           </span>
         ))}
       </div>
-    </div>
-  );
-}
 
-export default function EmptyMyTasksState() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <div style={{ fontSize: 44 }}>📭</div>
@@ -112,9 +122,7 @@ export default function EmptyMyTasksState() {
         </Link>
       </div>
 
-      <InfiniteTicker />
-
-      <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 8, fontWeight: 600 }}>
+      <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 4, fontWeight: 600 }}>
         אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪
       </p>
     </div>
