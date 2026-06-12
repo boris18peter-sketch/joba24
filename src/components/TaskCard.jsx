@@ -927,11 +927,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         {showDetails && (
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
             <TaskDetailsRows task={task} compact={true} />
-            {isMyPublished && liveApplicantCount === 0 && task.status === 'OPEN' && task.city && task.category && (
-              <div style={{ marginTop: 8 }}>
-                <WorkerPoolPill category={task.category} city={task.city} />
-              </div>
-            )}
+
+
           </div>
         )}
       </div>

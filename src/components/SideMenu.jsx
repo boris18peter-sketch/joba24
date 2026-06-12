@@ -154,8 +154,8 @@ export default function SideMenu({ open, onClose }) {
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           {/* Joba24 yellow CTA button — same as AppHeader */}
           <Link
-            to={isAuthenticated ? '/create-task' : '#'}
-            onClick={(e) => {if (!isAuthenticated) {e.preventDefault();setShowLogin(true);}onClose();}}
+            to="/create-task"
+            onClick={() => { onClose(); }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '13px 16px', borderRadius: 14,
