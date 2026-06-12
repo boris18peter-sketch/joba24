@@ -19,31 +19,34 @@ const EXAMPLES = [
   '🎂 איסוף עוגה דחוף',
   '🛠️ תיקון דלת',
   '🌿 גיזום גינה',
-  '📸 צלם לשעה',
   '🎁 איסוף חבילה',
   '🏋️ מדריך כושר לבית',
+  '📸 לצלם הצעת נישואין',
+  '🎈 לנפח בלונים למסיבה',
+  '🌹 להביא זר פרחים',
+  '🚗 לקחת רכב לטסט',
+  '🚗 שטיפת רכב',
+  '💡 להחליף נברשת בתקרה גבוהה',
+  '🚪 לתקן ציר של דלת',
+  '📺 לתלות טלוויזיה 65 אינץ\'',
+  '📦 עזרה בפריקת ארגזים',
+  '🧺 לעזור לקפל סל כביסה',
+  '💧 לנקות חצר בלחץ מים',
 ];
 
 let tagIdCounter = 0;
 
-// Pre-assigned horizontal lanes so tags don't overlap
-const LANES = [8, 28, 50, 68];
-
 export default function EmptyMyTasksState() {
   const [tags, setTags] = useState([]);
   const exampleIndexRef = useRef(0);
-  const laneIndexRef = useRef(0);
 
   const spawnTag = () => {
     const text = EXAMPLES[exampleIndexRef.current % EXAMPLES.length];
     exampleIndexRef.current += 1;
 
     const id = ++tagIdCounter;
-    // cycle through lanes so tags spread across the width
-    const left = LANES[laneIndexRef.current % LANES.length];
-    laneIndexRef.current += 1;
-
-    const duration = 9 + Math.random() * 3; // 9s – 12s
+    const left = 4 + Math.random() * 62; // 4% – 66%
+    const duration = 10 + Math.random() * 5; // 10s – 15s
 
     setTags(prev => [...prev, { id, text, left, duration }]);
 
@@ -53,13 +56,15 @@ export default function EmptyMyTasksState() {
   };
 
   useEffect(() => {
-    // Spawn 4 tags immediately spread across lanes, then keep going
-    const initialDelays = [0, 600, 1200, 1800];
-    const initialTimers = initialDelays.map(delay => setTimeout(spawnTag, delay));
-    const interval = setInterval(spawnTag, 1800);
+    // Staggered initial spawns spread over 6s so screen isn't empty
+    const initialDelays = [0, 1200, 2400, 3600, 4800];
+    const timers = initialDelays.map(delay => setTimeout(spawnTag, delay));
+
+    // After initial batch, spawn one every 3s
+    const interval = setInterval(spawnTag, 3000);
 
     return () => {
-      initialTimers.forEach(clearTimeout);
+      timers.forEach(clearTimeout);
       clearInterval(interval);
     };
   }, []);
@@ -84,19 +89,14 @@ export default function EmptyMyTasksState() {
         </Link>
       </div>
 
-      {/* Floating tags area — below hero */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        height: 130,
-        overflow: 'hidden',
-      }}>
+      {/* Floating tags area */}
+      <div style={{ position: 'relative', width: '100%', height: 140, overflow: 'hidden' }}>
         <style>{`
           @keyframes floatUp {
             0%   { transform: translateY(0px);    opacity: 0; }
-            6%   { opacity: 1; }
-            88%  { opacity: 1; }
-            100% { transform: translateY(-150px); opacity: 0; }
+            8%   { opacity: 1; }
+            85%  { opacity: 1; }
+            100% { transform: translateY(-160px); opacity: 0; }
           }
         `}</style>
 
