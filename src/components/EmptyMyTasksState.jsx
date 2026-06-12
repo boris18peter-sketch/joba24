@@ -23,8 +23,8 @@ const EXAMPLES = [
 ];
 
 export default function EmptyMyTasksState() {
-  // Render items 3x for seamless loop
-  const items = [...EXAMPLES, ...EXAMPLES, ...EXAMPLES];
+  // Render items 2x for seamless loop
+  const items = [...EXAMPLES, ...EXAMPLES];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
@@ -76,7 +76,7 @@ export default function EmptyMyTasksState() {
 
         @keyframes joba-scroll {
           0%   { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
+          100% { transform: translateX(-50%); }
         }
 
         .joba-tag {
