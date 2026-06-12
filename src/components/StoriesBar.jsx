@@ -106,8 +106,9 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
   useEffect(() => {
     if (!task) return;
     markViewed(task.id);
-    // Track story view (increment views_count) — only once per session per story
-    if (!viewedInSessionRef.current.has(task.id)) {
+    // Don't count views for the task owner
+    const isOwner = currentUserId && task.client_id === currentUserId;
+    if (!isOwner && !viewedInSessionRef.current.has(task.id)) {
       viewedInSessionRef.current.add(task.id);
       const newViews = (task.views_count || 0) + 1;
       base44.entities.Task.update(task.id, { views_count: newViews }).catch(() => {});
@@ -233,7 +234,8 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 
   const handleTaskClick = (e) => {
     e.stopPropagation();
-    // Track story click (increment clicks_count)
+    // Don't count clicks/views for the task owner
+    if (isOwnerStory) return;
     const newClicks = (task.clicks_count || 0) + 1;
     base44.entities.Task.update(task.id, { clicks_count: newClicks }).catch(() => {});
   };
@@ -291,7 +293,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
       </div>
 
       {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-0 z-20" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+      <div className="absolute bottom-0 left-0 right-0 z-20" style={{ paddingBottom: 'max(100px, calc(env(safe-area-inset-bottom) + 80px))' }}>
         <div style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 70%, transparent 100%)', padding: '32px 20px 14px', color: 'white' }}>
           <div style={{ fontSize: 38, fontWeight: 900, lineHeight: 1, marginBottom: 4 }}>₪{Math.round(currentPrice)}</div>
           <h2 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.25, marginBottom: 8 }}>{task.title}</h2>

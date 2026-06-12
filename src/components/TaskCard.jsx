@@ -216,10 +216,12 @@ const SCANNING_TEXTS = [
 // ── Boost Charge Pill ────────────────────────────────────────────────────────
 const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
 
-function BoostChargePill({ onBoost, loading, lastBoostAt }) {
+function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    if (!lastBoostAt) return 1;
-    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
+    // Use lastBoostAt if available, otherwise use createdDate (task just published)
+    const refTime = lastBoostAt || createdDate;
+    if (!refTime) return 0;
+    const elapsed = Date.now() - new Date(refTime).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS);
   };
 
@@ -592,7 +594,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           borderRadius: 16,
           border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : showCardSuccess ? '1.5px solid #16a34a' : '1px solid #e8edf5',
           boxShadow: '0 1px 6px rgba(15,43,107,0.06)',
-          padding: '16px 16px 24px',
+          padding: '16px 16px 0',
           cursor: 'pointer',
           position: 'relative',
           overflow: 'hidden',
@@ -811,7 +813,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               // Owner management controls — boost pill inline with button
               task.status === 'OPEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} lastBoostAt={task.last_boost_at} />}
+                  {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
                   <button
                     onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
                     style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
@@ -894,17 +896,36 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Details dropdown — compact arrow only */}
-        <div style={{ position: 'absolute', bottom: 8, left: 8 }}>
+        {/* Details toggle — subtle trapezoid strip at bottom center */}
+        <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
           <button
             onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
-            style={{ width: 24, height: 24, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', WebkitTapHighlightColor: 'transparent', flexShrink: 0 }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+              width: '100%', height: 26, background: 'none', border: 'none',
+              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              position: 'relative',
+            }}
           >
-            {showDetails ? <ChevronUp size={12} color="#94a3b8" /> : <ChevronDown size={12} color="#94a3b8" />}
+            {/* Trapezoid shape */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: showDetails ? '#f0f4fb' : '#f8fafc',
+              borderRadius: '0 0 12px 12px',
+              borderTop: '1px solid #eef2f8',
+              clipPath: 'polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)',
+              transition: 'background 0.15s',
+            }} />
+            <span style={{ position: 'relative', zIndex: 1, fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: 0.3 }}>
+              {showDetails ? 'פחות' : 'פרטים'}
+            </span>
+            {showDetails
+              ? <ChevronUp size={11} color="#94a3b8" style={{ position: 'relative', zIndex: 1 }} />
+              : <ChevronDown size={11} color="#94a3b8" style={{ position: 'relative', zIndex: 1 }} />}
           </button>
         </div>
         {showDetails && (
-          <div style={{ borderTop: '1px solid #f1f5f9', marginTop: 4, paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
             <TaskDetailsRows task={task} compact={true} />
             {isMyPublished && liveApplicantCount === 0 && task.status === 'OPEN' && task.city && task.category && (
               <div style={{ marginTop: 8 }}>

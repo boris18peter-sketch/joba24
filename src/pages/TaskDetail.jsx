@@ -97,10 +97,11 @@ import TaskLocationMap from '@/components/TaskLocationMap';
 // Charging bolt pill — fills over 1 hour, smooth liquid wave animation
 const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000;
 
-function BoostChargeDetail({ onBoost, loading, lastBoostAt }) {
+function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    if (!lastBoostAt) return 1;
-    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
+    const refTime = lastBoostAt || createdDate;
+    if (!refTime) return 0;
+    const elapsed = Date.now() - new Date(refTime).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS_DETAIL);
   };
 
@@ -990,13 +991,13 @@ export default function TaskDetail() {
                 <div style={{ flex: 1 }}>
                   <ScanningLabelDetail />
                 </div>
-                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} />}
-              </div>
-            )}
-            {/* Boost pill when there are applicants (no scanning label shown) */}
-            {isOwner && task.status === 'OPEN' && applicationCount > 0 && boostAvailable && (
-              <div style={{ marginBottom: 4 }}>
-                <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} />
+                {boostAvailable && <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
+                </div>
+                )}
+                {/* Boost pill when there are applicants (no scanning label shown) */}
+                {isOwner && task.status === 'OPEN' && applicationCount > 0 && boostAvailable && (
+                <div style={{ marginBottom: 4 }}>
+                  <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />
               </div>
             )}
 

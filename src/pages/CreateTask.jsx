@@ -538,6 +538,44 @@ export default function CreateTask() {
     it_support: ['מחשב', 'רשת', 'תמיכה טכנית', 'תוכנה', 'חומרה', 'אינטרנט', 'ווייפיי', 'wifi', 'התקנת תוכנה', 'וירוס', 'טלפון תקוע', 'אפליקציה'],
   };
 
+  // Check if text looks like gibberish (random key mashing)
+  // Returns error string if looks like gibberish, null if ok
+  const checkGibberish = (text, fieldLabel = 'הטקסט') => {
+    if (!text || text.trim().length < 4) return null;
+    const t = text.trim();
+    // Too short overall
+    if (t.length < 5) return null;
+    // Check for very long runs of consonants with no spaces or vowels (Hebrew gibberish)
+    const hebrewConsonants = /[בגדהוזחטיכלמנסעפצקרשתךםןף]/g;
+    const matches = t.match(hebrewConsonants);
+    const hebrewLetters = t.replace(/[^א-ת]/g, '');
+    // Detect if the string is mostly random short sequences with no recognizable words
+    const words = t.split(/\s+/).filter(w => w.length > 0);
+    if (words.length > 0) {
+      const avgLen = words.reduce((s, w) => s + w.length, 0) / words.length;
+      // Hebrew words are usually 2-8 chars, gibberish is often 1-2 random chars
+      const tinyWords = words.filter(w => w.replace(/[^א-ת]/g,'').length > 0 && w.replace(/[^א-ת]/g,'').length <= 1).length;
+      const tinyRatio = words.length > 0 ? tinyWords / words.length : 0;
+      if (tinyRatio > 0.65 && words.length >= 3) {
+        return `${fieldLabel} נראה כמו קלט לא תקין. אנא תאר את הנדרש בצורה ברורה.`;
+      }
+    }
+    // Check for runs of 5+ consecutive same/similar chars (lbgbmtz style)
+    if (/(.)\1{4,}/.test(t)) {
+      return `${fieldLabel} מכיל תווים חוזרים — אנא כתוב תיאור ברור.`;
+    }
+    // Check for all-consonant Hebrew with no vowel helpers (e.g. לבגבמצ)
+    if (hebrewLetters.length >= 4) {
+      const hebrewVowelLike = /[אויהא]/g;
+      const vowelCount = (hebrewLetters.match(hebrewVowelLike) || []).length;
+      const ratio = vowelCount / hebrewLetters.length;
+      if (ratio < 0.05 && hebrewLetters.length > 6) {
+        return `${fieldLabel} נראה כמו אותיות אקראיות. אנא כתוב תיאור שמובן לאחרים.`;
+      }
+    }
+    return null;
+  };
+
   // Check if the combined title+description matches the selected category
   // Returns error string if mismatch, null if ok
   const checkCategoryDescriptionMatch = (category, description, title = '') => {
@@ -618,6 +656,14 @@ export default function CreateTask() {
         setShowErrorBanner(true);
         return;
       }
+      // Gibberish check for edit mode too
+      const tg = checkGibberish(form.title, 'הכותרת');
+      const dg = checkGibberish(form.description, 'התיאור');
+      if (tg || dg) {
+        setModerationErrors({ title: tg || undefined, description: dg || undefined });
+        setShowErrorBanner(true);
+        return;
+      }
       setLoading(true);
       const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
       const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
@@ -668,6 +714,16 @@ export default function CreateTask() {
     setErrors({});
     setModerationErrors({});
     setLoading(true); // disable button immediately to prevent double-clicks
+
+    // Gibberish / meaningless content check (fast, no API)
+    const titleGibberish = checkGibberish(form.title, 'הכותרת');
+    const descGibberish = checkGibberish(form.description, 'התיאור');
+    if (titleGibberish || descGibberish) {
+      setModerationErrors({ title: titleGibberish || undefined, description: descGibberish || undefined });
+      setShowErrorBanner(true);
+      setLoading(false);
+      return;
+    }
 
     // Final moderation checks
     setCheckingModeration('submit');
