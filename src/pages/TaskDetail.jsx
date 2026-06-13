@@ -111,6 +111,11 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const charged = progress >= 1;
   const pct = Math.round(progress * 100);
 
+  // Reset progress immediately when lastBoostAt changes (e.g. after a boost)
+  useEffect(() => {
+    setProgress(getProgress());
+  }, [lastBoostAt]);
+
   useEffect(() => {
     if (charged) return;
     const iv = setInterval(() => {
