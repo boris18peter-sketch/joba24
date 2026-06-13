@@ -451,7 +451,7 @@ export default function TaskDetail() {
   });
 
   const reopenMutation = useMutation({
-    mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null }),
+    mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null, last_boost_at: null, boost_count: 0 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       toast.success('המשימה נפתחה מחדש!');

@@ -218,9 +218,10 @@ const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
 
 function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    // Only count from lastBoostAt — if never boosted, start from 0 (synced with TaskDetail behavior)
-    if (!lastBoostAt) return 0;
-    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
+    // If never boosted, count from task creation date (same logic as TaskDetail)
+    const startTime = lastBoostAt || createdDate;
+    if (!startTime) return 1;
+    const elapsed = Date.now() - new Date(startTime).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS);
   };
 
