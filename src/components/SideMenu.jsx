@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck } from 'lucide-react';
+import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -134,7 +134,7 @@ export default function SideMenu({ open, onClose }) {
 
           })}
           {/* Admin link — shown only to admins */}
-          {isAuthenticated &&
+          {isAuthenticated && me?.role === 'admin' &&
           <Link to="/admin" onClick={onClose}
           style={{
             display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
@@ -144,9 +144,22 @@ export default function SideMenu({ open, onClose }) {
             borderLeft: location.pathname === '/admin' ? '3px solid #fbbf24' : '3px solid transparent',
             opacity: 0.85
           }}>
-            
               <ShieldCheck size={18} />
               דשבורד מנהל
+            </Link>
+          }
+          {/* Agent link — shown only to agents */}
+          {isAuthenticated && me?.role === 'agent' &&
+          <Link to="/agent-dashboard" onClick={onClose}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
+            background: location.pathname === '/agent-dashboard' ? 'rgba(168,85,247,0.15)' : 'transparent',
+            color: '#a855f7',
+            fontWeight: 700, fontSize: 15, textDecoration: 'none',
+            borderLeft: location.pathname === '/agent-dashboard' ? '3px solid #a855f7' : '3px solid transparent',
+          }}>
+              <TrendingUp size={18} />
+              דשבורד סוכן
             </Link>
           }
         </nav>

@@ -32,6 +32,7 @@ import ChatInbox from '@/pages/ChatInbox';
 import PublicProfile from '@/pages/PublicProfile';
 import Notifications from '@/pages/Notifications';
 import AdminDashboard from '@/pages/AdminDashboard';
+import AgentDashboard from '@/pages/AgentDashboard';
 import Terms from '@/pages/Terms';
 
 function ScrollToTop() {
@@ -130,6 +131,7 @@ const AuthenticatedApp = () => {
                 <Route path="/chats" element={<ChatInbox />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/agent-dashboard" element={<AgentDashboard />} />
               </Route>
             </Route>
             <Route element={<ProtectedRoute />}>

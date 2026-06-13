@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2 } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 
@@ -57,9 +57,58 @@ function TaskRow({ task }) {
   );
 }
 
-function UserRow({ user, onToggleBlock }) {
+function SetAgentModal({ user, onClose, onSave }) {
+  const [rate, setRate] = useState(user.commission_rate || 10);
+  const [loading, setLoading] = useState(false);
+  const isAgent = user.role === 'agent';
+
+  const handleSave = async () => {
+    setLoading(true);
+    const agentCode = user.agent_code || `AGENT_${user.id.slice(-6).toUpperCase()}`;
+    await onSave(user, { role: 'agent', commission_rate: Number(rate), agent_code: agentCode });
+    setLoading(false);
+    onClose();
+  };
+
+  const handleRemove = async () => {
+    setLoading(true);
+    await onSave(user, { role: 'user', commission_rate: 0, agent_code: null });
+    setLoading(false);
+    onClose();
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface-2)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 }} dir="rtl">
+        <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>הגדרת סוכן</div>
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 20 }}>{user.full_name} · {user.email}</div>
+        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>אחוז עמלה (%)</label>
+        <input type="number" value={rate} onChange={e => setRate(e.target.value)} min={0} max={100}
+          style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 16, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 16 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleSave} disabled={loading} style={{ flex: 1, height: 42, borderRadius: 12, background: '#1a6fd4', color: 'white', border: 'none', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <><UserCheck size={14} /> {isAgent ? 'עדכן סוכן' : 'הגדר כסוכן'}</>}
+          </button>
+          {isAgent && (
+            <button onClick={handleRemove} disabled={loading} style={{ height: 42, padding: '0 14px', borderRadius: 12, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+              הסר סוכן
+            </button>
+          )}
+          <button onClick={onClose} style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            ביטול
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserRow({ user, onToggleBlock, onSetAgent }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAgentModal, setShowAgentModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const isAgent = user.role === 'agent';
 
   const handleBlock = async (e) => {
     e.stopPropagation();
@@ -68,14 +117,25 @@ function UserRow({ user, onToggleBlock }) {
     setLoading(false);
   };
 
+  const handleCopyLink = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(`${window.location.origin}/?ref=${user.agent_code}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div style={{ background: user.is_blocked ? '#fef2f2' : 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_blocked ? '#fecaca' : 'var(--border-1)'}` , marginBottom: 8, overflow: 'hidden' }}>
+    <>
+    <div style={{ background: user.is_blocked ? '#fef2f2' : isAgent ? '#f5f3ff' : 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_blocked ? '#fecaca' : isAgent ? '#ddd6fe' : 'var(--border-1)'}` , marginBottom: 8, overflow: 'hidden' }}>
       <div onClick={() => setOpen(v => !v)} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: isAgent ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
           {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>{user.full_name}</div>
+          <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {user.full_name}
+            {isAgent && <span style={{ fontSize: 9, fontWeight: 800, background: '#7c3aed', color: 'white', padding: '1px 6px', borderRadius: 10 }}>סוכן</span>}
+          </div>
           <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy') : ''}</div>
         </div>
         {user.is_blocked && <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>חסום</span>}
@@ -84,6 +144,15 @@ function UserRow({ user, onToggleBlock }) {
             <Star size={11} style={{ fill: '#fbbf24' }} /> {user.rating?.toFixed(1)}
           </span>
         )}
+        <button onClick={e => { e.stopPropagation(); setShowAgentModal(true); }} style={{
+          padding: '5px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
+          background: isAgent ? '#f5f3ff' : '#f0fdf4',
+          color: isAgent ? '#7c3aed' : '#16a34a',
+          display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+          border: `1px solid ${isAgent ? '#ddd6fe' : '#bbf7d0'}`,
+        }}>
+          <UserCheck size={11} /> {isAgent ? `${user.commission_rate}%` : 'סוכן'}
+        </button>
         <button onClick={handleBlock} disabled={loading} style={{
           padding: '5px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
           background: user.is_blocked ? '#dcfce7' : '#fef2f2',
@@ -98,6 +167,16 @@ function UserRow({ user, onToggleBlock }) {
         <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {user.phone && <div><strong>טלפון:</strong> {user.phone}</div>}
           {user.role && <div><strong>תפקיד:</strong> {user.role}</div>}
+          {isAgent && user.agent_code && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f3ff', borderRadius: 8, padding: '6px 10px', marginTop: 4 }}>
+              <div style={{ flex: 1, fontSize: 11, color: '#7c3aed', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {window.location.origin}/?ref={user.agent_code}
+              </div>
+              <button onClick={handleCopyLink} style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#16a34a' : '#7c3aed', display: 'flex', padding: 2 }}>
+                {copied ? <Check size={13} /> : <Copy size={13} />}
+              </button>
+            </div>
+          )}
           {user.is_verified && <div style={{ color: '#16a34a', fontWeight: 700 }}>✓ משתמש מאומת</div>}
           {user.score_tasks > 0 && <div><strong>משימות הושלמו:</strong> {user.score_tasks}</div>}
           {user.rating_count > 0 && <div><strong>דירוגים שניתנו:</strong> {user.rating_count}</div>}
@@ -105,6 +184,8 @@ function UserRow({ user, onToggleBlock }) {
         </div>
       )}
     </div>
+    {showAgentModal && <SetAgentModal user={user} onClose={() => setShowAgentModal(false)} onSave={onSetAgent} />}
+    </>
   );
 }
 
@@ -192,6 +273,13 @@ export default function AdminDashboard() {
     await base44.entities.User.update(user.id, { is_blocked: !user.is_blocked });
     queryClient.setQueryData(['adminUsers'], (old = []) =>
       old.map(u => u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u)
+    );
+  };
+
+  const handleSetAgent = async (user, updates) => {
+    await base44.entities.User.update(user.id, updates);
+    queryClient.setQueryData(['adminUsers'], (old = []) =>
+      old.map(u => u.id === user.id ? { ...u, ...updates } : u)
     );
   };
 
@@ -316,7 +404,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{filteredUsers.length} משתמשים</div>
             )}
             {filteredUsers.map(user => (
-              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} />
+              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} />
             ))}
           </>
         )}
