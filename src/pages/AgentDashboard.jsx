@@ -20,13 +20,16 @@ export default function AgentDashboard() {
   const workerIds = allUsers.map(u => u.id);
 
   const { data: allTasks = [], isLoading: loadingTasks } = useQuery({
-    queryKey: ['agentTasks', me?.agent_code],
+    queryKey: ['agentTasks', me?.agent_code, workerIds.join(',')],
     queryFn: async () => {
       if (!workerIds.length) return [];
-      const tasks = await base44.entities.Task.filter({ status: 'COMPLETED' }, '-completed_at', 500);
-      return tasks.filter(t => workerIds.includes(t.worker_id));
+      // Fetch completed tasks per worker in parallel (no $in support in filter)
+      const results = await Promise.all(
+        workerIds.map(wid => base44.entities.Task.filter({ worker_id: wid, status: 'COMPLETED' }, '-completed_at', 100))
+      );
+      return results.flat();
     },
-    enabled: !!me?.agent_code && workerIds.length >= 0,
+    enabled: !!me?.agent_code && allUsers.length >= 0 && !loadingUsers,
     staleTime: 60000,
   });
 

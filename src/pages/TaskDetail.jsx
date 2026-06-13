@@ -100,9 +100,10 @@ const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000; // 1 hour to recharge after last bo
 
 function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    // Only count progress from last boost — if never boosted, start from 0
-    if (!lastBoostAt) return 0;
-    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
+    // If never boosted, count from task creation date
+    const startTime = lastBoostAt || createdDate;
+    if (!startTime) return 1; // fully charged if no reference point
+    const elapsed = Date.now() - new Date(startTime).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS_DETAIL);
   };
 

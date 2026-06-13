@@ -85,6 +85,15 @@ export const AuthProvider = ({ children }) => {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
       }
 
+      // Referral: if user arrived via ?ref=AGENT_CODE, save it to their profile
+      try {
+        const savedRef = localStorage.getItem('joba24_ref_code');
+        if (savedRef && !currentUser.referred_by_agent_code) {
+          await base44.auth.updateMe({ referred_by_agent_code: savedRef });
+          localStorage.removeItem('joba24_ref_code');
+        }
+      } catch {}
+
       // Subscribe to User entity changes to keep credits up to date in real-time
       base44.entities.User.subscribe((event) => {
         if (event.data?.id === currentUser?.id || event.id === currentUser?.id) {

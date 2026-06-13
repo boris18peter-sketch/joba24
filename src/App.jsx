@@ -45,6 +45,18 @@ function ScrollToTop() {
   return null;
 }
 
+// Save referral code from URL to localStorage so AuthContext can apply it after login
+function CaptureRefCode() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('joba24_ref_code', ref);
+    }
+  }, []);
+  return null;
+}
+
 const ROOT_TABS = new Set(['/', '/map', '/chats', '/profile', '/wallet']);
 function getDepth(pathname) {
   if (ROOT_TABS.has(pathname)) return 0;
@@ -162,6 +174,7 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
+          <CaptureRefCode />
           <ScrollToTop />
           <AuthenticatedApp />
         </Router>
