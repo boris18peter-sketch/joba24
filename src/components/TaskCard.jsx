@@ -218,10 +218,9 @@ const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
 
 function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    // Use lastBoostAt if available, otherwise use createdDate (task just published)
-    const refTime = lastBoostAt || createdDate;
-    if (!refTime) return 0;
-    const elapsed = Date.now() - new Date(refTime).getTime();
+    // Only count from lastBoostAt — if never boosted, start from 0 (synced with TaskDetail behavior)
+    if (!lastBoostAt) return 0;
+    const elapsed = Date.now() - new Date(lastBoostAt).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS);
   };
 
@@ -573,6 +572,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const currentPrice = calculateCurrentPrice(task);
 
   // Boost availability check for card — show pill for all open owned tasks (pill handles charge state)
+  // Sync logic with TaskDetail: card pill counts from createdDate when never boosted (same as detail)
   const boostAvailableCard = isMyPublished && task.status === 'OPEN' && !task.worker_id;
 
   const handleBoostCard = async (e) => {
@@ -812,14 +812,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           {/* Price + payment + distance */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: dist != null && !isNaN(dist) ? 17 : 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
+              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
               {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
-              {dist != null && !isNaN(dist) && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                  <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
-                  {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
-                </span>
-              )}
+            </div>
+            {dist != null && !isNaN(dist) && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'inline-flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
+                <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
+                {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+              </span>
+            )}
+            <div style={{ display: 'none' }}>
             </div>
             {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
             <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>

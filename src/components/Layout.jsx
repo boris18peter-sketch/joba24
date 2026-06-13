@@ -630,6 +630,8 @@ export default function Layout() {
               const hasBeenVisited = visitedTabs.has(tabPath);
               // Only render if this tab has been visited at least once
               if (!hasBeenVisited) return null;
+              // Guard: if not authenticated, show login prompt for chat/profile instead of the actual page
+              const needsAuth = !isAuthenticated && (tabPath === '/chats' || tabPath === '/profile');
               const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
               return (
                 <div
@@ -646,7 +648,21 @@ export default function Layout() {
                     height: isActive ? '100%' : 0,
                   }}
                 >
-                  {tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
+                  {needsAuth ? (
+                    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', gap: 16, textAlign: 'center' }}>
+                      <div style={{ fontSize: 48, marginBottom: 4 }}>{tabPath === '/chats' ? '💬' : '👤'}</div>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>נדרשת התחברות</div>
+                      <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                        {tabPath === '/chats' ? 'כדי לצפות בצ\'אטים שלך יש להתחבר לחשבון.' : 'כדי לצפות בפרופיל ולנהל את הגדרותיך יש להתחבר.'}
+                      </div>
+                      <button
+                        onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                        style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}
+                      >
+                        התחבר עכשיו
+                      </button>
+                    </div>
+                  ) : tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
                   </div>
               );
             })}

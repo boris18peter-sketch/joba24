@@ -37,7 +37,7 @@ export default function HomeFeed() {
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
-  const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'available');
+  const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'my_published');
   const setActiveTab = (tab) => { sessionStorage.setItem('homeTab', tab); sessionStorage.setItem('homeTabChosen', '1'); setActiveTabRaw(tab); };
   const [myPubTab, setMyPubTab] = useState('active'); // 'active' | 'completed' | 'other'
 
