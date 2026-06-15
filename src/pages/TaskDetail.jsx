@@ -425,12 +425,39 @@ export default function TaskDetail() {
     };
   }, [id, me?.id]);
 
-  // Optimistic worker update — updates UI instantly, syncs to server in background
+  // Central update function — syncs ALL caches atomically + broadcasts global event
   const handleWorkerUpdate = async (data) => {
-    // 1. Update cache immediately for instant UI feedback
-    queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...data } : old);
-    // 2. Persist to server in background
-    await base44.entities.Task.update(id, data);
+    const patch = { ...data };
+    // 1. Update every relevant cache immediately
+    queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...patch } : old);
+    queryClient.setQueryData(['workerTasksLayout', me?.id], (old = []) =>
+      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
+    );
+    queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) =>
+      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
+    );
+    queryClient.setQueryData(['allTasks'], (old) =>
+      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
+    );
+    queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
+      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
+    );
+    // activeWorkerTask (worker's banner in HomeFeed)
+    queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
+      if (!old || old.id !== id) return old;
+      const merged = { ...old, ...patch };
+      return merged.status !== 'TAKEN' ? null : merged;
+    });
+    // 2. Broadcast so HomeFeed, ActiveTaskBanner, Profile all react instantly
+    window.dispatchEvent(new CustomEvent('task_status_update', { detail: { taskId: id, update: patch } }));
+    // 3. Persist to server
+    await base44.entities.Task.update(id, patch);
+    // 4. On completion — refresh profile stats + banner
+    if (patch.status === 'COMPLETED') {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['workerTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me?.id] });
+    }
   };
 
   // Auto-open rating popup when task just became COMPLETED (for both sides)

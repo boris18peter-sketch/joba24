@@ -71,9 +71,39 @@ export default function Profile() {
 
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 5),
-    enabled: !!me?.id
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 30000,
   });
+
+  // Real-time sync — update workerTasks when a task completes
+  useEffect(() => {
+    if (!me?.id) return;
+    const unsub = base44.entities.Task.subscribe((event) => {
+      if (event.type !== 'update' || !event.data) return;
+      if (event.data.worker_id !== me.id && event.data.worker_id !== undefined) return;
+      queryClient.setQueryData(['workerTasks', me.id], (old = []) => {
+        if (!Array.isArray(old)) return old;
+        const exists = old.find(t => t.id === event.id);
+        if (!exists) return old;
+        return old.map(t => t.id === event.id ? { ...t, ...event.data } : t);
+      });
+    });
+    // Also listen for task_status_update events
+    const handler = (e) => {
+      const { taskId, update } = e.detail || {};
+      if (!taskId || !update) return;
+      queryClient.setQueryData(['workerTasks', me.id], (old = []) => {
+        if (!Array.isArray(old)) return old;
+        return old.map(t => t.id === taskId ? { ...t, ...update } : t);
+      });
+      if (update.status === 'COMPLETED') {
+        queryClient.invalidateQueries({ queryKey: ['workerTasks', me.id] });
+      }
+    };
+    window.addEventListener('task_status_update', handler);
+    return () => { unsub(); window.removeEventListener('task_status_update', handler); };
+  }, [me?.id, queryClient]);
 
   if (isLoading) {
     return (

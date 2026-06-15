@@ -39,20 +39,36 @@ export default function TaskApplicants({ task, onApprove }) {
       return { task: res.data.task };
     },
     onSuccess: (data) => {
-      // Update task cache immediately with fresh data from server
-      if (data.task) {
-        queryClient.setQueryData(['task', task.id], (old) => old ? { ...old, ...data.task } : data.task);
-        queryClient.setQueryData(['myTasks', undefined], (old = []) =>
-          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...data.task } : t) : old
+      const updatedTask = data.task;
+      if (updatedTask) {
+        // Update ALL caches so ActiveTaskBanner, TaskCard, HomeFeed all see the new state immediately
+        queryClient.setQueryData(['task', task.id], (old) => old ? { ...old, ...updatedTask } : updatedTask);
+        // workerTasksLayout — the approved worker now has an active task → banner shows
+        queryClient.setQueryData(['workerTasksLayout', updatedTask.worker_id], (old = []) => {
+          if (!Array.isArray(old)) return old;
+          const exists = old.find(t => t.id === task.id);
+          return exists ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : [updatedTask, ...old];
+        });
+        // myPublishedTasks — client side
+        queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) =>
+          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : old
+        );
+        // Also update myTasks (HomeFeed) so activeClientTask banner shows immediately
+        queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
+          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : old
         );
         queryClient.setQueryData(['allTasks'], (old = []) =>
-          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...data.task } : t) : old
+          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...updatedTask } : t) : old
         );
+        // Broadcast so any other listener can react
+        window.dispatchEvent(new CustomEvent('task_status_update', { detail: { taskId: task.id, update: updatedTask } }));
       }
+      // Hard invalidate to get fresh server state
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
-      toast.success(`${data.task?.worker_name || 'העובד'} אושר! ✨`);
+      queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', updatedTask?.worker_id] });
+      toast.success(`${updatedTask?.worker_name || 'העובד'} אושר! ✨`);
       onApprove?.();
     },
     onError: (error) => {

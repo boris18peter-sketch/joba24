@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -81,7 +81,13 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
   const [updating, setUpdating] = useState(false);
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  // Real-time sync: update task data in the banner as worker_status changes
+  // Local state so the banner updates instantly without waiting for parent re-render
+  const [localTasks, setLocalTasks] = useState(Array.isArray(tasks) ? tasks : [tasks]);
+  useEffect(() => {
+    setLocalTasks(Array.isArray(tasks) ? tasks : [tasks]);
+  }, [tasks]);
+
+  // Real-time sync via WebSocket subscription
   useEffect(() => {
     const taskList = Array.isArray(tasks) ? tasks : [tasks];
     if (!taskList.length) return;
@@ -89,7 +95,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     const unsub = base44.entities.Task.subscribe((event) => {
       if (event.type === 'update' && event.data && relevantIds.has(event.id)) {
         const updated = event.data;
-        // Update all relevant caches for immediate UI sync
+        setLocalTasks(prev => prev.map(t => t.id === event.id ? { ...t, ...updated } : t));
         queryClient.setQueryData(['activeWorkerTask', me?.id], (old) =>
           old?.id === event.id ? { ...old, ...updated } : old
         );
@@ -104,8 +110,19 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     return unsub;
   }, [tasks, me?.id, queryClient]);
 
-  const taskList = Array.isArray(tasks) ? tasks : [tasks];
-  if (!taskList.length || !me) return null;
+  // Also listen for task_status_update events (from TaskDetail/WorkerTrackerBar)
+  useEffect(() => {
+    const handler = (e) => {
+      const { taskId, update } = e.detail || {};
+      if (!taskId || !update) return;
+      setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...update } : t));
+    };
+    window.addEventListener('task_status_update', handler);
+    return () => window.removeEventListener('task_status_update', handler);
+  }, []);
+
+  if (!localTasks.length || !me) return null;
+  const taskList = localTasks;
 
   const handleQuickAction = async () => {
     if (!pendingAction || updating) return;

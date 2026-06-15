@@ -159,6 +159,13 @@ export default function Layout() {
         if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
         return old;
       });
+      // When task becomes COMPLETED, refresh profile stats for the worker
+      if (event.type === 'update' && t.status === 'COMPLETED' && t.worker_id) {
+        queryClient.invalidateQueries({ queryKey: ['workerTasks', t.worker_id] });
+        if (t.worker_id === me.id || t.client_id === me.id) {
+          queryClient.invalidateQueries({ queryKey: ['me'] });
+        }
+      }
     });
     return unsub;
   }, [me?.id, isAuthenticated, queryClient]);
