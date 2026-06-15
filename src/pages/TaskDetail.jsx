@@ -359,7 +359,7 @@ export default function TaskDetail() {
     return () => window.removeEventListener('task_reset_to_open', handleReset);
   }, [id, me?.id]);
 
-  // Listen for direct task status updates (from WorkerTrackerBar / completeTask)
+  // Listen for task_status_update — sync TaskDetail + all caches
   useEffect(() => {
     const handler = (e) => {
       const { taskId, update } = e.detail || {};
@@ -368,11 +368,12 @@ export default function TaskDetail() {
       if (update.status === 'COMPLETED') {
         queryClient.invalidateQueries({ queryKey: ['me'] });
         queryClient.invalidateQueries({ queryKey: ['myReview', id, me?.id] });
+        queryClient.invalidateQueries({ queryKey: ['workerTasks', update.worker_id || task?.worker_id] });
       }
     };
     window.addEventListener('task_status_update', handler);
     return () => window.removeEventListener('task_status_update', handler);
-  }, [id, me?.id, queryClient]);
+  }, [id, me?.id, queryClient, task?.worker_id]);
 
   // Real-time subscriptions — set cache directly for instant render, no refetch delay
   useEffect(() => {
