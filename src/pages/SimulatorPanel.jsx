@@ -547,6 +547,77 @@ export default function SimulatorPanel() {
         )}
       </Section>
 
+      {/* ── SCENARIO QA: Application Flow (no real task taking) ── */}
+      <Section title="🧪 QA — ביטול בקשות וקרדיטים" icon={<FlaskConical size={14} color="#6366f1" />} defaultOpen badge={myApps.filter(a => a.status === 'pending' || a.status === 'approved').length}>
+        <div style={{ fontSize: 11, color: '#3730a3', padding: '5px 9px', background: '#eef2ff', borderRadius: 8, border: '1px solid #c7d2fe', marginBottom: 2 }}>
+          בדיקת cancelMyApplication ו-applyForTask ללא לקיחת משימה בפועל
+        </div>
+
+        {/* Step 1: create a manual task as "another user" — we apply to our own task for testing */}
+        <Btn label="1️⃣ צור משימת QA (ידנית, 250₪)" color="#6366f1"
+          onClick={wrap(() => createTask({ title: 'QA בקשות בדיקה', approval_mode: 'manual', price: 250, category: 'other' }))} />
+
+        {/* Step 2: apply via backend function */}
+        {myTasks.filter(t => t.status === 'OPEN' && t.approval_mode === 'manual').slice(0, 3).map(t => {
+          const alreadyApplied = myApps.some(a => a.task_id === t.id && (a.status === 'pending' || a.status === 'approved'));
+          return (
+            <div key={t.id} style={{ border: '1px solid #c7d2fe', borderRadius: 11, padding: '9px', background: '#eef2ff' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#3730a3', marginBottom: 6 }}>"{t.title.slice(0, 28)}"</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+                <Btn label={alreadyApplied ? '✅ הגשת' : '2️⃣ הגש בקשה (applyForTask)'} color="#6366f1" small disabled={alreadyApplied}
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('applyForTask', { taskId: t.id, message: '🧪 בקשת QA' });
+                    if (res.data?.error) { toast.error(res.data.error); return; }
+                    toast.success(`הוגשה! ${res.data.credits_charged} קרדיטים נוכו`);
+                  })} />
+                <Btn label="3️⃣ אשר בקשה (approveWorker)" color="#059669" small disabled={!alreadyApplied}
+                  onClick={wrap(async () => {
+                    const app = myApps.find(a => a.task_id === t.id && a.status === 'pending');
+                    if (!app) { toast.error('אין בקשה ממתינה'); return; }
+                    await base44.functions.invoke('approveWorker', { taskId: t.id, applicationId: app.id, workerId: app.worker_id, workerName: app.worker_name });
+                    toast.success('אושרה!');
+                  })} />
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Step 3: cancel pending/approved application via cancelMyApplication */}
+        {myApps.filter(a => a.status === 'pending' || a.status === 'approved').length > 0 && (
+          <div style={{ border: '1px solid #fde68a', borderRadius: 11, padding: '9px', background: '#fffbeb' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>בקשות פעילות שלי ({myApps.filter(a => a.status === 'pending' || a.status === 'approved').length})</div>
+            {myApps.filter(a => a.status === 'pending' || a.status === 'approved').slice(0, 3).map(a => (
+              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                <span style={{ fontSize: 10, flex: 1, color: '#78350f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  [{a.status}] {a.task_title || a.task_id?.slice(-8)}
+                </span>
+                <Btn label="4️⃣ בטל (cancelMyApplication)" color="#dc2626" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('cancelMyApplication', { applicationId: a.id, taskId: a.task_id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success(`בוטל! ${res.data.credits_refunded ?? 0} קרדיטים הוחזרו`);
+                  })} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Credit balance sanity check */}
+        <div style={{ background: '#f0fdf4', borderRadius: 9, padding: '8px 12px', border: '1px solid #bbf7d0' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 4 }}>✅ בדיקת שלמות קרדיטים</div>
+          {creditTxs.slice(0, 5).map(tx => (
+            <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '2px 0' }}>
+              <span style={{ color: '#475569', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.note || tx.type}</span>
+              <span style={{ fontWeight: 800, color: tx.amount > 0 ? '#16a34a' : '#dc2626', flexShrink: 0, marginRight: 8 }}>{tx.amount > 0 ? '+' : ''}{tx.amount}</span>
+              <span style={{ fontSize: 10, color: '#94a3b8', flexShrink: 0 }}>יתרה: {tx.balance_after}</span>
+            </div>
+          ))}
+          <div style={{ fontSize: 12, fontWeight: 900, color: '#0f2b6b', marginTop: 6 }}>
+            יתרה נוכחית: {me?.worker_credits ?? 0} ג'ובות
+          </div>
+        </div>
+      </Section>
+
       {/* ── SCENARIO I: Notifications & Reports ── */}
       <Section title="🔔 דיווחים ואירועים" icon={<Flag size={14} color="#ef4444" />}>
         <Btn label="📋 דווח על No-Show (לא הגיע)" color="#dc2626"
