@@ -145,26 +145,33 @@ export default function Chat() {
     enabled: !!otherPersonIdCalc,
   });
 
-  // Load message history — instant from cache, then live from server
+  // Load message history — show cached instantly, then fetch fresh from server
   const CACHE_KEY = `chat_msgs_${taskId}`;
+
+  // Initialize messages from cache immediately (synchronous — zero delay)
+  const [initialized, setInitialized] = useState(false);
+  useEffect(() => {
+    if (initialized) return;
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.length) setMessages(parsed);
+      }
+    } catch {}
+    setInitialized(true);
+  }, []);
+
   const { data: fetchedMessages = [] } = useQuery({
     queryKey: ['chatMessages', taskId],
     queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
-    staleTime: 30000,
-    // No polling — real-time subscription handles live updates
-    initialData: () => {
-      try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        return cached ? JSON.parse(cached) : undefined;
-      } catch { return undefined; }
-    },
+    staleTime: 0,
   });
 
-  // Sync fetched messages into local state + persist to sessionStorage
+  // Merge fresh server data into state + update cache
   useEffect(() => {
     if (!fetchedMessages.length) return;
     setMessages(prev => {
-      const fetchedIds = new Set(fetchedMessages.map(m => m.id));
       const optimistic = prev.filter(m => m._optimistic);
       const merged = [...fetchedMessages, ...optimistic].sort((a, b) =>
         new Date(a.created_date || 0) - new Date(b.created_date || 0)
@@ -317,13 +324,16 @@ export default function Chat() {
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         position: 'sticky', top: 0, zIndex: 40,
       }}>
-        {/* Task info button — left side */}
-        <button
-          onClick={() => setShowTaskInfo(true)}
-          style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
-        >
-          <Info size={14} /> פרטי משימה
-        </button>
+        {/* Right: Avatar + back button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <BackButton />
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}
+            onClick={() => { if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`); }}>
+            {otherUserData?.profile_photo
+              ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ color: 'white', fontWeight: 700 }}>{otherPersonName?.[0] || '?'}</span>}
+          </div>
+        </div>
 
         {/* Center: Name + verified + online */}
         <div style={{ flex: 1, minWidth: 0, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
@@ -339,15 +349,13 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Avatar + back button — right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, overflow: 'hidden', flexShrink: 0 }}>
-            {otherUserData?.profile_photo
-              ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ color: 'white', fontWeight: 700 }}>{otherPersonName?.[0] || '?'}</span>}
-          </div>
-          <BackButton />
-        </div>
+        {/* Left: Task info button */}
+        <button
+          onClick={() => setShowTaskInfo(true)}
+          style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+        >
+          <Info size={14} /> פרטי משימה
+        </button>
       </div>
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
