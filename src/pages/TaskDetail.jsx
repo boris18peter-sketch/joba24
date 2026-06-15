@@ -497,18 +497,8 @@ export default function TaskDetail() {
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
-      // Use cancelTaskPayment backend function — handles credit refunds securely via service role
-      const res = await base44.functions.invoke('cancelTaskPayment', { taskId: id });
+      const res = await base44.functions.invoke('workerLeaveTask', { taskId: id });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
-      // Notify task owner via chat
-      if (task?.client_id && me) {
-        await base44.entities.ChatMessage.create({
-          task_id: id,
-          sender_id: me.id,
-          sender_name: me.full_name,
-          content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`
-        });
-      }
     },
     onSuccess: () => {
       // Clear application cache so the worker sees the task as fresh

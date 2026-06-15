@@ -27,16 +27,8 @@ export default function TaskDetailActions({
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
-      const res = await base44.functions.invoke('cancelTaskPayment', { taskId: id });
+      const res = await base44.functions.invoke('workerLeaveTask', { taskId: id });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
-      if (task?.client_id && me) {
-        await base44.entities.ChatMessage.create({
-          task_id: id,
-          sender_id: me.id,
-          sender_name: me.full_name,
-          content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`
-        });
-      }
     },
     onSuccess: () => {
       queryClient.setQueryData(['myApp', id, me?.id], null);
