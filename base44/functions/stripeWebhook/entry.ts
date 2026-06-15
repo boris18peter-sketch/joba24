@@ -1,10 +1,10 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import Stripe from 'npm:stripe@14.21.0';
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
 Deno.serve(async (req) => {
   try {
+    // Init Stripe inside handler — module-level init crashes on missing secret
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const base44 = createClientFromRequest(req);
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ received: true });
   } catch (error) {
+    console.error('❌ stripeWebhook error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

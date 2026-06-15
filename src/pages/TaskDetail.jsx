@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import CompletionModal from '@/components/CompletionModal';
+import TaskDetailActions from '@/components/TaskDetailActions';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
 import BoostOverlay from '@/components/BoostOverlay';
@@ -226,13 +226,13 @@ export default function TaskDetail() {
   const queryClient = useQueryClient();
   const { isAuthenticated, login } = useAuth();
   const [showCompletion, setShowCompletion] = useState(false);
-  const [showRating, setShowRating] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [taskTaken, setTaskTaken] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [showRating, setShowRating] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
   const [hasRated, setHasRated] = useState(false);
@@ -497,28 +497,10 @@ export default function TaskDetail() {
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
-      // 1. Cancel the worker's approved application + refund credits
-      const workerApps = await base44.entities.TaskApplication.filter({ task_id: id, worker_id: me?.id });
-      const activeApps = workerApps.filter((a) => a.status === 'approved' || a.status === 'pending');
-      for (const app of activeApps) {
-        const creditsToRefund = app.credits_charged || 0;
-        if (creditsToRefund > 0) {
-          const freshMe = await base44.auth.me();
-          const currentCredits = freshMe?.worker_credits ?? 0;
-          const newBalance = currentCredits + creditsToRefund;
-          await base44.auth.updateMe({ worker_credits: newBalance });
-          await base44.entities.CreditTransaction.create({
-            user_id: me.id,
-            amount: creditsToRefund,
-            type: 'Refund_Rejection',
-            task_id: id,
-            balance_after: newBalance,
-            note: `החזר קרדיטים - יציאה מהמשימה`
-          });
-        }
-        await base44.entities.TaskApplication.update(app.id, { status: 'cancelled' });
-      }
-      // 2. Notify task owner via chat
+      // Use cancelTaskPayment backend function — handles credit refunds securely via service role
+      const res = await base44.functions.invoke('cancelTaskPayment', { taskId: id });
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+      // Notify task owner via chat
       if (task?.client_id && me) {
         await base44.entities.ChatMessage.create({
           task_id: id,
@@ -527,8 +509,6 @@ export default function TaskDetail() {
           content: `👋 ${me.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`
         });
       }
-      // 3. Reset task back to OPEN
-      return base44.entities.Task.update(id, { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null });
     },
     onSuccess: () => {
       // Clear application cache so the worker sees the task as fresh
@@ -547,20 +527,12 @@ export default function TaskDetail() {
 
   const cancelApplicationMutation = useMutation({
     mutationFn: async () => {
-      // Refund credits before cancelling
+      // Refund credits via service role through backend
       const creditsToRefund = myApp?.credits_charged || 0;
       if (creditsToRefund > 0) {
-        const freshMe = await base44.auth.me();
-        const currentCredits = freshMe?.worker_credits ?? 0;
-        const newBalance = currentCredits + creditsToRefund;
-        await base44.auth.updateMe({ worker_credits: newBalance });
-        await base44.entities.CreditTransaction.create({
-          user_id: me.id,
-          amount: creditsToRefund,
-          type: 'Refund_Rejection',
-          task_id: id,
-          balance_after: newBalance,
-          note: `החזר קרדיטים - ביטול בקשה`
+        await base44.functions.invoke('refundApplicationCredits', {
+          applicationId: myApp.id,
+          reason: 'Refund_Rejection',
         });
       }
       await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
@@ -1322,93 +1294,28 @@ export default function TaskDetail() {
         )}
 
         {/* Actions */}
-        {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && <div style={{ paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-
-          {/* Apply sheet portal */}
-          {canApplyManual && showApplyForm && createPortal(
-            <ApplySheet
-              task={task}
-              loading={applyLoading}
-              onClose={() => setShowApplyForm(false)}
-              onApply={(msg) => {setApplyMessage(msg);handleApply(msg);}} />,
-
-            document.body
-          )}
-
-          {/* Invoice button — for worker after completion (only when no location map shown) */}
-          {task.status === 'COMPLETED' && me?.id === task.worker_id && !(task.lat && task.lng) && (
-            <button
-              onClick={() => setShowInvoice(true)}
-              style={{ width: '100%', height: 48, borderRadius: 14, background: task.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#faf5ff', border: task.requires_invoice ? 'none' : '1.5px solid #e9d5ff', color: task.requires_invoice ? 'white' : '#7c3aed', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: task.requires_invoice ? '0 4px 14px rgba(124,58,237,0.3)' : 'none' }}>
-              <FileText size={16} />
-              {task.requires_invoice ? '📄 הפק חשבונית מס (נדרש על ידי הלקוח)' : 'הפק חשבונית מס'}
-            </button>
-          )}
-
-          {/* Rating CTA for completed tasks */}
-          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview === null && !hasRated &&
-          <button onClick={() => setShowRating(true)}
-          style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
-              <Star size={16} className="fill-white" /> דרג את {me?.id === task.client_id ? task.worker_name : task.client_name}
-            </button>
-          }
-          {task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id) && myReview &&
-          <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
-              <Star size={15} className="fill-yellow-400 text-yellow-400" />
-              {[1, 2, 3, 4, 5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב
-            </div>
-          }
-
-          {/* Repost */}
-          {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status) &&
-          <button
-            onClick={() => {
-              if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
-                navigate(`/create-task?editId=${id}&repost=1`);
-                return;
-              }
-              const params = new URLSearchParams({ repost: '1', title: task.title || '', description: task.description || '', price: String(task.price || ''), city: task.city || '', location_name: task.location_name || '', category: task.category || '', estimated_time: task.estimated_time || '', approval_mode: task.approval_mode || 'manual' });
-              navigate(`/create-task?${params.toString()}`);
-            }}
-            style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
-            
-              <RotateCcw size={16} /> פרסם שוב
-            </button>
-          }
-
-          {/* Exit task */}
-          {isWorker && task.status === 'TAKEN' && task.worker_status !== 'done' &&
-          <button onClick={() => setShowExitWarning(true)} disabled={cancelTakeMutation.isPending}
-          style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-            
-              {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
-            </button>
-          }
-        </div>}
+        {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && (
+          <TaskDetailActions
+            task={task} me={me} id={id}
+            isOwner={isOwner} isWorker={isWorker}
+            canApplyManual={canApplyManual}
+            myApp={myApp} myReview={myReview}
+            applyLoading={applyLoading}
+            onApply={(msg) => { setApplyMessage(msg); handleApply(msg); }}
+            onSetShowApplyForm={setShowApplyForm}
+            showApplyForm={showApplyForm}
+          />
+        )}
       </div>
-
-
-
-      {showCompletion && createPortal(
-        <CompletionModal task={task} me={me} onClose={() => {setShowCompletion(false);setShowRating(true);}} />,
-        document.body
-      )}
-      {showRating && task && me && createPortal(
-        <RatingModal task={task} me={me} onClose={() => { setShowRating(false); setHasRated(true); }} />,
-        document.body
-      )}
 
       {showReport && task && createPortal(
         <ReportModal task={task} me={me} onClose={() => setShowReport(false)} />,
         document.body
       )}
-
-      {showBuyCredits &&
-      <BuyCreditsModal
-        creditsNeeded={creditsNeeded}
-        onClose={() => setShowBuyCredits(false)} />
-
-      }
+      {showRating && task && me && createPortal(
+        <RatingModal task={task} me={me} onClose={() => setShowRating(false)} />,
+        document.body
+      )}
 
       {/* Owner 3-dot bottom sheet */}
       {showOwnerMenu && createPortal(

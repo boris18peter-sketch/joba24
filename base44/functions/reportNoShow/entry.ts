@@ -1,7 +1,11 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Called by task owner to report a worker no-show.
-// Resets task to OPEN, rejects worker's app (NO credit refund = penalty), reduces worker trust_score by 5%.
+/**
+ * reportNoShow — Called by task owner to report a worker no-show.
+ * - Rejects worker's application WITHOUT credit refund (penalty)
+ * - Reduces worker trust_score by 5%
+ * - Resets task to OPEN
+ */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -14,7 +18,6 @@ Deno.serve(async (req) => {
     const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
     const task = tasks?.[0];
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
-
     if (task.client_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const noShowWorkerId = task.worker_id;
@@ -26,28 +29,36 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.TaskApplication.update(approvedApp.id, { status: 'rejected' });
     }
 
-    // Reduce worker trust_score by 5%
-    if (noShowWorkerId) {
-      const workerUsers = await base44.asServiceRole.entities.User.filter({ id: noShowWorkerId });
-      const worker = workerUsers[0];
-      if (worker) {
-        const currentScore = worker.trust_score ?? 1;
-        const newScore = Math.max(0, Math.round((currentScore - 0.05) * 100) / 100);
-        await base44.asServiceRole.entities.User.update(worker.id, { trust_score: newScore });
-      }
-    }
+    // Reduce worker trust_score by 5% in parallel with task reset
+    await Promise.all([
+      noShowWorkerId
+        ? (async () => {
+            const workerUsers = await base44.asServiceRole.entities.User.filter({ id: noShowWorkerId });
+            const worker = workerUsers[0];
+            if (worker) {
+              const currentScore = worker.trust_score ?? 1;
+              const newScore = Math.max(0, Math.round((currentScore - 0.05) * 100) / 100);
+              await base44.asServiceRole.entities.User.update(worker.id, { trust_score: newScore });
+              console.log(`⚠️ Worker ${noShowWorkerId} trust_score reduced to ${newScore}`);
+            }
+          })()
+        : Promise.resolve(),
+      base44.asServiceRole.entities.Task.update(taskId, {
+        status: 'OPEN',
+        worker_id: null,
+        worker_name: null,
+        worker_rating: null,
+        worker_verified: null,
+        worker_status: null,
+        on_the_way_at: null,
+        arrived_at: null,
+      }),
+    ]);
 
-    // Reset task to OPEN
-    await base44.asServiceRole.entities.Task.update(taskId, {
-      status: 'OPEN',
-      worker_id: null,
-      worker_name: null,
-      worker_status: null,
-      on_the_way_at: null,
-    });
-
+    console.log(`✅ No-show reported for task ${taskId}, worker ${noShowWorkerId}`);
     return Response.json({ success: true, noShowWorkerId });
   } catch (error) {
+    console.error('❌ reportNoShow error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

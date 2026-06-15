@@ -1,10 +1,10 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import Stripe from 'npm:stripe@14.21.0';
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
 Deno.serve(async (req) => {
   try {
+    // Init Stripe inside handler — module-level init crashes on missing secret
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -12,12 +12,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { taskId, taskData } = body;
 
-    // Determine price and worker info
     let price, workerId, existingTaskId;
 
     if (taskId) {
-      // Paying for an existing task (TAKEN flow)
-      const tasks = await base44.entities.Task.filter({ id: taskId });
+      const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
       const task = tasks[0];
       if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
       if (task.client_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -25,24 +23,21 @@ Deno.serve(async (req) => {
       workerId = task.worker_id;
       existingTaskId = taskId;
     } else if (taskData) {
-      // New task publication — payment before task is created
       if (!taskData.price || taskData.price <= 0) return Response.json({ error: 'Invalid price' }, { status: 400 });
-      price = parseFloat(taskData.price); // base price only; story fee handled separately below
+      price = parseFloat(taskData.price);
       workerId = null;
       existingTaskId = null;
     } else {
       return Response.json({ error: 'Must provide taskId or taskData' }, { status: 400 });
     }
 
-    const storyFeeAgorot = (taskData?.is_story && !taskId) ? 500 : 0; // ₪5 story fee only for new tasks
+    const storyFeeAgorot = (taskData?.is_story && !taskId) ? 500 : 0;
     const taskPriceAgorot = Math.round((taskId ? price : parseFloat(taskData?.price || 0)) * 100);
     const amountAgorot = taskPriceAgorot + storyFeeAgorot;
     const feePercent = parseFloat(Deno.env.get('STRIPE_PLATFORM_FEE_PERCENT') || '15');
-    // Platform fee applies only to task price; story fee is 100% platform revenue
     const taskFeeAgorot = Math.round(taskPriceAgorot * feePercent / 100);
     const platformFeeAgorot = taskFeeAgorot + storyFeeAgorot;
 
-    // Check if worker has a connected Stripe account
     let transferData = undefined;
     if (workerId) {
       const workerAccounts = await base44.asServiceRole.entities.StripeAccount.filter({ user_id: workerId });
@@ -50,7 +45,7 @@ Deno.serve(async (req) => {
       if (workerAccount) {
         transferData = {
           destination: workerAccount.stripe_account_id,
-          amount: taskPriceAgorot - taskFeeAgorot, // worker gets task price minus task fee only
+          amount: taskPriceAgorot - taskFeeAgorot,
         };
       }
     }
@@ -69,9 +64,8 @@ Deno.serve(async (req) => {
       automatic_payment_methods: { enabled: true },
     });
 
-    // For existing tasks: mark as payment pending
     if (existingTaskId) {
-      await base44.entities.Task.update(existingTaskId, {
+      await base44.asServiceRole.entities.Task.update(existingTaskId, {
         payment_status: 'pending',
         payment_amount: price,
       });
@@ -88,6 +82,7 @@ Deno.serve(async (req) => {
       feePercent,
     });
   } catch (error) {
+    console.error('❌ stripeCreatePayment error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
