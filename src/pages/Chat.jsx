@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -145,13 +145,13 @@ export default function Chat() {
     enabled: !!otherPersonIdCalc,
   });
 
-  // Load message history — use sessionStorage cache to avoid empty screen on re-enter
+  // Load message history — instant from cache, then live from server
   const CACHE_KEY = `chat_msgs_${taskId}`;
   const { data: fetchedMessages = [] } = useQuery({
     queryKey: ['chatMessages', taskId],
     queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
-    staleTime: 0,
-    refetchInterval: 3000,
+    staleTime: 30000,
+    // No polling — real-time subscription handles live updates
     initialData: () => {
       try {
         const cached = sessionStorage.getItem(CACHE_KEY);
@@ -165,11 +165,10 @@ export default function Chat() {
     if (!fetchedMessages.length) return;
     setMessages(prev => {
       const fetchedIds = new Set(fetchedMessages.map(m => m.id));
-      const extraRealtime = prev.filter(m => m._optimistic || !fetchedIds.has(m.id));
-      const merged = [...fetchedMessages, ...extraRealtime].sort((a, b) =>
+      const optimistic = prev.filter(m => m._optimistic);
+      const merged = [...fetchedMessages, ...optimistic].sort((a, b) =>
         new Date(a.created_date || 0) - new Date(b.created_date || 0)
       );
-      // Persist to session for instant restore on re-entry
       try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetchedMessages)); } catch {}
       return merged;
     });
@@ -184,21 +183,27 @@ export default function Chat() {
     });
   }, [messages, me?.id]);
 
-  // Real-time subscription for instant updates
+  // Real-time subscription — single source of truth for live updates
   useEffect(() => {
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== taskId) return;
       if (event.type === 'create') {
-        setMessages(prev => prev.some(m => m.id === event.data.id) ? prev : [...prev, event.data]);
-        // Also invalidate query so polling stays in sync
-        queryClient.invalidateQueries({ queryKey: ['chatMessages', taskId] });
+        setMessages(prev => {
+          if (prev.some(m => m.id === event.data.id)) return prev;
+          // Replace matching optimistic message if it exists
+          const hasOptimistic = prev.some(m => m._optimistic && m.sender_id === event.data.sender_id);
+          if (hasOptimistic) {
+            return prev.map(m => (m._optimistic && m.sender_id === event.data.sender_id) ? event.data : m);
+          }
+          return [...prev, event.data];
+        });
         if (event.data.sender_id !== me?.id && event.data.id) {
           base44.entities.ChatMessage.update(event.data.id, { read: true }).catch(() => {});
         }
         if (event.data.sender_id !== me?.id) setOtherTyping(false);
       }
-      if (event.type === 'update' && event.data?.read) {
-        setMessages(prev => prev.map(m => m.id === event.data.id ? { ...m, read: true } : m));
+      if (event.type === 'update') {
+        setMessages(prev => prev.map(m => m.id === event.data.id ? { ...m, ...event.data } : m));
       }
     });
     return unsub;
@@ -279,20 +284,22 @@ export default function Chat() {
     });
   };
 
-  // Group messages by date
-  const grouped = [];
-  let lastDate = null;
-  messages.forEach((msg, idx) => {
-    const msgDate = msg.created_date ? new Date(msg.created_date).toDateString() : null;
-    if (msgDate && msgDate !== lastDate) {
-      grouped.push({ type: 'date', date: msg.created_date, key: `sep-${idx}` });
-      lastDate = msgDate;
-    }
-    // Group consecutive messages from same sender
-    const prev = grouped[grouped.length - 1];
-    const isContinuation = prev?.type === 'msg' && prev.msg.sender_id === msg.sender_id;
-    grouped.push({ type: 'msg', msg, isContinuation, key: msg.id });
-  });
+  // Group messages by date — memoized so it only recomputes when messages change
+  const grouped = useMemo(() => {
+    const result = [];
+    let lastDate = null;
+    messages.forEach((msg, idx) => {
+      const msgDate = msg.created_date ? new Date(msg.created_date).toDateString() : null;
+      if (msgDate && msgDate !== lastDate) {
+        result.push({ type: 'date', date: msg.created_date, key: `sep-${idx}` });
+        lastDate = msgDate;
+      }
+      const prev = result[result.length - 1];
+      const isContinuation = prev?.type === 'msg' && prev.msg.sender_id === msg.sender_id;
+      result.push({ type: 'msg', msg, isContinuation, key: msg.id });
+    });
+    return result;
+  }, [messages]);
 
   const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || 'הפועל') : (task?.client_name || 'המעסיק');
   const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
@@ -305,39 +312,42 @@ export default function Chat() {
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
-        padding: '48px 16px 12px',
-        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '48px 12px 12px',
+        display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         position: 'sticky', top: 0, zIndex: 40,
       }}>
-        <BackButton />
-        {/* Avatar */}
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-          {otherUserData?.profile_photo
-            ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ color: 'white', fontWeight: 700 }}>{otherPersonName?.[0] || '?'}</span>}
-        </div>
-        <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => {
-          if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`);
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</div>
-            {otherUserData?.is_verified && <VerifiedBadge size="sm" />}
-            <span style={{ fontSize: 10, color: '#64748b', background: '#f1f5f9', borderRadius: 6, padding: '1px 6px', fontWeight: 600, flexShrink: 0 }}>{roleLabel}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: otherIsOnline ? '#22c55e' : '#d1d5db', display: 'inline-block', flexShrink: 0 }} />
-            <span>{otherIsOnline ? 'מחובר עכשיו' : 'לא מחובר'}</span>
-            {task?.title && <span>· {task.title}</span>}
-          </div>
-        </div>
-        {/* Task info button */}
+        {/* Task info button — left side */}
         <button
           onClick={() => setShowTaskInfo(true)}
-          style={{ background: '#eff6ff', border: 'none', borderRadius: 10, padding: '6px 10px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+          style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
         >
           <Info size={14} /> פרטי משימה
         </button>
+
+        {/* Center: Name + verified + online */}
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
+          if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`);
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</span>
+            {otherUserData?.is_verified && <VerifiedBadge size="sm" />}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 2 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: otherIsOnline ? '#22c55e' : '#d1d5db', display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>{otherIsOnline ? 'מחובר עכשיו' : 'לא מחובר'}</span>
+          </div>
+        </div>
+
+        {/* Avatar + back button — right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, overflow: 'hidden', flexShrink: 0 }}>
+            {otherUserData?.profile_photo
+              ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ color: 'white', fontWeight: 700 }}>{otherPersonName?.[0] || '?'}</span>}
+          </div>
+          <BackButton />
+        </div>
       </div>
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
