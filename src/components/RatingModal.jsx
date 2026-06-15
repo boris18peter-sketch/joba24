@@ -27,8 +27,7 @@ export default function RatingModal({ task, me, onClose }) {
   const canSubmit = rating > 0 && paymentConfirmed;
 
   const handleSubmit = async () => {
-    if (loading) return;
-    if (!rating) { toast.error('בחר דירוג'); return; }
+    if (loading || !canSubmit) return;
     if (!paymentConfirmed) {
       toast.error(isOwner ? 'יש לאשר שהעבודה הושלמה כראוי' : 'יש לאשר שסיימת את הג״ובה');
       return;
@@ -44,26 +43,12 @@ export default function RatingModal({ task, me, onClose }) {
       }
     }
 
-    // Mark task confirmed on both sides
-    if (isOwner) {
-      base44.functions.invoke('completeTask', { taskId: task.id }).catch(() => {});
-    } else {
-      base44.entities.Task.update(task.id, { worker_confirmed: true }).catch(() => {});
-    }
-
-    toast.success('הביקורת נשמרה! תודה ⭐');
-    window.dispatchEvent(new CustomEvent('new_review', {
-      detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId }
-    }));
-    onClose();
-
     try {
-      // Submit review + update rating via secure backend function
-      await base44.functions.invoke('submitReview', {
+      const res = await base44.functions.invoke('submitReview', {
         taskId: task.id,
         revieweeId,
         rating,
-        comment: comment || '',
+        comment: comment.trim(),
         role,
         isOwner,
         arrivedOnTime: structured.arrivedOnTime,
@@ -73,11 +58,25 @@ export default function RatingModal({ task, me, onClose }) {
         wouldHireAgain: structured.wouldHireAgain,
       });
 
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+
+      toast.success('הביקורת נשמרה! תודה ⭐');
+      window.dispatchEvent(new CustomEvent('new_review', {
+        detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId }
+      }));
+
+      // Refresh caches
+      queryClient.invalidateQueries({ queryKey: ['myReview'] });
       queryClient.invalidateQueries({ queryKey: ['myReviews', revieweeId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      queryClient.invalidateQueries({ queryKey: ['myReview'] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+
+      onClose();
     } catch (e) {
-      console.error('Review save failed:', e);
+      console.error('Review submit failed:', e);
+      toast.error('שגיאה בשמירת הביקורת, נסה שוב');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -192,7 +191,7 @@ export default function RatingModal({ task, me, onClose }) {
 
         <button onClick={handleSubmit} disabled={loading || !canSubmit}
           style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: canSubmit ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0', color: canSubmit ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? '0 4px 16px rgba(26,111,212,0.3)' : 'none', pointerEvents: loading ? 'none' : 'auto' }}>
-          {loading ? <Loader2 size={18} className="animate-spin" /> : '⭐ שלח ביקורת'}
+          {loading ? <Loader2 size={20} className="animate-spin" /> : '⭐ שלח ביקורת'}
         </button>
       </div>
 
