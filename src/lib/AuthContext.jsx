@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import LoginPromptModal from '@/components/LoginPromptModal';
 
 const AuthContext = createContext();
 
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     checkAppState();
@@ -126,11 +128,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (nextPath) => {
-    const nextUrl = nextPath
-      ? `${window.location.origin}${nextPath}`
-      : window.location.href;
-    base44.auth.redirectToLogin(nextUrl);
+  const login = () => {
+    setShowLoginModal(true);
   };
 
   const logout = (shouldRedirect = true) => {
@@ -149,8 +148,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    setShowLoginModal(true);
   };
 
   return (
@@ -170,6 +168,12 @@ export const AuthProvider = ({ children }) => {
       refreshUser,
     }}>
       {children}
+      {showLoginModal && (
+        <LoginPromptModal
+          onClose={() => setShowLoginModal(false)}
+          onLogin={() => setShowLoginModal(false)}
+        />
+      )}
     </AuthContext.Provider>
   );
 };

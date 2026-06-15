@@ -25,7 +25,7 @@ import { useAuth } from '@/lib/AuthContext';
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const notifQueueRef = useRef([]);
   const notifActiveRef = useRef(false);
@@ -656,7 +656,7 @@ export default function Layout() {
                         {tabPath === '/chats' ? 'כדי לצפות בצ\'אטים שלך יש להתחבר לחשבון.' : 'כדי לצפות בפרופיל ולנהל את הגדרותיך יש להתחבר.'}
                       </div>
                       <button
-                        onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                        onClick={login}
                         style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}
                       >
                         התחבר עכשיו
