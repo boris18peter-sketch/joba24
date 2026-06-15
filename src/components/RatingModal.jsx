@@ -41,6 +41,10 @@ export default function RatingModal({ task, me, onClose }) {
     if (paymentConfirmed) {
       const update = isOwner ? { client_confirmed: true } : { worker_confirmed: true };
       base44.entities.Task.update(task.id, update).catch(() => {});
+      // Release payment to worker when client confirms
+      if (isOwner) {
+        base44.functions.invoke('releasePayment', { taskId: task.id }).catch(() => {});
+      }
     }
     toast.success('הביקורת נשמרה! תודה ⭐');
     window.dispatchEvent(new CustomEvent('new_review', { detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId } }));

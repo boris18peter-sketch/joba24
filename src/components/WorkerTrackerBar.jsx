@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag, AlertOctagon, ChevronLeft } from 'lucide-react';
+import { Loader2, Clock, Navigation, Wrench, CheckCircle, MapPin, Flag, AlertOctagon, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 import { base44 } from '@/api/base44Client';
@@ -152,6 +151,7 @@ function StatusDescription({ localStatus, workerName }) {
 }
 
 export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, onMapToggle, showMapButton }) {
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [localStatus, setLocalStatus] = useState(task?.worker_status ?? null);
   const [completionPhotos, setCompletionPhotos] = useState(task?.completion_photos || (task?.completion_photo ? [task.completion_photo] : []));
@@ -445,10 +445,22 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
           )}
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={() => onUpdate({ status: 'COMPLETED', client_confirmed: true })}
-            style={{ width: '100%', height: 56, borderRadius: 18, background: 'linear-gradient(135deg, #065f46, #059669)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', boxShadow: '0 6px 22px rgba(5,150,105,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            disabled={confirmLoading}
+            onClick={async () => {
+              setConfirmLoading(true);
+              try {
+                const res = await base44.functions.invoke('completeTask', { taskId: task.id });
+                if (!res.data?.success && res.data?.note !== 'Already completed') throw new Error(res.data?.error || 'שגיאה');
+                toast.success('המשימה הושלמה בהצלחה! 🎉');
+              } catch {
+                toast.error('שגיאה באישור — נסה שוב');
+              } finally {
+                setConfirmLoading(false);
+              }
+            }}
+            style={{ width: '100%', height: 56, borderRadius: 18, background: confirmLoading ? '#94a3b8' : 'linear-gradient(135deg, #065f46, #059669)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: confirmLoading ? 'not-allowed' : 'pointer', boxShadow: confirmLoading ? 'none' : '0 6px 22px rgba(5,150,105,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >
-            <CheckCircle size={19} strokeWidth={2} /> אשר סיום עבודה ✓
+            {confirmLoading ? <Loader2 size={19} className="animate-spin" /> : <><CheckCircle size={19} strokeWidth={2} /> אשר סיום עבודה ✓</>}
           </motion.button>
         </div>
       )}

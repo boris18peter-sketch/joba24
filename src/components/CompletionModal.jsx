@@ -17,7 +17,13 @@ export default function CompletionModal({ task, me, onClose }) {
 
   const completeMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Task.update(task.id, { status: 'COMPLETED' });
+      // Mark complete + confirm side
+      const confirmField = isWorker ? { worker_confirmed: true } : { client_confirmed: true };
+      await base44.entities.Task.update(task.id, { status: 'COMPLETED', ...confirmField });
+      // Release payment to worker (fire-and-forget, only relevant when payment_status=funded)
+      if (!isWorker) {
+        base44.functions.invoke('releasePayment', { taskId: task.id }).catch(e => console.warn('releasePayment:', e));
+      }
       await base44.entities.Review.create({
         task_id: task.id,
         reviewer_id: me.id,
