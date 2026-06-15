@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
@@ -66,29 +66,32 @@ export default function ChatInbox() {
     return allTasks.filter(t => tasksWithMessages.has(t.id));
   }, [allTasks, tasksWithMessages]);
 
+  const loadedRef = useRef(false);
+
   useEffect(() => {
     if (!allTasks.length || !me?.id) return;
+    // Only run once on initial load; real-time subscription handles updates
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+
     let cancelled = false;
     const run = async () => {
       const newLastMessages = {};
       const newUnreadCounts = {};
       const withMsgs = new Set();
-      // Process in batches of 5 to avoid rate limiting
       const tasks = allTasks.slice(0, 20);
-      for (let i = 0; i < tasks.length; i += 5) {
+      // Process one at a time with delay to avoid rate limiting
+      for (let i = 0; i < tasks.length; i++) {
         if (cancelled) return;
-        const batch = tasks.slice(i, i + 5);
-        await Promise.all(batch.map(async (task) => {
-          try {
-            const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 20);
-            if (msgs.length > 0) {
-              withMsgs.add(task.id);
-              newLastMessages[task.id] = msgs[0];
-              newUnreadCounts[task.id] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-            }
-          } catch {}
-        }));
-        if (i + 5 < tasks.length) await new Promise(r => setTimeout(r, 300));
+        try {
+          const msgs = await base44.entities.ChatMessage.filter({ task_id: tasks[i].id }, '-created_date', 10);
+          if (msgs.length > 0) {
+            withMsgs.add(tasks[i].id);
+            newLastMessages[tasks[i].id] = msgs[0];
+            newUnreadCounts[tasks[i].id] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+          }
+        } catch {}
+        if (i < tasks.length - 1) await new Promise(r => setTimeout(r, 200));
       }
       if (!cancelled) {
         setLastMessages(newLastMessages);
@@ -98,7 +101,7 @@ export default function ChatInbox() {
     };
     run();
     return () => { cancelled = true; };
-  }, [allTasks, me?.id]);
+  }, [allTasks.length > 0, me?.id]);
 
   // Real-time updates
   useEffect(() => {
