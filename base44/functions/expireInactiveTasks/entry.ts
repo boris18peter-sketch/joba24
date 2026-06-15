@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
  * Cron job — runs every hour.
@@ -15,9 +15,6 @@ Deno.serve(async (req) => {
     // Fetch all OPEN tasks
     const openTasks = await base44.asServiceRole.entities.Task.filter({ status: 'OPEN' });
 
-    // A task is expired if:
-    // 1. It has expires_at and it's in the past, OR
-    // 2. It has no expires_at and was created more than 48h ago
     const expiredTasks = openTasks.filter(t => {
       if (t.expires_at) return t.expires_at < now;
       return t.created_date && t.created_date < fallbackCutoff;
@@ -34,28 +31,24 @@ Deno.serve(async (req) => {
     for (const task of expiredTasks) {
       console.log(`🔄 Expiring task: ${task.id} (${task.title})`);
 
-      // Mark task as EXPIRED
       await base44.asServiceRole.entities.Task.update(task.id, { status: 'EXPIRED' });
       expiredCount++;
 
-      // Find ALL applications (pending OR approved) — refund all since task didn't complete
       const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: task.id });
       const appsToRefund = apps.filter(a => a.status === 'pending' || a.status === 'approved');
 
-      for (const app of appsToRefund) {
-        const creditsToRefund = app.credits_charged || 0;
-
-        // Mark application as cancelled
+      await Promise.all(appsToRefund.map(async (app) => {
+        // Mark cancelled first
         await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'cancelled' });
 
-        if (creditsToRefund <= 0) continue;
+        const creditsToRefund = app.credits_charged || 0;
+        if (creditsToRefund <= 0) return;
 
-        const users = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
-        const worker = users[0];
-        if (!worker) continue;
+        const workerUsers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
+        const worker = workerUsers[0];
+        if (!worker) return;
 
         const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-
         await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
 
         await base44.asServiceRole.entities.CreditTransaction.create({
@@ -70,7 +63,7 @@ Deno.serve(async (req) => {
 
         refundedCount++;
         console.log(`✅ Refunded ${creditsToRefund} credits to worker ${app.worker_id}`);
-      }
+      }));
     }
 
     console.log(`✅ Done: ${expiredCount} tasks expired, ${refundedCount} refunds issued`);

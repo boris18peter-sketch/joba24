@@ -39,11 +39,11 @@ export default function RatingModal({ task, me, onClose }) {
       if (modResult.flagged) { setLoading(false); toast.error('הביקורת מכילה תוכן שאינו עומד בכללי הקהילה.'); return; }
     }
     if (paymentConfirmed) {
-      const update = isOwner ? { client_confirmed: true } : { worker_confirmed: true };
-      base44.entities.Task.update(task.id, update).catch(() => {});
-      // Release payment to worker when client confirms
       if (isOwner) {
-        base44.functions.invoke('releasePayment', { taskId: task.id }).catch(() => {});
+        // completeTask: marks COMPLETED + triggers releasePayment internally
+        base44.functions.invoke('completeTask', { taskId: task.id }).catch(() => {});
+      } else {
+        base44.entities.Task.update(task.id, { worker_confirmed: true }).catch(() => {});
       }
     }
     toast.success('הביקורת נשמרה! תודה ⭐');
