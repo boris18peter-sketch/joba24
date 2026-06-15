@@ -3,8 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 /**
  * completeTask — Called by the task owner (client) to confirm task completion.
  * 1. Marks task as COMPLETED
- * 2. Updates worker_confirmed / client_confirmed flags
- * 3. Triggers releasePayment (Stripe transfer to worker if applicable)
+ * 2. Sets client_confirmed = true
+ * 3. Increments worker's tasks_completed count
  */
 Deno.serve(async (req) => {
   try {
@@ -35,11 +35,18 @@ Deno.serve(async (req) => {
       completed_at: new Date().toISOString(),
     });
 
-    // Trigger payment release (fire-and-forget — don't block on Stripe errors)
-    base44.functions.invoke('releasePayment', { taskId }).catch(err => {
-      console.warn('⚠️ releasePayment failed (non-fatal):', err?.message);
-    });
+    // Increment worker's completed tasks count
+    if (task.worker_id) {
+      const workerUsers = await base44.asServiceRole.entities.User.filter({ id: task.worker_id });
+      const worker = workerUsers[0];
+      if (worker) {
+        const newCount = (worker.tasks_completed ?? 0) + 1;
+        await base44.asServiceRole.entities.User.update(worker.id, { tasks_completed: newCount });
+        console.log(`✅ Worker ${worker.id} tasks_completed → ${newCount}`);
+      }
+    }
 
+    console.log(`✅ Task ${taskId} marked COMPLETED by client ${user.id}`);
     return Response.json({ success: true });
   } catch (error) {
     console.error('❌ completeTask error:', error);

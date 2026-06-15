@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star, X, CheckCircle2 } from 'lucide-react';
+import { Star, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { moderateText } from '@/hooks/useModeration';
 
@@ -27,47 +27,58 @@ export default function RatingModal({ task, me, onClose }) {
   const canSubmit = rating > 0 && paymentConfirmed;
 
   const handleSubmit = async () => {
-    if (loading) return; // prevent double submit
+    if (loading) return;
     if (!rating) { toast.error('בחר דירוג'); return; }
     if (!paymentConfirmed) {
       toast.error(isOwner ? 'יש לאשר שהעבודה הושלמה כראוי' : 'יש לאשר שסיימת את הג״ובה');
       return;
     }
     setLoading(true);
+
     if (comment && comment.trim().length > 3) {
       const modResult = await moderateText(comment);
-      if (modResult.flagged) { setLoading(false); toast.error('הביקורת מכילה תוכן שאינו עומד בכללי הקהילה.'); return; }
-    }
-    if (paymentConfirmed) {
-      if (isOwner) {
-        // completeTask: marks COMPLETED + triggers releasePayment internally
-        base44.functions.invoke('completeTask', { taskId: task.id }).catch(() => {});
-      } else {
-        base44.entities.Task.update(task.id, { worker_confirmed: true }).catch(() => {});
+      if (modResult.flagged) {
+        setLoading(false);
+        toast.error('הביקורת מכילה תוכן שאינו עומד בכללי הקהילה.');
+        return;
       }
     }
+
+    // Mark task confirmed on both sides
+    if (isOwner) {
+      base44.functions.invoke('completeTask', { taskId: task.id }).catch(() => {});
+    } else {
+      base44.entities.Task.update(task.id, { worker_confirmed: true }).catch(() => {});
+    }
+
     toast.success('הביקורת נשמרה! תודה ⭐');
-    window.dispatchEvent(new CustomEvent('new_review', { detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId } }));
+    window.dispatchEvent(new CustomEvent('new_review', {
+      detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId }
+    }));
     onClose();
+
     try {
-      await base44.entities.Review.create({ task_id: task.id, reviewer_id: me.id, reviewee_id: revieweeId, rating, comment, role, arrived_on_time: structured.arrivedOnTime, professional: structured.professional, good_communication: structured.goodCommunication, fair_pricing: structured.fairPricing, would_hire_again: structured.wouldHireAgain });
-      const allReviews = await base44.entities.Review.filter({ reviewee_id: revieweeId });
-      const avg = allReviews.length > 0 ? allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length : rating;
-      const clientRevs = allReviews.filter(r => r.role === 'client');
-      const withOnTime = clientRevs.filter(r => r.arrived_on_time !== null && r.arrived_on_time !== undefined);
-      const onTimeRate = withOnTime.length >= 2 ? Math.round((withOnTime.filter(r => r.arrived_on_time === true).length / withOnTime.length) * 100) : null;
-      const repeatHires = clientRevs.filter(r => r.would_hire_again === true).length;
-      const userUpdate = { rating: Math.round(avg * 10) / 10, rating_count: allReviews.length };
-      if (onTimeRate !== null) userUpdate.on_time_rate = onTimeRate;
-      if (isOwner) userUpdate.repeat_hires = repeatHires;
-      await base44.entities.User.update(revieweeId, userUpdate);
-      if (isOwner && rating === 5 && task.worker_id) {
-        base44.functions.invoke('grantLoyaltyReward', { taskId: task.id, workerId: task.worker_id, rating, taskTitle: task.title }).catch(() => {});
-      }
+      // Submit review + update rating via secure backend function
+      await base44.functions.invoke('submitReview', {
+        taskId: task.id,
+        revieweeId,
+        rating,
+        comment: comment || '',
+        role,
+        isOwner,
+        arrivedOnTime: structured.arrivedOnTime,
+        professional: structured.professional,
+        goodCommunication: structured.goodCommunication,
+        fairPricing: structured.fairPricing,
+        wouldHireAgain: structured.wouldHireAgain,
+      });
+
       queryClient.invalidateQueries({ queryKey: ['myReviews', revieweeId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['myReview'] });
-    } catch (e) { console.error('Review save failed:', e); }
+    } catch (e) {
+      console.error('Review save failed:', e);
+    }
   };
 
   return createPortal(
@@ -181,7 +192,7 @@ export default function RatingModal({ task, me, onClose }) {
 
         <button onClick={handleSubmit} disabled={loading || !canSubmit}
           style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: canSubmit ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0', color: canSubmit ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? '0 4px 16px rgba(26,111,212,0.3)' : 'none', pointerEvents: loading ? 'none' : 'auto' }}>
-          ⭐ שלח ביקורת
+          {loading ? <Loader2 size={18} className="animate-spin" /> : '⭐ שלח ביקורת'}
         </button>
       </div>
 
