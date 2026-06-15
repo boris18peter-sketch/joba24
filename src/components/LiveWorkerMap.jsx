@@ -12,6 +12,19 @@ function calcDistance(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+async function fetchRoute(token, fromLng, fromLat, toLng, toLat) {
+  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${fromLng},${fromLat};${toLng},${toLat}?geometries=geojson&access_token=${token}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const route = data.routes?.[0];
+  if (!route) return null;
+  return {
+    geometry: route.geometry,
+    distanceKm: route.distance / 1000,
+    durationMins: Math.ceil(route.duration / 60),
+  };
+}
+
 function WorkerDot() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
@@ -51,10 +64,10 @@ function TaskDot({ title }) {
 export default function LiveWorkerMap({ task }) {
   const mapRef = useRef(null);
   const [mapToken, setMapToken] = useState('');
-  const [dashOffset, setDashOffset] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const animRef = useRef(null);
-  const initialDistRef = useRef(null); // track starting distance for progress %
+  const [routeData, setRouteData] = useState(null); // { geometry, distanceKm, durationMins }
+  const [dashOffset, setDashOffset] = useState(0);
+  const initialDistRef = useRef(null);
   const lastUpdateRef = useRef(Date.now());
   const [secondsAgo, setSecondsAgo] = useState(0);
 
@@ -66,8 +79,9 @@ export default function LiveWorkerMap({ task }) {
   const hasWorker = isFinite(workerLat) && isFinite(workerLng);
   const hasTask = isFinite(taskLat) && isFinite(taskLng);
 
-  const distKm = (hasWorker && hasTask) ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null;
-  const etaMins = distKm ? Math.max(1, Math.round(distKm * 1.4 / 35 * 60)) : null;
+  // Use real route data when available, fallback to aerial
+  const distKm = routeData?.distanceKm ?? ((hasWorker && hasTask) ? calcDistance(workerLat, workerLng, taskLat, taskLng) : null);
+  const etaMins = routeData?.durationMins ?? (distKm ? Math.max(1, Math.round(distKm * 1.4 / 35 * 60)) : null);
 
   // Track initial distance for progress %
   useEffect(() => {
@@ -89,12 +103,8 @@ export default function LiveWorkerMap({ task }) {
     return () => clearInterval(iv);
   }, [workerLat, workerLng]);
 
-  // Fetch token — uses global cache, instant on repeat visits
-  useEffect(() => {
-    getMapToken().then(token => { if (token) setMapToken(token); });
-  }, []);
-
   // Animate route dashes
+  const animRef = useRef(null);
   useEffect(() => {
     if (!hasWorker || !hasTask) return;
     const animate = () => {
@@ -104,6 +114,19 @@ export default function LiveWorkerMap({ task }) {
     animRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animRef.current);
   }, [hasWorker, hasTask]);
+
+  // Fetch token + road route whenever positions change
+  useEffect(() => {
+    getMapToken().then(token => {
+      if (!token) return;
+      setMapToken(token);
+      if (hasWorker && hasTask) {
+        fetchRoute(token, workerLng, workerLat, taskLng, taskLat)
+          .then(r => { if (r) setRouteData(r); })
+          .catch(() => {});
+      }
+    });
+  }, [workerLat, workerLng, taskLat, taskLng]);
 
   // Fly to worker when location updates
   useEffect(() => {
@@ -117,47 +140,21 @@ export default function LiveWorkerMap({ task }) {
     });
   }, [workerLat, workerLng]);
 
-  // Add 3D buildings on load with warm colors
-  const onLoad = () => {
-    const map = mapRef.current?.getMap?.();
-    if (!map) return;
-    if (!map.getLayer('3d-buildings-live')) {
-      map.addLayer({
-        id: '3d-buildings-live',
-        source: 'composite',
-        'source-layer': 'building',
-        filter: ['==', 'extrude', 'true'],
-        type: 'fill-extrusion',
-        minzoom: 14,
-        paint: {
-          'fill-extrusion-color': ['interpolate', ['linear'], ['zoom'], 14, '#d9956f', 17, '#c88555'],
-          'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14, 0, 17, ['get', 'height']],
-          'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 14, 0, 17, ['get', 'min_height']],
-          'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 17, 0.7],
-          'fill-extrusion-vertical-gradient': true,
-        },
-      });
-      map.setLight({
-        anchor: 'viewport',
-        color: '#ffb366',
-        intensity: 0.55,
-        position: [1.2, 205, 35],
-      });
-    }
-  };
+
 
   if (!hasWorker) return null;
 
   const centerLng = hasTask ? (workerLng + taskLng) / 2 : workerLng;
   const centerLat = hasTask ? (workerLat + taskLat) / 2 : workerLat;
 
+  // Use real road geometry if available, fallback to straight line
   const routeGeoJSON = hasTask ? {
     type: 'Feature',
-    geometry: { type: 'LineString', coordinates: [[workerLng, workerLat], [taskLng, taskLat]] },
+    geometry: routeData?.geometry ?? { type: 'LineString', coordinates: [[workerLng, workerLat], [taskLng, taskLat]] },
   } : null;
 
   return (
-    <div dir="rtl" style={{ borderRadius: 20, overflow: 'hidden', border: '1.5px solid #bae6fd', background: '#f0f9ff' }}>
+    <div dir="rtl" style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border-1)', background: '#f0f9ff' }}>
       {/* Header: worker name + live dot + collapse */}
       <div style={{ padding: '12px 14px 10px', background: 'linear-gradient(135deg,#0c4a6e,#0369a1)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ position: 'relative', width: 12, height: 12, flexShrink: 0 }}>
@@ -221,11 +218,10 @@ export default function LiveWorkerMap({ task }) {
             bearing: 30,
           }}
           mapboxAccessToken={mapToken}
-          mapStyle="mapbox://styles/mapbox/outdoors-v12"
+          mapStyle="mapbox://styles/mapbox/standard"
           style={{ height: expanded ? 'calc(100dvh - 110px)' : 220, width: '100%', transition: 'height 0.35s ease' }}
           interactive={expanded}
           attributionControl={false}
-          onLoad={onLoad}
         >
           {routeGeoJSON && (
             <Source id="live-route" type="geojson" data={routeGeoJSON}>

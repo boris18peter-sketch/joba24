@@ -218,9 +218,9 @@ const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
 
 function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    // If never boosted, count from task creation date (same logic as TaskDetail)
+    // If never boosted, count from task creation date (new task starts at 0)
     const startTime = lastBoostAt || createdDate;
-    if (!startTime) return 1;
+    if (!startTime) return 0;
     const elapsed = Date.now() - new Date(startTime).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS);
   };
@@ -231,6 +231,7 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   const pct = Math.round(progress * 100);
 
   useEffect(() => {
+    setProgress(getProgress()); // recalc on mount and when boost changes
     if (charged) return;
     const iv = setInterval(() => {
       const p = getProgress();
@@ -238,7 +239,7 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
       if (p >= 1) clearInterval(iv);
     }, 1000);
     return () => clearInterval(iv);
-  }, [lastBoostAt, charged]);
+  }, [lastBoostAt, createdDate]);
 
   const handleClick = (e) => {
     e.stopPropagation();

@@ -100,9 +100,9 @@ const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000; // 1 hour to recharge after last bo
 
 function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const getProgress = () => {
-    // If never boosted, count from task creation date
+    // If never boosted, count from task creation date (NOT from now — new task starts at 0)
     const startTime = lastBoostAt || createdDate;
-    if (!startTime) return 1; // fully charged if no reference point
+    if (!startTime) return 0;
     const elapsed = Date.now() - new Date(startTime).getTime();
     return Math.min(1, elapsed / BOOST_FILL_MS_DETAIL);
   };
@@ -111,10 +111,10 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const charged = progress >= 1;
   const pct = Math.round(progress * 100);
 
-  // Reset progress immediately when lastBoostAt changes (e.g. after a boost)
+  // Recalculate when lastBoostAt or createdDate change
   useEffect(() => {
     setProgress(getProgress());
-  }, [lastBoostAt]);
+  }, [lastBoostAt, createdDate]);
 
   useEffect(() => {
     if (charged) return;
