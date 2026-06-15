@@ -452,49 +452,7 @@ export default function HomeFeed() {
     return base;
   }, [sortedTasks, smartSections, activeSection, filters, search, behavioralProfile]);
 
-  // Listen for direct task status updates from WorkerTrackerBar / approveWorker / completeTask
-  useEffect(() => {
-    const handler = (e) => {
-      const { taskId, update } = e.detail || {};
-      if (!taskId || !update) return;
-      // Update all feed caches immediately
-      queryClient.setQueryData(['allTasks'], (old = []) =>
-        Array.isArray(old) ? old.map(t => t.id === taskId ? { ...t, ...update } : t) : old
-      );
-      queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
-        Array.isArray(old) ? old.map(t => t.id === taskId ? { ...t, ...update } : t) : old
-      );
-      // activeWorkerTask — appears/disappears based on TAKEN status
-      queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
-        // If the update sets us as the worker on a TAKEN task — show banner
-        if (update.status === 'TAKEN' && update.worker_id === me?.id) {
-          return { ...(old || {}), id: taskId, ...update };
-        }
-        if (!old || old.id !== taskId) return old;
-        const merged = { ...old, ...update };
-        return merged.status !== 'TAKEN' ? null : merged;
-      });
-      // workerTasksLayout — keep Layout's active tasks in sync
-      queryClient.setQueryData(['workerTasksLayout', me?.id], (old = []) => {
-        if (!Array.isArray(old)) return old;
-        const exists = old.find(t => t.id === taskId);
-        if (!exists) {
-          // Add if this task now involves me as a worker
-          if (update.status === 'TAKEN' && update.worker_id === me?.id) {
-            return [{ id: taskId, ...update }, ...old];
-          }
-          return old;
-        }
-        return old.map(t => t.id === taskId ? { ...t, ...update } : t);
-      });
-      if (update.status === 'COMPLETED') {
-        queryClient.invalidateQueries({ queryKey: ['me'] });
-        queryClient.invalidateQueries({ queryKey: ['workerTasks'] });
-      }
-    };
-    window.addEventListener('task_status_update', handler);
-    return () => window.removeEventListener('task_status_update', handler);
-  }, [me?.id, queryClient]);
+  // task_status_update is handled centrally by Layout (single broadcaster) — no duplicate here
 
   // Pull to refresh — refetch main tasks list
   const { refreshing, pullProgress } = usePullToRefresh(async () => {

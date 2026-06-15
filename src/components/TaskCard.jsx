@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap } from 'lucide-react';
@@ -430,42 +430,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [boostLoading, setBoostLoading] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  // Live applicant count — fetch directly from TaskApplication entity for accuracy
-  const [liveApplicantCount, setLiveApplicantCount] = useState(task.applicants?.length || 0);
-  const prevCountRef = useRef(liveApplicantCount);
-
-  // Fetch real count from DB on mount (task.applicants field is often stale)
-  useEffect(() => {
-    if (!task.id || !isMyPublished) return;
-    base44.entities.TaskApplication.filter({ task_id: task.id, status: 'pending' })
-      .then(apps => setLiveApplicantCount(apps.length))
-      .catch(() => {});
-  }, [task.id, isMyPublished]);
-
-  // Keep in sync when task.applicants prop updates (real-time from HomeFeed)
-  useEffect(() => {
-    const fromProp = task.applicants?.length || 0;
-    setLiveApplicantCount(prev => Math.max(prev, fromProp));
-  }, [task.applicants?.length]);
-
-  // Real-time subscription to new applications for this task
-  useEffect(() => {
-    if (!task.id || !isMyPublished) return;
-    const unsub = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id !== task.id) return;
-      if (event.type === 'create' && event.data?.status === 'pending') {
-        setLiveApplicantCount(c => c + 1);
-      }
-      if (event.type === 'update' && (event.data?.status === 'cancelled' || event.data?.status === 'rejected')) {
-        setLiveApplicantCount(c => Math.max(0, c - 1));
-      }
-    });
-    return unsub;
-  }, [task.id, isMyPublished]);
-
-  useEffect(() => {
-    prevCountRef.current = liveApplicantCount;
-  }, [liveApplicantCount]);
+  // Applicant count comes directly from task.applicants prop (kept in sync by Layout's single broadcaster)
+  // No local state or subscriptions needed here
+  const liveApplicantCount = task.applicants?.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length
+    ?? (task.applicants?.length || 0);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -485,34 +453,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     if (cancellingRef.current || !myApp?.id) return;
     cancellingRef.current = true;
     setCancelling(true);
+    // Optimistic update
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) =>
       old.map(a => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
     );
     queryClient.setQueryData(['myApp', task.id, currentUserId], null);
     try {
-      const creditsToRefund = myApp?.credits_charged || 0;
-      if (creditsToRefund > 0) {
-        const freshMe = await base44.auth.me();
-        const currentCredits = freshMe?.worker_credits ?? 0;
-        const newBalance = currentCredits + creditsToRefund;
-        await base44.auth.updateMe({ worker_credits: newBalance });
-        await base44.entities.CreditTransaction.create({
-          user_id: currentUserId,
-          amount: creditsToRefund,
-          type: 'Refund_Rejection',
-          task_id: task.id,
-          balance_after: newBalance,
-          note: `החזר קרדיטים - ביטול בקשה`,
-        });
-      }
-      await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
+      const res = await base44.functions.invoke('cancelMyApplication', { applicationId: myApp.id, taskId: task.id });
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
-      queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      queryClient.invalidateQueries({ queryKey: ['myApp', task.id, currentUserId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      queryClient.invalidateQueries({ queryKey: ['creditTxns', currentUserId] });
       if (cardRef.current) {
         const r = cardRef.current.getBoundingClientRect();
         setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
@@ -521,8 +471,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       setCoinFlyActive(true);
       toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
     } catch {
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
+      // Rollback optimistic update
       queryClient.setQueryData(['myApp', task.id, currentUserId], myApp);
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       toast.error('שגיאה בביטול, נסה שוב');
     } finally {
       cancellingRef.current = false;

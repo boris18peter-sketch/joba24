@@ -359,59 +359,38 @@ export default function TaskDetail() {
     return () => window.removeEventListener('task_reset_to_open', handleReset);
   }, [id, me?.id]);
 
-  // Listen for task_status_update — sync TaskDetail + all caches
+  // Real-time task subscription — TaskDetail only needs to update its own ['task', id] cache.
+  // Layout is the single broadcaster for all shared caches (workerTasksLayout, myTasks, etc.)
   useEffect(() => {
-    const handler = (e) => {
-      const { taskId, update } = e.detail || {};
-      if (!taskId || !update || taskId !== id) return;
-      queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...update } : old);
-      if (update.status === 'COMPLETED') {
-        queryClient.invalidateQueries({ queryKey: ['me'] });
+    const unsubTask = base44.entities.Task.subscribe((event) => {
+      if (event.id !== id || !event.data) return;
+      queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...event.data } : event.data);
+      if (event.data.status === 'COMPLETED') {
         queryClient.invalidateQueries({ queryKey: ['myReview', id, me?.id] });
-        queryClient.invalidateQueries({ queryKey: ['workerTasks', update.worker_id || task?.worker_id] });
-      }
-    };
-    window.addEventListener('task_status_update', handler);
-    return () => window.removeEventListener('task_status_update', handler);
-  }, [id, me?.id, queryClient, task?.worker_id]);
-
-  // Real-time subscriptions — set cache directly for instant render, no refetch delay
-  useEffect(() => {
-    const unsubscribe1 = base44.entities.Task.subscribe((event) => {
-      if (event.id === id && event.data) {
-        queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...event.data } : event.data);
-        // Also keep Layout caches in sync
-        queryClient.setQueryData(['workerTasksLayout', me?.id], (old = []) =>
-          old.map(t => t.id === id ? { ...t, ...event.data } : t)
-        );
-        queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) =>
-          old.map(t => t.id === id ? { ...t, ...event.data } : t)
-        );
       }
     });
-    const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
+    const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
       if (!event.data || event.data.task_id !== id) return;
       const app = event.data;
-      // Update applications-pulse cache directly
+      // applications-pulse for applicant counter
       queryClient.setQueryData(['applications-pulse', id], (old = []) => {
         if (event.type === 'create') return old.find(a => a.id === app.id) ? old : [...old, app];
         if (event.type === 'update') return old.map(a => a.id === app.id ? { ...a, ...app } : a);
         if (event.type === 'delete') return old.filter(a => a.id !== app.id);
         return old;
       });
-      // Update myApp cache directly if this app belongs to me
+      // myApp cache for current worker
       if (me?.id && app.worker_id === me.id) {
         queryClient.setQueryData(['myApp', id, me.id], (old) => {
           if (event.type === 'delete') return null;
           if (event.type === 'update') {
-            // If cancelled/rejected, clear myApp
             if (app.status === 'cancelled' || app.status === 'rejected') return null;
             return old ? { ...old, ...app } : app;
           }
           return old;
         });
       }
-      // Always sync the applications list for the owner
+      // applications list for owner
       queryClient.setQueryData(['applications', id], (old = []) => {
         if (!old) return old;
         if (event.type === 'create') return old.find(a => a.id === app.id) ? old : [...old, app];
@@ -420,45 +399,17 @@ export default function TaskDetail() {
         return old;
       });
     });
-    return () => {
-      unsubscribe1();
-      unsubscribe2();
-    };
+    return () => { unsubTask(); unsubApp(); };
   }, [id, me?.id]);
 
-  // Central update function — syncs ALL caches atomically + broadcasts global event
+  // Central update: write to DB — WebSocket event will propagate to Layout (single broadcaster)
+  // which updates all shared caches. We only need to update the local ['task', id] cache optimistically.
   const handleWorkerUpdate = async (data) => {
     const patch = { ...data };
-    // 1. Update every relevant cache immediately
+    // Optimistic update for TaskDetail view
     queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...patch } : old);
-    queryClient.setQueryData(['workerTasksLayout', me?.id], (old = []) =>
-      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
-    );
-    queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) =>
-      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
-    );
-    queryClient.setQueryData(['allTasks'], (old) =>
-      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
-    );
-    queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
-      Array.isArray(old) ? old.map(t => t.id === id ? { ...t, ...patch } : t) : old
-    );
-    // activeWorkerTask (worker's banner in HomeFeed)
-    queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
-      if (!old || old.id !== id) return old;
-      const merged = { ...old, ...patch };
-      return merged.status !== 'TAKEN' ? null : merged;
-    });
-    // 2. Broadcast so HomeFeed, ActiveTaskBanner, Profile all react instantly
-    window.dispatchEvent(new CustomEvent('task_status_update', { detail: { taskId: id, update: patch } }));
-    // 3. Persist to server
+    // Persist to server — WebSocket fires and Layout handles all other caches
     await base44.entities.Task.update(id, patch);
-    // 4. On completion — refresh profile stats + banner
-    if (patch.status === 'COMPLETED') {
-      queryClient.invalidateQueries({ queryKey: ['me'] });
-      queryClient.invalidateQueries({ queryKey: ['workerTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me?.id] });
-    }
   };
 
   // Auto-open rating popup when task just became COMPLETED (for both sides)
@@ -560,36 +511,26 @@ export default function TaskDetail() {
 
   const cancelApplicationMutation = useMutation({
     mutationFn: async () => {
-      // Refund credits via service role through backend
-      const creditsToRefund = myApp?.credits_charged || 0;
-      if (creditsToRefund > 0) {
-        await base44.functions.invoke('refundApplicationCredits', {
-          applicationId: myApp.id,
-          reason: 'Refund_Rejection',
-        });
-      }
-      await base44.entities.TaskApplication.update(myApp.id, { status: 'cancelled' });
+      if (!myApp?.id) throw new Error('no application');
+      const res = await base44.functions.invoke('cancelMyApplication', { applicationId: myApp.id, taskId: id });
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
     },
     onMutate: () => {
-      // Optimistic: immediately remove from myApp cache
       prevWorkerIdRef.current = null;
       queryClient.setQueryData(['myApp', id, me?.id], null);
-      // Also update the feed applications cache immediately
       queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) =>
-      old.map((a) => a.id === myApp.id ? { ...a, status: 'cancelled' } : a)
+        old.map((a) => a.id === myApp?.id ? { ...a, status: 'cancelled' } : a)
       );
     },
     onSuccess: () => {
-      // Hard sync everything after server confirms
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', id] });
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
       toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      toast.error('שגיאה בביטול, נסה שוב');
     }
   });
 
@@ -610,20 +551,16 @@ export default function TaskDetail() {
       const newApp = data?.application;
       if (!newApp) throw new Error('שגיאה בשליחת הבקשה');
 
-      // Sync caches
+      // Sync caches with real server data — no need to invalidate immediately after setQueryData
       queryClient.setQueryData(['myApp', id, me?.id], newApp);
       queryClient.setQueryData(['myApplicationsFeed', me?.id], (old = []) => {
         const without = old.filter((a) => !(a.task_id === id && a.worker_id === me?.id));
         return [...without, newApp];
       });
-      // Refresh me to reflect updated credits
       queryClient.invalidateQueries({ queryKey: ['me'] });
       setShowApplyForm(false);
       setHasApplied(true);
       toast.success(`הגשת בקשה למשימה: ${data.credits_charged} קרדיטים נוכו`);
-      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
-      queryClient.invalidateQueries({ queryKey: ['applications', id] });
     } catch (err) {
       // 403 = insufficient credits
       const status = err?.response?.status || err?.status;

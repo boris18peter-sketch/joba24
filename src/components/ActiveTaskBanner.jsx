@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -81,48 +81,11 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
   const [updating, setUpdating] = useState(false);
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  // Local state so the banner updates instantly without waiting for parent re-render
-  const [localTasks, setLocalTasks] = useState(Array.isArray(tasks) ? tasks : [tasks]);
-  useEffect(() => {
-    setLocalTasks(Array.isArray(tasks) ? tasks : [tasks]);
-  }, [tasks]);
-
-  // Real-time sync via WebSocket subscription
-  useEffect(() => {
-    const taskList = Array.isArray(tasks) ? tasks : [tasks];
-    if (!taskList.length) return;
-    const relevantIds = new Set(taskList.map(t => t.id));
-    const unsub = base44.entities.Task.subscribe((event) => {
-      if (event.type === 'update' && event.data && relevantIds.has(event.id)) {
-        const updated = event.data;
-        setLocalTasks(prev => prev.map(t => t.id === event.id ? { ...t, ...updated } : t));
-        queryClient.setQueryData(['activeWorkerTask', me?.id], (old) =>
-          old?.id === event.id ? { ...old, ...updated } : old
-        );
-        queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
-          Array.isArray(old) ? old.map(t => t.id === event.id ? { ...t, ...updated } : t) : old
-        );
-        queryClient.setQueryData(['allTasks'], (old) =>
-          Array.isArray(old) ? old.map(t => t.id === event.id ? { ...t, ...updated } : t) : old
-        );
-      }
-    });
-    return unsub;
-  }, [tasks, me?.id, queryClient]);
-
-  // Also listen for task_status_update events (from TaskDetail/WorkerTrackerBar)
-  useEffect(() => {
-    const handler = (e) => {
-      const { taskId, update } = e.detail || {};
-      if (!taskId || !update) return;
-      setLocalTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...update } : t));
-    };
-    window.addEventListener('task_status_update', handler);
-    return () => window.removeEventListener('task_status_update', handler);
-  }, []);
-
-  if (!localTasks.length || !me) return null;
-  const taskList = localTasks;
+  // No local state — read directly from props (which come from React Query cache via Layout/HomeFeed)
+  // Layout.jsx is the single broadcaster: it subscribes to WebSocket and updates all caches
+  if (!tasks || !me) return null;
+  const taskList = Array.isArray(tasks) ? tasks : [tasks];
+  if (!taskList.length) return null;
 
   const handleQuickAction = async () => {
     if (!pendingAction || updating) return;
