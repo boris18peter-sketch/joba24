@@ -76,7 +76,9 @@ Deno.serve(async (req) => {
             task_id: taskId,
             task_title: task.title,
             balance_after: newBalance,
-            note: 'החזר קרדיטים - המשימה בוטלה על ידי המפרסם',
+            note: isClient
+              ? `החזר קרדיטים - המשימה "${task.title}" בוטלה על ידי המפרסם`
+              : `החזר קרדיטים - המשימה "${task.title}" בוטלה`,
           });
         }
       }

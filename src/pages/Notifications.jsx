@@ -9,16 +9,21 @@ import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 
 const TYPE_CONFIG = {
-  task_taken: { emoji: '🎉', color: '#16a34a', bg: '#f0fdf4', label: 'עובד נמצא!' },
-  worker_on_the_way: { emoji: '🚗', color: '#1a6fd4', bg: '#eff6ff', label: 'עובד בדרך' },
-  worker_arrived: { emoji: '📍', color: '#7c3aed', bg: '#f5f3ff', label: 'עובד הגיע' },
-  worker_done: { emoji: '✅', color: '#059669', bg: '#ecfdf5', label: 'עבודה הושלמה' },
-  application_received: { emoji: '✋', color: '#d97706', bg: '#fffbeb', label: 'בקשה חדשה' },
-  application_approved: { emoji: '✅', color: '#16a34a', bg: '#f0fdf4', label: 'בקשה אושרה' },
-  new_message: { emoji: '💬', color: '#1a6fd4', bg: '#eff6ff', label: 'הודעה חדשה' },
-  new_review: { emoji: '⭐', color: '#d97706', bg: '#fffbeb', label: 'ביקורת חדשה' },
-  task_cancelled_worker: { emoji: '⚠️', color: '#dc2626', bg: '#fef2f2', label: 'משימה בוטלה' },
-  boost_signal: { emoji: '⚡', color: '#7c3aed', bg: '#f5f3ff', label: 'משימה מתאימה לך' },
+  task_taken:            { emoji: '🎉', color: '#16a34a', bg: '#f0fdf4',  label: 'עובד נמצא!' },
+  worker_on_the_way:     { emoji: '🚗', color: '#1a6fd4', bg: '#eff6ff',  label: 'עובד בדרך' },
+  worker_arrived:        { emoji: '📍', color: '#7c3aed', bg: '#f5f3ff',  label: 'עובד הגיע' },
+  worker_done:           { emoji: '✅', color: '#059669', bg: '#ecfdf5',  label: 'עבודה הושלמה' },
+  application_received:  { emoji: '✋', color: '#d97706', bg: '#fffbeb',  label: 'בקשה חדשה' },
+  application_approved:  { emoji: '✅', color: '#16a34a', bg: '#f0fdf4',  label: 'בקשה אושרה' },
+  application_sent:      { emoji: '📤', color: '#16a34a', bg: '#f0fdf4',  label: 'בקשה נשלחה' },
+  application_rejected:  { emoji: '❌', color: '#dc2626', bg: '#fef2f2',  label: 'בקשה נדחתה' },
+  approval_revoked:      { emoji: '↩️', color: '#dc2626', bg: '#fef2f2',  label: 'אישור בוטל' },
+  worker_left_task:      { emoji: '🚪', color: '#ea580c', bg: '#fff7ed',  label: 'עובד עזב' },
+  no_show_reported:      { emoji: '⚠️', color: '#dc2626', bg: '#fef2f2',  label: 'אי-הופעה' },
+  task_cancelled_worker: { emoji: '🚫', color: '#dc2626', bg: '#fef2f2',  label: 'משימה בוטלה' },
+  new_message:           { emoji: '💬', color: '#1a6fd4', bg: '#eff6ff',  label: 'הודעה חדשה' },
+  new_review:            { emoji: '⭐', color: '#d97706', bg: '#fffbeb',  label: 'ביקורת חדשה' },
+  boost_signal:          { emoji: '⚡', color: '#7c3aed', bg: '#f5f3ff',  label: 'משימה מתאימה' },
 };
 
 export default function Notifications() {
@@ -122,11 +127,19 @@ export default function Notifications() {
                   <div style={{ fontSize: 13, color: 'var(--text-1)', fontWeight: 600, marginBottom: 2 }}>
                     {notif.taskTitle || notif.workerName || notif.senderName || ''}
                   </div>
-                  {notif.preview && (
-                    <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {notif.preview}
-                    </div>
-                  )}
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {notif.preview || (
+                      notif.type === 'application_approved' ? 'לחץ לצאת לדרך' :
+                      notif.type === 'application_rejected' ? 'הקרדיטים הוחזרו לחשבונך' :
+                      notif.type === 'approval_revoked'     ? 'המשימה חזרה לסטטוס פתוח' :
+                      notif.type === 'worker_left_task'     ? 'המשימה פתוחה שוב לעובדים' :
+                      notif.type === 'no_show_reported'     ? 'מדד האמינות שלך עודכן' :
+                      notif.type === 'task_cancelled_worker'? 'בוטלה על ידי המפרסם' :
+                      notif.type === 'application_sent'     ? 'ממתין לאישור המפרסם' :
+                      notif.type === 'worker_done'          ? 'לחץ לאשר ולשחרר תשלום' :
+                      null
+                    )}
+                  </div>
                   {date && (
                     <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
                       {formatDistanceToNow(date, { addSuffix: true, locale: he })}
