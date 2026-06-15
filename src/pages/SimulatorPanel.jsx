@@ -547,6 +547,97 @@ export default function SimulatorPanel() {
         )}
       </Section>
 
+      {/* ── BOT SIMULATOR ── */}
+      <Section title="🤖 בוט QA — עובד וירטואלי" icon={<FlaskConical size={14} color="#6366f1" />} defaultOpen badge={myOpenTasks.length}>
+        <div style={{ fontSize: 11, color: '#3730a3', padding: '7px 10px', background: '#eef2ff', borderRadius: 8, border: '1px solid #c7d2fe', lineHeight: 1.6 }}>
+          <strong>בוט מדמה עובד שני</strong> — מגיש בקשות, לוקח ומבצע משימות ללא מכשיר שני.<br />
+          בחר משימה → לחץ על הפעולות בסדר, או "זרימה מלאה" להרצה אוטומטית.
+        </div>
+
+        {/* Full flow — one click per task */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginTop: 4 }}>⚡ זרימה מלאה (לחיצה אחת):</div>
+        {myOpenTasks.length === 0 && (
+          <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', padding: 6 }}>צור משימה OPEN תחילה ↓</div>
+        )}
+        {myOpenTasks.slice(0, 4).map(t => (
+          <Btn key={t.id} label={`🤖 הרץ הכל: "${t.title.slice(0, 24)}"`} color="#6366f1"
+            onClick={wrap(async () => {
+              const res = await base44.functions.invoke('qaBot', { action: 'full_flow', taskId: t.id });
+              if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+              toast.success('✅ זרימה מלאה הושלמה! ' + (res.data.log?.slice(-1)[0] || ''));
+            })} />
+        ))}
+
+        {/* Step by step */}
+        {myOpenTasks.length > 0 && <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginTop: 6 }}>🔢 שלב-שלב (על משימה ראשונה):</div>
+          {(() => {
+            const t = myOpenTasks[0];
+            const taken = allTasks.find(x => x.worker_id === `bot_${me?.id}` && x.status === 'TAKEN');
+            const targetTask = taken || t;
+            return (
+              <div style={{ border: '1px solid #c7d2fe', borderRadius: 11, padding: 10, background: '#f5f3ff', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                <Btn label="1️⃣ בוט מגיש בקשה" color="#7c3aed" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'apply', taskId: t.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('בוט הגיש בקשה!');
+                  })} />
+                <Btn label="2️⃣ אשר את הבוט" color="#059669" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'approve', taskId: t.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('בוט אושר!');
+                  })} />
+                <Btn label="3️⃣ בוט לוקח משימה" color="#0891b2" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'take', taskId: t.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('בוט לקח!');
+                  })} />
+                <Btn label="4️⃣ בוט מתקדם" color="#3b82f6" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'advance', taskId: targetTask.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('סטטוס: ' + res.data.nextStatus);
+                  })} />
+                <Btn label="5️⃣ בוט מסיים (COMPLETED)" color="#16a34a" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'complete', taskId: targetTask.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('הושלם!');
+                  })} />
+                <Btn label="❌ בטל בקשת בוט" color="#dc2626" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'cancel_app', taskId: t.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('בוטל!');
+                  })} />
+                <Btn label="🛑 בטל משימה (כלקוח)" color="#f97316" small
+                  onClick={wrap(async () => {
+                    const res = await base44.functions.invoke('qaBot', { action: 'cancel_task', taskId: targetTask.id });
+                    if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
+                    toast.success('משימה בוטלה!');
+                  })} />
+              </div>
+            );
+          })()}
+        </>}
+
+        {/* Bot tasks status */}
+        {allTasks.filter(t => t.worker_id === `bot_${me?.id}`).length > 0 && (
+          <div style={{ background: '#f0fdf4', borderRadius: 9, padding: '8px 12px', border: '1px solid #bbf7d0' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 4 }}>משימות הבוט שלי:</div>
+            {allTasks.filter(t => t.worker_id === `bot_${me?.id}`).slice(0, 5).map(t => (
+              <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '2px 0' }}>
+                <span style={{ color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title.slice(0, 24)}</span>
+                <span style={{ fontWeight: 800, color: STATUS_COLORS[t.status] || '#64748b', flexShrink: 0 }}>{t.status} · {t.worker_status || '—'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
       {/* ── SCENARIO QA: Application Flow (no real task taking) ── */}
       <Section title="🧪 QA — ביטול בקשות וקרדיטים" icon={<FlaskConical size={14} color="#6366f1" />} defaultOpen badge={myApps.filter(a => a.status === 'pending' || a.status === 'approved').length}>
         <div style={{ fontSize: 11, color: '#3730a3', padding: '5px 9px', background: '#eef2ff', borderRadius: 8, border: '1px solid #c7d2fe', marginBottom: 2 }}>
