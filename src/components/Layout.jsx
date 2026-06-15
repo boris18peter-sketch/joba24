@@ -137,67 +137,6 @@ export default function Layout() {
     staleTime: 30000,
   });
 
-  // Real-time sync: keep workerTasks + myPublishedTasks + activeWorkerTask in sync
-  useEffect(() => {
-    if (!me?.id || !isAuthenticated) return;
-    const unsub = base44.entities.Task.subscribe((event) => {
-      const t = event.data || {};
-      // Update workerTasks cache
-      queryClient.setQueryData(['workerTasksLayout', me.id], (old = []) => {
-        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
-        if (event.type === 'update') {
-          const exists = old.find(x => x.id === event.id);
-          if (exists) return old.map(x => x.id === event.id ? { ...x, ...t } : x);
-          if (t.worker_id === me.id) return [t, ...old]; // newly assigned to me
-          return old;
-        }
-        return old;
-      });
-      // Update myPublishedTasks cache
-      queryClient.setQueryData(['myPublishedTasks', me.id], (old = []) => {
-        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
-        if (event.type === 'create' && t.client_id === me.id) return old.find(x => x.id === t.id) ? old : [t, ...old];
-        if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
-        return old;
-      });
-      // Also sync myTasks (HomeFeed cache) — so activeClientTask banner updates immediately
-      queryClient.setQueryData(['myTasks', me.id], (old = []) => {
-        if (!Array.isArray(old)) return old;
-        if (event.type === 'update' && old.find(x => x.id === event.id)) {
-          return old.map(x => x.id === event.id ? { ...x, ...t } : x);
-        }
-        return old;
-      });
-      // Sync activeWorkerTask — critical for banner appearing without refresh
-      if (event.type === 'update') {
-        queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
-          if (t.worker_id === me.id && t.status === 'TAKEN') {
-            // Newly assigned to me, or existing update
-            return old?.id === event.id ? { ...old, ...t } : (old ? old : t);
-          }
-          if (old?.id === event.id) {
-            // My active task changed status
-            return t.status !== 'TAKEN' ? null : { ...old, ...t };
-          }
-          return old;
-        });
-      }
-      if (event.type === 'delete') {
-        queryClient.setQueryData(['activeWorkerTask', me.id], (old) =>
-          old?.id === event.id ? null : old
-        );
-      }
-      // When task becomes COMPLETED, refresh profile stats for the worker
-      if (event.type === 'update' && t.status === 'COMPLETED' && t.worker_id) {
-        queryClient.invalidateQueries({ queryKey: ['workerTasks', t.worker_id] });
-        if (t.worker_id === me.id || t.client_id === me.id) {
-          queryClient.invalidateQueries({ queryKey: ['me'] });
-        }
-      }
-    });
-    return unsub;
-  }, [me?.id, isAuthenticated, queryClient]);
-
   // Seed appStatusRef with current approved applications
   useEffect(() => {
     myApplications.forEach(app => {
@@ -207,33 +146,30 @@ export default function Layout() {
     });
   }, [myApplications]);
 
-  // Watch for task status changes — keep prevTasksRef up to date for all relevant tasks
+  // Seed prevTasksRef from published + worker tasks
   useEffect(() => {
-    myPublishedTasks.forEach(task => {
-      prevTasksRef.current[task.id] = task;
-    });
+    myPublishedTasks.forEach(task => { prevTasksRef.current[task.id] = task; });
   }, [myPublishedTasks]);
 
   useEffect(() => {
     workerTasks.forEach(task => {
       if (task.status === 'TAKEN') {
         prevTasksRef.current[task.id] = task;
-        takenWorkerRef.current[task.id] = task.worker_id; // always me.id for TAKEN tasks
+        takenWorkerRef.current[task.id] = task.worker_id;
       } else if (!prevTasksRef.current[task.id]) {
         prevTasksRef.current[task.id] = task;
       }
     });
   }, [workerTasks]);
 
-  // Seed prevTasksRef + takenWorkerRef with TAKEN tasks I'm a worker on
-  // fetch once on mount so cancellation detection works reliably
+  // Seed prevTasksRef + takenWorkerRef on mount so cancellation detection works reliably
   useEffect(() => {
     if (!me?.id) return;
     base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50).then(tasks => {
       tasks.forEach(task => {
         if (task.status === 'TAKEN') {
           prevTasksRef.current[task.id] = task;
-          takenWorkerRef.current[task.id] = task.worker_id; // = me.id
+          takenWorkerRef.current[task.id] = task.worker_id;
         }
       });
     });
@@ -241,10 +177,115 @@ export default function Layout() {
 
   // Keep prevApplicationsRef up to date for revocation detection
   useEffect(() => {
-    myApplications.forEach(app => {
-      prevApplicationsRef.current[app.id] = app;
-    });
+    myApplications.forEach(app => { prevApplicationsRef.current[app.id] = app; });
   }, [myApplications]);
+
+  // ── SINGLE merged Task subscription: handles both cache sync AND notifications ──
+  useEffect(() => {
+    if (!me?.id || !isAuthenticated) return;
+    const unsub = base44.entities.Task.subscribe((event) => {
+      const t = event.data || {};
+
+      // ── 1. Cache sync ──
+      // workerTasksLayout
+      queryClient.setQueryData(['workerTasksLayout', me.id], (old = []) => {
+        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        if (event.type === 'update') {
+          const exists = old.find(x => x.id === event.id);
+          if (exists) return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+          if (t.worker_id === me.id && t.status === 'TAKEN') return [t, ...old];
+          return old;
+        }
+        return old;
+      });
+      // myPublishedTasks
+      queryClient.setQueryData(['myPublishedTasks', me.id], (old = []) => {
+        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        if (event.type === 'create' && t.client_id === me.id) return old.find(x => x.id === t.id) ? old : [t, ...old];
+        if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+        return old;
+      });
+      // myTasks (HomeFeed)
+      queryClient.setQueryData(['myTasks', me.id], (old = []) => {
+        if (!Array.isArray(old)) return old;
+        if (event.type === 'create' && t.client_id === me.id && !old.find(x => x.id === t.id)) return [t, ...old];
+        if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        return old;
+      });
+      // activeWorkerTask — the critical one for ActiveTaskBanner
+      queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+        if (event.type === 'delete') return old?.id === event.id ? null : old;
+        if (event.type === 'update') {
+          if (t.worker_id === me.id && t.status === 'TAKEN') {
+            return old?.id === event.id ? { ...old, ...t } : (old ?? t);
+          }
+          if (old?.id === event.id) {
+            return t.status !== 'TAKEN' ? null : { ...old, ...t };
+          }
+        }
+        return old;
+      });
+      // COMPLETED — refresh me stats
+      if (event.type === 'update' && t.status === 'COMPLETED') {
+        if (t.worker_id === me.id || t.client_id === me.id) {
+          queryClient.invalidateQueries({ queryKey: ['me'] });
+        }
+      }
+
+      // ── 2. Notifications (update events only) ──
+      if (event.type !== 'update') return;
+      const task = t;
+      const prev = prevTasksRef.current[task.id];
+
+      if (!prev) {
+        if (task.client_id === me.id || task.worker_id === me.id) {
+          prevTasksRef.current[task.id] = task;
+        }
+        return;
+      }
+
+      if (task.status === 'TAKEN' && task.worker_id) {
+        takenWorkerRef.current[task.id] = task.worker_id;
+      }
+
+      // Client notifications
+      if (task.client_id === me.id) {
+        if (task.status === 'TAKEN' && prev.status !== 'TAKEN') {
+          addNotification({ type: 'task_taken', taskTitle: task.title, taskId: task.id });
+        }
+        if (task.worker_status && task.worker_status !== prev.worker_status) {
+          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
+          else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
+          else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
+        }
+      }
+
+      // TAKEN → OPEN (worker left)
+      const prevWorkerId = prev.worker_id || takenWorkerRef.current[task.id];
+      if (prev.status === 'TAKEN' && task.status === 'OPEN' && prevWorkerId && !task.worker_id) {
+        if (task.client_id === me.id && me.id !== prevWorkerId) {
+          addNotification({ type: 'worker_left_task', taskTitle: task.title, taskId: task.id, workerName: prev.worker_name });
+        }
+      }
+
+      // Task CANCELLED — notify worker
+      const workerIdForTask = takenWorkerRef.current[task.id] || prev.worker_id;
+      const prevWasActiveForWorker = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(prev.status);
+      if (task.status === 'CANCELLED' && prevWasActiveForWorker && workerIdForTask === me.id && me.id !== task.client_id) {
+        addNotification({ type: 'task_cancelled_worker', taskTitle: prev.title || task.title });
+        setCancelledTask({ ...task, worker_id: workerIdForTask, title: prev.title || task.title });
+      }
+
+      // Task CANCELLED — notify client
+      if (task.client_id === me.id && me.id !== prev.worker_id && prev.status === 'TAKEN' && task.status === 'CANCELLED') {
+        setCancelSuccessTask(task);
+      }
+
+      prevTasksRef.current[task.id] = { ...prev, ...task };
+    });
+    return unsub;
+  }, [me?.id, isAuthenticated, queryClient]);
 
   // Real-time chat message push notifications
   useEffect(() => {
@@ -252,17 +293,11 @@ export default function Layout() {
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.type !== 'create' || !event.data) return;
       const msg = event.data;
-      if (msg.sender_id === me.id) return; // my own message
-      // Find task to get context
+      if (msg.sender_id === me.id) return;
       const task = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === msg.task_id);
       if (!task) return;
       setUnreadMessages(prev => prev + 1);
-      addNotification({
-        type: 'new_message',
-        senderName: msg.sender_name,
-        preview: msg.content?.slice(0, 60),
-        taskId: msg.task_id,
-      });
+      addNotification({ type: 'new_message', senderName: msg.sender_name, preview: msg.content?.slice(0, 60), taskId: msg.task_id });
     });
     return unsub;
   }, [me?.id, myPublishedTasks, workerTasks]);
@@ -272,7 +307,7 @@ export default function Layout() {
     if (location.pathname === '/chats') setUnreadMessages(0);
   }, [location.pathname]);
 
-  // CreditTransaction subscription — detect Loyalty_Reward (5-star bonus) in real-time
+  // CreditTransaction subscription
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
     const unsub = base44.entities.CreditTransaction.subscribe((event) => {
@@ -280,243 +315,109 @@ export default function Layout() {
       const tx = event.data;
       if (tx.user_id !== me.id) return;
       if (tx.type === 'Loyalty_Reward') {
-        // Fire coin toast with specific label
         window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: tx.amount, label: 'בונוס 5 כוכבים ⭐' } }));
-        addNotification({
-          type: 'new_review',
-          reviewerName: 'מפרסם המשימה',
-          rating: 5,
-          preview: `קיבלת ${tx.amount} קרדיטים בונוס על דירוג 5 כוכבים! ⭐`,
-        });
-        // Refresh me to reflect updated balance
+        addNotification({ type: 'new_review', reviewerName: 'מפרסם המשימה', rating: 5, preview: `קיבלת ${tx.amount} קרדיטים בונוס על דירוג 5 כוכבים! ⭐` });
         queryClient.invalidateQueries({ queryKey: ['me'] });
       }
     });
     return unsub;
   }, [me?.id, isAuthenticated]);
 
-  // Real-time notification when someone reviews ME (reviewee_id === me.id)
+  // Review subscription
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
     const unsub = base44.entities.Review.subscribe((event) => {
       if (event.type !== 'create' || !event.data) return;
       if (event.data.reviewee_id !== me.id) return;
-      addNotification({
-        type: 'new_review',
-        taskId: event.data.task_id,
-        rating: event.data.rating,
-        preview: `קיבלת ביקורת ${event.data.rating} כוכבים`,
-      });
+      addNotification({ type: 'new_review', taskId: event.data.task_id, rating: event.data.rating, preview: `קיבלת ביקורת ${event.data.rating} כוכבים` });
     });
     return unsub;
   }, [me?.id, isAuthenticated]);
 
-  // Listen for approval revoked by client — popup + notification for WORKER only
+  // Approval revoked event (from client action in TaskApplicants)
   useEffect(() => {
     const handleRevoked = (e) => {
       const { task } = e.detail;
-      // Only show to the worker — the client is the one who triggered this action
-      if (!me?.id || me?.id === task?.client_id) return;
-      // Show revocation popup to worker
+      if (!me?.id || me.id === task?.client_id) return;
       setRevokedTask(task || { id: task?.id, title: task?.title || 'משימה' });
-      addNotification({
-        type: 'approval_revoked',
-        taskTitle: task?.title || 'משימה',
-        taskId: task?.id,
-      });
+      addNotification({ type: 'approval_revoked', taskTitle: task?.title || 'משימה', taskId: task?.id });
     };
     window.addEventListener('approval_revoked_by_client', handleRevoked);
     return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
   }, [me?.id]);
 
-  // Listen for no-show report — notify worker
+  // No-show reported event
   useEffect(() => {
     const handleNoShow = (e) => {
       const { task } = e.detail;
-      if (!me?.id || me?.id === task?.client_id) return;
-      addNotification({
-        type: 'no_show_reported',
-        taskTitle: task?.title || 'משימה',
-        taskId: task?.id,
-      });
+      if (!me?.id || me.id === task?.client_id) return;
+      addNotification({ type: 'no_show_reported', taskTitle: task?.title || 'משימה', taskId: task?.id });
       setCancelledTask({ ...task, title: task.title });
     };
     window.addEventListener('worker_no_show_reported', handleNoShow);
     return () => window.removeEventListener('worker_no_show_reported', handleNoShow);
   }, [me?.id]);
 
-  // Listen for cancel warning request from TaskDetail — owner wants to cancel task with active worker
+  // Cancel warning from TaskDetail
   useEffect(() => {
-    const handleShowCancelWarning = (e) => {
-      const { task } = e.detail;
-      setCancelWarningTask(task);
-    };
-    window.addEventListener('show_cancel_warning', handleShowCancelWarning);
-    return () => window.removeEventListener('show_cancel_warning', handleShowCancelWarning);
+    const handler = (e) => setCancelWarningTask(e.detail?.task);
+    window.addEventListener('show_cancel_warning', handler);
+    return () => window.removeEventListener('show_cancel_warning', handler);
   }, []);
 
-  // Real-time task events for client (push-like) + worker cancellation alert
-  useEffect(() => {
-    if (!isAuthenticated || !me?.id) return;
-    const unsubscribe = base44.entities.Task.subscribe((event) => {
-      if (event.type !== 'update') return;
-      const task = event.data;
-      if (!task) return;
-      const prev = prevTasksRef.current[task.id];
-
-      // Always update prevTasksRef AFTER reading prev, so next event has fresh data
-      // But only if this task is relevant to me (I'm client or worker)
-      if (task.client_id === me?.id || task.worker_id === me?.id || prev?.worker_id === me?.id) {
-        // Store a snapshot BEFORE updating — we already have prev above
-        // Update after processing (at end of handler)
-      }
-
-      if (!prev) {
-        // If no prev but task is relevant, seed it now for future events
-        if (task.client_id === me?.id || task.worker_id === me?.id) {
-          prevTasksRef.current[task.id] = task;
-        }
-        return;
-      }
-
-      // When task becomes TAKEN, snapshot the worker_id immediately so cancellation detection works later
-      if (task.status === 'TAKEN' && task.worker_id) {
-        prevTasksRef.current[task.id] = { ...prev, ...task };
-        takenWorkerRef.current[task.id] = task.worker_id;
-      }
-
-      // Client notifications — only when this user is the task owner
-      if (task.client_id === me?.id) {
-        // Task just moved to TAKEN (worker approved) — only fire once, when status actually changes
-        if (task.status === 'TAKEN' && prev.status !== 'TAKEN') {
-          addNotification({ type: 'task_taken', taskTitle: task.title, taskId: task.id });
-        }
-        // Worker status updates — fire on every distinct change
-        if (task.worker_status && task.worker_status !== prev.worker_status) {
-          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
-          else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
-          else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
-        }
-      }
-
-      // TAKEN → OPEN: worker_id cleared (worker left voluntarily or approval revoked)
-      const prevWorkerId = prev.worker_id || takenWorkerRef.current[task.id];
-      if (prev.status === 'TAKEN' && task.status === 'OPEN' && prevWorkerId && !task.worker_id) {
-        // Client: worker left voluntarily — only notify client, never the worker
-        if (task.client_id === me?.id && me?.id !== prevWorkerId) {
-          addNotification({
-            type: 'worker_left_task',
-            taskTitle: task.title,
-            taskId: task.id,
-            workerName: prev.worker_name,
-          });
-        }
-        // Worker: publisher revoked the approval — notification handled by TaskApplication subscription
-        // Do NOT add approval_revoked here to avoid double notification
-      }
-
-      // Worker notification: task was cancelled after being assigned (only show to the worker, not the client)
-      // Use takenWorkerRef as the most reliable source — never cleared, even if worker_id was nulled
-      const workerIdForTask = takenWorkerRef.current[task.id] || prev.worker_id;
-      const prevWasActiveForWorker = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(prev.status);
-      if (
-        task.status === 'CANCELLED' &&
-        prevWasActiveForWorker &&
-        workerIdForTask === me?.id &&
-        me?.id !== task.client_id
-      ) {
-        addNotification({
-          type: 'task_cancelled_worker',
-          taskTitle: prev.title || task.title,
-        });
-        // Show popup to worker
-        setCancelledTask({ ...task, worker_id: workerIdForTask, title: prev.title || task.title });
-      }
-
-      // Client notification: task was cancelled (only show to the client, not the worker)
-      // Note: prev.worker_id holds the worker before cancellation since task.worker_id is now null
-      if (
-        task.client_id === me?.id &&
-        me?.id !== prev.worker_id &&   // don't show to the worker even if they're also a client
-        prev.status === 'TAKEN' &&
-        task.status === 'CANCELLED'
-      ) {
-        setCancelSuccessTask(task);
-      }
-
-      // Update prevTasksRef with latest data for future comparisons
-      prevTasksRef.current[task.id] = { ...prev, ...task };
-    });
-    return unsubscribe;
-  }, [me?.id]);
-
-  // Listen for real-time application events
+  // Real-time application events — notifications + cache sync for applications-pulse
   useEffect(() => {
     if (!isAuthenticated || !me?.id) return;
     const unsubscribe = base44.entities.TaskApplication.subscribe((event) => {
-      let prevAppStatus = null; // Save BEFORE mutation to avoid reading stale appStatusRef in else-if
-      // Detect when MY approved application is rejected → publisher revoked after approving
-      if (event.type === 'update' && event.data?.worker_id === me?.id) {
-        const appId = event.id || event.data?.id;
+      const appData = event.data || {};
+      let prevAppStatus = null;
+
+      // Sync applications-pulse cache so TaskDetail applicant counter updates live
+      if (appData.task_id) {
+        queryClient.setQueryData(['applications-pulse', appData.task_id], (old = []) => {
+          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
+          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
+          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
+          return old;
+        });
+      }
+
+      // Detect when MY approved application is rejected → approval revoked
+      if (event.type === 'update' && appData.worker_id === me.id) {
+        const appId = event.id || appData.id;
         const prevStatus = appStatusRef.current[appId];
-        prevAppStatus = prevStatus; // Save before mutation
-        appStatusRef.current[appId] = event.data?.status;
-        if (prevStatus === 'approved' && event.data?.status === 'rejected') {
-          const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data?.task_id);
-          setRevokedTask(relatedTask || { id: event.data?.task_id, title: event.data?.task_title || 'משימה' });
+        prevAppStatus = prevStatus;
+        appStatusRef.current[appId] = appData.status;
+        if (prevStatus === 'approved' && appData.status === 'rejected') {
+          const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === appData.task_id);
+          setRevokedTask(relatedTask || { id: appData.task_id, title: appData.task_title || 'משימה' });
         }
       }
 
-      if (event.type === 'create' && event.data?.task_id) {
-        const isMyTask = myPublishedTasks.some(t => t.id === event.data.task_id);
-        const iAmApplicant = event.data.worker_id === me?.id;
-
-        // Someone applied to MY task (I'm the client/publisher)
+      if (event.type === 'create' && appData.task_id) {
+        const isMyTask = myPublishedTasks.some(t => t.id === appData.task_id);
+        const iAmApplicant = appData.worker_id === me.id;
         if (isMyTask && !iAmApplicant) {
-          const task = myPublishedTasks.find(t => t.id === event.data.task_id);
-          addNotification({
-            type: 'application_received',
-            taskTitle: task?.title || 'משימה',
-            taskId: event.data.task_id,
-          });
+          const task = myPublishedTasks.find(t => t.id === appData.task_id);
+          addNotification({ type: 'application_received', taskTitle: task?.title || 'משימה', taskId: appData.task_id });
         }
-        // I applied as a worker to someone else's task
         if (iAmApplicant && !isMyTask) {
-          const appliedTask = workerTasks.find(t => t.id === event.data.task_id);
-          addNotification({
-            type: 'application_sent',
-            taskTitle: appliedTask?.title || event.data.task_title || 'משימה',
-            taskId: event.data.task_id,
-          });
+          const appliedTask = workerTasks.find(t => t.id === appData.task_id);
+          addNotification({ type: 'application_sent', taskTitle: appliedTask?.title || appData.task_title || 'משימה', taskId: appData.task_id });
         }
       } else if (event.type === 'update') {
-        if (event.data?.status === 'approved' && event.data.worker_id === me?.id) {
-          // My application was approved — I am the WORKER, not the client
-          // Make sure I'm not the owner of this task (prevent self-notification)
-          const isMyOwnTaskAsClient = myPublishedTasks.some(t => t.id === event.data.task_id);
+        if (appData.status === 'approved' && appData.worker_id === me.id) {
+          const isMyOwnTaskAsClient = myPublishedTasks.some(t => t.id === appData.task_id);
           if (!isMyOwnTaskAsClient) {
-            const task = workerTasks.find(t => t.id === event.data.task_id);
-            addNotification({
-              type: 'application_approved',
-              taskTitle: task?.title || event.data.task_title || 'משימה',
-              taskId: event.data.task_id,
-            });
+            const task = workerTasks.find(t => t.id === appData.task_id);
+            addNotification({ type: 'application_approved', taskTitle: task?.title || appData.task_title || 'משימה', taskId: appData.task_id });
           }
-        } else if (event.data?.status === 'rejected' && event.data.worker_id === me?.id) {
-          // Don't notify publisher about their own application being rejected on their own task
-          const isMyOwnTask = myPublishedTasks.some(t => t.id === event.data.task_id);
+        } else if (appData.status === 'rejected' && appData.worker_id === me.id) {
+          const isMyOwnTask = myPublishedTasks.some(t => t.id === appData.task_id);
           if (isMyOwnTask) return;
-          // Only show 'application_rejected' when the app was pending (not approved).
-          // If it was already approved, this is either a revocation (handled by ApprovalRevokedPopup)
-          // or a task cancellation (handled by task_cancelled_worker). Avoid double-notifications.
-          // Use prevAppStatus (saved before appStatusRef was mutated) to correctly distinguish revocation from rejection
           if (prevAppStatus !== 'approved') {
-            const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === event.data.task_id);
-            addNotification({
-              type: 'application_rejected',
-              taskTitle: rejectedTask?.title || 'משימה',
-              taskId: event.data.task_id,
-            });
+            const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === appData.task_id);
+            addNotification({ type: 'application_rejected', taskTitle: rejectedTask?.title || 'משימה', taskId: appData.task_id });
           }
         }
       }
