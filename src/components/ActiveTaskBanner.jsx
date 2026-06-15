@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -80,6 +80,25 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
   const [pendingAction, setPendingAction] = useState(null); // { task, action }
   const [updating, setUpdating] = useState(false);
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  // Real-time sync: update task data in the banner as worker_status changes
+  useEffect(() => {
+    const taskList = Array.isArray(tasks) ? tasks : [tasks];
+    if (!taskList.length) return;
+    const relevantIds = new Set(taskList.map(t => t.id));
+    const unsub = base44.entities.Task.subscribe((event) => {
+      if (event.type === 'update' && event.data && relevantIds.has(event.id)) {
+        // Invalidate workerTasksLayout so the parent re-renders with fresh data
+        queryClient.setQueryData(['workerTasksLayout', me?.id], (old = []) =>
+          old.map(t => t.id === event.id ? { ...t, ...event.data } : t)
+        );
+        queryClient.setQueryData(['tasks'], (old) =>
+          Array.isArray(old) ? old.map(t => t.id === event.id ? { ...t, ...event.data } : t) : old
+        );
+      }
+    });
+    return unsub;
+  }, [tasks, me?.id, queryClient]);
 
   const taskList = Array.isArray(tasks) ? tasks : [tasks];
   if (!taskList.length || !me) return null;

@@ -112,7 +112,7 @@ export default function Layout() {
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 120000,
+    staleTime: 30000,
     refetchOnWindowFocus: false,
   });
 
@@ -124,7 +124,7 @@ export default function Layout() {
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 120000,
+    staleTime: 30000,
     refetchOnWindowFocus: false,
   });
 
@@ -133,8 +133,35 @@ export default function Layout() {
     queryKey: ['myApplicationsLayout', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 60000,
+    staleTime: 30000,
   });
+
+  // Real-time sync: keep workerTasks + myPublishedTasks in sync without full refetch
+  useEffect(() => {
+    if (!me?.id || !isAuthenticated) return;
+    const unsub = base44.entities.Task.subscribe((event) => {
+      const t = event.data || {};
+      // Update workerTasks cache
+      queryClient.setQueryData(['workerTasksLayout', me.id], (old = []) => {
+        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        if (event.type === 'update') {
+          const exists = old.find(x => x.id === event.id);
+          if (exists) return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+          if (t.worker_id === me.id) return [t, ...old]; // newly assigned to me
+          return old;
+        }
+        return old;
+      });
+      // Update myPublishedTasks cache
+      queryClient.setQueryData(['myPublishedTasks', me.id], (old = []) => {
+        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        if (event.type === 'create' && t.client_id === me.id) return old.find(x => x.id === t.id) ? old : [t, ...old];
+        if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+        return old;
+      });
+    });
+    return unsub;
+  }, [me?.id, isAuthenticated, queryClient]);
 
   // Seed appStatusRef with current approved applications
   useEffect(() => {
@@ -249,14 +276,14 @@ export default function Layout() {
     return unsub;
   }, [me?.id, isAuthenticated]);
 
-  // Listen for approval revoked by client — notification only (popup handled by Task subscription)
+  // Listen for approval revoked by client — popup + notification for WORKER only
   useEffect(() => {
     const handleRevoked = (e) => {
       const { task } = e.detail;
-      // Only notify the worker (not the task owner/client)
+      // Only show to the worker — the client is the one who triggered this action
       if (!me?.id || me?.id === task?.client_id) return;
-      // Don't call setRevokedTask here — the Task subscription already handles the popup
-      // to avoid showing it twice when both triggers fire on the same device
+      // Show revocation popup to worker
+      setRevokedTask(task || { id: task?.id, title: task?.title || 'משימה' });
       addNotification({
         type: 'approval_revoked',
         taskTitle: task?.title || 'משימה',
@@ -323,16 +350,17 @@ export default function Layout() {
         takenWorkerRef.current[task.id] = task.worker_id;
       }
 
-      // Client notifications
+      // Client notifications — only when this user is the task owner
       if (task.client_id === me?.id) {
-        if (task.worker_status && task.worker_status !== prev.worker_status) {
-          // Worker on the way: skip separate task_taken notification — this covers it
-               if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
-               else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
-               else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
-        } else if (task.status === 'TAKEN' && prev.status === 'OPEN' && !task.worker_status) {
-          // Only fire task_taken if worker hasn't already set status (to avoid double notification)
+        // Task just moved to TAKEN (worker approved) — only fire once, when status actually changes
+        if (task.status === 'TAKEN' && prev.status !== 'TAKEN') {
           addNotification({ type: 'task_taken', taskTitle: task.title, taskId: task.id });
+        }
+        // Worker status updates — fire on every distinct change
+        if (task.worker_status && task.worker_status !== prev.worker_status) {
+          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
+          else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
+          else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
         }
       }
 
@@ -405,34 +433,40 @@ export default function Layout() {
       }
 
       if (event.type === 'create' && event.data?.task_id) {
-        // Someone applied to my task - notify client
-        const task = myPublishedTasks.find(t => t.id === event.data.task_id);
-        if (task && event.data.worker_id !== me?.id) {
+        const isMyTask = myPublishedTasks.some(t => t.id === event.data.task_id);
+        const iAmApplicant = event.data.worker_id === me?.id;
+
+        // Someone applied to MY task (I'm the client/publisher)
+        if (isMyTask && !iAmApplicant) {
+          const task = myPublishedTasks.find(t => t.id === event.data.task_id);
           addNotification({
             type: 'application_received',
-            taskTitle: task.title,
-            taskId: task.id,
+            taskTitle: task?.title || 'משימה',
+            taskId: event.data.task_id,
           });
         }
-        // I applied to a task - notify me (worker)
-        if (event.data.worker_id === me?.id) {
-          const appliedTask = myPublishedTasks.find(t => t.id === event.data.task_id);
+        // I applied as a worker to someone else's task
+        if (iAmApplicant && !isMyTask) {
+          const appliedTask = workerTasks.find(t => t.id === event.data.task_id);
           addNotification({
             type: 'application_sent',
-            taskTitle: appliedTask?.title || 'משימה',
+            taskTitle: appliedTask?.title || event.data.task_title || 'משימה',
             taskId: event.data.task_id,
           });
         }
       } else if (event.type === 'update') {
         if (event.data?.status === 'approved' && event.data.worker_id === me?.id) {
-          // My application was approved
-          const task = myPublishedTasks.find(t => t.id === event.data.task_id) ||
-                      workerTasks.find(t => t.id === event.data.task_id);
-          addNotification({
-            type: 'application_approved',
-            taskTitle: task?.title || 'משימה',
-            taskId: event.data.task_id,
-          });
+          // My application was approved — I am the WORKER, not the client
+          // Make sure I'm not the owner of this task (prevent self-notification)
+          const isMyOwnTaskAsClient = myPublishedTasks.some(t => t.id === event.data.task_id);
+          if (!isMyOwnTaskAsClient) {
+            const task = workerTasks.find(t => t.id === event.data.task_id);
+            addNotification({
+              type: 'application_approved',
+              taskTitle: task?.title || event.data.task_title || 'משימה',
+              taskId: event.data.task_id,
+            });
+          }
         } else if (event.data?.status === 'rejected' && event.data.worker_id === me?.id) {
           // Don't notify publisher about their own application being rejected on their own task
           const isMyOwnTask = myPublishedTasks.some(t => t.id === event.data.task_id);

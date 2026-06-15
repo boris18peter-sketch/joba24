@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
   // Create application
   const newApp = await base44.entities.TaskApplication.create({
     task_id: taskId,
+    task_title: task.title,
     worker_id: user.id,
     worker_name: user.full_name,
     worker_score: userData?.worker_score || 0,

@@ -25,43 +25,14 @@ Deno.serve(async (req) => {
     });
     console.log('✅ TASK UPDATED:', updateTaskResult);
 
-    // STEP 2: Approve the selected application
-    await base44.entities.TaskApplication.update(applicationId, {
-      status: 'approved'
+    // STEP 2: Approve the application — include task_title so notification can display it
+    await base44.entities.TaskApplication.update(applicationId, { 
+      status: 'approved',
+      task_title: updateTaskResult.title || '',
     });
     console.log('✅ APPLICATION APPROVED');
 
-    // STEP 3: Refund all OTHER pending applicants
-    const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    const otherPending = allApps.filter(a => a.id !== applicationId && a.status === 'pending');
-
-    for (const app of otherPending) {
-      const creditsToRefund = app.credits_charged || 0;
-
-      // Mark as rejected
-      await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'rejected' });
-
-      if (creditsToRefund > 0) {
-        const workers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
-        const worker = workers[0];
-        if (worker) {
-          const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
-          await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });
-          await base44.asServiceRole.entities.CreditTransaction.create({
-            user_id: app.worker_id,
-            amount: creditsToRefund,
-            type: 'Refund_Rejection',
-            task_id: taskId,
-            task_title: app.task_title || '',
-            balance_after: newBalance,
-            note: 'החזר קרדיטים - עובד אחר נבחר למשימה',
-          });
-          console.log(`✅ Refunded ${creditsToRefund} credits to rejected worker ${app.worker_id}`);
-        }
-      }
-    }
-
-    // STEP 4: Fetch FRESH task data from backend (no cache)
+    // STEP 3: Fetch FRESH task data from backend (no cache)
     const freshTaskData = await base44.entities.Task.filter({ id: taskId });
     const updatedTask = freshTaskData[0];
     console.log('✅ FRESH TASK FETCH:', updatedTask);
@@ -70,9 +41,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Task not found after update' }, { status: 500 });
     }
 
+    // STEP 4: Verify worker_id is actually set
     if (updatedTask.worker_id !== workerId) {
       console.error('❌ CRITICAL BUG: worker_id mismatch after update!');
-      return Response.json({
+      console.error('Expected:', workerId);
+      console.error('Got:', updatedTask.worker_id);
+      return Response.json({ 
         error: 'Data consistency error - worker_id not saved properly',
         debug: { expected: workerId, actual: updatedTask.worker_id }
       }, { status: 500 });
@@ -80,16 +54,18 @@ Deno.serve(async (req) => {
 
     if (updatedTask.status !== 'TAKEN') {
       console.error('❌ CRITICAL BUG: status mismatch after update!');
-      return Response.json({
+      console.error('Expected: TAKEN');
+      console.error('Got:', updatedTask.status);
+      return Response.json({ 
         error: 'Data consistency error - status not saved properly',
         debug: { expected: 'TAKEN', actual: updatedTask.status }
       }, { status: 500 });
     }
 
-    console.log(`✅ APPROVAL COMPLETE - refunded ${otherPending.length} other applicants`);
-    return Response.json({
-      success: true,
-      task: updatedTask
+    console.log('✅ APPROVAL COMPLETE - DATA VERIFIED');
+    return Response.json({ 
+      success: true, 
+      task: updatedTask 
     });
 
   } catch (error) {

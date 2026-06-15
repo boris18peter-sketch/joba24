@@ -363,16 +363,46 @@ export default function TaskDetail() {
   useEffect(() => {
     const unsubscribe1 = base44.entities.Task.subscribe((event) => {
       if (event.id === id && event.data) {
-        // Merge incoming data directly into cache for instant UI update
         queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...event.data } : event.data);
+        // Also keep Layout caches in sync
+        queryClient.setQueryData(['workerTasksLayout', me?.id], (old = []) =>
+          old.map(t => t.id === id ? { ...t, ...event.data } : t)
+        );
+        queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) =>
+          old.map(t => t.id === id ? { ...t, ...event.data } : t)
+        );
       }
     });
     const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === id) {
-        queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-        queryClient.invalidateQueries({ queryKey: ['applications', id] });
-        queryClient.invalidateQueries({ queryKey: ['applications-pulse', id] });
+      if (!event.data || event.data.task_id !== id) return;
+      const app = event.data;
+      // Update applications-pulse cache directly
+      queryClient.setQueryData(['applications-pulse', id], (old = []) => {
+        if (event.type === 'create') return old.find(a => a.id === app.id) ? old : [...old, app];
+        if (event.type === 'update') return old.map(a => a.id === app.id ? { ...a, ...app } : a);
+        if (event.type === 'delete') return old.filter(a => a.id !== app.id);
+        return old;
+      });
+      // Update myApp cache directly if this app belongs to me
+      if (me?.id && app.worker_id === me.id) {
+        queryClient.setQueryData(['myApp', id, me.id], (old) => {
+          if (event.type === 'delete') return null;
+          if (event.type === 'update') {
+            // If cancelled/rejected, clear myApp
+            if (app.status === 'cancelled' || app.status === 'rejected') return null;
+            return old ? { ...old, ...app } : app;
+          }
+          return old;
+        });
       }
+      // Always sync the applications list for the owner
+      queryClient.setQueryData(['applications', id], (old = []) => {
+        if (!old) return old;
+        if (event.type === 'create') return old.find(a => a.id === app.id) ? old : [...old, app];
+        if (event.type === 'update') return old.map(a => a.id === app.id ? { ...a, ...app } : a);
+        if (event.type === 'delete') return old.filter(a => a.id !== app.id);
+        return old;
+      });
     });
     return () => {
       unsubscribe1();

@@ -76,10 +76,9 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
+      // Dispatch event so Layout can show approval_revoked notification to the worker
+      // Layout's subscription handles saving to localStorage — don't double-save here
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
-      const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
-      const newNotif = { type: 'approval_revoked', taskTitle: task.title, taskId: task.id, timestamp: new Date().toISOString(), read: false };
-      localStorage.setItem('joba24_notifications', JSON.stringify([newNotif, ...stored].slice(0, 50)));
       toast.success('העובד בוטל והקרדיטים הוחזרו אליו 🪙');
       onApprove?.();
     },

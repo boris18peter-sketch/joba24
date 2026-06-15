@@ -70,7 +70,7 @@ export default function MyTasks() {
   const openTaskIds = tasks.filter(t => t.status === 'OPEN').map(t => t.id);
 
   const { data: allApps = [] } = useQuery({
-    queryKey: ['allMyTaskApps', openTaskIds.join(',')],
+    queryKey: ['allMyTaskApps', me?.id],
     queryFn: async () => {
       if (!openTaskIds.length) return [];
       const results = await Promise.all(
@@ -79,9 +79,27 @@ export default function MyTasks() {
       return results.flat();
     },
     enabled: openTaskIds.length > 0,
-    refetchInterval: 8000,
-    staleTime: 0,
+    staleTime: 30000,
   });
+
+  // Real-time sync for applications
+  useEffect(() => {
+    if (!me?.id) return;
+    const unsub = base44.entities.TaskApplication.subscribe((event) => {
+      const app = event.data;
+      if (!app) return;
+      queryClient.setQueryData(['allMyTaskApps', me.id], (old = []) => {
+        if (event.type === 'create' && app.status === 'pending') return old.find(a => a.id === app.id) ? old : [...old, app];
+        if (event.type === 'update') {
+          if (app.status !== 'pending') return old.filter(a => a.id !== app.id);
+          return old.map(a => a.id === app.id ? { ...a, ...app } : a);
+        }
+        if (event.type === 'delete') return old.filter(a => a.id !== app.id);
+        return old;
+      });
+    });
+    return unsub;
+  }, [me?.id, queryClient]);
 
   const cancelMutation = useMutation({
     mutationFn: (taskId) => base44.functions.invoke('cancelTaskPayment', { taskId }).then(r => { if (!r.data?.success) throw new Error(); }),
