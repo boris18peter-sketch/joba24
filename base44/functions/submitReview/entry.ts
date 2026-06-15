@@ -47,20 +47,9 @@ Deno.serve(async (req) => {
       would_hire_again: wouldHireAgain ?? null,
     });
 
-    // Mark task completion side
+    // Mark task confirmation side (tasks_completed already incremented by completeTask)
     if (isOwner) {
-      await base44.asServiceRole.entities.Task.update(taskId, {
-        status: 'COMPLETED',
-        client_confirmed: true,
-        completed_at: new Date().toISOString(),
-      });
-      // Increment worker's completed tasks count
-      const workerUsers = await base44.asServiceRole.entities.User.filter({ id: task.worker_id });
-      const worker = workerUsers[0];
-      if (worker) {
-        const newCount = (worker.tasks_completed ?? 0) + 1;
-        await base44.asServiceRole.entities.User.update(worker.id, { tasks_completed: newCount });
-      }
+      await base44.asServiceRole.entities.Task.update(taskId, { client_confirmed: true });
     } else {
       await base44.asServiceRole.entities.Task.update(taskId, { worker_confirmed: true });
     }

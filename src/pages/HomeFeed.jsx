@@ -176,7 +176,7 @@ export default function HomeFeed() {
         return old;
       });
 
-      // 3. Update activeWorkerTask cache live
+      // 3. Update activeWorkerTask cache live — includes worker_status sub-updates
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'update' && old?.id === event.id) {
           const merged = { ...old, ...updatedTask };
@@ -191,6 +191,11 @@ export default function HomeFeed() {
         }
         return old;
       });
+
+      // 4. Keep activeClientTask in sync (myTasks already updated above) — force re-render
+      if (event.type === 'update' && updatedTask.client_id === me.id) {
+        // Already handled by myTasks update — no extra work needed
+      }
     });
 
     // Live application updates — sync immediately on create/update/delete
@@ -214,13 +219,21 @@ export default function HomeFeed() {
           queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
             old.map(a => a.id === event.id ? { ...a, ...appData } : a)
           );
-          queryClient.setQueryData(['myApp', appData.task_id, me.id], (old) =>
-            old?.id === event.id ? { ...old, ...appData } : old
-          );
+          // If cancelled/rejected, clear myApp so apply button re-appears
+          if (appData.status === 'cancelled' || appData.status === 'rejected') {
+            queryClient.setQueryData(['myApp', appData.task_id, me.id], null);
+          } else {
+            queryClient.setQueryData(['myApp', appData.task_id, me.id], (old) =>
+              old?.id === event.id ? { ...old, ...appData } : old
+            );
+          }
         }
         if (event.type === 'delete') {
           queryClient.setQueryData(['myApplicationsFeed', me.id], (old = []) =>
             old.filter(a => a.id !== event.id)
+          );
+          queryClient.setQueryData(['myApp', appData.task_id, me.id], (old) =>
+            old?.id === event.id ? null : old
           );
         }
         // Data already updated via setQueryData above — no extra network call needed
@@ -427,6 +440,33 @@ export default function HomeFeed() {
     }
     return base;
   }, [sortedTasks, smartSections, activeSection, filters, search, behavioralProfile]);
+
+  // Listen for direct task status updates from WorkerTrackerBar / completeTask
+  useEffect(() => {
+    const handler = (e) => {
+      const { taskId, update } = e.detail || {};
+      if (!taskId || !update) return;
+      const patch = { id: taskId, ...update };
+      queryClient.setQueryData(['allTasks'], (old = []) =>
+        old.map(t => t.id === taskId ? { ...t, ...update } : t)
+      );
+      queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
+        old.map(t => t.id === taskId ? { ...t, ...update } : t)
+      );
+      queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
+        if (!old || old.id !== taskId) return old;
+        const merged = { ...old, ...update };
+        return merged.status !== 'TAKEN' ? null : merged;
+      });
+      // Also invalidate so TaskDetail gets fresh data
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      if (update.status === 'COMPLETED') {
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+      }
+    };
+    window.addEventListener('task_status_update', handler);
+    return () => window.removeEventListener('task_status_update', handler);
+  }, [me?.id, queryClient]);
 
   // Pull to refresh — refetch main tasks list
   const { refreshing, pullProgress } = usePullToRefresh(async () => {

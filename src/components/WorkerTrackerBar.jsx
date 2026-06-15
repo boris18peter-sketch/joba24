@@ -221,7 +221,7 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
 
   const handleStatusUpdate = async (statusKey, extra = {}) => {
     setLoading(true);
-    setLocalStatus(statusKey);
+    setLocalStatus(statusKey); // optimistic local update
     try {
       const update = { worker_status: statusKey, ...extra };
       if (statusKey === 'on_the_way' && !task.on_the_way_at) {
@@ -239,14 +239,15 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
         update.completed_at = new Date().toISOString();
         if (completionPhotos.length > 0) {
           update.completion_photos = completionPhotos;
-          update.completion_photo = completionPhotos[0]; // backward compat
+          update.completion_photo = completionPhotos[0];
         }
         if (completionVideo) update.completion_video_url = completionVideo;
       }
+      // onUpdate handles both DB write and cache update in TaskDetail
       await onUpdate(update);
       toast.success(getStatusInfo(statusKey).label);
     } catch {
-      setLocalStatus(task?.worker_status ?? null);
+      setLocalStatus(task?.worker_status ?? null); // rollback
       toast.error('שגיאה בעדכון');
     } finally {
       setLoading(false);
@@ -451,8 +452,10 @@ export default function WorkerTrackerBar({ task, isWorker, isOwner, onUpdate, on
               try {
                 const res = await base44.functions.invoke('completeTask', { taskId: task.id });
                 if (!res.data?.success && res.data?.note !== 'Already completed') throw new Error(res.data?.error || 'שגיאה');
+                // Update task cache immediately — triggers RatingModal auto-open via status change effect
+                await onUpdate({ status: 'COMPLETED', client_confirmed: true, completed_at: new Date().toISOString() });
                 toast.success('המשימה הושלמה בהצלחה! 🎉');
-              } catch {
+              } catch (e) {
                 toast.error('שגיאה באישור — נסה שוב');
               } finally {
                 setConfirmLoading(false);

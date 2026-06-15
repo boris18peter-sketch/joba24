@@ -359,6 +359,21 @@ export default function TaskDetail() {
     return () => window.removeEventListener('task_reset_to_open', handleReset);
   }, [id, me?.id]);
 
+  // Listen for direct task status updates (from WorkerTrackerBar / completeTask)
+  useEffect(() => {
+    const handler = (e) => {
+      const { taskId, update } = e.detail || {};
+      if (!taskId || !update || taskId !== id) return;
+      queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...update } : old);
+      if (update.status === 'COMPLETED') {
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+        queryClient.invalidateQueries({ queryKey: ['myReview', id, me?.id] });
+      }
+    };
+    window.addEventListener('task_status_update', handler);
+    return () => window.removeEventListener('task_status_update', handler);
+  }, [id, me?.id, queryClient]);
+
   // Real-time subscriptions — set cache directly for instant render, no refetch delay
   useEffect(() => {
     const unsubscribe1 = base44.entities.Task.subscribe((event) => {

@@ -856,7 +856,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#b45309', maxWidth: 160 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, animation: 'pulse-app 1.5s infinite', display: 'inline-block' }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {task.worker_status === 'on_the_way' ? 'בדרך אליך' : task.worker_status === 'arrived' ? 'הגיע לשטח' : task.worker_status === 'done' ? 'ממתין לאישורך' : 'בעבודה'}
+                    {task.worker_status === 'on_the_way' ? 'בדרך אליך' : task.worker_status === 'delayed' ? 'מתעכב' : task.worker_status === 'parking' ? 'מחפש חניה' : task.worker_status === 'arrived' ? 'הגיע לשטח' : task.worker_status === 'starting' ? 'מתחיל עבודה' : task.worker_status === 'finishing' ? 'מסיים עבודה' : task.worker_status === 'done' ? 'ממתין לאישורך' : 'בביצוע'}
                   </span>
                 </div>
               ) : (

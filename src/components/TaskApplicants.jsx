@@ -39,9 +39,20 @@ export default function TaskApplicants({ task, onApprove }) {
       return { task: res.data.task };
     },
     onSuccess: (data) => {
+      // Update task cache immediately with fresh data from server
+      if (data.task) {
+        queryClient.setQueryData(['task', task.id], (old) => old ? { ...old, ...data.task } : data.task);
+        queryClient.setQueryData(['myTasks', undefined], (old = []) =>
+          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...data.task } : t) : old
+        );
+        queryClient.setQueryData(['allTasks'], (old = []) =>
+          Array.isArray(old) ? old.map(t => t.id === task.id ? { ...t, ...data.task } : t) : old
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
-      toast.success(`${data.task.worker_name} אושר! ✨`);
+      queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+      toast.success(`${data.task?.worker_name || 'העובד'} אושר! ✨`);
       onApprove?.();
     },
     onError: (error) => {
