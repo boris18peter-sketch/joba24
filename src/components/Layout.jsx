@@ -112,8 +112,9 @@ export default function Layout() {
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 30000,
-    refetchOnWindowFocus: false,
+    staleTime: 10000,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   // Active task as worker

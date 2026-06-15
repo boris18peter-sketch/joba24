@@ -55,8 +55,9 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
+    staleTime: 15000,
+    refetchInterval: 20000,
+    refetchOnWindowFocus: true,
   });
 
   // Auto-switch to my_published silently if user has active tasks and hasn't manually chosen a tab
@@ -70,16 +71,17 @@ export default function HomeFeed() {
     }
   }, [myTasks.length]);
 
-  // Active task I'm working on as a worker
+  // Active task I'm working on as a worker — short staleTime so it picks up changes quickly
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    staleTime: 60000,
+    staleTime: 10000,
+    refetchInterval: 15000,
     gcTime: 120000,
     placeholderData: (prev) => prev,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: true,
   });
 
   // Active task I published that is currently TAKEN
@@ -177,20 +179,29 @@ export default function HomeFeed() {
       });
 
       // 3. Update activeWorkerTask cache live — includes worker_status sub-updates
-      queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
-        if (event.type === 'update' && old?.id === event.id) {
-          const merged = { ...old, ...updatedTask };
-          // If task is no longer TAKEN, clear the banner
-          if (merged.status !== 'TAKEN') return null;
-          return merged;
+      if (event.type === 'update') {
+        queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+          // Update existing active task
+          if (old?.id === event.id) {
+            const merged = { ...old, ...updatedTask };
+            return merged.status !== 'TAKEN' ? null : merged;
+          }
+          // New TAKEN task assigned to me — show banner immediately
+          if (updatedTask.worker_id === me.id && updatedTask.status === 'TAKEN') {
+            return updatedTask;
+          }
+          return old;
+        });
+        // Also invalidate to ensure fresh data is fetched soon
+        if (updatedTask.worker_id === me.id || updatedTask.status === 'TAKEN') {
+          queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] });
         }
-        if (event.type === 'delete' && old?.id === event.id) return null;
-        // If a new TAKEN task assigned to me appears
-        if (event.type === 'update' && updatedTask.worker_id === me.id && updatedTask.status === 'TAKEN') {
-          return updatedTask;
-        }
-        return old;
-      });
+      }
+      if (event.type === 'delete') {
+        queryClient.setQueryData(['activeWorkerTask', me.id], (old) =>
+          old?.id === event.id ? null : old
+        );
+      }
 
       // 4. Keep activeClientTask in sync (myTasks already updated above) — force re-render
       if (event.type === 'update' && updatedTask.client_id === me.id) {
