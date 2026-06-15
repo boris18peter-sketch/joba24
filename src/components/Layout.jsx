@@ -137,7 +137,7 @@ export default function Layout() {
     staleTime: 30000,
   });
 
-  // Real-time sync: keep workerTasks + myPublishedTasks in sync without full refetch
+  // Real-time sync: keep workerTasks + myPublishedTasks + activeWorkerTask in sync
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
     const unsub = base44.entities.Task.subscribe((event) => {
@@ -160,6 +160,33 @@ export default function Layout() {
         if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
         return old;
       });
+      // Also sync myTasks (HomeFeed cache) — so activeClientTask banner updates immediately
+      queryClient.setQueryData(['myTasks', me.id], (old = []) => {
+        if (!Array.isArray(old)) return old;
+        if (event.type === 'update' && old.find(x => x.id === event.id)) {
+          return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+        }
+        return old;
+      });
+      // Sync activeWorkerTask — critical for banner appearing without refresh
+      if (event.type === 'update') {
+        queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+          if (t.worker_id === me.id && t.status === 'TAKEN') {
+            // Newly assigned to me, or existing update
+            return old?.id === event.id ? { ...old, ...t } : (old ? old : t);
+          }
+          if (old?.id === event.id) {
+            // My active task changed status
+            return t.status !== 'TAKEN' ? null : { ...old, ...t };
+          }
+          return old;
+        });
+      }
+      if (event.type === 'delete') {
+        queryClient.setQueryData(['activeWorkerTask', me.id], (old) =>
+          old?.id === event.id ? null : old
+        );
+      }
       // When task becomes COMPLETED, refresh profile stats for the worker
       if (event.type === 'update' && t.status === 'COMPLETED' && t.worker_id) {
         queryClient.invalidateQueries({ queryKey: ['workerTasks', t.worker_id] });
