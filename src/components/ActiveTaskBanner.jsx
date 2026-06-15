@@ -86,36 +86,22 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     const taskList = Array.isArray(tasks) ? tasks : [tasks];
     if (!taskList.length) return;
     const relevantIds = new Set(taskList.map(t => t.id));
-
     const unsub = base44.entities.Task.subscribe((event) => {
       if (event.type === 'update' && event.data && relevantIds.has(event.id)) {
-        queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
-          if (!old || old.id !== event.id) return old;
-          const merged = { ...old, ...event.data };
-          return merged.status !== 'TAKEN' ? null : merged;
-        });
+        const updated = event.data;
+        // Update all relevant caches for immediate UI sync
+        queryClient.setQueryData(['activeWorkerTask', me?.id], (old) =>
+          old?.id === event.id ? { ...old, ...updated } : old
+        );
         queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
-          old.map(t => t.id === event.id ? { ...t, ...event.data } : t)
+          Array.isArray(old) ? old.map(t => t.id === event.id ? { ...t, ...updated } : t) : old
+        );
+        queryClient.setQueryData(['allTasks'], (old) =>
+          Array.isArray(old) ? old.map(t => t.id === event.id ? { ...t, ...updated } : t) : old
         );
       }
     });
-
-    // Also listen for direct updates from WorkerTrackerBar
-    const handleDirectUpdate = (e) => {
-      const { taskId, update } = e.detail || {};
-      if (!taskId || !update || !relevantIds.has(taskId)) return;
-      queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
-        if (!old || old.id !== taskId) return old;
-        const merged = { ...old, ...update };
-        return merged.status !== 'TAKEN' ? null : merged;
-      });
-      queryClient.setQueryData(['myTasks', me?.id], (old = []) =>
-        old.map(t => t.id === taskId ? { ...t, ...update } : t)
-      );
-    };
-    window.addEventListener('task_status_update', handleDirectUpdate);
-
-    return () => { unsub(); window.removeEventListener('task_status_update', handleDirectUpdate); };
+    return unsub;
   }, [tasks, me?.id, queryClient]);
 
   const taskList = Array.isArray(tasks) ? tasks : [tasks];
