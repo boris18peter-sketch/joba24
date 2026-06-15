@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Maximize2, Minimize2, Navigation, X, FileText } from 'lucide-react';
 import Map, { Marker, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { base44 } from '@/api/base44Client';
+import { getMapToken } from '@/lib/mapToken';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
 
 function calcDistKm(lat1, lng1, lat2, lng2) {
@@ -209,9 +209,8 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
 
   useEffect(() => {
     if (!hasLocation) return;
-    base44.functions.invoke('getMapboxToken', {}).then(res => {
-      if (res.data?.token) setMapToken(res.data.token);
-    }).catch(() => {});
+    // Token uses global cache — instant on repeat visits
+    getMapToken().then(token => { if (token) setMapToken(token); });
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),

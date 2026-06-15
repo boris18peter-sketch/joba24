@@ -359,18 +359,17 @@ export default function TaskDetail() {
     return () => window.removeEventListener('task_reset_to_open', handleReset);
   }, [id, me?.id]);
 
-  // Real-time subscriptions
+  // Real-time subscriptions — set cache directly for instant render, no refetch delay
   useEffect(() => {
     const unsubscribe1 = base44.entities.Task.subscribe((event) => {
-      if (event.id === id) {
-        queryClient.invalidateQueries({ queryKey: ['task', id] });
-        // Don't invalidate global tasks list on every update to avoid rate limits
+      if (event.id === id && event.data) {
+        // Merge incoming data directly into cache for instant UI update
+        queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...event.data } : event.data);
       }
     });
     const unsubscribe2 = base44.entities.TaskApplication.subscribe((event) => {
       if (event.data?.task_id === id) {
         queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-        queryClient.invalidateQueries({ queryKey: ['task', id] });
         queryClient.invalidateQueries({ queryKey: ['applications', id] });
         queryClient.invalidateQueries({ queryKey: ['applications-pulse', id] });
       }
@@ -381,9 +380,12 @@ export default function TaskDetail() {
     };
   }, [id, me?.id]);
 
+  // Optimistic worker update — updates UI instantly, syncs to server in background
   const handleWorkerUpdate = async (data) => {
+    // 1. Update cache immediately for instant UI feedback
+    queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...data } : old);
+    // 2. Persist to server in background
     await base44.entities.Task.update(id, data);
-    queryClient.invalidateQueries({ queryKey: ['task', id] });
   };
 
   // Auto-open rating popup when task just became COMPLETED (for both sides)

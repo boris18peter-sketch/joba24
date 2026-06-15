@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { base44 } from '@/api/base44Client';
+import { getMapToken } from '@/lib/mapToken';
 
 function calcDistance(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -89,11 +89,9 @@ export default function LiveWorkerMap({ task }) {
     return () => clearInterval(iv);
   }, [workerLat, workerLng]);
 
-  // Fetch token
+  // Fetch token — uses global cache, instant on repeat visits
   useEffect(() => {
-    base44.functions.invoke('getMapboxToken', {}).then(res => {
-      if (res.data?.token) setMapToken(res.data.token);
-    }).catch(() => {});
+    getMapToken().then(token => { if (token) setMapToken(token); });
   }, []);
 
   // Animate route dashes
