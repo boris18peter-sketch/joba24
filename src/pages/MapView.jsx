@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import FilterSheet from '@/components/FilterSheet';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
@@ -89,6 +90,7 @@ export default function MapView() {
   const seedRef = useRef({});
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
 
   const [userLocation, setUserLocation] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -390,9 +392,9 @@ export default function MapView() {
               }}>
                 <ArrowRight size={15} color="#1a6fd4" />
               </button>
-              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-1)', flex: 1 }}>מפת משימות</span>
+              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-1)', flex: 1 }}>{t('nav_map')}</span>
               <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 800 }}>
-                {displayTasks.length} פתוחות
+                {displayTasks.length} {t('open_count')}
               </span>
             </div>
 
@@ -409,7 +411,7 @@ export default function MapView() {
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >
-                {filters.category ? getCategoryLabel(filters.category) : 'קטגוריה'}
+                {filters.category ? getCategoryLabel(filters.category) : t('category')}
                 {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
 
@@ -440,7 +442,7 @@ export default function MapView() {
                   }}>
                     <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }}
                       style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
-                      הכל
+                      {t('all_filter') || 'הכל'}
                     </button>
                     {CATEGORIES.map(c => {
                       const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
@@ -513,7 +515,7 @@ export default function MapView() {
                     <ManeuverArrow type={nextStep.maneuver?.type} modifier={nextStep.maneuver?.modifier} size={15} />
                   </div>
                   <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
-                    אחר כך: {nextStep.name || nextStep.maneuver?.instruction || 'המשך ישר'}
+                    {t('then_label') || 'Then'}: {nextStep.name || nextStep.maneuver?.instruction || (t('continue_straight') || 'Continue straight')}
                   </span>
                   <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginRight: 'auto' }}>
                     {formatDist(nextStep.distance || 0)}
@@ -528,7 +530,7 @@ export default function MapView() {
                     flex: 1, height: 38, borderRadius: 11, background: 'rgba(255,255,255,0.15)',
                     border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                   }}>
-                    הוראה הבאה ›
+                    {t('next_instruction') || 'Next ›'}
                   </button>
                 )}
                 {currentStep > 0 && (
@@ -536,7 +538,7 @@ export default function MapView() {
                     height: 38, padding: '0 14px', borderRadius: 11, background: 'rgba(255,255,255,0.1)',
                     border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', fontSize: 13, cursor: 'pointer',
                   }}>
-                    ‹ הקודם
+                    {t('previous_instruction') || '‹ Previous'}
                   </button>
                 )}
               </div>
@@ -558,21 +560,21 @@ export default function MapView() {
                   <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -1 }}>
                     {getETA(remainTime)}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>הגעה משוערת</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>{t('est_arrival')}</div>
                 </div>
                 {/* Remaining distance */}
                 <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color: '#1a6fd4', letterSpacing: -0.5 }}>
                     {formatDist(remainDist)}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>נותר</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>{t('remaining')}</div>
                 </div>
                 {/* Time */}
                 <div style={{ flex: 1, textAlign: 'center', borderRight: '1px solid var(--border-1)' }}>
                   <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', letterSpacing: -0.5 }}>
                     {formatTime(remainTime)}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>זמן נסיעה</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500, marginTop: 1 }}>{t('travel_time')}</div>
                 </div>
                 {/* Stop */}
                 <div style={{ paddingRight: 8 }}>
@@ -583,7 +585,7 @@ export default function MapView() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 2,
                   }}>
                     <X size={18} />
-                    עצור
+                    {t('stop')}
                   </button>
                 </div>
               </div>
@@ -628,7 +630,7 @@ export default function MapView() {
             {navLoading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8faff', border: '1px solid #dce8f5', borderRadius: 12, padding: '9px 12px', marginBottom: 12 }}>
                 <div className="w-3 h-3 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-                <span style={{ fontSize: 12, color: '#64748b' }}>מחשב מסלול...</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>{t('computing_route')}</span>
               </div>
             )}
             {!navLoading && routeMeta && (
@@ -637,21 +639,21 @@ export default function MapView() {
                   <Navigation size={13} color="#1a6fd4" />
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#1e40af' }}>{formatDist(routeMeta.totalDist)}</div>
-                    <div style={{ fontSize: 10, color: '#60a5fa' }}>מרחק בכביש</div>
+                    <div style={{ fontSize: 10, color: '#60a5fa' }}>{t('road_distance')}</div>
                   </div>
                 </div>
                 <div style={{ flex: 1, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Clock size={13} color="#16a34a" />
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d' }}>{formatTime(routeMeta.totalTime)}</div>
-                    <div style={{ fontSize: 10, color: '#4ade80' }}>זמן נסיעה</div>
+                    <div style={{ fontSize: 10, color: '#4ade80' }}>{t('travel_time')}</div>
                   </div>
                 </div>
               </div>
             )}
             {!navLoading && !routeMeta && !userLocation && (
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '8px 12px', marginBottom: 12, fontSize: 12, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <MapPin size={13} /> אפשר גישה למיקום לצפייה במרחק ובניווט
+                <MapPin size={13} /> {t('enable_location') || 'Allow location access to see distance and navigate'}
               </div>
             )}
 
@@ -667,14 +669,14 @@ export default function MapView() {
                   boxShadow: navLoading || !route ? 'none' : '0 5px 18px rgba(26,111,212,0.45)',
                 }}>
                 <Navigation size={16} />
-                {navLoading ? 'מחשב...' : !route ? 'ללא מיקום' : 'התחל ניווט'}
+                {navLoading ? (t('computing_route')?.replace('...','') || 'Computing') : !route ? (t('no_location_short') || 'No location') : (t('start_nav') || 'Start navigation')}
               </button>
               <button onClick={() => window.location.href = `/task/${selectedTask.id}`} style={{
                 flex: 1, height: 46, borderRadius: 14, background: 'var(--surface-3)',
                 border: '1.5px solid var(--border-1)', color: '#1a6fd4', fontWeight: 800, fontSize: 13, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               }}>
-                פרטים <ChevronRight size={14} />
+                {t('details')} <ChevronRight size={14} />
               </button>
             </div>
           </div>

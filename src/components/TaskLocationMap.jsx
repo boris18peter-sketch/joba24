@@ -5,6 +5,7 @@ import Map, { Marker, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { getMapToken } from '@/lib/mapToken';
 import InvoiceViewModal from '@/components/InvoiceViewModal';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function calcDistKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -61,7 +62,7 @@ function TaskPin({ task, onClick }) {
   );
 }
 
-function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, isExpanded, onInvoiceClick, onGenerateInvoice }) {
+function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, isExpanded, onInvoiceClick, onGenerateInvoice, t }) {
   const distKm = (userLocation && task.lat && task.lng)
     ? calcDistKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
     : null;
@@ -173,7 +174,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
               border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(124,58,237,0.3)',
             }}
           >
-            <FileText size={15} /> חשבונית מס — לחץ לצפייה והורדה
+            <FileText size={15} /> {t('tax_invoice_view') || 'Tax invoice — click to view and download'}
           </button>
         ) : onGenerateInvoice && (
           <button
@@ -189,7 +190,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
               boxShadow: task.requires_invoice ? '0 2px 8px rgba(124,58,237,0.3)' : 'none',
             }}
           >
-            <FileText size={15} /> {task.requires_invoice ? '📄 הפק חשבונית מס (נדרש על ידי הלקוח)' : 'הפק חשבונית מס'}
+            <FileText size={15} /> {task.requires_invoice ? (t('generate_tax_invoice_required') || '📄 Generate tax invoice (required by client)') : (t('generate_tax_invoice_btn') || 'Generate tax invoice')}
           </button>
         )}
       </div>
@@ -198,6 +199,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
 }
 
 export default function TaskLocationMap({ task, onGenerateInvoice }) {
+  const { t } = useLanguage();
   const [mapToken, setMapToken] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [expanded, setExpanded] = useState(false);
@@ -238,6 +240,7 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
             isExpanded={false}
             onInvoiceClick={() => setShowInvoice(true)}
             onGenerateInvoice={onGenerateInvoice}
+            t={t}
           />
         ) : (
           <div style={{ height: 220, background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -260,6 +263,7 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
               isExpanded={true}
               onInvoiceClick={() => setShowInvoice(true)}
               onGenerateInvoice={onGenerateInvoice}
+              t={t}
             />
           ) : (
             <div style={{ height: '100dvh', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

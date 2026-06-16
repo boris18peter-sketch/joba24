@@ -44,17 +44,12 @@ import { parseDescription } from '@/lib/descriptionParser';
 import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import BoostPill from '@/components/BoostPill';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
+import { useLanguage } from '@/lib/LanguageContext';
 
-const SCANNING_TEXTS_DETAIL = [
-  'מאותת לעובדים',
-  'סורק עובדים',
-  'מחפש התאמות',
-  'מגביר חשיפה',
-  'מפיץ את המשימה',
-  'מרחיב חשיפה',
-];
+const getScanningTexts = (t) => t('scanning_texts') || ['מאותת לעובדים', 'סורק עובדים', 'מחפש התאמות', 'מגביר חשיפה', 'מפיץ את המשימה', 'מרחיב חשיפה'];
 
-function ScanningLabelDetail() {
+function ScanningLabelDetail({ t }) {
+  const scanningTexts = getScanningTexts(t);
   const [textIdx, setTextIdx] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -62,12 +57,12 @@ function ScanningLabelDetail() {
     const interval = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
-        setTextIdx(i => (i + 1) % SCANNING_TEXTS_DETAIL.length);
+        setTextIdx(i => (i + 1) % scanningTexts.length);
         setVisible(true);
       }, 400);
     }, 25000);
     return () => clearInterval(interval);
-  }, []);
+  }, [scanningTexts.length]);
 
   return (
     <div style={{
@@ -83,9 +78,9 @@ function ScanningLabelDetail() {
       </span>
       <div>
         <div style={{ fontSize: 13, fontWeight: 800, color: 'white', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-          {SCANNING_TEXTS_DETAIL[textIdx]}
+          {scanningTexts[textIdx]}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>המשימה נחשפת לעובדים באזור</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail') || 'המשימה נחשפת לעובדים באזור'}</div>
       </div>
     </div>
   );
@@ -135,6 +130,7 @@ export default function TaskDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, login } = useAuth();
+  const { t } = useLanguage();
   const [showCompletion, setShowCompletion] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
@@ -816,9 +812,9 @@ export default function TaskDetail() {
                 </span>
               )}
               {task.created_date && getRelativeTime(task.created_date) && (
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-                  פורסם {getRelativeTime(task.created_date)}
-                </span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+                {t('posted_in_time') || 'פורסם'} {getRelativeTime(task.created_date)}
+              </span>
               )}
             </div>
 
@@ -845,8 +841,8 @@ export default function TaskDetail() {
                       <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
                     </span>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>מאותת לעובדים</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>המשימה נחשפת לעובדים באזור</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{getScanningTexts(t)[0]}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail') || 'המשימה נחשפת לעובדים באזור'}</div>
                     </div>
                   </div>
                 ) : (
@@ -866,8 +862,8 @@ export default function TaskDetail() {
                   >
                     <span style={{ fontSize: 18, lineHeight: 1 }}>🟠</span>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{applicationCount} בקשות</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>לחץ לצפייה ואישור</div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{applicationCount} {t('applications')}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{t('click_to_view_approve') || 'לחץ לצפייה ואישור'}</div>
                     </div>
                   </button>
                 )}
@@ -885,15 +881,15 @@ export default function TaskDetail() {
               <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>צפיות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('views')}</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>כניסות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('clicks') || t('entries')}</div>
                 </div>
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1 }}>{applicationCount}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>בקשות</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{t('applications')}</div>
                 </div>
               </div>
             )}
