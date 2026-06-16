@@ -268,15 +268,17 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
           flexShrink: 0,
         }}
       >
-        {/* Liquid fill — CSS animation fills from 0% to 100% in exactly 1 hour */}
+        {/* Liquid fill — scaleY from 0→1 over totalSec seconds, origin bottom */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: charged ? '100%' : '0%',
+          height: '100%',
+          transformOrigin: 'bottom',
+          transform: charged ? 'scaleY(1)' : 'scaleY(0)',
           background: charged
             ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
             : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
-          animation: charged ? 'none' : `boostFill ${totalSec}s linear ${animDelaySec}s forwards`,
-          borderRadius: charged ? 8 : '0 0 8px 8px',
+          animation: charged ? 'none' : `boostFillScale ${totalSec}s linear ${animDelaySec}s forwards`,
+          borderRadius: 8,
           overflow: 'hidden',
         }}>
           {/* Sine wave top edge — two overlapping waves */}
@@ -355,7 +357,7 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
         document.body
       )}
       <style>{`
-        @keyframes boostFill { from { height: 0% } to { height: 100% } }
+        @keyframes boostFillScale { from { transform: scaleY(0) } to { transform: scaleY(1) } }
         @keyframes bWave1 {
           0%   { transform: translateX(0%) scaleY(1); }
           50%  { transform: translateX(-8%) scaleY(1.4); }

@@ -138,15 +138,17 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
           flexShrink: 0,
         }}
       >
-        {/* Liquid fill — CSS animation, negative delay resumes from elapsed position */}
+        {/* Liquid fill — scaleY from 0→1 over totalSec seconds, origin bottom */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: charged ? '100%' : '0%',
+          height: '100%',
+          transformOrigin: 'bottom',
+          transform: charged ? 'scaleY(1)' : 'scaleY(0)',
           background: charged
             ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
             : 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))',
-          animation: charged ? 'none' : `boostFillDetail ${totalSec}s linear ${animDelaySec}s forwards`,
-          borderRadius: charged ? 8 : '0 0 8px 8px',
+          animation: charged ? 'none' : `boostFillScaleDetail ${totalSec}s linear ${animDelaySec}s forwards`,
+          borderRadius: 8,
           overflow: 'hidden',
         }}>
           {!charged && <>
@@ -172,7 +174,7 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
         </div>
       </div>
       <style>{`
-        @keyframes boostFillDetail { from { height: 0% } to { height: 100% } }
+        @keyframes boostFillScaleDetail { from { transform: scaleY(0) } to { transform: scaleY(1) } }
         @keyframes bdWave1 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(-8%) scaleY(1.4)}100%{transform:translateX(0%) scaleY(1)} }
         @keyframes bdWave2 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(8%) scaleY(1.6)}100%{transform:translateX(0%) scaleY(1)} }
         @keyframes bdRise { 0%{transform:translateY(0) scale(1);opacity:0.8} 80%{opacity:0.6} 100%{transform:translateY(-80px) scale(0.4);opacity:0} }
