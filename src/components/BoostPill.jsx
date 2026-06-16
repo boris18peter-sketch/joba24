@@ -10,9 +10,22 @@ const BOOST_COST = 5;
 const HOUR_MS = 60 * 60 * 1000;
 
 /**
+ * Normalize a date string to a UTC timestamp.
+ * Base44 stores dates without Z suffix — treat them as UTC.
+ */
+function toUTCMs(str) {
+  if (!str) return null;
+  const s = String(str);
+  // If already has timezone info, parse as-is
+  if (s.endsWith('Z') || s.includes('+')) return new Date(s).getTime();
+  // Otherwise append Z to treat as UTC
+  return new Date(s + 'Z').getTime();
+}
+
+/**
  * BoostPill — fills over 1 hour since last boost (or task creation).
  * When full (charged), clicking opens a confirm sheet → calls boostTask backend function.
- * 
+ *
  * Props:
  *   task        — full task object (needs id, title, price, category, last_boost_at, created_date)
  *   size        — 'sm' (42×42, for card) | 'md' (54×54, for detail banner)
@@ -25,57 +38,58 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
-  const intervalRef = useRef(null);
 
-  const calcPct = () => {
-    // Reference point: last boost if exists, otherwise task creation
-    const refTime = task.last_boost_at
-      ? new Date(task.last_boost_at).getTime()
-      : task.created_date
-        ? new Date(task.created_date).getTime()
-        : null;
-    if (!refTime) return { pct: 100, charged: true };
-    const elapsed = Date.now() - refTime;
+  const calcState = () => {
+    // Reference: last boost if exists, else task creation date
+    const refMs = task.last_boost_at
+      ? toUTCMs(task.last_boost_at)
+      : toUTCMs(task.created_date);
+
+    if (!refMs || isNaN(refMs)) return { pct: 100, charged: true };
+
+    const elapsed = Date.now() - refMs;
     if (elapsed >= HOUR_MS) return { pct: 100, charged: true };
+    if (elapsed < 0) return { pct: 0, charged: false };
     return { pct: Math.round((elapsed / HOUR_MS) * 100), charged: false };
   };
 
-  // Update every second — restart cleanly whenever the task timestamps change
+  // Recalculate every second; restart when task timestamps change
   useEffect(() => {
-    const id = setInterval(() => {
-      const { pct: newPct, charged: newCharged } = calcPct();
-      setPct(newPct);
-      setCharged(newCharged);
-    }, 1000);
-    // Run once immediately on mount / timestamp change
-    const { pct: initPct, charged: initCharged } = calcPct();
-    setPct(initPct);
-    setCharged(initCharged);
+    const tick = () => {
+      const { pct: p, charged: c } = calcState();
+      setPct(p);
+      setCharged(c);
+    };
+    tick(); // run immediately
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task.last_boost_at, task.created_date, task.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.id, task.last_boost_at, task.created_date]);
 
   const handleBoost = async () => {
     if (loading) return;
     setLoading(true);
-    const res = await base44.functions.invoke('boostTask', { taskId: task.id });
-    setLoading(false);
-    if (res.data?.error === 'insufficient_credits') {
-      toast.error(`אין מספיק ג'ובות — נדרשות ${BOOST_COST}`);
-      return;
+    try {
+      const res = await base44.functions.invoke('boostTask', { taskId: task.id });
+      if (res.data?.error === 'insufficient_credits') {
+        toast.error(`אין מספיק ג'ובות — נדרשות ${BOOST_COST}`);
+        return;
+      }
+      if (!res.data?.success) {
+        toast.error('שגיאה בשיגור האיתות, נסה שוב');
+        return;
+      }
+      // Reset pill immediately — will re-sync from server on next render
+      setPct(0);
+      setCharged(false);
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setShowOverlay(true);
+      onBoostDone?.();
+    } finally {
+      setLoading(false);
     }
-    if (!res.data?.success) {
-      toast.error('שגיאה בשיגור האיתות, נסה שוב');
-      return;
-    }
-    // Reset pill — re-count from now
-    setPct(0);
-    setCharged(false);
-    queryClient.invalidateQueries({ queryKey: ['me'] });
-    queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    setShowOverlay(true);
-    onBoostDone?.();
   };
 
   const dim = size === 'md' ? 54 : 42;
@@ -94,7 +108,9 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
         onClick={(e) => { e.stopPropagation(); if (charged && !loading) setShowConfirm(true); }}
         title={charged ? `שגר איתות — ${BOOST_COST} ג'ובות` : `טוען... ${pct}%`}
         style={{
-          width: dim, height: dim, borderRadius: radius,
+          width: size === 'md' ? '100%' : dim,
+          height: dim,
+          borderRadius: radius,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', position: 'relative',
           border: `1.5px solid ${borderColor}`,
@@ -103,7 +119,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
           flexShrink: 0,
         }}
       >
-        {/* Fill bar — height % driven by state, updates every second */}
+        {/* Fill bar */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           height: `${pct}%`,
@@ -118,12 +134,10 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
           transition: 'height 0.9s linear',
           overflow: 'hidden',
         }}>
-          {/* Wave top edge */}
           {!charged && <>
             <div style={{ position: 'absolute', top: -5, left: 0, right: 0, height: 10, background: 'rgba(255,255,255,0.22)', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', animation: 'bpWave1 1.6s ease-in-out infinite' }} />
             <div style={{ position: 'absolute', top: -4, left: 0, right: 0, height: 8, background: 'rgba(255,255,255,0.15)', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', animation: 'bpWave2 2.1s ease-in-out infinite reverse' }} />
           </>}
-          {/* Bubbles */}
           {!charged && [
             { s: 3, l: '22%', d: '0s', dur: '1.8s' },
             { s: 2, l: '60%', d: '0.6s', dur: '2.2s' },

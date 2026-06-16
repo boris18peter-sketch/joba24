@@ -323,32 +323,34 @@ export default function Profile() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowTaskHistory(false)}>
             <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)', flexShrink: 0 }}>
-                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריית משימות ({completedCount})</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריית משימות ({completedCount} הושלמו)</span>
                 <button onClick={() => setShowTaskHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={16} color="#64748b" />
                 </button>
               </div>
-              <div style={{ overflowY: 'auto', padding: '12px 16px 24px', display: 'flex', flexDirection: 'column', gap: 8 }} dir="rtl">
-                {workerTasks.filter(t => t.status === 'COMPLETED').length === 0 ? (
+              <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 0 }} dir="rtl">
+                {completedCount === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
                     <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>אין משימות שהושלמו עדיין</div>
                   </div>
-                ) : workerTasks.filter(t => t.status === 'COMPLETED').map(task => (
-                  <div key={task.id} style={{ background: 'var(--surface-3)', borderRadius: 14, padding: '12px 14px', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <CheckCircle size={18} color="#16a34a" />
+                ) : workerTasks.filter(t => t.status === 'COMPLETED').map((task, idx, arr) => {
+                  const date = new Date(task.completed_at || task.updated_date);
+                  const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+                  const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                  return (
+                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < arr.length - 1 ? 16 : 0, position: 'relative' }}>
+                      {idx < arr.length - 1 && (
+                        <div style={{ position: 'absolute', right: 9, top: 22, width: 1, bottom: 0, background: '#e2e8f0' }} />
+                      )}
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
+                      </div>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{task.city || task.location_name || ''}</div>
-                    </div>
-                    <div style={{ textAlign: 'left', flexShrink: 0 }}>
-                      <div style={{ fontSize: 15, fontWeight: 900, color: '#16a34a' }}>₪{task.price}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{task.completed_at ? new Date(task.completed_at).toLocaleDateString('he-IL') : ''}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
