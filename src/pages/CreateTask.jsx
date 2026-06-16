@@ -510,9 +510,9 @@ export default function CreateTask() {
     if (isRepost || isEditMode) return;
     clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
+      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
       // Only save if user has typed something meaningful
-      if (form.title || form.description || form.price) {
+      if (form.title || form.description) {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
         setDraftSaved(true);
         setTimeout(() => setDraftSaved(false), 2000);
@@ -633,7 +633,7 @@ export default function CreateTask() {
   const handleSubmit = () => {
     if (!isAuthenticated) {
       // Save current form to draft before showing login
-      const draftFields = { title: form.title, description: form.description, price: form.price, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, auto_bump_enabled: form.auto_bump_enabled, max_price: form.max_price, is_story: form.is_story };
+      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, auto_bump_enabled: form.auto_bump_enabled, is_story: form.is_story };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
       setShowLoginPrompt(true);
       return;

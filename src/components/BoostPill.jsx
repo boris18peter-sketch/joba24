@@ -28,9 +28,10 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
   const intervalRef = useRef(null);
 
   const calcPct = () => {
-    // No previous boost → always ready (first boost)
-    if (!task.last_boost_at) return { pct: 100, charged: true };
-    const elapsed = Date.now() - new Date(task.last_boost_at).getTime();
+    // Use last_boost_at if exists, otherwise count from task creation (first boost)
+    const startTime = task.last_boost_at || task.created_date;
+    if (!startTime) return { pct: 0, charged: false };
+    const elapsed = Date.now() - new Date(startTime).getTime();
     if (elapsed >= HOUR_MS) return { pct: 100, charged: true };
     return { pct: Math.round((elapsed / HOUR_MS) * 100), charged: false };
   };
