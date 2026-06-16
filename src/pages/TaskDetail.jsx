@@ -94,38 +94,31 @@ function ScanningLabelDetail() {
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
-// Charging bolt pill — fills over 1 hour, smooth liquid wave animation
-const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000; // 1 hour to recharge after last boost
-// On first open (no last_boost_at), use created_date. Only charge based on elapsed time.
+// Charging bolt pill — fills over 1 hour via CSS animation
+const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000; // 1 hour
 
 function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
-  const getProgress = () => {
-    // If never boosted, count from task creation date (NOT from now — new task starts at 0)
+  const getElapsedSec = () => {
     const startTime = lastBoostAt || createdDate;
     if (!startTime) return 0;
-    const elapsed = Date.now() - new Date(startTime).getTime();
-    return Math.min(1, elapsed / BOOST_FILL_MS_DETAIL);
+    return (Date.now() - new Date(startTime).getTime()) / 1000;
   };
 
-  const [progress, setProgress] = useState(getProgress);
-  const mountedRef = useRef(false);
-  const charged = progress >= 1;
-  const pct = Math.round(progress * 100);
+  const totalSec = BOOST_FILL_MS_DETAIL / 1000; // 3600
+  const elapsedSec = getElapsedSec();
+  const charged = elapsedSec >= totalSec;
+  const pct = charged ? 100 : Math.round((elapsedSec / totalSec) * 100);
 
+  // Re-render once per minute to update % label; charged flips via animation
+  const [, forceUpdate] = useState(0);
   useEffect(() => {
-    const p = getProgress();
-    setProgress(p);
-    mountedRef.current = true;
-    if (p >= 1) return;
-    const iv = setInterval(() => {
-      const cur = getProgress();
-      setProgress(cur);
-      if (cur >= 1) clearInterval(iv);
-    }, 60000); // update every minute
+    if (charged) return;
+    const iv = setInterval(() => forceUpdate(n => n + 1), 60000);
     return () => clearInterval(iv);
-  }, [lastBoostAt, createdDate]);
+  }, [lastBoostAt, createdDate, charged]);
 
   const iconColor = pct > 50 ? 'white' : 'rgba(255,255,255,0.9)';
+  const animDelaySec = charged ? 0 : -elapsedSec;
 
   return (
     <>
@@ -142,14 +135,14 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
           flexShrink: 0,
         }}
       >
-        {/* Liquid fill */}
+        {/* Liquid fill — CSS animation, negative delay resumes from elapsed position */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: `${pct}%`,
+          height: charged ? '100%' : '0%',
           background: charged
             ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
             : 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))',
-          transition: mountedRef.current ? 'height 60s linear' : 'none',
+          animation: charged ? 'none' : `boostFillDetail ${totalSec}s linear ${animDelaySec}s forwards`,
           borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
         }}>
@@ -176,6 +169,7 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
         </div>
       </div>
       <style>{`
+        @keyframes boostFillDetail { from { height: 0% } to { height: 100% } }
         @keyframes bdWave1 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(-8%) scaleY(1.4)}100%{transform:translateX(0%) scaleY(1)} }
         @keyframes bdWave2 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(8%) scaleY(1.6)}100%{transform:translateX(0%) scaleY(1)} }
         @keyframes bdRise { 0%{transform:translateY(0) scale(1);opacity:0.8} 80%{opacity:0.6} 100%{transform:translateY(-80px) scale(0.4);opacity:0} }

@@ -217,32 +217,27 @@ const SCANNING_TEXTS = [
 const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
 
 function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
-  const getProgress = () => {
-    // If never boosted, count from task creation date (new task starts at 0)
+  // Calculate elapsed seconds since the charge started
+  const getElapsedSec = () => {
     const startTime = lastBoostAt || createdDate;
     if (!startTime) return 0;
-    const elapsed = Date.now() - new Date(startTime).getTime();
-    return Math.min(1, elapsed / BOOST_FILL_MS);
+    return (Date.now() - new Date(startTime).getTime()) / 1000;
   };
 
-  const [progress, setProgress] = useState(getProgress);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const mountedRef = useRef(false);
-  const charged = progress >= 1;
-  const pct = Math.round(progress * 100);
+  const elapsedSec = getElapsedSec();
+  const totalSec = BOOST_FILL_MS / 1000; // 3600
+  const charged = elapsedSec >= totalSec;
+  // For display only when charged: show 100%
+  const pct = charged ? 100 : Math.round((elapsedSec / totalSec) * 100);
 
+  const [showConfirm, setShowConfirm] = useState(false);
+  // Re-render once per minute so the % label stays current; charged state flips automatically via animation
+  const [, forceUpdate] = useState(0);
   useEffect(() => {
-    const p = getProgress();
-    setProgress(p);
-    mountedRef.current = true;
-    if (p >= 1) return;
-    const iv = setInterval(() => {
-      const cur = getProgress();
-      setProgress(cur);
-      if (cur >= 1) clearInterval(iv);
-    }, 60000); // update every minute, not every second
+    if (charged) return;
+    const iv = setInterval(() => forceUpdate(n => n + 1), 60000);
     return () => clearInterval(iv);
-  }, [lastBoostAt, createdDate]);
+  }, [lastBoostAt, createdDate, charged]);
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -251,6 +246,8 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   };
 
   const iconColor = pct > 50 ? 'white' : '#7c3aed';
+  // negative delay = start animation mid-way (already elapsed time)
+  const animDelaySec = charged ? 0 : -elapsedSec;
 
   return (
     <>
@@ -267,14 +264,14 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
           flexShrink: 0,
         }}
       >
-        {/* Liquid fill */}
+        {/* Liquid fill — CSS animation fills from 0% to 100% in exactly 1 hour */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: `${pct}%`,
+          height: charged ? '100%' : '0%',
           background: charged
             ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
             : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
-          transition: mountedRef.current ? 'height 60s linear' : 'none',
+          animation: charged ? 'none' : `boostFill ${totalSec}s linear ${animDelaySec}s forwards`,
           borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
         }}>
@@ -354,6 +351,7 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
         document.body
       )}
       <style>{`
+        @keyframes boostFill { from { height: 0% } to { height: 100% } }
         @keyframes bWave1 {
           0%   { transform: translateX(0%) scaleY(1); }
           50%  { transform: translateX(-8%) scaleY(1.4); }
