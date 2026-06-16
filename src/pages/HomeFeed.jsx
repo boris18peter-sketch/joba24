@@ -330,14 +330,20 @@ export default function HomeFeed() {
         const hasActiveApp = existingApps.some(a => a.status === 'pending' || a.status === 'approved');
         if (hasActiveApp) continue;
 
+        // Calculate how many 5-min intervals since task was created
         const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
         if (ageMinutes < 10) continue;
-        const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
+
         const base = task.base_price || task.price;
-        const step = (task.max_price - base) / 12;
-        const expectedPrice = Math.min(Math.round(base + step * intervals), task.max_price);
-        if (expectedPrice > task.price) {
-          base44.entities.Task.update(task.id, { price: expectedPrice });
+        if (base >= task.max_price) continue; // already at max, nothing to do
+
+        const totalSteps = 12; // spread price increase over 12 intervals (1 hour)
+        const step = (task.max_price - base) / totalSteps;
+
+        // Next expected price = current price + one step (simple increment per interval)
+        const nextPrice = Math.min(Math.round(task.price + step), task.max_price);
+        if (nextPrice > task.price) {
+          base44.entities.Task.update(task.id, { price: nextPrice });
         }
       }
     };
