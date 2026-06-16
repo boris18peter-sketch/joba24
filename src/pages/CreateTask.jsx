@@ -367,6 +367,7 @@ const getRequirementCategories = (category) =>
 export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useLanguage();
   const { isAuthenticated, login } = useAuth();
   const editId = searchParams.get('editId');
   const isEditMode = !!editId;
@@ -887,15 +888,15 @@ export default function CreateTask() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
               <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
-        {isRepostMode ? 'פרסם שוב' : isEditMode ? 'עריכת משימה' : isRepost ? 'פרסם שוב' : 'פרסום משימה חדשה'}
+        {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
-              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> נשמר</div>}
+              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
             {/* Progress bar */}
             <div style={{ padding: '0 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>השלמת הטופס</span>
-                <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ מוכן לפרסום!' : ''}</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{t('form_progress')}</span>
+                <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ ' + t('ready_to_publish') : ''}</span>
               </div>
               <div style={{ height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
@@ -910,9 +911,9 @@ export default function CreateTask() {
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 700 }}>
-              <Save size={14} /> טיוטה שמורה — המשך מהיכן שעצרת
+              <Save size={14} /> {t('draft_restored')}
             </div>
-            <button onClick={() => { setForm(DEFAULT_FORM); localStorage.removeItem(DRAFT_KEY); }} style={{ fontSize: 11, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>מחק</button>
+            <button onClick={() => { setForm(DEFAULT_FORM); localStorage.removeItem(DRAFT_KEY); }} style={{ fontSize: 11, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>{t('delete_task')}</button>
           </div>
         )}
 
@@ -921,7 +922,7 @@ export default function CreateTask() {
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
             <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>
-              ⚠️ חסרים פרטים כדי לפרסם את המשימה — בדוק את השדות המסומנים באדום
+              {t('missing_fields_warning')}
             </p>
           </div>
         )}
@@ -938,7 +939,7 @@ export default function CreateTask() {
         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
           <p style={{ fontSize: 13, color: '#1e40af', margin: 0, lineHeight: 1.6 }}>
-            <strong>חשוב!</strong> ככל שהמשימה מפורטת יותר — כך תקבל match מדויק יותר עם עובד מתאים.
+            <strong>{t('important_note_title')}</strong> {t('important_note_body')}
           </p>
         </div>
 
@@ -980,7 +981,7 @@ export default function CreateTask() {
 
         {/* Title + Description */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מה צריך לעשות? *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('what_need_to_do')} *</Label>
           <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
             value={form.title}
             onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); setModerationErrors(p => ({...p, title: null})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
@@ -991,7 +992,7 @@ export default function CreateTask() {
           {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
           {moderationErrors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>🛡️ {moderationErrors.title}</p>}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>תיאור מפורט *</Label>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{t('detailed_description')} *</Label>
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
@@ -999,13 +1000,13 @@ export default function CreateTask() {
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : '#eff6ff', color: recording ? '#dc2626' : '#1a6fd4' }}
             >
               {transcribing ? <Loader2 size={13} className="animate-spin" /> : recording ? <MicOff size={13} /> : <Mic size={13} />}
-              {transcribing ? 'מעבד...' : recording ? 'עצור הקלטה' : 'הקלט תיאור'}
+              {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
             </button>
           </div>
           {recording && (
             <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
-              מקליט... לחץ עצור כשסיימת
+              {t('recording_press_stop')}
             </div>
           )}
           <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
@@ -1033,13 +1034,13 @@ export default function CreateTask() {
 
         {/* Images + Video */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>מדיה</Label>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
           <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} />
         </SectionCard>
 
         {/* Price */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מחיר (₪) *</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
           <Input ref={fieldRefs.price} type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
             value={form.price}
             onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
@@ -1352,10 +1353,10 @@ export default function CreateTask() {
                 }}
               >
                 {loading
-                  ? <><Loader2 size={22} className="animate-spin" /> מפרסם...</>
+                  ? <><Loader2 size={22} className="animate-spin" /> {t('publishing_btn')}</>
                   : isReady
-                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם משימה עכשיו ✓</>)
-                    : (isEditMode ? <><Save size={20} />{isRepostMode ? 'שמור ופרסם שוב' : 'שמור שינויים'}</> : <><Zap size={20} />פרסם משימה חדשה</>)
+                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_now')} ✓</>)
+                    : (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_new_task')}</>)}
                 }
               </button>
               {!isEditMode && <SocialProofBar />}

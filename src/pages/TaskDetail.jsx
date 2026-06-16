@@ -46,7 +46,7 @@ import BoostPill from '@/components/BoostPill';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const getScanningTexts = (t) => t('scanning_texts') || ['מאותת לעובדים', 'סורק עובדים', 'מחפש התאמות', 'מגביר חשיפה', 'מפיץ את המשימה', 'מרחיב חשיפה'];
+const getScanningTexts = (t) => t('scanning_texts');
 
 function ScanningLabelDetail({ t }) {
   const scanningTexts = getScanningTexts(t);
@@ -80,7 +80,7 @@ function ScanningLabelDetail({ t }) {
         <div style={{ fontSize: 13, fontWeight: 800, color: 'white', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
           {scanningTexts[textIdx]}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail') || 'המשימה נחשפת לעובדים באזור'}</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
       </div>
     </div>
   );
@@ -93,12 +93,12 @@ import ApplySheet from '@/components/ApplySheet';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
-const getStatusLabel = (status, isOwner) => {
-  if (status === 'OPEN') return isOwner ? 'מחפש פועל' : 'פתוח';
-  if (status === 'TAKEN') return isOwner ? 'בביצוע' : 'לקחתי';
-  if (status === 'COMPLETED') return 'הושלם';
-  if (status === 'CANCELLED') return 'בוטל';
-  if (status === 'EXPIRED') return 'פג תוקף';
+const getStatusLabel = (status, isOwner, t) => {
+  if (status === 'OPEN') return isOwner ? t('looking_for_worker') : t('open_status');
+  if (status === 'TAKEN') return isOwner ? t('in_progress') : t('taken_status_worker');
+  if (status === 'COMPLETED') return t('completed');
+  if (status === 'CANCELLED') return t('cancelled') || t('cancel');
+  if (status === 'EXPIRED') return t('task_expired_title');
   return status;
 };
 const statusConfig = {
@@ -109,19 +109,19 @@ const statusConfig = {
   EXPIRED: { label: 'פג תוקף', color: 'text-orange-700 bg-orange-100' }
 };
 
-function getRelativeTime(date) {
+function getRelativeTime(date, t) {
   if (!date) return null;
   const s = String(date);
   const normalized = s.includes('T') && !s.endsWith('Z') && !s.includes('+') ? s + 'Z' : s;
   const ms = Date.now() - new Date(normalized).getTime();
-  if (ms < 0) return 'עכשיו';
+  if (ms < 0) return t('now_label');
   const minutes = Math.floor(ms / 60000);
-  if (minutes < 1) return 'עכשיו';
-  if (minutes < 60) return `לפני ${minutes} דקות`;
+  if (minutes < 1) return t('now_label');
+  if (minutes < 60) return t('minutes_ago').replace('{n}', minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `לפני ${hours} שעות`;
+  if (hours < 24) return t('hours_ago').replace('{n}', hours);
   const days = Math.floor(hours / 24);
-  if (days < 30) return `לפני ${days} ימים`;
+  if (days < 30) return t('days_ago').replace('{n}', days);
   return null;
 }
 
@@ -364,14 +364,14 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
-      toast.success('קחת את המשימה! 🎉');
+      toast.success(t('task_taken_toast'));
     }
   });
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
       const res = await base44.functions.invoke('cancelTaskPayment', { taskId: id });
-      if (!res.data?.success) throw new Error('שגיאה בביטול');
+      if (!res.data?.success) throw new Error(t('error_cancelling_task'));
     },
     onSuccess: () => {
       setShowCancelConfirm(false);
@@ -379,7 +379,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
-      toast.success('המשימה בוטלה');
+      toast.success(t('task_cancelled_toast'));
       navigate('/');
     }
   });
@@ -388,7 +388,7 @@ export default function TaskDetail() {
     mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null, last_boost_at: null, boost_count: 0 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('המשימה נפתחה מחדש!');
+      toast.success(t('task_reopened_toast'));
     }
   });
 
@@ -407,7 +407,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
-      toast.success('יצאת מהמשימה והקרדיטים הוחזרו 🪙');
+      toast.success(t('left_task_credits_back'));
       navigate('/');
     }
   });
@@ -429,11 +429,11 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success('הבקשה בוטלה והקרדיטים הוחזרו 🪙');
+      toast.success(t('app_cancelled_credits_back'));
     },
     onError: () => {
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
-      toast.error('שגיאה בביטול, נסה שוב');
+      toast.error(t('error_cancel_app'));
     }
   });
 
@@ -448,12 +448,12 @@ export default function TaskDetail() {
 
       if (data?.error === 'already_applied') {
         setShowApplyForm(false);
-        toast('כבר שלחת בקשה למשימה זו');
+        toast(t('already_applied_toast'));
         return;
       }
 
       const newApp = data?.application;
-      if (!newApp) throw new Error('שגיאה בשליחת הבקשה');
+      if (!newApp) throw new Error(t('error_sending_app_toast'));
 
       // Sync caches with real server data — no need to invalidate immediately after setQueryData
       queryClient.setQueryData(['myApp', id, me?.id], newApp);
@@ -464,7 +464,7 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       setShowApplyForm(false);
       setHasApplied(true);
-      toast.success(`הגשת בקשה למשימה: ${data.credits_charged} קרדיטים נוכו`);
+      toast.success(t('app_sent_n_credits').replace('{n}', data.credits_charged));
     } catch (err) {
       // 403 = insufficient credits
       const status = err?.response?.status || err?.status;
@@ -475,7 +475,7 @@ export default function TaskDetail() {
         setShowApplyForm(false);
         setShowBuyCredits(true);
       } else {
-        toast.error('שגיאה בשליחת הבקשה, נסה שוב');
+        toast.error(t('error_sending_app_toast'));
       }
     } finally {
       setApplyLoading(false);
@@ -492,7 +492,7 @@ export default function TaskDetail() {
       task_id: id,
       sender_id: me.id,
       sender_name: me.full_name,
-      content: `👋 היי! המשימה "${task.title}" פגה תוקף אבל אני מעוניין לבצע אותה. תוכל לפתוח אותה מחדש עבורי?`
+      content: t('signal_reopen_msg').replace('{title}', task.title)
     });
     // Also create a signal record on the task so owner can see interested workers
     await base44.entities.Task.update(id, {
@@ -500,7 +500,7 @@ export default function TaskDetail() {
       signal_worker_name: me.full_name
     });
     setSignalSent(true);
-    toast.success('האיתות נשלח לבעל המשימה! 📣');
+    toast.success(t('signal_sent_success'));
   };
 
   if (isLoading) {
@@ -533,7 +533,7 @@ export default function TaskDetail() {
       </div>);
 
   }
-  if (!task) return <div className="p-8 text-center text-muted-foreground">משימה לא נמצאה</div>;
+  if (!task) return <div className="p-8 text-center text-muted-foreground">{t('task_not_found')}</div>;
 
   const STATUS_GRADIENT = {
     OPEN: 'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
@@ -569,7 +569,7 @@ export default function TaskDetail() {
 
   const hasWorker = !!task.worker_id;
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
-  const statusLabel = getStatusLabel(task.status, isOwner);
+  const statusLabel = getStatusLabel(task.status, isOwner, t);
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = false; // All tasks now require application
   // hasApplied (local state) + myApp (server state) — both prevent showing the apply button
@@ -611,10 +611,10 @@ export default function TaskDetail() {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚪</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>לצאת מהמשימה?</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('exit_task_title')}</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                זוהי פעולה סופית — תצא מהמשימה ובעל המשימה יקבל עדכון.<br />
-                <strong style={{ color: '#0f1e40' }}>הוא יוכל לאשר בקשות אחרות או לקבל עובדים חדשים.</strong>
+                {t('exit_task_body')}<br />
+                <strong style={{ color: '#0f1e40' }}>{t('exit_task_note')}</strong>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -622,14 +622,14 @@ export default function TaskDetail() {
                 onClick={() => setShowExitWarning(false)}
                 style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
                 
-                המשך במשימה
+                {t('continue_in_task')}
               </button>
               <button
                 onClick={() => {setShowExitWarning(false);cancelTakeMutation.mutate();}}
                 disabled={cancelTakeMutation.isPending}
                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 
-                {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> כן, צא מהמשימה</>}
+                {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> {t('yes_exit_task')}</>}
               </button>
             </div>
           </div>
@@ -657,8 +657,8 @@ export default function TaskDetail() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
               <AlertTriangle size={20} color="#f97316" />
               <div>
-                <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 14 }}>המשימה פגה תוקף</div>
-                <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>המשימה הייתה פתוחה ופג תוקפה</div>
+                <div style={{ fontWeight: 800, color: '#c2410c', fontSize: 14 }}>{t('task_expired_title')}</div>
+                <div style={{ fontSize: 12, color: '#ea580c', marginTop: 2 }}>{t('task_was_open_sub')}</div>
               </div>
             </div>
             {isOwner &&
@@ -673,20 +673,20 @@ export default function TaskDetail() {
             disabled={reopenMutation.isPending}
             className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold h-11">
             
-                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />פתח את המשימה מחדש</>}
+                {reopenMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCw className="w-4 h-4 ml-2" />{t('reopen_task_btn')}</>}
               </Button>
           }
             {!isOwner && !signalSent &&
           <Button onClick={() => gate(handleSignalReopen)} variant="outline"
           className="w-full rounded-xl border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold h-11">
             
-                <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> שלח איתות לבעל המשימה
+                <Send size={15} strokeWidth={1.8} style={{ marginLeft: 6 }} /> {t('send_signal_owner')}
               </Button>
           }
             {!isOwner && signalSent &&
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 16px' }}>
-                <div style={{ fontWeight: 800, color: '#166534', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} color="#16a34a" /> האיתות נשלח!</div>
-                <div style={{ fontSize: 12, color: '#15803d', marginTop: 3 }}>מחכה לאישור פתיחת המשימה מחדש</div>
+                <div style={{ fontWeight: 800, color: '#166534', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle2 size={15} color="#16a34a" /> {t('signal_sent_ok')}</div>
+                <div style={{ fontSize: 12, color: '#15803d', marginTop: 3 }}>{t('awaiting_reopen_label')}</div>
               </div>
           }
           </div>
@@ -729,7 +729,7 @@ export default function TaskDetail() {
               {/* Price */}
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
                 <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</div>}
+                {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</div>}
               </div>
               <div style={{ flex: 1 }} />
 
@@ -811,9 +811,9 @@ export default function TaskDetail() {
                   {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}`}
                 </span>
               )}
-              {task.created_date && getRelativeTime(task.created_date) && (
+              {task.created_date && getRelativeTime(task.created_date, t) && (
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
-                {t('posted_in_time') || 'פורסם'} {getRelativeTime(task.created_date)}
+                {t('posted_in_time')} {getRelativeTime(task.created_date, t)}
               </span>
               )}
             </div>
@@ -842,7 +842,7 @@ export default function TaskDetail() {
                     </span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{getScanningTexts(t)[0]}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail') || 'המשימה נחשפת לעובדים באזור'}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
                     </div>
                   </div>
                 ) : (
@@ -863,7 +863,7 @@ export default function TaskDetail() {
                     <span style={{ fontSize: 18, lineHeight: 1 }}>🟠</span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{applicationCount} {t('applications')}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{t('click_to_view_approve') || 'לחץ לצפייה ואישור'}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{t('click_to_view_approve')}</div>
                     </div>
                   </button>
                 )}
@@ -899,21 +899,21 @@ export default function TaskDetail() {
             {/* Owner: confirm completion — worker marked done, waiting for owner approval */}
             {isOwner && task.status === 'TAKEN' && task.worker_status === 'done' && (
               <div style={{ background: 'rgba(5,150,105,0.18)', border: '1.5px solid rgba(5,150,105,0.5)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
-                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>✅ העובד סיים — ממתין לאישורך</div>
+                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{t('worker_finished_approval')}</div>
                 <button
                   onClick={async () => {
                     try {
                       const res = await base44.functions.invoke('completeTask', { taskId: id });
-                      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+                      if (!res.data?.success) throw new Error(res.data?.error || t('error_colon'));
                       queryClient.invalidateQueries({ queryKey: ['task', id] });
-                      toast.success('המשימה הושלמה! 🎉');
+                      toast.success(t('task_completed_toast'));
                     } catch (err) {
-                      toast.error('שגיאה: ' + err.message);
+                      toast.error(t('task_completed_error') + err.message);
                     }
                   }}
                   style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.5)', color: 'white', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  <CheckCircle2 size={16} /> אשר סיום עבודה
+                  <CheckCircle2 size={16} /> {t('approve_completion')}
                 </button>
               </div>
             )}
@@ -921,16 +921,16 @@ export default function TaskDetail() {
             {/* Approved CTA */}
             {isApproved && !isWorker && task.status === 'OPEN' &&
             <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
-                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>🎉 בקשתך אושרה!</div>
+                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{t('your_app_approved')}</div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
                 style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   
-                    {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : '🚀 צא עכשיו'}
+                    {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : t('go_now_action')}
                   </button>
                   <button onClick={() => cancelApplicationMutation.mutate()} disabled={cancelApplicationMutation.isPending}
                 style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                  בטל</button>
+                  {t('cancel')}</button>
                 </div>
               </div>
             }
@@ -942,7 +942,7 @@ export default function TaskDetail() {
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />
-                הגש מועמדות למשימה — {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
+                {t('apply_to_task')} — {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
               </button>
             }
 
@@ -950,7 +950,7 @@ export default function TaskDetail() {
             {hasPendingApp && !isOwner &&
             <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock size={12} />
-                <span style={{ fontSize: 12, fontWeight: 700 }}>בקשתך ממתינה לאישור</span>
+                <span style={{ fontSize: 12, fontWeight: 700 }}>{t('your_app_pending')}</span>
               </div>
             }
 
@@ -961,7 +961,7 @@ export default function TaskDetail() {
                 onClick={() => setShowQuickChat(true)}
                 style={{ flex: 1, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                 
-                  <MessageCircle size={13} /> הודעה למפרסם
+                  <MessageCircle size={13} /> {t('message_to_publisher')}
                 </button>
                 {hasPendingApp &&
               <button
@@ -969,7 +969,7 @@ export default function TaskDetail() {
                 disabled={cancelApplicationMutation.isPending}
                 style={{ height: 34, padding: '0 14px', borderRadius: 10, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                 
-                    {cancelApplicationMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <><X size={11} /> בטל בקשה</>}
+                    {cancelApplicationMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <><X size={11} /> {t('cancel_application_btn')}</>}
                   </button>
               }
               </div>
@@ -981,7 +981,7 @@ export default function TaskDetail() {
               onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;}setShowReport(true);}}
               style={{ width: '100%', height: 26, background: 'none', border: 'none', color: 'rgba(255,255,255,0.38)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 2 }}>
               
-                <Flag size={10} /> דיווח על המשימה
+                <Flag size={10} /> {t('report_task_btn')}
               </button>
             }
           </div>
@@ -1018,20 +1018,20 @@ export default function TaskDetail() {
             {/* Auto-bump — owner only, at top */}
             {isOwner && task.auto_bump_enabled && task.base_price && task.max_price && (
               <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: '9px 14px' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 4 }}>📈 מחיר עולה אוטומטית</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#92400e', marginBottom: 4 }}>{t('auto_price_increase_title')}</div>
                 <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.5 }}>
-                  המחיר עולה בהדרגה מ-₪{task.base_price} עד ₪{task.max_price} כל 5 דקות, כדי שהמשימה תהיה אטרקטיבית ותמשוך בקשות לביצוע.
+                  {t('price_increase_detail')}
                   {applicationCount > 0
-                    ? <span style={{ color: '#059669', fontWeight: 700, display: 'block', marginTop: 2 }}>✓ המחיר הוקפא על ₪{Math.round(calculateCurrentPrice(task))} — התקבלה בקשה</span>
-                    : <span style={{ display: 'block', marginTop: 2 }}>כעת: ₪{Math.round(calculateCurrentPrice(task))} · נעצר אוטומטית עם קבלת בקשה ראשונה</span>}
+                    ? <span style={{ color: '#059669', fontWeight: 700, display: 'block', marginTop: 2 }}>{t('price_frozen_label').replace('{price}', Math.round(calculateCurrentPrice(task)))} — {t('got_request_label')}</span>
+                    : <span style={{ display: 'block', marginTop: 2 }}>{t('now_label')}: ₪{Math.round(calculateCurrentPrice(task))} · {t('auto_stops_label')}</span>}
                 </div>
               </div>
             )}
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטי המשימה</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('task_details_title')}</div>
               <button
-                onClick={() => { navigator.clipboard.writeText(task.id); toast('ID הועתק'); }}
+                onClick={() => { navigator.clipboard.writeText(task.id); toast(t('id_copied')); }}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: 'none', cursor: 'pointer' }}
                 title="העתק ID"
               >
@@ -1047,7 +1047,7 @@ export default function TaskDetail() {
                   <Clock size={13} color="#ea580c" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>תוקף המשימה</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('task_validity_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
                     <TaskExpiry expiresAt={task.expires_at} showOnlyWhenUrgent={false} inline />
                   </div>
@@ -1062,9 +1062,9 @@ export default function TaskDetail() {
                   <Clock size={13} color="#1a6fd4" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>זמן משוער</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('estimated_time_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
-                    {task.estimated_time === '15m' ? 'רבע שעה' : task.estimated_time === '30m' ? 'חצי שעה' : task.estimated_time === '1h' ? 'שעה' : task.estimated_time === '2h' ? 'שעתיים' : task.estimated_time}
+                    {task.estimated_time === '15m' ? t('quarter_hour') : task.estimated_time === '30m' ? t('half_hour') : task.estimated_time === '1h' ? t('one_hour_label') : task.estimated_time === '2h' ? t('two_hours_label') : task.estimated_time}
                   </div>
                 </div>
               </div>
@@ -1077,7 +1077,7 @@ export default function TaskDetail() {
                   {CATEGORY_EMOJI[task.category] || '🔨'}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>קטגוריה</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('category_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
                 </div>
               </div>
@@ -1090,12 +1090,12 @@ export default function TaskDetail() {
                   <MapPin size={13} color="#ea580c" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>פרטי כתובת</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{t('address_details_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.5 }}>
                     {[
-                      task.address_building && `בניין ${task.address_building}`,
-                      task.address_floor && `קומה ${task.address_floor}`,
-                      task.address_apartment && `דירה ${task.address_apartment}`,
+                      task.address_building && `${t('building_label')} ${task.address_building}`,
+                      task.address_floor && `${t('floor_label')} ${task.address_floor}`,
+                      task.address_apartment && `${t('apartment_label')} ${task.address_apartment}`,
                       task.address_notes,
                     ].filter(Boolean).join(' · ')}
                   </div>
@@ -1110,12 +1110,12 @@ export default function TaskDetail() {
                   <CheckCircle2 size={13} color="#059669" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>דרישות</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
                     {[
-                      task.requirements.vehicle && 'נדרש רכב',
-                      task.requirements.two_people && 'נדרשים שני אנשים',
-                      task.requirements.experience && 'נדרש ניסיון',
+                      task.requirements.vehicle && t('vehicle_label'),
+                      task.requirements.two_people && t('two_people_label'),
+                      task.requirements.experience && t('experience_label'),
                     ].filter(Boolean).join(' · ')}
                   </div>
                 </div>
@@ -1126,7 +1126,7 @@ export default function TaskDetail() {
             {extraLines.length > 0 && (
               <>
                 <div style={{ height: 1, background: 'var(--border-1)', margin: '2px 0' }} />
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>פרטים נוספים</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('extra_details_label')}</div>
                 {extraLines.map((line, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>
@@ -1178,7 +1178,7 @@ export default function TaskDetail() {
         <div className="mobile-sheet-overlay" onClick={() => setShowOwnerMenu(false)}>
           <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>פעולות משימה</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
             {task.status === 'OPEN' &&
             <div onClick={() => { setShowOwnerMenu(false); navigate(`/create-task?editId=${id}`); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
@@ -1186,8 +1186,8 @@ export default function TaskDetail() {
                     <Pencil size={17} color="#1a6fd4" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b' }}>עריכת משימה</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>שינוי פרטים, מחיר ותיאור</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#0f2b6b' }}>{t('edit_task_title')}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('edit_task_sub')}</div>
                   </div>
                 </div>
               </div>
@@ -1206,8 +1206,8 @@ export default function TaskDetail() {
                 <X size={17} color="#dc2626" />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>ביטול משימה</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>המשימה תחזור לרשימה</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>{t('cancel_task_title')}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('cancel_task_sub')}</div>
               </div>
             </div>
             <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
