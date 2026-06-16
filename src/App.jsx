@@ -172,18 +172,18 @@ function App() {
   }, []);
 
   return (
-    <LanguageProvider>
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <CaptureRefCode />
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <LanguageProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <CaptureRefCode />
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </LanguageProvider>
     </AuthProvider>
-    </LanguageProvider>
   )
 }
 
