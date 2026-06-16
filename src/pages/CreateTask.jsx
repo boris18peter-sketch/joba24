@@ -62,7 +62,7 @@ function SocialProofBar() {
   );
 }
 
-function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange }) {
+function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange, t }) {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
 
@@ -1035,7 +1035,7 @@ export default function CreateTask() {
         {/* Images + Video */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
-          <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} />
+          <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
         </SectionCard>
 
         {/* Price */}
