@@ -44,6 +44,7 @@ import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
 import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
+import BoostPill from '@/components/BoostPill';
 
 const SCANNING_TEXTS_DETAIL = [
   'מאותת לעובדים',
@@ -94,90 +95,7 @@ function ScanningLabelDetail() {
 import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
-// Charging bolt pill — fills over 1 hour via CSS animation
-const BOOST_FILL_MS_DETAIL = 60 * 60 * 1000; // 1 hour
 
-function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
-  const getElapsedSec = () => {
-    const startTime = lastBoostAt || createdDate;
-    if (!startTime) return 0;
-    return (Date.now() - new Date(startTime).getTime()) / 1000;
-  };
-
-  const totalSec = BOOST_FILL_MS_DETAIL / 1000; // 3600
-  const elapsedSec = getElapsedSec();
-  const charged = elapsedSec >= totalSec;
-  const pct = charged ? 100 : Math.round((elapsedSec / totalSec) * 100);
-
-  // Re-render every minute so % label stays current;
-  // schedule exact flip when charging completes so charged state updates immediately
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (charged) return;
-    const remaining = Math.max(0, totalSec - elapsedSec) * 1000;
-    const flipTimer = setTimeout(() => setTick(n => n + 1), remaining + 100);
-    const iv = setInterval(() => setTick(n => n + 1), 60000);
-    return () => { clearTimeout(flipTimer); clearInterval(iv); };
-  }, [lastBoostAt, createdDate, charged]);
-
-  const iconColor = pct > 50 ? 'white' : 'rgba(255,255,255,0.9)';
-  const animDelaySec = charged ? 0 : -elapsedSec;
-
-  return (
-    <>
-      <div
-        onClick={charged && !loading ? onBoost : undefined}
-        title={charged ? 'שגר איתות נוסף — 5 ג\'ובות' : `מתטען... ${pct}%`}
-        style={{
-          height: '100%', width: '100%', borderRadius: 14,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden', position: 'relative',
-          border: `1.5px solid ${charged ? 'rgba(192,132,252,0.9)' : 'rgba(192,132,252,0.45)'}`,
-          background: 'rgba(255,255,255,0.07)',
-          cursor: charged ? 'pointer' : 'default',
-          flexShrink: 0,
-        }}
-      >
-        {/* Liquid fill — height % reflects current charge level, ticks update it every minute */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: charged ? '100%' : `${pct}%`,
-          background: charged
-            ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
-            : 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))',
-          borderRadius: charged ? 14 : '0 0 14px 14px',
-          overflow: 'hidden',
-        }}>
-          {!charged && <>
-            <div style={{ position: 'absolute', top: -5, left: 0, right: 0, height: 10, background: 'rgba(255,255,255,0.22)', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', animation: 'bdWave1 1.6s ease-in-out infinite' }} />
-            <div style={{ position: 'absolute', top: -4, left: 0, right: 0, height: 8, background: 'rgba(255,255,255,0.15)', borderRadius: '50% 50% 0 0 / 100% 100% 0 0', animation: 'bdWave2 2.1s ease-in-out infinite reverse' }} />
-          </>}
-          {!charged && [
-            { size: 3, left: '25%', delay: '0s', dur: '1.8s' },
-            { size: 2, left: '65%', delay: '0.7s', dur: '2.3s' },
-          ].map((b, i) => (
-            <div key={i} style={{ position: 'absolute', bottom: '5%', width: b.size, height: b.size, borderRadius: '50%', background: 'rgba(255,255,255,0.7)', left: b.left, animation: `bdRise ${b.dur} ease-in infinite`, animationDelay: b.delay }} />
-          ))}
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-          {loading
-            ? <Loader2 size={13} color="white" className="animate-spin" />
-            : <Zap size={14} color={iconColor} fill={charged ? iconColor : 'none'} strokeWidth={charged ? 0 : 2} />
-          }
-          {!charged && !loading && (
-            <span style={{ fontSize: 8, fontWeight: 900, color: iconColor, lineHeight: 1 }}>{pct}%</span>
-          )}
-        </div>
-      </div>
-      <style>{`
-        @keyframes bdWave1 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(-8%) scaleY(1.4)}100%{transform:translateX(0%) scaleY(1)} }
-        @keyframes bdWave2 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(8%) scaleY(1.6)}100%{transform:translateX(0%) scaleY(1)} }
-        @keyframes bdRise { 0%{transform:translateY(0) scale(1);opacity:0.8} 80%{opacity:0.6} 100%{transform:translateY(-80px) scale(0.4);opacity:0} }
-      `}</style>
-    </>
-  );
-}
 import ApplySheet from '@/components/ApplySheet';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 
@@ -244,8 +162,6 @@ export default function TaskDetail() {
   const [showQuickChat, setShowQuickChat] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
-  const [showBoostConfirm, setShowBoostConfirm] = useState(false);
-  const [boostLoading, setBoostLoading] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [showWorkerMap, setShowWorkerMap] = useState(false);
@@ -572,24 +488,7 @@ export default function TaskDetail() {
     }
   };
 
-  // Boost — call backend function (handles credits + task update atomically)
-  const handleBoost = async () => {
-    if (boostLoading) return;
-    setBoostLoading(true);
-    const res = await base44.functions.invoke('boostTask', { taskId: id });
-    setBoostLoading(false);
-    if (res.data?.error === 'insufficient_credits') {
-      toast.error('אין מספיק ג\'ובות — נדרשות 5 ג\'ובות לאיתות נוסף');
-      return;
-    }
-    if (!res.data?.success) {
-      toast.error('שגיאה בשיגור האיתות, נסה שוב');
-      return;
-    }
-    queryClient.invalidateQueries({ queryKey: ['me'] });
-    queryClient.invalidateQueries({ queryKey: ['task', id] });
-    setShowBoostOverlay(true);
-  };
+
 
   // Signal reopen - sends a chat message + creates a notification for task owner
   const handleSignalReopen = async () => {
@@ -985,7 +884,7 @@ export default function TaskDetail() {
                 {/* Boost button — symmetric fixed width */}
                 {boostAvailable && (
                   <div style={{ width: 54, flexShrink: 0 }}>
-                    <BoostChargeDetail onBoost={() => setShowBoostConfirm(true)} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />
+                    <BoostPill task={task} size="md" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['task', id] }); }} />
                   </div>
                 )}
               </div>
@@ -1313,38 +1212,7 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {/* Boost confirmation popup */}
-      {showBoostConfirm && createPortal(
-        <div className="mobile-sheet-overlay" onClick={() => setShowBoostConfirm(false)}>
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>⚡</div>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>שגר איתות נוסף</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
-                האיתות ישלח לכל העובדים הרלוונטיים באזור שלך — על בסיס קטגוריה, ניסיון והיסטוריית פעילות — כדי להגביר חשיפה ולמשוך בקשות חדשות.
-              </div>
-              <div style={{ background: '#faf5ff', border: '1.5px solid #d8b4fe', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>עלות: 5 ג'ובות מיתרתך</span>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>·</span>
-                <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>יתרה: {me?.worker_credits ?? 0} ג'ובות</span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
-              <button
-                onClick={() => { setShowBoostConfirm(false); handleBoost(); }}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.35)' }}>
-                ⚡ שגר עכשיו — 5 ג'ובות
-              </button>
-              <button onClick={() => setShowBoostConfirm(false)}
-                style={{ width: '100%', height: 46, borderRadius: 16, background: 'none', border: '1px solid #e8edf5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                ביטול
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+
 
       {showQuickChat && task && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowQuickChat(false)} />}
 
@@ -1353,15 +1221,7 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {showBoostOverlay && task && (
-        <BoostOverlay
-          taskId={task.id}
-          taskTitle={task.title}
-          taskPrice={task.price}
-          taskCategory={task.category}
-          onDismiss={() => setShowBoostOverlay(false)}
-        />
-      )}
+
 
       {showCancelConfirm && task && createPortal(
         <CancelTaskConfirmModal

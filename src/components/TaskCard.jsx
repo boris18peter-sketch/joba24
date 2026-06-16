@@ -19,6 +19,7 @@ import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
+import BoostPill from '@/components/BoostPill';
 
 
 function normalizeDate(d) {
@@ -213,167 +214,7 @@ const SCANNING_TEXTS = [
   'מרחיב חשיפה',
 ];
 
-// ── Boost Charge Pill ────────────────────────────────────────────────────────
-const BOOST_FILL_MS = 60 * 60 * 1000; // 1 hour
 
-function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
-  // Calculate elapsed seconds since the charge started
-  const getElapsedSec = () => {
-    const startTime = lastBoostAt || createdDate;
-    if (!startTime) return 0;
-    return (Date.now() - new Date(startTime).getTime()) / 1000;
-  };
-
-  const elapsedSec = getElapsedSec();
-  const totalSec = BOOST_FILL_MS / 1000; // 3600
-  const charged = elapsedSec >= totalSec;
-  // For display only when charged: show 100%
-  const pct = charged ? 100 : Math.round((elapsedSec / totalSec) * 100);
-
-  const [showConfirm, setShowConfirm] = useState(false);
-  // Re-render every minute so the % label stays current;
-  // when time runs out, forceUpdate causes re-render → charged becomes true → fill div switches to 100%
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    if (charged) return;
-    const remaining = Math.max(0, totalSec - elapsedSec) * 1000;
-    // Schedule an exact update when charging completes, plus periodic minute ticks
-    const flipTimer = setTimeout(() => setTick(n => n + 1), remaining + 100);
-    const iv = setInterval(() => setTick(n => n + 1), 60000);
-    return () => { clearTimeout(flipTimer); clearInterval(iv); };
-  }, [lastBoostAt, createdDate, charged]);
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-    if (!charged || loading) return;
-    setShowConfirm(true);
-  };
-
-  const iconColor = pct > 50 ? 'white' : '#7c3aed';
-  // negative delay = start animation mid-way (already elapsed time)
-  const animDelaySec = charged ? 0 : -elapsedSec;
-
-  return (
-    <>
-      <div
-        onClick={handleClick}
-        title={charged ? 'שגר איתות — 5 ג\'ובות' : `טוען... ${pct}%`}
-        style={{
-          height: 42, width: 42, borderRadius: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          overflow: 'hidden', position: 'relative',
-          border: `1.5px solid ${charged ? '#7c3aed' : '#c4b5fd'}`,
-          background: '#f5f3ff',
-          cursor: charged ? 'pointer' : 'default',
-          flexShrink: 0,
-        }}
-      >
-        {/* Liquid fill — CSS clip-path percentage, negative delay resumes from current position */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: charged ? '100%' : `${pct}%`,
-          background: charged
-            ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
-            : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
-          borderRadius: charged ? 8 : '0 0 8px 8px',
-          overflow: 'hidden',
-          transition: charged ? 'none' : undefined,
-        }}>
-          {/* Sine wave top edge — two overlapping waves */}
-          {!charged && <>
-            <div style={{
-              position: 'absolute', top: -5, left: 0, right: 0,
-              height: 10,
-              background: 'rgba(255,255,255,0.25)',
-              borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
-              animation: 'bWave1 1.6s ease-in-out infinite',
-            }} />
-            <div style={{
-              position: 'absolute', top: -4, left: 0, right: 0,
-              height: 8,
-              background: 'rgba(255,255,255,0.18)',
-              borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
-              animation: 'bWave2 2.1s ease-in-out infinite reverse',
-            }} />
-          </>}
-          {/* Rising bubbles */}
-          {!charged && [
-            { size: 3, left: '22%', delay: '0s', dur: '1.8s' },
-            { size: 4, left: '55%', delay: '0.5s', dur: '2.2s' },
-            { size: 2, left: '75%', delay: '1.1s', dur: '1.5s' },
-          ].map((b, i) => (
-            <div key={i} style={{
-              position: 'absolute', bottom: '5%',
-              width: b.size, height: b.size,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.7)',
-              left: b.left,
-              animation: `bRise ${b.dur} ease-in infinite`,
-              animationDelay: b.delay,
-            }} />
-          ))}
-        </div>
-
-        {/* Icon + % label */}
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-          {loading
-            ? <Loader2 size={14} color={iconColor} className="animate-spin" />
-            : <Zap size={15} color={iconColor} fill={charged ? iconColor : 'none'} strokeWidth={charged ? 0 : 2} />
-          }
-          {!charged && !loading && (
-            <span style={{ fontSize: 8, fontWeight: 900, color: iconColor, lineHeight: 1 }}>{pct}%</span>
-          )}
-        </div>
-      </div>
-
-      {showConfirm && createPortal(
-        <div className="mobile-sheet-overlay" onClick={() => setShowConfirm(false)}>
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>⚡ שגר איתות נוסף</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
-                האיתות ישלח לכל העובדים הרלוונטיים באזור שלך — על בסיס קטגוריה, ניסיון והיסטוריית פעילות — כדי להגביר חשיפה ולמשוך בקשות נוספות.
-              </div>
-              <div style={{ background: '#faf5ff', border: '1.5px solid #d8b4fe', borderRadius: 14, padding: '12px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>עלות: 5 ג'ובות</span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowConfirm(false); onBoost(e); }}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-                <Zap size={16} fill="white" /> שגר עכשיו — 5 ג'ובות
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); setShowConfirm(false); }}
-                style={{ width: '100%', height: 46, borderRadius: 16, background: 'none', border: '1px solid #e8edf5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                ביטול
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      <style>{`
-        @keyframes bWave1 {
-          0%   { transform: translateX(0%) scaleY(1); }
-          50%  { transform: translateX(-8%) scaleY(1.4); }
-          100% { transform: translateX(0%) scaleY(1); }
-        }
-        @keyframes bWave2 {
-          0%   { transform: translateX(0%) scaleY(1); }
-          50%  { transform: translateX(8%) scaleY(1.6); }
-          100% { transform: translateX(0%) scaleY(1); }
-        }
-        @keyframes bRise {
-          0%   { transform: translateY(0) scale(1); opacity: 0.8; }
-          80%  { opacity: 0.6; }
-          100% { transform: translateY(-120px) scale(0.4); opacity: 0; }
-        }
-      `}</style>
-    </>
-  );
-}
 
 // ── Scanning Label (no applicants state) ─────────────────────────────────────
 function ScanningLabel({ taskId }) {
@@ -432,7 +273,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [neededCredits, setNeededCredits] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
-  const [boostLoading, setBoostLoading] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   // Applicant count comes directly from task.applicants prop (kept in sync by Layout's single broadcaster)
@@ -532,24 +372,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   // Sync logic with TaskDetail: card pill counts from createdDate when never boosted (same as detail)
   const boostAvailableCard = isMyPublished && task.status === 'OPEN' && !task.worker_id;
 
-  const handleBoostCard = async (e) => {
-    e.stopPropagation();
-    if (boostLoading) return;
-    setBoostLoading(true);
-    const res = await base44.functions.invoke('boostTask', { taskId: task.id });
-    setBoostLoading(false);
-    if (res.data?.error === 'insufficient_credits') {
-      toast.error('אין מספיק ג\'ובות — נדרשות 5');
-      return;
-    }
-    if (!res.data?.success) {
-      toast.error('שגיאה בשיגור האיתות, נסה שוב');
-      return;
-    }
-    queryClient.invalidateQueries({ queryKey: ['me'] });
-    queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    setShowBoostOverlay(true);
-  };
+
 
   // Build badge labels (urgency handled separately)
   const badgeLabels = [];
@@ -793,7 +616,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               // Owner management controls — boost pill inline with button
               task.status === 'OPEN' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {boostAvailableCard && <BoostChargePill onBoost={handleBoostCard} loading={boostLoading} lastBoostAt={task.last_boost_at} createdDate={task.created_date} />}
+                  {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }} />}
                   <button
                     onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
                     style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
@@ -951,15 +774,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         />
       )}
 
-      {showBoostOverlay && (
-        <BoostOverlay
-          taskId={task.id}
-          taskTitle={task.title}
-          taskPrice={task.price}
-          taskCategory={task.category}
-          onDismiss={() => setShowBoostOverlay(false)}
-        />
-      )}
+
 
       {lightboxOpen && (() => {
         const allMedia = [
