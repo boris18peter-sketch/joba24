@@ -523,6 +523,49 @@ export const translations = {
     // Publish onboarding
     publish_task_onboard_title: 'פרסם משימה',
     publish_task_onboard_sub: 'קבל עזרה מאנשים בסביבתך תוך דקות. פרסם עכשיו — זה פשוט ומהיר.',
+    // Login banner
+    banner_need_help: 'צריכים עזרה?',
+    banner_post_line1: 'פרסמו משימה וקבלו בקשות מאנשים באזור שלכם.',
+    banner_post_highlight: 'פרסום תוך פחות מדקה.',
+    banner_earn_now: 'רוצה להרוויח עכשיו?',
+    banner_earn_line1: 'בכל יום משימות חדשות מחכות לך.',
+    banner_earn_line2: 'הגש בקשות למשימות באזור שלך, בצע אותן ',
+    banner_earn_highlight: 'ותרוויח.',
+    banner_btn: 'התחבר וקבל 🎁',
+    banner_credits: '{n} קרדיטים',
+    banner_trust: 'משתמשים מאומתים • דירוגים • חוויה בטוחה',
+    // Profile completion
+    profile_complete_title: 'השלם את הפרופיל שלך',
+    profile_complete_sub: 'ככל שתמלא יותר פרטים, נתאים לך משימות רלוונטיות יותר',
+    profile_complete_btn: 'מלא פרטי פרופיל עובד →',
+    // Stories
+    story_me_pill: 'אני',
+    story_views: 'צפיות בסטורי',
+    story_clicks: 'כניסות למשימה',
+    story_check_task: '🔍 בדוק את המשימה',
+    // InstantMatch popup
+    match_boost_title: '⚡ איתות חדש — משימה מתאימה לך',
+    match_new_title: 'משימה חדשה בקרבתך',
+    match_take_now: '🔥 קח עכשיו לפני שנגמר!',
+    match_view_now: '⚡ צפה במשימה מיד',
+    // Worker cancelled popup
+    popup_task_cancelled: 'המשימה בוטלה על ידי המפרסם',
+    popup_publisher_cancelled: 'המפרסם ביטל את המשימה',
+    popup_find_other_tasks: '💡 תוכל למצוא משימות אחרות בפיד',
+    popup_back_to_feed: 'חזור לפיד',
+    // Approval revoked popup
+    popup_approval_revoked: 'הבקשה בוטלה',
+    popup_approval_revoked_sub: 'המפרסם ביטל את בקשת העבודה שלך',
+    popup_apply_other_tasks: '💡 תוכל להגיש בקשות למשימות אחרות בפיד',
+    popup_got_it: 'הבנתי',
+    // Cancel success popup
+    popup_cancel_success: 'המשימה בוטלה',
+    popup_cancel_success_sub: 'המשימה בוטלה בהצלחה',
+    popup_cancel_success_check: '✓ המשימה בוטלה בהצלחה',
+    popup_cancel_success_detail: 'תוכל לחפש משימות נוספות בפיד',
+    popup_back_to_search: 'בחזרה לחיפוש:',
+    popup_discover_more: 'גלה עוד משימות מעניינות בפיד ובחר את הבאה שלך',
+    popup_returning_soon: 'מחזיר בעוד שניות...',
     },
 
     en: {
@@ -1085,6 +1128,49 @@ export const translations = {
     // Publish onboarding
     publish_task_onboard_title: 'Post a Task',
     publish_task_onboard_sub: 'Get help from people near you in minutes. Post now — it\'s simple and fast.',
+    // Login banner
+    banner_need_help: 'Need Help?',
+    banner_post_line1: 'Post a task and get requests from people in your area.',
+    banner_post_highlight: 'Post in under a minute.',
+    banner_earn_now: 'Want to Earn Now?',
+    banner_earn_line1: 'New tasks are waiting for you every day.',
+    banner_earn_line2: 'Apply to tasks in your area, complete them ',
+    banner_earn_highlight: 'and earn.',
+    banner_btn: 'Sign Up & Get 🎁',
+    banner_credits: '{n} Credits',
+    banner_trust: 'Verified Users • Ratings • Safe Experience',
+    // Profile completion
+    profile_complete_title: 'Complete Your Profile',
+    profile_complete_sub: 'The more details you fill in, the better tasks we\'ll match for you',
+    profile_complete_btn: 'Fill Worker Profile →',
+    // Stories
+    story_me_pill: 'Me',
+    story_views: 'Story Views',
+    story_clicks: 'Task Clicks',
+    story_check_task: '🔍 Check the Task',
+    // InstantMatch popup
+    match_boost_title: '⚡ New Signal — matching task for you',
+    match_new_title: 'New task near you',
+    match_take_now: '🔥 Grab it before it\'s gone!',
+    match_view_now: '⚡ View task now',
+    // Worker cancelled popup
+    popup_task_cancelled: 'Task cancelled by the poster',
+    popup_publisher_cancelled: 'The poster cancelled the task',
+    popup_find_other_tasks: '💡 You can find other tasks in the feed',
+    popup_back_to_feed: 'Back to Feed',
+    // Approval revoked popup
+    popup_approval_revoked: 'Approval Revoked',
+    popup_approval_revoked_sub: 'The poster cancelled your work request',
+    popup_apply_other_tasks: '💡 You can apply to other tasks in the feed',
+    popup_got_it: 'Got It',
+    // Cancel success popup
+    popup_cancel_success: 'Task Cancelled',
+    popup_cancel_success_sub: 'Task cancelled successfully',
+    popup_cancel_success_check: '✓ Task cancelled successfully',
+    popup_cancel_success_detail: 'You can look for other tasks in the feed',
+    popup_back_to_search: 'Back to search:',
+    popup_discover_more: 'Discover more interesting tasks in the feed',
+    popup_returning_soon: 'Returning in seconds...',
     // Expiry options
     expiry_never: 'No expiry',
     expiry_30min: '30 minutes',

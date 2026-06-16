@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Zap, X } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import { useQuery } from '@tanstack/react-query';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function getDistanceKm(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -49,6 +50,7 @@ function calcRelevanceScore({ task, currentUser, userLocation, myApplications, m
 }
 
 export default function InstantMatchPopup({ userLocation, currentUserId, activeCategory }) {
+  const { t } = useLanguage();
   const [popup, setPopup] = useState(null);
   const [countdown, setCountdown] = useState(DURATION);
   const timerRef = useRef(null);
@@ -197,7 +199,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
           {/* Middle: info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: isUrgent ? '#ef4444' : isBoosted ? '#7c3aed' : '#f59e0b', marginBottom: 3 }}>
-              {isBoosted ? '⚡ איתות חדש — משימה מתאימה לך' : 'משימה חדשה בקרבתך'} • {countdown}s
+              {isBoosted ? t('match_boost_title') : t('match_new_title')} • {countdown}s
             </div>
             <div style={{ fontWeight: 800, fontSize: 15, color: '#0f2b6b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
               {task.title}
@@ -246,7 +248,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               boxShadow: isUrgent ? '0 4px 16px rgba(239,68,68,0.35)' : '0 4px 16px rgba(245,158,11,0.35)',
             }}
           >
-            {isUrgent ? '🔥 קח עכשיו לפני שנגמר!' : '⚡ צפה במשימה מיד'}
+            {isUrgent ? t('match_take_now') : t('match_view_now')}
           </button>
         </div>
       </div>

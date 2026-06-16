@@ -1,7 +1,9 @@
 import { createPortal } from 'react-dom';
 import { X, AlertCircle } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function ApprovalRevokedPopup({ task, onClose }) {
+  const { t } = useLanguage();
   return createPortal(
     <div
       style={{
@@ -40,8 +42,8 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
           <div style={{ width: 68, height: 68, borderRadius: 22, background: '#fee2e2', border: '2px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <AlertCircle size={32} color="#dc2626" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>הבקשה בוטלה</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>המפרסם ביטל את בקשת העבודה שלך</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('popup_approval_revoked')}</div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>{t('popup_approval_revoked_sub')}</div>
         </div>
 
         {/* Task */}
@@ -55,12 +57,12 @@ export default function ApprovalRevokedPopup({ task, onClose }) {
         {/* Info */}
         <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: '#1a6fd4', lineHeight: 1.6, fontWeight: 600 }}>
-            💡 תוכל להגיש בקשות למשימות אחרות בפיד
+            {t('popup_apply_other_tasks')}
           </div>
         </div>
 
         <button onClick={onClose} style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
-          הבנתי
+          {t('popup_got_it')}
         </button>
       </div>
 

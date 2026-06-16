@@ -6,6 +6,7 @@ import { X, MapPin, Navigation, Eye, MousePointerClick } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { parseDescription } from '@/lib/descriptionParser';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function calcDistKm(userLoc, task) {
   if (!userLoc || !task.lat || !task.lng) return null;
@@ -38,7 +39,7 @@ function sortStories(stories) {
   });
 }
 
-function StoryCard({ task, isViewed, isOwn, onClick }) {
+function StoryCard({ task, isViewed, isOwn, onClick, t }) {
   const label = getCategoryLabel(task.category);
   const emoji = label.split(' ')[0];
   const currentPrice = calculateCurrentPrice(task);
@@ -75,7 +76,7 @@ function StoryCard({ task, isViewed, isOwn, onClick }) {
           </div>
         </div>
         {isOwn && (
-          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#fbbf24', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#7c2d12' }}>אני</div>
+          <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#fbbf24', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#7c2d12' }}>{t('story_me_pill')}</div>
         )}
       </div>
       <div style={{ background: isOwn ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 800, color: 'white' }}>₪{Math.round(currentPrice)}</div>
@@ -86,7 +87,7 @@ function StoryCard({ task, isViewed, isOwn, onClick }) {
   );
 }
 
-function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUserId }) {
+function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUserId, t }) {
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -329,14 +330,14 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
                 <Eye size={14} color="rgba(255,255,255,0.9)" />
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.views_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>צפיות בסטורי</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{t('story_views')}</div>
                 </div>
               </div>
               <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MousePointerClick size={14} color="rgba(255,255,255,0.9)" />
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 900, color: 'white', lineHeight: 1 }}>{task.clicks_count || 0}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>כניסות למשימה</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{t('story_clicks')}</div>
                 </div>
               </div>
             </div>
@@ -348,7 +349,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
             onTouchStart={e => e.stopPropagation()}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none' }}
           >
-            🔍 בדוק את המשימה
+            {t('story_check_task')}
             {!isOwnerStory && (
               <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 9px', fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', gap: 3 }}>
                 {applyCost}
@@ -363,6 +364,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 }
 
 export default function StoriesBar({ filterCategory = null, currentUserId = null }) {
+  const { t } = useLanguage();
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [viewedIds, setViewedIds] = useState(() => getViewedIds());
@@ -445,6 +447,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
               isViewed={viewedIds.has(task.id)}
               isOwn={!!currentUserId && task.client_id === currentUserId}
               onClick={() => handleOpen(i)}
+              t={t}
             />
           ))}
         </div>
@@ -456,6 +459,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
           userLocation={userLocation}
           currentUserId={currentUserId}
           onClose={handleClose}
+          t={t}
         />
       )}
     </>

@@ -1,9 +1,11 @@
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function WorkerCancelledPopup({ task, onClose }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const handleClose = () => { onClose(); navigate('/'); };
 
   return createPortal(
@@ -44,8 +46,8 @@ export default function WorkerCancelledPopup({ task, onClose }) {
           <div style={{ width: 68, height: 68, borderRadius: 22, background: '#fff7ed', border: '2px solid #fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <AlertTriangle size={32} color="#f97316" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>המשימה בוטלה על ידי המפרסם</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>המפרסם ביטל את המשימה</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('popup_task_cancelled')}</div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>{t('popup_publisher_cancelled')}</div>
         </div>
 
         {/* Task */}
@@ -59,12 +61,12 @@ export default function WorkerCancelledPopup({ task, onClose }) {
         {/* Info */}
         <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: '#1a6fd4', lineHeight: 1.6, fontWeight: 600 }}>
-            💡 תוכל למצוא משימות אחרות בפיד
+            {t('popup_find_other_tasks')}
           </div>
         </div>
 
         <button onClick={handleClose} style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
-          חזור לפיד
+          {t('popup_back_to_feed')}
         </button>
       </div>
 

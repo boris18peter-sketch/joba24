@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { UserCog, X } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const DISMISSED_KEY = 'joba24_profile_banner_dismissed';
 
 export default function ProfileCompletionBanner({ me }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [dismissed, setDismissed] = useState(() => !!localStorage.getItem(DISMISSED_KEY));
 
   if (!me || dismissed) return null;
@@ -49,9 +51,9 @@ export default function ProfileCompletionBanner({ me }) {
           <UserCog size={22} color="white" strokeWidth={1.8} />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 900, color: 'white', marginBottom: 2 }}>השלם את הפרופיל שלך</div>
+          <div style={{ fontSize: 14, fontWeight: 900, color: 'white', marginBottom: 2 }}>{t('profile_complete_title')}</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45 }}>
-            ככל שתמלא יותר פרטים, נתאים לך משימות רלוונטיות יותר
+            {t('profile_complete_sub')}
           </div>
         </div>
       </div>
@@ -72,7 +74,7 @@ export default function ProfileCompletionBanner({ me }) {
           boxShadow: '0 3px 10px rgba(251,191,36,0.4)',
         }}
       >
-        מלא פרטי פרופיל עובד →
+        {t('profile_complete_btn')}
       </button>
     </div>
   );

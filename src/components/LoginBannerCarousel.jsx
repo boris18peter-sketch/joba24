@@ -2,33 +2,35 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { Plus } from 'lucide-react';
-
-const banners = [
-  {
-    bg: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
-    title: 'צריכים עזרה?',
-    lines: [
-      'פרסמו משימה וקבלו בקשות מאנשים באזור שלכם.',
-      { text: '', highlight: 'פרסום תוך פחות מדקה.' },
-    ],
-    btn: 'התחבר וקבל 🎁',
-    btnBg: '#fbbf24',
-    btnColor: '#1a6fd4',
-  },
-  {
-    bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    title: 'רוצה להרוויח עכשיו?',
-    lines: [
-      'בכל יום משימות חדשות מחכות לך.',
-      { text: 'הגש בקשות למשימות באזור שלך, בצע אותן ', highlight: 'ותרוויח.' },
-    ],
-    btn: 'התחבר וקבל 🎁',
-    btnBg: '#fbbf24',
-    btnColor: '#047857',
-  },
-];
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCredits, activeTab }) {
+  const { t } = useLanguage();
+
+  const banners = [
+    {
+      bg: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
+      title: t('banner_need_help'),
+      lines: [
+        t('banner_post_line1'),
+        { text: '', highlight: t('banner_post_highlight') },
+      ],
+      btn: t('banner_btn'),
+      btnBg: '#fbbf24',
+      btnColor: '#1a6fd4',
+    },
+    {
+      bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+      title: t('banner_earn_now'),
+      lines: [
+        t('banner_earn_line1'),
+        { text: t('banner_earn_line2'), highlight: t('banner_earn_highlight') },
+      ],
+      btn: t('banner_btn'),
+      btnBg: '#fbbf24',
+      btnColor: '#047857',
+    },
+  ];
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Banner index: 0 = blue (my_published), 1 = green (available)
@@ -70,7 +72,7 @@ export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCr
             onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <span>{user?.worker_credits ?? 0} קרדיטים</span>
+            <span>{t('banner_credits').replace('{n}', user?.worker_credits ?? 0)}</span>
             <Plus size={16} strokeWidth={2.5} />
           </button>
         ) : (
@@ -93,7 +95,7 @@ export default function LoginBannerCarousel({ isAuthenticated, user, onOpenBuyCr
 
         {/* Trust badges */}
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 10, fontWeight: 600, letterSpacing: 0.4 }}>
-          משתמשים מאומתים • דירוגים • חוויה בטוחה
+          {t('banner_trust')}
         </div>
 
         {/* Tab indicator dots */}

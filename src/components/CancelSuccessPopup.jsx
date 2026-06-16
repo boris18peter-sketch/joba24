@@ -2,9 +2,11 @@ import { createPortal } from 'react-dom';
 import { X, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function CancelSuccessPopup({ task, onClose }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const timer = setTimeout(() => { onClose(); navigate('/'); }, 4000);
@@ -49,29 +51,29 @@ export default function CancelSuccessPopup({ task, onClose }) {
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#dcfce7', border: '2px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', animation: 'successPop 0.4s cubic-bezier(0.34,1.6,0.64,1)' }}>
             <CheckCircle size={36} color="#059669" strokeWidth={2} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>המשימה בוטלה</div>
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>המשימה בוטלה בהצלחה</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('popup_cancel_success')}</div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7 }}>{t('popup_cancel_success_sub')}</div>
         </div>
 
         {/* Info - success */}
         <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14, padding: '14px 16px', marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginBottom: 4 }}>✓ המשימה בוטלה בהצלחה</div>
-          <div style={{ fontSize: 12, color: '#15803d' }}>תוכל לחפש משימות נוספות בפיד</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#059669', marginBottom: 4 }}>{t('popup_cancel_success_check')}</div>
+          <div style={{ fontSize: 12, color: '#15803d' }}>{t('popup_cancel_success_detail')}</div>
         </div>
 
         {/* Info - blue */}
         <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 14, padding: '12px 16px', marginBottom: 24 }}>
           <div style={{ fontSize: 12, color: '#1a6fd4', lineHeight: 1.6, fontWeight: 600 }}>
-            <strong>בחזרה לחיפוש:</strong><br />
-            גלה עוד משימות מעניינות בפיד ובחר את הבאה שלך
+            <strong>{t('popup_back_to_search')}</strong><br />
+            {t('popup_discover_more')}
           </div>
         </div>
 
         <button onClick={onClose} style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          חזור לפיד
+          {t('popup_back_to_feed')}
         </button>
 
-        <div style={{ textAlign: 'center', marginTop: 10, fontSize: 12, color: '#94a3b8' }}>מחזיר בעוד שניות...</div>
+        <div style={{ textAlign: 'center', marginTop: 10, fontSize: 12, color: '#94a3b8' }}>{t('popup_returning_soon')}</div>
       </div>
 
       <style>{`
