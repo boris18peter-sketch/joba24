@@ -152,15 +152,15 @@ export default function WorkerProfile() {
             </div>
             <div className="grid grid-cols-3 gap-2 mt-3">
               <div className="bg-white/10 rounded-xl p-2 text-center">
-                <div className="text-sm font-bold">{me?.score_tasks || 0}</div>
+                <div className="text-sm font-bold">{currentUser?.score_tasks || 0}</div>
                 <div className="text-[10px] opacity-75">משימות</div>
               </div>
               <div className="bg-white/10 rounded-xl p-2 text-center">
-                <div className="text-sm font-bold">{me?.score_speed || 0}</div>
+                <div className="text-sm font-bold">{currentUser?.score_speed || 0}</div>
                 <div className="text-[10px] opacity-75">מהירות</div>
               </div>
               <div className="bg-white/10 rounded-xl p-2 text-center">
-                <div className="text-sm font-bold">{me?.score_quality || 0}</div>
+                <div className="text-sm font-bold">{currentUser?.score_quality || 0}</div>
                 <div className="text-[10px] opacity-75">ביצוע</div>
               </div>
             </div>
