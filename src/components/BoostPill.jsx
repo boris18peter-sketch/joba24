@@ -36,23 +36,20 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
     return { pct: Math.round((elapsed / HOUR_MS) * 100), charged: false };
   };
 
-  // Update every second while not charged for smooth fill
+  // Update every second — restart cleanly whenever the task timestamps change
   useEffect(() => {
-    const update = () => {
+    const id = setInterval(() => {
       const { pct: newPct, charged: newCharged } = calcPct();
       setPct(newPct);
       setCharged(newCharged);
-      if (newCharged && intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-    update(); // immediate
-    intervalRef.current = setInterval(update, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [task.last_boost_at, task.created_date]);
+    }, 1000);
+    // Run once immediately on mount / timestamp change
+    const { pct: initPct, charged: initCharged } = calcPct();
+    setPct(initPct);
+    setCharged(initCharged);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.last_boost_at, task.created_date, task.id]);
 
   const handleBoost = async () => {
     if (loading) return;

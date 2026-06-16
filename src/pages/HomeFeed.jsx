@@ -331,7 +331,7 @@ export default function HomeFeed() {
         if (hasActiveApp) continue;
 
         const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
-        if (ageMinutes < 5) continue;
+        if (ageMinutes < 10) continue;
         const intervals = Math.min(Math.floor(ageMinutes / 5), 12);
         const base = task.base_price || task.price;
         const step = (task.max_price - base) / 12;
