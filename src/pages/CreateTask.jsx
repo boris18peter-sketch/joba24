@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
-import SelectionSheet from '@/components/SelectionSheet';
+import TaskPublishedCelebration from '@/components/celebration/TaskPublishedCelebration';
 
 const DEFAULT_FORM = {
   title: '',
@@ -79,6 +79,8 @@ export default function CreateTask() {
   const audioChunksRef = useRef([]);
   const submittingRef = useRef(false);
   const hasSentInitialRef = useRef(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [publishedTask, setPublishedTask] = useState(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -289,9 +291,9 @@ export default function CreateTask() {
 
     setPublishing(false);
     submittingRef.current = false;
-    toast.success('המשימה פורסמה בהצלחה! ⚡');
     if (created?.id) {
-      navigate(`/task/${created.id}`);
+      setPublishedTask({ id: created.id, title: form.title, price: form.price, location_name: form.location_name });
+      setShowCelebration(true);
     } else {
       navigate('/');
     }
@@ -319,6 +321,8 @@ export default function CreateTask() {
       setForm(prev => ({ ...prev, is_story: !prev.is_story }));
     } else if (feature.includes('העלאת מחיר') || feature.includes('אוטומטית')) {
       setForm(prev => ({ ...prev, auto_bump_enabled: !prev.auto_bump_enabled }));
+    } else if (feature.includes('חשבונית')) {
+      setForm(prev => ({ ...prev, requires_invoice: !prev.requires_invoice }));
     }
   };
 
@@ -449,6 +453,7 @@ export default function CreateTask() {
                   let active = false;
                   if (feat.includes('סטורי')) active = form.is_story;
                   else if (feat.includes('העלאת מחיר') || feat.includes('אוטומטית')) active = form.auto_bump_enabled;
+                  else if (feat.includes('חשבונית')) active = form.requires_invoice;
                   return (
                     <button
                       key={idx}
@@ -657,6 +662,19 @@ export default function CreateTask() {
           </div>
         </div>
       </div>
+      {/* Celebration */}
+      {showCelebration && publishedTask && (
+        <TaskPublishedCelebration
+          visible={showCelebration}
+          taskTitle={publishedTask.title}
+          taskPrice={publishedTask.price}
+          taskLocation={publishedTask.location_name}
+          onNavigate={() => {
+            setShowCelebration(false);
+            navigate(`/task/${publishedTask.id}`);
+          }}
+        />
+      )}
     </div>
   );
 }
