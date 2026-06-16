@@ -28,10 +28,14 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
   const intervalRef = useRef(null);
 
   const calcPct = () => {
-    // If never boosted before — always ready (first boost has no cooldown)
-    if (!task.last_boost_at) return { pct: 100, charged: true };
-    // After a boost — count 1 hour cooldown from last_boost_at
-    const elapsed = Date.now() - new Date(task.last_boost_at).getTime();
+    // Reference point: last boost if exists, otherwise task creation
+    const refTime = task.last_boost_at
+      ? new Date(task.last_boost_at).getTime()
+      : task.created_date
+        ? new Date(task.created_date).getTime()
+        : null;
+    if (!refTime) return { pct: 100, charged: true };
+    const elapsed = Date.now() - refTime;
     if (elapsed >= HOUR_MS) return { pct: 100, charged: true };
     return { pct: Math.round((elapsed / HOUR_MS) * 100), charged: false };
   };

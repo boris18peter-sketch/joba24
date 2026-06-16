@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2 } from 'lucide-react';
+import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -29,6 +29,7 @@ export default function Profile() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showTaskHistory, setShowTaskHistory] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const photoInputRef = useRef(null);
 
@@ -233,7 +234,7 @@ export default function Profile() {
           { icon: Briefcase, label: 'פרופיל עובד', sub: 'מקצוע, תעודות, ערים', to: '/worker-profile', color: '#1a6fd4' },
           { icon: CreditCard, label: 'תנועת קרדיטים', sub: 'יתרה, תשלומים, היסטוריה', to: '/wallet', color: '#16a34a' }].
           map(({ icon: Icon, label, sub, to, color }, i, arr) =>
-          <Link key={to} to={to} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
+          <Link key={to} to={to} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--border-1)' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon size={17} color={color} />
               </div>
@@ -244,6 +245,16 @@ export default function Profile() {
               <ChevronLeft size={16} color="#ccc" />
             </Link>
           )}
+          <button onClick={() => setShowTaskHistory(true)} style={{ all: 'unset', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Clock size={17} color="#7c3aed" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>היסטוריית משימות</div>
+              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>משימות שביצעתי — {completedCount} הושלמו</div>
+            </div>
+            <ChevronLeft size={16} color="#ccc" />
+          </button>
         </div>
 
         {/* Skills / Categories */}
@@ -306,6 +317,42 @@ export default function Profile() {
           ראה את כל הביקורות שלי ({reviews.length}) →
         </button>
         }
+
+        {/* Task History Modal */}
+        {showTaskHistory && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowTaskHistory(false)}>
+            <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)', flexShrink: 0 }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריית משימות ({completedCount})</span>
+                <button onClick={() => setShowTaskHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={16} color="#64748b" />
+                </button>
+              </div>
+              <div style={{ overflowY: 'auto', padding: '12px 16px 24px', display: 'flex', flexDirection: 'column', gap: 8 }} dir="rtl">
+                {workerTasks.filter(t => t.status === 'COMPLETED').length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>אין משימות שהושלמו עדיין</div>
+                  </div>
+                ) : workerTasks.filter(t => t.status === 'COMPLETED').map(task => (
+                  <div key={task.id} style={{ background: 'var(--surface-3)', borderRadius: 14, padding: '12px 14px', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <CheckCircle size={18} color="#16a34a" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{task.city || task.location_name || ''}</div>
+                    </div>
+                    <div style={{ textAlign: 'left', flexShrink: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: '#16a34a' }}>₪{task.price}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{task.completed_at ? new Date(task.completed_at).toLocaleDateString('he-IL') : ''}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* All Reviews Modal */}
         {showAllReviews && (

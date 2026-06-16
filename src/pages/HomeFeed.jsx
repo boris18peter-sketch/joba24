@@ -7,6 +7,7 @@ import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/PullToRefreshIndicator';
 
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
+import RatingModal from '@/components/RatingModal';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
@@ -56,6 +57,7 @@ export default function HomeFeed() {
   const queryClient = useQueryClient();
 
   const { user: me, isAuthenticated } = useAuth();
+  const [ratingTask, setRatingTask] = useState(null); // task to rate after completion
 
   // My published tasks
   const { data: myTasks = [] } = useQuery({
@@ -93,6 +95,26 @@ export default function HomeFeed() {
 
   // Active task I published that is currently TAKEN
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
+
+  // Track prev worker task status to detect completion → show rating popup
+  const prevWorkerTaskRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!activeWorkerTask && prevWorkerTaskRef.current?.status === 'TAKEN') {
+      // Worker task just disappeared (completed/cancelled) — check if completed
+      const prev = prevWorkerTaskRef.current;
+      const ratedKey = `rated_${prev.id}`;
+      if (!localStorage.getItem(ratedKey)) {
+        // Fetch fresh to confirm it's COMPLETED
+        base44.entities.Task.filter({ id: prev.id }, '-created_date', 1)
+          .then(results => {
+            const fresh = results?.[0];
+            if (fresh?.status === 'COMPLETED') setRatingTask(fresh);
+          })
+          .catch(() => {});
+      }
+    }
+    prevWorkerTaskRef.current = activeWorkerTask;
+  }, [activeWorkerTask]);
 
   // My applications — to show status on feed cards
   const { data: myApplications = [] } = useQuery({
@@ -733,6 +755,18 @@ export default function HomeFeed() {
 
 
       <FilterSheet open={showFilters} onClose={() => setShowFilters(false)} filters={filters} onApply={setFilters} hasForYou={behavioralProfile?.hasStrongPattern} />
+
+      {/* Rating popup — shown when worker's task completes while on the feed */}
+      {ratingTask && me && (
+        <RatingModal
+          task={ratingTask}
+          me={me}
+          onClose={() => {
+            localStorage.setItem(`rated_${ratingTask.id}`, '1');
+            setRatingTask(null);
+          }}
+        />
+      )}
 
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.categories?.[0] || null} />
       <style>{`
