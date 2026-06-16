@@ -21,6 +21,7 @@ import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function HomeFeed() {
   const navigate = useNavigate();
@@ -49,10 +50,12 @@ export default function HomeFeed() {
   );
   const [tapHintTaskId, setTapHintTaskId] = useState(null);
 
+  const { t, isRTL } = useLanguage();
+
   const MY_PUB_TABS = [
-    { key: 'active',    label: 'פעילות',  statuses: ['OPEN', 'TAKEN'] },
-    { key: 'completed', label: 'הושלמו',  statuses: ['COMPLETED'] },
-    { key: 'other',     label: 'ארכיון',  statuses: ['CANCELLED', 'EXPIRED'] },
+    { key: 'active',    label: t('tab_available'),  statuses: ['OPEN', 'TAKEN'] },
+    { key: 'completed', label: t('tab_my_tasks'),    statuses: ['COMPLETED'] },
+    { key: 'other',     label: '📦',                 statuses: ['CANCELLED', 'EXPIRED'] },
   ];
   const queryClient = useQueryClient();
 
@@ -545,20 +548,20 @@ export default function HomeFeed() {
   };
 
   return (
-    <div style={{ background: 'var(--surface-1)', minHeight: '100%' }} dir="rtl">
+    <div style={{ background: 'var(--surface-1)', minHeight: '100%' }} dir={isRTL ? 'rtl' : 'ltr'}>
       <PullToRefreshIndicator refreshing={refreshing} pullProgress={pullProgress} />
       {/* Login Banner Carousel — color depends on active tab */}
       {!isAuthenticated && <LoginBannerCarousel activeTab={activeTab} />}
 
       {/* Segmented Control Tabs */}
-      <div dir="rtl" style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
         <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
           <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'my_published' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
           <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
-            פרסם משימה
+            {t('nav_create_task').replace('+ ', '')}
             {hasNewApplicants && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 12, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white', animation: 'pulseRedDot 1.5s infinite' }} />}
           </button>
-          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>משימות זמינות</button>
+          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>{t('all_tasks')}</button>
         </div>
       </div>
 
@@ -587,7 +590,7 @@ export default function HomeFeed() {
                 {/* Scrollable row: input + category chips */}
                 <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
                 <div className="cat-scroll" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', minWidth: 0 }}>
-                 <input placeholder="חיפוש משימות..." value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 150)} onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+                 <input placeholder={t('search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} onFocus={() => setSearchFocused(true)} onBlur={() => setTimeout(() => setSearchFocused(false), 150)} onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
                    style={{ flexShrink: 0, minWidth: (filters.categories?.length > 0) ? 55 : 110, width: (filters.categories?.length > 0) ? 55 : undefined, height: 28, border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)' }} />
                  {(filters.categories || []).map(cat => (
                    <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 7px 3px 5px', borderRadius: 8, background: '#eff6ff', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1a6fd4', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -642,9 +645,9 @@ export default function HomeFeed() {
             displayedTasks.length === 0 ?
               <div className="text-center py-16">
                 <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
-                <p className="font-semibold text-gray-700">לא נמצאו משימות</p>
-                <p className="text-sm text-gray-400 mt-1">נסה לשנות את הפילטרים</p>
-                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>נקה חיפוש</button>}
+                <p className="font-semibold text-gray-700">{t('no_tasks')}</p>
+                <p className="text-sm text-gray-400 mt-1">{t('no_tasks_sub')}</p>
+                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>{t('filter')}</button>}
               </div> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {displayedTasks.map((task, index) => {
@@ -702,7 +705,7 @@ export default function HomeFeed() {
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
-                  <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>אין משימות כאן</p>
+                  <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>{t('no_tasks')}</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

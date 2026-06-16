@@ -1,32 +1,34 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-
-const TYPES = {
-  new_message:           { emoji: '💬', title: (n) => `הודעה חדשה מ-${n.senderName || 'משתמש'}`,       body: (n) => n.preview || 'לחץ לפתיחת השיחה',                         link: (n) => n.taskId ? `/chat/${n.taskId}` : null },
-  task_taken:            { emoji: '🎉', title: ()  => 'עובד זמין וממתין לאישורך',                        body: (n) => n.taskTitle ? `"${n.taskTitle}" — לחץ לאישור` : 'לחץ לאישור', link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  application_received:  { emoji: '✋', title: ()  => 'בקשה חדשה התקבלה',                               body: (n) => n.taskTitle ? `"${n.taskTitle}" — לחץ לבדוק` : 'לחץ לבדוק',  link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  application_approved:  { emoji: '🎯', title: ()  => 'הבקשה שלך אושרה!',                              body: (n) => n.taskTitle ? `"${n.taskTitle}" — לחץ לצאת לדרך` : 'לחץ לצאת לדרך', link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  application_sent:      { emoji: '📤', title: ()  => 'בקשתך נשלחה בהצלחה',                            body: ()  => 'ממתין לאישור המפרסם',                                           link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  application_rejected:  { emoji: '❌', title: ()  => 'הבקשה נדחתה',                                   body: (n) => n.taskTitle ? `"${n.taskTitle}"` : 'הקרדיטים הוחזרו',            link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  worker_on_the_way:     { emoji: '🚗', title: ()  => 'העובד יצא לדרך אליך',                           body: (n) => n.taskTitle ? `"${n.taskTitle}"` : 'מגיע אליך עכשיו',             link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  worker_arrived:        { emoji: '📍', title: ()  => 'העובד הגיע למיקום',                             body: (n) => n.taskTitle ? `"${n.taskTitle}"` : 'עומד לפתחך',                  link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  worker_done:           { emoji: '✅', title: ()  => 'העובד סיים את המשימה',                          body: (n) => n.taskTitle ? `"${n.taskTitle}" — אשר ושחרר תשלום` : 'אשר ושחרר תשלום', link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  new_review:            { emoji: '⭐', title: (n) => `ביקורת חדשה התקבלה`,                            body: (n) => n.preview || 'לחץ לצפייה בפרופיל',                               link: () => null },
-  task_cancelled_worker: { emoji: '🚫', title: ()  => 'המשימה בוטלה על ידי המפרסם',                   body: (n) => n.taskTitle ? `"${n.taskTitle}"` : '',                            link: () => null },
-  approval_revoked:      { emoji: '↩️', title: ()  => 'האישור שלך בוטל',                              body: (n) => n.taskTitle ? `"${n.taskTitle}" — המשימה חזרה לפתוחה` : '',       link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  worker_left_task:      { emoji: '🚪', title: (n) => `${n.workerName || 'העובד'} עזב את המשימה`,     body: (n) => n.taskTitle ? `"${n.taskTitle}" — פתוחה שוב` : '',               link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-  no_show_reported:      { emoji: '⚠️', title: ()  => 'דווחת על אי-הופעה',                            body: (n) => n.taskTitle ? `"${n.taskTitle}"` : 'מדד האמינות עודכן',            link: () => null },
-  boost_available:       { emoji: '⚡', title: ()  => 'הגיע הזמן לבוסט!',                              body: (n) => n.taskTitle ? `"${n.taskTitle}" — שגר איתות לעובדים` : 'הגדל חשיפה וקבל עוד בקשות', link: (n) => n.taskId ? `/task/${n.taskId}` : null },
-};
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function LiveNotificationPopup({ notification, onClose }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(100);
   const [swipeY, setSwipeY] = useState(0);
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const DURATION = 7500;
   const touchStartY = useRef(null);
+
+  const TYPES = {
+    new_message:           { emoji: '💬', title: (n) => `${t('notif_new_message')}${n.senderName || ''}`,   body: (n) => n.preview || t('notif_preview'),                link: (n) => n.taskId ? `/chat/${n.taskId}` : null },
+    task_taken:            { emoji: '🎉', title: ()  => t('notif_task_taken'),                               body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_click_approve')}` : t('notif_click_approve'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    application_received:  { emoji: '✋', title: ()  => t('notif_app_received'),                             body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_check')}` : t('notif_check'),  link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    application_approved:  { emoji: '🎯', title: ()  => t('notif_app_approved'),                            body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_start')}` : t('notif_start'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    application_sent:      { emoji: '📤', title: ()  => t('notif_app_sent'),                                body: ()  => t('notif_waiting_publisher'),                     link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    application_rejected:  { emoji: '❌', title: ()  => t('notif_app_rejected'),                            body: (n) => n.taskTitle ? `"${n.taskTitle}"` : t('notif_credits_returned'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    worker_on_the_way:     { emoji: '🚗', title: ()  => t('notif_on_the_way'),                              body: (n) => n.taskTitle ? `"${n.taskTitle}"` : t('notif_worker_coming'),  link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    worker_arrived:        { emoji: '📍', title: ()  => t('notif_arrived'),                                 body: (n) => n.taskTitle ? `"${n.taskTitle}"` : t('notif_at_door'),           link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    worker_done:           { emoji: '✅', title: ()  => t('notif_done'),                                    body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_confirm_payment')}` : t('notif_confirm_payment'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    new_review:            { emoji: '⭐', title: ()  => t('notif_new_review'),                              body: (n) => n.preview || t('notif_view_profile'),             link: () => null },
+    task_cancelled_worker: { emoji: '🚫', title: ()  => t('notif_task_cancelled'),                          body: (n) => n.taskTitle ? `"${n.taskTitle}"` : '',            link: () => null },
+    approval_revoked:      { emoji: '↩️', title: ()  => t('notif_approval_revoked'),                       body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_back_to_open')}` : '', link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    worker_left_task:      { emoji: '🚪', title: (n) => `${n.workerName || ''} ${t('notif_worker_left')}`, body: (n) => n.taskTitle ? `"${n.taskTitle}"` : '',            link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    no_show_reported:      { emoji: '⚠️', title: ()  => t('notif_no_show'),                                body: (n) => n.taskTitle ? `"${n.taskTitle}"` : t('notif_trust_updated'), link: () => null },
+    boost_available:       { emoji: '⚡', title: ()  => t('notif_boost_available'),                        body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_boost_sub')}` : t('notif_boost_amplify'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+  };
 
   useEffect(() => {
     const start = Date.now();
@@ -61,7 +63,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
 
   return (
     <div
-      dir="rtl"
+      dir="auto"
       style={{ padding: '8px 12px', transform: `translateY(${swipeY}px)`, transition: swipeY === 0 ? 'transform 0.22s ease' : 'none' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -87,13 +89,11 @@ export default function LiveNotificationPopup({ notification, onClose }) {
           cursor: link ? 'pointer' : 'default',
         }}
       >
-        {/* Progress bar */}
         <div style={{ height: 3, background: 'rgba(0,0,0,0.06)' }}>
           <div style={{ height: '100%', background: '#1a6fd4', width: `${progress}%`, transition: 'width 0.05s linear' }} />
         </div>
 
         <div style={{ padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Emoji */}
           <div style={{
             width: 46, height: 46, borderRadius: 14,
             background: '#f4f7fb',
@@ -103,7 +103,6 @@ export default function LiveNotificationPopup({ notification, onClose }) {
             {cfg.emoji}
           </div>
 
-          {/* Text */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 900, fontSize: 15, color: '#0f1e40', marginBottom: 3, lineHeight: 1.25 }}>
               {cfg.title(notification)}
@@ -113,7 +112,6 @@ export default function LiveNotificationPopup({ notification, onClose }) {
             </div>
           </div>
 
-          {/* Close */}
           <button
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
             style={{ width: 26, height: 26, borderRadius: 9, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}

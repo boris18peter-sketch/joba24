@@ -4,23 +4,28 @@ import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useState } from 'react';
-
 import LoginPromptModal from '@/components/LoginPromptModal';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useLanguage } from '@/lib/LanguageContext';
 
 
-const navItems = [
-{ to: '/', icon: Home, label: 'פיד משימות' },
-{ to: '/map', icon: Map, label: 'מפת משימות' },
-{ to: '/chats', icon: MessageCircle, label: "צ'אטים" },
-{ to: '/notifications', icon: Bell, label: 'התראות' },
-{ to: '/daily-goal', icon: Target, label: 'מטרת היום 🎯' },
-{ to: '/leaderboard', icon: Trophy, label: 'לוח מובילים' }];
+// navItems built inside component using t()
 
 
 export default function SideMenu({ open, onClose }) {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+  const { t } = useLanguage();
+
+  const navItems = [
+    { to: '/', icon: Home, label: t('nav_feed') },
+    { to: '/map', icon: Map, label: t('nav_map') },
+    { to: '/chats', icon: MessageCircle, label: t('nav_chats') },
+    { to: '/notifications', icon: Bell, label: t('nav_notifications') },
+    { to: '/daily-goal', icon: Target, label: t('nav_daily_goal') },
+    { to: '/leaderboard', icon: Trophy, label: t('nav_leaderboard') },
+  ];
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -64,7 +69,7 @@ export default function SideMenu({ open, onClose }) {
             </div>
             <div>
               <div style={{ fontWeight: 900, fontSize: 18, color: 'white', letterSpacing: -0.5 }}>Joba<span style={{ color: '#fbbf24' }}>24</span></div>
-              <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>משימות מהירות בכל רחבי הארץ</div>
+              <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 500, marginTop: 1 }}>{t('nav_subtitle')}</div>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -87,7 +92,7 @@ export default function SideMenu({ open, onClose }) {
           }}>
             
               <User size={18} style={{ opacity: location.pathname === '/profile' ? 1 : 0.7 }} />
-              פרופיל
+              {t('nav_profile')}
             </Link> :
 
           <button
@@ -110,7 +115,7 @@ export default function SideMenu({ open, onClose }) {
             }}>
             
               <User size={16} />
-              התחבר עכשיו
+              {t('login_now')}
             </button>
           }
 
@@ -145,7 +150,7 @@ export default function SideMenu({ open, onClose }) {
             opacity: 0.85
           }}>
               <ShieldCheck size={18} />
-              דשבורד מנהל
+              {t('nav_admin')}
             </Link>
           }
           {/* Agent link — shown only to agents */}
@@ -159,7 +164,7 @@ export default function SideMenu({ open, onClose }) {
             borderLeft: location.pathname === '/agent-dashboard' ? '3px solid #a855f7' : '3px solid transparent',
           }}>
               <TrendingUp size={18} />
-              דשבורד סוכן
+              {t('nav_agent')}
             </Link>
           }
         </nav>
@@ -179,12 +184,15 @@ export default function SideMenu({ open, onClose }) {
             }}>
             
             
-            + פרסם משימה
+            {t('nav_create_task')}
           </Link>
+          <div style={{ marginBottom: 12 }}>
+            <LanguageSwitcher onClose={onClose} />
+          </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
-            <Link to="/faq" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>שאלות ותשובות</Link>
+            <Link to="/faq" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>{t('nav_faq')}</Link>
             <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 12 }}>|</span>
-            <Link to="/terms" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>תנאי שימוש</Link>
+            <Link to="/terms" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>{t('nav_terms')}</Link>
           </div>
         </div>
       </div>

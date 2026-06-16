@@ -8,6 +8,7 @@ import CreditBalancePill from '@/components/CreditBalancePill';
 import { useState } from 'react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function AppHeader({ onOpenMenu }) {
   const location = useLocation();
@@ -15,6 +16,7 @@ export default function AppHeader({ onOpenMenu }) {
   const { isAuthenticated } = useAuth();
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const { t, isRTL } = useLanguage();
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -25,7 +27,7 @@ export default function AppHeader({ onOpenMenu }) {
   return (
     <>
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           position: 'sticky', top: 0, zIndex: 40,
           background: 'var(--header-bg)',
@@ -70,7 +72,7 @@ export default function AppHeader({ onOpenMenu }) {
                 boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
               }}
             >
-              התחבר עכשיו
+              {t('login_now')}
             </button>
           )}
           <button
