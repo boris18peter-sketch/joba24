@@ -120,7 +120,7 @@ function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChan
         {uploading
           ? <Loader2 size={22} className="animate-spin" color="#1a6fd4" />
           : <Plus size={22} color="#1a6fd4" strokeWidth={2.5} />}
-        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>הוסף תמונות / סרטון</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{t('add_photos_video')}</span>
       </button>
       <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
     </div>
@@ -1357,7 +1357,6 @@ export default function CreateTask() {
                   : isReady
                     ? (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_now')} ✓</>)
                     : (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_new_task')}</>)}
-                }
               </button>
               {!isEditMode && <SocialProofBar />}
             </div>
