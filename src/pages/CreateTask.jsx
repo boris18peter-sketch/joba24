@@ -25,6 +25,7 @@ import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
+import TaskChatInterface from '@/components/TaskChatInterface';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -412,6 +413,7 @@ export default function CreateTask() {
   };
   const [showNoCreditsModal, setShowNoCreditsModal] = useState(false);
   const [showRequirements, setShowRequirements] = useState(false);
+  const [chatMode, setChatMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [extraFieldsText, setExtraFieldsText] = useState('');
   const draftTimerRef = useRef(null);
@@ -847,6 +849,185 @@ export default function CreateTask() {
   const activeBtn = { background: '#2563EB', color: 'white', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
   const inactiveBtn = { background: 'var(--surface-3)', color: 'var(--text-2)', border: 'none' };
 
+  // Publish from chat mode
+  const handleChatPublish = async (chatFormData) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setLoading(true);
+
+    try {
+      if (isEditMode) {
+        const estimatedTime = chatFormData.estimated_time === 'custom' 
+          ? (chatFormData.custom_time || 'custom') 
+          : (chatFormData.estimated_time || '1h');
+        const expiryHoursEdit = chatFormData.expiry_hours === 'custom' 
+          ? (parseFloat(chatFormData.custom_expiry_hours) || null) 
+          : chatFormData.expiry_hours;
+        const expires = expiryHoursEdit 
+          ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() 
+          : null;
+
+        await base44.entities.Task.update(editId, {
+          title: chatFormData.title,
+          description: extraFieldsText
+            ? (chatFormData.description ? chatFormData.description + '\n\n' + extraFieldsText : extraFieldsText)
+            : chatFormData.description,
+          price: hasActiveApplications ? editTask.price : Number(chatFormData.price),
+          max_price: chatFormData.auto_bump_enabled && chatFormData.max_price ? Number(chatFormData.max_price) : undefined,
+          auto_bump_enabled: chatFormData.auto_bump_enabled,
+          location_name: chatFormData.location_name,
+          city: chatFormData.city,
+          lat: chatFormData.lat || undefined,
+          lng: chatFormData.lng || undefined,
+          address_building: chatFormData.address_building || undefined,
+          address_floor: chatFormData.address_floor || undefined,
+          address_apartment: chatFormData.address_apartment || undefined,
+          address_notes: chatFormData.address_notes || undefined,
+          estimated_time: estimatedTime,
+          category: chatFormData.category || 'other',
+          expiry_duration_hours: expiryHoursEdit,
+          expires_at: expires,
+          images: chatFormData.images,
+          video_url: chatFormData.video_url || undefined,
+          requirements: chatFormData.requirements || {},
+          payment_method: chatFormData.payment_method || undefined,
+          urgency_tag: chatFormData.urgency_tag || undefined,
+          requires_invoice: chatFormData.requires_invoice || false,
+          ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
+        });
+        setLoading(false);
+        submittingRef.current = false;
+        toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
+        navigate('/task/' + editId);
+        return;
+      }
+
+      // Story credit deduction
+      if (chatFormData.is_story) {
+        const currentCredits = me?.worker_credits ?? 0;
+        if (currentCredits < 10) {
+          setShowNoCreditsModal(true);
+          setLoading(false);
+          submittingRef.current = false;
+          return;
+        }
+        const newBalance = currentCredits - 10;
+        await base44.auth.updateMe({ worker_credits: newBalance });
+        await base44.entities.CreditTransaction.create({
+          user_id: me.id,
+          amount: -10,
+          type: 'Application_Fee',
+          note: 'עלות סטורי פרסום: ' + (chatFormData.title || 'משימה'),
+          task_title: chatFormData.title || 'משימה',
+          balance_after: newBalance,
+        });
+      }
+
+      const expiryHours = chatFormData.expiry_hours === 'custom' 
+        ? (parseFloat(chatFormData.custom_expiry_hours) || null) 
+        : chatFormData.expiry_hours;
+      const expires = expiryHours 
+        ? new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString() 
+        : null;
+      const storyExpires = chatFormData.is_story 
+        ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() 
+        : undefined;
+      const estimatedTime = chatFormData.estimated_time === 'custom' 
+        ? (chatFormData.custom_time || 'custom') 
+        : (chatFormData.estimated_time || '1h');
+
+      const created = await base44.entities.Task.create({
+        payment_method: chatFormData.payment_method || 'Cash',
+        title: chatFormData.title,
+        description: extraFieldsText
+          ? (chatFormData.description ? chatFormData.description + '\n\n' + extraFieldsText : extraFieldsText)
+          : chatFormData.description,
+        price: Number(chatFormData.price),
+        base_price: Number(chatFormData.price),
+        max_price: chatFormData.auto_bump_enabled && chatFormData.max_price ? Number(chatFormData.max_price) : undefined,
+        auto_bump_enabled: chatFormData.auto_bump_enabled,
+        location_name: chatFormData.location_name,
+        city: chatFormData.city,
+        lat: chatFormData.lat || undefined,
+        lng: chatFormData.lng || undefined,
+        address_building: chatFormData.address_building || undefined,
+        address_floor: chatFormData.address_floor || undefined,
+        address_apartment: chatFormData.address_apartment || undefined,
+        address_notes: chatFormData.address_notes || undefined,
+        estimated_time: estimatedTime,
+        category: chatFormData.category || 'other',
+        approval_mode: 'manual',
+        expiry_duration_hours: expiryHours || null,
+        expires_at: expires,
+        is_story: chatFormData.is_story,
+        story_expires_at: storyExpires,
+        images: chatFormData.images || [],
+        video_url: chatFormData.video_url || undefined,
+        requirements: chatFormData.requirements || {},
+        status: 'OPEN',
+        requires_invoice: chatFormData.requires_invoice || false,
+        urgency_tag: chatFormData.urgency_tag || undefined,
+        client_id: me?.id,
+        client_name: me?.full_name,
+        client_rating: me?.rating || 0,
+        client_verified: me?.is_verified || false,
+      });
+
+      setLoading(false);
+      submittingRef.current = false;
+      localStorage.removeItem(DRAFT_KEY);
+      toast.success('המשימה פורסמה! ⚡');
+
+      if (created?.id) {
+        setSearchingTaskId(created.id);
+        setSearchingTaskTitle(chatFormData.title);
+        setSearchingTaskPrice(Number(chatFormData.price));
+        setSearchingTaskCategory(chatFormData.category || 'other');
+        setSearchingTaskLocation(chatFormData.location_name);
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      setLoading(false);
+      submittingRef.current = false;
+      toast.error('תקלה בפרסום, נסה שוב');
+    }
+  };
+
+  // Chat mode rendering
+  if (chatMode && !isEditMode && !isRepost && !isRepostMode) {
+    return (
+      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
+        {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
+        {showNoCreditsModal && <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />}
+        {showLoginPrompt && (
+          <LoginPromptModal
+            onLogin={() => { setShowLoginPrompt(false); login('/create-task'); }}
+            onClose={() => setShowLoginPrompt(false)}
+            type="publish"
+          />
+        )}
+        {searchingTaskId ? (
+          <LiveSearchOverlay
+            taskId={searchingTaskId}
+            taskTitle={searchingTaskTitle}
+            taskPrice={searchingTaskPrice}
+            taskCategory={searchingTaskCategory}
+            taskLocation={searchingTaskLocation}
+            onDismiss={() => setSearchingTaskId(null)}
+          />
+        ) : (
+          <TaskChatInterface
+            initialForm={form}
+            isEditMode={false}
+            onPublish={handleChatPublish}
+            onSwitchToForm={() => setChatMode(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
   if (searchingTaskId) {
     return (
       <LiveSearchOverlay
@@ -890,6 +1071,19 @@ export default function CreateTask() {
               <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
+              {!isEditMode && !isRepost && !isRepostMode && (
+                <button
+                  onClick={() => setChatMode(m => !m)}
+                  style={{
+                    fontSize: 11, fontWeight: 700, color: 'white',
+                    background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
+                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                    whiteSpace: 'nowrap', boxShadow: 'none',
+                  }}
+                >
+                  {chatMode ? '📋 טופס' : '💬 צ\'אט'}
+                </button>
+              )}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
             {/* Progress bar */}
