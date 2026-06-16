@@ -45,6 +45,7 @@ import TrustBadges from '@/components/TrustBadges';
 import { parseDescription } from '@/lib/descriptionParser';
 import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import BoostPill from '@/components/BoostPill';
+import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 
 const SCANNING_TEXTS_DETAIL = [
   'מאותת לעובדים',
@@ -578,7 +579,9 @@ export default function TaskDetail() {
   const statusLabel = getStatusLabel(task.status, isOwner);
   const isExpired = task.status === 'EXPIRED';
   const canTakeInstant = false; // All tasks now require application
-  const canApplyManual = task.status === 'OPEN' && !isOwner && !hasWorker && !hasPendingApp && !isApproved;
+  // hasApplied (local state) + myApp (server state) — both prevent showing the apply button
+  const alreadyApplied = hasApplied || !!myApp;
+  const canApplyManual = task.status === 'OPEN' && !isOwner && !hasWorker && !hasPendingApp && !isApproved && !alreadyApplied;
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
@@ -641,9 +644,6 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {/* Worker 3-min alert */}
-      {isWorker && <WorkerStatusAlert task={task} me={me} />}
-
       <PageHeader title={task.title} right={null} />
       
 
@@ -695,24 +695,15 @@ export default function TaskDetail() {
         <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
-          {/* WorkerTracker at top when TAKEN */}
-          {(isOwner && task.status === 'TAKEN' || isWorker && task.status === 'TAKEN') &&
-          <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
-              <WorkerTrackerBar
-              task={task}
-              isWorker={isWorker}
-              isOwner={isOwner}
-              onUpdate={handleWorkerUpdate}
-              showMapButton={!!(task.worker_lat && task.worker_lng)}
-              onMapToggle={() => setShowWorkerMap((v) => !v)} />
-            
-              {showWorkerMap && isOwner && task.worker_lat && task.worker_lng &&
-            <div style={{ marginTop: 10, borderRadius: 16, overflow: 'hidden' }}>
-                  <LiveWorkerMap task={task} />
-                </div>
-            }
+          {/* ActiveTaskBanner when TAKEN — same component as HomeFeed for consistency */}
+          {task.status === 'TAKEN' && (isOwner || isWorker) && (
+            <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
+              <ActiveTaskBanner
+                tasks={[{ ...task, _roleHint: isWorker ? 'worker' : 'client' }]}
+                roleHint={isWorker ? 'worker' : 'client'}
+              />
             </div>
-          }
+          )}
 
           <div style={{ padding: '16px 18px 18px' }}>
             {/* Non-owner status pill */}
