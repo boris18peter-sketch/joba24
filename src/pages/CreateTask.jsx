@@ -1039,9 +1039,9 @@ export default function CreateTask() {
         {/* Price */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מחיר (₪) *</Label>
-          <Input ref={fieldRefs.price} type="number" placeholder="100"
+          <Input ref={fieldRefs.price} type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
             value={form.price}
-            onChange={e => { if (hasActiveApplications) return; set('price', e.target.value); setErrors(p => ({...p, price: false})); }}
+            onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
             disabled={hasActiveApplications}
             style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
           />
@@ -1068,8 +1068,8 @@ export default function CreateTask() {
             <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
               <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>מחיר מקסימלי (₪)</Label>
               <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>המחיר יעלה בהדרגה מ-₪{form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.</div>
-              <Input type="number" placeholder="250"
-                value={form.max_price} onChange={e => set('max_price', e.target.value)}
+              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
+                value={form.max_price} onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
                 style={{ background: 'white', border: '1px solid #fcd34d', borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
               />
             </div>
