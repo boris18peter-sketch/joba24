@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, PartyPopper } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -79,6 +79,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
   const [showChat, setShowChat] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // { task, action }
   const [updating, setUpdating] = useState(false);
+  const [completingTaskId, setCompletingTaskId] = useState(null);
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   // No local state — read directly from props (which come from React Query cache via Layout/HomeFeed)
@@ -139,6 +140,23 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       }
     } catch {
       toast.error('שגיאת שמירה — נסה שוב');
+    }
+  };
+
+  const handleOwnerConfirmComplete = async (t) => {
+    if (completingTaskId) return;
+    setCompletingTaskId(t.id);
+    try {
+      const res = await base44.functions.invoke('completeTask', { taskId: t.id });
+      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+      queryClient.invalidateQueries({ queryKey: ['task', t.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      toast.success('המשימה הושלמה! 🎉');
+    } catch (err) {
+      toast.error('שגיאה: ' + err.message);
+    } finally {
+      setCompletingTaskId(null);
     }
   };
 
@@ -248,6 +266,18 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
 
               {/* Action row */}
               <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+
+                {/* Owner: confirm completion when worker says done */}
+                {tIsOwner && t.worker_status === 'done' && (
+                  <button
+                    onClick={() => handleOwnerConfirmComplete(t)}
+                    disabled={completingTaskId === t.id}
+                    style={{ flex: 2, height: 46, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 2px 12px rgba(5,150,105,0.4)' }}
+                  >
+                    {completingTaskId === t.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> אשר סיום עבודה</>}
+                  </button>
+                )}
+
                 {/* Quick action (worker only, not done) */}
                 {tIsWorker && quickAction && (
                   <button

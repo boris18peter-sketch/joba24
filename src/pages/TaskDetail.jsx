@@ -922,6 +922,28 @@ export default function TaskDetail() {
 
 
 
+            {/* Owner: confirm completion — worker marked done, waiting for owner approval */}
+            {isOwner && task.status === 'TAKEN' && task.worker_status === 'done' && (
+              <div style={{ background: 'rgba(5,150,105,0.18)', border: '1.5px solid rgba(5,150,105,0.5)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
+                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>✅ העובד סיים — ממתין לאישורך</div>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await base44.functions.invoke('completeTask', { taskId: id });
+                      if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+                      queryClient.invalidateQueries({ queryKey: ['task', id] });
+                      toast.success('המשימה הושלמה! 🎉');
+                    } catch (err) {
+                      toast.error('שגיאה: ' + err.message);
+                    }
+                  }}
+                  style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.5)', color: 'white', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  <CheckCircle2 size={16} /> אשר סיום עבודה
+                </button>
+              </div>
+            )}
+
             {/* Approved CTA */}
             {isApproved && !isWorker && task.status === 'OPEN' &&
             <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
@@ -992,8 +1014,8 @@ export default function TaskDetail() {
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
 
-        {/* Applicants for owner — above the map */}
-        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || task.status === 'TAKEN' && !task.worker_status) &&
+        {/* Applicants for owner — show when OPEN (with pending apps) or TAKEN before worker started */}
+        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) &&
         <div id="task-applicants-section">
           <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
         </div>
