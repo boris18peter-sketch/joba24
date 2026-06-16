@@ -42,6 +42,12 @@ export default function HomeFeed() {
   const setActiveTab = (tab) => { sessionStorage.setItem('homeTab', tab); sessionStorage.setItem('homeTabChosen', '1'); setActiveTabRaw(tab); };
   const [myPubTab, setMyPubTab] = useState('active'); // 'active' | 'completed' | 'other'
 
+  // New task highlight — set when navigating back from CreateTask with ?newTaskId=
+  const [highlightTaskId, setHighlightTaskId] = useState(() =>
+    new URLSearchParams(window.location.search).get('newTaskId') || null
+  );
+  const [tapHintTaskId, setTapHintTaskId] = useState(null);
+
   const MY_PUB_TABS = [
     { key: 'active',    label: 'פעילות',  statuses: ['OPEN', 'TAKEN'] },
     { key: 'completed', label: 'הושלמו',  statuses: ['COMPLETED'] },
@@ -473,6 +479,32 @@ export default function HomeFeed() {
     [myTasks, isAuthenticated]
   );
 
+  // ── New task highlight: auto-tab + scroll + glow ──────────────────────────
+  useEffect(() => {
+    if (!highlightTaskId) return;
+    setActiveTabRaw('my_published');
+    setMyPubTab('active');
+    // Clean URL without reload
+    window.history.replaceState({}, '', '/');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!highlightTaskId) return;
+    const taskInCache = myTasks.find(t => t.id === highlightTaskId);
+    if (!taskInCache) {
+      if (me?.id) queryClient.invalidateQueries({ queryKey: ['myTasks', me.id] });
+      return;
+    }
+    const scrollTimer = setTimeout(() => {
+      const el = document.getElementById(`task-card-${highlightTaskId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTapHintTaskId(highlightTaskId);
+    }, 400);
+    const tapClearTimer = setTimeout(() => setTapHintTaskId(null), 2800);
+    const glowTimer = setTimeout(() => setHighlightTaskId(null), 5200);
+    return () => { clearTimeout(scrollTimer); clearTimeout(tapClearTimer); clearTimeout(glowTimer); };
+  }, [highlightTaskId, myTasks.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSearchSubmit = (val) => {
     if (!val.trim()) return;
     setSearch(val);
@@ -646,11 +678,27 @@ export default function HomeFeed() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {filteredPub.map((task, index) => (
-                    <div key={task.id} style={{ animation: `slideInStagger 0.45s ease-out both`, animationDelay: `${Math.min(index, 12) * 50}ms` }}>
-                      <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
-                    </div>
-                  ))}
+                  {filteredPub.map((task, index) => {
+                    const isHighlighted = highlightTaskId === task.id;
+                    const hasTapHint = tapHintTaskId === task.id;
+                    return (
+                      <div
+                        key={task.id}
+                        id={`task-card-${task.id}`}
+                        style={isHighlighted ? {
+                          borderRadius: 18,
+                          animation: hasTapHint
+                            ? 'newTaskGlow 2s ease-in-out infinite, tapHintOnce 0.85s 0.35s ease-in-out'
+                            : 'newTaskGlow 2s ease-in-out infinite',
+                        } : {
+                          animation: `slideInStagger 0.45s ease-out both`,
+                          animationDelay: `${Math.min(index, 12) * 50}ms`,
+                        }}
+                      >
+                        <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -679,6 +727,17 @@ export default function HomeFeed() {
         @keyframes pulseRedDot {
           0%, 100% { transform: translateY(-50%) scale(1); opacity: 1; }
           50% { transform: translateY(-50%) scale(1.5); opacity: 0.5; }
+        }
+        @keyframes newTaskGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(26,111,212,0); }
+          50% { box-shadow: 0 0 0 3px rgba(26,111,212,0.22), 0 0 28px rgba(26,111,212,0.13); }
+        }
+        @keyframes tapHintOnce {
+          0%   { transform: scale(1); }
+          22%  { transform: scale(0.974); }
+          52%  { transform: scale(1.013); }
+          78%  { transform: scale(0.997); }
+          100% { transform: scale(1); }
         }
       `}</style>
     </div>);

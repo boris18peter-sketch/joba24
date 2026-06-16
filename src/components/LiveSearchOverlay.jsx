@@ -516,7 +516,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
 
   const goToTask = () => {
     onNavigate?.();
-    navigate(`/task/${taskId}`);
+    navigate(`/?newTaskId=${taskId}`);
   };
 
   const { data: allUsers = [] } = useQuery({
@@ -736,7 +736,7 @@ export default function LiveSearchOverlay({
 
   const handleDismiss = () => {
     onDismiss?.();
-    navigate(`/task/${taskId}`);
+    navigate(`/?newTaskId=${taskId}`);
   };
 
   return createPortal(
