@@ -109,12 +109,15 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   const charged = elapsedSec >= totalSec;
   const pct = charged ? 100 : Math.round((elapsedSec / totalSec) * 100);
 
-  // Re-render once per minute to update % label; charged flips via animation
-  const [, forceUpdate] = useState(0);
+  // Re-render every minute so % label stays current;
+  // schedule exact flip when charging completes so charged state updates immediately
+  const [, setTick] = useState(0);
   useEffect(() => {
     if (charged) return;
-    const iv = setInterval(() => forceUpdate(n => n + 1), 60000);
-    return () => clearInterval(iv);
+    const remaining = Math.max(0, totalSec - elapsedSec) * 1000;
+    const flipTimer = setTimeout(() => setTick(n => n + 1), remaining + 100);
+    const iv = setInterval(() => setTick(n => n + 1), 60000);
+    return () => { clearTimeout(flipTimer); clearInterval(iv); };
   }, [lastBoostAt, createdDate, charged]);
 
   const iconColor = pct > 50 ? 'white' : 'rgba(255,255,255,0.9)';
@@ -1317,7 +1320,7 @@ export default function TaskDetail() {
                 <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>המשימה תחזור לרשימה</div>
               </div>
             </div>
-            <div style={{ height: 24 }} />
+            <div style={{ height: 'max(24px, env(safe-area-inset-bottom))' }} />
           </div>
         </div>,
         document.body

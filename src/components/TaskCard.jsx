@@ -231,12 +231,16 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
   const pct = charged ? 100 : Math.round((elapsedSec / totalSec) * 100);
 
   const [showConfirm, setShowConfirm] = useState(false);
-  // Re-render once per minute so the % label stays current; charged state flips automatically via animation
-  const [, forceUpdate] = useState(0);
+  // Re-render every minute so the % label stays current;
+  // when time runs out, forceUpdate causes re-render → charged becomes true → fill div switches to 100%
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     if (charged) return;
-    const iv = setInterval(() => forceUpdate(n => n + 1), 60000);
-    return () => clearInterval(iv);
+    const remaining = Math.max(0, totalSec - elapsedSec) * 1000;
+    // Schedule an exact update when charging completes, plus periodic minute ticks
+    const flipTimer = setTimeout(() => setTick(n => n + 1), remaining + 100);
+    const iv = setInterval(() => setTick(n => n + 1), 60000);
+    return () => { clearTimeout(flipTimer); clearInterval(iv); };
   }, [lastBoostAt, createdDate, charged]);
 
   const handleClick = (e) => {

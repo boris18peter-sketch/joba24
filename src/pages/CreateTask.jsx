@@ -903,7 +903,7 @@ export default function CreateTask() {
         );
       })()}
 
-      <div className="px-4 py-4 space-y-4 pb-12">
+      <div className="px-4 py-4 space-y-4" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom))' }}>
         {/* Draft restore indicator */}
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
