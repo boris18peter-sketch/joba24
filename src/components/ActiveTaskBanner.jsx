@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_STEPS = {
   on_the_way: { label: 'בדרך',         ownerLabel: 'בדרך אליך',          step: 0 },
@@ -27,6 +28,7 @@ function getQuickAction(stepIdx, workerStatus) {
 
 // ── Confirm Bottom Sheet ────────────────────────────────────────────────────────
 function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
+  const { t, isRTL } = useLanguage();
   if (!action) return null;
   return (
     <div
@@ -34,7 +36,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
       onClick={onCancel}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{ background: 'white', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 40px', boxShadow: '0 -16px 60px rgba(0,0,0,0.2)' }}
         onClick={e => e.stopPropagation()}
       >
@@ -44,29 +46,29 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
             {action.nextKey === 'arrived' ? '📍' : action.nextKey === 'done' ? '✅' : '🚀'}
           </div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 6 }}>
-            {action.nextKey === 'arrived' ? 'אשר הגעה למיקום' : action.nextKey === 'done' ? 'אשר סיום המשימה' : 'יציאה לדרך'}
+            {action.nextKey === 'arrived' ? t('confirm_arrival') || 'Confirm arrival' : action.nextKey === 'done' ? t('confirm_done') || 'Confirm completion' : t('leaving_now') || 'Leaving now'}
           </div>
           <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-            {action.nextKey === 'arrived' ? 'ברגע שתאשר, המעסיק יקבל עדכון שהגעת' :
-             action.nextKey === 'done' ? 'ברגע שתאשר, המעסיק יקבל עדכון שסיימת את העבודה' :
-             'בוא נעדכן שיצאת לדרך!'}
+            {action.nextKey === 'arrived' ? t('owner_gets_update_arrived') || 'Owner will get an update' :
+             action.nextKey === 'done' ? t('owner_gets_update_done') || 'Owner will get an update' :
+             t('lets_update_leaving') || 'Let\'s update that you\'re leaving!'}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            style={{ width: '100%', height: 52, borderRadius: 16, background: action.color, border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : action.label}
-          </button>
-          <button
-            onClick={onCancel}
-            style={{ width: '100%', height: 44, borderRadius: 14, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-          >
-            ביטול
-          </button>
-        </div>
+           <button
+             onClick={onConfirm}
+             disabled={loading}
+             style={{ width: '100%', height: 52, borderRadius: 16, background: action.color, border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+           >
+             {loading ? <Loader2 size={18} className="animate-spin" /> : action.label}
+           </button>
+           <button
+             onClick={onCancel}
+             style={{ width: '100%', height: 44, borderRadius: 14, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+           >
+             {t('cancel_btn')}
+           </button>
+         </div>
       </div>
     </div>
   );
@@ -75,6 +77,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
 export default function ActiveTaskBanner({ tasks, roleHint }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const [activeIdx, setActiveIdx] = useState(0);
   const [showChat, setShowChat] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // { task, action }
@@ -139,7 +142,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
         queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       }
     } catch {
-      toast.error('שגיאת שמירה — נסה שוב');
+      toast.error(t('error_saving') || 'Error saving — try again');
     }
   };
 
@@ -152,16 +155,16 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       queryClient.invalidateQueries({ queryKey: ['task', t.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      toast.success('המשימה הושלמה! 🎉');
+      toast.success(t('task_completed') || 'Task completed! 🎉');
     } catch (err) {
-      toast.error('שגיאה: ' + err.message);
+      toast.error((t('error_colon') || 'Error: ') + err.message);
     } finally {
       setCompletingTaskId(null);
     }
   };
 
   return (
-    <div dir="rtl" style={{ paddingBottom: 0 }}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} style={{ paddingBottom: 0 }}>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
         {taskList.map((t, idx) => {
           const tStatusInfo = STATUS_STEPS[t.worker_status] || null;
@@ -194,7 +197,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                   <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 700, letterSpacing: 0.3 }}>
-                  {tIsWorker ? 'משימה פעילה' : 'בביצוע'}
+                  {tIsWorker ? t('active_task_worker') || 'Active task' : t('active_task_client') || 'In execution'}
                 </span>
               </div>
 
@@ -240,9 +243,9 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                   transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 }} />
                 {[
-                  { Icon: Navigation, label: 'בדרך' },
-                  { Icon: MapPin,     label: 'הגיע' },
-                  { Icon: CheckCircle,label: 'סיים'  },
+                   { Icon: Navigation, label: t('on_the_way') },
+                   { Icon: MapPin,     label: t('arrived') },
+                   { Icon: CheckCircle,label: t('finished')  },
                 ].map(({ Icon, label }, i) => {
                   const done   = tStepIdx >= 0 && i <= tStepIdx;
                   const active = tStepIdx >= 0 && i === tStepIdx;
@@ -274,7 +277,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                     disabled={completingTaskId === t.id}
                     style={{ flex: 2, height: 46, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 2px 12px rgba(5,150,105,0.4)' }}
                   >
-                    {completingTaskId === t.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> אשר סיום עבודה</>}
+                    {completingTaskId === t.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> {t('confirm_done_work')}</>}
                   </button>
                 )}
 
@@ -293,16 +296,16 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 {showNavBtn && (
                   <button
                     onClick={() => {
-                      const dst = t.lat && t.lng ? `${t.lat},${t.lng}` : encodeURIComponent(t.location_name);
-                      const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
-                      const mapsUrl = t.lat && t.lng ? `https://maps.google.com/maps?daddr=${t.lat},${t.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(t.location_name)}`;
-                      const choice = window.confirm('נווט עם Waze?\nלחץ ביטול לפתיחה עם Google Maps');
-                      window.open(choice ? wazeUrl : mapsUrl, '_blank');
+                    const dst = t.lat && t.lng ? `${t.lat},${t.lng}` : encodeURIComponent(t.location_name);
+                    const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
+                    const mapsUrl = t.lat && t.lng ? `https://maps.google.com/maps?daddr=${t.lat},${t.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(t.location_name)}`;
+                    const choice = window.confirm(t('navigate_choice') || 'Navigate with Waze?\nClick cancel for Google Maps');
+                    window.open(choice ? wazeUrl : mapsUrl, '_blank');
                     }}
                     style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                   >
-                    <Navigation size={15} /> נווט
-                  </button>
+                    <Navigation size={15} /> {t('navigate')}
+                    </button>
                 )}
 
                 {/* Chat button — after arrived */}
@@ -311,8 +314,8 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                     onClick={() => setShowChat(true)}
                     style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                   >
-                    <MessageCircle size={15} /> צ׳אט
-                  </button>
+                    <MessageCircle size={15} /> {t('chat')}
+                    </button>
                 )}
 
                 {/* Details button */}
@@ -320,7 +323,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                   onClick={() => navigate(`/task/${t.id}`)}
                   style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  פרטים
+                  {t('details')}
                 </button>
               </div>
             </div>
