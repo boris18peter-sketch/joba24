@@ -108,23 +108,22 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
   };
 
   const [progress, setProgress] = useState(getProgress);
+  const mountedRef = useRef(false);
   const charged = progress >= 1;
   const pct = Math.round(progress * 100);
 
-  // Recalculate when lastBoostAt or createdDate change
   useEffect(() => {
-    setProgress(getProgress());
-  }, [lastBoostAt, createdDate]);
-
-  useEffect(() => {
-    if (charged) return;
+    const p = getProgress();
+    setProgress(p);
+    mountedRef.current = true;
+    if (p >= 1) return;
     const iv = setInterval(() => {
-      const p = getProgress();
-      setProgress(p);
-      if (p >= 1) clearInterval(iv);
-    }, 1000);
+      const cur = getProgress();
+      setProgress(cur);
+      if (cur >= 1) clearInterval(iv);
+    }, 60000); // update every minute
     return () => clearInterval(iv);
-  }, [lastBoostAt, charged]);
+  }, [lastBoostAt, createdDate]);
 
   const iconColor = pct > 50 ? 'white' : 'rgba(255,255,255,0.9)';
 
@@ -150,6 +149,7 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
           background: charged
             ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
             : 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))',
+          transition: mountedRef.current ? 'height 60s linear' : 'none',
           borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
         }}>

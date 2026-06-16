@@ -700,15 +700,18 @@ export default function HomeFeed() {
                         {hasTapHint && (
                           <div style={{
                             position: 'absolute',
-                            top: '55%', left: '50%',
+                            top: '50%', left: '50%',
                             pointerEvents: 'none',
                             zIndex: 20,
-                            fontSize: 38,
-                            animation: 'fingerTap 1.1s 0.45s ease-in-out forwards',
+                            animation: 'fingerTap 1.2s 0.45s ease-in-out forwards',
                             opacity: 0,
-                            filter: 'drop-shadow(0 4px 12px rgba(26,111,212,0.4))',
+                            filter: 'drop-shadow(0 4px 16px rgba(26,111,212,0.5))',
                           }}>
-                            👆
+                            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="22" cy="22" r="20" fill="rgba(26,111,212,0.15)" stroke="rgba(26,111,212,0.4)" strokeWidth="1.5"/>
+                              <path d="M22 10 L22 26 M16 20 L22 26 L28 20" stroke="#1a6fd4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <circle cx="22" cy="30" r="2.5" fill="#1a6fd4"/>
+                            </svg>
                           </div>
                         )}
                       </div>

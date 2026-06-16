@@ -227,17 +227,20 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
 
   const [progress, setProgress] = useState(getProgress);
   const [showConfirm, setShowConfirm] = useState(false);
+  const mountedRef = useRef(false);
   const charged = progress >= 1;
   const pct = Math.round(progress * 100);
 
   useEffect(() => {
-    setProgress(getProgress()); // recalc on mount and when boost changes
-    if (charged) return;
+    const p = getProgress();
+    setProgress(p);
+    mountedRef.current = true;
+    if (p >= 1) return;
     const iv = setInterval(() => {
-      const p = getProgress();
-      setProgress(p);
-      if (p >= 1) clearInterval(iv);
-    }, 1000);
+      const cur = getProgress();
+      setProgress(cur);
+      if (cur >= 1) clearInterval(iv);
+    }, 60000); // update every minute, not every second
     return () => clearInterval(iv);
   }, [lastBoostAt, createdDate]);
 
@@ -271,6 +274,7 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
           background: charged
             ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
             : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
+          transition: mountedRef.current ? 'height 60s linear' : 'none',
           borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
         }}>

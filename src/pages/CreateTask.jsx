@@ -494,7 +494,8 @@ export default function CreateTask() {
   const [moderationErrors, setModerationErrors] = useState({});
   const [checkingModeration, setCheckingModeration] = useState('');
   // Track whether address was selected from autocomplete (not free text)
-  const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng));
+  // In repost mode, location_name is pre-filled from URL — treat it as confirmed
+  const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng) || (isRepost && !!form.location_name));
 
   const fieldRefs = {
     title: useRef(null),
