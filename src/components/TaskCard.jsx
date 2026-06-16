@@ -271,7 +271,6 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
           background: charged
             ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
             : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
-          transition: 'height 1.2s cubic-bezier(0.22,1,0.36,1)',
           borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
         }}>

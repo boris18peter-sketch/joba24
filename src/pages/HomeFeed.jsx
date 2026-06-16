@@ -687,8 +687,9 @@ export default function HomeFeed() {
                         id={`task-card-${task.id}`}
                         style={isHighlighted ? {
                           borderRadius: 18,
+                          position: 'relative',
                           animation: hasTapHint
-                            ? 'newTaskGlow 2s ease-in-out infinite, tapHintOnce 0.85s 0.35s ease-in-out'
+                            ? 'newTaskGlow 2s ease-in-out infinite, tapHintOnce 0.9s 0.3s ease-in-out'
                             : 'newTaskGlow 2s ease-in-out infinite',
                         } : {
                           animation: `slideInStagger 0.45s ease-out both`,
@@ -696,6 +697,20 @@ export default function HomeFeed() {
                         }}
                       >
                         <TaskCardWithSwipe task={task} isMyPublished={true} currentUserId={me?.id} workerName={me?.full_name} />
+                        {hasTapHint && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '55%', left: '50%',
+                            pointerEvents: 'none',
+                            zIndex: 20,
+                            fontSize: 38,
+                            animation: 'fingerTap 1.1s 0.45s ease-in-out forwards',
+                            opacity: 0,
+                            filter: 'drop-shadow(0 4px 12px rgba(26,111,212,0.4))',
+                          }}>
+                            👆
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -729,15 +744,23 @@ export default function HomeFeed() {
           50% { transform: translateY(-50%) scale(1.5); opacity: 0.5; }
         }
         @keyframes newTaskGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(26,111,212,0); }
-          50% { box-shadow: 0 0 0 3px rgba(26,111,212,0.22), 0 0 28px rgba(26,111,212,0.13); }
+          0%, 100% { box-shadow: 0 0 0 2px rgba(26,111,212,0.18), 0 4px 24px rgba(26,111,212,0.08); }
+          50% { box-shadow: 0 0 0 4px rgba(26,111,212,0.55), 0 6px 40px rgba(26,111,212,0.32); }
         }
         @keyframes tapHintOnce {
           0%   { transform: scale(1); }
-          22%  { transform: scale(0.974); }
-          52%  { transform: scale(1.013); }
-          78%  { transform: scale(0.997); }
+          22%  { transform: scale(0.967); }
+          52%  { transform: scale(1.018); }
+          78%  { transform: scale(0.995); }
           100% { transform: scale(1); }
+        }
+        @keyframes fingerTap {
+          0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+          18%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          42%  { transform: translate(-50%, -50%) scale(0.82); }
+          60%  { transform: translate(-50%, -50%) scale(1); }
+          82%  { opacity: 1; }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
         }
       `}</style>
     </div>);
