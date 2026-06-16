@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const BUBBLES = [
   { emoji: '🔧', label: 'תיקון ברז',     price: '₪80',  delay: 0,    x: '2%'  },
@@ -29,6 +30,7 @@ const BUBBLES = [
 
 export default function PublishTaskOnboarding() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function PublishTaskOnboarding() {
           lineHeight: 1.3,
           animation: visible ? 'onboardSlide 0.4s ease-out both' : 'none',
         }}>
-          פרסם משימה
+          {t('publish_task_onboard_title')}
         </h1>
         <p style={{
           fontSize: 14,
@@ -70,8 +72,7 @@ export default function PublishTaskOnboarding() {
           lineHeight: 1.5,
           animation: visible ? 'onboardSlide 0.4s 0.08s ease-out both' : 'none',
         }}>
-          קבל עזרה מאנשים בסביבתך תוך דקות.<br />
-          פרסם עכשיו — זה פשוט ומהיר.
+          {t('publish_task_onboard_sub')}
         </p>
         <button
           onClick={() => navigate('/create-task')}
@@ -94,7 +95,7 @@ export default function PublishTaskOnboarding() {
           }}
         >
           <Plus size={20} strokeWidth={3} />
-          פרסם משימה
+          {t('post_task_btn')}
         </button>
       </div>
 

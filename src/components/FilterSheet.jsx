@@ -1,43 +1,9 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MapPin, Sparkles, Clock, DollarSign, Zap, ArrowUpDown, CreditCard, FileText } from 'lucide-react';
-
-const URGENCY_FILTER_TAGS = [
-  { value: 'immediate', label: 'דחוף עכשיו' },
-  { value: 'few_hours', label: 'שעות הקרובות' },
-  { value: 'evening',   label: 'לקראת הערב' },
-  { value: 'flexible',  label: 'לא לחוץ' },
-];
-
-const timeOptions = [
-  { value: '15m', label: '15 דק׳' },
-  { value: '30m', label: '30 דק׳' },
-  { value: '1h',  label: 'שעה' },
-  { value: '2h',  label: '2 שעות' },
-];
+import { useLanguage } from '@/lib/LanguageContext';
 
 const cities = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'חולון', 'בת ים'];
-
-const PRICE_OPTIONS = [
-  { label: 'הכל',     min: '', max: '' },
-  { label: 'עד ₪100', min: '', max: '100' },
-  { label: '₪100–300', min: '100', max: '300' },
-  { label: '₪300–600', min: '300', max: '600' },
-  { label: '₪600+',   min: '600', max: '' },
-];
-
-const PAYMENT_METHODS = [
-  { value: 'Cash',   label: 'מזומן' },
-  { value: 'Bit',    label: 'ביט' },
-  { value: 'PayBox', label: 'PayBox' },
-];
-
-const SORT_OPTIONS = [
-  { val: '',           label: 'רלוונטי' },
-  { val: 'newest',     label: 'חדשות' },
-  { val: 'price_desc', label: 'מחיר גבוה' },
-  { val: 'price_asc',  label: 'מחיר נמוך' },
-];
 
 // Chip — grid-aware, full width of its cell
 function Chip({ label, active, onClick }) {
@@ -77,6 +43,43 @@ function SectionLabel({ icon: Icon, children }) {
 }
 
 export default function FilterSheet({ open, onClose, filters, onApply, hasForYou = false }) {
+  const { t } = useLanguage();
+
+  const URGENCY_FILTER_TAGS = [
+    { value: 'immediate', label: t('urgency_immediate') },
+    { value: 'few_hours', label: t('urgency_few_hours') },
+    { value: 'evening',   label: t('urgency_evening') },
+    { value: 'flexible',  label: t('urgency_flexible') },
+  ];
+
+  const timeOptions = [
+    { value: '15m', label: t('time_15m') },
+    { value: '30m', label: t('time_30m') },
+    { value: '1h',  label: t('time_1h') },
+    { value: '2h',  label: t('time_2h') },
+  ];
+
+  const PRICE_OPTIONS = [
+    { label: t('price_all'),     min: '', max: '' },
+    { label: t('price_upto_100'), min: '', max: '100' },
+    { label: t('price_100_300'), min: '100', max: '300' },
+    { label: t('price_300_600'), min: '300', max: '600' },
+    { label: t('price_600_plus'),   min: '600', max: '' },
+  ];
+
+  const PAYMENT_METHODS = [
+    { value: 'Cash',   label: t('cash') },
+    { value: 'Bit',    label: t('bit') },
+    { value: 'PayBox', label: t('paybox') },
+  ];
+
+  const SORT_OPTIONS = [
+    { val: '',           label: t('sort_relevant') },
+    { val: 'newest',     label: t('sort_newest') },
+    { val: 'price_desc', label: t('sort_price_high') },
+    { val: 'price_asc',  label: t('sort_price_low') },
+  ];
+
   const [local, setLocal] = useState({
     minPrice: '', maxPrice: '', time: '', city: '',
     approvalMode: '', sortBy: '', urgency_tag: '',
@@ -123,7 +126,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
         <div style={{ padding: '14px 20px 12px', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
           <div style={{ width: 40, height: 4, borderRadius: 99, background: '#e2e8f0', margin: '0 auto 14px' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>פילטרים</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{t('filter_title')}</div>
             <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={15} color="#64748b" />
             </button>
@@ -150,8 +153,8 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
                   <Sparkles size={16} color={local.forYou ? 'white' : '#94a3b8'} strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: local.forYou ? '#92400e' : '#334155' }}>For You</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>משימות שהמערכת לומדת שמתאימות לך</div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: local.forYou ? '#92400e' : '#334155' }}>{t('filter_for_you_title')}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('filter_for_you_sub')}</div>
                 </div>
               </div>
               <div style={{
@@ -168,7 +171,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
           {/* Price — 3-col grid (skip "הכל" as separate row) */}
           <div>
-            <SectionLabel icon={DollarSign}>טווח שכר</SectionLabel>
+            <SectionLabel icon={DollarSign}>{t('filter_price_range')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {PRICE_OPTIONS.map(opt => (
                 <Chip key={opt.label} label={opt.label}
@@ -184,7 +187,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
           {/* Time — 4-col grid */}
           <div>
-            <SectionLabel icon={Clock}>זמן ביצוע</SectionLabel>
+            <SectionLabel icon={Clock}>{t('filter_estimated_time')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
               {timeOptions.map(t => (
                 <Chip key={t.value} label={t.label}
@@ -197,7 +200,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
           {/* Urgency — 2-col grid */}
           <div>
-            <SectionLabel icon={Zap}>דחיפות המשימה</SectionLabel>
+            <SectionLabel icon={Zap}>{t('filter_urgency')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 7 }}>
               {URGENCY_FILTER_TAGS.map(tag => (
                 <Chip key={tag.value} label={tag.label}
@@ -224,8 +227,8 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
                 <FileText size={16} color={local.requires_invoice ? 'white' : '#94a3b8'} strokeWidth={1.8} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: local.requires_invoice ? '#6d28d9' : '#334155' }}>דורש חשבונית מס</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>הצג רק משימות שמפרסמן דורש חשבונית</div>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: local.requires_invoice ? '#6d28d9' : '#334155' }}>{t('filter_invoice_title')}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>{t('filter_invoice_sub')}</div>
               </div>
             </div>
             <div style={{
@@ -240,7 +243,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
           {/* Payment method — 3-col grid */}
           <div>
-            <SectionLabel icon={CreditCard}>אמצעי תשלום</SectionLabel>
+            <SectionLabel icon={CreditCard}>{t('filter_payment')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {PAYMENT_METHODS.map(pm => (
                 <Chip key={pm.value} label={pm.label}
@@ -253,7 +256,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
           {/* Sort — 3-col + 1 row */}
           <div>
-            <SectionLabel icon={ArrowUpDown}>סינון ומיון</SectionLabel>
+            <SectionLabel icon={ArrowUpDown}>{t('filter_sort_label')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
               {SORT_OPTIONS.map(opt => (
                 <Chip key={opt.val} label={opt.label}
@@ -266,7 +269,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
           {/* City */}
           <div>
-            <SectionLabel icon={MapPin}>מיקום</SectionLabel>
+            <SectionLabel icon={MapPin}>{t('filter_location_label')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7, marginBottom: 10 }}>
               {cities.map(c => (
                 <Chip key={c} label={c}
@@ -276,7 +279,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
               ))}
             </div>
             <input
-              placeholder="עיר אחרת..."
+              placeholder={t('filter_other_city')}
               value={!cities.includes(local.city) ? local.city : ''}
               onChange={e => setLocal(p => ({ ...p, city: e.target.value }))}
               style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#f8fafc', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: '#334155' }}
@@ -299,13 +302,13 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
           <button onClick={handleReset}
             style={{ flexShrink: 0, height: 48, padding: '0 16px', borderRadius: 12, background: 'none', border: 'none', color: '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            נקה הכל
+            {t('filter_reset')}
           </button>
           {/* Apply — full remaining width */}
           <button onClick={handleApply}
             style={{ flex: 1, height: 48, borderRadius: 12, background: '#2563EB', color: 'white', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}
           >
-            החל פילטרים
+            {t('filter_apply')}
           </button>
         </div>
       </div>

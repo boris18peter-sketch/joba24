@@ -21,8 +21,10 @@ import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Layout() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuth();
@@ -88,7 +90,7 @@ export default function Layout() {
     const prev = prevCreditsRef.current;
     if (prev !== null && me.worker_credits > prev) {
       const gained = me.worker_credits - prev;
-      window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: gained, label: 'קרדיטים' } }));
+      window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: gained, label: t('credits_label') } }));
     }
     prevCreditsRef.current = me.worker_credits;
   }, [me?.worker_credits]);
@@ -315,8 +317,8 @@ export default function Layout() {
       const tx = event.data;
       if (tx.user_id !== me.id) return;
       if (tx.type === 'Loyalty_Reward') {
-        window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: tx.amount, label: 'בונוס 5 כוכבים ⭐' } }));
-        addNotification({ type: 'new_review', reviewerName: 'מפרסם המשימה', rating: 5, preview: `קיבלת ${tx.amount} קרדיטים בונוס על דירוג 5 כוכבים! ⭐` });
+        window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: tx.amount, label: t('loyalty_reward_toast') } }));
+        addNotification({ type: 'new_review', reviewerName: 'מפרסם המשימה', rating: 5, preview: t('loyalty_reward_notif').replace('{n}', tx.amount) });
         queryClient.invalidateQueries({ queryKey: ['me'] });
       }
     });
@@ -329,7 +331,7 @@ export default function Layout() {
     const unsub = base44.entities.Review.subscribe((event) => {
       if (event.type !== 'create' || !event.data) return;
       if (event.data.reviewee_id !== me.id) return;
-      addNotification({ type: 'new_review', taskId: event.data.task_id, rating: event.data.rating, preview: `קיבלת ביקורת ${event.data.rating} כוכבים` });
+      addNotification({ type: 'new_review', taskId: event.data.task_id, rating: event.data.rating, preview: t('review_received_notif').replace('{n}', event.data.rating) });
     });
     return unsub;
   }, [me?.id, isAuthenticated]);
@@ -509,11 +511,11 @@ export default function Layout() {
   });
 
   const navItems = [
-    { to: '/', icon: Home, label: 'פיד' },
-    { to: '/map', icon: Map, label: 'מפה' },
-    { to: '/create-task', icon: Plus, label: 'משימה', primary: true },
-    { to: '/chats', icon: MessageCircle, label: "צ'אט", badge: unreadMessages },
-    { to: '/profile', icon: User, label: 'פרופיל' },
+    { to: '/', icon: Home, label: t('nav_feed_short') },
+    { to: '/map', icon: Map, label: t('nav_map_short') },
+    { to: '/create-task', icon: Plus, label: t('nav_create_short'), primary: true },
+    { to: '/chats', icon: MessageCircle, label: t('nav_chats_short'), badge: unreadMessages },
+    { to: '/profile', icon: User, label: t('nav_profile_short') },
   ];
 
   return (
@@ -555,10 +557,9 @@ export default function Layout() {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>⚠️</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>רגע לפני ביטול</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('cancel_warning_title')}</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                העובד <strong style={{ color: '#0f1e40' }}>{cancelWarningTask.worker_name}</strong> טרח ויצא במיוחד עבורך.
-                <br />ביטול המשימה תחזור לסטטוס פתוחה.
+                {t('cancel_warning_body').replace('{name}', cancelWarningTask.worker_name)}
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -566,7 +567,7 @@ export default function Layout() {
                 onClick={() => setCancelWarningTask(null)}
                 style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
               >
-                השאר את המשימה
+                {t('keep_task_btn')}
               </button>
               <button
                 onClick={async () => {
@@ -587,7 +588,7 @@ export default function Layout() {
                 disabled={cancelWarningLoading}
                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
-                {cancelWarningLoading ? <Loader2 size={18} className="animate-spin" /> : 'בטל משימה'}
+                {cancelWarningLoading ? <Loader2 size={18} className="animate-spin" /> : t('cancel_task_btn_label')}
               </button>
             </div>
           </div>
@@ -642,15 +643,15 @@ export default function Layout() {
                   {needsAuth ? (
                     <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', gap: 16, textAlign: 'center' }}>
                       <div style={{ fontSize: 48, marginBottom: 4 }}>{tabPath === '/chats' ? '💬' : '👤'}</div>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>נדרשת התחברות</div>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{t('login_required')}</div>
                       <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                        {tabPath === '/chats' ? 'כדי לצפות בצ\'אטים שלך יש להתחבר לחשבון.' : 'כדי לצפות בפרופיל ולנהל את הגדרותיך יש להתחבר.'}
+                        {tabPath === '/chats' ? t('login_required_chats') : t('login_required_profile')}
                       </div>
                       <button
                         onClick={login}
                         style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}
                       >
-                        התחבר עכשיו
+                        {t('login_now')}
                       </button>
                     </div>
                   ) : tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}

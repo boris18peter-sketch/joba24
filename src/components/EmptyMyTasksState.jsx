@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const EXAMPLES = [
   '🚗 צריך טרמפ לאילת',
@@ -37,6 +38,7 @@ const EXAMPLES = [
 let tagIdCounter = 0;
 
 export default function EmptyMyTasksState() {
+  const { t } = useLanguage();
   const [tags, setTags] = useState([]);
   const exampleIndexRef = useRef(0);
 
@@ -76,8 +78,8 @@ export default function EmptyMyTasksState() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', padding: '0 24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-        <p style={{ fontWeight: 900, color: '#0f1e40', margin: 0, fontSize: 22, lineHeight: 1.35 }}>אין לך משימות פעילות</p>
-        <p style={{ fontSize: 14, color: '#64748b', margin: 0, lineHeight: 1.6 }}>פרסם משימה ותתחיל לקבל בקשות מאנשים שרוצים לבצע אותה.</p>
+        <p style={{ fontWeight: 900, color: '#0f1e40', margin: 0, fontSize: 22, lineHeight: 1.35 }}>{t('no_active_tasks_title')}</p>
+        <p style={{ fontSize: 14, color: '#64748b', margin: 0, lineHeight: 1.6 }}>{t('no_active_tasks_sub')}</p>
         <Link to="/create-task" style={{ textDecoration: 'none' }}>
           <button style={{
             display: 'flex', alignItems: 'center', gap: 8, height: 50, paddingInline: 28,
@@ -86,7 +88,7 @@ export default function EmptyMyTasksState() {
             boxShadow: '0 6px 20px rgba(26,111,212,0.35)',
           }}>
             <span style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>+</span>
-            פרסם משימה
+            {t('post_task_btn')}
           </button>
         </Link>
       </div>
@@ -128,7 +130,7 @@ export default function EmptyMyTasksState() {
       </div>
 
       <p style={{ fontSize: 11, color: '#b0b8c8', marginTop: 4, fontWeight: 600 }}>
-        אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪
+        {t('people_post_everything')}
       </p>
     </div>
   );
