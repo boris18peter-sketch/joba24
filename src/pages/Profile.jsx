@@ -11,6 +11,7 @@ import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import TrustBadges from '@/components/TrustBadges';
 import TrustCard from '@/components/TrustCard';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const StatBox = ({ value, label, sub }) =>
 <div style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 10px', textAlign: 'center' }}>
@@ -26,6 +27,7 @@ const SectionTitle = ({ children }) =>
 
 export default function Profile() {
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
@@ -109,8 +111,8 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div dir="rtl" style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
-        <PageHeader title="הפרופיל שלי" right={<div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />} />
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
+        <PageHeader title={t('profile_title')} right={<div style={{ width: 36, height: 36, borderRadius: 12, background: '#e8edf5' }} className="animate-pulse" />} />
         {/* Hero skeleton */}
         <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
@@ -140,7 +142,7 @@ export default function Profile() {
   const workerScore = me?.worker_score || 0;
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerifyModal &&
       <VerifyModal
         onClose={() => setShowVerifyModal(false)}
@@ -148,7 +150,7 @@ export default function Profile() {
 
       }
 
-      <PageHeader title="הפרופיל שלי" />
+      <PageHeader title={t('profile_title')} />
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px', position: 'relative', overflow: 'hidden' }}>
@@ -189,10 +191,10 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <StatBox value={completedCount} label="משימות בוצעו" />
-          <StatBox value={avgRating + (rating > 0 ? '★' : '')} label="דירוג" sub={`${me?.rating_count || 0} ביקורות`} />
-          <StatBox value={me?.worker_credits ?? 100} label="קרדיטים" sub="למשימות" />
+         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+           <StatBox value={completedCount} label={t('tasks_completed')} />
+           <StatBox value={avgRating + (rating > 0 ? '★' : '')} label={t('rating')} sub={`${me?.rating_count || 0} ${t('reviews_count') || 'ביקורות'}`} />
+           <StatBox value={me?.worker_credits ?? 100} label={t('credits')} sub={t('for_tasks')} />
         </div>
       </div>
 
@@ -208,10 +210,10 @@ export default function Profile() {
                   <Shield size={22} color="white" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: 'white', marginBottom: 3 }}>אמת את הפרופיל שלך</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
-                    פרופיל מאומת זוכה לחשיפה גבוהה יותר וסיכוי פי 2 ל-Match מהיר למשימות
-                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: 'white', marginBottom: 3 }}>{t('verify_title')}</div>
+                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+                     {t('verify_sub')}
+                   </div>
                 </div>
                 <ChevronLeft size={18} color="rgba(255,255,255,0.7)" style={{ flexShrink: 0, marginTop: 4 }} />
               </div>
@@ -232,8 +234,8 @@ export default function Profile() {
         {/* Quick links */}
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
           {[
-          { icon: Briefcase, label: 'פרופיל עובד', sub: 'מקצוע, תעודות, ערים', to: '/worker-profile', color: '#1a6fd4' },
-          { icon: CreditCard, label: 'תנועת קרדיטים', sub: 'יתרה, תשלומים, היסטוריה', to: '/wallet', color: '#16a34a' }].
+           { icon: Briefcase, label: t('worker_profile'), sub: t('profession_certs_cities') || 'מקצוע, תעודות, ערים', to: '/worker-profile', color: '#1a6fd4' },
+           { icon: CreditCard, label: t('credit_movement'), sub: t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה', to: '/wallet', color: '#16a34a' }].
           map(({ icon: Icon, label, sub, to, color }, i, arr) =>
           <Link key={to} to={to} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--border-1)' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

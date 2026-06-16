@@ -6,6 +6,7 @@ import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, X
 import CreditIcon from '@/components/CreditIcon';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const STATUS_TABS = [
 { key: 'inprogress', label: 'פעילות', icon: '🟣' },
@@ -44,6 +45,7 @@ function TaskRow({ task, badge, onRepost }) {
 
 export default function Wallet() {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('inprogress');
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -95,16 +97,16 @@ export default function Wallet() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
-      <PageHeader title="הארנק שלי" />
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader title={t('wallet_title')} />
 
       {/* Stats hero */}
       <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {[
-            { icon: Trophy, label: "משימות שהושלמו", value: completedCount },
-            { icon: TrendingUp, label: 'פעיל כרגע', value: inProgressTasks.length },
-            { icon: Coins, label: 'קרדיטים', value: me?.worker_credits ?? 100 },
+            { icon: Trophy, label: t('completed_count'), value: completedCount },
+            { icon: TrendingUp, label: t('active_now'), value: inProgressTasks.length },
+            { icon: Coins, label: t('credits'), value: me?.worker_credits ?? 100 },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
               <Icon size={13} color="rgba(255,255,255,0.6)" style={{ marginBottom: 4 }} />
@@ -120,9 +122,9 @@ export default function Wallet() {
         {creditTxns.length > 0 && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Coins size={15} color="#1a6fd4" />
-              <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>היסטוריית קרדיטים</span>
-            </div>
+               <Coins size={15} color="#1a6fd4" />
+               <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>{t('credit_history')}</span>
+             </div>
             <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
               {creditTxns.map((txn) => {
                 const typeLabels = {
@@ -158,8 +160,8 @@ export default function Wallet() {
         {/* My worker tasks */}
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Briefcase size={15} color="#0f2b6b" />
-            <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>המשימות שלי (כעובד)</span>
+             <Briefcase size={15} color="#0f2b6b" />
+             <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>{t('my_tasks_worker')}</span>
             {inProgressTasks.length > 0 && (
               <span style={{ background: '#dc2626', color: 'white', fontSize: 10, fontWeight: 900, padding: '2px 7px', borderRadius: 20 }}>{inProgressTasks.length}</span>
             )}

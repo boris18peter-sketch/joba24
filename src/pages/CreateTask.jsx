@@ -11,6 +11,7 @@ import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
