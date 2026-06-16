@@ -445,12 +445,13 @@ export default function TaskDetail() {
     }
   });
 
-  const handleApply = async (msgOverride) => {
+  const handleApply = async (msgOverride, imagesOverride) => {
     if (applyLoading) return;
     setApplyLoading(true);
     const messageToSend = msgOverride !== undefined ? msgOverride : applyMessage;
+    const imagesToSend = imagesOverride || [];
     try {
-      const res = await base44.functions.invoke('applyForTask', { taskId: id, message: messageToSend });
+      const res = await base44.functions.invoke('applyForTask', { taskId: id, message: messageToSend, images: imagesToSend });
       const data = res.data;
 
       if (data?.error === 'already_applied') {
@@ -644,8 +645,19 @@ export default function TaskDetail() {
         document.body
       )}
 
+      {isWorker && <WorkerStatusAlert task={task} me={me} />}
       <PageHeader title={task.title} right={null} />
       
+
+      {/* ActiveTaskBanner — shown above the main card, same as HomeFeed */}
+      {task.status === 'TAKEN' && (isOwner || isWorker) && (
+        <div style={{ padding: '0 12px', paddingTop: 8 }}>
+          <ActiveTaskBanner
+            tasks={[{ ...task, _roleHint: isWorker ? 'worker' : 'client' }]}
+            roleHint={isWorker ? 'worker' : 'client'}
+          />
+        </div>
+      )}
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
         {/* Expired banner */}
@@ -695,13 +707,22 @@ export default function TaskDetail() {
         <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
-          {/* ActiveTaskBanner when TAKEN — same component as HomeFeed for consistency */}
-          {task.status === 'TAKEN' && (isOwner || isWorker) && (
-            <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
-              <ActiveTaskBanner
-                tasks={[{ ...task, _roleHint: isWorker ? 'worker' : 'client' }]}
-                roleHint={isWorker ? 'worker' : 'client'}
+          {/* Worker tracker progress bar when TAKEN — compact version inside banner */}
+          {task.status === 'TAKEN' && (isOwner || isWorker) && task.worker_status && (
+            <div style={{ padding: '10px 18px 0', borderBottom: '1px solid rgba(255,255,255,0.18)', paddingBottom: 10 }}>
+              <WorkerTrackerBar
+                task={task}
+                isWorker={isWorker}
+                isOwner={isOwner}
+                onUpdate={handleWorkerUpdate}
+                showMapButton={!!(task.worker_lat && task.worker_lng)}
+                onMapToggle={() => setShowWorkerMap((v) => !v)}
               />
+              {showWorkerMap && isOwner && task.worker_lat && task.worker_lng && (
+                <div style={{ marginTop: 10, borderRadius: 16, overflow: 'hidden' }}>
+                  <LiveWorkerMap task={task} />
+                </div>
+              )}
             </div>
           )}
 
@@ -1144,7 +1165,7 @@ export default function TaskDetail() {
             canApplyManual={canApplyManual}
             myApp={myApp} myReview={myReview}
             applyLoading={applyLoading}
-            onApply={(msg) => { setApplyMessage(msg); handleApply(msg); }}
+            onApply={(msg, imgs) => { setApplyMessage(msg); handleApply(msg, imgs); }}
             onSetShowApplyForm={setShowApplyForm}
             showApplyForm={showApplyForm}
           />

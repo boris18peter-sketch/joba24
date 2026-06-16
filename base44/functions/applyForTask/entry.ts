@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { taskId, message } = await req.json();
+    const { taskId, message, images } = await req.json();
     if (!taskId) return Response.json({ error: 'taskId required' }, { status: 400 });
 
     // Fetch task
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
       worker_rating: userData?.rating || 0,
       worker_tasks_count: userData?.score_tasks || 0,
       message: message || '',
+      images: images || [],
       status: 'pending',
       credits_charged: creditsRequired,
     });

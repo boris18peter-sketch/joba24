@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X } from 'lucide-react';
+import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 
@@ -12,6 +13,7 @@ export default function TaskApplicants({ task, onApprove }) {
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   // Track which application IDs are currently being declined (prevents double-click)
   const decliningRef = useRef(new Set());
@@ -273,6 +275,24 @@ export default function TaskApplicants({ task, onApprove }) {
                 {app.message && (
                   <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{app.message}</p>
                 )}
+                {app.images?.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, marginTop: 5, flexWrap: 'wrap' }}>
+                    {app.images.slice(0, 3).map((url, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setLightbox({ open: true, images: app.images, index: i })}
+                        style={{ width: 40, height: 40, borderRadius: 8, overflow: 'hidden', border: '1.5px solid #e8edf5', padding: 0, cursor: 'pointer', position: 'relative', background: '#f1f5f9', flexShrink: 0 }}
+                      >
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        {i === 2 && app.images.length > 3 && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: 'white' }}>
+                            +{app.images.length - 3}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -340,6 +360,12 @@ export default function TaskApplicants({ task, onApprove }) {
         );
       })}
       {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
+      <MediaLightbox
+        isOpen={lightbox.open}
+        items={lightbox.images.map(url => ({ type: 'image', url }))}
+        initialIndex={lightbox.index}
+        onClose={() => setLightbox(l => ({ ...l, open: false }))}
+      />
     </div>
   );
 }

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Loader2, Send, X } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import ImageUploader from '@/components/ImageUploader';
 
 export default function ApplySheet({ task, onClose, onApply, loading }) {
   const [message, setMessage] = useState('');
+  const [images, setImages] = useState([]);
   const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
 
   return createPortal(
@@ -64,10 +66,16 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
           />
         </div>
 
+        {/* Images */}
+        <div style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>תמונות (לא חובה)</p>
+          <ImageUploader images={images} onChange={setImages} />
+        </div>
+
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => onApply(message)}
+            onClick={() => onApply(message, images)}
             disabled={loading}
             style={{ flex: 1, height: 52, borderRadius: 16, background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}
           >
