@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function getDistance(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -17,6 +18,7 @@ function getDistance(lat1, lng1, lat2, lng2) {
 }
 
 export default function DailyGoal() {
+  const { t, isRTL } = useLanguage();
   const [goal, setGoal] = useState('');
   const [radius, setRadius] = useState(10);
   const [goalSet, setGoalSet] = useState(false);
@@ -133,8 +135,8 @@ ${JSON.stringify(tasksSummary, null, 2)}
   const displayTasks = recommendedTaskIds.length > 0 ? recommendedTaskIds : openTasksNearby.slice(0, 5);
 
   return (
-    <div style={{ background: '#f4f7fb', paddingBottom: 80 }} dir="rtl">
-      <PageHeader title="Daily Goal" />
+    <div style={{ background: '#f4f7fb', paddingBottom: 80 }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader title={t('daily_goal')} />
 
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '44px 20px 28px', position: 'relative', overflow: 'hidden' }}>
@@ -144,15 +146,15 @@ ${JSON.stringify(tasksSummary, null, 2)}
             <Target size={22} color="white" />
           </div>
           <div>
-            <div style={{ color: 'white', fontSize: 20, fontWeight: 900 }}>Daily Goal</div>
-             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>Plan your work day</div>
+            <div style={{ color: 'white', fontSize: 20, fontWeight: 900 }}>{t('daily_goal')}</div>
+             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{t('plan_work_day')}</div>
           </div>
         </div>
 
         {goalSet && goalNum > 0 && (
           <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 18, padding: '16px 18px', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Progress</div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>{t('progress')}</div>
               <div style={{ color: 'white', fontSize: 13, fontWeight: 700 }}>₪{earned} / ₪{goalNum}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 99, height: 10, overflow: 'hidden' }}>
@@ -160,11 +162,11 @@ ${JSON.stringify(tasksSummary, null, 2)}
             </div>
             {progress >= 100 ? (
               <div style={{ color: '#4ade80', fontSize: 13, fontWeight: 800, marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <CheckCircle2 size={16} /> 🎉 You reached your goal!
+              <CheckCircle2 size={16} /> 🎉 {t('reached_goal')}
               </div>
-            ) : (
+              ) : (
               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 8 }}>
-                ₪{remaining} left to reach goal
+              ₪{remaining} {t('km_left')}
               </div>
             )}
           </div>
@@ -175,17 +177,17 @@ ${JSON.stringify(tasksSummary, null, 2)}
 
         {/* Goal setter */}
         <div style={{ background: 'white', borderRadius: 20, padding: 18, border: '1px solid #dce8f5', boxShadow: '0 2px 10px rgba(26,111,212,0.06)' }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', marginBottom: 14 }}>Set income goal</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b', marginBottom: 14 }}>{t('set_income_goal')}</div>
 
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, color: '#666', fontWeight: 600, marginBottom: 6, display: 'block' }}>How much do you want to earn today?</label>
+            <label style={{ fontSize: 12, color: '#666', fontWeight: 600, marginBottom: 6, display: 'block' }}>{t('how_much_earn')}</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f4f7fb', borderRadius: 14, padding: '10px 14px', border: '1px solid #dce8f5' }}>
               <span style={{ fontSize: 20, fontWeight: 900, color: '#0f2b6b' }}>₪</span>
               <input
                 type="number"
                 value={goal}
                 onChange={e => setGoal(e.target.value)}
-                placeholder="E.g.: 1000"
+                placeholder={`${t('example')}: 1000`}
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 24, fontWeight: 900, color: '#0f2b6b', direction: 'ltr', textAlign: 'right' }}
               />
             </div>
@@ -202,8 +204,8 @@ ${JSON.stringify(tasksSummary, null, 2)}
 
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12, color: '#666', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-               <span>Task search radius</span>
-               <span style={{ color: '#1a6fd4', fontWeight: 800 }}>{radius} km</span>
+               <span>{t('task_search_radius')}</span>
+               <span style={{ color: '#1a6fd4', fontWeight: 800 }}>{radius} {t('km')}</span>
              </label>
             <input
               type="range"
@@ -212,7 +214,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
               style={{ width: '100%', accentColor: '#1a6fd4' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa', marginTop: 4 }}>
-              <span>1 km</span><span>50 km</span>
+              <span>1 {t('km')}</span><span>50 {t('km')}</span>
             </div>
           </div>
 
@@ -220,9 +222,9 @@ ${JSON.stringify(tasksSummary, null, 2)}
             style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 900, fontSize: 16, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: !goal ? 0.5 : 1 }}
           >
             {loadingPlan ? (
-               <><div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Building plan...</>
+               <><div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />{t('building_plan')}</>
              ) : (
-               <><Target size={18} />Build my plan</>
+               <><Target size={18} />{t('build_plan')}</>
              )}
           </button>
         </div>
@@ -231,7 +233,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
         {aiPlan?.summary && (
           <div style={{ background: '#eff6ff', borderRadius: 18, padding: 16, border: '1px solid #bfdbfe' }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Zap size={16} color="#1a6fd4" /> AI Recommendation
+              <Zap size={16} color="#1a6fd4" /> {t('ai_recommendation')}
             </div>
             <p style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.65, margin: 0 }}>{aiPlan.summary}</p>
             {aiPlan.tip && (
@@ -241,7 +243,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
             )}
             {aiPlan.total_potential > 0 && (
               <div style={{ marginTop: 8, fontSize: 13, fontWeight: 800, color: '#15803d' }}>
-                Earning potential: ₪{aiPlan.total_potential}
+                {t('earning_potential')}: ₪{aiPlan.total_potential}
               </div>
             )}
           </div>
@@ -251,11 +253,11 @@ ${JSON.stringify(tasksSummary, null, 2)}
         {goalSet && displayTasks.length > 0 && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b' }}>Recommended tasks</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b' }}>{t('recommended_tasks')}</div>
               <button onClick={generatePlan} disabled={loadingPlan}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#1a6fd4', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
               >
-                <RefreshCw size={14} /> Refresh
+                <RefreshCw size={14} /> {t('refresh')}
               </button>
             </div>
 
@@ -268,7 +270,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                     <div style={{ background: 'white', borderRadius: 18, padding: '14px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 8px rgba(26,111,212,0.05)', position: 'relative', overflow: 'hidden' }}>
                       {i === 0 && aiPlan && (
                         <div style={{ position: 'absolute', top: 0, right: 0, background: '#fbbf24', fontSize: 10, fontWeight: 800, color: '#78350f', padding: '3px 10px', borderBottomLeftRadius: 12 }}>
-                          ⭐ Recommended
+                          ⭐ {t('recommended')}
                         </div>
                       )}
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -310,8 +312,8 @@ ${JSON.stringify(tasksSummary, null, 2)}
         {goalSet && openTasksNearby.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
-            <div style={{ fontWeight: 700, color: '#0f2b6b' }}>No open tasks within {radius} km</div>
-            <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>Try increasing the radius</div>
+            <div style={{ fontWeight: 700, color: '#0f2b6b' }}>{t('no_open_tasks')} {radius} {t('km')}</div>
+            <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>{t('try_increase_radius')}</div>
           </div>
         )}
       </div>

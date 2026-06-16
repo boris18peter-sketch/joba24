@@ -5,9 +5,11 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['all-tasks-lb'],
@@ -35,7 +37,7 @@ export default function Leaderboard() {
       const userRecord = usersMap[t.worker_id];
       board[t.worker_id] = {
         user_id: t.worker_id,
-        name: userRecord?.full_name || t.worker_name || 'Anonymous',
+        name: userRecord?.full_name || t.worker_name || t('anonymous'),
         avatar: userRecord?.full_name?.[0]?.toUpperCase() || '?',
         profile_photo: userRecord?.profile_photo || null,
         is_verified: userRecord?.is_verified || false,
@@ -64,14 +66,14 @@ export default function Leaderboard() {
   const podiumColors = ['#1a6fd4', '#3b8fe8', '#0a52b0'];
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
-      <PageHeader title="Leaderboard 🏆" />
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader title={t('leaderboard')} />
 
       {/* Top 3 Podium */}
       {sorted.length >= 3 && (
         <div className="px-4 pt-6 pb-2">
           <div className="rounded-3xl p-5" style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
-            <div className="text-center text-white/70 text-xs mb-4 font-semibold uppercase tracking-widest">⭐ Top Performers</div>
+            <div className="text-center text-white/70 text-xs mb-4 font-semibold uppercase tracking-widest">⭐ {t('top_performers')}</div>
             <div className="flex items-end justify-center gap-3">
               {[1, 0, 2].map(i => {
                 const user = sorted[i];
@@ -101,7 +103,7 @@ export default function Leaderboard() {
                         {'★'.repeat(Math.round(user.avg))}<span style={{ color: '#93c5fd', marginRight: 2 }}>{user.avg.toFixed(1)}</span>
                       </div>
                     )}
-                    <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 2 }}>{user.count} tasks</div>
+                    <div style={{ fontSize: 11, color: '#93c5fd', marginTop: 2 }}>{user.count} {t('tasks')}</div>
                     <div style={{
                       marginTop: 8, height: isFirst ? 72 : i === 1 ? 48 : 40, width: '100%',
                       background: `rgba(255,255,255,0.08)`,
@@ -125,8 +127,8 @@ export default function Leaderboard() {
         ) : sorted.length === 0 ? (
           <div className="text-center py-16">
             <Trophy className="w-12 h-12 mx-auto mb-3" style={{ color: '#93c5fd' }} />
-            <p className="font-semibold" style={{ color: 'var(--text-1)' }}>No data yet</p>
-            <p className="text-sm mt-1" style={{ color: '#1a6fd4' }}>Complete tasks to appear on the board!</p>
+            <p className="font-semibold" style={{ color: 'var(--text-1)' }}>{t('no_data_yet')}</p>
+            <p className="text-sm mt-1" style={{ color: '#1a6fd4' }}>{t('complete_tasks_board')}</p>
           </div>
         ) : (
           sorted.map((user, idx) => (
@@ -150,7 +152,7 @@ export default function Leaderboard() {
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{user.profession}</span>}
-                  <span className="text-xs text-gray-400">{user.count} tasks</span>
+                  <span className="text-xs text-gray-400">{user.count} {t('tasks')}</span>
                   {user.avg > 0 && (
                     <span className="flex items-center gap-0.5 text-xs text-yellow-600">
                       <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
@@ -161,7 +163,7 @@ export default function Leaderboard() {
               </div>
               <div className="text-right">
                 <div className="font-black text-base" style={{ color: '#1a6fd4' }}>₪{user.earnings.toLocaleString()}</div>
-                <div className="text-xs text-gray-400">Earnings</div>
+                <div className="text-xs text-gray-400">{t('earnings')}</div>
               </div>
             </div>
           ))

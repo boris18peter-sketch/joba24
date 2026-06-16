@@ -8,21 +8,11 @@ import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/lib/LanguageContext';
 
-const STATUS_TABS = [
-{ key: 'inprogress', label: 'פעילות', icon: '🟣' },
-{ key: 'completed', label: 'הושלמו', icon: '✅' },
-{ key: 'applications', label: 'בקשות', icon: '📋' },
-];
+// STATUS_TABS defined inside component to use translations
 
 
-function TaskRow({ task, badge, onRepost }) {
+function TaskRow({ task, badge, onRepost, badgeMap, repostLabel }) {
   const navigate = useNavigate();
-  const badgeMap = {
-    inprogress: { label: 'בביצוע', bg: '#ede9fe', color: '#6d28d9' },
-    awaiting: { label: 'ממתין לתשלום', bg: '#fef3c7', color: '#92400e' },
-    paid: { label: 'שולם', bg: '#dcfce7', color: '#166534' },
-    cancelled: { label: 'בוטל — פיצוי 20%', bg: '#fef9ec', color: '#b45309' }
-  };
   const b = badgeMap[badge] || badgeMap.inprogress;
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '13px 14px' }}>
@@ -35,7 +25,7 @@ function TaskRow({ task, badge, onRepost }) {
         {onRepost &&
         <button onClick={() => onRepost(task)}
         style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '5px 11px', cursor: 'pointer' }}>
-            <RotateCcw size={12} /> פרסם שוב
+            <RotateCcw size={12} /> {repostLabel}
           </button>
         }
       </div>
@@ -47,6 +37,12 @@ export default function Wallet() {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('inprogress');
+
+  const STATUS_TABS = [
+    { key: 'inprogress', label: t('active'), icon: '🟣' },
+    { key: 'completed', label: t('completed'), icon: '✅' },
+    { key: 'applications', label: t('applications'), icon: '📋' },
+  ];
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: workerTasks = [] } = useQuery({
@@ -89,11 +85,18 @@ export default function Wallet() {
 
   const tabBadge = { inprogress: 'inprogress', completed: 'paid' };
 
+  const badgeMap = {
+    inprogress: { label: t('in_progress'), bg: '#ede9fe', color: '#6d28d9' },
+    awaiting: { label: t('awaiting_payment'), bg: '#fef3c7', color: '#92400e' },
+    paid: { label: t('paid'), bg: '#dcfce7', color: '#166534' },
+    cancelled: { label: t('cancelled_refund'), bg: '#fef9ec', color: '#b45309' }
+  };
+
   const appStatusConfig = {
-    pending:  { label: 'ממתין', bg: '#fef3c7', color: '#92400e', icon: Clock },
-    approved: { label: 'אושר ✅', bg: '#dcfce7', color: '#166534', icon: CheckCircle2 },
-    rejected: { label: 'נדחה', bg: '#fee2e2', color: '#991b1b', icon: XCircle },
-    cancelled:{ label: 'בוטל', bg: '#f3f4f6', color: '#6b7280', icon: Ban },
+    pending:  { label: t('waiting_approval_short'), bg: '#fef3c7', color: '#92400e', icon: Clock },
+    approved: { label: `${t('approved') || 'אושר'} ✅`, bg: '#dcfce7', color: '#166534', icon: CheckCircle2 },
+    rejected: { label: t('notif_app_rejected') || 'נדחה', bg: '#fee2e2', color: '#991b1b', icon: XCircle },
+    cancelled:{ label: t('cancel') || 'בוטל', bg: '#f3f4f6', color: '#6b7280', icon: Ban },
   };
 
   return (
@@ -128,12 +131,12 @@ export default function Wallet() {
             <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
               {creditTxns.map((txn) => {
                 const typeLabels = {
-                  Signup_Bonus: 'בונוס הצטרפות',
-                  Application_Fee: 'עלות הגשת בקשה',
-                  Refund_Rejection: 'החזר — בקשה נדחתה',
-                  Refund_Expiration: 'החזר — משימה פגה',
-                  Loyalty_Reward: 'פרס נאמנות',
-                  Purchase: 'רכישת קרדיטים',
+                  Signup_Bonus: t('tx_signup_bonus') || 'Signup Bonus',
+                  Application_Fee: t('tx_application_fee') || 'Application Fee',
+                  Refund_Rejection: t('tx_refund_rejection') || 'Refund — Rejected',
+                  Refund_Expiration: t('tx_refund_expiration') || 'Refund — Expired',
+                  Loyalty_Reward: t('tx_loyalty_reward') || 'Loyalty Reward',
+                  Purchase: t('tx_purchase') || 'Credit Purchase',
                 };
                 const isPositive = txn.amount > 0;
                 return (
@@ -147,7 +150,7 @@ export default function Wallet() {
                         {isPositive ? '+' : ''}{txn.amount} <CreditIcon size={15} />
                       </div>
                       {txn.balance_after !== undefined && (
-                        <div style={{ fontSize: 10, color: '#aaa', textAlign: 'left' }}>יתרה: {txn.balance_after}</div>
+                        <div style={{ fontSize: 10, color: '#aaa', textAlign: 'left' }}>{t('balance_after') || 'Balance'}: {txn.balance_after}</div>
                       )}
                     </div>
                   </div>
@@ -180,7 +183,7 @@ export default function Wallet() {
           <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {activeTab === 'applications' ? (
               myApplications.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>📋 לא הגשת בקשות עדיין</div>
+                <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>📋 {t('no_tasks_here')}</div>
               ) : (
                 myApplications.map((app) => {
                   const cfg = appStatusConfig[app.status] || appStatusConfig.pending;
@@ -199,7 +202,7 @@ export default function Wallet() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#9ca3af' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CreditIcon size={13} /> {app.credits_charged}</span>
                         {(app.status === 'rejected' || app.status === 'cancelled') && app.credits_charged > 0 && (
-                          <span style={{ color: '#16a34a', fontWeight: 700 }}>← הוחזרו</span>
+                          <span style={{ color: '#16a34a', fontWeight: 700 }}>← {t('notif_credits_returned')}</span>
                         )}
                       </div>
                     </div>
@@ -208,11 +211,11 @@ export default function Wallet() {
               )
             ) : tabTasks[activeTab].length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: '#bbb', fontSize: 13 }}>
-                {activeTab === 'inprogress' ? '💼 אין משימות פעילות כרגע' : '🏆 אין משימות שהושלמו עדיין'}
+                {activeTab === 'inprogress' ? `💼 ${t('no_tasks_here')}` : `🏆 ${t('no_completed_tasks_yet')}`}
               </div>
             ) : (
-              tabTasks[activeTab].map((t) => (
-                <TaskRow key={t.id} task={t} badge={tabBadge[activeTab]} />
+              tabTasks[activeTab].map((task) => (
+                <TaskRow key={task.id} task={task} badge={tabBadge[activeTab]} badgeMap={badgeMap} repostLabel={t('repost')} />
               ))
             )}
           </div>

@@ -6,8 +6,10 @@ import { MessageCircle, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { formatDistanceToNow } from 'date-fns';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function ChatInbox() {
+  const { t, isRTL } = useLanguage();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   const queryClient = useQueryClient();
@@ -121,8 +123,8 @@ export default function ChatInbox() {
   const isLoading = !me;
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
-      <PageHeader title="Messages" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{visibleTasks.length} chats</span>} />
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader title={t('messages')} right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{visibleTasks.length} {t('chats')}</span>} />
 
       <div style={{ padding: '16px 16px 100px' }}>
         {isLoading ? (
@@ -130,14 +132,14 @@ export default function ChatInbox() {
         ) : visibleTasks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>No active conversations</p>
-            <p style={{ color: '#888', fontSize: 13, marginTop: 6 }}>Conversations will appear here when a task starts</p>
+            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>{t('no_active_conversations')}</p>
+            <p style={{ color: '#888', fontSize: 13, marginTop: 6 }}>{t('conversations_appear')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {visibleTasks.map(task => {
               const isMyTask = task.client_id === me?.id;
-              const otherName = isMyTask ? (task.worker_name || 'Worker') : (task.client_name || 'Client');
+              const otherName = isMyTask ? (task.worker_name || t('worker')) : (task.client_name || t('client'));
               const lastMsg = lastMessages[task.id];
               const unread = unreadCounts[task.id] || 0;
 
