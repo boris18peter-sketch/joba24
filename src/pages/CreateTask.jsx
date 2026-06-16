@@ -1,249 +1,782 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Loader2, Mic, MicOff, Zap, Sparkles, Send, ArrowUp, Check, MapPin, CreditCard, FileText, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users } from 'lucide-react';
+import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
-import { moderateText, moderateImage } from '@/hooks/useModeration';
+import PriceSuggestion from '@/components/PriceSuggestion';
+
+import { CATEGORIES } from '@/lib/categories';
+import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
-import CreateTaskForm from '@/components/CreateTaskForm';
-import TaskPublishedCelebration from '@/components/celebration/TaskPublishedCelebration';
+import { moderateText, moderateImage } from '@/hooks/useModeration';
+import CategoryExtraFields from '@/components/CategoryExtraFields';
+import LiveSearchOverlay from '@/components/LiveSearchOverlay';
+import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
+
+const DRAFT_KEY = 'joba24_create_task_draft';
+const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
+const EXPIRY_OPTIONS = [
+   { label: 'ללא תוקף', hours: null, i18n_key: 'expiry_never' },
+   { label: "30 דק'", hours: 0.5, i18n_key: 'expiry_30min' },
+   { label: 'שעה', hours: 1, i18n_key: 'expiry_1hour' },
+   { label: '2 שעות', hours: 2, i18n_key: 'expiry_2hours' },
+   { label: '4 שעות', hours: 4, i18n_key: 'expiry_4hours' },
+   { label: '6 שעות', hours: 6, i18n_key: 'expiry_6hours' },
+   { label: 'יום', hours: 24, i18n_key: 'expiry_day' },
+   { label: '2 ימים', hours: 48, i18n_key: 'expiry_2days' },
+   { label: 'שבוע', hours: 168, i18n_key: 'expiry_week' },
+   { label: 'מותאם', hours: 'custom', i18n_key: 'expiry_custom' },
+];
+
+const URGENCY_TAGS = [
+  { value: 'immediate', emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
+  { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+];
+
+function SocialProofBar() {
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    staleTime: 60000,
+  });
+  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length || 238;
+  return (
+    <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      <span>הצטרף ל-<strong style={{ color: '#2563EB' }}>{completedCount}+</strong> משתמשים שכבר ביצעו משימות בהצלחה</span>
+    </div>
+  );
+}
+
+function MediaUploader({ images = [], videoUrl = '', onImagesChange, onVideoChange, t }) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleFiles = async (files) => {
+    if (!files?.length) return;
+    setUploading(true);
+    const newImages = [...images];
+    let newVideo = videoUrl;
+    for (const file of Array.from(files)) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      if (file.type.startsWith('video/')) {
+        newVideo = file_url;
+        onVideoChange(file_url);
+      } else {
+        if (newImages.length < 4) newImages.push(file_url);
+      }
+    }
+    onImagesChange(newImages);
+    onVideoChange(newVideo);
+    setUploading(false);
+  };
+
+  const removeImage = (idx) => onImagesChange(images.filter((_, i) => i !== idx));
+  const hasMedia = images.length > 0 || videoUrl;
+
+  return (
+    <div>
+      {hasMedia && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+          {images.map((url, i) => (
+            <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden', border: '1.5px solid #dce8f5' }}>
+              <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <button onClick={() => removeImage(i)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={12} color="white" />
+              </button>
+            </div>
+          ))}
+          {videoUrl && (
+            <div style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden', background: '#000', border: '1.5px solid #dce8f5' }}>
+              <video src={videoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}><Play size={18} color="white" fill="white" /></div>
+              <button onClick={() => onVideoChange('')} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={12} color="white" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        style={{ width: '100%', borderRadius: 16, border: '2px dashed #bfdbfe', background: '#f0f7ff', cursor: uploading ? 'not-allowed' : 'pointer', padding: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+      >
+        {uploading
+          ? <Loader2 size={22} className="animate-spin" color="#1a6fd4" />
+          : <Plus size={22} color="#1a6fd4" strokeWidth={2.5} />}
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{t('add_photos_video')}</span>
+      </button>
+      <input ref={fileRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
+    </div>
+  );
+}
+
+function SectionCard({ children }) {
+  return (
+    <div style={{ background: 'var(--card-bg)', borderRadius: 20, padding: '18px 16px', border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
+      {children}
+    </div>
+  );
+}
 
 const DEFAULT_FORM = {
   title: '',
   description: '',
   price: '',
+  max_price: '',
+  auto_bump_enabled: false,
+  requires_invoice: false,
   location_name: '',
   city: '',
   lat: null,
   lng: null,
-  payment_method: '',
-  category: 'other',
-  estimated_time: '1h',
-  max_price: '',
-  auto_bump_enabled: false,
-  is_story: false,
-  requires_invoice: false,
-  images: [],
-  video_url: '',
-  requirements: { vehicle: false, two_people: false, experience: false },
-  urgency_tag: '',
-  expiry_hours: null,
   address_building: '',
   address_floor: '',
   address_apartment: '',
   address_notes: '',
+  estimated_time: '1h',
+  category: 'other',
+  approval_mode: 'manual',
+  expiry_hours: null,
   custom_time: '',
+  is_story: false,
+  images: [],
+  video_url: '',
+  requirements: { vehicle: false, two_people: false, experience: false },
+  payment_method: '',
+  urgency_tag: '',
   custom_expiry_hours: '',
 };
 
 const PAYMENT_METHODS = [
-  { value: 'Cash', label: 'מזומן' },
-  { value: 'Bit', label: 'Bit' },
-  { value: 'PayBox', label: 'PayBox' },
-  { value: 'Other', label: 'אחר' },
+   { value: 'Cash', label: 'מזומן', i18n_key: 'cash' },
+   { value: 'Bit', label: 'Bit', i18n_key: 'bit' },
+   { value: 'PayBox', label: 'PayBox', i18n_key: 'paybox' },
+   { value: 'Other', label: 'אחר', i18n_key: 'other' },
 ];
 
-const MANDATORY_LABELS = {
-  title: 'כותרת',
-  description: 'תיאור',
-  price: 'מחיר',
-  location_name: 'כתובת',
-  payment_method: 'אמצעי תשלום',
+const TIME_OPTIONS = [
+   { value: '15m', label: '15 דקות', i18n_key: 'time_15m' },
+   { value: '30m', label: '30 דקות', i18n_key: 'time_30m' },
+   { value: '1h', label: 'שעה', i18n_key: 'time_1h' },
+   { value: '2h', label: 'שעתיים', i18n_key: 'time_2h' },
+   { value: '3h', label: '3 שעות', i18n_key: 'time_3h' },
+   { value: '4h', label: '4 שעות', i18n_key: 'time_4h' },
+   { value: '6h', label: '6 שעות', i18n_key: 'time_6h' },
+   { value: 'day', label: 'יום שלם', i18n_key: 'time_day' },
+   { value: 'week', label: 'שבוע', i18n_key: 'time_week' },
+   { value: 'custom', label: 'מותאם אישית', i18n_key: 'time_custom' },
+];
+
+// Requirements per category — each category shows only relevant options
+const CATEGORY_REQUIREMENTS = {
+  moving: [
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב פרטי' },
+      { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
+      { key: 'truck', label: 'טנדר / משאית' },
+    ]},
+    { label: 'כמות אנשים', items: [
+      { key: 'two_people', label: '2 אנשים' },
+      { key: 'three_people', label: '3 אנשים' },
+      { key: 'four_plus_people', label: '4+ אנשים' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
+      { key: 'driver', label: 'נהג מקצועי' },
+    ]},
+  ],
+  delivery: [
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב פרטי' },
+      { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
+      { key: 'motorcycle', label: 'קטנוע / אופנוע' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'driver', label: 'נהג מקצועי' },
+      { key: 'experience', label: 'ניסיון במשלוחים' },
+    ]},
+  ],
+  cleaning: [
+    { label: 'ניסיון', items: [
+      { key: 'cleaner_pro', label: 'מנקה מקצועי' },
+      { key: 'experience', label: 'ניסיון בניקיון' },
+      { key: 'certified', label: 'הסמכה' },
+    ]},
+    { label: 'כמות אנשים', items: [
+      { key: 'two_people', label: '2 אנשים' },
+      { key: 'three_people', label: '3 אנשים' },
+    ]},
+  ],
+  plumbing: [
+    { label: 'הסמכה', items: [
+      { key: 'plumber', label: 'אינסטלטור מוסמך' },
+      { key: 'certified', label: 'רישיון מקצועי' },
+    ]},
+    { label: 'כלי עבודה', items: [
+      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
+      { key: 'drill', label: 'מקדחה / אינבורר' },
+    ]},
+  ],
+  electricity: [
+    { label: 'הסמכה', items: [
+      { key: 'electrician', label: 'חשמלאי מוסמך' },
+      { key: 'certified', label: 'רישיון מקצועי' },
+    ]},
+    { label: 'כלי עבודה', items: [
+      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
+      { key: 'ladder', label: 'סולם' },
+    ]},
+  ],
+  carpentry: [
+    { label: 'הסמכה', items: [
+      { key: 'carpenter', label: 'נגר מוסמך' },
+      { key: 'certified', label: 'רישיון מקצועי' },
+    ]},
+    { label: 'כלי עבודה', items: [
+      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
+      { key: 'drill', label: 'מקדחה / אינבורר' },
+      { key: 'grinder', label: 'מטחנה / גרינדר' },
+    ]},
+  ],
+  painting: [
+    { label: 'הסמכה', items: [
+      { key: 'painter_pro', label: 'צבעי מוסמך' },
+      { key: 'experience', label: 'ניסיון בצביעה' },
+    ]},
+    { label: 'כלי עבודה', items: [
+      { key: 'ladder', label: 'סולם' },
+      { key: 'tools_basic', label: 'ציוד צביעה' },
+    ]},
+  ],
+  gardening: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון בגינון' },
+      { key: 'certified', label: 'הסמכה' },
+    ]},
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לפינוי פסולת' },
+    ]},
+    { label: 'כמות אנשים', items: [
+      { key: 'two_people', label: '2 אנשים' },
+    ]},
+  ],
+  ac: [
+    { label: 'הסמכה', items: [
+      { key: 'certified', label: 'רישיון טכנאי מזגנים' },
+      { key: 'electrician', label: 'חשמלאי מוסמך' },
+      { key: 'experience', label: 'ניסיון במזגנים' },
+    ]},
+    { label: 'כלי עבודה', items: [
+      { key: 'tools_basic', label: 'ציוד טכנאי' },
+      { key: 'ladder', label: 'סולם' },
+      { key: 'drill', label: 'מקדחה' },
+    ]},
+  ],
+  locksmith: [
+    { label: 'הסמכה', items: [
+      { key: 'certified', label: 'רישיון מנעולן' },
+      { key: 'experience', label: 'ניסיון' },
+    ]},
+    { label: 'כלי עבודה', items: [
+      { key: 'tools_basic', label: 'ארגז כלים' },
+    ]},
+  ],
+  shopping: [
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לקניות' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'heavy_lifting', label: 'יכולת נשיאת משאות' },
+      { key: 'english', label: 'אנגלית' },
+    ]},
+  ],
+  babysitting: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון עם ילדים' },
+      { key: 'experience_animals', label: 'ניסיון עם בעלי חיים' },
+      { key: 'certified', label: 'הסמכה / תעודה' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'english', label: 'אנגלית' },
+    ]},
+  ],
+  tutoring: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון בהוראה' },
+      { key: 'certified', label: 'תעודת הוראה' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'english', label: 'אנגלית' },
+    ]},
+  ],
+  it_support: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון בתמיכה' },
+      { key: 'certified', label: 'הסמכה מקצועית' },
+    ]},
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לביקורי בית' },
+    ]},
+  ],
 };
+
+// Default / fallback requirements for "other" and any uncategorized
+const DEFAULT_REQUIREMENT_CATEGORIES = [
+  { label: 'כלי רכב', items: [
+    { key: 'vehicle', label: 'רכב פרטי' },
+    { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
+    { key: 'motorcycle', label: 'קטנוע / אופנוע' },
+  ]},
+  { label: 'כלי עבודה', items: [
+    { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
+    { key: 'drill', label: 'מקדחה / אינבורר' },
+    { key: 'ladder', label: 'סולם' },
+  ]},
+  { label: 'ניסיון מקצועי', items: [
+    { key: 'experience', label: 'ניסיון בתחום' },
+    { key: 'certified', label: 'הסמכה / רישיון' },
+    { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
+  ]},
+  { label: 'כמות אנשים', items: [
+    { key: 'two_people', label: '2 אנשים' },
+    { key: 'three_people', label: '3 אנשים' },
+    { key: 'four_plus_people', label: '4+ אנשים' },
+  ]},
+];
+
+const getRequirementCategories = (category) =>
+  CATEGORY_REQUIREMENTS[category] || DEFAULT_REQUIREMENT_CATEGORIES;
 
 export default function CreateTask() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
   const { isAuthenticated, login } = useAuth();
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+  const editId = searchParams.get('editId');
+  const isEditMode = !!editId;
+  const isRepostMode = isEditMode && searchParams.get('repost') === '1';
+  const isRepost = !isEditMode && searchParams.get('repost') === '1';
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState(DEFAULT_FORM);
-  const [publishing, setPublishing] = useState(false);
-  const [showAddressPicker, setShowAddressPicker] = useState(false);
-  const [showPaymentPicker, setShowPaymentPicker] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [showNoCreditsModal, setShowNoCreditsModal] = useState(false);
+  const [searchingTaskId, setSearchingTaskId] = useState(null);
+  const [searchingTaskTitle, setSearchingTaskTitle] = useState('');
+  const [searchingTaskPrice, setSearchingTaskPrice] = useState(null);
+  const [searchingTaskCategory, setSearchingTaskCategory] = useState('');
+  const [searchingTaskLocation, setSearchingTaskLocation] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [suggestedFeatures, setSuggestedFeatures] = useState([]);
-  const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const submittingRef = useRef(false);
-  const hasSentInitialRef = useRef(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
-  const [publishedTask, setPublishedTask] = useState(null);
-  const [createMode, setCreateMode] = useState('chat'); // 'chat' | 'form'
-
-  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Send initial assistant greeting
-  useEffect(() => {
-    if (hasSentInitialRef.current) return;
-    hasSentInitialRef.current = true;
-    setMessages([{
-      role: 'assistant',
-      content: '👋 היי! אני אעזור לך לפרסם משימה בקלות.\n\nפשוט תאר לי מה אתה צריך — ואני אדאג לכל השאר.\n\nאפשר לכתוב או להקליט 🎙️',
-    }]);
-  }, []);
-
-  const callAssistant = useCallback(async (newMessages, currentData) => {
-    try {
-      const response = await base44.functions.invoke('taskAssistant', {
-        messages: newMessages,
-        currentData,
-      });
-      const data = response.data;
-      return data;
-    } catch (err) {
-      return { assistantMessage: 'מצטער, קרתה שגיאה. אפשר לנסות שוב?', extractedData: {}, missingMandatoryFields: [], suggestedFeatures: [], isReadyToPublish: false };
-    }
-  }, []);
-
-  const handleSend = async (text) => {
-    if (!text?.trim() || loading) return;
-    const userMsg = { role: 'user', content: text.trim() };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput('');
-    setLoading(true);
-
-    const result = await callAssistant(newMessages, form);
-
-    // Merge extracted data into form
-    if (result.extractedData && Object.keys(result.extractedData).length > 0) {
-      setForm(prev => {
-        const next = { ...prev };
-        for (const [key, val] of Object.entries(result.extractedData)) {
-          if (val !== undefined && val !== null && val !== '') {
-            next[key] = val;
-          }
-        }
-        return next;
-      });
-    }
-
-    setSuggestedFeatures(result.suggestedFeatures || []);
-    setIsReady(result.isReadyToPublish || false);
-
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: result.assistantMessage || 'הבנתי, ממשיך...',
-      missingFields: result.missingMandatoryFields || [],
-      suggestedFeatures: result.suggestedFeatures || [],
-      isReady: result.isReadyToPublish || false,
-    }]);
-    setLoading(false);
-  };
 
   const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
-      audioChunksRef.current = [];
-      mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setTranscribing(true);
-        const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
-        const file = new File([blob], 'recording.webm', { type: mr.mimeType });
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
-        setTranscribing(false);
-        if (text) handleSend(text);
-      };
-      mr.start();
-      mediaRecorderRef.current = mr;
-      setRecording(true);
-    } catch (e) {
-      toast.error('לא ניתן לגשת למיקרופון');
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+    audioChunksRef.current = [];
+    mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+    mr.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      setTranscribing(true);
+      const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
+      const file = new File([blob], 'recording.webm', { type: mr.mimeType });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
+      set('description', form.description ? form.description + '\n' + text : text);
+      setTranscribing(false);
+    };
+    mr.start();
+    mediaRecorderRef.current = mr;
+    setRecording(true);
   };
 
   const stopRecording = () => {
     mediaRecorderRef.current?.stop();
     setRecording(false);
   };
+  const [showNoCreditsModal, setShowNoCreditsModal] = useState(false);
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [extraFieldsText, setExtraFieldsText] = useState('');
+  const draftTimerRef = useRef(null);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend(input);
+  // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
+  const [form, setForm] = useState(() => {
+    if (isRepost) {
+      return {
+        ...DEFAULT_FORM,
+        title: searchParams.get('title') || '',
+        description: searchParams.get('description') || '',
+        price: searchParams.get('price') || '',
+        location_name: searchParams.get('location_name') || '',
+        city: searchParams.get('city') || '',
+        estimated_time: searchParams.get('estimated_time') || '1h',
+        category: searchParams.get('category') || 'other',
+        approval_mode: searchParams.get('approval_mode') || 'instant',
+      };
+    }
+    // Try to load saved draft
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return { ...DEFAULT_FORM, ...JSON.parse(saved) };
+    } catch (_) {}
+    return DEFAULT_FORM;
+  });
+
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  // Edit mode: load existing task
+  const { data: editTask } = useQuery({
+    queryKey: ['task', editId],
+    queryFn: () => base44.entities.Task.filter({ id: editId }).then(d => d[0]),
+    enabled: isEditMode,
+  });
+  const { data: editApplications = [] } = useQuery({
+    queryKey: ['applications', editId],
+    queryFn: () => base44.entities.TaskApplication.filter({ task_id: editId }),
+    enabled: isEditMode,
+  });
+  const hasActiveApplications = isEditMode && editApplications.some(a => a.status === 'pending' || a.status === 'approved');
+
+  // Populate form when editTask loads
+  useEffect(() => {
+    if (!editTask || !isEditMode) return;
+    const isCustomTime = editTask.estimated_time && !['15m', '30m', '1h', '2h'].includes(editTask.estimated_time);
+    setForm({
+      ...DEFAULT_FORM,
+      title: editTask.title || '',
+      description: editTask.description || '',
+      price: String(editTask.price || ''),
+      max_price: String(editTask.max_price || ''),
+      auto_bump_enabled: editTask.auto_bump_enabled || false,
+      location_name: editTask.location_name || '',
+      city: editTask.city || '',
+      lat: editTask.lat || null,
+      lng: editTask.lng || null,
+      address_building: editTask.address_building || '',
+      address_floor: editTask.address_floor || '',
+      address_apartment: editTask.address_apartment || '',
+      address_notes: editTask.address_notes || '',
+      estimated_time: isCustomTime ? 'custom' : (editTask.estimated_time || '1h'),
+      custom_time: isCustomTime ? editTask.estimated_time : '',
+      category: editTask.category || 'other',
+      approval_mode: 'manual',
+      expiry_hours: editTask.expiry_duration_hours || null,
+      images: editTask.images || [],
+      video_url: editTask.video_url || '',
+      requirements: editTask.requirements || { vehicle: false, two_people: false, experience: false },
+      payment_method: editTask.payment_method || '',
+      urgency_tag: editTask.urgency_tag || '',
+      requires_invoice: editTask.requires_invoice || false,
+      custom_expiry_hours: '',
+    });
+    setAddressConfirmed(!!(editTask.lat && editTask.lng));
+  }, [editTask?.id]);
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+  const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
+  const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
+  const [errors, setErrors] = useState({});
+  const [showErrorBanner, setShowErrorBanner] = useState(false);
+  const [moderationErrors, setModerationErrors] = useState({});
+  const [checkingModeration, setCheckingModeration] = useState('');
+  // Track whether address was selected from autocomplete (not free text)
+  // In repost mode, location_name is pre-filled from URL — treat it as confirmed
+  const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng) || (isRepost && !!form.location_name));
+
+  const fieldRefs = {
+    title: useRef(null),
+    description: useRef(null),
+    price: useRef(null),
+    location_name: useRef(null),
+    city: useRef(null),
+  };
+
+  // Auto-save draft on form change (debounced 1s)
+  useEffect(() => {
+    if (isRepost || isEditMode) return;
+    clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
+      // Never persist price/bump settings — these must always be entered fresh
+      // Only save if user has typed something meaningful
+      if (form.title || form.description) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
+        setDraftSaved(true);
+        setTimeout(() => setDraftSaved(false), 2000);
+      }
+    }, 1000);
+    return () => clearTimeout(draftTimerRef.current);
+  }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
+
+  // Category-description mismatch keywords
+  const CATEGORY_KEYWORDS = {
+    plumbing: ['אינסטלטור', 'צנרת', 'ברז', 'צינור', 'מים', 'כיור', 'שירותים', 'אסלה', 'דוד', 'נזילה', 'ניקוז', 'ביוב', 'אינסטלציה', 'צינורות', 'קולנית'],
+    electricity: ['חשמל', 'חשמלאי', 'שקע', 'מתג', 'לוח חשמל', 'נורה', 'חיווט', 'מפסק', 'תקע', 'חוט חשמל', 'התקנת שקע', 'לוח ראשי', 'מפל מתח'],
+    gardening: ['גינה', 'גינון', 'צמחים', 'עשב', 'גזם', 'גיזום', 'שיח', 'עשבייה', 'השקיה', 'דשא', 'זבל גינה', 'ערוגה', 'עץ', 'עצים', 'גינת'],
+    cleaning: ['ניקיון', 'לנקות', 'ניקוי', 'שואב אבק', 'מגב', 'חלונות', 'ניקוי עמוק', 'ניקוי בית', 'ניקוי משרד', 'ניקוי דירה', 'מגבון', 'אבק', 'רצפה'],
+    moving: ['הובלה', 'להוביל', 'ארגזים', 'רהיטים', 'מעבר דירה', 'משאית', 'ואן', 'עזרה בהובלה', 'נשיאה', 'לפרק', 'להרכיב', 'להעביר ריהוט'],
+    painting: ['צביעה', 'לצבוע', 'צבע קיר', 'קירות', 'רולר', 'מברשת צבע', 'גג', 'גדר', 'סיוד', 'צבעי', 'ניקוז צבע'],
+    carpentry: ['נגרות', 'נגר', 'ארון', 'מדף', 'ריהוט עץ', 'הרכבת ריהוט', 'תיקון ריהוט', 'דלת עץ', 'מטבח', 'ארונות', 'חיבור עץ'],
+    ac: ['מזגן', 'מיזוג', 'התקנת מזגן', 'תיקון מזגן', 'ניקוי מזגן', 'טכנאי מזגנים', 'קולר', 'מאוורר', 'מזגן מפוצל'],
+    locksmith: ['מנעול', 'מנעולן', 'פריצת מנעול', 'מפתח', 'כספת', 'החלפת מנעול', 'נעילה', 'פריצה', 'ידית דלת'],
+    shopping: ['קניות', 'לקנות', 'סופרמרקט', 'מוצרים', 'רשימת קניות', 'שליח קניות', 'רכישה', 'מכולת', 'קנייה'],
+    delivery: ['משלוח', 'לשלוח', 'להביא חבילה', 'שליח', 'חבילה', 'מסירה', 'אספקה', 'הגעה לכתובת', 'הסעת חבילה'],
+    babysitting: ['ילדים', 'ילד', 'ילדה', 'בייביסיטר', 'שמירה על ילד', 'גן ילדים', 'פעוט', 'תינוק', 'טיפול בילדים', 'לשמור על', 'בבייסיטינג', 'ביביסיטר'],
+    tutoring: ['שיעורים פרטיים', 'שיעור פרטי', 'מורה פרטי', 'לימוד', 'חונך', 'מתמטיקה', 'פיזיקה', 'כימיה', 'תגבור', 'הכנה לבגרות', 'עזרה בשיעורים'],
+    it_support: ['מחשב', 'רשת', 'תמיכה טכנית', 'תוכנה', 'חומרה', 'אינטרנט', 'ווייפיי', 'wifi', 'התקנת תוכנה', 'וירוס', 'טלפון תקוע', 'אפליקציה'],
+  };
+
+  // Check if text looks like gibberish (random key mashing)
+  // Returns error string if looks like gibberish, null if ok
+  const checkGibberish = (text, fieldLabel = 'הטקסט') => {
+    if (!text || text.trim().length < 4) return null;
+    const t = text.trim();
+    // Too short overall
+    if (t.length < 5) return null;
+    // Check for very long runs of consonants with no spaces or vowels (Hebrew gibberish)
+    const hebrewConsonants = /[בגדהוזחטיכלמנסעפצקרשתךםןף]/g;
+    const matches = t.match(hebrewConsonants);
+    const hebrewLetters = t.replace(/[^א-ת]/g, '');
+    // Detect if the string is mostly random short sequences with no recognizable words
+    const words = t.split(/\s+/).filter(w => w.length > 0);
+    if (words.length > 0) {
+      const avgLen = words.reduce((s, w) => s + w.length, 0) / words.length;
+      // Hebrew words are usually 2-8 chars, gibberish is often 1-2 random chars
+      const tinyWords = words.filter(w => w.replace(/[^א-ת]/g,'').length > 0 && w.replace(/[^א-ת]/g,'').length <= 1).length;
+      const tinyRatio = words.length > 0 ? tinyWords / words.length : 0;
+      if (tinyRatio > 0.65 && words.length >= 3) {
+        return `${fieldLabel} נראה כמו קלט לא תקין. אנא תאר את הנדרש בצורה ברורה.`;
+      }
+    }
+    // Check for runs of 5+ consecutive same/similar chars (lbgbmtz style)
+    if (/(.)\1{4,}/.test(t)) {
+      return `${fieldLabel} מכיל תווים חוזרים — אנא כתוב תיאור ברור.`;
+    }
+    // Check for all-consonant Hebrew with no vowel helpers (e.g. לבגבמצ)
+    if (hebrewLetters.length >= 4) {
+      const hebrewVowelLike = /[אויהא]/g;
+      const vowelCount = (hebrewLetters.match(hebrewVowelLike) || []).length;
+      const ratio = vowelCount / hebrewLetters.length;
+      if (ratio < 0.05 && hebrewLetters.length > 6) {
+        return `${fieldLabel} נראה כמו אותיות אקראיות. אנא כתוב תיאור שמובן לאחרים.`;
+      }
+    }
+    return null;
+  };
+
+  // Check if the combined title+description matches the selected category
+  // Returns error string if mismatch, null if ok
+  const checkCategoryDescriptionMatch = (category, description, title = '') => {
+    if (!category || category === 'other') return null;
+    const keywords = CATEGORY_KEYWORDS[category];
+    if (!keywords) return null;
+
+    const combined = `${title} ${description}`.toLowerCase();
+    // Must have some meaningful content
+    if (combined.trim().length < 15) return null;
+
+    // 1. Check if the combined text has ANY keyword from the chosen category
+    const hasMatch = keywords.some(kw => combined.includes(kw.toLowerCase()));
+
+    // 2. Check if the combined text strongly matches a DIFFERENT category (cross-category pollution)
+    let detectedOtherCategory = null;
+    if (!hasMatch) {
+      for (const [otherCat, otherKws] of Object.entries(CATEGORY_KEYWORDS)) {
+        if (otherCat === category) continue;
+        const otherMatchCount = otherKws.filter(kw => combined.includes(kw.toLowerCase())).length;
+        if (otherMatchCount >= 1) {
+          detectedOtherCategory = otherCat;
+          break;
+        }
+      }
+    }
+
+    if (!hasMatch) {
+      const catLabel = CATEGORIES.find(c => c.value === category)?.label || category;
+      if (detectedOtherCategory) {
+        const detectedLabel = CATEGORIES.find(c => c.value === detectedOtherCategory)?.label || detectedOtherCategory;
+        return `הכותרת והתיאור נראים כמו "${detectedLabel}", אבל הקטגוריה שנבחרה היא "${catLabel}". שנה את הקטגוריה לקטגוריה המתאימה, או עדכן את הכותרת והתיאור.`;
+      }
+      return `הכותרת והתיאור לא תואמים לקטגוריה "${catLabel}". כדי שנמצא לך עובד מתאים, אנא תאר את המשימה בהתאם לקטגוריה שבחרת.`;
+    }
+    return null;
+  };
+
+  const checkFieldModeration = async (field, text) => {
+    if (!text || text.trim().length < 4) {
+      setModerationErrors(p => ({ ...p, [field]: null }));
+      return;
+    }
+    setCheckingModeration(field);
+    const result = await moderateText(text);
+    setCheckingModeration('');
+    if (result.flagged) {
+      setModerationErrors(p => ({ ...p, [field]: 'תוכן זה אינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.' }));
+    } else {
+      setModerationErrors(p => ({ ...p, [field]: null }));
     }
   };
 
-  const handlePublish = () => {
+  const handleSubmit = () => {
     if (!isAuthenticated) {
+      // Save current form to draft before showing login
+      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, is_story: form.is_story };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
       setShowLoginPrompt(true);
       return;
     }
-    doPublish();
+    doSubmit();
   };
 
-  const doPublish = async () => {
+  const doSubmit = async () => {
     if (submittingRef.current) return;
-    submittingRef.current = true;
-    setPublishing(true);
+    const newErrors = {};
+    if (!form.title) newErrors.title = true;
+    if (!form.description) newErrors.description = true;
+    if (!form.price) newErrors.price = true;
+    if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
+    if (!form.payment_method) newErrors.payment_method = true;
 
-    // Validate mandatory fields
-    if (!form.title || !form.description || !form.price || !form.location_name || !form.payment_method) {
-      toast.error('חסרים שדות חובה — אנא ודא שמילאת כותרת, תיאור, מחיר, כתובת ואמצעי תשלום');
-      setPublishing(false);
-      submittingRef.current = false;
+    // Edit mode: save & navigate
+    if (isEditMode) {
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setShowErrorBanner(true);
+        return;
+      }
+      // Gibberish check for edit mode too
+      const tg = checkGibberish(form.title, 'הכותרת');
+      const dg = checkGibberish(form.description, 'התיאור');
+      if (tg || dg) {
+        setModerationErrors({ title: tg || undefined, description: dg || undefined });
+        setShowErrorBanner(true);
+        return;
+      }
+      setLoading(true);
+      const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
+      const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
+      const expires = expiryHoursEdit ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() : null;
+      await base44.entities.Task.update(editId, {
+        title: form.title,
+        description: form.description,
+        price: hasActiveApplications ? editTask.price : Number(form.price),
+        max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
+        auto_bump_enabled: form.auto_bump_enabled,
+        location_name: form.location_name,
+        city: form.city,
+        lat: form.lat || undefined,
+        lng: form.lng || undefined,
+        address_building: form.address_building || undefined,
+        address_floor: form.address_floor || undefined,
+        address_apartment: form.address_apartment || undefined,
+        address_notes: form.address_notes || undefined,
+        estimated_time: estimatedTime,
+        category: form.category,
+        expiry_duration_hours: expiryHoursEdit,
+        expires_at: expires,
+        images: form.images,
+        video_url: form.video_url || undefined,
+        requirements: form.requirements,
+        payment_method: form.payment_method || undefined,
+        urgency_tag: form.urgency_tag || undefined,
+        requires_invoice: form.requires_invoice || false,
+        ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
+      });
+      setLoading(false);
+      toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
+      navigate(`/task/${editId}`);
+      return;
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setShowErrorBanner(true);
+      const order = ['title', 'description', 'price', 'location_name'];
+      const firstError = order.find(k => newErrors[k]);
+      if (firstError && fieldRefs[firstError]?.current) {
+        fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        fieldRefs[firstError].current.focus?.();
+      }
+      return;
+    }
+    setShowErrorBanner(false);
+    setErrors({});
+    setModerationErrors({});
+    setLoading(true); // disable button immediately to prevent double-clicks
+
+    // Gibberish / meaningless content check (fast, no API)
+    const titleGibberish = checkGibberish(form.title, 'הכותרת');
+    const descGibberish = checkGibberish(form.description, 'התיאור');
+    if (titleGibberish || descGibberish) {
+      setModerationErrors({ title: titleGibberish || undefined, description: descGibberish || undefined });
+      setShowErrorBanner(true);
+      setLoading(false);
       return;
     }
 
-    // Moderation checks
+    // Final moderation checks
+    setCheckingModeration('submit');
     const [titleCheck, descCheck] = await Promise.all([
       form.title ? moderateText(form.title) : Promise.resolve({ flagged: false }),
       form.description ? moderateText(form.description) : Promise.resolve({ flagged: false }),
     ]);
-
-    if (titleCheck.flagged || descCheck.flagged) {
-      toast.error('התוכן אינו עומד בכללי הקהילה. אנא תקן.');
-      setPublishing(false);
-      submittingRef.current = false;
+    setCheckingModeration('');
+    // Check category-description mismatch (title + description vs category)
+    const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
+    if (mismatch) {
+      setModerationErrors({ categoryMismatch: mismatch });
+      setShowErrorBanner(true);
+      setLoading(false);
       return;
     }
 
+    if (titleCheck.flagged || descCheck.flagged) {
+      const newModerationErrors = {};
+      if (titleCheck.flagged) newModerationErrors.title = 'הכותרת מכילה תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
+      if (descCheck.flagged) newModerationErrors.description = 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
+      setModerationErrors(newModerationErrors);
+      setShowErrorBanner(true);
+      setLoading(false);
+      return;
+    }
     for (const imgUrl of (form.images || [])) {
+      setCheckingModeration('images');
       const imgCheck = await moderateImage(imgUrl);
+      setCheckingModeration('');
       if (imgCheck.flagged) {
-        toast.error('אחת התמונות נחסמה עקב תוכן לא הולם.');
-        setPublishing(false);
-        submittingRef.current = false;
+        setModerationErrors({ images: 'אחת התמונות שהעלית נחסמה עקב תוכן לא הולם.' });
+        setShowErrorBanner(true);
+        setLoading(false);
         return;
       }
     }
 
-    // Story credit deduction
+    // Deduct 10 credits for story
     if (form.is_story) {
       const currentCredits = me?.worker_credits ?? 0;
       if (currentCredits < 10) {
         setShowNoCreditsModal(true);
-        setPublishing(false);
-        submittingRef.current = false;
+        setLoading(false);
         return;
       }
       const newBalance = currentCredits - 10;
       await base44.auth.updateMe({ worker_credits: newBalance });
+      // Record the transaction
       await base44.entities.CreditTransaction.create({
         user_id: me.id,
         amount: -10,
@@ -260,8 +793,11 @@ export default function CreateTask() {
     const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
     const created = await base44.entities.Task.create({
+      payment_method: form.payment_method,
       title: form.title,
-      description: form.description,
+      description: extraFieldsText
+        ? (form.description ? form.description + '\n\n' + extraFieldsText : extraFieldsText)
+        : form.description,
       price: Number(form.price),
       base_price: Number(form.price),
       max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
@@ -276,7 +812,7 @@ export default function CreateTask() {
       address_notes: form.address_notes || undefined,
       estimated_time: estimatedTime,
       category: form.category,
-      approval_mode: 'manual',
+      approval_mode: form.approval_mode,
       expiry_duration_hours: expiryHours || null,
       expires_at: expires,
       is_story: form.is_story,
@@ -284,7 +820,6 @@ export default function CreateTask() {
       images: form.images,
       video_url: form.video_url || undefined,
       requirements: form.requirements,
-      payment_method: form.payment_method,
       status: 'OPEN',
       requires_invoice: form.requires_invoice || false,
       urgency_tag: form.urgency_tag || undefined,
@@ -294,526 +829,540 @@ export default function CreateTask() {
       client_verified: me?.is_verified || false,
     });
 
-    setPublishing(false);
+    setLoading(false);
     submittingRef.current = false;
+    localStorage.removeItem(DRAFT_KEY);
+    toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {
-      setPublishedTask({ id: created.id, title: form.title, price: form.price, location_name: form.location_name });
-      setShowCelebration(true);
+      setSearchingTaskId(created.id);
+      setSearchingTaskTitle(form.title);
+      setSearchingTaskPrice(Number(form.price));
+      setSearchingTaskCategory(form.category);
+      setSearchingTaskLocation(form.location_name);
     } else {
       navigate('/');
     }
   };
 
-  const handleAddressSelect = ({ location_name, city, lat, lng }) => {
-    if (location_name) {
-      setForm(prev => ({ ...prev, location_name, city: city || '', lat, lng }));
-      setShowAddressPicker(false);
-    }
-  };
+  const activeBtn = { background: '#2563EB', color: 'white', border: 'none', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' };
+  const inactiveBtn = { background: 'var(--surface-3)', color: 'var(--text-2)', border: 'none' };
 
-  const handlePaymentSelect = (method) => {
-    setForm(prev => ({ ...prev, payment_method: method }));
-    setShowPaymentPicker(false);
-  };
-
-  const handleFeatureToggle = (feature) => {
-    if (feature.includes('סטורי')) {
-      const currentCredits = me?.worker_credits ?? 0;
-      if (!form.is_story && currentCredits < 10) {
-        setShowNoCreditsModal(true);
-        return;
-      }
-      setForm(prev => ({ ...prev, is_story: !prev.is_story }));
-    } else if (feature.includes('העלאת מחיר') || feature.includes('אוטומטית')) {
-      setForm(prev => ({ ...prev, auto_bump_enabled: !prev.auto_bump_enabled }));
-    } else if (feature.includes('חשבונית')) {
-      setForm(prev => ({ ...prev, requires_invoice: !prev.requires_invoice }));
-    }
-  };
-
-  const activeFeatureStyles = (active) => ({
-    background: active ? '#eff6ff' : 'var(--surface-3)',
-    border: `1.5px solid ${active ? '#93c5fd' : 'var(--border-1)'}`,
-    color: active ? '#1e40af' : 'var(--text-2)',
-    fontWeight: 700,
-  });
+  if (searchingTaskId) {
+    return (
+      <LiveSearchOverlay
+        taskId={searchingTaskId}
+        taskTitle={searchingTaskTitle}
+        taskPrice={searchingTaskPrice}
+        taskCategory={searchingTaskCategory}
+        taskLocation={searchingTaskLocation}
+        onDismiss={() => setSearchingTaskId(null)}
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--surface-1)' }} dir="rtl">
-      {showLoginPrompt && (
-        <LoginPromptModal
-          onLogin={() => { setShowLoginPrompt(false); login('/create-task'); }}
-          onClose={() => setShowLoginPrompt(false)}
-          type="publish"
-        />
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
+      {showVerify && (
+        <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
       {showNoCreditsModal && (
         <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />
       )}
-
-      {/* Header */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)',
-        padding: '7px 12px 6px',
-        display: 'flex', alignItems: 'center', gap: 12,
-      }}>
-        <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
-        <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>פרסום משימה</span>
-        {/* Mode toggle */}
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.15)', borderRadius: 10, padding: 2, gap: 1 }}>
-          <button onClick={() => setCreateMode('chat')}
-            style={{ padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: createMode === 'chat' ? 'rgba(255,255,255,0.9)' : 'transparent',
-              color: createMode === 'chat' ? '#1a6fd4' : 'rgba(255,255,255,0.7)',
-              display: 'flex', alignItems: 'center', gap: 4 }}>
-            <MessageCircle size={12} /> צ'אט
-          </button>
-          <button onClick={() => setCreateMode('form')}
-            style={{ padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              background: createMode === 'form' ? 'rgba(255,255,255,0.9)' : 'transparent',
-              color: createMode === 'form' ? '#1a6fd4' : 'rgba(255,255,255,0.7)',
-              display: 'flex', alignItems: 'center', gap: 4 }}>
-            <FileText size={12} /> טופס
-          </button>
-        </div>
-        {isReady && (
-          <button
-            onClick={handlePublish}
-            disabled={publishing}
-            className="btn-tap"
-            style={{
-              background: 'linear-gradient(135deg, #059669, #047857)',
-              color: 'white', border: 'none', borderRadius: 14,
-              padding: '8px 20px', fontSize: 14, fontWeight: 800,
-              cursor: publishing ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 4px 16px rgba(5,150,105,0.4)',
-            }}
-          >
-            {publishing ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-            {publishing ? 'מפרסם...' : 'פרסם עכשיו'}
-          </button>
-        )}
-      </div>
-
-      {/* ── CHAT MODE ── */}
-      {createMode === 'chat' && (<>
-      {/* Progress indicator */}
+      {showLoginPrompt && (
+        <LoginPromptModal
+          onLogin={() => {
+            setShowLoginPrompt(false);
+            login('/create-task');
+          }}
+          onClose={() => setShowLoginPrompt(false)}
+          type="publish"
+        />
+      )}
+      {/* Sticky header + progress bar combined */}
       {(() => {
-        const filled = [form.title, form.description, form.price, form.location_name, form.payment_method].filter(Boolean).length;
+        const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
         const pct = Math.round((filled / 5) * 100);
         return (
-          <div style={{ padding: '8px 16px', background: 'rgba(26,111,212,0.06)', borderBottom: '1px solid var(--border-1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>התקדמות</span>
-              <span style={{ fontSize: 10, color: pct === 100 ? '#059669' : 'var(--text-2)', fontWeight: 800 }}>
-                {pct}% ({filled}/5)
-              </span>
+          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
+              <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
+              <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
+        {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
+      </span>
+              {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
-            <div style={{ height: 3, background: 'var(--border-1)', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#059669' : '#1a6fd4', borderRadius: 99, transition: 'width 0.4s ease' }} />
+            {/* Progress bar */}
+            <div style={{ padding: '0 16px 12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>{t('form_progress')}</span>
+                <span style={{ fontSize: 10, color: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>{pct}%{pct === 100 ? ' ✓ ' + t('ready_to_publish') : ''}</span>
+              </div>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', borderRadius: 99, transition: 'width 0.4s ease' }} />
+              </div>
             </div>
           </div>
         );
       })()}
 
-      {/* Extracted data summary */}
-      {Object.values(form).some(v => v) && (
-        <div style={{ padding: '8px 16px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {form.title && (
-            <span style={{ fontSize: 11, fontWeight: 600, background: '#eff6ff', color: '#1e40af', borderRadius: 12, padding: '3px 10px', border: '1px solid #bfdbfe' }}>
-              📝 {form.title.slice(0, 25)}{form.title.length > 25 ? '...' : ''}
-            </span>
-          )}
-          {form.price && (
-            <span style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#166534', borderRadius: 12, padding: '3px 10px', border: '1px solid #bbf7d0' }}>
-              💰 ₪{form.price}
-            </span>
-          )}
-          {form.location_name && (
-            <span style={{ fontSize: 11, fontWeight: 600, background: '#fef3c7', color: '#92400e', borderRadius: 12, padding: '3px 10px', border: '1px solid #fcd34d' }}>
-              📍 {form.location_name.slice(0, 25)}{form.location_name.length > 25 ? '...' : ''}
-            </span>
-          )}
-          {form.payment_method && (
-            <span style={{ fontSize: 11, fontWeight: 600, background: '#faf5ff', color: '#7c3aed', borderRadius: 12, padding: '3px 10px', border: '1px solid #d8b4fe' }}>
-              💳 {PAYMENT_METHODS.find(p => p.value === form.payment_method)?.label || form.payment_method}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3" style={{ paddingBottom: 12 }}>
-        {messages.map((msg, i) => (
-          <div key={i} className={`mb-4 ${msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}`}>
-            <div style={{
-              maxWidth: '85%',
-              padding: '12px 16px',
-              borderRadius: msg.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-              background: msg.role === 'user'
-                ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)'
-                : 'var(--card-bg)',
-              color: msg.role === 'user' ? 'white' : 'var(--text-1)',
-              border: msg.role === 'user' ? 'none' : '1px solid var(--border-1)',
-              fontSize: 14,
-              lineHeight: 1.6,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}>
-              {msg.content}
+      <div className="px-4 py-4 space-y-4" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom))' }}>
+        {/* Draft restore indicator */}
+        {!isRepost && !isEditMode && form.title && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#166534', fontWeight: 700 }}>
+              <Save size={14} /> {t('draft_restored')}
             </div>
-          </div>
-        ))}
-
-        {/* Suggested features */}
-        {suggestedFeatures.length > 0 && (
-          <div className="mb-4 flex justify-start">
-            <div style={{ maxWidth: '85%' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 6, fontWeight: 600 }}>💡 פיצ'רים מומלצים:</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {suggestedFeatures.map((feat, idx) => {
-                  let active = false;
-                  if (feat.includes('סטורי')) active = form.is_story;
-                  else if (feat.includes('העלאת מחיר') || feat.includes('אוטומטית')) active = form.auto_bump_enabled;
-                  else if (feat.includes('חשבונית')) active = form.requires_invoice;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => handleFeatureToggle(feat)}
-                      style={{
-                        padding: '8px 14px', borderRadius: 14, fontSize: 12, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        ...activeFeatureStyles(active),
-                      }}
-                    >
-                      {active && <Check size={12} />}
-                      {feat.includes('סטורי') ? <Sparkles size={12} /> : <Zap size={12} />}
-                      {feat}
-                    </button>
-                  );
-                })}
-              </div>
-              {form.auto_bump_enabled && (
-                <div style={{ marginTop: 8 }}>
-                  <input
-                    type="text" inputMode="numeric" pattern="[0-9]*"
-                    placeholder="מחיר מקסימלי (₪)"
-                    value={form.max_price}
-                    onChange={e => setForm(prev => ({ ...prev, max_price: e.target.value.replace(/[^0-9]/g, '') }))}
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: 12,
-                      background: 'var(--input-bg)', border: '1.5px solid var(--border-1)',
-                      fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                      color: 'var(--text-1)',
-                    }}
-                  />
-                </div>
-              )}
-            </div>
+            <button onClick={() => { setForm(DEFAULT_FORM); localStorage.removeItem(DRAFT_KEY); }} style={{ fontSize: 11, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>{t('delete_task')}</button>
           </div>
         )}
 
-        {/* Loading indicator */}
-        {loading && (
-          <div className="mb-4 flex justify-start">
-            <div style={{
-              background: 'var(--card-bg)', border: '1px solid var(--border-1)',
-              borderRadius: '20px 20px 20px 4px', padding: '12px 20px',
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <Loader2 size={16} className="animate-spin" color="#1a6fd4" />
-              <span style={{ fontSize: 13, color: 'var(--text-2)' }}>חושב...</span>
-            </div>
+        {/* Error banner */}
+        {showErrorBanner && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>
+              {t('missing_fields_warning')}
+            </p>
           </div>
         )}
 
-        {/* Transcribing indicator */}
-        {transcribing && (
-          <div className="mb-4 flex justify-start" style={{ marginTop: 8 }}>
-            <div style={{
-              background: '#eff6ff', border: '1px solid #bfdbfe',
-              borderRadius: '20px 20px 20px 4px', padding: '12px 20px',
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <Loader2 size={16} className="animate-spin" color="#1a6fd4" />
-              <span style={{ fontSize: 13, color: '#1a6fd4', fontWeight: 600 }}>מתמלל הקלטה...</span>
-            </div>
+        {/* Moderation image error */}
+        {moderationErrors.images && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>🛡️ {moderationErrors.images}</p>
           </div>
         )}
 
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Address picker */}
-      {showAddressPicker && (
-        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-1)', background: 'var(--surface-2)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}>📍 בחר כתובת מהרשימה:</div>
-          <AddressAutocomplete
-            value={form.location_name || ''}
-            onSelect={handleAddressSelect}
-          />
-        </div>
-      )}
-
-      {/* Payment picker */}
-      {showPaymentPicker && (
-        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-1)', background: 'var(--surface-2)' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}>💳 בחר אמצעי תשלום:</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-            {PAYMENT_METHODS.map(pm => (
-              <button key={pm.value} onClick={() => handlePaymentSelect(pm.value)}
-                style={{
-                  padding: '8px 4px', borderRadius: 10, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', border: 'none',
-                  background: form.payment_method === pm.value ? '#2563EB' : 'var(--surface-3)',
-                  color: form.payment_method === pm.value ? 'white' : 'var(--text-2)',
-                }}
-              >{pm.label}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Input area */}
-      <div style={{
-        padding: '10px 12px',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-        background: 'var(--surface-2)',
-        borderTop: '1px solid var(--border-1)',
-      }}>
-        {/* Quick action buttons */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-          {(!form.location_name || !form.lat) && (
-            <button onClick={() => setShowAddressPicker(!showAddressPicker)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600,
-                background: showAddressPicker ? '#eff6ff' : 'var(--surface-3)',
-                border: `1px solid ${showAddressPicker ? '#bfdbfe' : 'var(--border-1)'}`,
-                color: showAddressPicker ? '#1e40af' : 'var(--text-2)',
-                cursor: 'pointer',
-              }}
-            >
-              <MapPin size={12} /> כתובת {form.location_name ? '✅' : ''}
-            </button>
-          )}
-          {!form.payment_method && (
-            <button onClick={() => setShowPaymentPicker(!showPaymentPicker)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px', borderRadius: 16, fontSize: 11, fontWeight: 600,
-                background: showPaymentPicker ? '#faf5ff' : 'var(--surface-3)',
-                border: `1px solid ${showPaymentPicker ? '#d8b4fe' : 'var(--border-1)'}`,
-                color: showPaymentPicker ? '#7c3aed' : 'var(--text-2)',
-                cursor: 'pointer',
-              }}
-            >
-              <CreditCard size={12} /> תשלום {form.payment_method ? '✅' : ''}
-            </button>
-          )}
-          {isReady && (
-            <button onClick={handlePublish} disabled={publishing}
-              className="btn-tap"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 12px', borderRadius: 16, fontSize: 11, fontWeight: 800,
-                background: 'linear-gradient(135deg, #059669, #047857)',
-                color: 'white', border: 'none', cursor: publishing ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {publishing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-              {publishing ? '...' : 'פרסם'}
-            </button>
-          )}
+        {/* Info banner */}
+        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
+          <p style={{ fontSize: 13, color: '#1e40af', margin: 0, lineHeight: 1.6 }}>
+            <strong>{t('important_note_title')}</strong> {t('important_note_body')}
+          </p>
         </div>
 
-        {/* Text input + mic */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-          <button
-            onClick={recording ? stopRecording : startRecording}
-            disabled={transcribing}
-            style={{
-              width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: recording ? '#fee2e2' : '#eff6ff',
-              border: `1.5px solid ${recording ? '#fca5a5' : '#bfdbfe'}`,
-              cursor: 'pointer',
+        {/* Category */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>קטגוריה</Label>
+          <SelectionSheet
+            value={form.category}
+            options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
+            onChange={val => {
+              set('category', val);
+              // Re-validate mismatch immediately when category changes
+              if (form.title || form.description) {
+                const mismatch = checkCategoryDescriptionMatch(val, form.description, form.title);
+                setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
+              }
             }}
-          >
-            {transcribing ? <Loader2 size={18} className="animate-spin" color="#1a6fd4" /> :
-              recording ? <MicOff size={18} color="#dc2626" /> : <Mic size={18} color="#1a6fd4" />}
-          </button>
+          />
+        </SectionCard>
 
-          <div style={{
-            flex: 1, display: 'flex', alignItems: 'flex-end',
-            background: 'var(--input-bg)', borderRadius: 16,
-            border: '1.5px solid var(--border-1)', padding: '4px',
-          }}>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={recording ? 'מקליט...' : 'תאר את המשימה שאתה צריך...'}
-              disabled={loading || recording}
-              rows={1}
-              style={{
-                flex: 1, background: 'transparent', border: 'none',
-                outline: 'none', resize: 'none', fontSize: 15,
-                color: 'var(--text-1)', fontFamily: 'inherit',
-                padding: '8px 10px', maxHeight: 100,
-                lineHeight: 1.4,
+        {/* Category mismatch warning — shown right below category picker */}
+        {moderationErrors.categoryMismatch && (
+          <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 14, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <AlertTriangle size={15} color="#f97316" style={{ flexShrink: 0, marginTop: 1 }} />
+            <p style={{ fontSize: 13, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>{moderationErrors.categoryMismatch}</p>
+          </div>
+        )}
+
+        {/* Worker count hint — removed per design decision */}
+
+        {/* Smart Category Extra Fields — right below category picker */}
+        <CategoryExtraFields
+          key={form.category}
+          category={form.category}
+          originLat={form.lat}
+          originLng={form.lng}
+          onChange={(_data, text) => setExtraFieldsText(text)}
+        />
+
+        {/* Title + Description */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('what_need_to_do')} *</Label>
+          <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
+            value={form.title}
+            onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); setModerationErrors(p => ({...p, title: null})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
+            onBlur={() => checkFieldModeration('title', form.title)}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.title || moderationErrors.title ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: (errors.title || moderationErrors.title) ? 4 : 14 }}
+          />
+          {checkingModeration === 'title' && <p style={{ fontSize: 11, color: '#1a6fd4', marginBottom: 8 }}>🔍 בודק תוכן...</p>}
+          {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
+          {moderationErrors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>🛡️ {moderationErrors.title}</p>}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{t('detailed_description')} *</Label>
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', background: recording ? '#fee2e2' : '#eff6ff', color: recording ? '#dc2626' : '#1a6fd4' }}
+            >
+              {transcribing ? <Loader2 size={13} className="animate-spin" /> : recording ? <MicOff size={13} /> : <Mic size={13} />}
+              {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
+            </button>
+          </div>
+          {recording && (
+            <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
+              {t('recording_press_stop')}
+            </div>
+          )}
+          <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
+            value={form.description}
+            onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
+            onBlur={() => {
+              checkFieldModeration('description', form.description);
+              const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
+              setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
+            }}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={4}
+          />
+          {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>🔍 בודק תוכן...</p>}
+          {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
+          {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
+          {moderationErrors.categoryMismatch && !moderationErrors.description && (
+            <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginTop: 6, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <AlertTriangle size={14} color="#f97316" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 12, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>✏️ {moderationErrors.categoryMismatch}</p>
+            </div>
+          )}
+        </SectionCard>
+
+
+
+        {/* Images + Video */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
+          <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
+        </SectionCard>
+
+        {/* Price */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
+          <Input ref={fieldRefs.price} type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
+            value={form.price}
+            onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
+            disabled={hasActiveApplications}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
+          />
+          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
+          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
+          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
+            <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
+          </div>
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
+
+          {/* Auto bump */}
+          <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
+            style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : 'var(--surface-3)', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : 'var(--border-1)'}` }}
+          >
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>📈 העלאת מחיר אוטומטית</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>המחיר יעלה מהמחיר שהגדרת לעיל עד למחיר המקסימלי, כל 5 דקות — כדי שהמשימה תהיה אטרקטיבית יותר ותמשוך בקשות. העלאת המחיר נעצרת אוטומטית ברגע שמגיעה בקשה ראשונה.</div>
+            </div>
+          </button>
+          {form.auto_bump_enabled && (
+            <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>מחיר מקסימלי (₪)</Label>
+              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>המחיר יעלה בהדרגה מ-₪{form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.</div>
+              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
+                value={form.max_price} onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
+                style={{ background: 'white', border: '1px solid #fcd34d', borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
+              />
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Expiry + Urgency */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
+            <Clock size={14} /> תוקף המשימה
+          </Label>
+          <div style={{ marginBottom: 4 }}>
+            <SelectionSheet
+              value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
+              options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: opt.label }))}
+              onChange={v => set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v))}
+            />
+          </div>
+          {form.expiry_hours === 'custom' && (
+            <input type="number" min="0.5" step="0.5" placeholder="מספר שעות (לדוגמא: 3)"
+              value={form.custom_expiry_hours} onChange={e => set('custom_expiry_hours', e.target.value)}
+              style={{ width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
+            />
+          )}
+
+          {/* Urgency tag */}
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+            <Zap size={14} color="#94a3b8" strokeWidth={1.8} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>מתי דרוש עובד?</span>
+          </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {URGENCY_TAGS.map(tag => {
+                const isActive = form.urgency_tag === tag.value;
+                return (
+                  <button key={tag.value}
+                    onClick={() => set('urgency_tag', isActive ? '' : tag.value)}
+                    style={{
+                      padding: '10px 14px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer', textAlign: 'center',
+                      background: isActive ? tag.bg : 'var(--surface-3)',
+                      color: isActive ? tag.color : 'var(--text-2)',
+                      border: isActive ? `1.5px solid ${tag.border}` : '1px solid var(--border-1)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {tag.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Story — only when creating new task */}
+        {!isEditMode && <div
+          onClick={() => {
+            if (!form.is_story) {
+              // Trying to enable — check credits
+              const currentCredits = me?.worker_credits ?? 0;
+              if (currentCredits < 10) {
+                setShowNoCreditsModal(true);
+                return;
+              }
+            }
+            set('is_story', !form.is_story);
+          }}
+          style={{
+            background: form.is_story ? 'linear-gradient(135deg,#fdf4ff,#f3e8ff)' : 'var(--card-bg)',
+            border: `2px solid ${form.is_story ? '#a855f7' : 'var(--border-1)'}`,
+            borderRadius: 20, padding: '16px', cursor: 'pointer',
+            boxShadow: form.is_story ? '0 4px 20px rgba(168,85,247,0.2)' : '0 2px 12px rgba(26,111,212,0.06)',
+            transition: 'all 0.2s',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.is_story ? '#a855f7' : '#cbd5e1'}`, background: form.is_story ? '#a855f7' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {form.is_story && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: form.is_story ? '#7e22ce' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={15} color="#a855f7" /> הצג כ-Story
+                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'white', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>מומלץ</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : 'var(--surface-3)', borderRadius: 12, padding: '10px 12px' }}>
+            <Zap size={18} color="#a855f7" />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>חשיפה גבוהה פי 3 בשורת ה-Stories</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>המשימה תופיע למעלה בפיד למשך 24 שעות · עלות: <strong style={{color:'#7e22ce'}}>10 ג'ובות</strong></div>
+            </div>
+          </div>
+        </div>}
+
+        {/* Location */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
+            <MapPin size={14} /> מיקום *
+          </Label>
+          <div ref={fieldRefs.location_name}>
+            <AddressAutocomplete
+              value={form.location_name}
+              error={!!errors.location_name}
+              onBlur={() => {
+                if (form.location_name && !addressConfirmed) {
+                  setErrors(p => ({ ...p, location_name: true }));
+                }
               }}
-              onInput={(e) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
+              onSelect={({ location_name, city, lat, lng }) => {
+                if (location_name) {
+                  set('location_name', location_name);
+                  set('city', city || '');
+                  set('lat', lat);
+                  set('lng', lng);
+                  // Confirm address even for free-text (lat/lng may be null for free text)
+                  const hasCoords = !!(lat && lng);
+                  setAddressConfirmed(hasCoords);
+                  if (hasCoords) setErrors(p => ({ ...p, location_name: false }));
+                } else {
+                  setAddressConfirmed(false);
+                }
               }}
             />
-            <button
-              onClick={() => handleSend(input)}
-              disabled={!input.trim() || loading}
-              style={{
-                width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: input.trim() && !loading ? '#1a6fd4' : 'var(--border-1)',
-                border: 'none', cursor: input.trim() && !loading ? 'pointer' : 'default',
-                transition: 'all 0.15s',
-              }}
-            >
-              <ArrowUp size={16} color="white" />
-            </button>
+          </div>
+          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ יש לבחור כתובת מהרשימה</p>}
+          {/* Extra address details */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+            <div>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>בניין / מספר בית</p>
+              <Input placeholder="לדוגמה: 12"
+                value={form.address_building || ''}
+                onChange={e => set('address_building', e.target.value)}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>קומה</p>
+              <Input placeholder="לדוגמה: 3"
+                value={form.address_floor || ''}
+                onChange={e => set('address_floor', e.target.value)}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>דירה</p>
+              <Input placeholder="לדוגמה: 5"
+                value={form.address_apartment || ''}
+                onChange={e => set('address_apartment', e.target.value)}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
+              />
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>הערות ניווט</p>
+              <Input placeholder="לדוגמה: כניסה אחורית"
+                value={form.address_notes || ''}
+                onChange={e => set('address_notes', e.target.value)}
+                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Worker Pool Scanner banners removed */}
+
+        {/* Time */}
+        <SectionCard>
+          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
+            <Clock size={14} /> זמן ביצוע משוער
+          </Label>
+          <SelectionSheet
+            value={form.estimated_time}
+            options={TIME_OPTIONS}
+            onChange={val => set('estimated_time', val)}
+          />
+          {form.estimated_time === 'custom' && (
+            <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
+              value={form.custom_time} onChange={e => set('custom_time', e.target.value)}
+              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 14, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
+            />
+          )}
+        </SectionCard>
+
+        {/* Requirements */}
+        <SectionCard>
+          <button type="button" onClick={() => setShowRequirements(v => !v)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
+            <div>
+              <Label className="text-sm font-bold flex items-center gap-1" style={{ color: 'var(--text-1)', cursor: 'pointer', margin: 0 }}>
+                <CheckSquare size={14} /> דרישות נוספות (לא חובה)
+              </Label>
+              <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>⚠️ ככל שתוסיף יותר דרישות, פחות עובדים יוכלו להגיש בקשה</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{count} נבחרו</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>לחץ להוספה</span>; })()}
+              {showRequirements ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
+            </div>
+          </button>
+          {showRequirements && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {getRequirementCategories(form.category).map(cat => (
+                <div key={cat.label}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    {cat.items.map(({ key, label }) => (
+                      <button key={key} onClick={() => setReq(key, !form.requirements[key])}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? 'rgba(59,130,246,0.08)' : 'var(--surface-3)', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : 'var(--border-1)'}`, background: form.requirements[key] ? '#1a6fd4' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {form.requirements[key] && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : 'var(--text-2)' }}>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>דרישה חופשית</div>
+                <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
+                  value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
+              </div>
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Payment Method + Requires Invoice */}
+        <SectionCard>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+            <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>איך תרצה לשלם על המשימה? *</Label>
+          </div>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
+            💡 אין צורך להזין פרטי תשלום — רק בחר את השיטה בה תשלם לעובד בסיום המשימה
           </div>
         </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
+          {PAYMENT_METHODS.map(pm => (
+            <button key={pm.value} onClick={() => { set('payment_method', form.payment_method === pm.value ? '' : pm.value); setErrors(p => ({...p, payment_method: false})); }}
+              style={{ width: '100%', padding: '10px 4px', borderRadius: 10, fontSize: 13, fontWeight: form.payment_method === pm.value ? 700 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, outline: errors.payment_method ? '1.5px solid #ef4444' : 'none' }) }}
+            >{pm.label}</button>
+          ))}
+        </div>
+        {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
+
+        {/* Requires Invoice — inline, compact */}
+        <button type="button" onClick={() => set('requires_invoice', !form.requires_invoice)}
+          style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, textAlign: 'right', cursor: 'pointer', background: form.requires_invoice ? '#faf5ff' : 'var(--surface-3)', border: `1px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
+          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${form.requires_invoice ? '#7c3aed' : '#cbd5e1'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {form.requires_invoice && <span style={{ color: 'white', fontSize: 9 }}>✓</span>}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: form.requires_invoice ? '#7c3aed' : 'var(--text-2)' }}>📄 דורש חשבונית מס מהעובד</span>
+        </button>
+        </SectionCard>
+
+        {/* Submit */}
+        {(() => {
+          const isReady = !!(form.title && form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
+          return (
+            <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
+              <button
+                onClick={handleSubmit}
+                disabled={loading || !!checkingModeration}
+                className="btn-tap"
+                style={{
+                  width: '100%', height: 60, borderRadius: 18, fontSize: 17, fontWeight: 900,
+                  color: 'white', border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  background: isReady
+                    ? 'linear-gradient(135deg, #059669, #047857)'
+                    : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                  boxShadow: isReady
+                    ? '0 8px 28px rgba(5,150,105,0.4)'
+                    : '0 8px 28px rgba(26,111,212,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  marginBottom: 10, transition: 'background 0.35s ease, box-shadow 0.35s ease',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {loading
+                  ? <><Loader2 size={22} className="animate-spin" /> {t('publishing_btn')}</>
+                  : isReady
+                    ? (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_now')} ✓</>)
+                    : (isEditMode ? <><Save size={20} />{isRepostMode ? t('save_and_repost') : t('save_changes')}</> : <><Zap size={20} />{t('publish_new_task')}</>)}
+              </button>
+              {!isEditMode && <SocialProofBar />}
+            </div>
+          );
+        })()}
       </div>
-      </>)}
-      {/* ── FORM MODE ── */}
-      {createMode === 'form' && (
-        <CreateTaskForm form={form} setForm={setForm} publishing={publishing} handlePublish={handlePublish} isReady={isReady} />
-      )}
-
-      {/* Celebration → Scanner → Feed */}
-      {showCelebration && publishedTask && (
-        <TaskPublishedCelebration
-          visible={showCelebration && !showScanner}
-          taskTitle={publishedTask.title}
-          taskPrice={publishedTask.price}
-          taskLocation={publishedTask.location_name}
-          onNavigate={() => { setShowCelebration(false); setShowScanner(true); }}
-        />
-      )}
-
-      {/* Scanner phase after celebration */}
-      {showScanner && publishedTask && (
-        <PublishScanner
-          taskId={publishedTask.id}
-          taskTitle={publishedTask.title}
-          taskPrice={publishedTask.price}
-          taskCategory={form.category}
-          onComplete={() => {
-            setShowScanner(false);
-            setPublishedTask(null);
-            navigate(`/?newTaskId=${publishedTask.id}`);
-          }}
-        />
-      )}
     </div>
-  );
-}
-
-// ── PublishScanner (blue/gold, same style as BoostScanner) ──────────────────
-function PublishScanner({ taskId, taskTitle, taskPrice, taskCategory, onComplete }) {
-  const [workerCount, setWorkerCount] = useState(0);
-  const [pulseWorkers, setPulseWorkers] = useState([]);
-  const [statusMsg, setStatusMsg] = useState('מפיץ לעובדים מתאימים...');
-
-  const B = { blue: '#60a5fa', gold: '#fbbf24', green: '#4ade80' };
-
-  useEffect(() => {
-    const msgs = ['מפיץ לעובדים מתאימים...', 'מחפש עובדים לפי קטגוריה', 'סורק פרופילים פעילים', 'מרחיב חשיפה באזור שלך'];
-    let i = 0;
-    const iv = setInterval(() => { if (i < msgs.length) { setStatusMsg(msgs[i]); i++; } else clearInterval(iv); }, 2600);
-    return () => clearInterval(iv);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPulseWorkers(prev => [...prev.slice(-6), { id: Date.now(), angle: Math.random() * 360, dist: 35 + Math.random() * 45 }]);
-    }, 1600);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!taskId) return;
-    base44.entities.TaskApplication.filter({ task_id: taskId }).then(apps => setWorkerCount(apps.length));
-    const unsub = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === taskId && event.type === 'create') {
-        setWorkerCount(c => c + 1);
-        setStatusMsg('התקבלה מועמדות! 🎯');
-      }
-    });
-    return () => unsub();
-  }, [taskId]);
-
-  useEffect(() => { const t = setTimeout(() => onComplete(), 7000); return () => clearTimeout(t); }, []);
-
-  const dotX = (a, d) => 50 + d * Math.cos((a * Math.PI) / 180);
-  const dotY = (a, d) => 50 + d * Math.sin((a * Math.PI) / 180);
-
-  return createPortal(
-    <div dir="rtl" style={{ position: 'fixed', inset: 0, zIndex: 9999999, background: 'linear-gradient(160deg, #05112e 0%, #0a1f4e 55%, #0d2a60 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', padding: '12px 24px 0', width: '100%' }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.4)', marginBottom: 5, fontWeight: 600 }}>Joba24 · פרסום</div>
-        <div style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', lineHeight: 1.3, marginBottom: 6 }}>שלחנו לעובדים באזור</div>
-        {(taskTitle || taskPrice) && (
-          <div style={{ background: 'rgba(96,165,250,.1)', border: '1px solid rgba(96,165,250,.25)', borderRadius: 12, padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'rgba(255,255,255,.85)', fontWeight: 700 }}>
-            {taskTitle && <span>{taskTitle}</span>}
-            {taskPrice && <span style={{ color: B.green, fontWeight: 900 }}>₪{taskPrice}</span>}
-          </div>
-        )}
-      </motion.div>
-
-      {/* Radar */}
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} style={{ position: 'relative', width: 220, height: 220 }}>
-        {[100, 78, 56, 36].map((size, i) => (
-          <div key={i} style={{ position: 'absolute', inset: `${(100 - size) / 2}%`, borderRadius: '50%', border: `1px solid rgba(96,165,250,${0.06 + i * 0.04})`, animation: `celebPulse ${2.5 + i * 0.4}s ease-in-out infinite`, animationDelay: `${i * 0.3}s` }} />
-        ))}
-        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'conic-gradient(from 0deg, transparent 75%, rgba(96,165,250,.3) 100%)', animation: 'celebRingSpin 2.8s linear infinite', borderRadius: '50%' }} />
-        </div>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 12, height: 12, borderRadius: '50%', background: B.blue, boxShadow: `0 0 14px ${B.blue}, 0 0 32px rgba(96,165,250,.35)` }} />
-        {pulseWorkers.map(w => (
-          <div key={w.id} style={{ position: 'absolute', left: `${dotX(w.angle, w.dist)}%`, top: `${dotY(w.angle, w.dist)}%`, transform: 'translate(-50%,-50%)', width: 8, height: 8, borderRadius: '50%', background: B.gold, boxShadow: `0 0 8px ${B.gold}`, animation: 'workerDot 1.4s ease-out forwards' }} />
-        ))}
-      </motion.div>
-
-      {/* Status */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%', padding: '0 24px' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', textAlign: 'center', display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ display: 'flex', gap: 3 }}>
-            {[0.1, 0.3, 0.5].map((d, i) => (
-              <span key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: B.blue, display: 'inline-block', animation: `celebBlink 1.2s ${d}s infinite` }} />
-            ))}
-          </span>
-          {statusMsg}
-        </div>
-        <div style={{ background: 'rgba(96,165,250,.1)', border: '1px solid rgba(96,165,250,.25)', borderRadius: 99, padding: '6px 14px', fontSize: 12, fontWeight: 700, color: B.blue, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: B.blue, display: 'inline-block', animation: 'celebBlink 1.2s .1s infinite' }} />
-          עובדים באזור מקבלים התראה
-        </div>
-      </motion.div>
-
-      {/* Skip button */}
-      <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-        onClick={onComplete}
-        style={{ background: 'rgba(96,165,250,.12)', border: '1px solid rgba(96,165,250,.3)', borderRadius: 14, padding: '14px 0', width: 'calc(100% - 48px)', color: '#ffffff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-        מעבר לפיד ›
-      </motion.button>
-
-      <style>{`
-        @keyframes workerDot { 0%{transform:scale(.4);opacity:0;} 40%{transform:scale(1.4);opacity:1;} 100%{transform:scale(1);opacity:.85;} }
-      `}</style>
-    </div>,
-    document.body
   );
 }
