@@ -268,18 +268,16 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
           flexShrink: 0,
         }}
       >
-        {/* Liquid fill — scaleY from 0→1 over totalSec seconds, origin bottom */}
+        {/* Liquid fill — CSS clip-path percentage, negative delay resumes from current position */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '100%',
-          transformOrigin: 'bottom',
-          transform: charged ? 'scaleY(1)' : 'scaleY(0)',
+          height: charged ? '100%' : `${pct}%`,
           background: charged
             ? 'linear-gradient(180deg,#a855f7,#7c3aed)'
             : 'linear-gradient(180deg,rgba(192,132,252,0.9),rgba(168,85,247,0.95))',
-          animation: charged ? 'none' : `boostFillScale ${totalSec}s linear ${animDelaySec}s forwards`,
-          borderRadius: 8,
+          borderRadius: charged ? 8 : '0 0 8px 8px',
           overflow: 'hidden',
+          transition: charged ? 'none' : undefined,
         }}>
           {/* Sine wave top edge — two overlapping waves */}
           {!charged && <>
@@ -357,7 +355,6 @@ function BoostChargePill({ onBoost, loading, lastBoostAt, createdDate }) {
         document.body
       )}
       <style>{`
-        @keyframes boostFillScale { from { transform: scaleY(0) } to { transform: scaleY(1) } }
         @keyframes bWave1 {
           0%   { transform: translateX(0%) scaleY(1); }
           50%  { transform: translateX(-8%) scaleY(1.4); }
@@ -538,19 +535,19 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const handleBoostCard = async (e) => {
     e.stopPropagation();
     if (boostLoading) return;
-    const freshMe = await base44.auth.me();
-    const currentCredits = freshMe?.worker_credits ?? 0;
-    if (currentCredits < 5) {
+    setBoostLoading(true);
+    const res = await base44.functions.invoke('boostTask', { taskId: task.id });
+    setBoostLoading(false);
+    if (res.data?.error === 'insufficient_credits') {
       toast.error('אין מספיק ג\'ובות — נדרשות 5');
       return;
     }
-    setBoostLoading(true);
-    const newBalance = currentCredits - 5;
-    await base44.auth.updateMe({ worker_credits: newBalance });
-    await base44.entities.CreditTransaction.create({ user_id: currentUserId, amount: -5, type: 'Application_Fee', task_id: task.id, task_title: task.title, balance_after: newBalance, note: 'Boost — איתות נוסף' });
-    await base44.entities.Task.update(task.id, { last_boost_at: new Date().toISOString(), boost_count: (task.boost_count || 0) + 1 });
+    if (!res.data?.success) {
+      toast.error('שגיאה בשיגור האיתות, נסה שוב');
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ['me'] });
-    setBoostLoading(false);
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
     setShowBoostOverlay(true);
   };
 

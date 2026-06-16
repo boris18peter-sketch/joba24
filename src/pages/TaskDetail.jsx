@@ -138,17 +138,14 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
           flexShrink: 0,
         }}
       >
-        {/* Liquid fill — scaleY from 0→1 over totalSec seconds, origin bottom */}
+        {/* Liquid fill — height % reflects current charge level, ticks update it every minute */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '100%',
-          transformOrigin: 'bottom',
-          transform: charged ? 'scaleY(1)' : 'scaleY(0)',
+          height: charged ? '100%' : `${pct}%`,
           background: charged
             ? 'linear-gradient(180deg,rgba(168,85,247,0.85),rgba(124,58,237,0.9))'
             : 'linear-gradient(180deg,rgba(192,132,252,0.65),rgba(168,85,247,0.75))',
-          animation: charged ? 'none' : `boostFillScaleDetail ${totalSec}s linear ${animDelaySec}s forwards`,
-          borderRadius: 8,
+          borderRadius: charged ? 14 : '0 0 14px 14px',
           overflow: 'hidden',
         }}>
           {!charged && <>
@@ -174,7 +171,6 @@ function BoostChargeDetail({ onBoost, loading, lastBoostAt, createdDate }) {
         </div>
       </div>
       <style>{`
-        @keyframes boostFillScaleDetail { from { transform: scaleY(0) } to { transform: scaleY(1) } }
         @keyframes bdWave1 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(-8%) scaleY(1.4)}100%{transform:translateX(0%) scaleY(1)} }
         @keyframes bdWave2 { 0%{transform:translateX(0%) scaleY(1)}50%{transform:translateX(8%) scaleY(1.6)}100%{transform:translateX(0%) scaleY(1)} }
         @keyframes bdRise { 0%{transform:translateY(0) scale(1);opacity:0.8} 80%{opacity:0.6} 100%{transform:translateY(-80px) scale(0.4);opacity:0} }
@@ -576,33 +572,22 @@ export default function TaskDetail() {
     }
   };
 
-  // Boost — deduct 5 credits + update task + show animation
+  // Boost — call backend function (handles credits + task update atomically)
   const handleBoost = async () => {
     if (boostLoading) return;
-    const currentCredits = me?.worker_credits ?? 0;
-    if (currentCredits < 5) {
+    setBoostLoading(true);
+    const res = await base44.functions.invoke('boostTask', { taskId: id });
+    setBoostLoading(false);
+    if (res.data?.error === 'insufficient_credits') {
       toast.error('אין מספיק ג\'ובות — נדרשות 5 ג\'ובות לאיתות נוסף');
       return;
     }
-    setBoostLoading(true);
-    const newBalance = currentCredits - 5;
-    await base44.auth.updateMe({ worker_credits: newBalance });
-    await base44.entities.CreditTransaction.create({
-      user_id: me.id,
-      amount: -5,
-      type: 'Application_Fee',
-      task_id: id,
-      task_title: task.title,
-      balance_after: newBalance,
-      note: 'Boost — איתות נוסף',
-    });
-    await base44.entities.Task.update(id, {
-      last_boost_at: new Date().toISOString(),
-      boost_count: (task.boost_count || 0) + 1,
-    });
+    if (!res.data?.success) {
+      toast.error('שגיאה בשיגור האיתות, נסה שוב');
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ['me'] });
     queryClient.invalidateQueries({ queryKey: ['task', id] });
-    setBoostLoading(false);
     setShowBoostOverlay(true);
   };
 
@@ -1393,7 +1378,7 @@ export default function TaskDetail() {
       <MediaLightbox
         isOpen={lightboxOpen}
         items={[
-        ...task.images.map((url) => ({ type: 'image', url })),
+        ...(task.images || []).map((url) => ({ type: 'image', url })),
         ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])]
         }
         initialIndex={lightboxIndex}
