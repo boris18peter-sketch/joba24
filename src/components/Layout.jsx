@@ -473,6 +473,27 @@ export default function Layout() {
   // Active task I published that a worker is currently doing
   const activeClientTask = myPublishedTasks.find(t => t.status === 'TAKEN') || null;
 
+  // Boost available alert — fire once per task per hour when task is OPEN with no applicants
+  const boostAlertSentRef = useRef({});
+  useEffect(() => {
+    if (!me?.id || !isAuthenticated) return;
+    const HOUR_MS = 60 * 60 * 1000;
+    const openTasksWithNoApps = myPublishedTasks.filter(t =>
+      t.status === 'OPEN' && !t.worker_id
+    );
+    openTasksWithNoApps.forEach(task => {
+      const refMs = task.last_boost_at
+        ? new Date(task.last_boost_at + (task.last_boost_at.endsWith('Z') || task.last_boost_at.includes('+') ? '' : 'Z')).getTime()
+        : new Date(task.created_date + (task.created_date?.endsWith('Z') || task.created_date?.includes('+') ? '' : 'Z')).getTime();
+      const elapsed = Date.now() - refMs;
+      const alertKey = `${task.id}_${Math.floor(elapsed / HOUR_MS)}`;
+      if (elapsed >= HOUR_MS && !boostAlertSentRef.current[alertKey]) {
+        boostAlertSentRef.current[alertKey] = true;
+        addNotification({ type: 'boost_available', taskTitle: task.title, taskId: task.id });
+      }
+    });
+  }, [myPublishedTasks, me?.id]);
+
   // Tasks in progress = TAKEN and worker confirmed (active work)
   const inProgressCount = workerTasks.filter(t => t.status === 'TAKEN').length;
 

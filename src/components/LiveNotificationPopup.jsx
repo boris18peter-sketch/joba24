@@ -17,6 +17,7 @@ const TYPES = {
   approval_revoked:      { emoji: '↩️', title: ()  => 'האישור שלך בוטל',                              body: (n) => n.taskTitle ? `"${n.taskTitle}" — המשימה חזרה לפתוחה` : '',       link: (n) => n.taskId ? `/task/${n.taskId}` : null },
   worker_left_task:      { emoji: '🚪', title: (n) => `${n.workerName || 'העובד'} עזב את המשימה`,     body: (n) => n.taskTitle ? `"${n.taskTitle}" — פתוחה שוב` : '',               link: (n) => n.taskId ? `/task/${n.taskId}` : null },
   no_show_reported:      { emoji: '⚠️', title: ()  => 'דווחת על אי-הופעה',                            body: (n) => n.taskTitle ? `"${n.taskTitle}"` : 'מדד האמינות עודכן',            link: () => null },
+  boost_available:       { emoji: '⚡', title: ()  => 'הגיע הזמן לבוסט!',                              body: (n) => n.taskTitle ? `"${n.taskTitle}" — שגר איתות לעובדים` : 'הגדל חשיפה וקבל עוד בקשות', link: (n) => n.taskId ? `/task/${n.taskId}` : null },
 };
 
 export default function LiveNotificationPopup({ notification, onClose }) {

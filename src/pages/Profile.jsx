@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock } from 'lucide-react';
+import { Star, LogOut, Pencil, Briefcase, CheckCircle, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, CheckCircle2 } from 'lucide-react';
+import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { Link } from 'react-router-dom';
@@ -328,29 +329,15 @@ export default function Profile() {
                   <X size={16} color="#64748b" />
                 </button>
               </div>
-              <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 0 }} dir="rtl">
+              <div style={{ overflowY: 'auto', padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 10 }} dir="rtl">
                 {completedCount === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
                     <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>אין משימות שהושלמו עדיין</div>
                   </div>
-                ) : workerTasks.filter(t => t.status === 'COMPLETED').map((task, idx, arr) => {
-                  const date = new Date(task.completed_at || task.updated_date);
-                  const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-                  const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
-                  return (
-                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < arr.length - 1 ? 16 : 0, position: 'relative' }}>
-                      {idx < arr.length - 1 && (
-                        <div style={{ position: 'absolute', right: 9, top: 22, width: 1, bottom: 0, background: '#e2e8f0' }} />
-                      )}
-                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
-                      </div>
-                    </div>
-                  );
-                })}
+                ) : workerTasks.filter(t => t.status === 'COMPLETED').map(task => (
+                  <TaskCard key={task.id} task={task} viewOnly />
+                ))}
               </div>
             </div>
           </div>
