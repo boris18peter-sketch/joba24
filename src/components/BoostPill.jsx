@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import BoostOverlay from '@/components/BoostOverlay';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const BOOST_COST = 5;
 const HOUR_MS = 60 * 60 * 1000;
@@ -33,6 +34,7 @@ function toUTCMs(str) {
  */
 export default function BoostPill({ task, size = 'sm', onBoostDone }) {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [pct, setPct] = useState(0);
   const [charged, setCharged] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -72,11 +74,11 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
     try {
       const res = await base44.functions.invoke('boostTask', { taskId: task.id });
       if (res.data?.error === 'insufficient_credits') {
-        toast.error(`אין מספיק ג'ובות — נדרשות ${BOOST_COST}`);
+        toast.error(t('boost_insufficient').replace('{n}', BOOST_COST));
         return;
       }
       if (!res.data?.success) {
-        toast.error('שגיאה בשיגור האיתות, נסה שוב');
+        toast.error(t('boost_error'));
         return;
       }
       // Reset pill immediately — will re-sync from server on next render
@@ -106,7 +108,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
     <>
       <div
         onClick={(e) => { e.stopPropagation(); if (charged && !loading) setShowConfirm(true); }}
-        title={charged ? `שגר איתות — ${BOOST_COST} ג'ובות` : `טוען... ${pct}%`}
+        title={charged ? t('boost_send_tooltip').replace('{n}', BOOST_COST) : t('boost_loading_tooltip').replace('{pct}', pct)}
         style={{
           width: size === 'md' ? '100%' : dim,
           height: dim,
@@ -165,12 +167,12 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 44, marginBottom: 10 }}>⚡</div>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>שגר איתות נוסף</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 10 }}>{t('boost_send_again')}</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
-                האיתות ישלח לכל העובדים הרלוונטיים באזור שלך — על בסיס קטגוריה, ניסיון והיסטוריית פעילות.
+                {t('boost_desc_long')}
               </div>
               <div style={{ background: '#faf5ff', border: '1.5px solid #d8b4fe', borderRadius: 14, padding: '12px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>עלות: {BOOST_COST} ג'ובות</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>{t('boost_cost_label').replace('{n}', BOOST_COST)}</span>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
@@ -178,11 +180,11 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
                 onClick={() => { setShowConfirm(false); handleBoost(); }}
                 disabled={loading}
                 style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 18px rgba(124,58,237,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <><Zap size={16} fill="white" /> שגר עכשיו — {BOOST_COST} ג'ובות</>}
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <><Zap size={16} fill="white" /> {t('boost_send_now_cost').replace('{n}', BOOST_COST)}</>}
               </button>
               <button onClick={() => setShowConfirm(false)}
                 style={{ width: '100%', height: 46, borderRadius: 16, background: 'none', border: '1px solid #e8edf5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                ביטול
+                {t('boost_cancel_btn')}
               </button>
             </div>
           </div>

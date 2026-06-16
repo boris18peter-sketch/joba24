@@ -4,6 +4,7 @@ import useCountUp from '@/hooks/useCountUp';
 import { X, Zap, Star } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import CreditIcon from '@/components/CreditIcon';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const SHIMMER_STYLE = `
   @keyframes shimmerWipe {
@@ -45,6 +46,7 @@ const PACKAGES = [
 
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
+  const { t } = useLanguage();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
 
   // Inject keyframes once
@@ -76,7 +78,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   }, []);
 
   const handleSelect = (pkg) => {
-    alert(`בקרוב: רכישת ${pkg.credits + pkg.bonus} קרדיטים ב-₪${pkg.price}`);
+    alert(t('buy_coming_soon').replace('{credits}', pkg.credits + pkg.bonus).replace('{price}', pkg.price.toFixed(2)));
   };
 
   return createPortal(
@@ -111,9 +113,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 <CreditIcon size={26} />
               </div>
               <div>
-                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>רכישת קרדיטים</div>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>{t('buy_title')}</div>
                 <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  יתרה נוכחית: <span style={{ fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 3 }}>{animatedCredits} <CreditIcon size={13} /></span>
+                  {t('buy_balance')} <span style={{ fontWeight: 700, color: '#1a6fd4', display: 'flex', alignItems: 'center', gap: 3 }}>{animatedCredits} <CreditIcon size={13} /></span>
                 </div>
               </div>
             </div>
@@ -121,7 +123,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               <div style={{ marginTop: 12, background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Zap size={14} color="#f97316" />
                 <span style={{ fontSize: 13, color: '#c2410c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  כניסה למשימה <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={14} /></strong>
+                  {t('buy_task_entry')} <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={14} /></strong>
                 </span>
               </div>
             )}
@@ -206,7 +208,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     display: 'flex', alignItems: 'center', gap: 4,
                     zIndex: 10,
                   }}>
-                    <Star size={9} fill="currentColor" /> פופולרי
+                    <Star size={9} fill="currentColor" /> {t('buy_popular')}
                   </div>
                 )}
 
@@ -219,7 +221,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 {/* Bonus tag */}
                 {pkg.bonus > 0 && (
                   <div style={{ fontSize: 10, color: pkg.popular ? '#fde68a' : '#16a34a', fontWeight: 800, background: pkg.popular ? 'rgba(255,255,255,0.1)' : '#f0fdf4', borderRadius: 20, padding: '2px 8px', border: pkg.popular ? 'none' : '1px solid #bbf7d0' }}>
-                    +{pkg.bonus} בונוס
+                    +{pkg.bonus} {t('buy_bonus')}
                   </div>
                 )}
 
@@ -233,7 +235,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     ₪{pkg.price.toFixed(2)}
                   </div>
                   <div style={{ fontSize: 10, color: pkg.popular ? 'rgba(255,255,255,0.55)' : '#9ca3af', marginTop: 1 }}>
-                    ₪{pricePerCredit} לקרדיט
+                    ₪{pricePerCredit} {t('buy_per_credit')}
                   </div>
                 </div>
               </button>
@@ -242,7 +244,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         </div>
 
         <div style={{ padding: '14px 20px', textAlign: 'center', color: 'var(--text-3)', fontSize: 11 }}>
-          🔒 קרדיטים משמשים להגשת בקשות למשימות
+          {t('buy_footer')}
         </div>
       </div>
     </div>,

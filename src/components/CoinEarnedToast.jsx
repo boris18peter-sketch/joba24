@@ -5,8 +5,10 @@
  */
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function CoinEarnedToast() {
+  const { t } = useLanguage();
   const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function CoinEarnedToast() {
             <text x="12" y="16" textAnchor="middle" fontSize="9" fontWeight="900" fontFamily="Inter,Arial,sans-serif" fill="#1a6fd4">J</text>
           </svg>
           <span style={{ color: '#fbbf24', fontSize: 17 }}>+{t.amount}</span>
-          <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600 }}>{t.label || 'קרדיטים'}</span>
+          <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600 }}>{t.label || t('credits_label')}</span>
         </div>
       ))}
       <style>{`
