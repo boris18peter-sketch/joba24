@@ -178,7 +178,7 @@ export default function Profile() {
           </div>
           <div>
             <div style={{ color: 'white', fontSize: 19, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7 }}>
-              {me?.full_name || 'משתמש'}
+              {me?.full_name || 'User'}
               {(me?.is_verified && me?.id_number) && <VerifiedBadge size="md" />}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>{me?.email}</div>
@@ -218,7 +218,7 @@ export default function Profile() {
                 <ChevronLeft size={18} color="rgba(255,255,255,0.7)" style={{ flexShrink: 0, marginTop: 4 }} />
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {['✅ אימות חד-פעמי', '🔒 מידע מוצפן', '⚡ Match מהיר פי 2'].map(t => (
+                {['✅ One-time verify', '🔒 Encrypted data', '⚡ 2x faster match'].map(t => (
                   <div key={t} style={{ flex: 1, background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '5px 6px', fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.9)', textAlign: 'center' }}>{t}</div>
                 ))}
               </div>
@@ -249,13 +249,13 @@ export default function Profile() {
             </Link>
           )}
           <button onClick={() => setShowTaskHistory(true)} style={{ all: 'unset', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Clock size={17} color="#7c3aed" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>היסטוריית משימות</div>
-              <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>משימות שביצעתי — {completedCount} הושלמו</div>
-            </div>
+          <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Clock size={17} color="#7c3aed" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>Task History</div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>Tasks I completed — {completedCount} done</div>
+          </div>
             <ChevronLeft size={16} color="#ccc" />
           </button>
         </div>
@@ -263,7 +263,7 @@ export default function Profile() {
         {/* Skills / Categories */}
         {me?.preferred_categories?.length > 0 &&
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <SectionTitle>תחומי עיסוק</SectionTitle>
+            <SectionTitle>Categories</SectionTitle>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {me.preferred_categories.map((c) =>
             <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1a6fd4', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
@@ -277,7 +277,7 @@ export default function Profile() {
         {/* Certificates */}
         {me?.certificates?.length > 0 &&
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <SectionTitle>תעודות ואישורים</SectionTitle>
+            <SectionTitle>Certificates</SectionTitle>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {me.certificates.map((cert) =>
             <span key={cert} style={{ fontSize: 12, background: '#f0fdf4', color: '#166534', padding: '4px 12px', borderRadius: 20, fontWeight: 600, border: '1px solid #bbf7d0' }}>
@@ -291,7 +291,7 @@ export default function Profile() {
         {/* Recent Reviews */}
         {reviews.length > 0 &&
         <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <SectionTitle>ביקורות אחרונות</SectionTitle>
+            <SectionTitle>Recent Reviews</SectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {reviews.slice(0, 3).map((review) =>
             <div key={review.id} style={{ borderBottom: '1px solid var(--border-1)', paddingBottom: 10 }}>
@@ -299,14 +299,14 @@ export default function Profile() {
                     {[1, 2, 3, 4, 5].map((s) =>
                 <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
                 )}
-                    <span style={{ fontSize: 10, color: '#aaa', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
+                    <span style={{ fontSize: 10, color: '#aaa', marginRight: 'auto' }}>{review.role === 'worker' ? 'From client' : 'From worker'}</span>
                   </div>
                   {review.comment && <p style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, margin: '0 0 6px' }}>{review.comment}</p>}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 7px' }}>⏱️ הגיע בזמן</span>}
-                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 7px' }}>💼 מקצועי</span>}
-                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 7px' }}>💬 תקשורת טובה</span>}
-                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 7px' }}>🔁 ממליץ</span>}
+                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 7px' }}>⏱️ On time</span>}
+                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 7px' }}>💼 Professional</span>}
+                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 7px' }}>💬 Great communication</span>}
+                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 7px' }}>🔁 Recommended</span>}
                   </div>
                 </div>
             )}
@@ -317,7 +317,7 @@ export default function Profile() {
         {/* All Reviews button */}
         {reviews.length > 3 &&
         <button onClick={() => setShowAllReviews(true)} style={{ width: '100%', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 14, padding: '10px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1a6fd4', cursor: 'pointer' }}>
-          ראה את כל הביקורות שלי ({reviews.length}) →
+          See all my reviews ({reviews.length}) →
         </button>
         }
 
@@ -326,7 +326,7 @@ export default function Profile() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowTaskHistory(false)}>
             <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)', flexShrink: 0 }}>
-                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריית משימות ({completedCount} הושלמו)</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>Task History ({completedCount} completed)</span>
                 <button onClick={() => setShowTaskHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={16} color="#64748b" />
                 </button>
@@ -335,7 +335,7 @@ export default function Profile() {
                 {completedCount === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px 0' }}>
                     <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>אין משימות שהושלמו עדיין</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>No completed tasks yet</div>
                   </div>
                 ) : workerTasks.filter(t => t.status === 'COMPLETED').map(task => (
                   <TaskCard key={task.id} task={task} viewOnly />
@@ -350,7 +350,7 @@ export default function Profile() {
           <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowAllReviews(false)}>
             <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>כל הביקורות שלי ({reviews.length})</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>All My Reviews ({reviews.length})</span>
                 <button onClick={() => setShowAllReviews(false)} style={{ width: 32, height: 32, borderRadius: 10, background: '#f1f5f9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={16} color="#64748b" />
                 </button>
@@ -380,7 +380,7 @@ export default function Profile() {
             <div style={{ width: 38, height: 38, borderRadius: 11, background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <LogOut size={17} color="#dc2626" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', flex: 1, textAlign: 'right' }}>התנתקות</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#dc2626', flex: 1, textAlign: 'right' }}>Logout</span>
             <ChevronLeft size={16} color="#fca5a5" />
           </button>
           <button
@@ -389,7 +389,7 @@ export default function Profile() {
             <div style={{ width: 38, height: 38, borderRadius: 11, background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Trash2 size={17} color="#94a3b8" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#94a3b8', flex: 1, textAlign: 'right' }}>מחיקת חשבון</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#94a3b8', flex: 1, textAlign: 'right' }}>Delete Account</span>
             <ChevronLeft size={16} color="#e2e8f0" />
           </button>
         </div>
@@ -407,20 +407,20 @@ export default function Profile() {
                 <div style={{ width: 60, height: 60, borderRadius: 20, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                   <Trash2 size={28} color="#dc2626" strokeWidth={1.6} />
                 </div>
-                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>מחיקת חשבון</div>
-                <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>
-                  פעולה זו <strong style={{ color: '#dc2626' }}>בלתי הפיכה</strong>.<br />
-                  כל הנתונים, ההיסטוריה והקרדיטים שלך יימחקו לצמיתות.
-                </div>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>Delete Account</div>
+                  <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>
+                    This action is <strong style={{ color: '#dc2626' }}>permanent</strong>.<br />
+                    All your data, history, and credits will be deleted forever.
+                  </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <button onClick={handleDeleteAccount} disabled={deleteLoading}
                   style={{ width: '100%', height: 52, borderRadius: 14, background: deleteLoading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: deleteLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  {deleteLoading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> כן, מחק את החשבון שלי</>}
+                  {deleteLoading ? <Loader2 size={18} className="animate-spin" /> : <><Trash2 size={16} /> Yes, delete my account</>}
                 </button>
                 <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteLoading}
                   style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1.5px solid #dce8f5', color: '#374151', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-                  ביטול
+                  Cancel
                 </button>
               </div>
             </div>

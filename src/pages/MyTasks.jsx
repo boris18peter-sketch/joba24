@@ -20,13 +20,13 @@ const STATUS_GRADIENT = {
   EXPIRED:   'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
 };
 const STATUS_LABEL = {
-  OPEN: 'פתוח', TAKEN: 'בעבודה', COMPLETED: 'הושלם', CANCELLED: 'בוטל', EXPIRED: 'פג תוקף',
+  OPEN: 'Open', TAKEN: 'In Progress', COMPLETED: 'Completed', CANCELLED: 'Cancelled', EXPIRED: 'Expired',
 };
 
 const TABS = [
-  { key: 'active',    label: 'פעילות',  statuses: ['OPEN', 'TAKEN'] },
-  { key: 'completed', label: 'הושלמו',  statuses: ['COMPLETED'] },
-  { key: 'other',     label: 'ארכיון',  statuses: ['CANCELLED', 'EXPIRED'] },
+  { key: 'active',    label: 'Active',  statuses: ['OPEN', 'TAKEN'] },
+  { key: 'completed', label: 'Completed',  statuses: ['COMPLETED'] },
+  { key: 'other',     label: 'Archive',  statuses: ['CANCELLED', 'EXPIRED'] },
 ];
 
 export default function MyTasks() {
@@ -113,13 +113,13 @@ export default function MyTasks() {
       queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myTasks', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('המשימה בוטלה');
+      toast.success('Task cancelled');
       setCancelTask(null);
       navigate('/');
     },
     onError: () => {
       queryClient.invalidateQueries({ queryKey: ['myTasksPage', me?.id] });
-      toast.error('שגיאה בביטול, נסה שוב');
+      toast.error('Error cancelling task, try again');
       setCancelTask(null);
     },
   });
@@ -158,7 +158,7 @@ export default function MyTasks() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }} dir="rtl">
-      <PageHeader title="המשימות שלי" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} משימות</span>} />
+      <PageHeader title="My Tasks" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} tasks</span>} />
       {/* Tabs bar */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -192,7 +192,7 @@ export default function MyTasks() {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 0' }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
-            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>אין משימות כאן</p>
+            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>No tasks here</p>
           </div>
         ) : (
           filtered.map(task => {
@@ -232,24 +232,24 @@ export default function MyTasks() {
                   {pendingApps > 0 && task.status === 'OPEN' && (
                     <div style={{ flex: 1, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: 5 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pendingPulse 1.5s infinite', flexShrink: 0 }} />
-                      {pendingApps} בקשות ממתינות
+                      {pendingApps} pending applications
                     </div>
                   )}
                   {(task.status === 'COMPLETED' || task.status === 'CANCELLED' || task.status === 'EXPIRED') && (
                     <button onClick={e => { e.stopPropagation(); handleReopen(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <RefreshCw size={13} /> פרסם שוב
+                      <RefreshCw size={13} /> Repost
                     </button>
                   )}
                   {task.status === 'TAKEN' && (
                     <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                       <button style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MessageCircle size={13} /> צ'אט
+                        <MessageCircle size={13} /> Chat
                       </button>
                     </Link>
                   )}
                   {task.status === 'OPEN' && (
                     <button onClick={e => { e.stopPropagation(); setCancelTask(task); }} style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#fff1f1', border: '1px solid #fecaca', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <X size={13} /> בטל
+                      <X size={13} /> Cancel
                     </button>
                   )}
 

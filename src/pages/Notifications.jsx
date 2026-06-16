@@ -7,21 +7,21 @@ import { he } from 'date-fns/locale';
 import PageHeader from '@/components/PageHeader';
 
 const TYPE_CONFIG = {
-  task_taken:            { emoji: '🎉', label: 'עובד נמצא!',              sub: 'המשימה שלך נלקחה בהצלחה' },
-  worker_on_the_way:     { emoji: '🚗', label: 'העובד בדרך אליך',         sub: 'מגיע בקרוב' },
-  worker_arrived:        { emoji: '📍', label: 'העובד הגיע',              sub: 'נמצא בשטח' },
-  worker_done:           { emoji: '✅', label: 'העבודה הושלמה',           sub: 'לחץ לאשר ולסגור משימה' },
-  application_received:  { emoji: '✋', label: 'בקשה חדשה התקבלה',       sub: 'מישהו רוצה לבצע את המשימה' },
-  application_approved:  { emoji: '🎯', label: 'הבקשה שלך אושרה!',       sub: 'לחץ לצאת לדרך עכשיו' },
-  application_sent:      { emoji: '📤', label: 'בקשה נשלחה',             sub: 'ממתין לאישור המפרסם' },
-  application_rejected:  { emoji: '❌', label: 'הבקשה נדחתה',            sub: 'הקרדיטים הוחזרו לחשבונך' },
-  approval_revoked:      { emoji: '↩️', label: 'האישור בוטל',            sub: 'המשימה חזרה לסטטוס פתוח' },
-  worker_left_task:      { emoji: '🚪', label: 'העובד עזב',              sub: 'המשימה פתוחה שוב לעובדים' },
-  no_show_reported:      { emoji: '⚠️', label: 'דווח אי-הופעה',          sub: 'מדד האמינות שלך עודכן' },
-  task_cancelled_worker: { emoji: '🚫', label: 'המשימה בוטלה',           sub: 'בוטלה על ידי המפרסם' },
-  new_message:           { emoji: '💬', label: 'הודעה חדשה',             sub: 'לחץ לפתיחת השיחה' },
-  new_review:            { emoji: '⭐', label: 'ביקורת חדשה',            sub: 'מישהו השאיר לך ביקורת' },
-  boost_signal:          { emoji: '⚡', label: 'משימה מתאימה לך',        sub: 'לחץ לצפייה' },
+  task_taken:            { emoji: '🎉', label: 'Worker found!',              sub: 'Your task was taken successfully' },
+  worker_on_the_way:     { emoji: '🚗', label: 'Worker on the way',         sub: 'Arriving soon' },
+  worker_arrived:        { emoji: '📍', label: 'Worker arrived',              sub: 'On the job' },
+  worker_done:           { emoji: '✅', label: 'Work completed',           sub: 'Approve and close the task' },
+  application_received:  { emoji: '✋', label: 'New application',       sub: 'Someone wants to do your task' },
+  application_approved:  { emoji: '🎯', label: 'Your application approved!',       sub: 'Go now' },
+  application_sent:      { emoji: '📤', label: 'Application sent',             sub: 'Waiting for publisher approval' },
+  application_rejected:  { emoji: '❌', label: 'Application rejected',            sub: 'Credits returned to your account' },
+  approval_revoked:      { emoji: '↩️', label: 'Approval cancelled',            sub: 'Task is back to open status' },
+  worker_left_task:      { emoji: '🚪', label: 'Worker left',              sub: 'Task is open to workers again' },
+  no_show_reported:      { emoji: '⚠️', label: 'No-show reported',          sub: 'Your trust score updated' },
+  task_cancelled_worker: { emoji: '🚫', label: 'Task cancelled',           sub: 'Cancelled by publisher' },
+  new_message:           { emoji: '💬', label: 'New message',             sub: 'Click to open chat' },
+  new_review:            { emoji: '⭐', label: 'New review',            sub: 'Someone left you a review' },
+  boost_signal:          { emoji: '⚡', label: 'Task for you',        sub: 'Click to view' },
 };
 
 function timeAgo(ts) {
@@ -58,10 +58,10 @@ export default function Notifications() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
       <PageHeader
-        title="התראות"
+        title="Notifications"
         right={notifications.length > 0 && (
           <button onClick={clearAll} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13, fontWeight: 700 }}>
-            <Trash2 size={15} /> מחק הכל
+            <Trash2 size={15} /> Clear All
           </button>
         )}
       />
@@ -74,8 +74,8 @@ export default function Notifications() {
         ) : notifications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
             <div style={{ fontSize: 56, marginBottom: 14 }}>🔔</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>אין התראות</div>
-            <div style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6 }}>כשמשהו יקרה — תראה את זה כאן</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>No notifications</div>
+            <div style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6 }}>When something happens, you'll see it here</div>
           </div>
         ) : (
           notifications.map((notif, i) => {
