@@ -53,9 +53,9 @@ export default function HomeFeed() {
   const { t, isRTL } = useLanguage();
 
   const MY_PUB_TABS = [
-    { key: 'active',    label: t('tab_available'),  statuses: ['OPEN', 'TAKEN'] },
-    { key: 'completed', label: t('tab_my_tasks'),    statuses: ['COMPLETED'] },
-    { key: 'other',     label: '📦',                 statuses: ['CANCELLED', 'EXPIRED'] },
+    { key: 'active',    label: 'פעילות',  statuses: ['OPEN', 'TAKEN'] },
+    { key: 'completed', label: 'הושלמו',  statuses: ['COMPLETED'] },
+    { key: 'other',     label: 'ארכיון',  statuses: ['CANCELLED', 'EXPIRED'] },
   ];
   const queryClient = useQueryClient();
 
