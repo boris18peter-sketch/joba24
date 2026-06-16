@@ -15,9 +15,7 @@ import BoostOverlay from '@/components/BoostOverlay';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
 import TaskApplicants from '@/components/TaskApplicants';
-import WorkerStatusAlert from '@/components/WorkerStatusAlert';
 import ApprovedPopup from '@/components/ApprovedPopup';
-import WorkerTrackerBar from '@/components/WorkerTrackerBar';
 import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
@@ -93,7 +91,6 @@ function ScanningLabelDetail() {
   );
 }
 
-import LiveWorkerMap from '@/components/LiveWorkerMap';
 import TaskLocationMap from '@/components/TaskLocationMap';
 
 
@@ -165,7 +162,6 @@ export default function TaskDetail() {
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
-  const [showWorkerMap, setShowWorkerMap] = useState(false);
   const [mediaIdx, setMediaIdx] = useState(0);
   const prevWorkerIdRef = useRef(null);
 
@@ -645,7 +641,6 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {isWorker && <WorkerStatusAlert task={task} me={me} />}
       <PageHeader title={task.title} right={null} />
       
 
@@ -707,24 +702,7 @@ export default function TaskDetail() {
         <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
-          {/* Worker tracker progress bar when TAKEN — compact version inside banner */}
-          {task.status === 'TAKEN' && (isOwner || isWorker) && task.worker_status && (
-            <div style={{ padding: '10px 18px 0', borderBottom: '1px solid rgba(255,255,255,0.18)', paddingBottom: 10 }}>
-              <WorkerTrackerBar
-                task={task}
-                isWorker={isWorker}
-                isOwner={isOwner}
-                onUpdate={handleWorkerUpdate}
-                showMapButton={!!(task.worker_lat && task.worker_lng)}
-                onMapToggle={() => setShowWorkerMap((v) => !v)}
-              />
-              {showWorkerMap && isOwner && task.worker_lat && task.worker_lng && (
-                <div style={{ marginTop: 10, borderRadius: 16, overflow: 'hidden' }}>
-                  <LiveWorkerMap task={task} />
-                </div>
-              )}
-            </div>
-          )}
+
 
           <div style={{ padding: '16px 18px 18px' }}>
             {/* Non-owner status pill */}
@@ -1029,11 +1007,7 @@ export default function TaskDetail() {
         />
         }
 
-        {/* Live worker map */}
-        {task.status === 'TAKEN' && task.worker_lat && task.worker_lng &&
-        ['on_the_way', 'delayed', 'parking'].includes(task.worker_status) &&
-        <LiveWorkerMap task={task} />
-        }
+
 
 
 
