@@ -53,9 +53,9 @@ export default function HomeFeed() {
   const { t, isRTL } = useLanguage();
 
   const MY_PUB_TABS = [
-    { key: 'active',    label: 'פעילות',  statuses: ['OPEN', 'TAKEN'] },
-    { key: 'completed', label: 'הושלמו',  statuses: ['COMPLETED'] },
-    { key: 'other',     label: 'ארכיון',  statuses: ['CANCELLED', 'EXPIRED'] },
+    { key: 'active',    label: t('active'),    statuses: ['OPEN', 'TAKEN'] },
+    { key: 'completed', label: t('completed'), statuses: ['COMPLETED'] },
+    { key: 'other',     label: t('archive'),   statuses: ['CANCELLED', 'EXPIRED'] },
   ];
   const queryClient = useQueryClient();
 
@@ -557,11 +557,11 @@ export default function HomeFeed() {
       <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
         <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
           <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'my_published' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
-          <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+          <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
             {t('nav_create_task').replace('+ ', '')}
             {hasNewApplicants && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 12, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white', animation: 'pulseRedDot 1.5s infinite' }} />}
           </button>
-          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : 'var(--text-2)', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>{t('all_tasks')}</button>
+          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>{t('all_tasks')}</button>
         </div>
       </div>
 
@@ -601,7 +601,7 @@ export default function HomeFeed() {
                 </div>
                 {search && (<button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><X size={11} color="#94a3b8" /></button>)}
                 <button onClick={() => setShowCategoryDropdown(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 8, border: `1px solid ${(filters.categories?.length > 0) ? '#93c5fd' : 'var(--border-1)'}`, background: (filters.categories?.length > 0) ? '#eff6ff' : 'var(--surface-3)', cursor: 'pointer', flexShrink: 0, fontSize: 11, color: (filters.categories?.length > 0) ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {(filters.categories?.length > 0) ? '+ קטגוריה' : 'קטגוריה'}
+                  {(filters.categories?.length > 0) ? `+ ${t('category')}` : t('category')}
                   {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
                 </button>
                 <button onClick={() => setShowFilters(true)} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 6, border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}`, background: hasSheetFilters ? '#1a6fd4' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' }}>
@@ -618,7 +618,7 @@ export default function HomeFeed() {
                 <>
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
                   <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 220, overflowY: 'auto' }}>
-                    {(filters.categories?.length > 0) && <button onClick={() => { setFilters(f => ({ ...f, categories: [] })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>נקה קטגוריות</button>}
+                    {(filters.categories?.length > 0) &&                    <button onClick={() => { setFilters(f => ({ ...f, categories: [] })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>{t('clear_categories')}</button>}
                     {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN').length - tasks.filter(t => t.category === a.value && t.status === 'OPEN').length).map(c => {
                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
                       if (count === 0) return null;

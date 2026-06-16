@@ -184,9 +184,14 @@ export const translations = {
     auto_bump_desc: 'נעצר כאשר יש בקשה',
     auto_bump_active: 'נעצר (יש בקשה)',
     applications_count: 'מועמדויות',
-  },
+    active: 'פעילות',
+    completed: 'הושלמו',
+    archive: 'ארכיון',
+    clear_categories: 'נקה קטגוריות',
+    category: 'קטגוריה',
+    },
 
-  en: {
+    en: {
     nav_feed: 'Task Feed',
     nav_map: 'Task Map',
     nav_chats: 'Chats',
@@ -349,9 +354,14 @@ export const translations = {
     auto_bump_desc: 'Paused when application received',
     auto_bump_active: 'Paused (has application)',
     applications_count: 'Applications',
-  },
+    active: 'Active',
+    completed: 'Completed',
+    archive: 'Archive',
+    clear_categories: 'Clear Categories',
+    category: 'Category',
+    },
 
-  ar: {
+    ar: {
     nav_feed: 'تغذية المهام',
     nav_map: 'خريطة المهام',
     nav_chats: 'المحادثات',
@@ -514,9 +524,14 @@ export const translations = {
     auto_bump_desc: 'توقف عند استقبال الطلب',
     auto_bump_active: 'متوقف (يوجد طلب)',
     applications_count: 'الطلبات',
-  },
+    active: 'نشطة',
+    completed: 'مكتملة',
+    archive: 'الأرشيف',
+    clear_categories: 'مسح الفئات',
+    category: 'فئة',
+    },
 
-  es: {
+    es: {
     nav_feed: 'Feed de Tareas',
     nav_map: 'Mapa de Tareas',
     nav_chats: 'Chats',
@@ -679,9 +694,14 @@ export const translations = {
     auto_bump_desc: 'Pausado al recibir postulación',
     auto_bump_active: 'Pausado (hay postulación)',
     applications_count: 'Postulaciones',
-  },
+    active: 'Activas',
+    completed: 'Completadas',
+    archive: 'Archivo',
+    clear_categories: 'Limpiar Categorías',
+    category: 'Categoría',
+    },
 
-  fr: {
+    fr: {
     nav_feed: 'Fil des Tâches',
     nav_map: 'Carte des Tâches',
     nav_chats: 'Chats',
@@ -844,9 +864,14 @@ export const translations = {
     auto_bump_desc: 'En pause lors de réception de candidature',
     auto_bump_active: 'En pause (candidature reçue)',
     applications_count: 'Candidatures',
-  },
+    active: 'Actives',
+    completed: 'Complétées',
+    archive: 'Archive',
+    clear_categories: 'Effacer les Catégories',
+    category: 'Catégorie',
+    },
 
-  ru: {
+    ru: {
     nav_feed: 'Лента задач',
     nav_map: 'Карта задач',
     nav_chats: 'Чаты',
@@ -1009,8 +1034,13 @@ export const translations = {
     auto_bump_desc: 'Пауза при получении заявки',
     auto_bump_active: 'Пауза (есть заявка)',
     applications_count: 'Заявки',
-  },
-};
+    active: 'Активные',
+    completed: 'Завершённые',
+    archive: 'Архив',
+    clear_categories: 'Очистить категории',
+    category: 'Категория',
+    },
+    };
 
 /** Detect language from IP (uses free ipapi.co), fallback to browser/localStorage */
 export async function detectLanguage() {
