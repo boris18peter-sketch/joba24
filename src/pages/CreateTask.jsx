@@ -29,16 +29,16 @@ import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolSca
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
 const EXPIRY_OPTIONS = [
-  { label: 'ללא תוקף', hours: null },
-  { label: "30 דק'", hours: 0.5 },
-  { label: 'שעה', hours: 1 },
-  { label: '2 שעות', hours: 2 },
-  { label: '4 שעות', hours: 4 },
-  { label: '6 שעות', hours: 6 },
-  { label: 'יום', hours: 24 },
-  { label: '2 ימים', hours: 48 },
-  { label: 'שבוע', hours: 168 },
-  { label: 'מותאם', hours: 'custom' },
+   { label: 'ללא תוקף', hours: null, i18n_key: 'expiry_never' },
+   { label: "30 דק'", hours: 0.5, i18n_key: 'expiry_30min' },
+   { label: 'שעה', hours: 1, i18n_key: 'expiry_1hour' },
+   { label: '2 שעות', hours: 2, i18n_key: 'expiry_2hours' },
+   { label: '4 שעות', hours: 4, i18n_key: 'expiry_4hours' },
+   { label: '6 שעות', hours: 6, i18n_key: 'expiry_6hours' },
+   { label: 'יום', hours: 24, i18n_key: 'expiry_day' },
+   { label: '2 ימים', hours: 48, i18n_key: 'expiry_2days' },
+   { label: 'שבוע', hours: 168, i18n_key: 'expiry_week' },
+   { label: 'מותאם', hours: 'custom', i18n_key: 'expiry_custom' },
 ];
 
 const URGENCY_TAGS = [
@@ -165,23 +165,23 @@ const DEFAULT_FORM = {
 };
 
 const PAYMENT_METHODS = [
-  { value: 'Cash', label: 'מזומן' },
-  { value: 'Bit', label: 'Bit' },
-  { value: 'PayBox', label: 'PayBox' },
-  { value: 'Other', label: 'אחר' },
+   { value: 'Cash', label: 'מזומן', i18n_key: 'cash' },
+   { value: 'Bit', label: 'Bit', i18n_key: 'bit' },
+   { value: 'PayBox', label: 'PayBox', i18n_key: 'paybox' },
+   { value: 'Other', label: 'אחר', i18n_key: 'other' },
 ];
 
 const TIME_OPTIONS = [
-  { value: '15m', label: '15 דקות' },
-  { value: '30m', label: '30 דקות' },
-  { value: '1h', label: 'שעה' },
-  { value: '2h', label: 'שעתיים' },
-  { value: '3h', label: '3 שעות' },
-  { value: '4h', label: '4 שעות' },
-  { value: '6h', label: '6 שעות' },
-  { value: 'day', label: 'יום שלם' },
-  { value: 'week', label: 'שבוע' },
-  { value: 'custom', label: 'מותאם אישית' },
+   { value: '15m', label: '15 דקות', i18n_key: 'time_15m' },
+   { value: '30m', label: '30 דקות', i18n_key: 'time_30m' },
+   { value: '1h', label: 'שעה', i18n_key: 'time_1h' },
+   { value: '2h', label: 'שעתיים', i18n_key: 'time_2h' },
+   { value: '3h', label: '3 שעות', i18n_key: 'time_3h' },
+   { value: '4h', label: '4 שעות', i18n_key: 'time_4h' },
+   { value: '6h', label: '6 שעות', i18n_key: 'time_6h' },
+   { value: 'day', label: 'יום שלם', i18n_key: 'time_day' },
+   { value: 'week', label: 'שבוע', i18n_key: 'time_week' },
+   { value: 'custom', label: 'מותאם אישית', i18n_key: 'time_custom' },
 ];
 
 // Requirements per category — each category shows only relevant options
