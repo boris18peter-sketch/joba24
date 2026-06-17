@@ -35,10 +35,10 @@ export default function Layout() {
 
   // Lazy-mount tabs: track which tabs have been visited so we only mount them on first visit
   const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
-  const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter(p => ROOT_TAB_PATHS.includes(p))));
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter((p) => ROOT_TAB_PATHS.includes(p))));
   useEffect(() => {
     if (ROOT_TAB_PATHS.includes(location.pathname)) {
-      setVisitedTabs(prev => {
+      setVisitedTabs((prev) => {
         if (prev.has(location.pathname)) return prev;
         const next = new Set(prev);
         next.add(location.pathname);
@@ -116,11 +116,11 @@ export default function Layout() {
     enabled: !!me?.id && isAuthenticated,
     staleTime: 10000,
     refetchInterval: 15000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: true
   });
 
   // Active task as worker
-  const activeWorkerTask = workerTasks.find(t => t.status === 'TAKEN') || null;
+  const activeWorkerTask = workerTasks.find((t) => t.status === 'TAKEN') || null;
 
   // Get my published tasks for real-time notifications
   const { data: myPublishedTasks = [] } = useQuery({
@@ -128,7 +128,7 @@ export default function Layout() {
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
     staleTime: 30000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false
   });
 
   // Get my applications
@@ -136,12 +136,12 @@ export default function Layout() {
     queryKey: ['myApplicationsLayout', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 30000,
+    staleTime: 30000
   });
 
   // Seed appStatusRef with current approved applications
   useEffect(() => {
-    myApplications.forEach(app => {
+    myApplications.forEach((app) => {
       if (!appStatusRef.current[app.id]) {
         appStatusRef.current[app.id] = app.status;
       }
@@ -150,11 +150,11 @@ export default function Layout() {
 
   // Seed prevTasksRef from published + worker tasks
   useEffect(() => {
-    myPublishedTasks.forEach(task => { prevTasksRef.current[task.id] = task; });
+    myPublishedTasks.forEach((task) => {prevTasksRef.current[task.id] = task;});
   }, [myPublishedTasks]);
 
   useEffect(() => {
-    workerTasks.forEach(task => {
+    workerTasks.forEach((task) => {
       if (task.status === 'TAKEN') {
         prevTasksRef.current[task.id] = task;
         takenWorkerRef.current[task.id] = task.worker_id;
@@ -167,8 +167,8 @@ export default function Layout() {
   // Seed prevTasksRef + takenWorkerRef on mount so cancellation detection works reliably
   useEffect(() => {
     if (!me?.id) return;
-    base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50).then(tasks => {
-      tasks.forEach(task => {
+    base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50).then((tasks) => {
+      tasks.forEach((task) => {
         if (task.status === 'TAKEN') {
           prevTasksRef.current[task.id] = task;
           takenWorkerRef.current[task.id] = task.worker_id;
@@ -179,7 +179,7 @@ export default function Layout() {
 
   // Keep prevApplicationsRef up to date for revocation detection
   useEffect(() => {
-    myApplications.forEach(app => { prevApplicationsRef.current[app.id] = app; });
+    myApplications.forEach((app) => {prevApplicationsRef.current[app.id] = app;});
   }, [myApplications]);
 
   // ── SINGLE merged Task subscription: handles both cache sync AND notifications ──
@@ -191,10 +191,10 @@ export default function Layout() {
       // ── 1. Cache sync ──
       // workerTasksLayout
       queryClient.setQueryData(['workerTasksLayout', me.id], (old = []) => {
-        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
         if (event.type === 'update') {
-          const exists = old.find(x => x.id === event.id);
-          if (exists) return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+          const exists = old.find((x) => x.id === event.id);
+          if (exists) return old.map((x) => x.id === event.id ? { ...x, ...t } : x);
           if (t.worker_id === me.id && t.status === 'TAKEN') return [t, ...old];
           return old;
         }
@@ -202,17 +202,17 @@ export default function Layout() {
       });
       // myPublishedTasks
       queryClient.setQueryData(['myPublishedTasks', me.id], (old = []) => {
-        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
-        if (event.type === 'create' && t.client_id === me.id) return old.find(x => x.id === t.id) ? old : [t, ...old];
-        if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+        if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
+        if (event.type === 'create' && t.client_id === me.id) return old.find((x) => x.id === t.id) ? old : [t, ...old];
+        if (event.type === 'update') return old.map((x) => x.id === event.id ? { ...x, ...t } : x);
         return old;
       });
       // myTasks (HomeFeed)
       queryClient.setQueryData(['myTasks', me.id], (old = []) => {
         if (!Array.isArray(old)) return old;
-        if (event.type === 'create' && t.client_id === me.id && !old.find(x => x.id === t.id)) return [t, ...old];
-        if (event.type === 'update') return old.map(x => x.id === event.id ? { ...x, ...t } : x);
-        if (event.type === 'delete') return old.filter(x => x.id !== event.id);
+        if (event.type === 'create' && t.client_id === me.id && !old.find((x) => x.id === t.id)) return [t, ...old];
+        if (event.type === 'update') return old.map((x) => x.id === event.id ? { ...x, ...t } : x);
+        if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
         return old;
       });
       // activeWorkerTask — the critical one for ActiveTaskBanner
@@ -220,7 +220,7 @@ export default function Layout() {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update') {
           if (t.worker_id === me.id && t.status === 'TAKEN') {
-            return old?.id === event.id ? { ...old, ...t } : (old ?? t);
+            return old?.id === event.id ? { ...old, ...t } : old ?? t;
           }
           if (old?.id === event.id) {
             return t.status !== 'TAKEN' ? null : { ...old, ...t };
@@ -257,9 +257,9 @@ export default function Layout() {
           addNotification({ type: 'task_taken', taskTitle: task.title, taskId: task.id });
         }
         if (task.worker_status && task.worker_status !== prev.worker_status) {
-          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });
-          else if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });
-          else if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
+          if (task.worker_status === 'on_the_way') addNotification({ type: 'worker_on_the_way', taskTitle: task.title, taskId: task.id });else
+          if (task.worker_status === 'arrived') addNotification({ type: 'worker_arrived', taskTitle: task.title, taskId: task.id });else
+          if (task.worker_status === 'done') addNotification({ type: 'worker_done', taskTitle: task.title, taskId: task.id });
         }
       }
 
@@ -292,13 +292,13 @@ export default function Layout() {
   // Real-time chat message push notifications
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
-    const unsub = base44.entities.ChatMessage.subscribe(event => {
+    const unsub = base44.entities.ChatMessage.subscribe((event) => {
       if (event.type !== 'create' || !event.data) return;
       const msg = event.data;
       if (msg.sender_id === me.id) return;
-      const task = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === msg.task_id);
+      const task = [...(myPublishedTasks || []), ...(workerTasks || [])].find((t) => t.id === msg.task_id);
       if (!task) return;
-      setUnreadMessages(prev => prev + 1);
+      setUnreadMessages((prev) => prev + 1);
       addNotification({ type: 'new_message', senderName: msg.sender_name, preview: msg.content?.slice(0, 60), taskId: msg.task_id });
     });
     return unsub;
@@ -377,9 +377,9 @@ export default function Layout() {
       // Sync applications-pulse cache so TaskDetail applicant counter updates live
       if (appData.task_id) {
         queryClient.setQueryData(['applications-pulse', appData.task_id], (old = []) => {
-          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
-          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
-          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
+          if (event.type === 'create') return old.find((a) => a.id === appData.id) ? old : [...old, appData];
+          if (event.type === 'update') return old.map((a) => a.id === appData.id ? { ...a, ...appData } : a);
+          if (event.type === 'delete') return old.filter((a) => a.id !== appData.id);
           return old;
         });
       }
@@ -391,34 +391,34 @@ export default function Layout() {
         prevAppStatus = prevStatus;
         appStatusRef.current[appId] = appData.status;
         if (prevStatus === 'approved' && appData.status === 'rejected') {
-          const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === appData.task_id);
+          const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find((t) => t.id === appData.task_id);
           setRevokedTask(relatedTask || { id: appData.task_id, title: appData.task_title || 'משימה' });
         }
       }
 
       if (event.type === 'create' && appData.task_id) {
-        const isMyTask = myPublishedTasks.some(t => t.id === appData.task_id);
+        const isMyTask = myPublishedTasks.some((t) => t.id === appData.task_id);
         const iAmApplicant = appData.worker_id === me.id;
         if (isMyTask && !iAmApplicant) {
-          const task = myPublishedTasks.find(t => t.id === appData.task_id);
+          const task = myPublishedTasks.find((t) => t.id === appData.task_id);
           addNotification({ type: 'application_received', taskTitle: task?.title || 'משימה', taskId: appData.task_id });
         }
         if (iAmApplicant && !isMyTask) {
-          const appliedTask = workerTasks.find(t => t.id === appData.task_id);
+          const appliedTask = workerTasks.find((t) => t.id === appData.task_id);
           addNotification({ type: 'application_sent', taskTitle: appliedTask?.title || appData.task_title || 'משימה', taskId: appData.task_id });
         }
       } else if (event.type === 'update') {
         if (appData.status === 'approved' && appData.worker_id === me.id) {
-          const isMyOwnTaskAsClient = myPublishedTasks.some(t => t.id === appData.task_id);
+          const isMyOwnTaskAsClient = myPublishedTasks.some((t) => t.id === appData.task_id);
           if (!isMyOwnTaskAsClient) {
-            const task = workerTasks.find(t => t.id === appData.task_id);
+            const task = workerTasks.find((t) => t.id === appData.task_id);
             addNotification({ type: 'application_approved', taskTitle: task?.title || appData.task_title || 'משימה', taskId: appData.task_id });
           }
         } else if (appData.status === 'rejected' && appData.worker_id === me.id) {
-          const isMyOwnTask = myPublishedTasks.some(t => t.id === appData.task_id);
+          const isMyOwnTask = myPublishedTasks.some((t) => t.id === appData.task_id);
           if (isMyOwnTask) return;
           if (prevAppStatus !== 'approved') {
-            const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find(t => t.id === appData.task_id);
+            const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find((t) => t.id === appData.task_id);
             addNotification({ type: 'application_rejected', taskTitle: rejectedTask?.title || 'משימה', taskId: appData.task_id });
           }
         }
@@ -473,21 +473,21 @@ export default function Layout() {
   };
 
   // Active task I published that a worker is currently doing
-  const activeClientTask = myPublishedTasks.find(t => t.status === 'TAKEN') || null;
+  const activeClientTask = myPublishedTasks.find((t) => t.status === 'TAKEN') || null;
 
   // Boost available alert — fire ONCE per session per task (stored in sessionStorage)
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
     const HOUR_MS = 60 * 60 * 1000;
-    const openTasksWithNoApps = myPublishedTasks.filter(t =>
-      t.status === 'OPEN' && !t.worker_id
+    const openTasksWithNoApps = myPublishedTasks.filter((t) =>
+    t.status === 'OPEN' && !t.worker_id
     );
-    openTasksWithNoApps.forEach(task => {
+    openTasksWithNoApps.forEach((task) => {
       const sessionKey = `boost_notif_${task.id}`;
       if (sessionStorage.getItem(sessionKey)) return; // already shown this session
-      const refMs = task.last_boost_at
-        ? new Date(task.last_boost_at + (task.last_boost_at.endsWith('Z') || task.last_boost_at.includes('+') ? '' : 'Z')).getTime()
-        : new Date(task.created_date + (task.created_date?.endsWith('Z') || task.created_date?.includes('+') ? '' : 'Z')).getTime();
+      const refMs = task.last_boost_at ?
+      new Date(task.last_boost_at + (task.last_boost_at.endsWith('Z') || task.last_boost_at.includes('+') ? '' : 'Z')).getTime() :
+      new Date(task.created_date + (task.created_date?.endsWith('Z') || task.created_date?.includes('+') ? '' : 'Z')).getTime();
       const elapsed = Date.now() - refMs;
       if (elapsed >= HOUR_MS) {
         sessionStorage.setItem(sessionKey, '1');
@@ -497,26 +497,26 @@ export default function Layout() {
   }, [myPublishedTasks, me?.id]);
 
   // Tasks in progress = TAKEN and worker confirmed (active work)
-  const inProgressCount = workerTasks.filter(t => t.status === 'TAKEN').length;
+  const inProgressCount = workerTasks.filter((t) => t.status === 'TAKEN').length;
 
   const { data: unreadNotifCount = 0 } = useQuery({
     queryKey: ['notifUnread'],
     queryFn: () => {
       if (!isAuthenticated) return 0;
       const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
-      return stored.filter(n => !n.read).length;
+      return stored.filter((n) => !n.read).length;
     },
     enabled: isAuthenticated,
-    staleTime: 30000,
+    staleTime: 30000
   });
 
   const navItems = [
-    { to: '/', icon: Home, label: t('nav_feed_short') },
-    { to: '/map', icon: Map, label: t('nav_map_short') },
-    { to: '/create-task', icon: Plus, label: t('nav_create_short'), primary: true },
-    { to: '/chats', icon: MessageCircle, label: t('nav_chats_short'), badge: unreadMessages },
-    { to: '/profile', icon: User, label: t('nav_profile_short') },
-  ];
+  { to: '/', icon: Home, label: t('nav_feed_short') },
+  { to: '/map', icon: Map, label: t('nav_map_short') },
+  { to: '/create-task', icon: Plus, label: t('nav_create_short'), primary: true },
+  { to: '/chats', icon: MessageCircle, label: t('nav_chats_short'), badge: unreadMessages },
+  { to: '/profile', icon: User, label: t('nav_profile_short') }];
+
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
@@ -548,11 +548,11 @@ export default function Layout() {
       )}
       {cancelWarningTask && createPortal(
         <div className="mobile-sheet-overlay"
-          style={{ zIndex: 100001 }}
-          onClick={(e) => { if (e.target === e.currentTarget) setCancelWarningTask(null); }}
-          onPointerDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-        >
+        style={{ zIndex: 100001 }}
+        onClick={(e) => {if (e.target === e.currentTarget) setCancelWarningTask(null);}}
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}>
+          
           <div dir="rtl" className="mobile-sheet" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -565,8 +565,8 @@ export default function Layout() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setCancelWarningTask(null)}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}
-              >
+                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
+                
                 {t('keep_task_btn')}
               </button>
               <button
@@ -586,8 +586,8 @@ export default function Layout() {
                   setCancelWarningLoading(false);
                 }}
                 disabled={cancelWarningLoading}
-                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-              >
+                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                
                 {cancelWarningLoading ? <Loader2 size={18} className="animate-spin" /> : t('cancel_task_btn_label')}
               </button>
             </div>
@@ -599,14 +599,14 @@ export default function Layout() {
       {/* Live Notifications Stack */}
       {createPortal(
         <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 9999999, pointerEvents: 'none' }}>
-          {notifications.map(notif => (
-            <div key={notif.id} style={{ pointerEvents: 'auto' }}>
-              <LiveNotificationPopup 
-                notification={notif} 
-                onClose={() => removeNotification(notif.id)} 
-              />
+          {notifications.map((notif) =>
+          <div key={notif.id} style={{ pointerEvents: 'auto' }}>
+              <LiveNotificationPopup
+              notification={notif}
+              onClose={() => removeNotification(notif.id)} />
+            
             </div>
-          ))}
+          )}
         </div>,
         document.body
       )}
@@ -617,7 +617,7 @@ export default function Layout() {
         const isNonRootTab = !isRootTab;
         return (
           <>
-            {ROOT_TAB_PATHS.map(tabPath => {
+            {ROOT_TAB_PATHS.map((tabPath) => {
               const isActive = location.pathname === tabPath;
               const hasBeenVisited = visitedTabs.has(tabPath);
               // Only render if this tab has been visited at least once
@@ -637,48 +637,48 @@ export default function Layout() {
                     paddingBottom: tabPath === '/map' ? 0 : 'calc(100px + env(safe-area-inset-bottom))',
                     WebkitOverflowScrolling: 'touch',
                     overscrollBehavior: 'contain',
-                    height: isActive ? '100%' : 0,
-                  }}
-                >
-                  {needsAuth ? (
-                    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', gap: 16, textAlign: 'center' }}>
+                    height: isActive ? '100%' : 0
+                  }}>
+                  
+                  {needsAuth ?
+                  <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', gap: 16, textAlign: 'center' }}>
                       <div style={{ fontSize: 48, marginBottom: 4 }}>{tabPath === '/chats' ? '💬' : '👤'}</div>
                       <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{t('login_required')}</div>
                       <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
                         {tabPath === '/chats' ? t('login_required_chats') : t('login_required_profile')}
                       </div>
                       <button
-                        onClick={login}
-                        style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}
-                      >
+                      onClick={login}
+                      style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
+                      
                         {t('login_now')}
                       </button>
-                    </div>
-                  ) : tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
-                  </div>
-              );
+                    </div> :
+                  tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
+                  </div>);
+
             })}
             {/* Non-root routes rendered via Outlet */}
-            {isNonRootTab && (
-              <div
-               id="main-scroll"
-               style={{
-                 flex: 1,
-                 display: 'flex',
-                 flexDirection: 'column',
-                 overflowY: 'auto',
-                 overflowX: 'hidden',
-                 paddingBottom: 'calc(100px + env(safe-area-inset-bottom))',
-                 WebkitOverflowScrolling: 'touch',
-                 overscrollBehavior: 'contain',
-                 height: '100%',
-               }}
-              >
+            {isNonRootTab &&
+            <div
+              id="main-scroll"
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                paddingBottom: 'calc(100px + env(safe-area-inset-bottom))',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                height: '100%'
+              }} className="opacity-100">
+              
                 <Outlet />
               </div>
-            )}
-          </>
-        );
+            }
+          </>);
+
       })()}
 
 
@@ -688,7 +688,7 @@ export default function Layout() {
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
         background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
         boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
-        paddingBottom: 'max(0px, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(0px, env(safe-area-inset-bottom))'
       }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
           {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
@@ -696,42 +696,42 @@ export default function Layout() {
             if (primary) {
               return (
                 <button id="onboarding-create-btn" key={to} onClick={() => {
-                  if (!isAuthenticated) { navigate(to); return; }
+                  if (!isAuthenticated) {navigate(to);return;}
                   gate(() => navigate(to));
                 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <div style={{
                     width: 56, height: 56, borderRadius: '50%',
                     background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 20px rgba(26,111,212,0.45)',
+                    boxShadow: '0 4px 20px rgba(26,111,212,0.45)'
                   }}>
                     <Icon size={24} color="white" />
                   </div>
                   <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
-                </button>
-              );
+                </button>);
+
             }
             return (
               <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
                 <div style={{ position: 'relative' }}>
                   <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
-                  {badge > 0 && (
-                    <div style={{
-                      position: 'absolute', top: -6, right: -8,
-                      background: '#dc2626', color: 'white',
-                      fontSize: 9, fontWeight: 900,
-                      width: 16, height: 16, borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: '1.5px solid white',
-                    }}>{badge}</div>
-                  )}
+                  {badge > 0 &&
+                  <div style={{
+                    position: 'absolute', top: -6, right: -8,
+                    background: '#dc2626', color: 'white',
+                    fontSize: 9, fontWeight: 900,
+                    width: 16, height: 16, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1.5px solid white'
+                  }}>{badge}</div>
+                  }
                 </div>
                 <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
-              </Link>
-            );
+              </Link>);
+
           })}
         </div>
       </div>}
-    </div>
-  );
+    </div>);
+
 }
