@@ -661,9 +661,8 @@ export default function TaskChatInterface({
 
       {/* Messages */}
       <div style={{ 
-        flex: 1, overflowY: 'auto', padding: '16px', 
+        flex: 1, overflowY: 'auto', padding: '16px 16px 0', 
         display: 'flex', flexDirection: 'column', gap: 14,
-        paddingBottom: 8,
       }}>
         {messages.map((msg, i) => (
           <div key={i} style={{
@@ -854,7 +853,7 @@ export default function TaskChatInterface({
       {/* Input area */}
       <div style={{
         background: 'white', borderTop: '1px solid #e5e7eb',
-        padding: '6px 16px 4px',
+        padding: '6px 16px 0',
       }}>
         {/* Publish button — only after features shown (right before publish) */}
         {showFeatures && (
