@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { messaging, requestNotificationPermission, getFCMToken, onForegroundMessage } from '@/lib/firebase';
+import { requestNotificationPermission, getFCMToken, onForegroundMessage } from '@/lib/fcm';
 
 export default function usePushNotifications() {
   const [token, setToken] = useState(null);
@@ -14,7 +14,6 @@ export default function usePushNotifications() {
     try {
       const me = await base44.auth.me();
       if (!me) return;
-      // Update user's devices array with this token
       const existingUser = await base44.asServiceRole.entities.User.filter({ id: me.id });
       const currentUser = existingUser[0];
       if (!currentUser) return;
@@ -49,7 +48,6 @@ export default function usePushNotifications() {
   // Auto-init on mount
   useEffect(() => {
     const init = async () => {
-      if (!messaging) return;
       const perm = Notification.permission;
       setPermission(perm);
 
@@ -66,11 +64,10 @@ export default function usePushNotifications() {
 
   // Listen for foreground messages
   useEffect(() => {
-    if (!messaging) return;
     const unsub = onForegroundMessage((payload) => {
       setForegroundMsg(payload);
     });
-    return unsub;
+    return () => { if (unsub) unsub(); };
   }, []);
 
   // Clear foreground message
