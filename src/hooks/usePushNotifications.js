@@ -21,7 +21,7 @@ export default function usePushNotifications() {
       const existingTokens = currentUser.fcm_tokens || [];
       if (existingTokens.includes(fcmToken)) return;
 
-      await base44.entities.User.update(me.id, {
+      await base44.asServiceRole.entities.User.update(me.id, {
         fcm_tokens: [...existingTokens, fcmToken]
       });
       tokenRef.current = fcmToken;
