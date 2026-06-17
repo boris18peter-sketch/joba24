@@ -36,15 +36,23 @@ export default function SideMenu({ open, onClose }) {
     enabled: isAuthenticated
   });
 
-  // Check permissions on mount
+  // Check permissions on mount and listen for changes
   useEffect(() => {
-    const isLocEnabled = localStorage.getItem('joba24_location_enabled') === '1';
-    setLocationEnabled(isLocEnabled);
+    const updatePermissions = () => {
+      const isLocEnabled = localStorage.getItem('joba24_location_enabled') === '1';
+      setLocationEnabled(isLocEnabled);
 
-    if (typeof Notification !== 'undefined') {
-      const isNotifEnabled = Notification.permission === 'granted';
-      setNotificationsEnabled(isNotifEnabled);
-    }
+      if (typeof Notification !== 'undefined') {
+        const isNotifEnabled = Notification.permission === 'granted';
+        setNotificationsEnabled(isNotifEnabled);
+      }
+    };
+
+    updatePermissions();
+
+    // Listen for permission changes from NotificationsPermissionPrompt
+    window.addEventListener('notif_permission_changed', updatePermissions);
+    return () => window.removeEventListener('notif_permission_changed', updatePermissions);
   }, []);
 
   const handleLocationToggle = async () => {
@@ -217,31 +225,32 @@ export default function SideMenu({ open, onClose }) {
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          {/* Toggles for Location & Notifications */}
-          <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Toggles for Location & Notifications — compact inline */}
+          <div style={{ marginBottom: 16, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
             {/* Location Toggle */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <MapPin size={18} color="#60a5fa" />
-                <span style={{ fontSize: 13, color: '#bfdbfe', fontWeight: 600 }}>{t('location')}</span>
-              </div>
-              <button
-                onClick={handleLocationToggle}
+            <button
+              onClick={handleLocationToggle}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer',
+              }}
+            >
+              <MapPin size={16} color={locationEnabled ? '#10b981' : '#60a5fa'} />
+              <span style={{ fontSize: 11, color: '#bfdbfe', fontWeight: 500 }}>{t('location')}</span>
+              <div
                 style={{
-                  width: 44,
-                  height: 24,
-                  borderRadius: 12,
-                  border: 'none',
+                  marginLeft: 'auto',
+                  width: 28,
+                  height: 16,
+                  borderRadius: 8,
                   background: locationEnabled ? '#10b981' : '#4b5563',
-                  cursor: 'pointer',
                   position: 'relative',
                   transition: 'background 0.2s',
                 }}
@@ -249,61 +258,62 @@ export default function SideMenu({ open, onClose }) {
                 <div
                   style={{
                     position: 'absolute',
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
+                    width: 14,
+                    height: 14,
+                    borderRadius: 6,
                     background: 'white',
-                    top: 2,
-                    left: locationEnabled ? 22 : 2,
+                    top: 1,
+                    left: locationEnabled ? 13 : 1,
                     transition: 'left 0.2s',
                   }}
                 />
-              </button>
-            </div>
+              </div>
+            </button>
 
             {/* Notifications Toggle */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Bell size={18} color="#f59e0b" />
-                <span style={{ fontSize: 13, color: '#bfdbfe', fontWeight: 600 }}>{t('notifications')}</span>
-              </div>
-              <button
-                onClick={handleNotificationsToggle}
-                disabled={typeof Notification === 'undefined'}
+            <button
+              onClick={handleNotificationsToggle}
+              disabled={typeof Notification === 'undefined'}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                cursor: typeof Notification === 'undefined' ? 'not-allowed' : 'pointer',
+                opacity: typeof Notification === 'undefined' ? 0.5 : 1,
+              }}
+            >
+              <Bell size={16} color={notificationsEnabled ? '#f59e0b' : '#60a5fa'} />
+              <span style={{ fontSize: 11, color: '#bfdbfe', fontWeight: 500 }}>{t('notifications')}</span>
+              <div
                 style={{
-                  width: 44,
-                  height: 24,
-                  borderRadius: 12,
-                  border: 'none',
+                  marginLeft: 'auto',
+                  width: 28,
+                  height: 16,
+                  borderRadius: 8,
                   background: notificationsEnabled ? '#10b981' : '#4b5563',
-                  cursor: typeof Notification === 'undefined' ? 'not-allowed' : 'pointer',
                   position: 'relative',
                   transition: 'background 0.2s',
-                  opacity: typeof Notification === 'undefined' ? 0.5 : 1,
                 }}
               >
                 <div
                   style={{
                     position: 'absolute',
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
+                    width: 14,
+                    height: 14,
+                    borderRadius: 6,
                     background: 'white',
-                    top: 2,
-                    left: notificationsEnabled ? 22 : 2,
+                    top: 1,
+                    left: notificationsEnabled ? 13 : 1,
                     transition: 'left 0.2s',
                   }}
                 />
-              </button>
-            </div>
+              </div>
+            </button>
           </div>
 
           {/* Joba24 yellow CTA button — same as AppHeader */}

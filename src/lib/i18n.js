@@ -1296,7 +1296,6 @@ export const translations = {
   },
 
   he: {
-    // ... existing...
     notif_permission_title: 'אפשר התראות?',
     notif_permission_body: 'קבל התראות מיידיות כשמשימה חדשה מתאימה לך, כשמישהו משיב לך בצ\'אט, או כשהתשלום שלך מוכן.',
     notif_permission_allow: 'כן, אפשר',

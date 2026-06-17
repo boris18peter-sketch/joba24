@@ -23,6 +23,10 @@ export default function NotificationsPermissionPrompt() {
   const handleAllow = async () => {
     const perm = await requestNotificationPermission();
     setShow(false);
+    // Notify SideMenu to update toggle
+    if (perm === 'granted') {
+      window.dispatchEvent(new Event('notif_permission_changed'));
+    }
   };
 
   const handleDeny = () => {
