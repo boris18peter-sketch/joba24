@@ -165,7 +165,7 @@ export default function Chat() {
   const { data: fetchedMessages = [] } = useQuery({
     queryKey: ['chatMessages', taskId],
     queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
-    staleTime: 0,
+    staleTime: 60000,
   });
 
   // Merge fresh server data into state + update cache

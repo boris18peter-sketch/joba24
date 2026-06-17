@@ -82,19 +82,28 @@ export default function ChatInbox() {
       const newUnreadCounts = {};
       const withMsgs = new Set();
       const tasks = allTasks.slice(0, 20);
-      // Process one at a time with delay to avoid rate limiting
-      for (let i = 0; i < tasks.length; i++) {
+
+      // Batch in groups of 8 to avoid server overload
+      const BATCH_SIZE = 8;
+      for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
         if (cancelled) return;
-        try {
-          const msgs = await base44.entities.ChatMessage.filter({ task_id: tasks[i].id }, '-created_date', 10);
+        const batch = tasks.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(task =>
+            base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 10)
+              .then(msgs => ({ taskId: task.id, msgs }))
+              .catch(() => ({ taskId: task.id, msgs: [] }))
+          )
+        );
+        results.forEach(({ taskId, msgs }) => {
           if (msgs.length > 0) {
-            withMsgs.add(tasks[i].id);
-            newLastMessages[tasks[i].id] = msgs[0];
-            newUnreadCounts[tasks[i].id] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+            withMsgs.add(taskId);
+            newLastMessages[taskId] = msgs[0];
+            newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
           }
-        } catch {}
-        if (i < tasks.length - 1) await new Promise(r => setTimeout(r, 200));
+        });
       }
+
       if (!cancelled) {
         setLastMessages(newLastMessages);
         setUnreadCounts(newUnreadCounts);
@@ -103,7 +112,8 @@ export default function ChatInbox() {
     };
     run();
     return () => { cancelled = true; };
-  }, [allTasks.length > 0, me?.id]);
+  // dependency: allTasks.length (numeric) ensures re-run when tasks load after me
+  }, [allTasks.length, me?.id]);
 
   // Real-time updates
   useEffect(() => {
