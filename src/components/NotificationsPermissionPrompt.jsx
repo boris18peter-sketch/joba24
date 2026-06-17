@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { requestNotificationPermission } from '@/lib/fcm';
+import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
+import { base44 } from '@/api/base44Client';
 
 export default function NotificationsPermissionPrompt() {
   const { t, isRTL } = useLanguage();
@@ -23,8 +24,27 @@ export default function NotificationsPermissionPrompt() {
   const handleAllow = async () => {
     const perm = await requestNotificationPermission();
     setShow(false);
-    // Notify SideMenu to update toggle
+    
     if (perm === 'granted') {
+      // Get FCM token and save to user
+      const token = await getFCMToken();
+      if (token) {
+        try {
+          const me = await base44.auth.me();
+          if (me) {
+            const existingTokens = me.fcm_tokens || [];
+            if (!existingTokens.includes(token)) {
+              await base44.auth.updateMe({
+                fcm_tokens: [...existingTokens, token]
+              });
+              console.log('[Notif] FCM token saved to user');
+            }
+          }
+        } catch (err) {
+          console.error('[Notif] Failed to save token:', err);
+        }
+      }
+      // Notify SideMenu to update toggle
       window.dispatchEvent(new Event('notif_permission_changed'));
     }
   };
