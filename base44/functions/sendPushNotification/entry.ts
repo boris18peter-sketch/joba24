@@ -14,29 +14,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: user_ids, title' }, { status: 400 });
     }
 
-    // Initialize Firebase Admin
-    const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
-    if (!saJson) return Response.json({ error: 'FCM not configured — missing FIREBASE_SERVICE_ACCOUNT' }, { status: 500 });
+    // Initialize Firebase Admin using individual secrets
+    const projectId = Deno.env.get("FIREBASE_PROJECT_ID");
+    const clientEmail = Deno.env.get("FIREBASE_CLIENT_EMAIL");
+    const privateKey = Deno.env.get("FIREBASE_PRIVATE_KEY");
 
-    // Debug: show first and last chars
-    const firstChars = saJson.substring(0, 30);
-    const lastChars = saJson.substring(saJson.length - 30);
-
-    let serviceAccount;
-    try {
-      serviceAccount = JSON.parse(saJson);
-    } catch (e) {
-      return Response.json({ 
-        error: `Invalid JSON. First: "${firstChars}" | Last: "${lastChars}" | Parse error: ${e.message}`,
-        first: firstChars,
-        last: lastChars 
-      }, { status: 500 });
+    if (!projectId || !clientEmail || !privateKey) {
+      return Response.json({ error: 'FCM not configured — missing Firebase secrets' }, { status: 500 });
     }
 
-    // Fix private key: replace literal \\n with actual newlines
-    if (serviceAccount.private_key) {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    // Fix private key: handle all possible formats
+    let cleanKey = privateKey;
+    // Ensure key starts with ----- (platform may strip leading dashes)
+    if (!cleanKey.startsWith('-----')) {
+      cleanKey = '-----' + cleanKey;
     }
+    // If key has literal \\n (escaped), replace with real newlines
+    cleanKey = cleanKey.replace(/\\n/g, '\n');
+    // If key has \\r\\n, normalize
+    cleanKey = cleanKey.replace(/\r\n/g, '\n');
+
+    const serviceAccount = {
+      projectId,
+      clientEmail,
+      privateKey: cleanKey,
+    };
 
     if (!getApps().length) {
       initializeApp({ credential: cert(serviceAccount) });

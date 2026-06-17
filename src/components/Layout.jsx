@@ -22,12 +22,16 @@ import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import usePushNotifications from '@/hooks/usePushNotifications';
 
 export default function Layout() {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuth();
+
+  // Initialize push notifications (FCM) — auto-registers token on mount
+  usePushNotifications();
   const [notifications, setNotifications] = useState([]);
   const notifQueueRef = useRef([]);
   const notifActiveRef = useRef(false);
