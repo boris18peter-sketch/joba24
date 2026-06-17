@@ -1,75 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
-import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
-import { base44 } from '@/api/base44Client';
 
-export default function NotificationsPermissionPrompt() {
+export default function SystemPermissionModal({ type, onConfirm, onCancel, isOpen }) {
   const { t, isRTL } = useLanguage();
-  const [show, setShow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Show prompt only if Notifications are supported and not yet requested
-    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
-      return;
-    }
+  if (!isOpen || !type) return null;
 
-    const alreadyAsked = localStorage.getItem('joba24_notif_prompt_shown');
-    if (!alreadyAsked && Notification.permission === 'default') {
-      setShow(true);
-      localStorage.setItem('joba24_notif_prompt_shown', '1');
-    }
-  }, []);
+  const config = {
+    location: {
+      title: t('location_permission_title') || 'Share Location?',
+      body: t('location_permission_body') || 'We need your location to help workers find you',
+      icon: '📍',
+    },
+    notifications: {
+      title: t('notif_permission_title') || 'Enable Notifications?',
+      body: t('notif_permission_body') || 'Get instant updates on tasks and messages',
+      icon: '🔔',
+    },
+    updates: {
+      title: t('updates_permission_title') || 'Allow Live Updates?',
+      body: t('updates_permission_body') || 'Your location will be shared with clients in real-time',
+      icon: '📡',
+    },
+  };
 
-  const handleAllow = async () => {
+  const current = config[type];
+
+  const handleConfirm = async () => {
     setIsLoading(true);
-    const perm = await requestNotificationPermission();
-    setShow(false);
-    
-    if (perm === 'granted') {
-      // Get FCM token and save to user using updateMe (not asServiceRole)
-      const token = await getFCMToken();
-      if (token) {
-        try {
-          const me = await base44.auth.me();
-          if (me) {
-            console.log('[Notif] Got token, saving:', token.substring(0, 30) + '...');
-            const existingTokens = me.fcm_tokens || [];
-            if (!existingTokens.includes(token)) {
-              // Use auth.updateMe() for user-scoped update (not asServiceRole)
-              await base44.auth.updateMe({
-                fcm_tokens: [...existingTokens, token]
-              });
-              console.log('[Notif] ✅ FCM token saved to user');
-            } else {
-              console.log('[Notif] Token already saved');
-            }
-          }
-        } catch (err) {
-          console.error('[Notif] ❌ Failed to save token:', err.message);
-        }
-      } else {
-        console.warn('[Notif] No token returned from getFCMToken()');
-      }
-      // Notify SideMenu to update toggle
-      window.dispatchEvent(new Event('notif_permission_changed'));
+    try {
+      await onConfirm();
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
-
-  const handleDeny = () => {
-    setShow(false);
-  };
-
-  if (!show) return null;
 
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 100000,
+        zIndex: 100001,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -78,9 +51,7 @@ export default function NotificationsPermissionPrompt() {
         backdropFilter: 'blur(6px)',
         animation: 'sheetFadeIn 0.22s ease both',
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleDeny();
-      }}
+      onClick={onCancel}
     >
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
@@ -97,7 +68,7 @@ export default function NotificationsPermissionPrompt() {
       >
         {/* Close button */}
         <button
-          onClick={handleDeny}
+          onClick={onCancel}
           style={{
             position: 'absolute',
             top: 16,
@@ -115,22 +86,22 @@ export default function NotificationsPermissionPrompt() {
         </button>
 
         {/* Icon */}
-        <div style={{ fontSize: 48, marginBottom: 16, textAlign: 'center' }}>🔔</div>
+        <div style={{ fontSize: 48, marginBottom: 16, textAlign: 'center' }}>{current?.icon}</div>
 
         {/* Title */}
         <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8, textAlign: 'center' }}>
-          {t('notif_permission_title')}
+          {current?.title}
         </div>
 
         {/* Body */}
         <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 24, textAlign: 'center' }}>
-          {t('notif_permission_body')}
+          {current?.body}
         </div>
 
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
-            onClick={handleAllow}
+            onClick={handleConfirm}
             disabled={isLoading}
             style={{
               width: '100%',
@@ -146,10 +117,10 @@ export default function NotificationsPermissionPrompt() {
               boxShadow: '0 4px 16px rgba(26,111,212,0.35)',
             }}
           >
-            {isLoading ? '⏳' : '✓'} {t('notif_permission_allow')}
+            {isLoading ? '⏳' : '✓'} {t('allow_btn') || 'Allow'}
           </button>
           <button
-            onClick={handleDeny}
+            onClick={onCancel}
             disabled={isLoading}
             style={{
               width: '100%',
@@ -164,7 +135,7 @@ export default function NotificationsPermissionPrompt() {
               opacity: isLoading ? 0.5 : 1,
             }}
           >
-            {t('maybe_later')}
+            {t('maybe_later') || 'Maybe later'}
           </button>
         </div>
       </div>

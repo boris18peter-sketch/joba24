@@ -156,6 +156,8 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       toast.success(t('task_completed') || 'Task completed! 🎉');
+      // Dispatch rating popup event
+      window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task: t } }));
     } catch (err) {
       toast.error((t('error_colon') || 'Error: ') + err.message);
     } finally {

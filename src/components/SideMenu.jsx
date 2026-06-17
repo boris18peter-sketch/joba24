@@ -8,6 +8,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/LanguageContext';
 import { requestNotificationPermission } from '@/lib/fcm';
+import SystemPermissionModal from '@/components/SystemPermissionModal';
 
 
 // navItems built inside component using t()
@@ -20,6 +21,7 @@ export default function SideMenu({ open, onClose }) {
   const { t } = useLanguage();
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [permissionModal, setPermissionModal] = useState(null);
 
   const navItems = [
     { to: '/', icon: Home, label: t('nav_feed') },
@@ -60,32 +62,41 @@ export default function SideMenu({ open, onClose }) {
       localStorage.removeItem('joba24_location_enabled');
       setLocationEnabled(false);
     } else {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            localStorage.setItem('joba24_location_enabled', '1');
-            setLocationEnabled(true);
-          },
-          () => {
-            alert(t('location_permission_denied'));
-          }
-        );
-      }
+      setPermissionModal('location');
+    }
+  };
+
+  const handleLocationConfirm = async () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          localStorage.setItem('joba24_location_enabled', '1');
+          setLocationEnabled(true);
+          setPermissionModal(null);
+        },
+        () => {
+          setPermissionModal(null);
+        }
+      );
     }
   };
 
   const handleNotificationsToggle = async () => {
     if (notificationsEnabled) {
-      // User wants to disable — we can't truly disable, but can clear flag
       localStorage.setItem('joba24_notif_disabled', '1');
       setNotificationsEnabled(false);
     } else {
-      const perm = await requestNotificationPermission();
-      if (perm === 'granted') {
-        localStorage.removeItem('joba24_notif_disabled');
-        setNotificationsEnabled(true);
-      }
+      setPermissionModal('notifications');
     }
+  };
+
+  const handleNotificationsConfirm = async () => {
+    const perm = await requestNotificationPermission();
+    if (perm === 'granted') {
+      localStorage.removeItem('joba24_notif_disabled');
+      setNotificationsEnabled(true);
+    }
+    setPermissionModal(null);
   };
 
   return (
@@ -343,6 +354,24 @@ export default function SideMenu({ open, onClose }) {
         </div>
       </div>
       {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
+
+      {/* System Permission Modal */}
+      {permissionModal === 'location' && (
+        <SystemPermissionModal
+          type="location"
+          isOpen={permissionModal === 'location'}
+          onConfirm={handleLocationConfirm}
+          onCancel={() => setPermissionModal(null)}
+        />
+      )}
+      {permissionModal === 'notifications' && (
+        <SystemPermissionModal
+          type="notifications"
+          isOpen={permissionModal === 'notifications'}
+          onConfirm={handleNotificationsConfirm}
+          onCancel={() => setPermissionModal(null)}
+        />
+      )}
     </>);
 
 }

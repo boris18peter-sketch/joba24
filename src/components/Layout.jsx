@@ -18,6 +18,7 @@ import ChatPushNotification from '@/components/ChatPushNotification';
 import CoinEarnedToast from '@/components/CoinEarnedToast';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
+import RatingModal from '@/components/RatingModal';
 
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import SignupGiftModal from '@/components/SignupGiftModal';
@@ -124,8 +125,8 @@ export default function Layout() {
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 10000,
-    refetchInterval: 15000,
+    staleTime: 5000,
+    refetchInterval: 8000,
     refetchOnWindowFocus: true
   });
 
@@ -137,8 +138,9 @@ export default function Layout() {
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 30000,
-    refetchOnWindowFocus: false
+    staleTime: 5000,
+    refetchInterval: 8000,
+    refetchOnWindowFocus: true
   });
 
   // Get my applications
@@ -358,6 +360,16 @@ export default function Layout() {
     return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
   }, [me?.id]);
 
+  // Rating modal for task completion
+  const [ratingTask, setRatingTask] = useState(null);
+  useEffect(() => {
+    const handleShowRating = (e) => {
+      setRatingTask(e.detail?.task);
+    };
+    window.addEventListener('show_rating_modal', handleShowRating);
+    return () => window.removeEventListener('show_rating_modal', handleShowRating);
+  }, []);
+
   // No-show reported event
   useEffect(() => {
     const handleNoShow = (e) => {
@@ -552,6 +564,11 @@ export default function Layout() {
         <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
         document.body
       )}
+      {ratingTask && createPortal(
+        <RatingModal task={ratingTask} onClose={() => setRatingTask(null)} />,
+        document.body
+      )}
+
       {cancelWarningTask && createPortal(
         <div className="mobile-sheet-overlay"
         style={{ zIndex: 100001 }}
