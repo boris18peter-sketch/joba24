@@ -581,6 +581,12 @@ export const translations = {
     boost_send_tooltip: 'שגר איתות — {n} ג\'ובות',
     boost_insufficient: 'אין מספיק ג\'ובות — נדרשות {n}',
     boost_error: 'שגיאה בשיגור האיתות, נסה שוב',
+    notif_permission_title: 'אפשר התראות?',
+    notif_permission_body: 'קבל התראות מיידיות כשמשימה חדשה מתאימה לך, כשמישהו משיב לך בצ\'אט, או כשהתשלום שלך מוכן.',
+    notif_permission_allow: 'כן, אפשר',
+    maybe_later: 'אולי מאוחר יותר',
+    location: 'מיקום',
+    notifications: 'התראות',
     },
 
   en: {
@@ -1285,7 +1291,7 @@ export const translations = {
     notifications: 'Notifications',
     },
 
-  ar: {
+    ar: {
     ...ar,
     notif_permission_title: 'تفعيل الإخطارات؟',
     notif_permission_body: 'احصل على تنبيهات فورية عند توافق مهام جديدة، أو رد أحد على دردشتك، أو جهوزية دفعتك.',
@@ -1293,18 +1299,9 @@ export const translations = {
     maybe_later: 'ربما لاحقاً',
     location: 'الموقع',
     notifications: 'الإخطارات',
-  },
+    },
 
-  he: {
-    notif_permission_title: 'אפשר התראות?',
-    notif_permission_body: 'קבל התראות מיידיות כשמשימה חדשה מתאימה לך, כשמישהו משיב לך בצ\'אט, או כשהתשלום שלך מוכן.',
-    notif_permission_allow: 'כן, אפשר',
-    maybe_later: 'אולי מאוחר יותר',
-    location: 'מיקום',
-    notifications: 'התראות',
-  },
-
-  es: {
+    es: {
     ...es,
     notif_permission_title: '¿Habilitar notificaciones?',
     notif_permission_body: 'Recibe alertas instantáneas cuando se asigne una tarea, alguien responda tu chat, o tu pago esté listo.',
@@ -1312,9 +1309,9 @@ export const translations = {
     maybe_later: 'Quizás Después',
     location: 'Ubicación',
     notifications: 'Notificaciones',
-  },
+    },
 
-  fr: {
+    fr: {
     ...fr,
     notif_permission_title: 'Activer les notifications ?',
     notif_permission_body: 'Recevez des alertes instantanées quand une tâche vous correspond, quelqu\'un répond à votre chat, ou votre paiement est prêt.',
@@ -1322,9 +1319,9 @@ export const translations = {
     maybe_later: 'Peut-être Plus Tard',
     location: 'Localisation',
     notifications: 'Notifications',
-  },
+    },
 
-  ru: {
+    ru: {
     ...ru,
     notif_permission_title: 'Включить уведомления?',
     notif_permission_body: 'Получайте мгновенные оповещения, когда вам подходит задача, кто-то отвечает в чате или платеж готов.',
@@ -1332,7 +1329,7 @@ export const translations = {
     maybe_later: 'Может быть Позже',
     location: 'Местоположение',
     notifications: 'Уведомления',
-  },
+    },
   };
 
 /** Detect language from IP (uses free ipapi.co), fallback to browser/localStorage */
