@@ -51,7 +51,7 @@ export default function SystemPermissionModal({ type, onConfirm, onCancel, isOpe
         backdropFilter: 'blur(6px)',
         animation: 'sheetFadeIn 0.22s ease both',
       }}
-      onClick={onCancel}
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div
         dir={isRTL ? 'rtl' : 'ltr'}

@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
         body: n.body,
         url: n.url,
         tag: n.tag,
+        click_action: n.url,
       });
       if (result?.sent) sent.push(n.userId);
     }

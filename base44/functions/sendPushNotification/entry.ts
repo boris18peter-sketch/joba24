@@ -77,6 +77,10 @@ Deno.serve(async (req) => {
           vibrate: [200, 100, 200],
           requireInteraction: true,
           tag: tag || 'joba24',
+          data: {
+            url: url || '/',
+            click_action: url || '/',
+          },
         },
         fcmOptions: {
           link: url || '/',
@@ -102,11 +106,16 @@ Deno.serve(async (req) => {
             'mutable-content': 1,
             'content-available': 1,
           },
+          custom_data: {
+            url: url || '/',
+            click_action: url || '/',
+          },
         },
       },
       data: {
         url: url || '/',
         tag: tag || 'joba24',
+        click_action: url || '/',
       },
     }));
 

@@ -258,22 +258,24 @@ export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategor
   const handleDismiss = () => { onDismiss?.(); navigate(`/task/${taskId}`); };
 
   return createPortal(
-    <div dir="rtl" style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <AnimatePresence mode="wait">
-        {step === 'launch' ? (
-          <motion.div key="launch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            <LaunchScene taskTitle={taskTitle} taskPrice={taskPrice} onContinue={() => setStep('scanner')} />
-          </motion.div>
-        ) : (
-          <motion.div key="scanner" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-            <button onClick={handleDismiss} style={{ position: 'absolute', top: 0, left: 16, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '7px 14px', color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, zIndex: 10 }}>
-              <X size={14} /> סגור
-            </button>
-            <BoostScanner taskId={taskId} taskTitle={taskTitle} taskPrice={taskPrice} taskCategory={taskCategory} onNavigate={onDismiss} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>,
+    <div onClick={(e) => { if (e.target === e.currentTarget) handleDismiss(); }} dir="rtl" style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }} onClick={(e) => e.stopPropagation()}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <AnimatePresence mode="wait">
+          {step === 'launch' ? (
+            <motion.div key="launch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <LaunchScene taskTitle={taskTitle} taskPrice={taskPrice} onContinue={() => setStep('scanner')} />
+            </motion.div>
+          ) : (
+            <motion.div key="scanner" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+              <button onClick={handleDismiss} style={{ position: 'absolute', top: 0, left: 16, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '7px 14px', color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, zIndex: 10 }}>
+                <X size={14} /> סגור
+              </button>
+              <BoostScanner taskId={taskId} taskTitle={taskTitle} taskPrice={taskPrice} taskCategory={taskCategory} onNavigate={onDismiss} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      </div>,
     document.body
   );
 }

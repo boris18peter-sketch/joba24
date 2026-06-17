@@ -200,46 +200,45 @@ export default function Layout() {
     const unsub = base44.entities.Task.subscribe((event) => {
       const t = event.data || {};
 
-      // ── 1. Cache sync ──
-      // workerTasksLayout
-      queryClient.setQueryData(['workerTasksLayout', me.id], (old = []) => {
-        if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
-        if (event.type === 'update') {
+      // ── 1. Cache sync — ultra-aggressive multi-target sync ──
+      const updateCache = (key) => {
+        queryClient.setQueryData([key, me.id], (old = []) => {
+          if (!Array.isArray(old)) return old;
+          if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
           const exists = old.find((x) => x.id === event.id);
-          if (exists) return old.map((x) => x.id === event.id ? { ...x, ...t } : x);
-          if (t.worker_id === me.id && t.status === 'TAKEN') return [t, ...old];
+          if (event.type === 'update') {
+            return exists ? old.map((x) => x.id === event.id ? { ...x, ...t } : x) : old;
+          }
+          if (event.type === 'create' && (t.client_id === me.id || t.worker_id === me.id)) {
+            return [...old.filter(x => x.id !== t.id), t];
+          }
           return old;
-        }
-        return old;
-      });
-      // myPublishedTasks
-      queryClient.setQueryData(['myPublishedTasks', me.id], (old = []) => {
-        if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
-        if (event.type === 'create' && t.client_id === me.id) return old.find((x) => x.id === t.id) ? old : [t, ...old];
-        if (event.type === 'update') return old.map((x) => x.id === event.id ? { ...x, ...t } : x);
-        return old;
-      });
-      // myTasks (HomeFeed)
-      queryClient.setQueryData(['myTasks', me.id], (old = []) => {
-        if (!Array.isArray(old)) return old;
-        if (event.type === 'create' && t.client_id === me.id && !old.find((x) => x.id === t.id)) return [t, ...old];
-        if (event.type === 'update') return old.map((x) => x.id === event.id ? { ...x, ...t } : x);
-        if (event.type === 'delete') return old.filter((x) => x.id !== event.id);
-        return old;
-      });
-      // activeWorkerTask — the critical one for ActiveTaskBanner
+        });
+      };
+
+      // Sync all relevant caches instantly
+      updateCache('workerTasksLayout');
+      updateCache('myPublishedTasks');
+      updateCache('myTasks');
+      updateCache('tasks');
+      
+      // activeWorkerTask + activeClientTask — both critical
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
-        if (event.type === 'update') {
-          if (t.worker_id === me.id && t.status === 'TAKEN') {
-            return old?.id === event.id ? { ...old, ...t } : old ?? t;
-          }
-          if (old?.id === event.id) {
-            return t.status !== 'TAKEN' ? null : { ...old, ...t };
-          }
+        if (event.type === 'update' && t.worker_id === me.id && t.status === 'TAKEN') {
+          return old?.id === event.id ? { ...old, ...t } : (old || t);
         }
-        return old;
+        return old?.id === event.id && t.status !== 'TAKEN' ? null : old;
       });
+
+      queryClient.setQueryData(['activeClientTask', me.id], (old) => {
+        if (event.type === 'delete') return old?.id === event.id ? null : old;
+        if (event.type === 'update' && t.client_id === me.id && t.status === 'TAKEN') {
+          return old?.id === event.id ? { ...old, ...t } : (old || t);
+        }
+        return old?.id === event.id && t.status !== 'TAKEN' ? null : old;
+      });
+
       // COMPLETED — refresh me stats
       if (event.type === 'update' && t.status === 'COMPLETED') {
         if (t.worker_id === me.id || t.client_id === me.id) {
