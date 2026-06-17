@@ -15,32 +15,27 @@ Deno.serve(async (req) => {
     }
 
     // Initialize Firebase Admin
-    const saKey = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
-    if (!saKey) return Response.json({ error: 'FCM not configured' }, { status: 500 });
+    const saJson = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
+    if (!saJson) return Response.json({ error: 'FCM not configured — missing FIREBASE_SERVICE_ACCOUNT' }, { status: 500 });
 
-    // The secret may be the full JSON or just the private key
+    // Debug: show first and last chars
+    const firstChars = saJson.substring(0, 30);
+    const lastChars = saJson.substring(saJson.length - 30);
+
     let serviceAccount;
     try {
-      serviceAccount = JSON.parse(saKey);
-    } catch {
-      // If it's just the private key, construct the service account object
-      if (saKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        serviceAccount = {
-          projectId: 'joba24',
-          clientEmail: 'firebase-adminsdk-fbsvc@joba24.iam.gserviceaccount.com',
-          privateKey: saKey.replace(/\\n/g, '\n'),
-        };
-      } else {
-        return Response.json({ error: 'Invalid service account: ' + saKey.substring(0, 50) }, { status: 500 });
-      }
+      serviceAccount = JSON.parse(saJson);
+    } catch (e) {
+      return Response.json({ 
+        error: `Invalid JSON. First: "${firstChars}" | Last: "${lastChars}" | Parse error: ${e.message}`,
+        first: firstChars,
+        last: lastChars 
+      }, { status: 500 });
     }
 
-    // Clean private key newlines
+    // Fix private key: replace literal \\n with actual newlines
     if (serviceAccount.private_key) {
-      serviceAccount.privateKey = serviceAccount.private_key.replace(/\\n/g, '\n');
-      delete serviceAccount.private_key;
-    } else if (serviceAccount.privateKey) {
-      serviceAccount.privateKey = serviceAccount.privateKey.replace(/\\n/g, '\n');
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
     if (!getApps().length) {
