@@ -6,9 +6,6 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   logLevel: 'error', // Suppress warnings, only show errors
-  optimizeDeps: {
-    exclude: ['firebase/messaging'], // Don't pre-bundle — needs browser APIs at runtime
-  },
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
