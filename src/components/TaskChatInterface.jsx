@@ -854,7 +854,7 @@ export default function TaskChatInterface({
       {/* Input area */}
       <div style={{
         background: 'white', borderTop: '1px solid #e5e7eb',
-        padding: '8px 16px', paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
+        padding: '6px 16px 4px',
       }}>
         {/* Publish button — only after features shown (right before publish) */}
         {showFeatures && (
