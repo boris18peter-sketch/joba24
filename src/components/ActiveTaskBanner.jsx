@@ -166,7 +166,8 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ paddingBottom: 0 }}>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
-        {taskList.map((t, idx) => {
+        {taskList.map((task, idx) => {
+          const t = task;
           const tStatusInfo = STATUS_STEPS[t.worker_status] || null;
           const tRole = t._roleHint || roleHint;
           const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === t.worker_id);
@@ -246,11 +247,11 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                    { Icon: Navigation, label: t('on_the_way') },
                    { Icon: MapPin,     label: t('arrived') },
                    { Icon: CheckCircle,label: t('finished')  },
-                ].map(({ Icon, label }, i) => {
-                  const done   = tStepIdx >= 0 && i <= tStepIdx;
-                  const active = tStepIdx >= 0 && i === tStepIdx;
+                ].map(({ Icon, label }, stepIdx) => {
+                  const done   = tStepIdx >= 0 && stepIdx <= tStepIdx;
+                  const active = tStepIdx >= 0 && stepIdx === tStepIdx;
                   return (
-                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+                    <div key={stepIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
                       <div style={{
                         width: 32, height: 32, borderRadius: '50%',
                         background: done ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)',
