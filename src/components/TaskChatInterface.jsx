@@ -2,41 +2,46 @@ import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { 
-  Mic, MicOff, Loader2, Sparkles, Zap, FileText, ArrowUp, Camera
+  Mic, MicOff, Loader2, Sparkles, Zap, FileText, ArrowUp, Camera,
+  MapPin, CreditCard, Clock, CheckCircle2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import BackButton from '@/components/BackButton';
 
-// Feature pill configurations
+// Feature pills — shown as a polished card group when all mandatory fields are filled
 const FEATURE_PILLS = [
   {
     key: 'is_story',
     icon: Sparkles,
     label: 'פרסם כ-Story',
-    desc: 'חשיפה פי 3 · 10 ג\'ובות',
+    desc: 'חשיפה פי 3 למשימה שלך — תופיע למעלה בפיד ל-24 שעות',
+    cost: '10 ג\'ובות',
     color: '#a855f7',
     bg: '#faf5ff',
     border: '#d8b4fe',
-    dotColor: '#c084fc',
+    glow: 'rgba(168,85,247,0.12)',
   },
   {
     key: 'auto_bump_enabled',
     icon: Zap,
     label: 'העלאת מחיר אוטומטית',
-    desc: 'המחיר עולה עד שמגיעה בקשה',
+    desc: 'המחיר עולה אוטומטית כל 5 דקות — עד שמגיעה בקשה ראשונה',
+    cost: null,
     color: '#f59e0b',
     bg: '#fffbeb',
     border: '#fcd34d',
-    dotColor: '#fbbf24',
+    glow: 'rgba(245,158,11,0.10)',
   },
   {
     key: 'requires_invoice',
     icon: FileText,
     label: 'חשבונית מס',
-    desc: 'דרוש מהעובד חשבונית',
+    desc: 'דרוש מהעובד חשבונית מס — מתאים לעסקים ועצמאים',
+    cost: null,
     color: '#3b82f6',
     bg: '#eff6ff',
     border: '#bfdbfe',
-    dotColor: '#60a5fa',
+    glow: 'rgba(59,130,246,0.10)',
   },
 ];
 
@@ -53,7 +58,7 @@ function TypingDots() {
   );
 }
 
-function FeaturePill({ pill, active, onToggle, extraConfig, onExtraChange }) {
+function FeatureCard({ pill, active, onToggle, extraConfig, onExtraChange }) {
   const Icon = pill.icon;
   const isActive = active;
 
@@ -62,31 +67,46 @@ function FeaturePill({ pill, active, onToggle, extraConfig, onExtraChange }) {
       <button
         onClick={() => onToggle(pill.key)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-          borderRadius: 16, cursor: 'pointer', border: '1.5px solid ' + (isActive ? pill.border : '#e5e7eb'),
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 16px', borderRadius: 16, cursor: 'pointer',
+          border: `1.5px solid ${isActive ? pill.border : '#e5e7eb'}`,
           background: isActive ? pill.bg : 'white',
-          transition: 'all 0.2s', width: 'auto',
-          boxShadow: isActive ? '0 2px 12px ' + pill.color + '20' : 'none',
+          transition: 'all 0.2s',
+          boxShadow: isActive ? `0 4px 20px ${pill.glow}` : '0 1px 3px rgba(0,0,0,0.04)',
         }}
       >
         <div style={{
-          width: 36, height: 36, borderRadius: 12, flexShrink: 0,
-          background: isActive ? pill.color + '15' : '#f3f4f6',
+          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+          background: isActive ? pill.color + '18' : '#f8fafc',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1.5px solid ${isActive ? pill.border : '#e5e7eb'}`,
         }}>
-          <Icon size={18} color={isActive ? pill.color : '#9ca3af'} />
+          <Icon size={20} color={isActive ? pill.color : '#9ca3af'} />
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: isActive ? pill.color : '#374151' }}>
-            {isActive && <span style={{ marginLeft: 4 }}>✓ </span>}{pill.label}
+        <div style={{ flex: 1, textAlign: 'right' }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: isActive ? pill.color : '#1f2937', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+            {isActive && <CheckCircle2 size={14} color={pill.color} />}
+            {pill.label}
           </div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{pill.desc}</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3, lineHeight: 1.5 }}>{pill.desc}</div>
+          {pill.cost && (
+            <span style={{
+              fontSize: 10, fontWeight: 800, color: pill.color,
+              background: pill.bg, borderRadius: 6, padding: '2px 8px',
+              display: 'inline-block', marginTop: 4,
+            }}>
+              {pill.cost}
+            </span>
+          )}
         </div>
       </button>
-      
+
       {pill.key === 'auto_bump_enabled' && isActive && (
-        <div style={{ marginTop: 8, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>מחיר מקסימלי להעלאה אוטומטית (₪)</div>
+        <div style={{ marginTop: 8, padding: '14px 16px', background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 8 }}>מחיר מקסימלי (₪)</div>
+          <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.5 }}>
+            המחיר יעלה בהדרגה עד לסכום זה. ברגע שעובד מגיש בקשה — המחיר נעצר אוטומטית.
+          </div>
           <input
             type="number"
             inputMode="numeric"
@@ -94,14 +114,51 @@ function FeaturePill({ pill, active, onToggle, extraConfig, onExtraChange }) {
             value={extraConfig?.max_price || ''}
             onChange={e => onExtraChange?.('max_price', e.target.value.replace(/[^0-9]/g, ''))}
             style={{
-              width: '100%', padding: '10px 12px', borderRadius: 10,
-              border: '1px solid #fcd34d', background: 'white',
-              fontSize: 16, fontWeight: 700, outline: 'none',
+              width: '100%', padding: '12px 14px', borderRadius: 12,
+              border: '1.5px solid #fcd34d', background: 'white',
+              fontSize: 18, fontWeight: 800, outline: 'none',
               color: '#92400e', boxSizing: 'border-box',
             }}
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// Summary card of filled fields
+function FilledFieldsSummary({ taskState }) {
+  const fields = [
+    { key: 'title', label: 'כותרת', icon: '📝' },
+    { key: 'description', label: 'תיאור', icon: '📄' },
+    { key: 'price', label: 'מחיר', icon: '💰', fmt: v => '₪' + v },
+    { key: 'location_name', label: 'מיקום', icon: '📍' },
+    { key: 'payment_method', label: 'תשלום', icon: '💳' },
+    { key: 'category', label: 'קטגוריה', icon: '🏷️' },
+  ];
+  const filled = fields.filter(f => taskState[f.key]);
+  if (!filled.length) return null;
+  return (
+    <div style={{
+      background: 'white', borderRadius: 18, border: '1px solid #e5e7eb',
+      padding: '14px 16px', marginTop: 4,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: '#16a34a', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <CheckCircle2 size={14} color="#16a34a" /> מה שמילאת עד כה
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {filled.map(f => (
+          <div key={f.key} style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0',
+            borderRadius: 10, padding: '5px 10px', fontSize: 12, fontWeight: 600,
+            color: '#166534', display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <span>{f.icon}</span>
+            <span>{f.label}{f.fmt ? ': ' + f.fmt(taskState[f.key]) : ''}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -126,8 +183,7 @@ export default function TaskChatInterface({
   const [transcribing, setTranscribing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [featurePhase, setFeaturePhase] = useState(-1); // -1=not started, 0..2=pills, 3=done
-  const featureTimerRef = useRef(null);
+  const [showFeatures, setShowFeatures] = useState(false);
   const featureStartedRef = useRef(false);
   
   const messagesEndRef = useRef(null);
@@ -191,7 +247,6 @@ export default function TaskChatInterface({
         .slice(-10)
         .map(m => ({ role: m.role === 'agent' ? 'agent' : 'user', content: m.content }));
 
-      // Merge features into state for the agent
       const fullState = { ...taskState, ...enabledFeatures, ...featureConfig };
 
       const response = await base44.functions.invoke('taskChatAgent', {
@@ -244,32 +299,20 @@ export default function TaskChatInterface({
     setFeatureConfig(prev => ({ ...prev, [key]: value }));
   };
 
-  // Start sequential feature pill display
+  // Start feature card display
   const startFeatureSequence = () => {
     if (featureStartedRef.current) return;
     featureStartedRef.current = true;
-    setFeaturePhase(0);
-    // Add intro message
+    
     setMessages(prev => [...prev, {
       role: 'agent',
-      content: '👍 **כל הפרטים מולאו!**\n\nלפני שאנחנו מפרסמים — רוצה להוסיף פיצ\'רים שיעזרו לך לקבל עובד מהר יותר?',
+      content: '👍 **כל הפרטים מולאו!**\n\nהמשימה מוכנה לפרסום. לפני שאנחנו מפרסמים — יש כמה פיצ\'רים שיכולים לעזור לך לקבל עובד מהר יותר:',
       isFeatureIntro: true,
     }]);
-  };
 
-  // Sequential pill timing
-  useEffect(() => {
-    if (featurePhase < 0 || featurePhase >= FEATURE_PILLS.length) return;
-    featureTimerRef.current = setTimeout(() => {
-      setMessages(prev => [...prev, {
-        role: 'agent',
-        content: '',
-        featurePillIndex: featurePhase,
-      }]);
-      setFeaturePhase(prev => prev + 1);
-    }, featurePhase === 0 ? 800 : 500);
-    return () => clearTimeout(featureTimerRef.current);
-  }, [featurePhase]);
+    // Show features after a short delay
+    setTimeout(() => setShowFeatures(true), 600);
+  };
 
   // Recording
   const startRecording = async () => {
@@ -354,6 +397,8 @@ export default function TaskChatInterface({
   ].filter(Boolean).length;
   const progressPct = Math.round((filledCount / 5) * 100);
 
+  const isFormMode = !!onSwitchToForm;
+
   // Inject typing animation CSS
   useEffect(() => {
     if (document.getElementById('chat-typing-style')) return;
@@ -378,64 +423,52 @@ export default function TaskChatInterface({
       background: '#f8fafc', position: 'relative' 
     }} dir="rtl">
       
-      {/* Header */}
-      <div style={{
-        background: 'white', borderBottom: '1px solid #e5e7eb',
-        padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
-        position: 'sticky', top: 0, zIndex: 10,
+      {/* Header — matches form's gradient header exactly */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)',
+        position: 'sticky', top: 0, zIndex: 50,
       }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: '50%', overflow: 'hidden',
-          border: '2px solid #e5e7eb', flexShrink: 0,
-          background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Sparkles size={20} color="#1a6fd4" />
-        </div>
-        
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: '#111' }}>
-            {isEditMode ? 'עריכת משימה בצ\'אט' : 'פרסום משימה — צ\'אט'}
-          </div>
-          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
-            {filledCount >= 5 ? '✅ כל הפרטים מולאו' : filledCount + '/5 שדות חובה הושלמו'}
-          </div>
-        </div>
-
-        {/* Progress ring */}
-        <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
-          <svg width="36" height="36" style={{ transform: 'rotate(-90deg)' }}>
-            <circle cx="18" cy="18" r="15" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-            <circle cx="18" cy="18" r="15" fill="none" 
-              stroke={progressPct === 100 ? '#16a34a' : '#1a6fd4'} strokeWidth="3"
-              strokeDasharray={progressPct * 0.942 + ' 94.2'}
-              strokeLinecap="round"
-              style={{ transition: 'stroke-dasharray 0.5s ease' }}
-            />
-          </svg>
-          <span style={{ 
-            position: 'absolute', inset: 0, display: 'flex', 
-            alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 800, color: progressPct === 100 ? '#16a34a' : '#1a6fd4'
-          }}>
-            {progressPct === 100 ? '✓' : progressPct + '%'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
+          <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
+          <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
+            {isEditMode ? 'עריכת משימה' : 'פרסום משימה'}
           </span>
+          {isFormMode && (
+            <button
+              onClick={onSwitchToForm}
+              style={{
+                fontSize: 11, fontWeight: 700, color: 'white',
+                background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
+                borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              📋 טופס
+            </button>
+          )}
         </div>
-
-        <button onClick={onSwitchToForm} style={{
-          fontSize: 11, fontWeight: 700, color: '#64748b', 
-          background: '#f1f5f9', border: '1px solid #e2e8f0',
-          borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}>
-          📋 טופס
-        </button>
+        {/* Progress bar — same as form */}
+        <div style={{ padding: '0 16px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600 }}>התקדמות</span>
+            <span style={{ fontSize: 10, color: progressPct === 100 ? '#4ade80' : 'rgba(255,255,255,0.7)', fontWeight: 800 }}>
+              {progressPct}%{progressPct === 100 ? ' ✓ מוכן לפרסום' : ''}
+            </span>
+          </div>
+          <div style={{ height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ 
+              height: '100%', width: `${progressPct}%`, 
+              background: progressPct === 100 ? '#4ade80' : 'rgba(255,255,255,0.75)', 
+              borderRadius: 99, transition: 'width 0.4s ease' 
+            }} />
+          </div>
+        </div>
       </div>
 
       {/* Messages */}
       <div style={{ 
         flex: 1, overflowY: 'auto', padding: '16px', 
-        display: 'flex', flexDirection: 'column', gap: 16,
+        display: 'flex', flexDirection: 'column', gap: 14,
         paddingBottom: 8,
       }}>
         {messages.map((msg, i) => (
@@ -446,13 +479,13 @@ export default function TaskChatInterface({
           }}>
             {msg.role === 'agent' && (
               <div style={{
-                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
                 marginLeft: 8, marginTop: 2,
                 background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: '1.5px solid #bfdbfe',
               }}>
-                <Sparkles size={14} color="#1a6fd4" />
+                <Sparkles size={13} color="#1a6fd4" />
               </div>
             )}
             
@@ -488,32 +521,42 @@ export default function TaskChatInterface({
                 ))}
               </div>
 
-              {/* Feature pill message — render as a styled bubble */}
-              {msg.featurePillIndex !== undefined && msg.featurePillIndex < FEATURE_PILLS.length && (
-                <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  <FeaturePill
-                    pill={FEATURE_PILLS[msg.featurePillIndex]}
-                    active={!!enabledFeatures[FEATURE_PILLS[msg.featurePillIndex].key]}
-                    onToggle={handleFeatureToggle}
-                    extraConfig={featureConfig}
-                    onExtraChange={handleFeatureConfig}
-                  />
+              {/* Filled fields summary — shown after feature intro */}
+              {msg.isFeatureIntro && (
+                <div style={{ marginTop: 8 }}>
+                  <FilledFieldsSummary taskState={taskState} />
                 </div>
               )}
             </div>
           </div>
         ))}
         
+        {/* Feature cards — shown together as a nice group */}
+        {showFeatures && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'messageIn 0.3s ease' }}>
+            {FEATURE_PILLS.map(pill => (
+              <FeatureCard
+                key={pill.key}
+                pill={pill}
+                active={!!enabledFeatures[pill.key]}
+                onToggle={handleFeatureToggle}
+                extraConfig={featureConfig}
+                onExtraChange={handleFeatureConfig}
+              />
+            ))}
+          </div>
+        )}
+        
         {/* Typing indicator */}
         {loading && (
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
             <div style={{
-              width: 32, height: 32, borderRadius: '50%',
+              width: 30, height: 30, borderRadius: '50%',
               background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '1.5px solid #bfdbfe',
             }}>
-              <Sparkles size={14} color="#1a6fd4" />
+              <Sparkles size={13} color="#1a6fd4" />
             </div>
             <div style={{
               padding: '12px 16px', borderRadius: '4px 18px 18px 18px',
@@ -539,13 +582,15 @@ export default function TaskChatInterface({
             <button
               onClick={handlePublish}
               disabled={publishing}
+              className="btn-tap"
               style={{
                 width: '100%', padding: '14px 0', borderRadius: 16,
                 background: publishing ? '#9ca3af' : 'linear-gradient(135deg, #059669, #047857)',
                 color: 'white', border: 'none', fontSize: 16, fontWeight: 900,
                 cursor: publishing ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 20px rgba(5,150,105,0.3)',
+                boxShadow: '0 6px 24px rgba(5,150,105,0.35)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'all 0.2s',
               }}
             >
               {publishing ? (
