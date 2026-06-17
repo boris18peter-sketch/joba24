@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Star, RotateCcw, DoorOpen, Loader2, FileText } from 'lucide-react';
+import { buildRepostUrl } from '@/lib/taskUtils';
 import { toast } from 'sonner';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
@@ -94,14 +95,7 @@ export default function TaskDetailActions({
         {/* Repost */}
         {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task?.status) && (
           <button
-            onClick={() => {
-              if (task?.status === 'EXPIRED' && task?.payment_status === 'funded') {
-                navigate(`/create-task?editId=${id}&repost=1`);
-                return;
-              }
-              const params = new URLSearchParams({ repost: '1', title: task?.title || '', description: task?.description || '', price: String(task?.price || ''), city: task?.city || '', location_name: task?.location_name || '', category: task?.category || '', estimated_time: task?.estimated_time || '', approval_mode: task?.approval_mode || 'manual' });
-              navigate(`/create-task?${params.toString()}`);
-            }}
+            onClick={() => navigate(buildRepostUrl(task))}
             style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
             <RotateCcw size={16} /> פרסם שוב
           </button>

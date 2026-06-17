@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Users, X, RefreshCw, Loader2 } from 'lucide-react';
+import { MessageCircle, X, RefreshCw, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { getCategoryLabel } from '@/lib/categories';
@@ -11,17 +11,7 @@ import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
-
-const STATUS_GRADIENT = {
-  OPEN:      'linear-gradient(135deg, #1a6fd4 0%, #3b82f6 100%)',
-  TAKEN:     'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
-  COMPLETED: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
-  CANCELLED: 'linear-gradient(135deg, #64748b 0%, #94a3b8 100%)',
-  EXPIRED:   'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
-};
-const STATUS_LABEL = {
-  OPEN: 'Open', TAKEN: 'In Progress', COMPLETED: 'Completed', CANCELLED: 'Cancelled', EXPIRED: 'Expired',
-};
+import { STATUS_GRADIENT, STATUS_LABEL, buildRepostUrl } from '@/lib/taskUtils';
 
 const TABS = [
   { key: 'active',    label: 'Active',  statuses: ['OPEN', 'TAKEN'] },
@@ -125,29 +115,10 @@ export default function MyTasks() {
   });
 
   const handleReopen = async (task) => {
-    // Reset applications + refund credits before reopening
     try {
       await base44.functions.invoke('resetTaskApplications', { taskId: task.id });
     } catch (_) {}
-
-    // Only EXPIRED tasks that were already paid don't need a new payment
-    if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
-      navigate(`/edit-task/${task.id}`, { state: { repostMode: true } });
-      return;
-    }
-    // All other cases (CANCELLED, EXPIRED without payment) → new task with payment
-    const params = new URLSearchParams({
-      repost: '1',
-      title: task.title || '',
-      description: task.description || '',
-      price: String(task.base_price || task.price || ''),
-      city: task.city || '',
-      location_name: task.location_name || '',
-      category: task.category || '',
-      estimated_time: task.estimated_time || '',
-      approval_mode: task.approval_mode || 'manual',
-    });
-    navigate(`/create-task?${params.toString()}`);
+    navigate(buildRepostUrl(task));
   };
 
   const tab = TABS.find(t => t.key === activeTab);
