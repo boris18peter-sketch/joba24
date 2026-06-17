@@ -67,9 +67,8 @@ export default function HomeFeed() {
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 15000,
-    refetchInterval: 20000,
-    refetchOnWindowFocus: true,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Auto-switch to my_published silently if user has active tasks and hasn't manually chosen a tab
@@ -83,17 +82,16 @@ export default function HomeFeed() {
     }
   }, [myTasks.length]);
 
-  // Active task I'm working on as a worker — short staleTime so it picks up changes quickly
+  // Active task I'm working on as a worker — driven by WebSocket, no polling needed
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
     select: (data) => data?.[0] || null,
     enabled: !!me?.id,
-    staleTime: 10000,
-    refetchInterval: 15000,
-    gcTime: 120000,
+    staleTime: 120000,
+    gcTime: 300000,
     placeholderData: (prev) => prev,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   // Active task I published that is currently TAKEN
@@ -224,11 +222,7 @@ export default function HomeFeed() {
           }
           return old;
         });
-        // Also invalidate to ensure fresh data is fetched soon
-        if (updatedTask.worker_id === me.id || updatedTask.status === 'TAKEN') {
-          queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] });
         }
-      }
       if (event.type === 'delete') {
         queryClient.setQueryData(['activeWorkerTask', me.id], (old) =>
           old?.id === event.id ? null : old
@@ -401,44 +395,44 @@ export default function HomeFeed() {
     return buildBehavioralProfile(appliedTaskDetails, completedTasks);
   }, [myApplications, myTasks, tasks, me?.id]);
 
-  // Categorize my applications
-  const approvedApps = myApplications.filter(a => a.status === 'approved');
-  const pendingApps  = myApplications.filter(a => a.status === 'pending');
-  const approvedTaskIds = new Set(approvedApps.map(a => a.task_id));
-  const pendingTaskIds  = new Set(pendingApps.map(a => a.task_id));
+  // Categorize my applications — memoized to avoid recomputing every render
+  const { approvedTaskIds, pendingTaskIds } = useMemo(() => {
+    const approved = new Set();
+    const pending = new Set();
+    myApplications.forEach(a => {
+      if (a.status === 'approved') approved.add(a.task_id);
+      else if (a.status === 'pending') pending.add(a.task_id);
+    });
+    return { approvedTaskIds: approved, pendingTaskIds: pending };
+  }, [myApplications]);
 
-  // My own OPEN tasks to show in the available feed (same card style, isMyPublished)
-  const myOpenTasks = useMemo(() =>
-    myTasks.filter(t => t.status === 'OPEN'),
-    [myTasks]
-  );
-
-  // Filter: only OPEN tasks from OTHER users, not dismissed, matching search/filters
-  const candidateTasks = tasks.filter(t => {
-    if (t.status !== 'OPEN') return false;
-    // own tasks stay in the feed — ranked normally alongside others
-    if (dismissedTasks.has(t.id)) return false;
-    const q = search.toLowerCase().replace('#', '');
-    if (search && !(
-      t.title?.toLowerCase().includes(q) ||
-      t.description?.toLowerCase().includes(q) ||
-      t.city?.toLowerCase().includes(q) ||
-      t.location_name?.toLowerCase().includes(q) ||
-      String(t.price).includes(search.trim()) ||
-      t.id?.toLowerCase().includes(q) ||
-      t.id?.slice(-8).toLowerCase() === q
-    )) return false;
-    if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
-    if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
-    if (filters.time && t.estimated_time !== filters.time) return false;
-    if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-    if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
-    if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
-    if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
-    if (filters.payment_method && t.payment_method !== filters.payment_method) return false;
-    if (filters.requires_invoice && !t.requires_invoice) return false;
-    return true;
-  });
+  // Filter: only OPEN tasks, not dismissed, matching search/filters — memoized
+  const candidateTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (t.status !== 'OPEN') return false;
+      if (dismissedTasks.has(t.id)) return false;
+      const q = search.toLowerCase().replace('#', '');
+      if (search && !(
+        t.title?.toLowerCase().includes(q) ||
+        t.description?.toLowerCase().includes(q) ||
+        t.city?.toLowerCase().includes(q) ||
+        t.location_name?.toLowerCase().includes(q) ||
+        String(t.price).includes(search.trim()) ||
+        t.id?.toLowerCase().includes(q) ||
+        t.id?.slice(-8).toLowerCase() === q
+      )) return false;
+      if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
+      if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
+      if (filters.time && t.estimated_time !== filters.time) return false;
+      if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
+      if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
+      if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
+      if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
+      if (filters.payment_method && t.payment_method !== filters.payment_method) return false;
+      if (filters.requires_invoice && !t.requires_invoice) return false;
+      return true;
+    });
+  }, [tasks, search, filters, dismissedTasks]);
 
   // Run smart ranking — pass isLoggedIn + behavioralProfile
   const rankedTasks = useMemo(() =>

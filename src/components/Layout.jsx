@@ -8,7 +8,7 @@ import Profile from '@/pages/Profile';
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
@@ -125,9 +125,8 @@ export default function Layout() {
     queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 5000,
-    refetchInterval: 8000,
-    refetchOnWindowFocus: true
+    staleTime: 60000,
+    refetchOnWindowFocus: false
   });
 
   // Active task as worker
@@ -138,9 +137,8 @@ export default function Layout() {
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 5000,
-    refetchInterval: 8000,
-    refetchOnWindowFocus: true
+    staleTime: 60000,
+    refetchOnWindowFocus: false
   });
 
   // Get my applications
@@ -148,7 +146,8 @@ export default function Layout() {
     queryKey: ['myApplicationsLayout', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me?.id }, '-created_date', 50),
     enabled: !!me?.id && isAuthenticated,
-    staleTime: 30000
+    staleTime: 120000,
+    refetchOnWindowFocus: false
   });
 
   // Seed appStatusRef with current approved applications
@@ -488,8 +487,11 @@ export default function Layout() {
     setTimeout(showNextNotif, 400);
   };
 
-  // Active task I published that a worker is currently doing
-  const activeClientTask = myPublishedTasks.find((t) => t.status === 'TAKEN') || null;
+  // Active task I published that a worker is currently doing — memoized
+  const activeClientTask = useMemo(
+    () => myPublishedTasks.find((t) => t.status === 'TAKEN') || null,
+    [myPublishedTasks]
+  );
 
   // Boost available alert — fire ONCE per session per task (stored in sessionStorage)
   useEffect(() => {
