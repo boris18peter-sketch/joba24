@@ -582,6 +582,35 @@ export default function CreateTask() {
     return null;
   };
 
+  // Auto-detect category from description text
+  const autoDetectCategory = (description) => {
+    if (!description || description.trim().length < 5) return null;
+    const combined = description.toLowerCase();
+    let bestCategory = null;
+    let bestScore = 0;
+    for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+      const score = keywords.filter(kw => combined.includes(kw.toLowerCase())).length;
+      if (score > bestScore) {
+        bestScore = score;
+        bestCategory = cat;
+      }
+    }
+    return bestScore >= 1 ? bestCategory : null;
+  };
+
+  // Auto-generate title from description (first sentence or ~60 chars)
+  const autoGenerateTitle = (description) => {
+    if (!description) return '';
+    const clean = description.trim();
+    // Take first sentence (up to .!?\n or first 60 chars)
+    const firstSentence = clean.split(/[.!?\n]/)[0].trim();
+    if (firstSentence.length <= 60) return firstSentence;
+    // Truncate at word boundary
+    const truncated = firstSentence.substring(0, 60);
+    const lastSpace = truncated.lastIndexOf(' ');
+    return (lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated) + '...';
+  };
+
   // Check if the combined title+description matches the selected category
   // Returns error string if mismatch, null if ok
   const checkCategoryDescriptionMatch = (category, description, title = '') => {
@@ -649,7 +678,6 @@ export default function CreateTask() {
   const doSubmit = async () => {
     if (submittingRef.current) return;
     const newErrors = {};
-    if (!form.title) newErrors.title = true;
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
     if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
@@ -708,7 +736,7 @@ export default function CreateTask() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
-      const order = ['title', 'description', 'price', 'location_name'];
+      const order = ['description', 'price', 'location_name'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
         fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -721,37 +749,37 @@ export default function CreateTask() {
     setModerationErrors({});
     setLoading(true); // disable button immediately to prevent double-clicks
 
-    // Gibberish / meaningless content check (fast, no API)
-    const titleGibberish = checkGibberish(form.title, 'הכותרת');
+    // Gibberish / meaningless content check (fast, no API) — description only
     const descGibberish = checkGibberish(form.description, 'התיאור');
-    if (titleGibberish || descGibberish) {
-      setModerationErrors({ title: titleGibberish || undefined, description: descGibberish || undefined });
+    if (descGibberish) {
+      setModerationErrors({ description: descGibberish });
       setShowErrorBanner(true);
       setLoading(false);
       return;
     }
 
-    // Final moderation checks
+    // Final moderation checks — description only
     setCheckingModeration('submit');
-    const [titleCheck, descCheck] = await Promise.all([
-      form.title ? moderateText(form.title) : Promise.resolve({ flagged: false }),
-      form.description ? moderateText(form.description) : Promise.resolve({ flagged: false }),
-    ]);
+    const descCheck = form.description ? await moderateText(form.description) : { flagged: false };
     setCheckingModeration('');
-    // Check category-description mismatch (title + description vs category)
-    const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
+    
+    if (descCheck.flagged) {
+      setModerationErrors({ description: 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.' });
+      setShowErrorBanner(true);
+      setLoading(false);
+      return;
+    }
+
+    // Auto-generated fields
+    const autoTitle = autoGenerateTitle(form.description);
+    // Auto-detect category if still "other"
+    const detectedCat = form.category === 'other' ? autoDetectCategory(form.description) : null;
+    const finalCategory = detectedCat || form.category || 'other';
+
+    // Check category-description mismatch
+    const mismatch = checkCategoryDescriptionMatch(finalCategory, form.description);
     if (mismatch) {
       setModerationErrors({ categoryMismatch: mismatch });
-      setShowErrorBanner(true);
-      setLoading(false);
-      return;
-    }
-
-    if (titleCheck.flagged || descCheck.flagged) {
-      const newModerationErrors = {};
-      if (titleCheck.flagged) newModerationErrors.title = 'הכותרת מכילה תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
-      if (descCheck.flagged) newModerationErrors.description = 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.';
-      setModerationErrors(newModerationErrors);
       setShowErrorBanner(true);
       setLoading(false);
       return;
@@ -796,7 +824,7 @@ export default function CreateTask() {
 
     const created = await base44.entities.Task.create({
       payment_method: form.payment_method,
-      title: form.title,
+      title: autoTitle,
       description: extraFieldsText
         ? (form.description ? form.description + '\n\n' + extraFieldsText : extraFieldsText)
         : form.description,
@@ -813,7 +841,7 @@ export default function CreateTask() {
       address_apartment: form.address_apartment || undefined,
       address_notes: form.address_notes || undefined,
       estimated_time: estimatedTime,
-      category: form.category,
+      category: finalCategory,
       approval_mode: form.approval_mode,
       expiry_duration_hours: expiryHours || null,
       expires_at: expires,
@@ -837,9 +865,9 @@ export default function CreateTask() {
     toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {
       setSearchingTaskId(created.id);
-      setSearchingTaskTitle(form.title);
+      setSearchingTaskTitle(autoTitle);
       setSearchingTaskPrice(Number(form.price));
-      setSearchingTaskCategory(form.category);
+      setSearchingTaskCategory(finalCategory);
       setSearchingTaskLocation(form.location_name);
     } else {
       navigate('/');
@@ -1061,8 +1089,8 @@ export default function CreateTask() {
       )}
       {/* Sticky header + progress bar combined */}
       {(() => {
-        const filled = [form.title, form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
-        const pct = Math.round((filled / 5) * 100);
+        const filled = [form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
+        const pct = Math.round((filled / 4) * 100);
         return (
           <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
             {/* Header row */}
@@ -1173,20 +1201,10 @@ export default function CreateTask() {
           onChange={(_data, text) => setExtraFieldsText(text)}
         />
 
-        {/* Title + Description */}
+        {/* Description — the main input. Title and category are auto-generated from this. */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('what_need_to_do')} *</Label>
-          <Input ref={fieldRefs.title} placeholder="לדוגמה: להרים מקרר לקומה שלישית"
-            value={form.title}
-            onChange={e => { set('title', e.target.value); setErrors(p => ({...p, title: false})); setModerationErrors(p => ({...p, title: null})); if (showErrorBanner && e.target.value) setShowErrorBanner(false); }}
-            onBlur={() => checkFieldModeration('title', form.title)}
-            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.title || moderationErrors.title ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 15, marginBottom: (errors.title || moderationErrors.title) ? 4 : 14 }}
-          />
-          {checkingModeration === 'title' && <p style={{ fontSize: 11, color: '#1a6fd4', marginBottom: 8 }}>🔍 בודק תוכן...</p>}
-          {errors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>⚠️ שדה חובה</p>}
-          {moderationErrors.title && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 10 }}>🛡️ {moderationErrors.title}</p>}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{t('detailed_description')} *</Label>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>📝 תאר את המשימה *</Label>
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
@@ -1197,29 +1215,44 @@ export default function CreateTask() {
               {transcribing ? t('processing') : recording ? t('stop_recording') : t('record_description')}
             </button>
           </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
+            תאר מה צריך לעשות במילים שלך — הכותרת והקטגוריה ייווצרו אוטומטית. כלול: <strong>מה צריך, איפה, מתי, וכמה</strong>
+          </div>
           {recording && (
             <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
               {t('recording_press_stop')}
             </div>
           )}
-          <Textarea ref={fieldRefs.description} placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
+          <Textarea ref={fieldRefs.description} placeholder="לדוגמה: צריך צבעי לצבוע את הסלון ושני חדרי שינה בדירה ברחוב הרצל 15 תל אביב, הקירות לבנים ויש כבר צבע בבית. מוכן לשלם 800 ש״ח במזומן."
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
               checkFieldModeration('description', form.description);
+              // Auto-detect category from description
+              const detected = autoDetectCategory(form.description);
+              if (detected && detected !== form.category && form.category === 'other') {
+                set('category', detected);
+              }
               const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
               setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
             }}
-            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={4}
+            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={5}
           />
           {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>🔍 בודק תוכן...</p>}
           {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
-          {moderationErrors.categoryMismatch && !moderationErrors.description && (
-            <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginTop: 6, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <AlertTriangle size={14} color="#f97316" style={{ flexShrink: 0, marginTop: 1 }} />
-              <p style={{ fontSize: 12, color: '#c2410c', margin: 0, lineHeight: 1.6, fontWeight: 600 }}>✏️ {moderationErrors.categoryMismatch}</p>
+
+          {/* Auto-detected category chip */}
+          {form.description && form.category && form.category !== 'other' && (
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>קטגוריה שזוהתה:</span>
+              <span style={{
+                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #bfdbfe',
+                borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: '#1a6fd4',
+              }}>
+                🏷️ {CATEGORIES.find(c => c.value === form.category)?.label || form.category}
+              </span>
             </div>
           )}
         </SectionCard>
@@ -1524,7 +1557,7 @@ export default function CreateTask() {
 
         {/* Submit */}
         {(() => {
-          const isReady = !!(form.title && form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
+          const isReady = !!(form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
           return (
             <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
               <button

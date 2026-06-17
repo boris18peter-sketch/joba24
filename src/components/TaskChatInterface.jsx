@@ -129,7 +129,6 @@ function FeatureCard({ pill, active, onToggle, extraConfig, onExtraChange }) {
 // Summary card of filled fields
 function FilledFieldsSummary({ taskState }) {
   const fields = [
-    { key: 'title', label: 'כותרת', icon: '📝' },
     { key: 'description', label: 'תיאור', icon: '📄' },
     { key: 'price', label: 'מחיר', icon: '💰', fmt: v => '₪' + v },
     { key: 'location_name', label: 'מיקום', icon: '📍' },
@@ -392,10 +391,10 @@ export default function TaskChatInterface({
   };
 
   const filledCount = [
-    taskState.title, taskState.description, taskState.price, 
+    taskState.description, taskState.price, 
     taskState.location_name, taskState.payment_method
   ].filter(Boolean).length;
-  const progressPct = Math.round((filledCount / 5) * 100);
+  const progressPct = Math.round((filledCount / 4) * 100);
 
   const isFormMode = !!onSwitchToForm;
 
