@@ -26,23 +26,29 @@ export default function NotificationsPermissionPrompt() {
     setShow(false);
     
     if (perm === 'granted') {
-      // Get FCM token and save to user
+      // Get FCM token and save to user using updateMe (not asServiceRole)
       const token = await getFCMToken();
       if (token) {
         try {
           const me = await base44.auth.me();
           if (me) {
+            console.log('[Notif] Got token, saving:', token.substring(0, 30) + '...');
             const existingTokens = me.fcm_tokens || [];
             if (!existingTokens.includes(token)) {
+              // Use auth.updateMe() for user-scoped update (not asServiceRole)
               await base44.auth.updateMe({
                 fcm_tokens: [...existingTokens, token]
               });
-              console.log('[Notif] FCM token saved to user');
+              console.log('[Notif] ✅ FCM token saved to user');
+            } else {
+              console.log('[Notif] Token already saved');
             }
           }
         } catch (err) {
-          console.error('[Notif] Failed to save token:', err);
+          console.error('[Notif] ❌ Failed to save token:', err.message);
         }
+      } else {
+        console.warn('[Notif] No token returned from getFCMToken()');
       }
       // Notify SideMenu to update toggle
       window.dispatchEvent(new Event('notif_permission_changed'));

@@ -8,26 +8,24 @@ export default function usePushNotifications() {
   const [foregroundMsg, setForegroundMsg] = useState(null);
   const tokenRef = useRef(null);
 
-  // Save token to backend
+  // Save token to backend using auth.updateMe (user-scoped, not admin)
   const saveToken = useCallback(async (fcmToken) => {
     if (!fcmToken || fcmToken === tokenRef.current) return;
     try {
       const me = await base44.auth.me();
       if (!me) return;
-      const existingUser = await base44.asServiceRole.entities.User.filter({ id: me.id });
-      const currentUser = existingUser[0];
-      if (!currentUser) return;
       
-      const existingTokens = currentUser.fcm_tokens || [];
+      const existingTokens = me.fcm_tokens || [];
       if (existingTokens.includes(fcmToken)) return;
 
-      await base44.asServiceRole.entities.User.update(me.id, {
+      // Use auth.updateMe() for user-scoped update
+      await base44.auth.updateMe({
         fcm_tokens: [...existingTokens, fcmToken]
       });
       tokenRef.current = fcmToken;
-      console.log('FCM token saved');
+      console.log('[usePushNotifications] ✅ Token saved:', fcmToken.substring(0, 30) + '...');
     } catch (err) {
-      console.error('Failed to save FCM token:', err);
+      console.error('[usePushNotifications] ❌ Failed to save FCM token:', err.message);
     }
   }, []);
 
