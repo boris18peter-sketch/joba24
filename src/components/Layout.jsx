@@ -523,7 +523,7 @@ export default function Layout() {
 
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', maxWidth: '100vw', bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden', boxSizing: 'border-box' }}>
       <ChatPushNotification />
       <CoinEarnedToast />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
