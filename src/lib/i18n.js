@@ -1277,9 +1277,63 @@ export const translations = {
     boost_send_tooltip: 'Send signal — {n} Joobs',
     boost_insufficient: 'Not enough Joobs — need {n}',
     boost_error: 'Error sending signal, try again',
+    notif_permission_title: 'Enable Notifications?',
+    notif_permission_body: 'Get instant alerts when new tasks match you, someone replies to your chat, or your payment is ready.',
+    notif_permission_allow: 'Yes, Enable',
+    maybe_later: 'Maybe Later',
+    location: 'Location',
+    notifications: 'Notifications',
     },
 
-  ar, es, fr, ru,
+  ar: {
+    ...ar,
+    notif_permission_title: 'تفعيل الإخطارات؟',
+    notif_permission_body: 'احصل على تنبيهات فورية عند توافق مهام جديدة، أو رد أحد على دردشتك، أو جهوزية دفعتك.',
+    notif_permission_allow: 'نعم، فعّل',
+    maybe_later: 'ربما لاحقاً',
+    location: 'الموقع',
+    notifications: 'الإخطارات',
+  },
+
+  he: {
+    // ... existing...
+    notif_permission_title: 'אפשר התראות?',
+    notif_permission_body: 'קבל התראות מיידיות כשמשימה חדשה מתאימה לך, כשמישהו משיב לך בצ\'אט, או כשהתשלום שלך מוכן.',
+    notif_permission_allow: 'כן, אפשר',
+    maybe_later: 'אולי מאוחר יותר',
+    location: 'מיקום',
+    notifications: 'התראות',
+  },
+
+  es: {
+    ...es,
+    notif_permission_title: '¿Habilitar notificaciones?',
+    notif_permission_body: 'Recibe alertas instantáneas cuando se asigne una tarea, alguien responda tu chat, o tu pago esté listo.',
+    notif_permission_allow: 'Sí, Habilitar',
+    maybe_later: 'Quizás Después',
+    location: 'Ubicación',
+    notifications: 'Notificaciones',
+  },
+
+  fr: {
+    ...fr,
+    notif_permission_title: 'Activer les notifications ?',
+    notif_permission_body: 'Recevez des alertes instantanées quand une tâche vous correspond, quelqu\'un répond à votre chat, ou votre paiement est prêt.',
+    notif_permission_allow: 'Oui, Activer',
+    maybe_later: 'Peut-être Plus Tard',
+    location: 'Localisation',
+    notifications: 'Notifications',
+  },
+
+  ru: {
+    ...ru,
+    notif_permission_title: 'Включить уведомления?',
+    notif_permission_body: 'Получайте мгновенные оповещения, когда вам подходит задача, кто-то отвечает в чате или платеж готов.',
+    notif_permission_allow: 'Да, Включить',
+    maybe_later: 'Может быть Позже',
+    location: 'Местоположение',
+    notifications: 'Уведомления',
+  },
   };
 
 /** Detect language from IP (uses free ipapi.co), fallback to browser/localStorage */

@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp } from 'lucide-react';
+import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp, MapPin } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/LanguageContext';
+import { requestNotificationPermission } from '@/lib/fcm';
 
 
 // navItems built inside component using t()
@@ -17,6 +18,8 @@ export default function SideMenu({ open, onClose }) {
   const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const { t } = useLanguage();
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   const navItems = [
     { to: '/', icon: Home, label: t('nav_feed') },
@@ -32,6 +35,50 @@ export default function SideMenu({ open, onClose }) {
     queryFn: () => base44.auth.me(),
     enabled: isAuthenticated
   });
+
+  // Check permissions on mount
+  useEffect(() => {
+    const isLocEnabled = localStorage.getItem('joba24_location_enabled') === '1';
+    setLocationEnabled(isLocEnabled);
+
+    if (typeof Notification !== 'undefined') {
+      const isNotifEnabled = Notification.permission === 'granted';
+      setNotificationsEnabled(isNotifEnabled);
+    }
+  }, []);
+
+  const handleLocationToggle = async () => {
+    if (locationEnabled) {
+      localStorage.removeItem('joba24_location_enabled');
+      setLocationEnabled(false);
+    } else {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            localStorage.setItem('joba24_location_enabled', '1');
+            setLocationEnabled(true);
+          },
+          () => {
+            alert(t('location_permission_denied'));
+          }
+        );
+      }
+    }
+  };
+
+  const handleNotificationsToggle = async () => {
+    if (notificationsEnabled) {
+      // User wants to disable — we can't truly disable, but can clear flag
+      localStorage.setItem('joba24_notif_disabled', '1');
+      setNotificationsEnabled(false);
+    } else {
+      const perm = await requestNotificationPermission();
+      if (perm === 'granted') {
+        localStorage.removeItem('joba24_notif_disabled');
+        setNotificationsEnabled(true);
+      }
+    }
+  };
 
   return (
     <>
@@ -170,6 +217,95 @@ export default function SideMenu({ open, onClose }) {
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {/* Toggles for Location & Notifications */}
+          <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Location Toggle */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 12,
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <MapPin size={18} color="#60a5fa" />
+                <span style={{ fontSize: 13, color: '#bfdbfe', fontWeight: 600 }}>{t('location')}</span>
+              </div>
+              <button
+                onClick={handleLocationToggle}
+                style={{
+                  width: 44,
+                  height: 24,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: locationEnabled ? '#10b981' : '#4b5563',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'background 0.2s',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    background: 'white',
+                    top: 2,
+                    left: locationEnabled ? 22 : 2,
+                    transition: 'left 0.2s',
+                  }}
+                />
+              </button>
+            </div>
+
+            {/* Notifications Toggle */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: 12,
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Bell size={18} color="#f59e0b" />
+                <span style={{ fontSize: 13, color: '#bfdbfe', fontWeight: 600 }}>{t('notifications')}</span>
+              </div>
+              <button
+                onClick={handleNotificationsToggle}
+                disabled={typeof Notification === 'undefined'}
+                style={{
+                  width: 44,
+                  height: 24,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: notificationsEnabled ? '#10b981' : '#4b5563',
+                  cursor: typeof Notification === 'undefined' ? 'not-allowed' : 'pointer',
+                  position: 'relative',
+                  transition: 'background 0.2s',
+                  opacity: typeof Notification === 'undefined' ? 0.5 : 1,
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    background: 'white',
+                    top: 2,
+                    left: notificationsEnabled ? 22 : 2,
+                    transition: 'left 0.2s',
+                  }}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Joba24 yellow CTA button — same as AppHeader */}
           <Link
             to="/create-task"

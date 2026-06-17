@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
+import NotificationsPermissionPrompt from '@/components/NotificationsPermissionPrompt';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
 import CoinEarnedToast from '@/components/CoinEarnedToast';
@@ -531,6 +532,7 @@ export default function Layout() {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f4f7fb', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <CoinEarnedToast />
+      <NotificationsPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
 
