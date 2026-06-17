@@ -37,7 +37,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
     }, 50);
     const timer = setTimeout(() => { setVisible(false); onClose?.(); }, DURATION);
     return () => { clearTimeout(timer); clearInterval(interval); };
-  }, []);
+  }, [onClose]);
 
   if (!visible) return null;
 
