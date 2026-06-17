@@ -96,13 +96,9 @@ const AuthenticatedApp = () => {
   const isRootTab = ROOT_TABS.has(location.pathname);
   const animKey = isRootTab ? 'root' : location.pathname;
 
-  // Startup logging
-  useEffect(() => {
-    console.log('[Joba24] App: AuthenticatedApp render — isLoadingAuth=' + isLoadingAuth + ' isLoadingPublicSettings=' + isLoadingPublicSettings + ' authError=' + (authError?.type || 'none'));
-  });
+
 
   if (isLoadingPublicSettings || isLoadingAuth) {
-    console.log('[Joba24] App: showing spinner (auth loading)');
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#f4f7fb' }}>
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>

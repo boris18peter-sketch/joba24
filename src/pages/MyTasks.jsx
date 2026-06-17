@@ -128,9 +128,7 @@ export default function MyTasks() {
     // Reset applications + refund credits before reopening
     try {
       await base44.functions.invoke('resetTaskApplications', { taskId: task.id });
-    } catch (e) {
-      console.error('resetTaskApplications failed', e);
-    }
+    } catch (_) {}
 
     // Only EXPIRED tasks that were already paid don't need a new payment
     if (task.status === 'EXPIRED' && task.payment_status === 'funded') {

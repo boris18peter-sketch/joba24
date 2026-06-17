@@ -4,8 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Car, Users, Wrench, Pencil, RefreshCw, AlertTriangle, Navigation, RotateCcw, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Zap } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -131,7 +130,6 @@ export default function TaskDetail() {
   const queryClient = useQueryClient();
   const { isAuthenticated, login } = useAuth();
   const { t } = useLanguage();
-  const [showCompletion, setShowCompletion] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
@@ -141,7 +139,6 @@ export default function TaskDetail() {
   const [showRating, setShowRating] = useState(false);
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
-  const [hasRated, setHasRated] = useState(false);
 
 
   const [showExitWarning, setShowExitWarning] = useState(false);
@@ -571,7 +568,7 @@ export default function TaskDetail() {
   const isWorker = me?.id === task.worker_id && task.status === 'TAKEN';
   const statusLabel = getStatusLabel(task.status, isOwner, t);
   const isExpired = task.status === 'EXPIRED';
-  const canTakeInstant = false; // All tasks now require application
+
   // hasApplied (local state) + myApp (server state) — both prevent showing the apply button
   const alreadyApplied = hasApplied || !!myApp;
   const canApplyManual = task.status === 'OPEN' && !isOwner && !hasWorker && !hasPendingApp && !isApproved && !alreadyApplied;

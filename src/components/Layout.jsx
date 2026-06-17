@@ -32,10 +32,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuth();
 
-  // Startup logging
-  useEffect(() => {
-    console.log('[Joba24] Layout: mounted — path=' + location.pathname + ' isAuthenticated=' + isAuthenticated);
-  }, []);
+
 
   // Initialize push notifications (FCM) — auto-registers token on mount
   usePushNotifications();

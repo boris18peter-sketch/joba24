@@ -7,9 +7,7 @@ import { Star, RotateCcw, DoorOpen, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
-import CompletionModal from '@/components/CompletionModal';
 import ApplySheet from '@/components/ApplySheet';
-import BuyCreditsModal from '@/components/BuyCreditsModal';
 
 export default function TaskDetailActions({
   task, me, id, isOwner, isWorker,
@@ -20,10 +18,7 @@ export default function TaskDetailActions({
   const queryClient = useQueryClient();
   const [showRating, setShowRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
-  const [showCompletion, setShowCompletion] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
-  const [showBuyCredits, setShowBuyCredits] = useState(false);
-  const [creditsNeeded, setCreditsNeeded] = useState(null);
 
   const cancelTakeMutation = useMutation({
     mutationFn: async () => {
@@ -127,16 +122,9 @@ export default function TaskDetailActions({
         <RatingModal task={task} me={me} onClose={() => { setShowRating(false); setHasRated(true); }} />,
         document.body
       )}
-      {showCompletion && task && me && createPortal(
-        <CompletionModal task={task} me={me} onClose={() => { setShowCompletion(false); setShowRating(true); }} />,
-        document.body
-      )}
       {showInvoice && task && me && createPortal(
         <InvoiceModal task={task} me={me} onClose={() => setShowInvoice(false)} />,
         document.body
-      )}
-      {showBuyCredits && (
-        <BuyCreditsModal creditsNeeded={creditsNeeded} onClose={() => setShowBuyCredits(false)} />
       )}
     </>
   );
