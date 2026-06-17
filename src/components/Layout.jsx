@@ -418,13 +418,8 @@ export default function Layout() {
           addNotification({ type: 'application_sent', taskTitle: appliedTask?.title || appData.task_title || 'משימה', taskId: appData.task_id });
         }
       } else if (event.type === 'update') {
-        if (appData.status === 'approved' && appData.worker_id === me.id) {
-          const isMyOwnTaskAsClient = myPublishedTasks.some((t) => t.id === appData.task_id);
-          if (!isMyOwnTaskAsClient) {
-            const task = workerTasks.find((t) => t.id === appData.task_id);
-            addNotification({ type: 'application_approved', taskTitle: task?.title || appData.task_title || 'משימה', taskId: appData.task_id });
-          }
-        } else if (appData.status === 'rejected' && appData.worker_id === me.id) {
+        // Skip: application_approved is already sent via push notification (notifyApplicationUpdated)
+        if (appData.status === 'rejected' && appData.worker_id === me.id) {
           const isMyOwnTask = myPublishedTasks.some((t) => t.id === appData.task_id);
           if (isMyOwnTask) return;
           if (prevAppStatus !== 'approved') {
