@@ -37,6 +37,12 @@
       </div>
     </div>
     <!-- Firebase is loaded on-demand via lib/fcm.js — no blocking CDN scripts on initial load -->
+    <script>
+      console.log('[Joba24] HTML: page loaded, React not yet mounted');
+      window.__joba24Startup = { htmlReady: Date.now() };
+      // Ensure body isn't white even if CSS fails entirely
+      document.body.style.backgroundColor = '#f4f7fb';
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

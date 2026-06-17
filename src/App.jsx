@@ -11,6 +11,7 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
 
 // Add page imports here
 import Landing from '@/pages/Landing';
@@ -92,9 +93,15 @@ const AuthenticatedApp = () => {
   const isRootTab = ROOT_TABS.has(location.pathname);
   const animKey = isRootTab ? 'root' : location.pathname;
 
+  // Startup logging
+  useEffect(() => {
+    console.log('[Joba24] App: AuthenticatedApp render — isLoadingAuth=' + isLoadingAuth + ' isLoadingPublicSettings=' + isLoadingPublicSettings + ' authError=' + (authError?.type || 'none'));
+  });
+
   if (isLoadingPublicSettings || isLoadingAuth) {
+    console.log('[Joba24] App: showing spinner (auth loading)');
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#f4f7fb' }}>
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     );
@@ -120,7 +127,6 @@ const AuthenticatedApp = () => {
               : { type: 'tween', ease: [0.25, 0.46, 0.45, 0.94], duration: 0.28 }
           }
           style={{ position: 'absolute', inset: 0, willChange: 'transform' }}
-          style={{ position: 'absolute', inset: 0, isolation: 'isolate' }}
         >
           <Routes location={location}>
             <Route path="/lp" element={<Landing />} />
@@ -172,18 +178,20 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <CaptureRefCode />
-            <ScrollToTop />
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
-        </QueryClientProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <AppErrorBoundary>
+      <AuthProvider>
+        <LanguageProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            <Router>
+              <CaptureRefCode />
+              <ScrollToTop />
+              <AuthenticatedApp />
+            </Router>
+            <Toaster />
+          </QueryClientProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </AppErrorBoundary>
   )
 }
 

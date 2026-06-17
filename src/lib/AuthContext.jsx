@@ -38,20 +38,31 @@ export const AuthProvider = ({ children }) => {
 
   const checkAppState = async () => {
     try {
+      console.log('[Joba24] Auth: checkAppState start');
       setIsLoadingPublicSettings(true);
       setAuthError(null);
+      
+      // Safety timeout — if auth hangs for 8s, force-unlock the UI
+      const safetyTimeout = setTimeout(() => {
+        console.warn('[Joba24] Auth: safety timeout — forcing isLoading=false');
+        setIsLoadingPublicSettings(false);
+        setIsLoadingAuth(false);
+      }, 8000);
       
       // Check if user is authenticated
       if (appParams.token) {
         await checkUserAuth();
       } else {
+        console.log('[Joba24] Auth: no token — not authenticated');
         setIsLoadingAuth(false);
         setIsAuthenticated(false);
         setAuthChecked(true);
       }
+      clearTimeout(safetyTimeout);
+      console.log('[Joba24] Auth: checkAppState done — isLoadingPublicSettings=false');
       setIsLoadingPublicSettings(false);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('[Joba24] Auth: checkAppState error:', error.message);
       setAuthError({
         type: 'unknown',
         message: error.message || 'An unexpected error occurred'
@@ -75,8 +86,10 @@ export const AuthProvider = ({ children }) => {
   const checkUserAuth = async () => {
     try {
       // Now check if the user is authenticated
+      console.log('[Joba24] Auth: checkUserAuth — calling base44.auth.me()...');
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+      console.log('[Joba24] Auth: auth.me() returned', currentUser ? `user=${currentUser.id}` : 'null');
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -113,7 +126,7 @@ export const AuthProvider = ({ children }) => {
         }
       });
     } catch (error) {
-      console.error('User auth check failed:', error);
+      console.error('[Joba24] Auth: checkUserAuth failed:', error.message, error.status);
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
