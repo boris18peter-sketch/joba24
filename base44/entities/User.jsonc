@@ -144,6 +144,13 @@
     "referred_by_agent_code": {
       "type": "string",
       "description": "\u05e7\u05d5\u05d3 \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d4\u05d1\u05d9\u05d0 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+    },
+    "fcm_tokens": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Firebase Cloud Messaging device tokens for push notifications"
     }
   },
   "required": []
