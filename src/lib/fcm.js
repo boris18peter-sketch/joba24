@@ -1,4 +1,5 @@
 // Firebase Cloud Messaging — loads compat SDK on-demand (no blocking CDN scripts in index.html)
+// Protected: checks for Notification API support before any Firebase Messaging init
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyD4GmTgh-fFEyBzrv6bHN8PyKvOKFHC_wc",
@@ -10,6 +11,11 @@ const FIREBASE_CONFIG = {
 };
 
 const VAPID_KEY = "BMGA4Y0BwTCSY44y0Q1y4dkPklK4vBLMboxjxPUpGQQS7NBNXvYAvtEdsbl0uOaRsJADoXDTjffFsp3sr2dvcCw";
+
+// Early check: if Notifications API is not supported, bail out entirely
+const isNotificationsSupported = () => {
+  return typeof Notification !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
+};
 
 let loadPromise = null;
 let messagingInstance = null;
@@ -28,13 +34,19 @@ function loadScript(src) {
 
 // Load Firebase compat SDK + initialize messaging — called once, cached, never throws
 async function ensureFirebase() {
+  // Early guard: if Notifications API is not supported, don't even try
+  if (!isNotificationsSupported()) {
+    loadFailed = true;
+    return null;
+  }
+
   if (messagingInstance) return messagingInstance;
   if (loadFailed) return null;
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      if (!isNotificationsSupported()) {
         loadFailed = true;
         return null;
       }
@@ -69,7 +81,9 @@ async function ensureFirebase() {
 
 // Register the service worker — separate from messaging init so SW can register even without messaging
 async function ensureSW() {
-  if (!('serviceWorker' in navigator)) return null;
+  // Don't even try to register SW if Notifications are not supported
+  if (!isNotificationsSupported()) return null;
+  
   try {
     const reg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
     if (reg) return reg;
@@ -81,6 +95,7 @@ async function ensureSW() {
 }
 
 export async function requestNotificationPermission() {
+  if (typeof Notification === 'undefined') return 'denied';
   try {
     const permission = await Notification.requestPermission();
     return permission;

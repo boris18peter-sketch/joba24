@@ -4,7 +4,7 @@ import { requestNotificationPermission, getFCMToken, onForegroundMessage } from 
 
 export default function usePushNotifications() {
   const [token, setToken] = useState(null);
-  const [permission, setPermission] = useState(Notification.permission);
+  const [permission, setPermission] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
   const [foregroundMsg, setForegroundMsg] = useState(null);
   const tokenRef = useRef(null);
 
@@ -48,6 +48,11 @@ export default function usePushNotifications() {
   // Auto-init on mount
   useEffect(() => {
     const init = async () => {
+      if (typeof Notification === 'undefined') {
+        setPermission('denied');
+        return;
+      }
+      
       const perm = Notification.permission;
       setPermission(perm);
 
