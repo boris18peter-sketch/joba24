@@ -4,7 +4,7 @@ import { Loader2, Send, X } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import ImageUploader from '@/components/ImageUploader';
 
-export default function ApplySheet({ task, onClose, onApply, loading }) {
+export default function ApplySheet({ task, onClose, onApply, loading, showImages = true }) {
   const [message, setMessage] = useState('');
   const [images, setImages] = useState([]);
   const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
@@ -67,10 +67,12 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
         </div>
 
         {/* Images */}
-        <div style={{ marginBottom: 16 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>תמונות (לא חובה)</p>
-          <ImageUploader images={images} onChange={setImages} />
-        </div>
+        {showImages && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>תמונות (לא חובה)</p>
+            <ImageUploader images={images} onChange={setImages} />
+          </div>
+        )}
 
         {/* Buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
