@@ -20,44 +20,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Firebase Messaging compat SDK — loaded from CDN to avoid Vite pre-bundling -->
-    <script>
-      (function loadFirebase() {
-        function initApp() {
-          try {
-            firebase.initializeApp({
-              apiKey: "AIzaSyD4GmTgh-fFEyBzrv6bHN8PyKvOKFHC_wc",
-              authDomain: "joba24.firebaseapp.com",
-              projectId: "joba24",
-              storageBucket: "joba24.firebasestorage.app",
-              messagingSenderId: "79738163466",
-              appId: "1:79738163466:web:a7fea9dd112a0909bfeaf3",
-            });
-          } catch(e) { /* already initialized */ }
-        }
-        function registerSW() {
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
-              .then(function(reg) { console.log('FCM SW registered:', reg.scope); })
-              .catch(function(err) { console.log('FCM SW registration failed:', err); });
-          }
-        }
-        var appScript = document.createElement('script');
-        appScript.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
-        appScript.onload = function() {
-          var msgScript = document.createElement('script');
-          msgScript.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js';
-          msgScript.onload = function() {
-            initApp();
-            registerSW();
-          };
-          msgScript.onerror = function() { registerSW(); };
-          document.head.appendChild(msgScript);
-        };
-        appScript.onerror = function() { registerSW(); };
-        document.head.appendChild(appScript);
-      })();
-    </script>
+    <!-- Firebase is loaded on-demand via lib/fcm.js — no blocking CDN scripts on initial load -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
