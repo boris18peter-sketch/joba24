@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { 
-  Mic, MicOff, Loader2, Sparkles, Zap, FileText, ArrowUp, Camera,
-  MapPin, CreditCard, Clock, CheckCircle2
+  Mic, MicOff, Loader2, Sparkles, Zap, ArrowUp, Camera,
+  MapPin, CreditCard, Clock, CheckCircle2, FileText
 } from 'lucide-react';
+import { getRequirementCategories } from '@/lib/requirements';
 import ReactMarkdown from 'react-markdown';
 import BackButton from '@/components/BackButton';
 
-// Feature pills — shown as a polished card group when all mandatory fields are filled
+// Feature pills — shown after requirements, before publishing
 const FEATURE_PILLS = [
   {
     key: 'is_story',
@@ -31,17 +32,6 @@ const FEATURE_PILLS = [
     bg: '#fffbeb',
     border: '#fcd34d',
     glow: 'rgba(245,158,11,0.10)',
-  },
-  {
-    key: 'requires_invoice',
-    icon: FileText,
-    label: 'חשבונית מס',
-    desc: 'דרוש מהעובד חשבונית מס — מתאים לעסקים ועצמאים',
-    cost: null,
-    color: '#3b82f6',
-    bg: '#eff6ff',
-    border: '#bfdbfe',
-    glow: 'rgba(59,130,246,0.10)',
   },
 ];
 
@@ -126,6 +116,79 @@ function FeatureCard({ pill, active, onToggle, extraConfig, onExtraChange }) {
   );
 }
 
+// Requirements card group — shown step before features
+function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceToggle, invoiceEnabled }) {
+  const cats = getRequirementCategories(category);
+  if (!cats.length) return null;
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Invoice — always first */}
+      <button
+        onClick={onInvoiceToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 14px', borderRadius: 16, cursor: 'pointer',
+          border: `1.5px solid ${invoiceEnabled ? '#d8b4fe' : '#e5e7eb'}`,
+          background: invoiceEnabled ? '#faf5ff' : 'white',
+          transition: 'all 0.2s',
+          boxShadow: invoiceEnabled ? '0 4px 20px rgba(168,85,247,0.10)' : '0 1px 3px rgba(0,0,0,0.04)',
+        }}
+      >
+        <div style={{
+          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+          background: invoiceEnabled ? '#7c3aed18' : '#f8fafc',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: `1.5px solid ${invoiceEnabled ? '#d8b4fe' : '#e5e7eb'}`,
+        }}>
+          <FileText size={18} color={invoiceEnabled ? '#7c3aed' : '#9ca3af'} />
+        </div>
+        <div style={{ flex: 1, textAlign: 'right' }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: invoiceEnabled ? '#7c3aed' : '#1f2937', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+            {invoiceEnabled && <CheckCircle2 size={14} color="#7c3aed" />}
+            חשבונית מס
+          </div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>דרוש מהעובד חשבונית מס — מתאים לעסקים ועצמאים</div>
+        </div>
+      </button>
+      
+      {cats.map(cat => (
+        <div key={cat.label}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>{cat.label}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            {cat.items.map(({ key, label }) => {
+              const active = !!requirements[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => onToggle(key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px',
+                    borderRadius: 10, cursor: 'pointer',
+                    background: active ? 'rgba(26,111,212,0.08)' : '#f8fafc',
+                    border: `1px solid ${active ? '#bfdbfe' : '#e5e7eb'}`,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{
+                    width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                    border: `2px solid ${active ? '#1a6fd4' : '#d1d5db'}`,
+                    background: active ? '#1a6fd4' : 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {active && <span style={{ color: 'white', fontSize: 9 }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: active ? '#1e40af' : '#6b7280' }}>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Summary card of filled fields
 function FilledFieldsSummary({ taskState }) {
   const fields = [
@@ -182,8 +245,10 @@ export default function TaskChatInterface({
   const [transcribing, setTranscribing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showRequirements, setShowRequirements] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
   const featureStartedRef = useRef(false);
+  const requirementsShownRef = useRef(false);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -274,9 +339,21 @@ export default function TaskChatInterface({
         content: agentData.response || 'קיבלתי, ממשיך...',
       }]);
 
-      // Start feature sequence when all mandatory fields are filled
-      if (isReady && !featureStartedRef.current) {
+      // Show requirements when agent says so (after mandatory + category-specific fields filled)
+      if (agentData.show_requirements && !requirementsShownRef.current) {
+        requirementsShownRef.current = true;
+        setShowRequirements(true);
+      }
+
+      // Show features only after requirements were shown and agent says so
+      if (agentData.show_features && !featureStartedRef.current && requirementsShownRef.current) {
         startFeatureSequence();
+      }
+
+      // Legacy fallback: if publish_ready but requirements not shown yet, show requirements
+      if (isReady && !requirementsShownRef.current) {
+        requirementsShownRef.current = true;
+        setShowRequirements(true);
       }
     } catch (err) {
       console.error('Chat agent error:', err);
@@ -298,6 +375,17 @@ export default function TaskChatInterface({
     setFeatureConfig(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleRequirementToggle = (key) => {
+    setTaskState(prev => ({
+      ...prev,
+      requirements: { ...(prev.requirements || {}), [key]: !(prev.requirements || {})[key] }
+    }));
+  };
+
+  const handleInvoiceToggle = () => {
+    setEnabledFeatures(prev => ({ ...prev, requires_invoice: !prev.requires_invoice }));
+  };
+
   // Start feature card display
   const startFeatureSequence = () => {
     if (featureStartedRef.current) return;
@@ -305,7 +393,7 @@ export default function TaskChatInterface({
     
     setMessages(prev => [...prev, {
       role: 'agent',
-      content: '👍 **כל הפרטים מולאו!**\n\nהמשימה מוכנה לפרסום. לפני שאנחנו מפרסמים — יש כמה פיצ\'רים שיכולים לעזור לך לקבל עובד מהר יותר:',
+      content: '👍 **המשימה מוכנה!**\n\nלפני פרסום — יש 2 פיצ\'רים שיכולים לעזור לך לקבל עובד מהר יותר:',
       isFeatureIntro: true,
     }]);
 
@@ -530,6 +618,28 @@ export default function TaskChatInterface({
           </div>
         ))}
         
+        {/* Requirements — shown after mandatory fields, before features */}
+        {showRequirements && !showFeatures && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, animation: 'messageIn 0.3s ease' }}>
+            <div style={{
+              padding: '12px 16px', borderRadius: '4px 18px 18px 18px',
+              background: 'white', border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)', fontSize: 14, lineHeight: 1.6,
+            }}>
+              <div style={{ fontWeight: 800, marginBottom: 10, color: '#0f2b6b' }}>
+                📋 דרישות נוספות מהעובד <span style={{ fontSize: 11, color: '#f97316', fontWeight: 600, display: 'block', marginTop: 2 }}>ככל שתוסיף יותר — פחות עובדים יוכלו להגיש בקשה</span>
+              </div>
+              <RequirementsCardGroup
+                category={taskState.category || 'other'}
+                requirements={taskState.requirements || {}}
+                onToggle={handleRequirementToggle}
+                onInvoiceToggle={handleInvoiceToggle}
+                invoiceEnabled={!!enabledFeatures.requires_invoice}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Feature cards — shown together as a nice group */}
         {showFeatures && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, animation: 'messageIn 0.3s ease' }}>

@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users, FileText } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import { getRequirementCategories } from '@/lib/requirements';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -184,186 +185,6 @@ const TIME_OPTIONS = [
    { value: 'week', label: 'שבוע', i18n_key: 'time_week' },
    { value: 'custom', label: 'מותאם אישית', i18n_key: 'time_custom' },
 ];
-
-// Requirements per category — each category shows only relevant options
-const CATEGORY_REQUIREMENTS = {
-  moving: [
-    { label: 'כלי רכב', items: [
-      { key: 'vehicle', label: 'רכב פרטי' },
-      { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
-      { key: 'truck', label: 'טנדר / משאית' },
-    ]},
-    { label: 'כמות אנשים', items: [
-      { key: 'two_people', label: '2 אנשים' },
-      { key: 'three_people', label: '3 אנשים' },
-      { key: 'four_plus_people', label: '4+ אנשים' },
-    ]},
-    { label: 'כישורים', items: [
-      { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
-      { key: 'driver', label: 'נהג מקצועי' },
-    ]},
-  ],
-  delivery: [
-    { label: 'כלי רכב', items: [
-      { key: 'vehicle', label: 'רכב פרטי' },
-      { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
-      { key: 'motorcycle', label: 'קטנוע / אופנוע' },
-    ]},
-    { label: 'כישורים', items: [
-      { key: 'driver', label: 'נהג מקצועי' },
-      { key: 'experience', label: 'ניסיון במשלוחים' },
-    ]},
-  ],
-  cleaning: [
-    { label: 'ניסיון', items: [
-      { key: 'cleaner_pro', label: 'מנקה מקצועי' },
-      { key: 'experience', label: 'ניסיון בניקיון' },
-      { key: 'certified', label: 'הסמכה' },
-    ]},
-    { label: 'כמות אנשים', items: [
-      { key: 'two_people', label: '2 אנשים' },
-      { key: 'three_people', label: '3 אנשים' },
-    ]},
-  ],
-  plumbing: [
-    { label: 'הסמכה', items: [
-      { key: 'plumber', label: 'אינסטלטור מוסמך' },
-      { key: 'certified', label: 'רישיון מקצועי' },
-    ]},
-    { label: 'כלי עבודה', items: [
-      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
-      { key: 'drill', label: 'מקדחה / אינבורר' },
-    ]},
-  ],
-  electricity: [
-    { label: 'הסמכה', items: [
-      { key: 'electrician', label: 'חשמלאי מוסמך' },
-      { key: 'certified', label: 'רישיון מקצועי' },
-    ]},
-    { label: 'כלי עבודה', items: [
-      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
-      { key: 'ladder', label: 'סולם' },
-    ]},
-  ],
-  carpentry: [
-    { label: 'הסמכה', items: [
-      { key: 'carpenter', label: 'נגר מוסמך' },
-      { key: 'certified', label: 'רישיון מקצועי' },
-    ]},
-    { label: 'כלי עבודה', items: [
-      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
-      { key: 'drill', label: 'מקדחה / אינבורר' },
-      { key: 'grinder', label: 'מטחנה / גרינדר' },
-    ]},
-  ],
-  painting: [
-    { label: 'הסמכה', items: [
-      { key: 'painter_pro', label: 'צבעי מוסמך' },
-      { key: 'experience', label: 'ניסיון בצביעה' },
-    ]},
-    { label: 'כלי עבודה', items: [
-      { key: 'ladder', label: 'סולם' },
-      { key: 'tools_basic', label: 'ציוד צביעה' },
-    ]},
-  ],
-  gardening: [
-    { label: 'ניסיון', items: [
-      { key: 'experience', label: 'ניסיון בגינון' },
-      { key: 'certified', label: 'הסמכה' },
-    ]},
-    { label: 'כלי רכב', items: [
-      { key: 'vehicle', label: 'רכב לפינוי פסולת' },
-    ]},
-    { label: 'כמות אנשים', items: [
-      { key: 'two_people', label: '2 אנשים' },
-    ]},
-  ],
-  ac: [
-    { label: 'הסמכה', items: [
-      { key: 'certified', label: 'רישיון טכנאי מזגנים' },
-      { key: 'electrician', label: 'חשמלאי מוסמך' },
-      { key: 'experience', label: 'ניסיון במזגנים' },
-    ]},
-    { label: 'כלי עבודה', items: [
-      { key: 'tools_basic', label: 'ציוד טכנאי' },
-      { key: 'ladder', label: 'סולם' },
-      { key: 'drill', label: 'מקדחה' },
-    ]},
-  ],
-  locksmith: [
-    { label: 'הסמכה', items: [
-      { key: 'certified', label: 'רישיון מנעולן' },
-      { key: 'experience', label: 'ניסיון' },
-    ]},
-    { label: 'כלי עבודה', items: [
-      { key: 'tools_basic', label: 'ארגז כלים' },
-    ]},
-  ],
-  shopping: [
-    { label: 'כלי רכב', items: [
-      { key: 'vehicle', label: 'רכב לקניות' },
-    ]},
-    { label: 'כישורים', items: [
-      { key: 'heavy_lifting', label: 'יכולת נשיאת משאות' },
-      { key: 'english', label: 'אנגלית' },
-    ]},
-  ],
-  babysitting: [
-    { label: 'ניסיון', items: [
-      { key: 'experience', label: 'ניסיון עם ילדים' },
-      { key: 'experience_animals', label: 'ניסיון עם בעלי חיים' },
-      { key: 'certified', label: 'הסמכה / תעודה' },
-    ]},
-    { label: 'כישורים', items: [
-      { key: 'english', label: 'אנגלית' },
-    ]},
-  ],
-  tutoring: [
-    { label: 'ניסיון', items: [
-      { key: 'experience', label: 'ניסיון בהוראה' },
-      { key: 'certified', label: 'תעודת הוראה' },
-    ]},
-    { label: 'כישורים', items: [
-      { key: 'english', label: 'אנגלית' },
-    ]},
-  ],
-  it_support: [
-    { label: 'ניסיון', items: [
-      { key: 'experience', label: 'ניסיון בתמיכה' },
-      { key: 'certified', label: 'הסמכה מקצועית' },
-    ]},
-    { label: 'כלי רכב', items: [
-      { key: 'vehicle', label: 'רכב לביקורי בית' },
-    ]},
-  ],
-};
-
-// Default / fallback requirements for "other" and any uncategorized
-const DEFAULT_REQUIREMENT_CATEGORIES = [
-  { label: 'כלי רכב', items: [
-    { key: 'vehicle', label: 'רכב פרטי' },
-    { key: 'vehicle_commercial', label: 'רכב מסחרי / ואן' },
-    { key: 'motorcycle', label: 'קטנוע / אופנוע' },
-  ]},
-  { label: 'כלי עבודה', items: [
-    { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
-    { key: 'drill', label: 'מקדחה / אינבורר' },
-    { key: 'ladder', label: 'סולם' },
-  ]},
-  { label: 'ניסיון מקצועי', items: [
-    { key: 'experience', label: 'ניסיון בתחום' },
-    { key: 'certified', label: 'הסמכה / רישיון' },
-    { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
-  ]},
-  { label: 'כמות אנשים', items: [
-    { key: 'two_people', label: '2 אנשים' },
-    { key: 'three_people', label: '3 אנשים' },
-    { key: 'four_plus_people', label: '4+ אנשים' },
-  ]},
-];
-
-const getRequirementCategories = (category) =>
-  CATEGORY_REQUIREMENTS[category] || DEFAULT_REQUIREMENT_CATEGORIES;
 
 export default function CreateTask() {
   const navigate = useNavigate();
@@ -1493,12 +1314,31 @@ export default function CreateTask() {
               <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>⚠️ ככל שתוסיף יותר דרישות, פחות עובדים יוכלו להגיש בקשה</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{count} נבחרו</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>לחץ להוספה</span>; })()}
+              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0) + (form.requires_invoice ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{count} נבחרו</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>לחץ להוספה</span>; })()}
               {showRequirements ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
             </div>
           </button>
           {showRequirements && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Invoice — always first */}
+              <button type="button" onClick={() => set('requires_invoice', !form.requires_invoice)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, cursor: 'pointer', background: form.requires_invoice ? '#faf5ff' : 'var(--surface-3)', border: `1.5px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                  background: form.requires_invoice ? '#7c3aed18' : 'var(--input-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: `1.5px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`,
+                }}>
+                  <FileText size={18} color={form.requires_invoice ? '#7c3aed' : '#94a3b8'} />
+                </div>
+                <div style={{ flex: 1, textAlign: 'right' }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: form.requires_invoice ? '#7c3aed' : 'var(--text-1)' }}>📄 חשבונית מס</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>דרוש מהעובד חשבונית מס — מתאים לעסקים ועצמאים</div>
+                </div>
+                <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requires_invoice ? '#7c3aed' : 'var(--border-1)'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {form.requires_invoice && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+                </div>
+              </button>
               {getRequirementCategories(form.category).map(cat => (
                 <div key={cat.label}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
@@ -1525,7 +1365,7 @@ export default function CreateTask() {
           )}
         </SectionCard>
 
-        {/* Payment Method + Requires Invoice */}
+        {/* Payment Method */}
         <SectionCard>
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
@@ -1545,14 +1385,6 @@ export default function CreateTask() {
         </div>
         {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
 
-        {/* Requires Invoice — inline, compact */}
-        <button type="button" onClick={() => set('requires_invoice', !form.requires_invoice)}
-          style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10, textAlign: 'right', cursor: 'pointer', background: form.requires_invoice ? '#faf5ff' : 'var(--surface-3)', border: `1px solid ${form.requires_invoice ? '#d8b4fe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
-          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${form.requires_invoice ? '#7c3aed' : '#cbd5e1'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {form.requires_invoice && <span style={{ color: 'white', fontSize: 9 }}>✓</span>}
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 600, color: form.requires_invoice ? '#7c3aed' : 'var(--text-2)' }}>📄 דורש חשבונית מס מהעובד</span>
-        </button>
         </SectionCard>
 
         {/* Submit */}
