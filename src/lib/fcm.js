@@ -113,6 +113,16 @@ export async function getFCMToken() {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: swRegistration || undefined,
     });
+    
+    // Log for debugging iOS support
+    if (currentToken) {
+      console.log('[FCM] Token obtained:', currentToken.substring(0, 20) + '...');
+      // iOS Safari PWA detection
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isPWA = window.navigator.standalone === true;
+      console.log('[FCM] iOS PWA:', isIOS && isPWA);
+    }
+    
     return currentToken || null;
   } catch (err) {
     console.error('FCM token error:', err);

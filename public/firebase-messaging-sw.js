@@ -39,20 +39,29 @@ try {
   // Handle notification click
   self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const url = event.notification.data?.url || '/';
+    const url = new URL(event.notification.data?.url || '/', self.location.origin).href;
     event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      clients.matchAll({ type: 'window' }).then((windowClients) => {
+        // Try to focus existing window
         for (let i = 0; i < windowClients.length; i++) {
           const client = windowClients[i];
-          if (client.url === url && 'focus' in client) {
-            return client.focus();
+          if ('focus' in client) {
+            client.focus();
+            client.navigate(url);
+            return;
           }
         }
+        // Fallback: open new window
         if (clients.openWindow) {
           return clients.openWindow(url);
         }
       })
     );
+  });
+  
+  // Handle notification close (iOS tracking)
+  self.addEventListener('notificationclose', (event) => {
+    console.log('[FCM] Notification closed:', event.notification.tag);
   });
   
 } catch (err) {
