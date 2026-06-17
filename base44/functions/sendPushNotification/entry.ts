@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     // Deduplicate
     const uniqueTokens = [...new Set(allTokens)];
 
-    // Send to all tokens
+    // Send to all tokens with iOS + Android compatible payload
     const messages = uniqueTokens.map(token => ({
       token,
       notification: {
@@ -82,6 +82,28 @@ Deno.serve(async (req) => {
           link: url || '/',
         },
       },
+      android: {
+        notification: {
+          title,
+          body: body || '',
+          icon: 'ic_launcher',
+          channelId: 'joba24',
+          clickAction: url || '/',
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title,
+              body: body || '',
+            },
+            sound: 'default',
+            'mutable-content': 1,
+            'content-available': 1,
+          },
+        },
+      },
       data: {
         url: url || '/',
         tag: tag || 'joba24',
@@ -95,22 +117,36 @@ Deno.serve(async (req) => {
     const sent = sendResults.filter(r => r.status === 'fulfilled').length;
     const failed = sendResults.filter(r => r.status === 'rejected').length;
 
+    // Log send results for debugging
+    console.log(`[Push] Sent: ${sent}/${uniqueTokens.length}, Failed: ${failed}`);
+    
     // Clean up invalid tokens
     for (let i = 0; i < sendResults.length; i++) {
       const result = sendResults[i];
-      if (result.status === 'rejected' && result.reason?.code === 'messaging/registration-token-not-registered') {
+      if (result.status === 'rejected') {
         const badToken = uniqueTokens[i];
-        // Remove invalid token from user
-        for (const u of users) {
-          if (u.fcm_tokens && u.fcm_tokens.includes(badToken)) {
-            const cleaned = u.fcm_tokens.filter(t => t !== badToken);
-            await base44.asServiceRole.entities.User.update(u.id, { fcm_tokens: cleaned });
+        const errorCode = result.reason?.code;
+        console.log(`[Push] Token ${i} failed: ${errorCode}`);
+        
+        if (errorCode === 'messaging/registration-token-not-registered') {
+          // Remove invalid token from user
+          for (const u of users) {
+            if (u.fcm_tokens && u.fcm_tokens.includes(badToken)) {
+              const cleaned = u.fcm_tokens.filter(t => t !== badToken);
+              await base44.asServiceRole.entities.User.update(u.id, { fcm_tokens: cleaned });
+              console.log(`[Push] Removed invalid token from user ${u.id}`);
+            }
           }
         }
       }
     }
 
-    return Response.json({ sent, failed, totalTokens: uniqueTokens.length });
+    return Response.json({ 
+      sent, 
+      failed, 
+      totalTokens: uniqueTokens.length,
+      message: `Successfully sent ${sent} notifications, ${failed} failed`
+    });
   } catch (error) {
     console.error('sendPushNotification error:', error);
     return Response.json({ error: error.message }, { status: 500 });

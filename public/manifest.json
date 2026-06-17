@@ -10,22 +10,6 @@
   "background_color": "#f4f7fb",
   "dir": "rtl",
   "lang": "he",
-  "screenshots": [
-    {
-      "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
-      "sizes": "540x720",
-      "type": "image/jpeg",
-      "form_factor": "narrow",
-      "purpose": "any"
-    },
-    {
-      "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
-      "sizes": "1080x1440",
-      "type": "image/jpeg",
-      "form_factor": "wide",
-      "purpose": "any"
-    }
-  ],
   "icons": [
     {
       "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
@@ -45,7 +29,15 @@
       "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
       "sizes": "540x720",
       "type": "image/jpeg",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "purpose": "any"
+    },
+    {
+      "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
+      "sizes": "1080x1440",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "purpose": "any"
     }
   ],
   "categories": ["productivity", "lifestyle"],

@@ -85,47 +85,92 @@ async function ensureSW() {
   if (!isNotificationsSupported()) return null;
   
   try {
-    const reg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-    if (reg) return reg;
-    return await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    // Try to get existing registration with exact path
+    let reg = null;
+    try {
+      reg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+    } catch (e) {
+      // Some browsers don't support getRegistration with absolute paths
+    }
+    
+    if (reg) {
+      console.log('[FCM] SW already registered');
+      return reg;
+    }
+    
+    // Register with root scope for iOS/Android compatibility
+    reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/'
+    });
+    console.log('[FCM] SW registered successfully');
+    return reg;
   } catch (err) {
-    console.warn('FCM SW registration failed:', err);
+    console.error('[FCM] SW registration failed:', err.message);
     return null;
   }
 }
 
 export async function requestNotificationPermission() {
-  if (typeof Notification === 'undefined') return 'denied';
+  if (typeof Notification === 'undefined') {
+    console.warn('[FCM] Notification API not supported');
+    return 'denied';
+  }
+  
+  // Check if running as standalone PWA (especially important for iOS)
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone) {
+    console.warn('[FCM] Not in standalone mode - notifications may not work');
+  }
+  
   try {
     const permission = await Notification.requestPermission();
+    console.log('[FCM] Permission request result:', permission, 'Standalone:', isStandalone);
     return permission;
   } catch (err) {
+    console.error('[FCM] Permission request failed:', err.message);
     return 'denied';
   }
 }
 
 export async function getFCMToken() {
   const messaging = await ensureFirebase();
-  if (!messaging) return null;
+  if (!messaging) {
+    console.warn('[FCM] Firebase messaging not available');
+    return null;
+  }
+  
   try {
     const swRegistration = await ensureSW();
+    if (!swRegistration) {
+      console.warn('[FCM] Service Worker not registered');
+    }
+    
     const currentToken = await messaging.getToken({
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: swRegistration || undefined,
     });
     
-    // Log for debugging iOS support
+    // Detailed logging for debugging
     if (currentToken) {
-      console.log('[FCM] Token obtained:', currentToken.substring(0, 20) + '...');
-      // iOS Safari PWA detection
+      const tokenPreview = currentToken.substring(0, 30) + '...';
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isPWA = window.navigator.standalone === true;
-      console.log('[FCM] iOS PWA:', isIOS && isPWA);
+      const isAndroid = /Android/.test(navigator.userAgent);
+      const isStandalone = window.navigator.standalone === true;
+      const displayMode = window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser';
+      
+      console.log('[FCM] ✅ Token obtained');
+      console.log('[FCM] Token:', tokenPreview);
+      console.log('[FCM] Platform:', isIOS ? 'iOS' : isAndroid ? 'Android' : 'Web');
+      console.log('[FCM] Mode:', displayMode);
+      console.log('[FCM] Standalone:', isStandalone);
+    } else {
+      console.warn('[FCM] ⚠️ No token returned from Firebase');
     }
     
     return currentToken || null;
   } catch (err) {
-    console.error('FCM token error:', err);
+    console.error('[FCM] ❌ Token generation failed:', err.message);
+    console.error('[FCM] Error details:', err);
     return null;
   }
 }
