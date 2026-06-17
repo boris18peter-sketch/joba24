@@ -1,15 +1,15 @@
 {
-  "name": "Joba24 - משימות מהירות",
+  "name": "Joba24",
   "short_name": "Joba24",
-  "description": "אפליקציית משימות מהירות בישראל - קבל עבודות מקומיות בדקות",
+  "description": "משימות מהירות בקרבתך",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "dir": "rtl",
-  "lang": "he-IL",
-  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
   "theme_color": "#0f2b6b",
+  "background_color": "#f4f7fb",
+  "dir": "rtl",
+  "lang": "he",
   "icons": [
     {
       "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
@@ -33,18 +33,5 @@
     }
   ],
   "categories": ["productivity", "lifestyle"],
-  "shortcuts": [
-    {
-      "name": "משימות חדשות",
-      "short_name": "משימות",
-      "description": "צפה בכל המשימות הפתוחות",
-      "url": "/?launch=tasks",
-      "icons": [
-        {
-          "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
-          "sizes": "192x192"
-        }
-      ]
-    }
-  ]
+  "prefer_related_applications": false
 }
