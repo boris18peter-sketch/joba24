@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { 
   Mic, MicOff, Loader2, Sparkles, Zap, FileText, ArrowUp, Camera
@@ -115,7 +114,6 @@ export default function TaskChatInterface({
   onSwitchToForm,
 }) {
   const { t } = useLanguage();
-  const { login } = useAuth();
   
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -128,6 +126,9 @@ export default function TaskChatInterface({
   const [transcribing, setTranscribing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [featurePhase, setFeaturePhase] = useState(-1); // -1=not started, 0..2=pills, 3=done
+  const featureTimerRef = useRef(null);
+  const featureStartedRef = useRef(false);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -211,13 +212,18 @@ export default function TaskChatInterface({
         setTaskState(prev => ({ ...prev, category: agentData.category_detected }));
       }
 
-      setPublishReady(agentData.publish_ready || agentData.all_mandatory_filled);
+      const isReady = agentData.publish_ready || agentData.all_mandatory_filled;
+      setPublishReady(isReady);
 
       setMessages(prev => [...prev, {
         role: 'agent',
         content: agentData.response || 'קיבלתי, ממשיך...',
-        showFeaturePrompt: agentData.all_mandatory_filled && !agentData.publish_ready,
       }]);
+
+      // Start feature sequence when all mandatory fields are filled
+      if (isReady && !featureStartedRef.current) {
+        startFeatureSequence();
+      }
     } catch (err) {
       console.error('Chat agent error:', err);
       setMessages(prev => [...prev, {
@@ -231,23 +237,39 @@ export default function TaskChatInterface({
 
   // Handle feature toggle
   const handleFeatureToggle = (key) => {
-    setEnabledFeatures(prev => {
-      const next = { ...prev, [key]: !prev[key] };
-      
-      if (key === 'is_story' && !prev[key]) {
-        setMessages(prev => [...prev, {
-          role: 'agent',
-          content: '✅ **Story הופעל!** המשימה שלך תופיע בראש הפיד למשך 24 שעות.\n\n⚠️ שים לב: זה עולה **10 ג\'ובות** וייגרע מהיתרה שלך בעת הפרסום.\n\nרוצה להמשיך לפרסום? פשוט תגיד "פרסם" 😊',
-        }]);
-      }
-      
-      return next;
-    });
+    setEnabledFeatures(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleFeatureConfig = (key, value) => {
     setFeatureConfig(prev => ({ ...prev, [key]: value }));
   };
+
+  // Start sequential feature pill display
+  const startFeatureSequence = () => {
+    if (featureStartedRef.current) return;
+    featureStartedRef.current = true;
+    setFeaturePhase(0);
+    // Add intro message
+    setMessages(prev => [...prev, {
+      role: 'agent',
+      content: '👍 **כל הפרטים מולאו!**\n\nלפני שאנחנו מפרסמים — רוצה להוסיף פיצ\'רים שיעזרו לך לקבל עובד מהר יותר?',
+      isFeatureIntro: true,
+    }]);
+  };
+
+  // Sequential pill timing
+  useEffect(() => {
+    if (featurePhase < 0 || featurePhase >= FEATURE_PILLS.length) return;
+    featureTimerRef.current = setTimeout(() => {
+      setMessages(prev => [...prev, {
+        role: 'agent',
+        content: '',
+        featurePillIndex: featurePhase,
+      }]);
+      setFeaturePhase(prev => prev + 1);
+    }, featurePhase === 0 ? 800 : 500);
+    return () => clearTimeout(featureTimerRef.current);
+  }, [featurePhase]);
 
   // Recording
   const startRecording = async () => {
@@ -466,19 +488,16 @@ export default function TaskChatInterface({
                 ))}
               </div>
 
-              {/* Feature prompt after message */}
-              {msg.showFeaturePrompt && (
+              {/* Feature pill message — render as a styled bubble */}
+              {msg.featurePillIndex !== undefined && msg.featurePillIndex < FEATURE_PILLS.length && (
                 <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {FEATURE_PILLS.map(pill => (
-                    <FeaturePill
-                      key={pill.key}
-                      pill={pill}
-                      active={!!enabledFeatures[pill.key]}
-                      onToggle={handleFeatureToggle}
-                      extraConfig={featureConfig}
-                      onExtraChange={handleFeatureConfig}
-                    />
-                  ))}
+                  <FeaturePill
+                    pill={FEATURE_PILLS[msg.featurePillIndex]}
+                    active={!!enabledFeatures[FEATURE_PILLS[msg.featurePillIndex].key]}
+                    onToggle={handleFeatureToggle}
+                    extraConfig={featureConfig}
+                    onExtraChange={handleFeatureConfig}
+                  />
                 </div>
               )}
             </div>
@@ -507,23 +526,6 @@ export default function TaskChatInterface({
         )}
 
         <div ref={messagesEndRef} />
-      </div>
-
-      {/* Feature pills row */}
-      <div style={{ 
-        padding: '0 16px 8px', display: 'flex', gap: 8, flexWrap: 'wrap',
-        borderTop: '1px solid #f1f5f9',
-      }}>
-        {FEATURE_PILLS.map(pill => (
-          <FeaturePill
-            key={pill.key}
-            pill={pill}
-            active={!!enabledFeatures[pill.key]}
-            onToggle={handleFeatureToggle}
-            extraConfig={featureConfig}
-            onExtraChange={handleFeatureConfig}
-          />
-        ))}
       </div>
 
       {/* Input area */}
