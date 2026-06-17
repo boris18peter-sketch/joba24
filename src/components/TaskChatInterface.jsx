@@ -340,6 +340,7 @@ export default function TaskChatInterface({
   const [addressDest, setAddressDest] = useState({}); // destination address fields
   const featureStartedRef = useRef(false);
   const requirementsShownRef = useRef(false);
+  const requirementsSkippedRef = useRef(false);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -484,6 +485,14 @@ export default function TaskChatInterface({
     setEnabledFeatures(prev => ({ ...prev, requires_invoice: !prev.requires_invoice }));
   };
 
+  // Skip requirements — dismiss and move to features/publish
+  const handleSkipRequirements = () => {
+    if (requirementsSkippedRef.current) return;
+    requirementsSkippedRef.current = true;
+    setShowRequirements(false);
+    sendMessage('אין צורך בדרישות נוספות, אפשר להמשיך לפרסום');
+  };
+
   // Start feature card display
   const startFeatureSequence = () => {
     if (featureStartedRef.current) return;
@@ -491,7 +500,7 @@ export default function TaskChatInterface({
     
     setMessages(prev => [...prev, {
       role: 'agent',
-      content: '👍 **המשימה מוכנה!**\n\nלפני פרסום — יש 2 פיצ\'רים שיכולים לעזור לך לקבל עובד מהר יותר:',
+      content: '👍 **המשימה מוכנה לפרסום!**\n\nרגע לפני — יש לך 2 אפשרויות שיעזרו למשוך עובדים מהר יותר:',
       isFeatureIntro: true,
     }]);
 
@@ -783,6 +792,21 @@ export default function TaskChatInterface({
                 onInvoiceToggle={handleInvoiceToggle}
                 invoiceEnabled={!!enabledFeatures.requires_invoice}
               />
+              {/* Skip requirements button */}
+              <button
+                onClick={handleSkipRequirements}
+                style={{
+                  width: '100%', marginTop: 14, padding: '12px 0', borderRadius: 14,
+                  background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                  color: 'white', border: 'none', fontSize: 14, fontWeight: 800,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: 6,
+                  boxShadow: '0 4px 14px rgba(26,111,212,0.25)',
+                }}
+              >
+                <ArrowUp size={16} />
+                אין צורך — המשך לפרסום ✓
+              </button>
             </div>
           </div>
         )}
@@ -832,8 +856,8 @@ export default function TaskChatInterface({
         background: 'white', borderTop: '1px solid #e5e7eb',
         padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
       }}>
-        {/* Publish button when ready */}
-        {publishReady && (
+        {/* Publish button — only after features shown (right before publish) */}
+        {showFeatures && (
           <div style={{ marginBottom: 10 }}>
             <button
               onClick={handlePublish}

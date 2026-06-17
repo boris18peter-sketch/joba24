@@ -84,10 +84,11 @@ location_name, address_building, address_floor, address_apartment, address_notes
 - category_detected — חובה! זהה בכל תגובה.
 
 ## שלבי ready לפרסום:
-- all_mandatory_filled=true כשכל 4 שדות החובה + קטגוריה מלאים.
-- publish_ready=true כשהכל מולא: חובה + קטגוריה + estimated_time + urgency_tag + address_building (אם רלוונטי).
-- show_requirements=true כשהשדות הייחודיים לקטגוריה + חובה + זמן מלאים — זה הזמן להציג דרישות.
-- show_features=true כש-publish_ready=true — זה הזמן להציע פיצ'רים.
+- all_mandatory_filled=true כשכל 4 שדות החובה + קטגוריה + (לקטגוריות moving/delivery — גם to_address) מלאים.
+- publish_ready=true כשהכל מולא: חובה + קטגוריה + to_address (אם רלוונטי) + estimated_time + urgency_tag + address_building (אם רלוונטי).
+- show_requirements=true כשהשדות הייחודיים לקטגוריה + חובה + to_address (אם רלוונטי) + זמן מלאים — זה הזמן להציג דרישות. **חשוב**: לקטגוריית moving/delivery — show_requirements=false כל עוד to_address לא מולא. קודם תאסוף את כתובת היעד.
+- show_features=true כש-publish_ready=true — זה הזמן להציע פיצ'רים (לפני כפתור הפרסום).
+- **אם המשתמש אומר שאין צורך בדרישות / אפשר להמשיך**: show_requirements=false, show_features=true, publish_ready=true. זה אומר שהמשתמש דילג על שלב הדרישות.
 - all_fields_filled=true כשהכל מולא.
 - missing_mandatory — רשימת שדות חובה חסרים.
 - next_question — שאלה טבעית אחת שממוקדת בשדה החסר הכי קריטי.`;
