@@ -167,13 +167,12 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ paddingBottom: 0 }}>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
         {taskList.map((task, idx) => {
-          const t = task;
-          const tStatusInfo = STATUS_STEPS[t.worker_status] || null;
-          const tRole = t._roleHint || roleHint;
-          const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === t.worker_id);
-          const tIsOwner  = tRole === 'client' || (tRole !== 'worker' && me?.id === t.client_id);
+          const tStatusInfo = STATUS_STEPS[task.worker_status] || null;
+          const tRole = task._roleHint || roleHint;
+          const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === task.worker_id);
+          const tIsOwner  = tRole === 'client' || (tRole !== 'worker' && me?.id === task.client_id);
           const tStepIdx  = tStatusInfo?.step ?? -1;
-          const quickAction = tIsWorker ? getQuickAction(tStepIdx, t.worker_status) : null;
+          const quickAction = tIsWorker ? getQuickAction(tStepIdx, task.worker_status) : null;
 
           const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
@@ -182,14 +181,14 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
             : tStatusInfo?.label || 'לחץ יצאתי לדרך';
 
           // Nav button → show only when on_the_way. After arrived → show chat.
-          const showNavBtn  = tIsWorker && tStepIdx === 0 && t.location_name;
+          const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;
           const showChatBtn = tIsWorker && tStepIdx >= 1;
 
           return (
             <div
-              key={t.id}
+              key={task.id}
               style={{ flex: '0 0 100%', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-              onClick={() => navigate(`/task/${t.id}`)}
+              onClick={() => navigate(`/task/${task.id}`)}
             >
               {/* Live dot + badge */}
               <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -210,25 +209,25 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
                   <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>{statusText}</div>
-                  <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+                  <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
                     {tIsWorker ? (
                       <>
-                        <span onClick={e => { e.stopPropagation(); if (t.client_id) navigate(`/public-profile?id=${t.client_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {t.client_name}</span>
-                        {t.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.client_rating.toFixed(1)}</span>}
-                        {t.client_verified && <VerifiedBadge size="sm" />}
+                        <span onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {task.client_name}</span>
+                        {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.client_rating.toFixed(1)}</span>}
+                                                 {task.client_verified && <VerifiedBadge size="sm" />}
                       </>
                     ) : (
                       <>
-                        <span onClick={e => { e.stopPropagation(); if (t.worker_id) navigate(`/public-profile?id=${t.worker_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {t.worker_name}</span>
-                        {t.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {t.worker_rating.toFixed(1)}</span>}
-                        {t.worker_verified && <VerifiedBadge size="sm" />}
+                        <span onClick={e => { e.stopPropagation(); if (task.worker_id) navigate(`/public-profile?id=${task.worker_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span>
+                        {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>}
+                                                 {task.worker_verified && <VerifiedBadge size="sm" />}
                       </>
                     )}
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
-                  <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{t.price}</div>
+                  <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{task.price}</div>
                 </div>
               </div>
 
@@ -272,20 +271,20 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
               <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
 
                 {/* Owner: confirm completion when worker says done */}
-                {tIsOwner && t.worker_status === 'done' && (
+                {tIsOwner && task.worker_status === 'done' && (
                   <button
-                    onClick={() => handleOwnerConfirmComplete(t)}
-                    disabled={completingTaskId === t.id}
+                    onClick={() => handleOwnerConfirmComplete(task)}
+                    disabled={completingTaskId === task.id}
                     style={{ flex: 2, height: 46, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 2px 12px rgba(5,150,105,0.4)' }}
                   >
-                    {completingTaskId === t.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> {t('confirm_done_work')}</>}
+                    {completingTaskId === task.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> {t('confirm_done_work')}</>}
                   </button>
                 )}
 
                 {/* Quick action (worker only, not done) */}
                 {tIsWorker && quickAction && (
                   <button
-                    onClick={() => setPendingAction({ task: t, action: { ...quickAction, color: quickAction.color } })}
+                    onClick={() => setPendingAction({ task: task, action: { ...quickAction, color: quickAction.color } })}
                     style={{ flex: 2, height: 46, borderRadius: 14, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}
                   >
                     {quickAction.nextKey === 'arrived' ? <MapPin size={15} /> : quickAction.nextKey === 'done' ? <CheckCircle size={15} /> : <Navigation size={15} />}
@@ -297,9 +296,9 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 {showNavBtn && (
                   <button
                     onClick={() => {
-                    const dst = t.lat && t.lng ? `${t.lat},${t.lng}` : encodeURIComponent(t.location_name);
+                    const dst = task.lat && task.lng ? `${task.lat},${task.lng}` : encodeURIComponent(task.location_name);
                     const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
-                    const mapsUrl = t.lat && t.lng ? `https://maps.google.com/maps?daddr=${t.lat},${t.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(t.location_name)}`;
+                    const mapsUrl = task.lat && task.lng ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
                     const choice = window.confirm(t('navigate_choice') || 'Navigate with Waze?\nClick cancel for Google Maps');
                     window.open(choice ? wazeUrl : mapsUrl, '_blank');
                     }}
@@ -321,7 +320,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
 
                 {/* Details button */}
                 <button
-                  onClick={() => navigate(`/task/${t.id}`)}
+                  onClick={() => navigate(`/task/${task.id}`)}
                   style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   {t('details')}
