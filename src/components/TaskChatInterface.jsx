@@ -6,8 +6,96 @@ import {
   MapPin, CreditCard, Clock, CheckCircle2, FileText
 } from 'lucide-react';
 import { getRequirementCategories } from '@/lib/requirements';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 import ReactMarkdown from 'react-markdown';
 import BackButton from '@/components/BackButton';
+
+// Inline address input card — mirrors the form's AddressAutocomplete + extra fields
+function AddressChatCard({ label, addressState, onChange, onConfirm }) {
+  const [building, setBuilding] = useState(addressState.address_building || '');
+  const [floor, setFloor] = useState(addressState.address_floor || '');
+  const [apartment, setApartment] = useState(addressState.address_apartment || '');
+  const [notes, setNotes] = useState(addressState.address_notes || '');
+  const [confirmed, setConfirmed] = useState(!!(addressState.lat && addressState.lng));
+
+  const handleAddressSelect = ({ location_name, city, lat, lng }) => {
+    const hasCoords = !!(lat && lng);
+    onChange({
+      location_name,
+      city: city || '',
+      lat: lat || null,
+      lng: lng || null,
+      address_building: building,
+      address_floor: floor,
+      address_apartment: apartment,
+      address_notes: notes,
+    });
+    setConfirmed(hasCoords);
+  };
+
+  return (
+    <div style={{
+      padding: '14px 16px', borderRadius: 18,
+      background: 'white', border: '1px solid #e5e7eb',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex',
+      flexDirection: 'column', gap: 10, animation: 'messageIn 0.3s ease',
+    }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: '#0f2b6b' }}>{label}</div>
+      <AddressAutocomplete
+        value={addressState.location_name || ''}
+        error={false}
+        onSelect={handleAddressSelect}
+      />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 3 }}>בניין / מספר</div>
+          <input
+            placeholder="12" value={building}
+            onChange={e => { setBuilding(e.target.value); onChange({ ...addressState, address_building: e.target.value }); }}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1.5px solid #dce8f5', fontSize: 13, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#1f2937' }}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 3 }}>קומה</div>
+          <input
+            placeholder="3" value={floor}
+            onChange={e => { setFloor(e.target.value); onChange({ ...addressState, address_floor: e.target.value }); }}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1.5px solid #dce8f5', fontSize: 13, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#1f2937' }}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 3 }}>דירה</div>
+          <input
+            placeholder="5" value={apartment}
+            onChange={e => { setApartment(e.target.value); onChange({ ...addressState, address_apartment: e.target.value }); }}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1.5px solid #dce8f5', fontSize: 13, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#1f2937' }}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: 3 }}>הערות ניווט</div>
+          <input
+            placeholder="כניסה אחורית" value={notes}
+            onChange={e => { setNotes(e.target.value); onChange({ ...addressState, address_notes: e.target.value }); }}
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1.5px solid #dce8f5', fontSize: 13, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#1f2937' }}
+          />
+        </div>
+      </div>
+      {confirmed && (
+        <button
+          onClick={onConfirm}
+          style={{
+            width: '100%', padding: '10px 0', borderRadius: 12,
+            background: 'linear-gradient(135deg, #16a34a, #15803d)',
+            color: 'white', border: 'none', fontSize: 13, fontWeight: 800,
+            cursor: 'pointer', marginTop: 4,
+          }}
+        >
+          ✓ אישור כתובת — המשך
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Feature pills — shown after requirements, before publishing
 const FEATURE_PILLS = [
@@ -247,6 +335,9 @@ export default function TaskChatInterface({
   const [publishing, setPublishing] = useState(false);
   const [showRequirements, setShowRequirements] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
+  const [showAddressInput, setShowAddressInput] = useState(null); // { type, label }
+  const [addressOrigin, setAddressOrigin] = useState({}); // origin address fields
+  const [addressDest, setAddressDest] = useState({}); // destination address fields
   const featureStartedRef = useRef(false);
   const requirementsShownRef = useRef(false);
   
@@ -338,6 +429,13 @@ export default function TaskChatInterface({
         role: 'agent',
         content: agentData.response || 'קיבלתי, ממשיך...',
       }]);
+
+      // Show address input when agent signals it
+      if (agentData.show_address_input && agentData.show_address_input.type) {
+        setShowAddressInput(agentData.show_address_input);
+      } else {
+        setShowAddressInput(null);
+      }
 
       // Show requirements when agent says so (after mandatory + category-specific fields filled)
       if (agentData.show_requirements && !requirementsShownRef.current) {
@@ -618,6 +716,55 @@ export default function TaskChatInterface({
           </div>
         ))}
         
+        {/* Address input card — shown when agent asks for address verification */}
+        {showAddressInput && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, animation: 'messageIn 0.3s ease' }}>
+            <AddressChatCard
+              label={showAddressInput.label || '📍 כתובת'}
+              addressState={showAddressInput.type === 'destination' ? addressDest : addressOrigin}
+              onChange={(data) => {
+                if (showAddressInput.type === 'destination') {
+                  setAddressDest(prev => ({ ...prev, ...data }));
+                } else {
+                  setAddressOrigin(prev => ({ ...prev, ...data }));
+                }
+              }}
+              onConfirm={() => {
+                const addrData = showAddressInput.type === 'destination' ? addressDest : addressOrigin;
+                // Update task state with address
+                if (showAddressInput.type === 'destination') {
+                  setTaskState(prev => ({
+                    ...prev,
+                    to_address: addrData.location_name,
+                    to_city: addrData.city,
+                    to_lat: addrData.lat,
+                    to_lng: addrData.lng,
+                    to_building: addrData.address_building,
+                    to_floor: addrData.address_floor,
+                  }));
+                  // Send message to agent confirming destination
+                  sendMessage(`כתובת היעד: ${addrData.location_name}${addrData.address_building ? ' בניין ' + addrData.address_building : ''}${addrData.address_floor ? ' קומה ' + addrData.address_floor : ''}${addrData.address_apartment ? ' דירה ' + addrData.address_apartment : ''}`);
+                } else {
+                  setTaskState(prev => ({
+                    ...prev,
+                    location_name: addrData.location_name,
+                    city: addrData.city,
+                    lat: addrData.lat,
+                    lng: addrData.lng,
+                    address_building: addrData.address_building,
+                    address_floor: addrData.address_floor,
+                    address_apartment: addrData.address_apartment,
+                    address_notes: addrData.address_notes,
+                  }));
+                  // Send message to agent confirming origin
+                  sendMessage(`הכתובת שלי: ${addrData.location_name}${addrData.address_building ? ' בניין ' + addrData.address_building : ''}${addrData.address_floor ? ' קומה ' + addrData.address_floor : ''}${addrData.address_apartment ? ' דירה ' + addrData.address_apartment : ''}`);
+                }
+                setShowAddressInput(null);
+              }}
+            />
+          </div>
+        )}
+
         {/* Requirements — shown after mandatory fields, before features */}
         {showRequirements && !showFeatures && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, animation: 'messageIn 0.3s ease' }}>

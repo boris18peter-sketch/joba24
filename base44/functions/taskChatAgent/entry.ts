@@ -62,8 +62,17 @@ location_name, address_building, address_floor, address_apartment, address_notes
   "next_question": "מה כתובת היעד להובלה?",
   "publish_ready": false,
   "show_requirements": false,
-  "show_features": false
+  "show_features": false,
+  "show_address_input": null
 }
+
+## show_address_input — מתי להציג שדות כתובת בצ'אט:
+החזר אובייקט עם type ו-label כשצריך שהמשתמש ימלא כתובת מדויקת (עם אימות מהרשימה).
+- type: "origin" (כתובת מקור/המשימה) | "destination" (כתובת יעד, רק להובלה/משלוח)
+- label: טקסט תצוגה קצר, לדוגמה "📍 כתובת איסוף" או "📍 כתובת מסירה"
+- **חשוב**: החזר show_address_input רק כשצריך כתובת חדשה. אל תחזיר אם location_name כבר מלא.
+- **חשוב**: לקטגוריית moving/delivery — קודם תציג origin, ורק אחרי שהיא מולאה תציג destination.
+- כשלא צריך — החזר null.
 
 ## כללי חובה ל-extracted_data:
 - **בכל תגובה** מלא extracted_data. לעולם אל תשאיר {} אם סופק מידע.
@@ -111,7 +120,7 @@ Deno.serve(async (req) => {
     const fullPrompt = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `${fullPrompt}\n\nעליך להחזיר אובייקט JSON בלבד — ללא טקסט נוסף, ללא markdown. בדיוק במבנה הזה:\n\n{\n  "response": "תשובה ידידותית למשתמש",\n  "extracted_data": { "title": "...", "price": 200, ... },\n  "missing_mandatory": ["title", "payment_method"],\n  "all_mandatory_filled": false,\n  "all_fields_filled": false,\n  "category_detected": "plumbing",\n  "next_question": "שאלה הבאה",\n  "publish_ready": false\n}\n\nחשוב: extracted_data חייב להכיל את כל השדות שהמשתמש סיפק. לעולם אל תחזיר extracted_data ריק אם סופק מידע.`
+      prompt: `${fullPrompt}\n\nעליך להחזיר אובייקט JSON בלבד — ללא טקסט נוסף, ללא markdown. בדיוק במבנה הזה:\n\n{\n  "response": "תשובה ידידותית למשתמש",\n  "extracted_data": { "title": "...", "price": 200, ... },\n  "missing_mandatory": ["title", "payment_method"],\n  "all_mandatory_filled": false,\n  "all_fields_filled": false,\n  "category_detected": "plumbing",\n  "next_question": "שאלה הבאה",\n  "publish_ready": false,\n  "show_requirements": false,\n  "show_features": false,\n  "show_address_input": null\n}\n\nחשוב: extracted_data חייב להכיל את כל השדות שהמשתמש סיפק. לעולם אל תחזיר extracted_data ריק אם סופק מידע.\n\nחשוב: show_address_input = null כשהכתובת כבר קיימת. show_address_input = { "type": "origin", "label": "📍 כתובת המשימה" } כשצריך שכתובת תמולא.`
     });
 
     let parsed;
