@@ -712,7 +712,7 @@ export default function TaskDetail() {
                   {task.title}
                 </div>
               )}
-              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || (task.status === 'TAKEN' && !!task.worker_status)) && (
+              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
                   style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
@@ -985,8 +985,8 @@ export default function TaskDetail() {
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
 
-        {/* Applicants for owner — show when OPEN (with pending apps) or TAKEN before worker started */}
-        {isOwner && applicationCount > 0 && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) &&
+        {/* Applicants for owner — show when OPEN or TAKEN before worker started */}
+        {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) &&
         <div id="task-applicants-section">
           <TaskApplicants task={task} onApprove={() => queryClient.refetchQueries({ queryKey: ['task', id] })} />
         </div>
