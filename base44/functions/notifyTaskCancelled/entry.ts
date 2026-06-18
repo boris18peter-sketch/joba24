@@ -3,14 +3,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { data, event } = await req.json();
+    const { data, old_data, event } = await req.json();
 
     if (data?.status !== 'CANCELLED') {
       return Response.json({ sent: 0, reason: 'Not cancelled' });
     }
 
-    // Notify worker if there is one
-    const workerId = data.worker_id;
+    // worker_id may be nulled in the update payload — fall back to old_data
+    const workerId = data.worker_id || old_data?.worker_id;
     if (!workerId) {
       return Response.json({ sent: 0, reason: 'No worker assigned' });
     }

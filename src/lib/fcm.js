@@ -175,13 +175,25 @@ export async function getFCMToken() {
   }
 }
 
+// Guard: only register ONE onMessage listener ever, regardless of how many times onForegroundMessage is called
+let foregroundListenerRegistered = false;
+const foregroundCallbacks = new Set();
+
 export function onForegroundMessage(callback) {
-  // Ensure Firebase is loaded (async, but the listener will attach once ready)
-  ensureFirebase().then((messaging) => {
-    if (!messaging) return;
-    messaging.onMessage((payload) => {
-      callback(payload);
+  foregroundCallbacks.add(callback);
+
+  if (!foregroundListenerRegistered) {
+    foregroundListenerRegistered = true;
+    ensureFirebase().then((messaging) => {
+      if (!messaging) return;
+      messaging.onMessage((payload) => {
+        foregroundCallbacks.forEach(cb => cb(payload));
+      });
     });
-  });
-  return () => {}; // No-op unsubscribe (Firebase compat doesn't support unsubscribing onMessage easily)
+  }
+
+  // Return a real unsubscribe that removes this specific callback
+  return () => {
+    foregroundCallbacks.delete(callback);
+  };
 }

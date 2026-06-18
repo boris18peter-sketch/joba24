@@ -181,7 +181,9 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
           const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === task.worker_id);
           const tIsOwner  = tRole === 'client' || (tRole !== 'worker' && me?.id === task.client_id);
           const tStepIdx  = tStatusInfo?.step ?? -1;
-          const quickAction = tIsWorker ? getQuickAction(tStepIdx, task.worker_status) : null;
+          // If task is no longer TAKEN (cancelled by publisher), worker cannot update status
+          const isTaskActive = task.status === 'TAKEN';
+          const quickAction = tIsWorker && isTaskActive ? getQuickAction(tStepIdx, task.worker_status) : null;
 
           const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
