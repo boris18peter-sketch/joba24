@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, PartyPopper } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
+import InvoiceModal from '@/components/InvoiceModal';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -83,6 +86,11 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
   const [pendingAction, setPendingAction] = useState(null); // { task, action }
   const [updating, setUpdating] = useState(false);
   const [completingTaskId, setCompletingTaskId] = useState(null);
+  const [mediaTask, setMediaTask] = useState(null); // task for media upload sheet
+  const [mediaPhotos, setMediaPhotos] = useState([]);
+  const [mediaVideo, setMediaVideo] = useState('');
+  const [savingMedia, setSavingMedia] = useState(false);
+  const [invoiceTask, setInvoiceTask] = useState(null); // task for invoice modal
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   // No local state — read directly from props (which come from React Query cache via Layout/HomeFeed)
@@ -328,6 +336,26 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                   {t('details')}
                 </button>
               </div>
+
+              {/* Worker extra actions row */}
+              {tIsWorker && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => { setMediaTask(task); setMediaPhotos(task.completion_photos || []); setMediaVideo(task.completion_video_url || ''); }}
+                    style={{ flex: 1, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                  >
+                    <Camera size={13} /> הוכחת ביצוע {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
+                  </button>
+                  {task.requires_invoice && (
+                    <button
+                      onClick={() => setInvoiceTask(task)}
+                      style={{ flex: 1, height: 38, borderRadius: 12, background: task.invoice_html ? 'rgba(124,58,237,0.35)' : 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    >
+                      <FileText size={13} /> חשבונית {task.invoice_html ? '✓' : ''}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -342,6 +370,48 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       />
 
       {showChat && me && <QuickChatDrawer task={taskList[activeIdx]} me={me} onClose={() => setShowChat(false)} />}
+
+      {/* Media upload sheet */}
+      {mediaTask && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={() => setMediaTask(null)}
+          onPointerDown={e => e.stopPropagation()}
+          onTouchStart={e => e.stopPropagation()}
+        >
+          <div dir="rtl" onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg,white)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '80dvh', overflowY: 'auto' }}>
+            <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 16px' }} />
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1,#0f1e40)', marginBottom: 4 }}>📸 הוכחת ביצוע</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>התמונות/סרטון יוצגו למפרסם המשימה</div>
+            <WorkerCompletionPhoto
+              photos={mediaPhotos}
+              videoUrl={mediaVideo}
+              onPhotosChange={setMediaPhotos}
+              onVideoChange={setMediaVideo}
+            />
+            <button
+              onClick={async () => {
+                setSavingMedia(true);
+                await base44.entities.Task.update(mediaTask.id, { completion_photos: mediaPhotos, completion_video_url: mediaVideo || null });
+                queryClient.setQueryData(['activeWorkerTask', me?.id], old => old?.id === mediaTask.id ? { ...old, completion_photos: mediaPhotos, completion_video_url: mediaVideo || null } : old);
+                setSavingMedia(false);
+                toast.success('הוכחת הביצוע נשמרה ✓');
+                setMediaTask(null);
+              }}
+              disabled={savingMedia}
+              style={{ marginTop: 14, width: '100%', height: 50, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              {savingMedia ? <Loader2 size={18} className="animate-spin" /> : '💾 שמור'}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Invoice modal */}
+      {invoiceTask && me && createPortal(
+        <InvoiceModal task={invoiceTask} me={me} onClose={() => setInvoiceTask(null)} />,
+        document.body
+      )}
 
       <style>{`
         @keyframes livePing {
