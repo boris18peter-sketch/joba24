@@ -14,6 +14,23 @@ YOUR ONLY PURPOSE: Collect all required task fields as fast as possible and publ
 7. Auto-detect category from keywords — NEVER ask for it.
 8. Default payment_method = "Cash" silently if user never specifies — do NOT ask unless other fields are done.
 
+## CONVERSATION STATE MACHINE
+CRITICAL: Only collect ONE field at a time. Never jump ahead.
+
+Field states:
+- EMPTY: not yet asked
+- COLLECTING: actively collecting (keep asking same field until valid)
+- VALIDATING: checking if valid
+- COMPLETE: field successfully collected
+
+Rules:
+- current_field_state tells you which field to collect
+- Only ask about current_field_state.field_name
+- Do NOT ask about any other field until current_field is COMPLETE
+- If validation fails: respond with error + retry current field
+- If validation succeeds: set field_state to COMPLETE, return next_field to collect
+- Never queue multiple questions ahead
+
 ## EXTRACTION RULES
 Extract as much as possible from every single message. A message like "צריך מישהו לנקות דירה 4 חדרים בתל אביב מחר ב-200 שקל" extracts:
 - description: "ניקיון דירה 4 חדרים"
@@ -105,7 +122,9 @@ Line 4: ⚡ Urgency
   "marketplace_insight": null,
   "summary": null,
   "media_suggested": false,
-  "quick_replies": []
+  "quick_replies": [],
+  "current_field_state": { "field_name": "location_name", "state": "COLLECTING", "validation_error": null },
+  "next_field_state": { "field_name": "price", "state": "EMPTY" }
 }
 
 ## FIELD RULES
@@ -129,15 +148,68 @@ Line 4: ⚡ Urgency
 - If user says "לא יודע" on price → suggest a range based on category
 - If user is vague → ask ONE clarifying question about the most important missing field`;
 
+// Field completion order (step by step, one at a time)
+const FIELD_ORDER = [
+  'description',
+  'category_specific', // varies by category
+  'price',
+  'location_name',
+  'payment_method',
+  'estimated_time_urgency',
+  'requirements',
+  'media',
+  'features',
+];
+
+// Determine which field is currently missing and should be collected
+function findCurrentField(taskState, category) {
+  // 1. Description (10+ words)?
+  if (!taskState.description || taskState.description.trim().split(/\s+/).length < 10) {
+    return { field: 'description', state: 'COLLECTING' };
+  }
+  // 2. Category-specific (varies)
+  if (!category || category === 'other') {
+    // no category-specific for 'other'
+  } else if (category === 'moving') {
+    if (!taskState.to_address) return { field: 'to_address', state: 'COLLECTING' };
+  } else if (category === 'delivery') {
+    if (!taskState.to_address) return { field: 'to_address', state: 'COLLECTING' };
+  } else if (category === 'cleaning') {
+    if (!taskState.description || !taskState.description.includes('חדרים')) return { field: 'cleaning_rooms', state: 'COLLECTING' };
+  } else if (category === 'plumbing') {
+    if (!taskState.description || !/(נזילה|סתימה|התקנה)/i.test(taskState.description)) return { field: 'plumbing_issue', state: 'COLLECTING' };
+  }
+  // 3. Price?
+  if (!taskState.price || taskState.price <= 0) {
+    return { field: 'price', state: 'COLLECTING' };
+  }
+  // 4. Location?
+  if (!taskState.location_name) {
+    return { field: 'location_name', state: 'COLLECTING' };
+  }
+  // 5. Payment method?
+  if (!taskState.payment_method) {
+    return { field: 'payment_method', state: 'COLLECTING' };
+  }
+  // 6. Timing?
+  if (!taskState.estimated_time || !taskState.urgency_tag) {
+    return { field: 'estimated_time_urgency', state: 'COLLECTING' };
+  }
+  // All mandatory done
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { current_state, user_message, conversation_history } = await req.json();
+    const { current_state, user_message, conversation_history, current_field_state } = await req.json();
 
     const stateJson = current_state ? JSON.stringify(current_state, null, 2) : '{}';
+    const currentField = findCurrentField(current_state, current_state.category);
+    const currentFieldStr = current_field_state?.field_name || currentField?.field || 'none';
 
     // Build conversation array for LLM
     const historyLines = (conversation_history || []).slice(-10).map(m =>
@@ -150,6 +222,13 @@ Deno.serve(async (req) => {
 CURRENT TASK STATE (already collected — do NOT ask about these again):
 ${stateJson}
 
+CURRENT FIELD BEING COLLECTED:
+${currentFieldStr}
+
+STAY FOCUSED: Only ask about "${currentFieldStr}" until it is COMPLETE.
+Do NOT ask about other fields.
+Do NOT move forward until this field is valid.
+
 CONVERSATION SO FAR:
 ${historyLines}
 
@@ -157,7 +236,7 @@ USER MESSAGE: ${user_message}
 
 ---
 Return ONLY valid JSON, no markdown, no backticks, no extra text:
-{"response":"...","extracted_data":{},"category_detected":null,"missing_mandatory":[],"all_mandatory_filled":false,"publish_ready":false,"show_requirements":false,"show_features":false,"show_address_input":null,"next_question":"","completeness_pct":0,"marketplace_insight":null,"summary":null,"media_suggested":false,"quick_replies":[]}`;
+{"response":"...","extracted_data":{},"category_detected":null,"missing_mandatory":[],"all_mandatory_filled":false,"publish_ready":false,"show_requirements":false,"show_features":false,"show_address_input":null,"next_question":"","completeness_pct":0,"marketplace_insight":null,"summary":null,"media_suggested":false,"quick_replies":[],"current_field_state":{"field_name":"${currentFieldStr}","state":"COLLECTING","validation_error":null},"next_field_state":null}`;
 
     const result = await base44.integrations.Core.InvokeLLM({ prompt });
 
@@ -174,11 +253,25 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
           show_requirements: false, show_features: false, show_address_input: null,
           completeness_pct: 0, marketplace_insight: null, summary: null,
           media_suggested: false, quick_replies: [],
+          current_field_state: { field_name: currentFieldStr, state: 'COLLECTING', validation_error: null },
+          next_field_state: null,
         };
       }
     } else {
       parsed = result;
       if (!parsed.quick_replies) parsed.quick_replies = [];
+      if (!parsed.current_field_state) parsed.current_field_state = { field_name: currentFieldStr, state: 'COLLECTING', validation_error: null };
+    }
+
+    // Determine next field only if current is COMPLETE
+    if (parsed.current_field_state?.state === 'COMPLETE') {
+      const nextCurrentField = findCurrentField(
+        { ...current_state, ...parsed.extracted_data },
+        parsed.category_detected || current_state.category
+      );
+      if (nextCurrentField) {
+        parsed.next_field_state = { field_name: nextCurrentField.field, state: 'EMPTY' };
+      }
     }
 
     return Response.json(parsed);

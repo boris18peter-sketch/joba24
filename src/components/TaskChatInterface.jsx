@@ -310,6 +310,8 @@ export default function TaskChatInterface({
   const [addressOrigin, setAddressOrigin] = useState({});
   const [addressDest, setAddressDest] = useState({});
   const [quickReplies, setQuickReplies] = useState([]);
+  const [currentFieldState, setCurrentFieldState] = useState(null); // { field_name, state, validation_error }
+  const [nextFieldState, setNextFieldState] = useState(null); // hint for UI
   const initializedRef = useRef(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -351,9 +353,10 @@ export default function TaskChatInterface({
       const conversationHistory = updatedMessages.filter(m => m.role !== 'system').slice(-12)
         .map(m => ({ role: m.role === 'agent' ? 'agent' : 'user', content: m.content }));
       
-      // STEP 1: Send Task Draft (not taskState) as the primary context
+      // STEP 1: Send Task Draft + current field state (conversation state machine)
       const response = await base44.functions.invoke('taskChatAgent', {
         current_state: taskDraft, // Single source of truth
+        current_field_state: currentFieldState, // Which field we're collecting
         user_message: text + (mediaUrls.length ? '\n[צירפתי ' + mediaUrls.length + ' קבצי מדיה]' : ''),
         conversation_history: conversationHistory.slice(0, -1),
       });
@@ -385,6 +388,14 @@ export default function TaskChatInterface({
           draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
           return updated;
         });
+      }
+
+      // Update field state machine
+      if (agentData.current_field_state) {
+        setCurrentFieldState(agentData.current_field_state);
+      }
+      if (agentData.next_field_state) {
+        setNextFieldState(agentData.next_field_state);
       }
 
       // Update UI states
