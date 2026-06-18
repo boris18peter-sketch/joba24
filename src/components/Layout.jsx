@@ -265,10 +265,12 @@ export default function Layout() {
         return old;
       });
 
-      // COMPLETED — refresh me stats
+      // COMPLETED — refresh me stats + show rating popup
       if (event.type === 'update' && t.status === 'COMPLETED') {
         if (t.worker_id === me.id || t.client_id === me.id) {
           queryClient.invalidateQueries({ queryKey: ['me'] });
+          // Show rating popup globally — maybeShowRating guards against duplicates
+          maybeShowRating(t);
         }
       }
 
@@ -385,15 +387,27 @@ export default function Layout() {
     return () => window.removeEventListener('approval_revoked_by_client', handleRevoked);
   }, [me?.id]);
 
-  // Rating modal for task completion
+  // Rating modal for task completion — shown globally for both client and worker
   const [ratingTask, setRatingTask] = useState(null);
+  const shownRatingRef = useRef(new Set()); // track tasks already shown to avoid duplicates
+
+  const maybeShowRating = useCallback((task) => {
+    if (!me?.id || !task?.id) return;
+    if (task.status !== 'COMPLETED') return;
+    const isParticipant = me.id === task.client_id || me.id === task.worker_id;
+    if (!isParticipant) return;
+    const key = `rated_${task.id}_${me.id}`;
+    if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) return;
+    shownRatingRef.current.add(task.id);
+    setTimeout(() => setRatingTask(task), 800);
+  }, [me?.id]);
+
+  // Listen for manual show_rating_modal events (from ActiveTaskBanner)
   useEffect(() => {
-    const handleShowRating = (e) => {
-      setRatingTask(e.detail?.task);
-    };
+    const handleShowRating = (e) => maybeShowRating(e.detail?.task);
     window.addEventListener('show_rating_modal', handleShowRating);
     return () => window.removeEventListener('show_rating_modal', handleShowRating);
-  }, []);
+  }, [maybeShowRating]);
 
   // No-show reported event
   useEffect(() => {
@@ -592,8 +606,11 @@ export default function Layout() {
         <CancelSuccessPopup task={cancelSuccessTask} onClose={() => setCancelSuccessTask(null)} />,
         document.body
       )}
-      {ratingTask && createPortal(
-        <RatingModal task={ratingTask} onClose={() => setRatingTask(null)} />,
+      {ratingTask && me && createPortal(
+        <RatingModal task={ratingTask} me={me} onClose={() => {
+          localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
+          setRatingTask(null);
+        }} />,
         document.body
       )}
 

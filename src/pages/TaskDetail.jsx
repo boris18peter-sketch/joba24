@@ -59,28 +59,16 @@ function ScanningLabelDetail({ t }) {
         setTextIdx(i => (i + 1) % scanningTexts.length);
         setVisible(true);
       }, 400);
-    }, 25000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [scanningTexts.length]);
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.15)',
-      borderRadius: 12, padding: '9px 14px',
-      display: 'flex', alignItems: 'center', gap: 10,
-      marginBottom: 8,
-    }}>
-      <span style={{ position: 'relative', width: 14, height: 14, flexShrink: 0 }}>
-        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.5)', animation: 'scanRing 1.4s ease-in-out infinite' }} />
-        <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
-        <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
-      </span>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: 'white', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-          {scanningTexts[textIdx]}
-        </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: 'white', opacity: visible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+        {scanningTexts[textIdx]}
       </div>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
     </div>
   );
 }
@@ -837,10 +825,7 @@ export default function TaskDetail() {
                       <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'conic-gradient(rgba(255,255,255,0.6) 0deg, transparent 90deg, transparent 360deg)', animation: 'scanSweep 1.4s linear infinite' }} />
                       <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 3, height: 3, borderRadius: '50%', background: 'white' }} />
                     </span>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{getScanningTexts(t)[0]}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 1 }}>{t('task_exposed_detail')}</div>
-                    </div>
+                    <ScanningLabelDetail t={t} />
                   </div>
                 ) : (
                   <button
