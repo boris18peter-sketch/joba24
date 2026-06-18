@@ -211,15 +211,16 @@ export default function HomeFeed() {
       // 3. Update activeWorkerTask cache live — includes worker_status sub-updates
       const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
       if (event.type === 'update') {
+        // Strip undefined fields so partial payloads never overwrite existing values with undefined
+        const cleanPatch = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
         queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
           if (old?.id === event.id) {
-            // Only clear on explicit terminal status — never on partial updates missing status
-            if (updatedTask.status && TERMINAL_STATUSES.includes(updatedTask.status)) return null;
-            return { ...old, ...updatedTask };
+            if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
+            return { ...old, ...cleanPatch };
           }
           // New TAKEN task assigned to me — show banner immediately
-          if (updatedTask.worker_id === me.id && updatedTask.status === 'TAKEN') {
-            return updatedTask;
+          if (cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
+            return cleanPatch;
           }
           return old;
         });

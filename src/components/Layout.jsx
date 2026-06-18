@@ -220,17 +220,17 @@ export default function Layout() {
       
       // activeWorkerTask + activeClientTask — both critical
       const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
+      // Strip undefined fields from partial payloads so spread never overwrites existing values with undefined
+      const cleanPatch = Object.fromEntries(Object.entries(t).filter(([, v]) => v !== undefined));
 
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
-          // Only null-out when we have an explicit terminal status — never on partial updates
-          if (t.status && TERMINAL_STATUSES.includes(t.status)) return null;
-          // If still TAKEN or status not provided (partial update), keep merged
-          if (!t.status || t.status === 'TAKEN') return { ...old, ...t };
+          if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
+          return { ...old, ...cleanPatch };
         }
-        if (event.type === 'update' && !old && t.worker_id === me.id && t.status === 'TAKEN') {
-          return t; // New TAKEN task assigned to me
+        if (event.type === 'update' && !old && cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
+          return cleanPatch;
         }
         return old;
       });
@@ -238,11 +238,11 @@ export default function Layout() {
       queryClient.setQueryData(['activeClientTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
-          if (t.status && TERMINAL_STATUSES.includes(t.status)) return null;
-          if (!t.status || t.status === 'TAKEN') return { ...old, ...t };
+          if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
+          return { ...old, ...cleanPatch };
         }
-        if (event.type === 'update' && !old && t.client_id === me.id && t.status === 'TAKEN') {
-          return t;
+        if (event.type === 'update' && !old && cleanPatch.client_id === me.id && cleanPatch.status === 'TAKEN') {
+          return cleanPatch;
         }
         return old;
       });
