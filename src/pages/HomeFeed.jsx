@@ -73,22 +73,6 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
-  // Auto-switch to the tab with an active task if user hasn't manually chosen a tab
-  const didAutoSwitch = useRef(false);
-  useEffect(() => {
-    if (didAutoSwitch.current || sessionStorage.getItem('homeTabChosen')) return;
-    const hasActiveWorkerTask = !!activeWorkerTask;
-    const hasActiveClientTask = myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN');
-    if (hasActiveWorkerTask && !hasActiveClientTask) {
-      // worker has active task but no published tasks → go to available
-      didAutoSwitch.current = true;
-      setActiveTabRaw('available');
-    } else if (hasActiveClientTask) {
-      didAutoSwitch.current = true;
-      setActiveTabRaw('my_published');
-    }
-  }, [myTasks.length, activeWorkerTask]);
-
   // Active task I'm working on as a worker — seeded by Layout, kept live via WebSocket
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
@@ -99,6 +83,21 @@ export default function HomeFeed() {
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,
   });
+
+  // Auto-switch to the tab with an active task if user hasn't manually chosen a tab
+  const didAutoSwitch = useRef(false);
+  useEffect(() => {
+    if (didAutoSwitch.current || sessionStorage.getItem('homeTabChosen')) return;
+    const hasActiveWorkerTask = !!activeWorkerTask;
+    const hasActiveClientTask = myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN');
+    if (hasActiveWorkerTask && !hasActiveClientTask) {
+      didAutoSwitch.current = true;
+      setActiveTabRaw('available');
+    } else if (hasActiveClientTask) {
+      didAutoSwitch.current = true;
+      setActiveTabRaw('my_published');
+    }
+  }, [myTasks.length, activeWorkerTask]);
 
   // Active task I published that is currently TAKEN
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
