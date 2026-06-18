@@ -703,20 +703,25 @@ export default function TaskChatInterface({
         {/* Quick Replies */}
         {quickReplies.length > 0 && !loading && (
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 8, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
-            {quickReplies.map((reply, i) => (
-              <button key={i} onClick={() => handleQuickReply(reply)}
-                style={{
-                  flexShrink: 0, padding: '7px 14px', borderRadius: 20,
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  background: reply.startsWith('✅') ? 'linear-gradient(135deg,#059669,#047857)' : '#eff6ff',
-                  color: reply.startsWith('✅') ? 'white' : '#1a6fd4',
-                  border: reply.startsWith('✅') ? 'none' : '1.5px solid #bfdbfe',
-                  boxShadow: reply.startsWith('✅') ? '0 4px 14px rgba(5,150,105,0.3)' : '0 1px 4px rgba(26,111,212,0.1)',
-                  whiteSpace: 'nowrap',
-                }}>
-                {reply}
-              </button>
-            ))}
+            {quickReplies.map((reply, i) => {
+              const replyStr = typeof reply === 'string' ? reply : String(reply ?? '');
+              if (!replyStr) return null;
+              const isConfirm = replyStr.startsWith('✅');
+              return (
+                <button key={i} onClick={() => handleQuickReply(replyStr)}
+                  style={{
+                    flexShrink: 0, padding: '7px 14px', borderRadius: 20,
+                    fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    background: isConfirm ? 'linear-gradient(135deg,#059669,#047857)' : '#eff6ff',
+                    color: isConfirm ? 'white' : '#1a6fd4',
+                    border: isConfirm ? 'none' : '1.5px solid #bfdbfe',
+                    boxShadow: isConfirm ? '0 4px 14px rgba(5,150,105,0.3)' : '0 1px 4px rgba(26,111,212,0.1)',
+                    whiteSpace: 'nowrap',
+                  }}>
+                  {replyStr}
+                </button>
+              );
+            })}
           </div>
         )}
 
