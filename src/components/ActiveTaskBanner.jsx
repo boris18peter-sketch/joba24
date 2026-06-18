@@ -153,18 +153,18 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     }
   };
 
-  const handleOwnerConfirmComplete = async (t) => {
+  const handleOwnerConfirmComplete = async (task) => {
     if (completingTaskId) return;
-    setCompletingTaskId(t.id);
+    setCompletingTaskId(task.id);
     try {
-      const res = await base44.functions.invoke('completeTask', { taskId: t.id });
+      const res = await base44.functions.invoke('completeTask', { taskId: task.id });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
-      queryClient.invalidateQueries({ queryKey: ['task', t.id] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       toast.success(t('task_completed') || 'Task completed! 🎉');
       // Dispatch rating popup event
-      window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task: t } }));
+      window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task } }));
     } catch (err) {
       toast.error((t('error_colon') || 'Error: ') + err.message);
     } finally {
