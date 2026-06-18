@@ -6,11 +6,11 @@ import { MapPin, CheckCircle, Loader2 } from 'lucide-react';
  * Prioritizes results near the user's location (if available).
  * Allows free-text input and confirms via selection.
  */
-export default function AddressAutocomplete({ value, onSelect, error, onBlur }) {
+export default function AddressAutocomplete({ value, onSelect, error, onBlur, initialConfirmed = false }) {
   const [query, setQuery] = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmed, setConfirmed] = useState(initialConfirmed || !!value);
   const [userLocation, setUserLocation] = useState(null);
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
@@ -26,10 +26,10 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur }) 
     }
   }, []);
 
-  // Sync if parent resets value
+  // Sync if parent resets value or sets it externally
   useEffect(() => {
     if (!value) { setQuery(''); setConfirmed(false); }
-    else if (value !== query && !confirmed) { setQuery(value); }
+    else if (value !== query) { setQuery(value); if (value) setConfirmed(true); }
   }, [value]);
 
   const search = async (q) => {

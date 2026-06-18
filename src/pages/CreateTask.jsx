@@ -249,9 +249,17 @@ export default function CreateTask() {
         price: searchParams.get('price') || '',
         location_name: searchParams.get('location_name') || '',
         city: searchParams.get('city') || '',
+        lat: searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : null,
+        lng: searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : null,
+        address_building: searchParams.get('address_building') || '',
+        address_floor: searchParams.get('address_floor') || '',
+        address_apartment: searchParams.get('address_apartment') || '',
+        address_notes: searchParams.get('address_notes') || '',
         estimated_time: searchParams.get('estimated_time') || '1h',
         category: searchParams.get('category') || 'other',
-        approval_mode: searchParams.get('approval_mode') || 'instant',
+        approval_mode: searchParams.get('approval_mode') || 'manual',
+        payment_method: searchParams.get('payment_method') || '',
+        urgency_tag: searchParams.get('urgency_tag') || '',
       };
     }
     // Try to load saved draft
@@ -318,16 +326,15 @@ export default function CreateTask() {
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [moderationErrors, setModerationErrors] = useState({});
   const [checkingModeration, setCheckingModeration] = useState('');
-  // Track whether address was selected from autocomplete (not free text)
-  // In repost mode, location_name is pre-filled from URL — treat it as confirmed
-  const [addressConfirmed, setAddressConfirmed] = useState(!!(form.lat && form.lng) || (isRepost && !!form.location_name));
+  // Address is confirmed if we have a location (repost/edit pre-fills it, free text also accepted)
+  const [addressConfirmed, setAddressConfirmed] = useState(!!form.location_name);
 
   const fieldRefs = {
     title: useRef(null),
     description: useRef(null),
     price: useRef(null),
     location_name: useRef(null),
-    city: useRef(null),
+    payment_method: useRef(null),
   };
 
   // Auto-save draft on form change (debounced 1s)
@@ -557,11 +564,12 @@ export default function CreateTask() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
-      const order = ['description', 'price', 'location_name'];
+      const order = ['description', 'price', 'location_name', 'payment_method'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
         fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        fieldRefs[firstError].current.focus?.();
+        const input = fieldRefs[firstError].current.querySelector?.('input,textarea');
+        input?.focus();
       }
       return;
     }
@@ -1023,6 +1031,7 @@ export default function CreateTask() {
         />
 
         {/* Description — the main input. Title and category are auto-generated from this. */}
+        <div ref={fieldRefs.description}>
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>📝 תאר את המשימה *</Label>
@@ -1045,7 +1054,7 @@ export default function CreateTask() {
               {t('recording_press_stop')}
             </div>
           )}
-          <Textarea ref={fieldRefs.description} placeholder="לדוגמה: צריך צבעי לצבוע את הסלון ושני חדרי שינה בדירה ברחוב הרצל 15 תל אביב, הקירות לבנים ויש כבר צבע בבית. מוכן לשלם 800 ש״ח במזומן."
+          <Textarea placeholder="לדוגמה: צריך צבעי לצבוע את הסלון ושני חדרי שינה בדירה ברחוב הרצל 15 תל אביב, הקירות לבנים ויש כבר צבע בבית. מוכן לשלם 800 ש״ח במזומן."
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
@@ -1080,6 +1089,7 @@ export default function CreateTask() {
 
 
 
+        </div>
         {/* Images + Video */}
         <SectionCard>
           <Label className="text-sm font-bold mb-3 block" style={{ color: 'var(--text-1)' }}>{t('media')}</Label>
@@ -1087,9 +1097,10 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Price */}
+        <div ref={fieldRefs.price}>
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
-          <Input ref={fieldRefs.price} type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
+          <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
             value={form.price}
             onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
             disabled={hasActiveApplications}
@@ -1126,6 +1137,7 @@ export default function CreateTask() {
           )}
         </SectionCard>
 
+        </div>
         {/* Expiry + Urgency */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
@@ -1223,6 +1235,7 @@ export default function CreateTask() {
           <div ref={fieldRefs.location_name}>
             <AddressAutocomplete
               value={form.location_name}
+              initialConfirmed={!!form.location_name}
               error={!!errors.location_name}
               onBlur={() => {
                 if (form.location_name && !addressConfirmed) {
@@ -1235,10 +1248,8 @@ export default function CreateTask() {
                   set('city', city || '');
                   set('lat', lat);
                   set('lng', lng);
-                  // Confirm address even for free-text (lat/lng may be null for free text)
-                  const hasCoords = !!(lat && lng);
-                  setAddressConfirmed(hasCoords);
-                  if (hasCoords) setErrors(p => ({ ...p, location_name: false }));
+                  setAddressConfirmed(true);
+                  setErrors(p => ({ ...p, location_name: false }));
                 } else {
                   setAddressConfirmed(false);
                 }
@@ -1366,6 +1377,7 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Payment Method */}
+        <div ref={fieldRefs.payment_method}>
         <SectionCard>
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
@@ -1386,6 +1398,7 @@ export default function CreateTask() {
         {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
 
         </SectionCard>
+        </div>
 
         {/* Submit */}
         {(() => {

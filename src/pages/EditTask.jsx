@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -100,6 +100,12 @@ export default function EditTask() {
   const [form, setForm] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
   const [addressConfirmed, setAddressConfirmed] = useState(false);
+  const [errors, setErrors] = useState({});
+  const fieldRefs = {
+    description: useRef(null),
+    price: useRef(null),
+    location_name: useRef(null),
+  };
   const [extraFieldsText, setExtraFieldsText] = useState('');
   const isRepostMode = location.state?.repostMode;
 
@@ -156,10 +162,21 @@ export default function EditTask() {
   const inactiveBtn = { background: '#F1F5F9', color: '#475569', border: 'none' };
 
   const handleSave = async () => {
-    if (!form.title) { toast.error('חובה למלא כותרת'); return; }
-    if (!form.description) { toast.error('חובה למלא תיאור מפורט'); return; }
-    if (!form.price) { toast.error('חובה למלא מחיר'); return; }
-    if (!form.location_name) { toast.error('חובה למלא מיקום'); return; }
+    const newErrors = {};
+    if (!form.description) newErrors.description = true;
+    if (!form.price) newErrors.price = true;
+    if (!form.location_name) newErrors.location_name = true;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const order = ['description', 'price', 'location_name'];
+      const firstError = order.find(k => newErrors[k]);
+      if (firstError && fieldRefs[firstError]?.current) {
+        fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const input = fieldRefs[firstError].current.querySelector?.('input,textarea');
+        input?.focus();
+      }
+      return;
+    }
     if (me?.id !== task?.client_id) { toast.error('אין לך הרשאה לערוך משימה זו'); return; }
 
     setLoading(true);
@@ -285,6 +302,7 @@ export default function EditTask() {
         />
 
         {/* Title + Description */}
+        <div ref={fieldRefs.description}>
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מה צריך לעשות? *</Label>
           <Input
@@ -297,11 +315,13 @@ export default function EditTask() {
           <Textarea
             placeholder="תאר את המשימה בפירוט: מה בדיוק צריך לעשות, מה הציפיות, מה יש במקום..."
             value={form.description}
-            onChange={e => set('description', e.target.value)}
-            style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, resize: 'none' }}
+            onChange={e => { set('description', e.target.value); setErrors(p => ({ ...p, description: false })); }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.description ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, resize: 'none' }}
             rows={4}
           />
+          {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
         </SectionCard>
+        </div>
 
         {/* Images + Video */}
         <SectionCard>
@@ -319,17 +339,19 @@ export default function EditTask() {
         </SectionCard>
 
         {/* Price */}
+        <div ref={fieldRefs.price}>
         <SectionCard>
           <Label className="text-sm font-bold mb-2 block" style={{ color: '#0f2b6b' }}>מחיר (₪) *</Label>
           <Input
             type="number"
             placeholder="100"
             value={form.price}
-            onChange={e => hasActiveApplications ? null : set('price', e.target.value)}
+            onChange={e => { if (hasActiveApplications) return; set('price', e.target.value); setErrors(p => ({ ...p, price: false })); }}
             disabled={hasActiveApplications}
-            style={{ background: '#f4f7fb', border: '1.5px solid #dce8f5', borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
+            style={{ background: '#f4f7fb', border: `1.5px solid ${errors.price ? '#ef4444' : '#dce8f5'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
           />
           {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
+          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
           {!hasActiveApplications && <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} onAccept={p => set('price', String(p))} />}
 
           {/* Auto bump */}
@@ -355,6 +377,7 @@ export default function EditTask() {
             </div>
           )}
         </SectionCard>
+        </div>
 
         {/* Expiry */}
         <SectionCard>
@@ -369,24 +392,29 @@ export default function EditTask() {
         </SectionCard>
 
         {/* Location */}
+        <div ref={fieldRefs.location_name}>
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: '#0f2b6b' }}>
             <MapPin size={14} /> מיקום *
           </Label>
           <AddressAutocomplete
             value={form.location_name}
+            initialConfirmed={!!form.location_name}
+            error={!!errors.location_name}
             onSelect={({ location_name, city, lat, lng }) => {
               if (location_name) {
                 set('location_name', location_name);
-                set('city', city);
+                set('city', city || '');
                 set('lat', lat);
                 set('lng', lng);
                 setAddressConfirmed(true);
+                setErrors(p => ({ ...p, location_name: false }));
               } else {
                 setAddressConfirmed(false);
               }
             }}
           />
+          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
             <div>
               <p style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 4 }}>בניין / מספר בית</p>
@@ -410,6 +438,7 @@ export default function EditTask() {
             </div>
           </div>
         </SectionCard>
+        </div>
 
         {/* Time */}
         <SectionCard>
