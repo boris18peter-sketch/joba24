@@ -395,6 +395,7 @@ export default function TaskChatInterface({
 
   // Recording
   const startRecording = async () => {
+    try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
     audioChunksRef.current = [];
@@ -402,16 +403,24 @@ export default function TaskChatInterface({
     mr.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
       setTranscribing(true);
-      const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
-      const file = new File([blob], 'recording.webm', { type: mr.mimeType });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
-      setTranscribing(false);
-      if (text) sendMessage(text);
+      try {
+        const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
+        const file = new File([blob], 'recording.webm', { type: mr.mimeType });
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
+        if (text && typeof text === 'string' && text.trim()) sendMessage(text.trim());
+      } catch (e) {
+        console.error('Transcription error:', e);
+      } finally {
+        setTranscribing(false);
+      }
     };
     mr.start();
     mediaRecorderRef.current = mr;
     setRecording(true);
+    } catch (e) {
+      console.error('Recording error:', e);
+    }
   };
   const stopRecording = () => { mediaRecorderRef.current?.stop(); setRecording(false); };
 
@@ -549,7 +558,7 @@ export default function TaskChatInterface({
                   
                   {msg.media?.map((url, j) => (
                     <div key={j} style={{ marginTop: 8 }}>
-                      {url.match(/\.(mp4|webm|mov)/) ? (
+                      {typeof url === 'string' && url.match(/\.(mp4|webm|mov)/) ? (
                         <video src={url} controls style={{ maxWidth: 180, borderRadius: 10 }} />
                       ) : (
                         <img src={url} alt="" style={{ maxWidth: 180, borderRadius: 10 }} />
