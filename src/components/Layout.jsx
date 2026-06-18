@@ -742,55 +742,58 @@ export default function Layout() {
 
 
 
-      {/* Bottom Nav — hidden on map, create-task, edit-task pages */}
-      {!['/map', '/create-task'].includes(location.pathname) && !location.pathname.startsWith('/edit-task') && <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-        background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
-        boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
-        paddingBottom: 'max(0px, env(safe-area-inset-bottom))'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
-          {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
-            const active = location.pathname === to;
-            if (primary) {
+      {/* Bottom Nav — rendered as portal to escape CSS transform context (prevents nav sliding during page transitions) */}
+      {!['/map', '/create-task'].includes(location.pathname) && !location.pathname.startsWith('/edit-task') && !location.pathname.startsWith('/task/') && !location.pathname.startsWith('/chat/') && createPortal(
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
+          background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
+          boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
+          paddingBottom: 'max(0px, env(safe-area-inset-bottom))'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
+            {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
+              const active = location.pathname === to;
+              if (primary) {
+                return (
+                  <button id="onboarding-create-btn" key={to} onClick={() => {
+                    if (!isAuthenticated) {navigate(to);return;}
+                    gate(() => navigate(to));
+                  }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    <div style={{
+                      width: 56, height: 56, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 4px 20px rgba(26,111,212,0.45)'
+                    }}>
+                      <Icon size={24} color="white" />
+                    </div>
+                    <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
+                  </button>
+                );
+              }
               return (
-                <button id="onboarding-create-btn" key={to} onClick={() => {
-                  if (!isAuthenticated) {navigate(to);return;}
-                  gate(() => navigate(to));
-                }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 20px rgba(26,111,212,0.45)'
-                  }}>
-                    <Icon size={24} color="white" />
+                <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
+                  <div style={{ position: 'relative' }}>
+                    <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
+                    {badge > 0 &&
+                    <div style={{
+                      position: 'absolute', top: -6, right: -8,
+                      background: '#dc2626', color: 'white',
+                      fontSize: 9, fontWeight: 900,
+                      width: 16, height: 16, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1.5px solid white'
+                    }}>{badge}</div>
+                    }
                   </div>
-                  <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
-                </button>);
-
-            }
-            return (
-              <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
-                <div style={{ position: 'relative' }}>
-                  <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
-                  {badge > 0 &&
-                  <div style={{
-                    position: 'absolute', top: -6, right: -8,
-                    background: '#dc2626', color: 'white',
-                    fontSize: 9, fontWeight: 900,
-                    width: 16, height: 16, borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '1.5px solid white'
-                  }}>{badge}</div>
-                  }
-                </div>
-                <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
-              </Link>);
-
-          })}
-        </div>
-      </div>}
+                  <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>);
 
 }

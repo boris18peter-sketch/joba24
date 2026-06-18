@@ -270,10 +270,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  // Applicant count comes directly from task.applicants prop (kept in sync by Layout's single broadcaster)
-  // No local state or subscriptions needed here
-  const liveApplicantCount = task.applicants?.filter(a => a.status !== 'cancelled' && a.status !== 'rejected').length
-    ?? (task.applicants?.length || 0);
+  // Applicant count — task.applicants is an array of {worker_id, worker_name} objects (no status field)
+  // so we just use the raw length; kept in sync by Layout/HomeFeed websocket handlers
+  const liveApplicantCount = task.applicants?.length || 0;
 
   useEffect(() => {
     if (!showMenu) return;

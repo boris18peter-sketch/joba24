@@ -42,6 +42,8 @@ export default function HomeFeed() {
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
   const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'my_published');
   const setActiveTab = (tab) => { sessionStorage.setItem('homeTab', tab); sessionStorage.setItem('homeTabChosen', '1'); setActiveTabRaw(tab); };
+
+
   const [myPubTab, setMyPubTab] = useState('active'); // 'active' | 'completed' | 'other'
 
   // New task highlight — set when navigating back from CreateTask with ?newTaskId=
@@ -71,16 +73,21 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
-  // Auto-switch to my_published silently if user has active tasks and hasn't manually chosen a tab
+  // Auto-switch to the tab with an active task if user hasn't manually chosen a tab
   const didAutoSwitch = useRef(false);
   useEffect(() => {
-    if (!didAutoSwitch.current && myTasks.length > 0 && myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN')) {
+    if (didAutoSwitch.current || sessionStorage.getItem('homeTabChosen')) return;
+    const hasActiveWorkerTask = !!activeWorkerTask;
+    const hasActiveClientTask = myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN');
+    if (hasActiveWorkerTask && !hasActiveClientTask) {
+      // worker has active task but no published tasks → go to available
       didAutoSwitch.current = true;
-      if (!sessionStorage.getItem('homeTabChosen')) {
-        setActiveTab('my_published');
-      }
+      setActiveTabRaw('available');
+    } else if (hasActiveClientTask) {
+      didAutoSwitch.current = true;
+      setActiveTabRaw('my_published');
     }
-  }, [myTasks.length]);
+  }, [myTasks.length, activeWorkerTask]);
 
   // Active task I'm working on as a worker — seeded by Layout, kept live via WebSocket
   const { data: activeWorkerTask } = useQuery({
@@ -284,19 +291,11 @@ export default function HomeFeed() {
         // Data already updated via setQueryData above — no extra network call needed
       }
 
-      // If it's an application for one of MY published tasks — sync the applicants panel + update task applicant count
-      if (isForMyTask) {
-        // Use setQueryData instead of invalidate to avoid extra API calls
-        queryClient.setQueryData(['applications', appData.task_id], (old = []) => {
-          if (!old) return old;
-          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
-          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
-          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
-          return old;
-        });
-        // Also bump the task.applicants array so liveApplicantCount in TaskCard updates immediately
-        const updateApplicants = (old = []) => {
-          if (event.type === 'create' && (appData.status === 'pending' || appData.status === 'approved')) {
+      // Always update applicants array for both my tasks and all tasks (for live button color change)
+      {
+        const updateApplicantsGlobal = (old = []) => {
+          if (!old || !Array.isArray(old)) return old;
+          if (event.type === 'create') {
             return old.map(t => t.id === appData.task_id
               ? { ...t, applicants: [...(t.applicants || []).filter(a => a.worker_id !== appData.worker_id), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
               : t
@@ -310,8 +309,21 @@ export default function HomeFeed() {
           }
           return old;
         };
-        queryClient.setQueryData(['myTasks', me.id], updateApplicants);
-        queryClient.setQueryData(['allTasks'], updateApplicants);
+        queryClient.setQueryData(['myTasks', me.id], updateApplicantsGlobal);
+        queryClient.setQueryData(['allTasks'], updateApplicantsGlobal);
+      }
+
+      // If it's an application for one of MY published tasks — sync the applicants panel
+      if (isForMyTask) {
+        // Use setQueryData instead of invalidate to avoid extra API calls
+        queryClient.setQueryData(['applications', appData.task_id], (old = []) => {
+          if (!old) return old;
+          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
+          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
+          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
+          return old;
+        });
+        // applicants array already updated by the global handler above
       }
     });
 
@@ -544,16 +556,31 @@ export default function HomeFeed() {
       {!isAuthenticated && <LoginBannerCarousel activeTab={activeTab} />}
 
       {/* Segmented Control Tabs */}
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
-        <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
-          <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'my_published' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
-          <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
-            {t('nav_create_task').replace('+ ', '')}
-            {hasNewApplicants && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 12, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white', animation: 'pulseRedDot 1.5s infinite' }} />}
-          </button>
-          <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', transition: 'color 150ms ease' }}>{t('all_tasks')}</button>
-        </div>
-      </div>
+      {(() => {
+        const hasPublished = myTasks.length > 0;
+        const myPubLabel = hasPublished ? 'משימות שפרסמתי' : t('nav_create_task').replace('+ ', '');
+        const hasActiveWorkerTaskForBadge = !!activeWorkerTask;
+        const hasActiveClientTaskForBadge = myTasks.some(t => t.status === 'TAKEN' || t.status === 'OPEN');
+        // Red dot on "available" tab if worker has an active task there
+        const availableDot = isAuthenticated && hasActiveWorkerTaskForBadge;
+        // Red dot on "my_published" tab if client has active task or new applicants
+        const myPubDot = isAuthenticated && (hasNewApplicants || hasActiveClientTaskForBadge);
+        return (
+          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-2)', borderBottom: '1.5px solid var(--border-1)', padding: '6px 16px', position: 'sticky', top: 0, zIndex: 50, height: 50, boxSizing: 'border-box', display: 'flex', alignItems: 'center', marginTop: -1 }}>
+            <div style={{ display: 'flex', background: 'var(--surface-3)', borderRadius: 99, padding: 3, width: '100%', position: 'relative', height: 38, alignItems: 'center' }}>
+              <div style={{ position: 'absolute', top: 3, bottom: 3, width: 'calc(50% - 3px)', right: activeTab === 'my_published' ? 3 : 'calc(50%)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 99, transition: 'right 220ms cubic-bezier(0.16,1,0.3,1)', zIndex: 1, boxShadow: '0 4px 12px rgba(26,111,212,0.25)' }} />
+              <button onClick={() => setActiveTab('my_published')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'my_published' ? 800 : 600, color: activeTab === 'my_published' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+                {myPubLabel}
+                {myPubDot && activeTab !== 'my_published' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
+              </button>
+              <button onClick={() => setActiveTab('available')} style={{ flex: 1, background: 'none', border: 'none', fontSize: 13.5, fontWeight: activeTab === 'available' ? 800 : 600, color: activeTab === 'available' ? 'white' : '#64748b', zIndex: 2, cursor: 'pointer', height: '100%', position: 'relative', transition: 'color 150ms ease' }}>
+                {t('all_tasks')}
+                {availableDot && activeTab !== 'available' && <span style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 10, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '1.5px solid var(--surface-3)', animation: 'pulseRedDot 1.5s infinite' }} />}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Active Task Banner — below segmented control */}
       {activeTab === 'available' && activeWorkerTask && (
