@@ -16,7 +16,6 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link } from 'react-router-dom';
-import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
@@ -691,7 +690,7 @@ export default function HomeFeed() {
               </div>
 
               {filteredPub.length === 0 && myPubTab === 'active' && myTasks.length > 0 ? (
-                <EmptyMyTasksState />
+                <PublishTaskOnboarding />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
