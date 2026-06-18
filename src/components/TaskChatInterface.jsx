@@ -35,11 +35,12 @@ function AddressChatCard({ label, addressState, onChange, onConfirm }) {
 
   const handleAddressSelect = ({ location_name, city, lat, lng }) => {
     const hasCoords = !!(lat && lng);
-    onChange({
+    const updatedAddr = {
       location_name, city: city || '', lat: lat || null, lng: lng || null,
       address_building: building, address_floor: floor,
       address_apartment: apartment, address_notes: notes,
-    });
+    };
+    onChange(updatedAddr);
     setConfirmed(hasCoords);
   };
 
@@ -260,7 +261,39 @@ export default function TaskChatInterface({
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [taskState, setTaskState] = useState(initialForm);
+  
+  // Task Draft — Single Source of Truth
+  const [taskDraft, setTaskDraft] = useState({
+    category: initialForm.category || null,
+    title: initialForm.title || null,
+    description: initialForm.description || null,
+    price: initialForm.price || null,
+    location_name: initialForm.location_name || null,
+    city: initialForm.city || null,
+    lat: initialForm.lat || null,
+    lng: initialForm.lng || null,
+    address_building: initialForm.address_building || null,
+    address_floor: initialForm.address_floor || null,
+    address_apartment: initialForm.address_apartment || null,
+    address_notes: initialForm.address_notes || null,
+    payment_method: initialForm.payment_method || null,
+    estimated_time: initialForm.estimated_time || null,
+    urgency_tag: initialForm.urgency_tag || null,
+    requirements: initialForm.requirements || {},
+    images: initialForm.images || [],
+    video_url: initialForm.video_url || null,
+    is_story: initialForm.is_story || false,
+    auto_bump_enabled: initialForm.auto_bump_enabled || false,
+    max_price: initialForm.max_price || null,
+    requires_invoice: initialForm.requires_invoice || false,
+    to_address: initialForm.to_address || null,
+    to_city: initialForm.to_city || null,
+    to_lat: initialForm.to_lat || null,
+    to_lng: initialForm.to_lng || null,
+    to_building: initialForm.to_building || null,
+    to_floor: initialForm.to_floor || null,
+  });
+
   const [enabledFeatures, setEnabledFeatures] = useState({});
   const [featureConfig, setFeatureConfig] = useState({});
   const [publishReady, setPublishReady] = useState(false);
@@ -283,6 +316,7 @@ export default function TaskChatInterface({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
+  const draftHistoryRef = useRef([]);
 
   // Scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
@@ -304,7 +338,7 @@ export default function TaskChatInterface({
     setMessages(initMessages);
   }, []);
 
-  // Send
+  // Send — STATE-DRIVEN approach
   const sendMessage = async (text, mediaUrls = []) => {
     if (!text?.trim() && !mediaUrls.length) return;
     const userMsg = { role: 'user', content: text || '', media: mediaUrls.length > 0 ? mediaUrls : undefined };
@@ -316,37 +350,50 @@ export default function TaskChatInterface({
     try {
       const conversationHistory = updatedMessages.filter(m => m.role !== 'system').slice(-12)
         .map(m => ({ role: m.role === 'agent' ? 'agent' : 'user', content: m.content }));
-      const fullState = { ...taskState, ...enabledFeatures, ...featureConfig };
       
+      // STEP 1: Send Task Draft (not taskState) as the primary context
       const response = await base44.functions.invoke('taskChatAgent', {
-        current_state: fullState,
+        current_state: taskDraft, // Single source of truth
         user_message: text + (mediaUrls.length ? '\n[צירפתי ' + mediaUrls.length + ' קבצי מדיה]' : ''),
         conversation_history: conversationHistory.slice(0, -1),
       });
 
       const agentData = response.data;
 
-      // Update quick replies
-      setQuickReplies(agentData.quick_replies || []);
-
+      // STEP 2: Extract and update Task Draft
       if (agentData.extracted_data && Object.keys(agentData.extracted_data).length > 0) {
         const data = { ...agentData.extracted_data };
-        // Normalize payment_method to English enum values
+        // Normalize payment_method
         if (data.payment_method) {
           const pm = data.payment_method;
           if (/מזומן|מזומנים|cash/i.test(pm)) data.payment_method = 'Cash';
           else if (/ביט|bit/i.test(pm)) data.payment_method = 'Bit';
           else if (/פייבוקס|paybox/i.test(pm)) data.payment_method = 'PayBox';
         }
-        setTaskState(prev => ({ ...prev, ...data }));
+        // Update Task Draft atomically
+        setTaskDraft(prev => {
+          const updated = { ...prev, ...data };
+          draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+          return updated;
+        });
       }
-      if (agentData.category_detected && !taskState.category) {
-        setTaskState(prev => ({ ...prev, category: agentData.category_detected }));
+
+      // STEP 3: Lock category if detected (never ask again)
+      if (agentData.category_detected && !taskDraft.category) {
+        setTaskDraft(prev => {
+          const updated = { ...prev, category: agentData.category_detected };
+          draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+          return updated;
+        });
       }
+
+      // Update UI states
       if (agentData.completeness_pct !== undefined) setCompletenessPct(agentData.completeness_pct);
       if (agentData.marketplace_insight) setMarketplaceInsight(agentData.marketplace_insight);
       if (agentData.summary) setTaskSummary(agentData.summary);
 
+      setQuickReplies(agentData.quick_replies || []);
+      
       const isReady = agentData.publish_ready || agentData.all_mandatory_filled;
       setPublishReady(isReady);
 
@@ -363,7 +410,6 @@ export default function TaskChatInterface({
       if (agentData.show_requirements && !showRequirements) setShowRequirements(true);
       if (agentData.show_features && !showFeatures) setShowFeatures(true);
       
-      // Auto-dismiss requirements if agent moved past them
       if (!agentData.show_requirements && showRequirements && agentData.show_features) {
         setShowRequirements(false);
       }
@@ -376,12 +422,45 @@ export default function TaskChatInterface({
     }
   };
 
-  const handleFeatureToggle = (key) => setEnabledFeatures(prev => ({ ...prev, [key]: !prev[key] }));
-  const handleFeatureConfig = (key, value) => setFeatureConfig(prev => ({ ...prev, [key]: value }));
-  const handleRequirementToggle = (key) => setTaskState(prev => ({
-    ...prev, requirements: { ...(prev.requirements || {}), [key]: !(prev.requirements || {})[key] }
-  }));
-  const handleInvoiceToggle = () => setEnabledFeatures(prev => ({ ...prev, requires_invoice: !prev.requires_invoice }));
+  const handleFeatureToggle = (key) => {
+    setEnabledFeatures(prev => ({ ...prev, [key]: !prev[key] }));
+    if (key === 'is_story') {
+      setTaskDraft(prev => {
+        const updated = { ...prev, is_story: !prev.is_story };
+        draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+        return updated;
+      });
+    } else if (key === 'auto_bump_enabled') {
+      setTaskDraft(prev => {
+        const updated = { ...prev, auto_bump_enabled: !prev.auto_bump_enabled };
+        draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+        return updated;
+      });
+    }
+  };
+  const handleFeatureConfig = (key, value) => {
+    setFeatureConfig(prev => ({ ...prev, [key]: value }));
+    if (key === 'max_price') {
+      setTaskDraft(prev => {
+        const updated = { ...prev, max_price: value ? Number(value) : null };
+        draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+        return updated;
+      });
+    }
+  };
+  const handleRequirementToggle = (key) => setTaskDraft(prev => {
+    const updated = { ...prev, requirements: { ...(prev.requirements || {}), [key]: !(prev.requirements || {})[key] } };
+    draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+    return updated;
+  });
+  const handleInvoiceToggle = () => {
+    setEnabledFeatures(prev => ({ ...prev, requires_invoice: !prev.requires_invoice }));
+    setTaskDraft(prev => {
+      const updated = { ...prev, requires_invoice: !prev.requires_invoice };
+      draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+      return updated;
+    });
+  };
 
   const handleSkipRequirements = () => {
     setShowRequirements(false);
@@ -436,8 +515,16 @@ export default function TaskChatInterface({
     setUploading(false);
     const images = urls.filter(u => u.type.startsWith('image/')).map(u => u.url);
     const video = urls.find(u => u.type.startsWith('video/'));
-    if (images.length > 0) setTaskState(prev => ({ ...prev, images: [...(prev.images || []), ...images].slice(0, 4) }));
-    if (video) setTaskState(prev => ({ ...prev, video_url: video.url }));
+    if (images.length > 0) setTaskDraft(prev => {
+      const updated = { ...prev, images: [...(prev.images || []), ...images].slice(0, 4) };
+      draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+      return updated;
+    });
+    if (video) setTaskDraft(prev => {
+      const updated = { ...prev, video_url: video.url };
+      draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+      return updated;
+    });
     sendMessage('צירפתי מדיה 📎', urls.map(u => u.url));
   };
 
@@ -445,7 +532,8 @@ export default function TaskChatInterface({
   const handlePublish = async () => {
     setPublishing(true);
     try {
-      await onPublish({ ...taskState, ...enabledFeatures, ...featureConfig });
+      // Use Task Draft as source of truth when publishing
+      await onPublish({ ...taskDraft, ...enabledFeatures, ...featureConfig });
     } catch (err) {
       setMessages(prev => [...prev, { role: 'agent', content: 'הייתה תקלה בפרסום. נסה שוב.' }]);
     } finally { setPublishing(false); }
@@ -503,8 +591,8 @@ export default function TaskChatInterface({
         </div>
       </div>
 
-      {/* Live Draft Card */}
-      <LiveDraftCard taskState={taskState} completenessPct={completenessPct} enabledFeatures={enabledFeatures} />
+      {/* Live Draft Card — uses Task Draft, not taskState */}
+      <LiveDraftCard taskState={taskDraft} completenessPct={completenessPct} enabledFeatures={enabledFeatures} />
 
       {/* Messages */}
       <div style={{ 
@@ -608,30 +696,38 @@ export default function TaskChatInterface({
               label={showAddressInput.label || '📍 כתובת'}
               addressState={showAddressInput.type === 'destination' ? addressDest : addressOrigin}
               onChange={(data) => {
-                if (showAddressInput.type === 'destination') setAddressDest(prev => ({ ...prev, ...data }));
-                else setAddressOrigin(prev => ({ ...prev, ...data }));
+               if (showAddressInput.type === 'destination') setAddressDest(prev => ({ ...prev, ...data }));
+               else setAddressOrigin(prev => ({ ...prev, ...data }));
               }}
               onConfirm={() => {
-                const addrData = showAddressInput.type === 'destination' ? addressDest : addressOrigin;
-                if (showAddressInput.type === 'destination') {
-                  setTaskState(prev => ({
-                    ...prev,
-                    to_address: addrData.location_name, to_city: addrData.city,
-                    to_lat: addrData.lat, to_lng: addrData.lng,
-                    to_building: addrData.address_building, to_floor: addrData.address_floor,
-                  }));
-                  sendMessage(`כתובת יעד: ${addrData.location_name}${addrData.address_building ? ' בנין ' + addrData.address_building : ''}${addrData.address_floor ? ' קומה ' + addrData.address_floor : ''}`);
-                } else {
-                  setTaskState(prev => ({
-                    ...prev,
-                    location_name: addrData.location_name, city: addrData.city,
-                    lat: addrData.lat, lng: addrData.lng,
-                    address_building: addrData.address_building, address_floor: addrData.address_floor,
-                    address_apartment: addrData.address_apartment, address_notes: addrData.address_notes,
-                  }));
-                  sendMessage(`כתובת: ${addrData.location_name}${addrData.address_building ? ' בנין ' + addrData.address_building : ''}${addrData.address_floor ? ' קומה ' + addrData.address_floor : ''}`);
-                }
-                setShowAddressInput(null);
+               const addrData = showAddressInput.type === 'destination' ? addressDest : addressOrigin;
+               if (showAddressInput.type === 'destination') {
+                 setTaskDraft(prev => {
+                   const updated = {
+                     ...prev,
+                     to_address: addrData.location_name, to_city: addrData.city,
+                     to_lat: addrData.lat, to_lng: addrData.lng,
+                     to_building: addrData.address_building, to_floor: addrData.address_floor,
+                   };
+                   draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+                   return updated;
+                 });
+                 sendMessage(`כתובת יעד: ${addrData.location_name}${addrData.address_building ? ' בנין ' + addrData.address_building : ''}${addrData.address_floor ? ' קומה ' + addrData.address_floor : ''}`);
+               } else {
+                 setTaskDraft(prev => {
+                   const updated = {
+                     ...prev,
+                     location_name: addrData.location_name, city: addrData.city,
+                     lat: addrData.lat, lng: addrData.lng,
+                     address_building: addrData.address_building, address_floor: addrData.address_floor,
+                     address_apartment: addrData.address_apartment, address_notes: addrData.address_notes,
+                   };
+                   draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
+                   return updated;
+                 });
+                 sendMessage(`כתובת: ${addrData.location_name}${addrData.address_building ? ' בנין ' + addrData.address_building : ''}${addrData.address_floor ? ' קומה ' + addrData.address_floor : ''}`);
+               }
+               setShowAddressInput(null);
               }}
             />
           </div>
@@ -648,8 +744,8 @@ export default function TaskChatInterface({
               </span>
             </div>
             <RequirementsCardGroup
-              category={taskState.category || 'other'}
-              requirements={taskState.requirements || {}}
+              category={taskDraft.category || 'other'}
+              requirements={taskDraft.requirements || {}}
               onToggle={handleRequirementToggle}
               onInvoiceToggle={handleInvoiceToggle}
               invoiceEnabled={!!enabledFeatures.requires_invoice}
