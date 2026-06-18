@@ -15,7 +15,6 @@ import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
-import CoinFlyAnimation from '@/components/CoinFlyAnimation';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
@@ -263,8 +262,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showMenu, setShowMenu] = useState(false);
   const [showCardSuccess, setShowCardSuccess] = useState(false);
   const [cardSuccessCredits, setCardSuccessCredits] = useState(0);
-  const [coinFlyActive, setCoinFlyActive] = useState(false);
-  const [coinFlyDir, setCoinFlyDir] = useState('debit');
   const [applyBtnPos, setApplyBtnPos] = useState(null);
   const cardRef = useRef(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
@@ -306,12 +303,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      if (cardRef.current) {
-        const r = cardRef.current.getBoundingClientRect();
-        setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-      }
-      setCoinFlyDir('credit');
-      setCoinFlyActive(true);
       toast.success(t('cancelled_credits_returned') || 'הבקשה בוטלה והקרדיטים הוחזרו 🪙');
     } catch {
       // Rollback optimistic update
@@ -328,8 +319,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     setShowCardSuccess(true);
     setCardSuccessCredits(creditsCharged);
     setTimeout(() => setShowCardSuccess(false), 4000);
-    setCoinFlyDir('debit');
-    setCoinFlyActive(true);
     const appRecord = realApp || { task_id: task.id, worker_id: currentUserId, status: 'pending', id: `opt_${task.id}` };
     queryClient.setQueryData(['myApplicationsFeed', currentUserId], (old = []) => {
       const without = old.filter(a => !(a.task_id === task.id && a.worker_id === currentUserId));
@@ -788,15 +777,6 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           />
         );
       })()}
-
-      <CoinFlyAnimation
-        trigger={coinFlyActive}
-        count={8}
-        direction={coinFlyDir}
-        toPos={coinFlyDir === 'debit' ? applyBtnPos : undefined}
-        fromPos={coinFlyDir === 'credit' ? applyBtnPos : undefined}
-        onDone={() => setCoinFlyActive(false)}
-      />
 
       <style>{`
         @keyframes pulse-app { 0%,100%{opacity:1}50%{opacity:0.4} }

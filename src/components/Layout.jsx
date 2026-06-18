@@ -15,7 +15,6 @@ import VerifyModal from '@/components/VerifyModal';
 import NotificationsPermissionPrompt from '@/components/NotificationsPermissionPrompt';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
-import CoinEarnedToast from '@/components/CoinEarnedToast';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import RatingModal from '@/components/RatingModal';
@@ -92,15 +91,9 @@ export default function Layout() {
     }
   }, [me?.id, isAuthenticated]);
 
-  // Fire coin_earned event when worker_credits increases
+  // Track worker_credits changes (for future use)
   useEffect(() => {
-    if (!me?.worker_credits) return;
-    const prev = prevCreditsRef.current;
-    if (prev !== null && me.worker_credits > prev) {
-      const gained = me.worker_credits - prev;
-      window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: gained, label: t('credits_label') } }));
-    }
-    prevCreditsRef.current = me.worker_credits;
+    prevCreditsRef.current = me?.worker_credits ?? null;
   }, [me?.worker_credits]);
   // Update last_active_at once per calendar day per user
   useEffect(() => {
@@ -356,7 +349,6 @@ export default function Layout() {
       const tx = event.data;
       if (tx.user_id !== me.id) return;
       if (tx.type === 'Loyalty_Reward') {
-        window.dispatchEvent(new CustomEvent('coin_earned', { detail: { amount: tx.amount, label: t('loyalty_reward_toast') } }));
         addNotification({ type: 'new_review', reviewerName: 'מפרסם המשימה', rating: 5, preview: t('loyalty_reward_notif').replace('{n}', tx.amount) });
         queryClient.invalidateQueries({ queryKey: ['me'] });
       }
@@ -580,7 +572,6 @@ export default function Layout() {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: '#f4f7fb', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
-      <CoinEarnedToast />
       <NotificationsPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
