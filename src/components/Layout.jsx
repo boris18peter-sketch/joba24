@@ -224,12 +224,19 @@ export default function Layout() {
       const cleanPatch = Object.fromEntries(Object.entries(t).filter(([, v]) => v !== undefined));
 
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+        console.log('[Layout WS] activeWorkerTask setQueryData — event.type:', event.type, 'event.id:', event.id, 'old:', old?.id, old?.status, old?.worker_status, '| cleanPatch.status:', cleanPatch.status, 'cleanPatch.worker_status:', cleanPatch.worker_status);
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
-          if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
-          return { ...old, ...cleanPatch };
+          if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) {
+            console.log('[Layout WS] → TERMINAL, setting null');
+            return null;
+          }
+          const next = { ...old, ...cleanPatch };
+          console.log('[Layout WS] → merging OK, new worker_status:', next.worker_status);
+          return next;
         }
         if (event.type === 'update' && !old && cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
+          console.log('[Layout WS] → new TAKEN task, setting from patch');
           return cleanPatch;
         }
         return old;

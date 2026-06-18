@@ -213,13 +213,20 @@ export default function HomeFeed() {
       if (event.type === 'update') {
         // Strip undefined fields so partial payloads never overwrite existing values with undefined
         const cleanPatch = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
+        console.log('[HomeFeed WS] update event.id:', event.id, 'cleanPatch:', JSON.stringify(cleanPatch));
         queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+          console.log('[HomeFeed WS] activeWorkerTask old:', old?.id, old?.status, old?.worker_status, '| matching:', old?.id === event.id);
           if (old?.id === event.id) {
-            if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
-            return { ...old, ...cleanPatch };
+            if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) {
+              console.log('[HomeFeed WS] → TERMINAL, setting null');
+              return null;
+            }
+            const next = { ...old, ...cleanPatch };
+            console.log('[HomeFeed WS] → merging, new worker_status:', next.worker_status, 'status:', next.status);
+            return next;
           }
-          // New TAKEN task assigned to me — show banner immediately
           if (cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
+            console.log('[HomeFeed WS] → new TAKEN task assigned');
             return cleanPatch;
           }
           return old;

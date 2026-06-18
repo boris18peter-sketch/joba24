@@ -105,6 +105,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     setUpdating(true);
 
     const update = { worker_status: action.nextKey };
+    console.log('[Banner] handleQuickAction START — task.id:', task.id, 'update:', update);
     if (action.nextKey === 'on_the_way' && !task.on_the_way_at) {
       update.on_the_way_at = new Date().toISOString();
     } else if (action.nextKey === 'arrived' && !task.arrived_at) {
@@ -116,12 +117,11 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
     // ── Optimistic update — update cache immediately so UI responds instantly ──
     const optimisticTask = { ...task, ...update };
     queryClient.setQueryData(['task', task.id], optimisticTask);
-    queryClient.setQueryData(['tasks'], (old) =>
-      Array.isArray(old) ? old.map(t => t.id === task.id ? optimisticTask : t) : old
-    );
-    queryClient.setQueryData(['myTasks'], (old) =>
-      Array.isArray(old) ? old.map(t => t.id === task.id ? optimisticTask : t) : old
-    );
+    // Also update activeWorkerTask cache optimistically so banner stays up-to-date
+    queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
+      console.log('[Banner] optimistic activeWorkerTask — old:', old?.worker_status, '→ new:', update.worker_status);
+      return old?.id === task.id ? { ...old, ...update } : old;
+    });
 
     toast.success(action.label + ' ✓');
     setPendingAction(null);
@@ -145,9 +145,8 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
       );
       } else {
         await base44.entities.Task.update(task.id, update);
+        console.log('[Banner] DB write done, invalidating task query');
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       }
     } catch {
       toast.error(t('error_saving') || 'Error saving — try again');
