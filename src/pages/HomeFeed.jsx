@@ -17,6 +17,7 @@ import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
+import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
@@ -657,7 +658,7 @@ export default function HomeFeed() {
 
         {/* ── My Published Tasks Tab ───────────────────────────── */}
         {activeTab === 'my_published' && myTasks.length === 0 && (
-          <PublishTaskOnboarding />
+          <EmptyMyTasksState />
         )}
         {activeTab === 'my_published' && myTasks.length > 0 && (() => {
           const pubTab = MY_PUB_TABS.find(t => t.key === myPubTab);
@@ -690,7 +691,7 @@ export default function HomeFeed() {
               </div>
 
               {filteredPub.length === 0 && myPubTab === 'active' && myTasks.length > 0 ? (
-                <PublishTaskOnboarding />
+                <EmptyMyTasksState />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
