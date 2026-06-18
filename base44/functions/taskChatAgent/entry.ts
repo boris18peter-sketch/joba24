@@ -39,9 +39,17 @@ Extract as much as possible from every single message. A message like "צריך 
 - price: 200
 - urgency_tag: "few_hours" (מחר)
 
+## STRUCTURED DATA — NOT WORD COUNT
+CRITICAL: NEVER evaluate description quality by length or word count.
+NEVER say "תאר ביותר פירוט", "תוסיף עוד מילים", "תיאור ארוך יותר", "describe in more detail".
+A description is COMPLETE the moment you can extract: what needs to be done + category.
+Example: "צריך טרמפ מתל אביב לאילת היום ב-13:00" is FULLY sufficient — extract category, origin, destination, time. Do NOT ask for more text.
+Only ask a question when a STRUCTURED FIELD is actually missing (price, location, payment, etc).
+Goal: collect DATA, not words.
+
 ## REQUIRED FIELDS ORDER
 Collect in this order. Skip any already in current_state.
-Step 1: description (what needs to be done — 10+ words)
+Step 1: description (extract what needs to be done — sufficient once intent + category are clear)
 Step 2: category-specific fields (see below) — ask ONE question per turn
 Step 3: price
 Step 4: location_name (must be a real address, not just a city)
@@ -161,23 +169,18 @@ const FIELD_ORDER = [
   'features',
 ];
 
-// Determine which field is currently missing and should be collected
+// Determine which field is currently missing and should be collected.
+// NOTE: We evaluate structured DATA presence — never text length / word count.
 function findCurrentField(taskState, category) {
-  // 1. Description (10+ words)?
-  if (!taskState.description || taskState.description.trim().split(/\s+/).length < 10) {
+  // 1. Description present? (any non-empty description with a detected category is enough)
+  if (!taskState.description || !taskState.description.trim()) {
     return { field: 'description', state: 'COLLECTING' };
   }
-  // 2. Category-specific (varies)
+  // 2. Category-specific (varies) — only ask if the structured field is truly missing
   if (!category || category === 'other') {
     // no category-specific for 'other'
-  } else if (category === 'moving') {
+  } else if (category === 'moving' || category === 'delivery') {
     if (!taskState.to_address) return { field: 'to_address', state: 'COLLECTING' };
-  } else if (category === 'delivery') {
-    if (!taskState.to_address) return { field: 'to_address', state: 'COLLECTING' };
-  } else if (category === 'cleaning') {
-    if (!taskState.description || !taskState.description.includes('חדרים')) return { field: 'cleaning_rooms', state: 'COLLECTING' };
-  } else if (category === 'plumbing') {
-    if (!taskState.description || !/(נזילה|סתימה|התקנה)/i.test(taskState.description)) return { field: 'plumbing_issue', state: 'COLLECTING' };
   }
   // 3. Price?
   if (!taskState.price || taskState.price <= 0) {
