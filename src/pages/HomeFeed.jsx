@@ -295,35 +295,23 @@ export default function HomeFeed() {
           return old;
         });
         // Also bump the task.applicants array so liveApplicantCount in TaskCard updates immediately
-        if (event.type === 'create' && (appData.status === 'pending' || appData.status === 'approved')) {
-          queryClient.setQueryData(['myTasks', me.id], (old = []) =>
-            old.map(t => t.id === appData.task_id
-              ? { ...t, applicants: [...(t.applicants || []), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
+        const updateApplicants = (old = []) => {
+          if (event.type === 'create' && (appData.status === 'pending' || appData.status === 'approved')) {
+            return old.map(t => t.id === appData.task_id
+              ? { ...t, applicants: [...(t.applicants || []).filter(a => a.worker_id !== appData.worker_id), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
               : t
-            )
-          );
-          queryClient.setQueryData(['allTasks'], (old = []) =>
-            old.map(t => t.id === appData.task_id
-              ? { ...t, applicants: [...(t.applicants || []), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
-              : t
-            )
-          );
-        }
-        if (event.type === 'update' && (appData.status === 'cancelled' || appData.status === 'rejected')) {
-          // Remove from applicants array
-          queryClient.setQueryData(['myTasks', me.id], (old = []) =>
-            old.map(t => t.id === appData.task_id
+            );
+          }
+          if (event.type === 'update' && (appData.status === 'cancelled' || appData.status === 'rejected')) {
+            return old.map(t => t.id === appData.task_id
               ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== appData.worker_id) }
               : t
-            )
-          );
-          queryClient.setQueryData(['allTasks'], (old = []) =>
-            old.map(t => t.id === appData.task_id
-              ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== appData.worker_id) }
-              : t
-            )
-          );
-        }
+            );
+          }
+          return old;
+        };
+        queryClient.setQueryData(['myTasks', me.id], updateApplicants);
+        queryClient.setQueryData(['allTasks'], updateApplicants);
       }
     });
 
@@ -702,7 +690,7 @@ export default function HomeFeed() {
                 })}
               </div>
 
-              {filteredPub.length === 0 && myPubTab === 'active' ? (
+              {filteredPub.length === 0 && myPubTab === 'active' && myTasks.length > 0 ? (
                 <EmptyMyTasksState />
               ) : filteredPub.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0' }}>

@@ -878,27 +878,7 @@ export default function TaskDetail() {
 
 
 
-            {/* Owner: confirm completion — worker marked done, waiting for owner approval */}
-            {isOwner && task.status === 'TAKEN' && task.worker_status === 'done' && (
-              <div style={{ background: 'rgba(5,150,105,0.18)', border: '1.5px solid rgba(5,150,105,0.5)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
-                <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{t('worker_finished_approval')}</div>
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await base44.functions.invoke('completeTask', { taskId: id });
-                      if (!res.data?.success) throw new Error(res.data?.error || t('error_colon'));
-                      queryClient.invalidateQueries({ queryKey: ['task', id] });
-                      toast.success(t('task_completed_toast'));
-                    } catch (err) {
-                      toast.error(t('task_completed_error') + err.message);
-                    }
-                  }}
-                  style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.5)', color: 'white', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                >
-                  <CheckCircle2 size={16} /> {t('approve_completion')}
-                </button>
-              </div>
-            )}
+
 
             {/* Approved CTA */}
             {isApproved && !isWorker && task.status === 'OPEN' &&
@@ -969,6 +949,30 @@ export default function TaskDetail() {
           </div>
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
+
+        {/* Completion media — shown for both owner and worker when task is TAKEN and worker uploaded proof */}
+        {task.status === 'TAKEN' && (isOwner || isWorker) && (task.completion_photos?.length > 0 || task.completion_video_url) && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5, marginBottom: 10 }}>📸 הוכחת ביצוע</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {(task.completion_photos || []).map((url, i) => (
+                <button key={i} onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+                  style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000' }}>
+                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                </button>
+              ))}
+              {task.completion_video_url && (
+                <button onClick={() => { setLightboxIndex((task.completion_photos?.length || 0)); setLightboxOpen(true); }}
+                  style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000', position: 'relative' }}>
+                  <video src={task.completion_video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
+                    <Play size={22} color="white" fill="white" />
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Applicants for owner — show when OPEN or TAKEN before worker started */}
         {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) &&
@@ -1225,7 +1229,9 @@ export default function TaskDetail() {
         isOpen={lightboxOpen}
         items={[
         ...(task.images || []).map((url) => ({ type: 'image', url })),
-        ...(task.video_url ? [{ type: 'video', url: task.video_url }] : [])]
+        ...(task.video_url ? [{ type: 'video', url: task.video_url }] : []),
+        ...(task.completion_photos || []).map((url) => ({ type: 'image', url })),
+        ...(task.completion_video_url ? [{ type: 'video', url: task.completion_video_url }] : [])]
         }
         initialIndex={lightboxIndex}
         onClose={() => setLightboxOpen(false)} />
