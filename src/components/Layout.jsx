@@ -129,6 +129,17 @@ export default function Layout() {
   // Active task as worker
   const activeWorkerTask = workerTasks.find((t) => t.status === 'TAKEN') || null;
 
+  // Seed activeWorkerTask cache from workerTasksLayout so HomeFeed banner appears immediately
+  useEffect(() => {
+    if (!me?.id || workerTasks.length === 0) return;
+    const takenTask = workerTasks.find((t) => t.status === 'TAKEN') || null;
+    queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
+      // Only seed if cache is empty — don't overwrite a more recent value from WS
+      if (old !== undefined) return old;
+      return takenTask;
+    });
+  }, [workerTasks, me?.id]);
+
   // Get my published tasks for real-time notifications
   const { data: myPublishedTasks = [] } = useQuery({
     queryKey: ['myPublishedTasks', me?.id],

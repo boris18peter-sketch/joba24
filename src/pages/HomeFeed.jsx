@@ -82,11 +82,10 @@ export default function HomeFeed() {
     }
   }, [myTasks.length]);
 
-  // Active task I'm working on as a worker — driven by WebSocket, no polling needed
+  // Active task I'm working on as a worker — seeded by Layout, kept live via WebSocket
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1),
-    select: (data) => data?.[0] || null,
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id,
     staleTime: 120000,
     gcTime: 300000,
