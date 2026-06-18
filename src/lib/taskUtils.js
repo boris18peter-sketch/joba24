@@ -32,6 +32,9 @@ export function buildRepostUrl(task) {
     category: task.category || '',
     estimated_time: task.estimated_time || '',
     approval_mode: task.approval_mode || 'manual',
+    payment_method: task.payment_method || '',
   });
+  if (task.lat) params.set('lat', String(task.lat));
+  if (task.lng) params.set('lng', String(task.lng));
   return `/create-task?${params.toString()}`;
 }
