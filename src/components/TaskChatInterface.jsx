@@ -276,6 +276,7 @@ export default function TaskChatInterface({
   const [showAddressInput, setShowAddressInput] = useState(null);
   const [addressOrigin, setAddressOrigin] = useState({});
   const [addressDest, setAddressDest] = useState({});
+  const [quickReplies, setQuickReplies] = useState([]);
   const initializedRef = useRef(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -297,7 +298,8 @@ export default function TaskChatInterface({
     } else if (initialForm.title) {
       initMessages.push({ role: 'agent', content: 'היי! 👋 ראיתי שיש לך טיוטה של **"' + initialForm.title + '"** — רוצה שנמשיך?' });
     } else {
-      initMessages.push({ role: 'agent', content: 'היי! 👋 נעים להכיר, אני העוזר שלך ב-Joba24.\n\n**מה צריך לעשות?** ספר לי בכמה מילים ואני כבר אדאג לכל השאר 🚀' });
+      initMessages.push({ role: 'agent', content: 'מה צריך לעשות? 🚀\nתאר בכמה מילים ואני אדאג לכל השאר.' });
+      setQuickReplies(['ניקיון דירה', 'אינסטלטור', 'הובלה', 'מזגן']);
     }
     setMessages(initMessages);
   }, []);
@@ -323,6 +325,9 @@ export default function TaskChatInterface({
       });
 
       const agentData = response.data;
+
+      // Update quick replies
+      setQuickReplies(agentData.quick_replies || []);
 
       if (agentData.extracted_data && Object.keys(agentData.extracted_data).length > 0) {
         const data = { ...agentData.extracted_data };
@@ -380,7 +385,12 @@ export default function TaskChatInterface({
 
   const handleSkipRequirements = () => {
     setShowRequirements(false);
-    sendMessage('אין צורך בדרישות נוספות, אפשר להמשיך לפרסום');
+    sendMessage('אין צורך בדרישות נוספות, המשך לפרסום');
+  };
+
+  const handleQuickReply = (reply) => {
+    setQuickReplies([]);
+    sendMessage(reply);
   };
 
   // Recording
@@ -681,6 +691,26 @@ export default function TaskChatInterface({
         padding: '8px 12px',
         paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
       }}>
+        {/* Quick Replies */}
+        {quickReplies.length > 0 && !loading && (
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 8, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 2 }}>
+            {quickReplies.map((reply, i) => (
+              <button key={i} onClick={() => handleQuickReply(reply)}
+                style={{
+                  flexShrink: 0, padding: '7px 14px', borderRadius: 20,
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  background: reply.startsWith('✅') ? 'linear-gradient(135deg,#059669,#047857)' : '#eff6ff',
+                  color: reply.startsWith('✅') ? 'white' : '#1a6fd4',
+                  border: reply.startsWith('✅') ? 'none' : '1.5px solid #bfdbfe',
+                  boxShadow: reply.startsWith('✅') ? '0 4px 14px rgba(5,150,105,0.3)' : '0 1px 4px rgba(26,111,212,0.1)',
+                  whiteSpace: 'nowrap',
+                }}>
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Publish button */}
         {showFeatures && (
           <div style={{ marginBottom: 8 }}>
