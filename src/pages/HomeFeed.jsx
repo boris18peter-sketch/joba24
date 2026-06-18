@@ -209,12 +209,13 @@ export default function HomeFeed() {
       });
 
       // 3. Update activeWorkerTask cache live — includes worker_status sub-updates
+      const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
       if (event.type === 'update') {
         queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
-          // Update existing active task
           if (old?.id === event.id) {
-            const merged = { ...old, ...updatedTask };
-            return merged.status !== 'TAKEN' ? null : merged;
+            // Only clear on explicit terminal status — never on partial updates missing status
+            if (updatedTask.status && TERMINAL_STATUSES.includes(updatedTask.status)) return null;
+            return { ...old, ...updatedTask };
           }
           // New TAKEN task assigned to me — show banner immediately
           if (updatedTask.worker_id === me.id && updatedTask.status === 'TAKEN') {
@@ -222,7 +223,7 @@ export default function HomeFeed() {
           }
           return old;
         });
-        }
+      }
       if (event.type === 'delete') {
         queryClient.setQueryData(['activeWorkerTask', me.id], (old) =>
           old?.id === event.id ? null : old

@@ -219,20 +219,32 @@ export default function Layout() {
       updateCache('tasks');
       
       // activeWorkerTask + activeClientTask — both critical
+      const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
+
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
-        if (event.type === 'update' && t.worker_id === me.id && t.status === 'TAKEN') {
-          return old?.id === event.id ? { ...old, ...t } : (old || t);
+        if (event.type === 'update' && old?.id === event.id) {
+          // Only null-out when we have an explicit terminal status — never on partial updates
+          if (t.status && TERMINAL_STATUSES.includes(t.status)) return null;
+          // If still TAKEN or status not provided (partial update), keep merged
+          if (!t.status || t.status === 'TAKEN') return { ...old, ...t };
         }
-        return old?.id === event.id && t.status !== 'TAKEN' ? null : old;
+        if (event.type === 'update' && !old && t.worker_id === me.id && t.status === 'TAKEN') {
+          return t; // New TAKEN task assigned to me
+        }
+        return old;
       });
 
       queryClient.setQueryData(['activeClientTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
-        if (event.type === 'update' && t.client_id === me.id && t.status === 'TAKEN') {
-          return old?.id === event.id ? { ...old, ...t } : (old || t);
+        if (event.type === 'update' && old?.id === event.id) {
+          if (t.status && TERMINAL_STATUSES.includes(t.status)) return null;
+          if (!t.status || t.status === 'TAKEN') return { ...old, ...t };
         }
-        return old?.id === event.id && t.status !== 'TAKEN' ? null : old;
+        if (event.type === 'update' && !old && t.client_id === me.id && t.status === 'TAKEN') {
+          return t;
+        }
+        return old;
       });
 
       // COMPLETED — refresh me stats
