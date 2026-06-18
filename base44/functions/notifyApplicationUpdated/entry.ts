@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       tag: `app_status_${data.task_id}_${data.worker_id}`,
     });
 
-    return Response.json({ sent: true, result });
+    return Response.json({ sent: true, result: result?.data ?? null });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
