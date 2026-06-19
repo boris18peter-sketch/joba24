@@ -5,6 +5,7 @@ import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2
 import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import TrustCard from '@/components/TrustCard';
 import { Link } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -80,6 +81,7 @@ export default function Profile() {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showTaskHistory, setShowTaskHistory] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const photoInputRef = useRef(null);
 
@@ -248,6 +250,9 @@ export default function Profile() {
           </button>
         )}
 
+        {/* ── Trust Bar ── */}
+        <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
+
         {/* ── Main Menu ── */}
         <SectionCard>
           <MenuRow icon={Briefcase} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
@@ -255,6 +260,10 @@ export default function Profile() {
           <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
           <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
           <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('task_history')} sub={`${completedCount} ${t('tasks_completed')}`} onClick={() => setShowTaskHistory(true)} />
+          {reviews.length > 0 && <>
+            <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
+            <MenuRow icon={Star} iconBg="#fffbeb" iconColor="#f59e0b" label={t('recent_reviews') || 'ביקורות'} sub={`${reviews.length} ביקורות`} onClick={() => setShowAllReviews(true)} />
+          </>}
         </SectionCard>
 
         {/* ── Skills ── */}
@@ -266,35 +275,6 @@ export default function Profile() {
                 <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
                   {getCategoryLabel(c)}
                 </span>
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* ── Recent Reviews ── */}
-        {reviews.length > 0 && (
-          <SectionCard style={{ padding: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{t('recent_reviews') || 'ביקורות'}</div>
-              {reviews.length > 3 && (
-                <button onClick={() => setShowAllReviews(true)} style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  הכל ({reviews.length}) →
-                </button>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {reviews.slice(0, 3).map((review, i) => (
-                <div key={review.id}>
-                  {i > 0 && <div style={{ height: 1, background: 'var(--border-1)', marginBottom: 14 }} />}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
-                    ))}
-                    <span style={{ fontSize: 11, color: 'var(--text-3)', marginRight: 'auto' }}>{review.role === 'worker' ? t('from_client') : t('from_worker')}</span>
-                  </div>
-                  {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.55, margin: 0 }}>{review.comment}</p>}
-                  <ReviewChips review={review} />
-                </div>
               ))}
             </div>
           </SectionCard>
