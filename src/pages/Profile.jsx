@@ -300,15 +300,26 @@ export default function Profile() {
                 <X size={16} color="#64748b" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 10 }} dir="rtl">
+            <div style={{ overflowY: 'auto', padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 0 }} dir="rtl">
               {completedCount === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('no_completed_tasks_yet')}</div>
                 </div>
-              ) : workerTasks.filter(t => t.status === 'COMPLETED').map(task => (
-                <TaskCard key={task.id} task={task} viewOnly />
-              ))}
+              ) : workerTasks.filter(task => task.status === 'COMPLETED').map((task, idx, arr) => {
+                const date = new Date(task.completed_at || task.updated_date);
+                const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+                const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                return (
+                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingTop: idx > 0 ? 14 : 0, paddingBottom: idx < arr.length - 1 ? 14 : 0, borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>{dateLabel} · ₪{task.price}</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
