@@ -155,17 +155,17 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
     <div style={{ position: 'fixed', bottom: 'calc(80px + max(0px, env(safe-area-inset-bottom)) + 12px)', left: 12, right: 12, zIndex: 100000 }} dir="rtl">
       <style>{`
         @keyframes slideUpPop {
-          from { opacity: 0; transform: translateY(30px) scale(0.96); }
+          from { opacity: 0; transform: translateY(40px) scale(0.94); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
       <div style={{
-        background: 'white',
+        background: 'var(--surface-2)',
         borderRadius: 22,
         overflow: 'hidden',
         boxShadow: '0 16px 60px rgba(0,0,0,0.2)',
         border: isUrgent ? '2px solid #ef4444' : '1.5px solid #e2e8f0',
-        animation: 'slideUpPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        animation: 'slideUpPop 0.38s cubic-bezier(0.32, 1.2, 0.64, 1)',
         transition: 'border 0.3s',
       }}>
         {/* Progress bar */}
@@ -223,9 +223,10 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
           {/* Close */}
           <button
             onClick={() => setPopup(null)}
-            style={{ width: 28, height: 28, borderRadius: 8, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+            className="j-icon-btn"
+            style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
-            <X size={14} color="#94a3b8" />
+            <X size={16} color="var(--text-3)" />
           </button>
         </div>
 
