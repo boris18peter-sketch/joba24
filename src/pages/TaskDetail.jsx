@@ -125,7 +125,7 @@ export default function TaskDetail() {
   const [confetti, setConfetti] = useState(false);
   const [taskTaken, setTaskTaken] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
-  const [showRating, setShowRating] = useState(false);
+  const [showRating, setShowRating] = useState(false); // kept for manual trigger only
   const [showApprovedPopup, setShowApprovedPopup] = useState(false);
   const [signalSent, setSignalSent] = useState(false);
 
@@ -161,7 +161,6 @@ export default function TaskDetail() {
     }
   }, []);
   const prevTaskStatusRef = useRef(null);
-  const autoRatingShownRef = useRef(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -307,32 +306,11 @@ export default function TaskDetail() {
     await base44.entities.Task.update(id, patch);
   };
 
-  // Auto-open rating popup when task just became COMPLETED (for both sides)
+  // Rating popup is handled globally by Layout via WebSocket — no local logic needed here
+  // Track task status changes for other side-effects
   useEffect(() => {
-    if (!task || !me) return;
-    const prevStatus = prevTaskStatusRef.current;
-    if (prevStatus === 'TAKEN' && task.status === 'COMPLETED') {
-      const isParticipant = me.id === task.client_id || me.id === task.worker_id;
-      if (isParticipant && !autoRatingShownRef.current) {
-        autoRatingShownRef.current = true;
-        setTimeout(() => setShowRating(true), 1200);
-      }
-    }
-    prevTaskStatusRef.current = task.status;
+    prevTaskStatusRef.current = task?.status;
   }, [task?.status]);
-
-  // Auto-open rating on page load if task is already COMPLETED and user hasn't rated yet
-  useEffect(() => {
-    if (!task || !me || autoRatingShownRef.current) return;
-    if (task.status !== 'COMPLETED') return;
-    const isParticipant = me.id === task.client_id || me.id === task.worker_id;
-    if (!isParticipant) return;
-    // Only open if myReview is loaded and is empty
-    if (myReview !== undefined && !myReview) {
-      autoRatingShownRef.current = true;
-      setTimeout(() => setShowRating(true), 800);
-    }
-  }, [task?.status, me?.id, myReview]);
 
   // Check expiry
   useEffect(() => {

@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
       worker_score: userData?.worker_score || 0,
       worker_rating: userData?.rating || 0,
       worker_tasks_count: userData?.score_tasks || 0,
+      worker_verified: userData?.verified || false,
       message: message || '',
       images: images || [],
       status: 'pending',
