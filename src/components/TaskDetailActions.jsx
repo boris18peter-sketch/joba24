@@ -81,12 +81,12 @@ export default function TaskDetailActions({
         {isCompleted && isParticipant && myReview === null && !hasRated && (
           <button
             onClick={() => setShowRating(true)}
-            style={{ width: '100%', height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
+            style={{ width: '100%', height: 52, borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,var(--brand-accent),var(--brand-accent-dark))', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
             <Star size={16} style={{ fill: 'white' }} /> דרג את {me?.id === task?.client_id ? task?.worker_name : task?.client_name}
           </button>
         )}
         {isCompleted && isParticipant && myReview && (
-          <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
+          <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-md)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
             <Star size={15} style={{ fill: '#fbbf24', color: '#fbbf24' }} />
             {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב
           </div>
@@ -96,7 +96,7 @@ export default function TaskDetailActions({
         {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task?.status) && (
           <button
             onClick={() => navigate(buildRepostUrl(task))}
-            style={{ width: '100%', height: 48, borderRadius: 14, background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1a6fd4', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
+            style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', color: 'var(--brand-primary)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
             <RotateCcw size={16} /> פרסם שוב
           </button>
         )}
@@ -106,7 +106,7 @@ export default function TaskDetailActions({
           <button
             onClick={() => cancelTakeMutation.mutate()}
             disabled={cancelTakeMutation.isPending}
-            style={{ width: '100%', height: 48, borderRadius: 14, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+            style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--surface-2)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
             {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
           </button>
         )}

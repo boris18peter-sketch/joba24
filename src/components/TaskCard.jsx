@@ -124,13 +124,13 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
         dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'var(--modal-bg)',
-          borderRadius: '24px 24px 0 0',
+          background: 'var(--sheet-bg)',
+          borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
           width: '100%', maxWidth: 480,
-          boxShadow: '0 -16px 60px rgba(0,0,0,0.2)',
+          boxShadow: 'var(--shadow-xl)',
           padding: '12px 20px',
           paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
-          animation: 'slideUpModal 0.26s cubic-bezier(0.34,1.3,0.64,1)',
+          animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1)',
           maxHeight: '90dvh',
           overflowY: 'auto',
           overscrollBehavior: 'contain',
@@ -174,19 +174,19 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={onClose}
-            style={{ height: 52, padding: '0 18px', borderRadius: 14, background: 'white', border: '1px solid #dce8f5', color: '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
+            style={{ height: 52, padding: '0 18px', borderRadius: 'var(--r-md)', background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
           >{t('cancel_btn')}</button>
           <button
             ref={submitBtnRef}
             onClick={handleSubmit}
             disabled={loading}
             style={{
-              flex: 1, height: 52, borderRadius: 14,
-              background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              flex: 1, height: 52, borderRadius: 'var(--r-md)',
+              background: loading ? '#93b4d8' : 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))',
               border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : '0 6px 20px rgba(26,111,212,0.35)',
+              boxShadow: loading ? 'none' : 'var(--shadow-md)',
               transition: 'background 0.2s, transform 0.1s',
               WebkitTapHighlightColor: 'transparent',
             }}
@@ -378,10 +378,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         className="active:scale-[0.982] transition-all"
         style={{
           background: 'var(--surface-2)',
-          borderRadius: 16,
-          border: isApproved ? '1.5px solid #16a34a' : isPending ? '1.5px solid #d97706' : showCardSuccess ? '1.5px solid #16a34a' : '1px solid #e8edf5',
-          boxShadow: '0 1px 6px rgba(15,43,107,0.06)',
-          padding: '16px 16px 0',
+          borderRadius: 'var(--r-lg)',
+          border: isApproved
+            ? '1.5px solid var(--color-success-border)'
+            : isPending
+            ? '1.5px solid var(--color-warning-border)'
+            : showCardSuccess
+            ? '1.5px solid var(--color-success-border)'
+            : '1px solid var(--border-1)',
+          boxShadow: 'var(--shadow-xs)',
+          padding: '14px 14px 0',
           cursor: 'pointer',
           position: 'relative',
           overflow: 'hidden',
@@ -418,12 +424,12 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         )}
 
         {/* Approved banner */}
-         {isApproved && (
-           <div onClick={e => e.stopPropagation()} style={{
-             background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10,
-             padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10,
-             animation: 'cardFadeIn 0.3s ease',
-           }}>
+        {isApproved && (
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--r-sm)',
+            padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'cardFadeIn 0.3s ease',
+          }}>
              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                <CheckCircle2 size={16} color="#16a34a" />
              </div>
@@ -441,7 +447,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
 
          {/* Pending banner */}
          {isPending && (
-           <div onClick={e => e.stopPropagation()} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-sm)', padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#d97706', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
              <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#b45309' }}>{t('waiting_approval_short')}</div>
              <button onClick={handleCancelApp} disabled={cancelling}
@@ -574,7 +580,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
         </div>
 
         {/* Card Footer: price + apply */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border-1)' }}>
           {/* Price + payment + distance */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
@@ -604,8 +610,8 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }} />}
                   <button
-                    onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
-                    style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 10, background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: '0 3px 10px rgba(0,0,0,0.12)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
+                   onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                   style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 'var(--r-sm)', background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: 'var(--shadow-sm)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
                   >
                     {liveApplicantCount > 0 ? (
                        <>
@@ -625,7 +631,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                     </span>
                   </div>
               ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&estimated_time=${task.estimated_time||''}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#eff6ff', border: '1.5px solid #bfdbfe', color: '#1d4ed8', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&estimated_time=${task.estimated_time||''}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
                    <RefreshCw size={11} /> {t('repost')}
                  </button>
               )
@@ -673,7 +679,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                       setTimeout(() => setApplyLocked(false), 600);
                     }}
                     disabled={applyLocked}
-                    style={{ height: 36, padding: '0 14px', borderRadius: 10, background: '#1a6fd4', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : '0 3px 10px rgba(26,111,212,0.3)' }}
+                    style={{ height: 36, padding: '0 14px', borderRadius: 'var(--r-sm)', background: 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : 'var(--shadow-sm)' }}
                   >
                     {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
                       <><span>הגש מועמדות</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>

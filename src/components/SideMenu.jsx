@@ -109,12 +109,12 @@ export default function SideMenu({ open, onClose }) {
 
       <div
         style={{
-          position: 'fixed', top: 0, left: 0, bottom: 0, width: 270,
-          background: 'linear-gradient(180deg, #0a1f4e 0%, #0f2b6b 40%, #1a3a80 100%)',
+          position: 'fixed', top: 0, left: 0, bottom: 0, width: 272,
+          background: 'linear-gradient(165deg, #091b3e 0%, #0e2660 45%, #183673 100%)',
           zIndex: 10002,
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-          boxShadow: '6px 0 32px rgba(0,0,0,0.25)',
+          transition: 'transform 0.26s cubic-bezier(0.32,0,0.2,1)',
+          boxShadow: '8px 0 40px rgba(0,0,0,0.3)',
           display: 'flex', flexDirection: 'column'
         }}>
         
@@ -333,8 +333,8 @@ export default function SideMenu({ open, onClose }) {
             onClick={() => { onClose(); }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', padding: '13px 16px', borderRadius: 14,
-              background: '#fbbf24', color: '#0a1f5c',
+              width: '100%', padding: '13px 16px', borderRadius: 'var(--r-md)',
+              background: 'var(--brand-accent)', color: '#0a1f5c',
               border: 'none', fontWeight: 900, fontSize: 15,
               textDecoration: 'none', marginBottom: 14,
               boxShadow: '0 4px 16px rgba(251,191,36,0.4)'

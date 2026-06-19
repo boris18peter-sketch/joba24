@@ -95,11 +95,11 @@ export default function RatingModal({ task, me, onClose }) {
         dir="rtl"
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'white', borderRadius: '28px 28px 0 0',
+          background: 'var(--sheet-bg)', borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
           width: '100%', maxWidth: 480,
           padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
-          boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
-          animation: 'sheetSlideUp 0.32s cubic-bezier(0.34,1.4,0.64,1) both',
+          boxShadow: 'var(--shadow-xl)',
+          animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1) both',
           maxHeight: '92dvh', overflowY: 'auto',
           position: 'relative',
         }}
@@ -112,7 +112,7 @@ export default function RatingModal({ task, me, onClose }) {
           <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
             {isOwner ? `איך היה עם ${revieweeName}?` : 'דרג את בעל המשימה'}
           </h2>
-          <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 12, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 'var(--r-sm)', background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X size={18} color="#6b7280" />
           </button>
         </div>
@@ -157,7 +157,7 @@ export default function RatingModal({ task, me, onClose }) {
                 { key: 'wouldHireAgain', label: '🔁 אעבוד שוב' },
               ]).map(item => (
                 <button key={item.key} onClick={() => toggleStructured(item.key)}
-                  style={{ padding: '6px 13px', borderRadius: 99, fontSize: 12, fontWeight: 700, border: `1.5px solid ${structured[item.key] ? '#1a6fd4' : '#e2e8f0'}`, background: structured[item.key] ? '#eff6ff' : 'white', color: structured[item.key] ? '#1a6fd4' : '#64748b', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  style={{ padding: '6px 13px', borderRadius: 'var(--r-full)', fontSize: 12, fontWeight: 700, border: `1.5px solid ${structured[item.key] ? 'var(--brand-primary)' : 'var(--border-1)'}`, background: structured[item.key] ? 'var(--brand-primary-light)' : 'var(--surface-2)', color: structured[item.key] ? 'var(--brand-primary)' : 'var(--text-2)', cursor: 'pointer', transition: 'all 0.15s' }}>
                   {item.label}
                 </button>
               ))}
@@ -167,7 +167,7 @@ export default function RatingModal({ task, me, onClose }) {
 
         {/* Payment confirm */}
         <button onClick={() => setPaymentConfirmed(v => !v)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 16, marginBottom: 16, cursor: 'pointer', border: paymentConfirmed ? '2px solid #059669' : '2px solid #e2e8f0', background: paymentConfirmed ? '#f0fdf4' : '#f8fafc', textAlign: 'right', transition: 'all 0.2s' }}>
+          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 'var(--r-md)', marginBottom: 16, cursor: 'pointer', border: paymentConfirmed ? '2px solid var(--color-success)' : '2px solid var(--border-1)', background: paymentConfirmed ? 'var(--color-success-bg)' : 'var(--surface-3)', textAlign: 'right', transition: 'all 0.2s' }}>
           <div style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0, background: paymentConfirmed ? '#059669' : 'white', border: paymentConfirmed ? '2px solid #059669' : '2px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
             {paymentConfirmed && <CheckCircle2 size={15} color="white" strokeWidth={2.5} />}
           </div>
@@ -186,11 +186,11 @@ export default function RatingModal({ task, me, onClose }) {
           value={comment}
           onChange={e => setComment(e.target.value)}
           rows={3}
-          style={{ width: '100%', padding: '12px 14px', borderRadius: 14, border: '1.5px solid #dce8f5', background: '#f4f7fb', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--border-2)', background: 'var(--input-bg)', color: 'var(--text-1)', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
         />
 
         <button onClick={handleSubmit} disabled={loading || !canSubmit}
-          style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 16, background: canSubmit ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0', color: canSubmit ? 'white' : '#aaa', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? '0 4px 16px rgba(26,111,212,0.3)' : 'none', pointerEvents: loading ? 'none' : 'auto' }}>
+          style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 'var(--r-md)', background: canSubmit ? 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))' : 'var(--surface-3)', color: canSubmit ? 'white' : 'var(--text-3)', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? 'var(--shadow-md)' : 'none', pointerEvents: loading ? 'none' : 'auto' }}>
           {loading ? <Loader2 size={20} className="animate-spin" /> : '⭐ שלח ביקורת'}
         </button>
       </div>

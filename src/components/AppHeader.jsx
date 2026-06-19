@@ -32,43 +32,42 @@ export default function AppHeader({ onOpenMenu }) {
           position: 'sticky', top: 0, zIndex: 40,
           background: 'var(--header-bg)',
           borderBottom: '1px solid var(--border-1)',
-          backdropFilter: 'blur(14px)',
-          height: 56,
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          height: 58,
           display: 'flex', alignItems: 'center',
           paddingRight: 16, paddingLeft: 16,
           justifyContent: 'space-between',
           flexShrink: 0,
+          boxShadow: '0 1px 0 var(--border-1)',
         }}
       >
-        {/* Right: Logo — always visible, clickable to home */}
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, textDecoration: 'none' }}>
+        {/* Right: Logo */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0, textDecoration: 'none' }}>
           <img
             src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg"
             alt="Joba24"
-            style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 10 }}
+            style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 'var(--r-sm)' }}
           />
-          <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--text-1)', letterSpacing: -0.5 }}>
-            Joba<span style={{ color: '#fbbf24' }}>24</span>
+          <span style={{ fontWeight: 900, fontSize: 18, color: 'var(--text-1)', letterSpacing: -0.6 }}>
+            Joba<span style={{ color: 'var(--brand-accent)' }}>24</span>
           </span>
         </Link>
 
-        {/* Left: Credits pill (home only) + Menu button */}
+        {/* Left: Credits pill + Menu */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {isAuthenticated && (
             <span id="onboarding-credits-pill">
-            <CreditBalancePill
-              credits={me?.worker_credits ?? 0}
-              onClick={() => setShowBuyCredits(true)}
-            />
+              <CreditBalancePill credits={me?.worker_credits ?? 0} onClick={() => setShowBuyCredits(true)} />
             </span>
           )}
           {!isAuthenticated && (
             <button
               onClick={() => setShowLogin(true)}
               style={{
-                background: '#fbbf24', color: '#1a3a6b', border: 'none',
-                height: 36, padding: '0 16px', borderRadius: 12, fontWeight: 900,
-                fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap',
+                background: 'var(--brand-accent)', color: '#1a3a6b', border: 'none',
+                height: 36, padding: '0 16px', borderRadius: 'var(--r-sm)',
+                fontWeight: 800, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
                 boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
               }}
             >
@@ -78,13 +77,13 @@ export default function AppHeader({ onOpenMenu }) {
           <button
             onClick={onOpenMenu}
             style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: '#1a6fd4', border: 'none', cursor: 'pointer',
+              width: 38, height: 38, borderRadius: 'var(--r-sm)',
+              background: 'var(--brand-primary)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
+              flexShrink: 0, boxShadow: 'var(--shadow-sm)',
             }}
           >
-            <Menu size={20} color="white" strokeWidth={2.5} />
+            <Menu size={18} color="white" strokeWidth={2.5} />
           </button>
         </div>
       </div>
