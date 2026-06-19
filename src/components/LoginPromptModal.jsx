@@ -36,12 +36,16 @@ function EmailForm({ onBack }) {
   const handleSend = async () => {
     if (!email.trim() || !email.includes('@')) return;
     setLoading(true);
+    let redirectUrl = window.location.href;
+    const refCode = localStorage.getItem('joba24_ref_code');
+    if (refCode && !redirectUrl.includes('ref=')) {
+      redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + `ref=${refCode}`;
+    }
     try {
-      await base44.auth.sendMagicLink(email.trim(), window.location.href);
+      await base44.auth.sendMagicLink(email.trim(), redirectUrl);
       setSent(true);
     } catch {
-      // fallback: redirect to login with email pre-filled
-      base44.auth.redirectToLogin(window.location.href);
+      base44.auth.redirectToLogin(redirectUrl);
     } finally {
       setLoading(false);
     }
@@ -108,11 +112,20 @@ function EmailForm({ onBack }) {
 
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
-  const redirectUrl = window.location.href;
 
-  const handleGoogle = () => base44.auth.loginWithProvider('google', redirectUrl);
-  const handleApple = () => base44.auth.loginWithProvider('apple', redirectUrl);
-  const handleFacebook = () => base44.auth.loginWithProvider('facebook', redirectUrl);
+  // Ensure the ref code survives the OAuth redirect even if the user navigated away from the original referral URL
+  const getRedirectUrl = () => {
+    let url = window.location.href;
+    const refCode = localStorage.getItem('joba24_ref_code');
+    if (refCode && !url.includes('ref=')) {
+      url += (url.includes('?') ? '&' : '?') + `ref=${refCode}`;
+    }
+    return url;
+  };
+
+  const handleGoogle = () => base44.auth.loginWithProvider('google', getRedirectUrl());
+  const handleApple = () => base44.auth.loginWithProvider('apple', getRedirectUrl());
+  const handleFacebook = () => base44.auth.loginWithProvider('facebook', getRedirectUrl());
 
   const modal = (
     <div
