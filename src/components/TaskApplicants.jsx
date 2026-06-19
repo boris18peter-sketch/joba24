@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -177,9 +177,16 @@ export default function TaskApplicants({ task, onApprove }) {
     );
   }
 
+  // Sort: verified workers first, then by rating desc
+  const sortedPending = [...pending].sort((a, b) => {
+    if (a.worker_verified && !b.worker_verified) return -1;
+    if (!a.worker_verified && b.worker_verified) return 1;
+    return (b.worker_rating || 0) - (a.worker_rating || 0);
+  });
+
   const visibleApps = [
     ...(approvedApp ? [approvedApp] : []),
-    ...pending,
+    ...sortedPending,
   ];
 
   return (
@@ -258,20 +265,25 @@ export default function TaskApplicants({ task, onApprove }) {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <span onClick={() => navigate(`/public-profile?id=${app.worker_id}`)} style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40', cursor: 'pointer' }}>
-                    {app.worker_name}
-                  </span>
-                  {app.worker_rating > 0 && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#b45309', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 20, padding: '1px 7px' }}>
-                      <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
-                      {app.worker_rating.toFixed(1)}
-                    </span>
-                  )}
-                  {app.worker_tasks_count > 0 && (
-                    <span style={{ fontSize: 10, color: '#64748b' }}>✅ {app.worker_tasks_count}</span>
-                  )}
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                 <span onClick={() => navigate(`/public-profile?id=${app.worker_id}`)} style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40', cursor: 'pointer' }}>
+                   {app.worker_name}
+                 </span>
+                 {app.worker_verified && (
+                   <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 20, padding: '1px 6px' }}>
+                     <ShieldCheck size={10} /> מאומת
+                   </span>
+                 )}
+                 {app.worker_rating > 0 && (
+                   <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#b45309', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 20, padding: '1px 7px' }}>
+                     <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
+                     {app.worker_rating.toFixed(1)}
+                   </span>
+                 )}
+                 {app.worker_tasks_count > 0 && (
+                   <span style={{ fontSize: 10, color: '#64748b' }}>✅ {app.worker_tasks_count}</span>
+                 )}
+               </div>
                 {app.message && (
                   <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{app.message}</p>
                 )}

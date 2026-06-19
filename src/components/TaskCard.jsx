@@ -270,9 +270,9 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  // Applicant count — task.applicants is an array of {worker_id, worker_name} objects (no status field)
-  // so we just use the raw length; kept in sync by Layout/HomeFeed websocket handlers
-  const liveApplicantCount = task.applicants?.length || 0;
+  // Applicant count — use applicants array length from task; this is kept in sync by WS handlers in HomeFeed
+  // We intentionally don't drop to 0 if it's undefined/null (could be stale); treat undefined as 0 but never as "missing"
+  const liveApplicantCount = Array.isArray(task.applicants) ? task.applicants.length : 0;
 
   useEffect(() => {
     if (!showMenu) return;

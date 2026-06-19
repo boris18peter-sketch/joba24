@@ -342,7 +342,7 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
               {tIsWorker && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={e => e.stopPropagation()}>
                   <button
-                    onClick={() => { setMediaTask(task); setMediaPhotos(task.completion_photos || []); setMediaVideo(task.completion_video_url || ''); }}
+                    onClick={() => { setMediaTask(task); setMediaPhotos([...(task.completion_photos || [])]); setMediaVideo(task.completion_video_url || ''); }}
                     style={{ flex: 1, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                   >
                     <Camera size={13} /> הוכחת ביצוע {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}

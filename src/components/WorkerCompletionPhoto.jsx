@@ -24,7 +24,6 @@ export default function WorkerCompletionPhoto({ photos = [], videoUrl = '', onPh
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       if (file.type.startsWith('video/')) {
         newVideo = file_url;
-        onVideoChange?.(file_url);
       } else {
         if (newPhotos.length < 6) newPhotos.push(file_url);
       }

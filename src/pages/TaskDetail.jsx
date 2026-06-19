@@ -78,6 +78,7 @@ import TaskLocationMap from '@/components/TaskLocationMap';
 
 import ApplySheet from '@/components/ApplySheet';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
+import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
 const getStatusLabel = (status, isOwner, t) => {
@@ -133,6 +134,8 @@ export default function TaskDetail() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [completionLightboxOpen, setCompletionLightboxOpen] = useState(false);
+  const [completionLightboxIndex, setCompletionLightboxIndex] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
@@ -142,6 +145,10 @@ export default function TaskDetail() {
   const [showInvoice, setShowInvoice] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
+  const [editingCompletion, setEditingCompletion] = useState(false);
+  const [editPhotos, setEditPhotos] = useState([]);
+  const [editVideo, setEditVideo] = useState('');
+  const [savingCompletion, setSavingCompletion] = useState(false);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [mediaIdx, setMediaIdx] = useState(0);
   const prevWorkerIdRef = useRef(null);
@@ -950,27 +957,59 @@ export default function TaskDetail() {
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
 
-        {/* Completion media — shown for both owner and worker when task is TAKEN and worker uploaded proof */}
-        {task.status === 'TAKEN' && (isOwner || isWorker) && (task.completion_photos?.length > 0 || task.completion_video_url) && (
+        {/* Completion media section — for worker: always shown with add/edit; for owner: only when proof exists */}
+        {task.status === 'TAKEN' && (isWorker || (isOwner && (task.completion_photos?.length > 0 || task.completion_video_url))) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5, marginBottom: 10 }}>📸 הוכחת ביצוע</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {(task.completion_photos || []).map((url, i) => (
-                <button key={i} onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
-                  style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000' }}>
-                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                </button>
-              ))}
-              {task.completion_video_url && (
-                <button onClick={() => { setLightboxIndex((task.completion_photos?.length || 0)); setLightboxOpen(true); }}
-                  style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000', position: 'relative' }}>
-                  <video src={task.completion_video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
-                    <Play size={22} color="white" fill="white" />
-                  </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>📸 הוכחת ביצוע</div>
+              {isWorker && !editingCompletion && (
+                <button onClick={() => { setEditPhotos([...(task.completion_photos || [])]); setEditVideo(task.completion_video_url || ''); setEditingCompletion(true); }}
+                  style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '3px 10px', cursor: 'pointer' }}>
+                  {task.completion_photos?.length > 0 || task.completion_video_url ? 'עריכה' : '+ הוסף'}
                 </button>
               )}
             </div>
+            {isWorker && editingCompletion ? (
+              <>
+                <WorkerCompletionPhoto
+                  photos={editPhotos}
+                  videoUrl={editVideo}
+                  onPhotosChange={setEditPhotos}
+                  onVideoChange={setEditVideo}
+                />
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button onClick={async () => {
+                    setSavingCompletion(true);
+                    await base44.entities.Task.update(id, { completion_photos: editPhotos, completion_video_url: editVideo || null });
+                    queryClient.setQueryData(['task', id], old => old ? { ...old, completion_photos: editPhotos, completion_video_url: editVideo || null } : old);
+                    setSavingCompletion(false);
+                    setEditingCompletion(false);
+                    toast.success('הוכחת הביצוע עודכנה ✓');
+                  }} disabled={savingCompletion} style={{ flex: 1, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {savingCompletion ? <Loader2 size={16} className="animate-spin" /> : '💾 שמור'}
+                  </button>
+                  <button onClick={() => setEditingCompletion(false)} style={{ height: 44, padding: '0 16px', borderRadius: 12, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>ביטול</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {(task.completion_photos || []).map((url, i) => (
+                  <button key={i} onClick={() => { setCompletionLightboxIndex(i); setCompletionLightboxOpen(true); }}
+                    style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000' }}>
+                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  </button>
+                ))}
+                {task.completion_video_url && (
+                  <button onClick={() => { setCompletionLightboxIndex(task.completion_photos?.length || 0); setCompletionLightboxOpen(true); }}
+                    style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000', position: 'relative' }}>
+                    <video src={task.completion_video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
+                      <Play size={22} color="white" fill="white" />
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1223,19 +1262,28 @@ export default function TaskDetail() {
         document.body
       )}
 
-      {/* Lightbox */}
+      {/* Task media lightbox */}
       {task &&
       <MediaLightbox
         isOpen={lightboxOpen}
         items={[
-        ...(task.images || []).map((url) => ({ type: 'image', url })),
-        ...(task.video_url ? [{ type: 'video', url: task.video_url }] : []),
-        ...(task.completion_photos || []).map((url) => ({ type: 'image', url })),
-        ...(task.completion_video_url ? [{ type: 'video', url: task.completion_video_url }] : [])]
-        }
+          ...(task.images || []).map((url) => ({ type: 'image', url })),
+          ...(task.video_url ? [{ type: 'video', url: task.video_url }] : []),
+        ]}
         initialIndex={lightboxIndex}
         onClose={() => setLightboxOpen(false)} />
+      }
 
+      {/* Completion proof lightbox — separate from task media */}
+      {task &&
+      <MediaLightbox
+        isOpen={completionLightboxOpen}
+        items={[
+          ...(task.completion_photos || []).map((url) => ({ type: 'image', url })),
+          ...(task.completion_video_url ? [{ type: 'video', url: task.completion_video_url }] : []),
+        ]}
+        initialIndex={completionLightboxIndex}
+        onClose={() => setCompletionLightboxOpen(false)} />
       }
     </div>);
 
