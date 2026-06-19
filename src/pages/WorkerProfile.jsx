@@ -1,28 +1,54 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, X, Save, Loader2, Award, Star, CheckCircle2, Upload, FileText, Trash2, Camera, User } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
-import TrustBadges from '@/components/TrustBadges';
-import TrustCard from '@/components/TrustCard';
+import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, User, ChevronLeft } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES } from '@/lib/categories';
 import { toast } from 'sonner';
-import TaskCard from '@/components/TaskCard';
 
 const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
+
+function SectionCard({ title, children, style }) {
+  return (
+    <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden', ...style }}>
+      {title && (
+        <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border-1)' }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{title}</div>
+        </div>
+      )}
+      <div style={{ padding: '14px 16px' }}>{children}</div>
+    </div>
+  );
+}
+
+function ReviewChips({ review }) {
+  const chips = [
+    review.arrived_on_time && { label: '⏱️ הגיע בזמן', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+    review.professional && { label: '💼 מקצועי', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    review.good_communication && { label: '💬 תקשורת', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.fair_pricing && { label: '💰 מחיר הוגן', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+    review.would_hire_again && { label: '🔁 ממליץ', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+  ].filter(Boolean);
+  if (!chips.length) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+      {chips.map(c => (
+        <span key={c.label} style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 99, padding: '2px 8px' }}>{c.label}</span>
+      ))}
+    </div>
+  );
+}
 
 export default function WorkerProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const viewUserId = searchParams.get('id');
-  
+
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: viewUser } = useQuery({
     queryKey: ['user', viewUserId],
@@ -33,7 +59,7 @@ export default function WorkerProfile() {
     },
     enabled: !!viewUserId,
   });
-  
+
   const isViewingOther = !!viewUserId && viewUserId !== me?.id;
   const currentUser = isViewingOther ? viewUser : me;
 
@@ -77,7 +103,6 @@ export default function WorkerProfile() {
 
   const removeCertDoc = (url) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).filter(c => c.url !== url) }));
 
-  // Initialize form when currentUser loads
   if (currentUser && !form) {
     setForm({
       bio: currentUser.bio || '',
@@ -99,296 +124,302 @@ export default function WorkerProfile() {
     },
   });
 
-  if (isViewingOther && !currentUser) {
-    return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>;
-  }
+  if (isViewingOther && !currentUser) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
+      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+    </div>
+  );
+
+  if (!form) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
+      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+    </div>
+  );
 
   const toggleCategory = (val) => {
-    setForm(f => ({
-      ...f,
-      preferred_categories: f.preferred_categories.includes(val)
-        ? f.preferred_categories.filter(c => c !== val)
-        : [...f.preferred_categories, val]
-    }));
+    setForm(f => ({ ...f, preferred_categories: f.preferred_categories.includes(val) ? f.preferred_categories.filter(c => c !== val) : [...f.preferred_categories, val] }));
   };
-
   const toggleCity = (c) => {
-    setForm(f => ({
-      ...f,
-      preferred_cities: f.preferred_cities.includes(c)
-        ? f.preferred_cities.filter(x => x !== c)
-        : [...f.preferred_cities, c]
-    }));
+    setForm(f => ({ ...f, preferred_cities: f.preferred_cities.includes(c) ? f.preferred_cities.filter(x => x !== c) : [...f.preferred_cities, c] }));
   };
-
   const addCert = () => {
     if (!newCert.trim()) return;
     setForm(f => ({ ...f, certificates: [...f.certificates, newCert.trim()] }));
     setNewCert('');
   };
-
   const removeCert = (cert) => setForm(f => ({ ...f, certificates: f.certificates.filter(c => c !== cert) }));
 
-  if (!form) return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>;
-
-  const workerScore = currentUser?.worker_score || 0;
+  const completedCount = workerTasks.filter(t => t.status === 'COMPLETED').length;
+  const avgRating = workerReviews.length > 0
+    ? (workerReviews.reduce((sum, r) => sum + r.rating, 0) / workerReviews.length).toFixed(1)
+    : null;
+  const initials = currentUser?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
   return (
-    <div className="min-h-screen" dir="rtl">
-      <PageHeader title={isViewingOther ? (currentUser?.full_name || 'פרופיל עובד') : 'פרופיל שלי'} />
+    <div style={{ background: 'var(--surface-1)', minHeight: '100dvh', paddingBottom: 40 }} dir="rtl">
 
-      <div className="px-4 py-5 space-y-6 pb-12">
-        {/* Worker Score */}
-        {workerScore > 0 && (
-          <div className="bg-gradient-to-l from-purple-600 to-purple-800 rounded-2xl p-4 text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Award className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="text-sm opacity-80">ניקוד עובד</div>
-                <div className="text-2xl font-black">{workerScore.toFixed(0)} נק'</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className="bg-white/10 rounded-xl p-2 text-center">
-                <div className="text-sm font-bold">{currentUser?.score_tasks || 0}</div>
-                <div className="text-[10px] opacity-75">משימות</div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-2 text-center">
-                <div className="text-sm font-bold">{currentUser?.score_speed || 0}</div>
-                <div className="text-[10px] opacity-75">מהירות</div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-2 text-center">
-                <div className="text-sm font-bold">{currentUser?.score_quality || 0}</div>
-                <div className="text-[10px] opacity-75">ביצוע</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Trust Badges */}
-        {currentUser && (
-          <div style={{ padding: '0 2px' }}>
-            <TrustBadges user={currentUser} />
-          </div>
-        )}
-
-        {/* Trust Card — visible when viewing another profile */}
-        {isViewingOther && (
-          <TrustCard user={currentUser} reviews={workerReviews} tasks={workerTasks} />
-        )}
-
-        {/* Profile Photo */}
+      {/* ── Header ── */}
+      <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => navigate(-1)} style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
+        </button>
+        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)', flex: 1 }}>
+          {isViewingOther ? (currentUser?.full_name || 'פרופיל עובד') : 'עריכת פרופיל'}
+        </span>
         {!isViewingOther && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px', background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)' }}>
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <div
-                onClick={() => photoInputRef.current?.click()}
-                style={{ width: 72, height: 72, borderRadius: 20, background: '#e8edf5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, color: 'var(--text-2)', overflow: 'hidden', cursor: 'pointer', border: '2px solid var(--border-1)' }}
-              >
-                {me?.profile_photo ? <img src={me.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={28} />}
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> שמור</>}
+          </button>
+        )}
+      </div>
+
+      {/* ── Avatar block (both view modes) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 22px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
+        <div style={{ position: 'relative', marginBottom: 14 }}>
+          <div
+            onClick={() => !isViewingOther && photoInputRef.current?.click()}
+            style={{
+              width: 88, height: 88, borderRadius: '50%',
+              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 30, fontWeight: 900, color: 'white',
+              overflow: 'hidden', cursor: isViewingOther ? 'default' : 'pointer',
+              boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
+            }}
+          >
+            {currentUser?.profile_photo
+              ? <img src={currentUser.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initials}
+          </div>
+          {!isViewingOther && (
+            <button onClick={() => photoInputRef.current?.click()} style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: 'white', border: '2px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+              {uploadingPhoto ? <Loader2 size={12} color="#1a6fd4" className="animate-spin" /> : <Camera size={12} color="#1a6fd4" />}
+            </button>
+          )}
+          <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{currentUser?.full_name}</span>
+          {currentUser?.is_verified && <VerifiedBadge size="md" />}
+        </div>
+        {form.profession && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{form.profession}</div>}
+
+        {/* Mini stats */}
+        {isViewingOther && (
+          <div style={{ display: 'flex', gap: 0, marginTop: 16, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 300 }}>
+            {[
+              { value: completedCount, label: 'ג\'ובות' },
+              { value: avgRating ? `${avgRating}★` : '—', label: 'דירוג' },
+              { value: workerReviews.length, label: 'ביקורות' },
+            ].map((s, i, arr) => (
+              <div key={i} style={{ flex: 1, padding: '10px 6px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
+                <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)' }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{s.label}</div>
               </div>
-              <button onClick={() => photoInputRef.current?.click()} style={{ position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'white', border: '2px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                {uploadingPhoto ? <Loader2 size={12} color="#1a6fd4" className="animate-spin" /> : <Camera size={12} color="#1a6fd4" />}
-              </button>
-              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
-            </div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>{me?.full_name}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{me?.email}</div>
-              <button onClick={() => photoInputRef.current?.click()} style={{ marginTop: 6, fontSize: 12, color: '#1a6fd4', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>שנה תמונת פרופיל</button>
-            </div>
+            ))}
           </div>
         )}
+      </div>
 
-        {/* Basic Info */}
-         <div className="space-y-3">
-           <Label className="text-sm font-semibold">{isViewingOther ? 'פרופיל' : 'מי אני?'}</Label>
-           <Input placeholder="שם המקצוע (לדוגמה: אינסטלטור מוסמך)"
-             value={form.profession} onChange={e => !isViewingOther && setForm(f => ({ ...f, profession: e.target.value }))}
-             disabled={isViewingOther}
-             className="bg-secondary border-0 rounded-xl h-12"
-           />
-           <Textarea placeholder="ספר קצת על עצמך, הניסיון שלך..."
-             value={form.bio} onChange={e => !isViewingOther && setForm(f => ({ ...f, bio: e.target.value }))}
-             disabled={isViewingOther}
-             className="bg-secondary border-0 rounded-xl resize-none" rows={3}
-           />
-           <Input placeholder="טלפון ליצירת קשר"
-             value={form.phone} onChange={e => !isViewingOther && setForm(f => ({ ...f, phone: e.target.value }))}
-             disabled={isViewingOther}
-             className="bg-secondary border-0 rounded-xl h-12"
-             type="tel"
-           />
-         </div>
+      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* Certificates */}
-         <div>
-           <Label className="text-sm font-semibold mb-2 block">תעודות מקצוע</Label>
-           <div className="flex gap-2 flex-wrap mb-2">
-             {form.certificates.map(cert => (
-               <span key={cert} className="flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 rounded-xl text-sm font-medium">
-                 ✅ {cert}
-                 {!isViewingOther && <button onClick={() => removeCert(cert)} className="text-green-600 hover:text-green-900"><X className="w-3 h-3" /></button>}
-               </span>
-             ))}
-           </div>
-           {!isViewingOther && (
-             <div className="flex gap-2">
-               <Input placeholder="לדוגמה: מוסמך משרד הפנים"
-                 value={newCert} onChange={e => setNewCert(e.target.value)}
-                 onKeyDown={e => e.key === 'Enter' && addCert()}
-                 className="bg-secondary border-0 rounded-xl flex-1"
-               />
-               <Button onClick={addCert} variant="outline" className="rounded-xl shrink-0"><Plus className="w-4 h-4" /></Button>
-             </div>
-           )}
-         </div>
-
-         {/* Certificate Document Uploads */}
-         <div>
-           <Label className="text-sm font-semibold mb-2 block">העלאת מסמכי תעודה</Label>
-           <input ref={certDocRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleCertDocUpload} />
-
-           {/* Uploaded docs list */}
-           {(form.certificate_files || []).length > 0 && (
-             <div className="space-y-2 mb-3">
-               {form.certificate_files.map(doc => (
-                 <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px' }}>
-                   <FileText size={18} color="#16a34a" style={{ flexShrink: 0 }} />
-                   <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                     {doc.name}
-                   </a>
-                   {!isViewingOther && (
-                     <button onClick={() => removeCertDoc(doc.url)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                       <Trash2 size={14} color="#dc2626" />
-                     </button>
-                   )}
-                 </div>
-               ))}
-             </div>
-           )}
-
-           {!isViewingOther && (
-             <button
-               onClick={() => certDocRef.current?.click()}
-               disabled={uploadingDoc}
-               style={{ width: '100%', height: 48, borderRadius: 14, border: '2px dashed #dbeafe', background: '#f8faff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}
-             >
-               {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> העלה מסמך תעודה (תמונה / PDF)</>}
-             </button>
-           )}
-         </div>
-
-        {/* Preferred Categories */}
-         <div>
-           <Label className="text-sm font-semibold mb-2 block">סוגי משימות שאני מבצע</Label>
-           <div className="flex gap-2 flex-wrap">
-             {CATEGORIES.map(c => (
-               <button key={c.value} onClick={() => !isViewingOther && toggleCategory(c.value)}
-                 disabled={isViewingOther}
-                 className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
-                   form.preferred_categories.includes(c.value)
-                     ? 'bg-black text-white border-black'
-                     : 'bg-white text-gray-600 border-gray-200'
-                 } ${isViewingOther ? 'opacity-60 cursor-not-allowed' : ''}`}
-               >{c.label}</button>
-             ))}
-           </div>
-         </div>
-
-        {/* Preferred Cities */}
-         <div>
-           <Label className="text-sm font-semibold mb-2 block">ערים שאני מוכן לבצע משימות</Label>
-           <div className="flex gap-2 flex-wrap">
-             {CITIES.map(c => (
-               <button key={c} onClick={() => !isViewingOther && toggleCity(c)}
-                 disabled={isViewingOther}
-                 className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
-                   form.preferred_cities.includes(c)
-                     ? 'bg-black text-white border-black'
-                     : 'bg-white text-gray-600 border-gray-200'
-                 } ${isViewingOther ? 'opacity-60 cursor-not-allowed' : ''}`}
-               >{c}</button>
-             ))}
-           </div>
-         </div>
-
-         {!isViewingOther && (
-           <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
-             className="w-full h-14 rounded-2xl text-base font-bold bg-black hover:bg-gray-900"
-           >
-             {saveMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5 ml-2" />שמור פרופיל</>}
-           </Button>
-         )}
-
-        {/* Work History */}
-        {workerTasks.length > 0 && (
-          <div>
-            <Label className="text-sm font-semibold mb-3 flex items-center gap-2 block">
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
-              היסטוריית משימות ({workerTasks.filter(t => t.status === 'COMPLETED').length} הושלמו)
-            </Label>
-            {isViewingOther ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {workerTasks.filter(t => t.status === 'COMPLETED').slice(0, 8).map((task, idx, arr) => {
-                  const date = new Date(task.completed_at || task.updated_date);
-                  const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-                  const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
-                  return (
-                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < arr.length - 1 ? 14 : 0, position: 'relative' }}>
-                      {idx < arr.length - 1 && (
-                        <div style={{ position: 'absolute', right: 10, top: 22, width: 1, bottom: 0, background: '#e2e8f0' }} />
-                      )}
-                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f1e40', lineHeight: 1.3 }}>{task.title}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {workerTasks.map(t => <TaskCard key={t.id} task={t} viewOnly />)}
-            </div>
-            )}
-          </div>
-        )}
-
-        {/* Structured Reviews — visible when viewing other */}
-        {isViewingOther && workerReviews.length > 0 && (
-          <div>
-            <Label className="text-sm font-semibold mb-3 flex items-center gap-2 block">
-              <Star className="w-4 h-4 text-yellow-500" fill="#fbbf24" />
-              ביקורות ({workerReviews.length})
-            </Label>
+        {/* ── Edit mode: basic info ── */}
+        {!isViewingOther && (
+          <SectionCard title="פרטים בסיסיים">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {workerReviews.slice(0, 5).map(review => (
-                <div key={review.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 14px' }} dir="rtl">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    {'⭐'.repeat(review.rating)}
-                    <span style={{ fontSize: 11, color: '#94a3b8', marginRight: 'auto' }}>
+              <Input
+                placeholder="שם המקצוע (לדוגמה: אינסטלטור מוסמך)"
+                value={form.profession}
+                onChange={e => setForm(f => ({ ...f, profession: e.target.value }))}
+                className="bg-secondary border-0 rounded-xl h-12"
+              />
+              <Textarea
+                placeholder="ספר קצת על עצמך, הניסיון שלך..."
+                value={form.bio}
+                onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                className="bg-secondary border-0 rounded-xl resize-none"
+                rows={3}
+              />
+              <Input
+                placeholder="טלפון ליצירת קשר"
+                value={form.phone}
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                className="bg-secondary border-0 rounded-xl h-12"
+                type="tel"
+              />
+            </div>
+          </SectionCard>
+        )}
+
+        {/* View mode: bio */}
+        {isViewingOther && form.bio && (
+          <SectionCard title="אודות">
+            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{form.bio}</p>
+          </SectionCard>
+        )}
+
+        {/* ── Certificates ── */}
+        <SectionCard title="תעודות מקצוע">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: form.certificates.length > 0 ? 12 : 0 }}>
+            {form.certificates.map(cert => (
+              <span key={cert} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
+                ✅ {cert}
+                {!isViewingOther && (
+                  <button onClick={() => removeCert(cert)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#86efac' }}>
+                    <X size={12} />
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+          {!isViewingOther && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                placeholder="לדוגמה: מוסמך משרד הפנים"
+                value={newCert}
+                onChange={e => setNewCert(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addCert()}
+                style={{ flex: 1, height: 44, borderRadius: 12, border: '1px solid var(--border-1)', background: 'var(--surface-3)', padding: '0 12px', fontSize: 14, color: 'var(--text-1)', outline: 'none', fontFamily: 'inherit' }}
+              />
+              <button onClick={addCert} style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <Plus size={18} color="#1a6fd4" />
+              </button>
+            </div>
+          )}
+        </SectionCard>
+
+        {/* ── Certificate docs ── */}
+        {(!isViewingOther || (form.certificate_files || []).length > 0) && (
+          <SectionCard title="מסמכי תעודה">
+            <input ref={certDocRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleCertDocUpload} />
+            {(form.certificate_files || []).length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: !isViewingOther ? 10 : 0 }}>
+                {form.certificate_files.map(doc => (
+                  <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px' }}>
+                    <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                    <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</a>
+                    {!isViewingOther && (
+                      <button onClick={() => removeCertDoc(doc.url)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                        <Trash2 size={14} color="#dc2626" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {!isViewingOther && (
+              <button onClick={() => certDocRef.current?.click()} disabled={uploadingDoc}
+                style={{ width: '100%', height: 46, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}>
+                {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> העלה מסמך תעודה</>}
+              </button>
+            )}
+          </SectionCard>
+        )}
+
+        {/* ── Categories ── */}
+        <SectionCard title="סוגי משימות">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {CATEGORIES.map(c => {
+              const sel = form.preferred_categories.includes(c.value);
+              return (
+                <button key={c.value}
+                  onClick={() => !isViewingOther && toggleCategory(c.value)}
+                  disabled={isViewingOther}
+                  style={{
+                    padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
+                    background: sel ? '#1a6fd4' : 'var(--surface-3)',
+                    color: sel ? 'white' : 'var(--text-2)',
+                    borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
+                  }}
+                >{c.label}</button>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        {/* ── Cities ── */}
+        <SectionCard title="ערים לביצוע משימות">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {CITIES.map(c => {
+              const sel = form.preferred_cities.includes(c);
+              return (
+                <button key={c}
+                  onClick={() => !isViewingOther && toggleCity(c)}
+                  disabled={isViewingOther}
+                  style={{
+                    padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
+                    background: sel ? '#1a6fd4' : 'var(--surface-3)',
+                    color: sel ? 'white' : 'var(--text-2)',
+                    borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
+                  }}
+                >{c}</button>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        {/* ── Task history (viewing other) ── */}
+        {isViewingOther && completedCount > 0 && (
+          <SectionCard title={`היסטוריית משימות · ${completedCount} הושלמו`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {workerTasks.filter(t => t.status === 'COMPLETED').slice(0, 6).map((task, idx, arr) => {
+                const date = new Date(task.completed_at || task.updated_date);
+                const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+                const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                return (
+                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingTop: idx > 0 ? 12 : 0, paddingBottom: idx < arr.length - 1 ? 12 : 0, borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Reviews (viewing other) ── */}
+        {isViewingOther && workerReviews.length > 0 && (
+          <SectionCard title={`ביקורות · ${workerReviews.length}`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {workerReviews.slice(0, 5).map((review, i) => (
+                <div key={review.id}>
+                  {i > 0 && <div style={{ height: 1, background: 'var(--border-1)', marginBottom: 14 }} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
+                    ))}
+                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 'auto' }}>
                       {new Date(review.created_date).toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: '2-digit' })}
                     </span>
                   </div>
-                  {review.comment && (
-                    <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, marginBottom: 6 }}>"{review.comment}"</div>
-                  )}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 8px' }}>⏱️ הגיע בזמן</span>}
-                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 8px' }}>💼 מקצועי</span>}
-                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>💬 תקשורת טובה</span>}
-                    {review.fair_pricing === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 99, padding: '2px 8px' }}>💰 מחיר הוגן</span>}
-                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 8px' }}>🔁 ממליץ</span>}
-                  </div>
+                  {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>"{review.comment}"</p>}
+                  <ReviewChips review={review} />
                 </div>
               ))}
             </div>
-          </div>
+          </SectionCard>
         )}
+
+        {/* ── Save button (bottom, edit mode) ── */}
+        {!isViewingOther && (
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            style={{ width: '100%', height: 56, borderRadius: 18, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 6px 20px rgba(26,111,212,0.35)', marginTop: 4 }}
+          >
+            {saveMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <><Save size={18} /> שמור פרופיל</>}
+          </button>
+        )}
+
+        <div style={{ height: 16 }} />
       </div>
     </div>
   );

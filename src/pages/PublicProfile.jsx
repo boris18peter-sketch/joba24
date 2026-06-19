@@ -1,14 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Star, CheckCircle, FileText, MapPin, Award } from 'lucide-react';
-import PageHeader from '@/components/PageHeader';
-import TrustBadges from '@/components/TrustBadges';
-import TrustCard from '@/components/TrustCard';
+import { Star, MapPin, FileText, ChevronLeft, Loader2 } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { getCategoryLabel } from '@/lib/categories';
-import CompletionTimeline from '@/components/CompletionTimeline';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
+
+function ReviewChips({ review }) {
+  const chips = [
+    review.arrived_on_time && { label: '⏱️ הגיע בזמן', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+    review.professional && { label: '💼 מקצועי', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    review.good_communication && { label: '💬 תקשורת', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.fair_pricing && { label: '💰 מחיר הוגן', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+    review.would_hire_again && { label: '🔁 ממליץ', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+  ].filter(Boolean);
+  if (!chips.length) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+      {chips.map(c => (
+        <span key={c.label} style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 99, padding: '2px 8px' }}>
+          {c.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function SectionCard({ title, children }) {
+  return (
+    <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
+      {title && (
+        <div style={{ padding: '14px 16px 10px' }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{title}</div>
+        </div>
+      )}
+      <div style={{ padding: title ? '0 16px 16px' : '16px' }}>{children}</div>
+    </div>
+  );
+}
 
 export default function PublicProfile() {
   const navigate = useNavigate();
@@ -19,26 +48,17 @@ export default function PublicProfile() {
     queryKey: ['publicProfileUser', userId],
     queryFn: async () => {
       if (!userId) return null;
-      // Use created_by_id trick: the User entity stores id as created_by_id too
-      // Best approach: filter tasks to extract user info, or use the review entity
-      // Primary: try filter by id (works for admins & same user)
       try {
         const users = await base44.entities.User.filter({ id: userId });
         if (users?.length > 0) return users[0];
       } catch (_) {}
-      // Fallback: reconstruct from Task data (client_id / worker_id fields have names)
       try {
         const workerTasks = await base44.entities.Task.filter({ worker_id: userId }, '-created_date', 1);
         const clientTasks = await base44.entities.Task.filter({ client_id: userId }, '-created_date', 1);
         const task = workerTasks[0] || clientTasks[0];
         if (task) {
           const isWorker = task.worker_id === userId;
-          return {
-            id: userId,
-            full_name: isWorker ? task.worker_name : task.client_name,
-            rating: isWorker ? task.worker_rating : task.client_rating,
-            is_verified: isWorker ? task.worker_verified : task.client_verified,
-          };
+          return { id: userId, full_name: isWorker ? task.worker_name : task.client_name, rating: isWorker ? task.worker_rating : task.client_rating, is_verified: isWorker ? task.worker_verified : task.client_verified };
         }
       } catch (_) {}
       return null;
@@ -65,216 +85,197 @@ export default function PublicProfile() {
     enabled: !!userId,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
+      <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+    </div>
+  );
 
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4" dir="rtl">
-        <p className="text-gray-500 text-sm">המשתמש לא נמצא</p>
-        <button onClick={() => navigate(-1)} className="text-blue-600 font-semibold text-sm">חזרה</button>
-      </div>
-    );
-  }
+  if (!user) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 12 }} dir="rtl">
+      <div style={{ fontSize: 36 }}>🔍</div>
+      <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-2)' }}>המשתמש לא נמצא</p>
+      <button onClick={() => navigate(-1)} style={{ fontSize: 14, fontWeight: 700, color: '#1a6fd4', background: 'none', border: 'none', cursor: 'pointer' }}>חזרה</button>
+    </div>
+  );
 
   const avgRating = allReviews.length > 0
     ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
     : '—';
-  const workerScore = user.worker_score || 0;
+  const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const trustScore = calculateTrustScore(user, { tasks: completedTasks, reviews: allReviews });
   const trustLevel = getTrustLevel(trustScore);
 
   return (
-    <div className="min-h-screen" style={{ background: '#f4f7fb' }} dir="rtl">
-      <PageHeader title="פרופיל משתמש" />
+    <div style={{ background: 'var(--surface-1)', minHeight: '100dvh', paddingBottom: 32 }} dir="rtl">
+      {/* ── Header ── */}
+      <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button onClick={() => navigate(-1)} style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
+        </button>
+        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>פרופיל משתמש</span>
+      </div>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(140deg, #0f2b6b 0%, #1a6fd4 100%)', padding: '28px 20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 900, color: 'white', border: '2px solid rgba(255,255,255,0.25)', overflow: 'hidden', flexShrink: 0 }}>
-            {user.profile_photo
-              ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : (user.full_name?.[0]?.toUpperCase() || '?')}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ color: 'white', fontSize: 20, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 7 }}>
-              {user.full_name}
-              {user.is_verified && <VerifiedBadge size="md" />}
-            </div>
-            {user.profession && (
-              <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 5, background: 'rgba(255,255,255,0.15)', padding: '3px 12px', borderRadius: 20, display: 'inline-block' }}>
-                {user.profession}
-              </div>
-            )}
-          </div>
+      {/* ── Avatar + Name ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 20px 24px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
+        <div style={{
+          width: 88, height: 88, borderRadius: '50%',
+          background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 30, fontWeight: 900, color: 'white',
+          overflow: 'hidden', marginBottom: 16,
+          boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
+        }}>
+          {user.profile_photo
+            ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : initials}
         </div>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{user.full_name}</span>
+          {user.is_verified && <VerifiedBadge size="md" />}
+        </div>
+        {user.profession && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{user.profession}</div>}
+
+        {/* Trust level pill */}
+        {trustScore > 0 && (
+          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', borderRadius: 20, padding: '4px 14px' }}>
+            {trustLevel?.label || 'עובד מאומת'} · {trustScore} נק'
+          </div>
+        )}
+
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>
           {[
             { value: completedTasks.length, label: "ג'ובות בוצעו" },
             { value: postedTasks.length, label: "ג'ובות פורסמו" },
-            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: 'דירוג', sub: `${allReviews.length} ביקורות` },
-          ].map(s => (
-            <div key={s.label} style={{ background: 'rgba(255,255,255,0.13)', borderRadius: 16, padding: '12px 6px', textAlign: 'center' }}>
-              <div style={{ color: 'white', fontSize: 18, fontWeight: 900 }}>{s.value}</div>
-              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{s.label}</div>
-              {s.sub && <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9 }}>{s.sub}</div>}
+            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: 'דירוג', sub: allReviews.length > 0 ? `${allReviews.length} ביקורות` : null },
+          ].map((s, i, arr) => (
+            <div key={i} style={{ flex: 1, padding: '12px 6px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
+              <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.3 }}>{s.label}</div>
+              {s.sub && <div style={{ fontSize: 9, color: 'var(--text-3)' }}>{s.sub}</div>}
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{ padding: '16px 16px 40px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-        {/* Trust Badges */}
-        <TrustBadges user={user} />
-
-        {/* Trust Card — "Why this user is trusted" */}
-        <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
-
-        {/* Worker score */}
-        {workerScore > 0 && (
-          <div style={{ background: 'linear-gradient(135deg, #6d28d9, #7c3aed)', borderRadius: 16, padding: '14px 16px', color: 'white' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-              <div style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.15)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Award size={20} color="white" />
-              </div>
-              <div>
-                <div style={{ fontSize: 10, opacity: 0.8 }}>ניקוד עובד</div>
-                <div style={{ fontSize: 22, fontWeight: 900 }}>{workerScore.toFixed(0)} נק'</div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-              {[
-                { val: user.score_tasks || 0, label: 'משימות' },
-                { val: user.score_speed || 0, label: 'מהירות' },
-                { val: user.score_quality || 0, label: 'ביצוע' },
-              ].map(s => (
-                <div key={s.label} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
-                  <div style={{ fontWeight: 800, fontSize: 14 }}>{s.val}</div>
-                  <div style={{ fontSize: 9, opacity: 0.75 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
         {/* Bio */}
         {user.bio && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>אודות</div>
-            <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, margin: 0 }}>{user.bio}</p>
-          </div>
+          <SectionCard title="אודות">
+            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{user.bio}</p>
+          </SectionCard>
         )}
 
-        {/* Certificates (text) */}
-        {user.certificates?.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>תעודות מקצוע</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.certificates.map(cert => (
-                <span key={cert} style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                  ✅ {cert}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Certificate files */}
-        {user.certificate_files?.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>מסמכי תעודה</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {user.certificate_files.map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
-                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 10, color: '#86efac' }}>לצפייה ›</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Work categories */}
+        {/* Categories */}
         {user.preferred_categories?.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>תחומי עיסוק</div>
+          <SectionCard title="תחומי עיסוק">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
                   {getCategoryLabel(c)}
                 </span>
               ))}
             </div>
-          </div>
+          </SectionCard>
         )}
 
-        {/* Preferred cities */}
+        {/* Cities */}
         {user.preferred_cities?.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <MapPin size={12} /> אזורי פעילות
-            </div>
+          <SectionCard title="אזורי פעילות">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_cities.map(c => (
-                <span key={c} style={{ fontSize: 12, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
-                  📍 {c}
+                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={11} /> {c}
                 </span>
               ))}
             </div>
-          </div>
+          </SectionCard>
         )}
 
-        {/* Completion Timeline */}
+        {/* Certificates */}
+        {user.certificates?.length > 0 && (
+          <SectionCard title="תעודות מקצוע">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {user.certificates.map(cert => (
+                <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
+                  ✅ {cert}
+                </span>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Certificate files */}
+        {user.certificate_files?.length > 0 && (
+          <SectionCard title="מסמכי תעודה">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {user.certificate_files.map(doc => (
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="#16a34a" />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
+                </a>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Task timeline */}
         {completedTasks.length > 0 && (
-          <CompletionTimeline tasks={completedTasks} reviews={allReviews} />
+          <SectionCard title={`היסטוריית משימות · ${completedTasks.length} הושלמו`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {completedTasks.slice(0, 6).map((task, idx, arr) => {
+                const date = new Date(task.completed_at || task.updated_date);
+                const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+                const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                return (
+                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingBottom: idx < arr.length - 1 ? 14 : 0, paddingTop: idx > 0 ? 14 : 0, position: 'relative', borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
         )}
 
         {/* Reviews */}
         {allReviews.length > 0 && (
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 10 }}>ביקורות ({allReviews.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {allReviews.slice(0, 10).map(review => (
-                <div key={review.id} style={{ borderBottom: '1px solid #f0f4fa', paddingBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                    {[1,2,3,4,5].map(s => (
+          <SectionCard title={`ביקורות · ${allReviews.length}`}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {allReviews.slice(0, 8).map((review, i) => (
+                <div key={review.id}>
+                  {i > 0 && <div style={{ height: 1, background: 'var(--border-1)', marginBottom: 14 }} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                    {[1, 2, 3, 4, 5].map(s => (
                       <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
                     ))}
-                    <span style={{ fontSize: 10, color: '#aaa', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
                   </div>
-                  {review.comment && (
-                    <p style={{ fontSize: 12, color: '#444', lineHeight: 1.5, margin: '0 0 7px' }}>{review.comment}</p>
-                  )}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                    {review.arrived_on_time === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 99, padding: '2px 8px' }}>⏱️ הגיע בזמן</span>}
-                    {review.professional === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 99, padding: '2px 8px' }}>💼 מקצועי</span>}
-                    {review.good_communication === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>💬 תקשורת טובה</span>}
-                    {review.fair_pricing === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 99, padding: '2px 8px' }}>💰 מחיר הוגן</span>}
-                    {review.would_hire_again === true && <span style={{ fontSize: 10, fontWeight: 700, color: '#db2777', background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: 99, padding: '2px 8px' }}>🔁 ממליץ</span>}
-                  </div>
+                  {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.55, margin: 0 }}>{review.comment}</p>}
+                  <ReviewChips review={review} />
                 </div>
               ))}
             </div>
+          </SectionCard>
+        )}
+
+        {/* Empty */}
+        {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && allReviews.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-3)' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>המשתמש טרם מילא פרטי פרופיל</div>
           </div>
         )}
 
-        {/* Empty state */}
-        {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && allReviews.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '32px 16px', color: '#94a3b8' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🔍</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>המשתמש טרם מילא פרטי פרופיל</div>
-          </div>
-        )}
+        <div style={{ height: 16 }} />
       </div>
     </div>
   );
