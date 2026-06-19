@@ -142,12 +142,7 @@ export default function PublicProfile() {
         </div>
         {user.profession && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{user.profession}</div>}
 
-        {/* Trust level pill */}
-        {trustScore > 0 && (
-          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', borderRadius: 20, padding: '4px 14px' }}>
-            {trustLevel?.label || 'עובד מאומת'} · {trustScore} נק'
-          </div>
-        )}
+
 
         {/* Stats */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>
@@ -166,6 +161,9 @@ export default function PublicProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Trust bar */}
+        <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
 
         {/* Bio */}
         {user.bio && (
@@ -228,9 +226,6 @@ export default function PublicProfile() {
             </div>
           </SectionCard>
         )}
-
-        {/* Trust bar */}
-        <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
 
         {/* History & Reviews menu buttons */}
         {(completedTasks.length > 0 || allReviews.length > 0) && (
