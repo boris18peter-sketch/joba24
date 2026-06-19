@@ -457,95 +457,63 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
            </div>
          )}
 
-        {/* Card Header: tags (right in RTL = first child) + applicant count (left = second child) */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          {/* First child = RIGHT side in RTL: all tags */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag] && (() => {
-              const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
-              return (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
-                  {tag.emoji} {tag.label}
+        {/* Card Header: minimal — only urgent tag + For You */}
+        {(task.urgency_tag === 'immediate' || isForYou || (task.status === 'OPEN' && liveApplicantCount > 0)) && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {task.urgency_tag === 'immediate' && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', whiteSpace: 'nowrap' }}>
+                  🔥 דחוף
                 </span>
-              );
-            })()}
-            {badgeLabels.slice(0, 1).map((label, i) => (
-              <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-                {label}
-              </span>
-            ))}
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {isForYou && (
+                <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+                  ✦ For You
+                </span>
+              )}
+              {task.status === 'OPEN' && liveApplicantCount > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
+                  {liveApplicantCount}
+                </span>
+              )}
+            </div>
           </div>
-          {/* Second child = LEFT side in RTL: For You badge + applicant count */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {isForYou && (
-              <span style={{
-                fontSize: 10, fontWeight: 800,
-                padding: '2px 8px', borderRadius: 6,
-                background: 'linear-gradient(135deg,#f59e0b,#d97706)',
-                color: 'white',
-                display: 'inline-flex', alignItems: 'center', gap: 3,
-                boxShadow: '0 2px 6px rgba(245,158,11,0.45)',
-                whiteSpace: 'nowrap',
-                letterSpacing: 0.1,
-                border: '1px solid rgba(255,255,255,0.25)',
-              }}>
-                ✦ For You
-              </span>
-            )}
-            {task.status === 'OPEN' && liveApplicantCount > 0 && (
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                padding: '2px 8px', borderRadius: 20,
-                background: '#fffbeb', border: '1px solid #fde68a',
-                color: '#92400e',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                whiteSpace: 'nowrap',
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'pulse-app 1.5s infinite', flexShrink: 0 }} />
-                {liveApplicantCount} {t('applications_count')}
-              </span>
-            )}
+        )}
 
-          </div>
-        </div>
-
-        {/* Card Body: title + description + meta + media */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ display: 'flex', gap: 10 }}>
+        {/* Card Body: title + meta + media */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              {/* Title — hero element */}
+              <h3 style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 17, lineHeight: 1.3, margin: '0 0 6px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', letterSpacing: -0.2 }}>
                 {task.title}
               </h3>
+              {/* Location + publisher — one clean line */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--text-3)', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                {task.location_name && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>
+                    <MapPin size={11} strokeWidth={2} color="var(--text-3)" />
+                    {task.location_name}
+                  </span>
+                )}
+                {task.client_name && task.client_id !== currentUserId && (
+                  <>
+                    {task.location_name && <span style={{ color: 'var(--border-1)' }}>·</span>}
+                    <UserBadge name={task.client_name} userId={task.client_id} verified={task.client_verified} rating={task.client_rating} />
+                  </>
+                )}
+              </div>
+              {/* Description — one subtle line, only if present */}
               {task.description && (
-                <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                <p style={{ color: 'var(--text-3)', fontSize: 12, margin: '4px 0 0', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
                   {parseDescription(task.description).mainDescription}
                 </p>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
-                {task.location_name && (
-                  <><MapPin size={10} strokeWidth={1.8} />
-                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span></>
-                )}
-                {task.client_name && (
-                  task.client_id === currentUserId ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
-                  ) : (
-                    <UserBadge
-                      name={task.client_name}
-                      userId={task.client_id}
-                      verified={task.client_verified}
-                      rating={task.client_rating}
-                    />
-                  )
-                )}
-              </div>
-              {task.created_date && getRelativeTime(task.created_date) && (
-                <div style={{ fontSize: 10, color: '#b0bac8', marginTop: 4 }}>
-                  {t('posted')} {getRelativeTime(task.created_date)}
-                </div>
-              )}
             </div>
-            {/* Media thumbnail — opens lightbox */}
+            {/* Media thumbnail */}
             {(() => {
               const allMedia = [
                 ...(task.images || []).map(url => ({ type: 'image', url })),
@@ -554,10 +522,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               if (!allMedia.length) return null;
               const cur = allMedia[0];
               return (
-                <div
-                  onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }}
-                  style={{ width: 78, height: 72, flexShrink: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-1)', position: 'relative', background: '#000', cursor: 'pointer' }}
-                >
+                <div onClick={e => { e.stopPropagation(); setLightboxIndex(0); setLightboxOpen(true); }} style={{ width: 76, height: 76, flexShrink: 0, borderRadius: 'var(--r-md)', overflow: 'hidden', border: '1px solid var(--border-1)', position: 'relative', background: '#000', cursor: 'pointer' }}>
                   {cur.type === 'image' ? (
                     <img src={cur.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   ) : (
@@ -569,9 +534,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                     </div>
                   )}
                   {allMedia.length > 1 && (
-                    <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.55)', borderRadius: 6, padding: '1px 5px', fontSize: 9, color: 'white', fontWeight: 700 }}>
-                      +{allMedia.length - 1}
-                    </div>
+                    <div style={{ position: 'absolute', bottom: 4, right: 4, background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '1px 5px', fontSize: 9, color: 'white', fontWeight: 700 }}>+{allMedia.length - 1}</div>
                   )}
                 </div>
               );
@@ -579,28 +542,23 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
           </div>
         </div>
 
-        {/* Card Footer: price + apply */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border-1)' }}>
-          {/* Price + payment + distance */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
-              {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
-            </div>
+        {/* Card Footer: price + distance + action */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--border-1)' }}>
+          {/* Price (hero) + distance + payment */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 900, color: 'var(--text-1)', fontSize: 22, lineHeight: 1, letterSpacing: -0.8, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
             {dist != null && !isNaN(dist) && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'inline-flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
-                <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-primary)', display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}>
+                <Navigation size={11} strokeWidth={2.5} />
                 {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
               </span>
             )}
-            <div style={{ display: 'none' }}>
-            </div>
+            {task.payment_method && (
+              <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>{task.payment_method === 'Cash' ? '💵' : task.payment_method === 'Bit' ? '📱' : '💳'}</span>
+            )}
             {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
-             <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>
-               📈 ₪{task.base_price} ← ₪{task.max_price}{liveApplicantCount > 0 ? ` · ${t('auto_bump_active')}` : ` · ${t('auto_bump_desc')}`}
-             </span>
-             )}
-
+              <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>📈</span>
+            )}
           </div>
           {/* Right: owner controls or apply button */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
@@ -679,10 +637,10 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
                       setTimeout(() => setApplyLocked(false), 600);
                     }}
                     disabled={applyLocked}
-                    style={{ height: 36, padding: '0 14px', borderRadius: 'var(--r-sm)', background: 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : 'var(--shadow-sm)' }}
+                    style={{ height: 44, padding: '0 18px', borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))', border: 'none', color: 'white', fontSize: 13, fontWeight: 800, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.94)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : '0 4px 14px rgba(26,111,212,0.35)' }}
                   >
-                    {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
-                      <><span>הגש מועמדות</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
+                    {applyLocked ? <Loader2 size={14} className="animate-spin" /> : (
+                      <><span>הגש מועמדות</span><span style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={11} /></span></>
                     )}
                   </button>
                 )}
