@@ -197,6 +197,23 @@
   button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   button:active { opacity: 0.85; transform: scale(0.97); }
 
+  /* ── Global minimum tap targets (WCAG / Apple HIG: 44×44pt) ── */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Inline/icon-only buttons may be smaller visually but keep the tap area */
+  button.j-icon-btn {
+    position: relative;
+    min-height: unset;
+    min-width: unset;
+  }
+  button.j-icon-btn::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+  }
+
   /* Prevent iOS font-size zoom */
   input[type="text"], input[type="email"], input[type="password"],
   input[type="number"], input[type="tel"], textarea, select {

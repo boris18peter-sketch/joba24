@@ -34,9 +34,9 @@ export default function AppHeader({ onOpenMenu }) {
           borderBottom: '1px solid var(--border-1)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          height: 58,
+          height: 60,
           display: 'flex', alignItems: 'center',
-          paddingRight: 16, paddingLeft: 16,
+          paddingRight: 14, paddingLeft: 14,
           justifyContent: 'space-between',
           flexShrink: 0,
           boxShadow: '0 1px 0 var(--border-1)',
@@ -66,7 +66,7 @@ export default function AppHeader({ onOpenMenu }) {
               onClick={() => setShowLogin(true)}
               style={{
                 background: 'var(--brand-accent)', color: '#1a3a6b', border: 'none',
-                height: 36, padding: '0 16px', borderRadius: 'var(--r-sm)',
+                height: 40, padding: '0 18px', borderRadius: 'var(--r-sm)',
                 fontWeight: 800, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
                 boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
               }}
@@ -77,7 +77,7 @@ export default function AppHeader({ onOpenMenu }) {
           <button
             onClick={onOpenMenu}
             style={{
-              width: 38, height: 38, borderRadius: 'var(--r-sm)',
+              width: 42, height: 42, borderRadius: 'var(--r-sm)',
               background: 'var(--brand-primary)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, boxShadow: 'var(--shadow-sm)',

@@ -624,8 +624,7 @@ export default function Layout() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setCancelWarningTask(null)}
-                style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
-                
+                style={{ width: '100%', height: 56, borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 16px rgba(26,111,212,0.35)' }}>
                 {t('keep_task_btn')}
               </button>
               <button
@@ -645,7 +644,7 @@ export default function Layout() {
                   setCancelWarningLoading(false);
                 }}
                 disabled={cancelWarningLoading}
-                style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                style={{ width: '100%', height: 52, borderRadius: 'var(--r-md)', background: 'var(--surface-2)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 
                 {cancelWarningLoading ? <Loader2 size={18} className="animate-spin" /> : t('cancel_task_btn_label')}
               </button>
@@ -693,7 +692,7 @@ export default function Layout() {
                     display: isActive ? 'block' : 'none',
                     overflowY: tabPath === '/map' ? 'hidden' : 'auto',
                     overflowX: 'hidden',
-                    paddingBottom: tabPath === '/map' ? 0 : 'calc(100px + env(safe-area-inset-bottom))',
+                    paddingBottom: tabPath === '/map' ? 0 : 'calc(80px + max(16px, env(safe-area-inset-bottom)))',
                     WebkitOverflowScrolling: 'touch',
                     overscrollBehavior: 'contain',
                     height: isActive ? '100%' : 0
@@ -727,7 +726,7 @@ export default function Layout() {
                 flexDirection: 'column',
                 overflowY: 'auto',
                 overflowX: 'hidden',
-                paddingBottom: 'calc(100px + env(safe-area-inset-bottom))',
+                paddingBottom: 'calc(80px + max(16px, env(safe-area-inset-bottom)))',
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehavior: 'contain',
                 height: '100%'
@@ -748,9 +747,9 @@ export default function Layout() {
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
           background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',
           boxShadow: '0 -2px 20px rgba(10,90,190,0.08)',
-          paddingBottom: 'max(0px, env(safe-area-inset-bottom))'
+          paddingBottom: 'max(8px, env(safe-area-inset-bottom))'
         }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '8px 16px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '6px 8px 4px' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
               const active = location.pathname === to;
               if (primary) {
@@ -758,29 +757,29 @@ export default function Layout() {
                   <button id="onboarding-create-btn" key={to} onClick={() => {
                     if (!isAuthenticated) {navigate(to);return;}
                     gate(() => navigate(to));
-                  }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -26, background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', minWidth: 64, WebkitTapHighlightColor: 'transparent' }}>
                     <div style={{
-                      width: 56, height: 56, borderRadius: '50%',
+                      width: 60, height: 60, borderRadius: '50%',
                       background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       boxShadow: '0 4px 20px rgba(26,111,212,0.45)'
                     }}>
-                      <Icon size={24} color="white" />
+                      <Icon size={26} color="white" />
                     </div>
-                    <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 600 }}>{label}</span>
+                    <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 700 }}>{label}</span>
                   </button>
                 );
               }
               return (
-                <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 12px', textDecoration: 'none', position: 'relative' }}>
+                <Link key={to} to={to} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 12px 4px', textDecoration: 'none', position: 'relative', minWidth: 52, minHeight: 56, justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
                   <div style={{ position: 'relative' }}>
-                    <Icon size={20} color={active ? '#1a6fd4' : '#a0b8d8'} />
+                    <Icon size={22} color={active ? '#1a6fd4' : '#a0b8d8'} />
                     {badge > 0 &&
                     <div style={{
                       position: 'absolute', top: -6, right: -8,
                       background: '#dc2626', color: 'white',
                       fontSize: 9, fontWeight: 900,
-                      width: 16, height: 16, borderRadius: '50%',
+                      width: 17, height: 17, borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: '1.5px solid white'
                     }}>{badge}</div>
