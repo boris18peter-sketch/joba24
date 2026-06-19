@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Search, SlidersHorizontal, SearchX, X, MapPin, Banknote, Flame, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/PullToRefreshIndicator';
 
 import TaskCardWithSwipe from '@/components/TaskCardWithSwipe';
+import TaskCardSkeleton from '@/components/TaskCardSkeleton';
+import EmptySearchState from '@/components/EmptySearchState';
 import FilterSheet from '@/components/FilterSheet';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
@@ -637,15 +639,13 @@ export default function HomeFeed() {
 
             {isLoading ?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-                {Array(4).fill(0).map((_, i) => <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', padding: '16px' }} className="animate-pulse"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}><div style={{ flex: 1 }}><div className="h-4 bg-gray-100 rounded-lg w-3/4 mb-3" /><div className="h-3 bg-gray-100 rounded-lg w-1/3 mb-4" /><div className="h-3 bg-gray-100 rounded-lg w-1/2" /></div><div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}><div className="h-6 bg-gray-100 rounded-lg w-16" /><div className="h-8 bg-gray-100 rounded-lg w-16" /></div></div></div>)}
+                <TaskCardSkeleton count={5} />
               </div> :
             displayedTasks.length === 0 ?
-              <div className="text-center py-16">
-                <SearchX size={36} className="mx-auto mb-3 text-gray-300" strokeWidth={1.2} />
-                <p className="font-semibold text-gray-700">{t('no_tasks')}</p>
-                <p className="text-sm text-gray-400 mt-1">{t('no_tasks_sub')}</p>
-                {(search || hasFilters) && <button onClick={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }} style={{ marginTop: 14, padding: '8px 20px', borderRadius: 20, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>{t('filter')}</button>}
-              </div> :
+              <EmptySearchState
+                hasFilters={!!(search || hasFilters)}
+                onReset={() => { setSearch(''); setFilters({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false }); }}
+              /> :
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
                 {displayedTasks.map((task, index) => {
                   const isOwn = !!me?.id && task.client_id === me.id;

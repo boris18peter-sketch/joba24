@@ -375,7 +375,7 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
       <div
         ref={cardRef}
         onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
-        className="active:scale-[0.982] transition-all"
+        className="j-task-card"
         style={{
           background: 'var(--surface-2)',
           borderRadius: 'var(--r-lg)',
@@ -406,10 +406,13 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
               width: 52, height: 52, borderRadius: '50%',
               background: 'linear-gradient(135deg,#dcfce7,#bbf7d0)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 0 8px rgba(22,163,74,0.1)',
+              boxShadow: '0 0 0 10px rgba(22,163,74,0.08)',
               animation: 'successPop 0.4s cubic-bezier(0.34,1.6,0.64,1)',
             }}>
-              <CheckCircle2 size={26} color="#16a34a" />
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+                <circle cx="13" cy="13" r="13" fill="#16a34a" opacity="0.15" />
+                <path className="j-checkmark-path" d="M7 13.5l4.5 4.5L19 9" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
             </div>
             <div style={{ fontSize: 15, fontWeight: 900, color: '#14532d' }}>{t('application_sent')}</div>
              {cardSuccessCredits > 0 && (

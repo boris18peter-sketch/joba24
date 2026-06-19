@@ -333,6 +333,68 @@
 .sheet-scroll { max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 
 /* ════════════════════════════════════════════════════════════════════
+   PREMIUM INTERACTION STATES
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Task card hover — subtle lift */
+.j-task-card {
+  transition: box-shadow 0.22s ease, transform 0.18s ease, border-color 0.18s ease;
+  will-change: transform;
+}
+.j-task-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  border-color: var(--border-2) !important;
+}
+.j-task-card:active {
+  transform: scale(0.982) translateY(0);
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+/* Primary buttons — press depth */
+.j-btn-primary:active,
+button[style*="linear-gradient(135deg,#1a6fd4"]:active,
+button[style*="linear-gradient(135deg, #1a6fd4"]:active {
+  transform: scale(0.96) !important;
+  opacity: 0.9 !important;
+  box-shadow: 0 2px 6px rgba(26,111,212,0.2) !important;
+}
+
+/* Success check animation */
+@keyframes checkmarkDraw {
+  from { stroke-dashoffset: 36; opacity: 0; }
+  to   { stroke-dashoffset: 0;  opacity: 1; }
+}
+.j-checkmark-path {
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: checkmarkDraw 0.45s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+}
+
+/* Micro — icon spin on action */
+@keyframes iconSpinIn {
+  from { transform: rotate(-90deg) scale(0.6); opacity: 0; }
+  to   { transform: rotate(0deg)   scale(1);   opacity: 1; }
+}
+.j-icon-spin { animation: iconSpinIn 0.3s cubic-bezier(0.34,1.4,0.64,1); }
+
+/* Badge pop-in */
+@keyframes badgePop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.j-badge-pop { animation: badgePop 0.35s cubic-bezier(0.34,1.6,0.64,1) both; }
+
+/* Row hover in lists */
+.j-list-row {
+  transition: background 0.15s ease;
+  border-radius: var(--r-md);
+}
+.j-list-row:hover { background: var(--surface-3); }
+
+/* ════════════════════════════════════════════════════════════════════
    ANIMATIONS
    ════════════════════════════════════════════════════════════════════ */
 @keyframes sheetSlideUp   { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
