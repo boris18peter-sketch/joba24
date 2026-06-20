@@ -47,10 +47,8 @@ Deno.serve(async (req) => {
       would_hire_again: wouldHireAgain ?? null,
     });
 
-    // Mark task confirmation side (tasks_completed already incremented by completeTask)
-    if (isOwner) {
-      await base44.asServiceRole.entities.Task.update(taskId, { client_confirmed: true });
-    } else {
+    // Mark worker_confirmed on task (worker's side only — client_confirmed is set by completeTask)
+    if (!isOwner) {
       await base44.asServiceRole.entities.Task.update(taskId, { worker_confirmed: true });
     }
 

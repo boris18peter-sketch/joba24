@@ -312,24 +312,28 @@ export default function TaskDetail() {
     prevTaskStatusRef.current = task?.status;
   }, [task?.status]);
 
-  // Check expiry
+  // Check expiry — update via backend function to avoid direct client-side status writes
   useEffect(() => {
     if (!task || task.status !== 'OPEN') return;
     if (task.expires_at && new Date(task.expires_at) < new Date()) {
-      base44.entities.Task.update(id, { status: 'EXPIRED' }).then(() => {
+      base44.functions.invoke('expireInactiveTasks', {}).catch(() => {}).finally(() => {
         queryClient.invalidateQueries({ queryKey: ['task', id] });
       });
     }
-  }, [task]);
+  }, [task?.id, task?.expires_at]);
 
   const takeMutation = useMutation({
-    mutationFn: () => base44.entities.Task.update(id, {
-      status: 'TAKEN',
-      worker_id: me?.id,
-      worker_name: me?.full_name,
-      worker_status: 'on_the_way'
+    mutationFn: () => base44.functions.invoke('approveWorker', {
+      taskId: id,
+      applicationId: myApp?.id,
+      workerId: me?.id,
+      workerName: me?.full_name,
     }),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (!res.data?.success && res.data?.error !== 'already_assigned') {
+        toast.error(res.data?.error || t('error_taking_task'));
+        return;
+      }
       setTaskTaken(true);
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       setConfetti(true);
