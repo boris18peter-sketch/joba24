@@ -8,9 +8,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Only grant bonus if user doesn't have credits yet (first time)
-    if (user.worker_credits !== undefined && user.worker_credits !== null) {
-      return Response.json({ message: 'Bonus already granted', credits: user.worker_credits });
+    // Re-fetch user via service role to get the CURRENT credits value (not the stale JWT claim)
+    const freshUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    const freshUser = freshUsers[0];
+    if (!freshUser) return Response.json({ error: 'User not found' }, { status: 404 });
+
+    // Idempotency guard: only grant if credits field is genuinely null/undefined
+    if (freshUser.worker_credits !== undefined && freshUser.worker_credits !== null) {
+      return Response.json({ message: 'Bonus already granted', credits: freshUser.worker_credits });
     }
 
     // Use service role to update credits reliably

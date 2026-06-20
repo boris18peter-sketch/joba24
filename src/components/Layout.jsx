@@ -321,6 +321,12 @@ export default function Layout() {
     return unsub;
   }, [me?.id, isAuthenticated, queryClient]);
 
+  // Keep a live ref to task lists so the ChatMessage subscription never closes over stale arrays
+  const myPublishedTasksRef = useRef(myPublishedTasks);
+  const workerTasksRef = useRef(workerTasks);
+  useEffect(() => { myPublishedTasksRef.current = myPublishedTasks; }, [myPublishedTasks]);
+  useEffect(() => { workerTasksRef.current = workerTasks; }, [workerTasks]);
+
   // Real-time chat message push notifications
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
@@ -328,13 +334,14 @@ export default function Layout() {
       if (event.type !== 'create' || !event.data) return;
       const msg = event.data;
       if (msg.sender_id === me.id) return;
-      const task = [...(myPublishedTasks || []), ...(workerTasks || [])].find((t) => t.id === msg.task_id);
+      // Use refs so we always see the latest task list without re-subscribing
+      const task = [...(myPublishedTasksRef.current || []), ...(workerTasksRef.current || [])].find((t) => t.id === msg.task_id);
       if (!task) return;
       setUnreadMessages((prev) => prev + 1);
       addNotification({ type: 'new_message', senderName: msg.sender_name, preview: msg.content?.slice(0, 60), taskId: msg.task_id });
     });
     return unsub;
-  }, [me?.id, myPublishedTasks, workerTasks]);
+  }, [me?.id, isAuthenticated]);
 
   // Clear unread when visiting chat inbox
   useEffect(() => {
@@ -444,36 +451,37 @@ export default function Layout() {
         prevAppStatus = prevStatus;
         appStatusRef.current[appId] = appData.status;
         if (prevStatus === 'approved' && appData.status === 'rejected') {
-          const relatedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find((t) => t.id === appData.task_id);
+          // Use refs to always read fresh task lists without stale closure
+          const relatedTask = [...(myPublishedTasksRef.current || []), ...(workerTasksRef.current || [])].find((t) => t.id === appData.task_id);
           setRevokedTask(relatedTask || { id: appData.task_id, title: appData.task_title || 'משימה' });
         }
       }
 
       if (event.type === 'create' && appData.task_id) {
-        const isMyTask = myPublishedTasks.some((t) => t.id === appData.task_id);
+        const isMyTask = myPublishedTasksRef.current.some((t) => t.id === appData.task_id);
         const iAmApplicant = appData.worker_id === me.id;
         if (isMyTask && !iAmApplicant) {
-          const task = myPublishedTasks.find((t) => t.id === appData.task_id);
+          const task = myPublishedTasksRef.current.find((t) => t.id === appData.task_id);
           addNotification({ type: 'application_received', taskTitle: task?.title || 'משימה', taskId: appData.task_id });
         }
         if (iAmApplicant && !isMyTask) {
-          const appliedTask = workerTasks.find((t) => t.id === appData.task_id);
+          const appliedTask = workerTasksRef.current.find((t) => t.id === appData.task_id);
           addNotification({ type: 'application_sent', taskTitle: appliedTask?.title || appData.task_title || 'משימה', taskId: appData.task_id });
         }
       } else if (event.type === 'update') {
         // Skip: application_approved is already sent via push notification (notifyApplicationUpdated)
         if (appData.status === 'rejected' && appData.worker_id === me.id) {
-          const isMyOwnTask = myPublishedTasks.some((t) => t.id === appData.task_id);
+          const isMyOwnTask = myPublishedTasksRef.current.some((t) => t.id === appData.task_id);
           if (isMyOwnTask) return;
           if (prevAppStatus !== 'approved') {
-            const rejectedTask = [...(myPublishedTasks || []), ...(workerTasks || [])].find((t) => t.id === appData.task_id);
+            const rejectedTask = [...(myPublishedTasksRef.current || []), ...(workerTasksRef.current || [])].find((t) => t.id === appData.task_id);
             addNotification({ type: 'application_rejected', taskTitle: rejectedTask?.title || 'משימה', taskId: appData.task_id });
           }
         }
       }
     });
     return unsubscribe;
-  }, [me?.id, myPublishedTasks, workerTasks]);
+  }, [me?.id, isAuthenticated]);
 
   const recentNotifKeysRef = useRef(new Set());
 
