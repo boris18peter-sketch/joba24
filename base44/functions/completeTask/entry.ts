@@ -28,6 +28,9 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, note: 'Already completed' });
     }
 
+    // Capture client_confirmed BEFORE updating — used as idempotency guard below
+    const wasAlreadyClientConfirmed = !!task.client_confirmed;
+
     // Mark task as COMPLETED
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'COMPLETED',
@@ -36,7 +39,7 @@ Deno.serve(async (req) => {
     });
 
     // Increment worker's completed tasks count — only if not already incremented (idempotency guard)
-    if (task.worker_id && !task.client_confirmed) {
+    if (task.worker_id && !wasAlreadyClientConfirmed) {
       const workerUsers = await base44.asServiceRole.entities.User.filter({ id: task.worker_id });
       const worker = workerUsers[0];
       if (worker) {
