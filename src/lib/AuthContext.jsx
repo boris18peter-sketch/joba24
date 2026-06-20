@@ -24,21 +24,8 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
-  // Poll credits every 15s when authenticated
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const interval = setInterval(async () => {
-      try {
-        const fresh = await base44.auth.me();
-        setUser(prev => {
-          if (!prev) return fresh;
-          if (fresh.worker_credits !== prev.worker_credits) return { ...prev, worker_credits: fresh.worker_credits };
-          return prev;
-        });
-      } catch {}
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  // Credits are kept up-to-date via the CreditTransaction WS subscription in checkUserAuth.
+  // No polling needed — removing the 15s interval to reduce unnecessary API calls.
 
   const checkAppState = async () => {
     try {

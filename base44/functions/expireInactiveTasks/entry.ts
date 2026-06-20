@@ -9,6 +9,16 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Allow: scheduled cron (no auth token) OR authenticated admin users
+    const isAuthenticated = await base44.auth.isAuthenticated();
+    if (isAuthenticated) {
+      const user = await base44.auth.me();
+      if (user?.role !== 'admin') {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+    // Unauthenticated requests are allowed (scheduled cron automation)
+
     const now = new Date().toISOString();
     const fallbackCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
