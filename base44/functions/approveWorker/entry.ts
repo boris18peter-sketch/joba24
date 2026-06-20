@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 Deno.serve(async (req) => {
   try {
@@ -16,15 +16,6 @@ Deno.serve(async (req) => {
     }
 
     console.log('🔄 APPROVAL MUTATION START:', { taskId, workerId });
-
-    // STEP 0: Race condition guard — re-fetch task and verify it's still OPEN
-    const freshCheck = await base44.asServiceRole.entities.Task.filter({ id: taskId });
-    const currentTask = freshCheck[0];
-    if (!currentTask) return Response.json({ error: 'Task not found' }, { status: 404 });
-    if (currentTask.status !== 'OPEN' || currentTask.worker_id) {
-      console.warn('⚠️ approveWorker: task no longer OPEN', { status: currentTask.status, worker_id: currentTask.worker_id });
-      return Response.json({ error: 'task_already_taken', status: currentTask.status }, { status: 409 });
-    }
 
     // STEP 1: Update task with worker assignment (ATOMIC)
     const updateTaskResult = await base44.entities.Task.update(taskId, {

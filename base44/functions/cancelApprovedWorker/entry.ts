@@ -29,6 +29,12 @@ Deno.serve(async (req) => {
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
     const activeApps = apps.filter(a => a.status === 'approved' || a.status === 'pending');
 
+    // Batch-fetch all worker records to avoid N+1 queries
+    const workerIds = [...new Set(activeApps.filter(a => (a.credits_charged || 0) > 0).map(a => a.worker_id))];
+    const workerResults = await Promise.all(workerIds.map(id => base44.asServiceRole.entities.User.filter({ id })));
+    const workerMap = {};
+    workerResults.forEach(res => { if (res[0]) workerMap[res[0].id] = res[0]; });
+
     // Refund all active applicants in parallel
     await Promise.all(activeApps.map(async (app) => {
       const note = app.status === 'approved'
@@ -40,8 +46,7 @@ Deno.serve(async (req) => {
       const creditsToRefund = app.credits_charged || 0;
       if (creditsToRefund <= 0) return;
 
-      const workerUsers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
-      const worker = workerUsers[0];
+      const worker = workerMap[app.worker_id];
       if (!worker) return;
 
       const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;

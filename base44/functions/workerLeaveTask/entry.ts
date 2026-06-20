@@ -24,16 +24,16 @@ Deno.serve(async (req) => {
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId, worker_id: user.id });
     const activeApps = apps.filter(a => a.status === 'approved' || a.status === 'pending');
 
+    // Fetch worker once (outside the loop — avoid N+1)
+    const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    const worker = workerUsers[0];
+
     // Refund credits for all active applications (should be 1)
     await Promise.all(activeApps.map(async (app) => {
       const creditsToRefund = app.credits_charged || 0;
       await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'cancelled' });
 
-      if (creditsToRefund <= 0) return;
-
-      const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
-      const worker = workerUsers[0];
-      if (!worker) return;
+      if (creditsToRefund <= 0 || !worker) return;
 
       const newBalance = (worker.worker_credits ?? 0) + creditsToRefund;
       await base44.asServiceRole.entities.User.update(worker.id, { worker_credits: newBalance });

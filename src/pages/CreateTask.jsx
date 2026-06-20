@@ -506,6 +506,7 @@ export default function CreateTask() {
   const doSubmit = async () => {
     if (submittingRef.current) return;
     submittingRef.current = true;
+    let submitted = false;
     const newErrors = {};
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
@@ -633,18 +634,15 @@ export default function CreateTask() {
       if (currentCredits < 10) {
         setShowNoCreditsModal(true);
         setLoading(false);
+        submittingRef.current = false;
         return;
       }
       const newBalance = currentCredits - 10;
       await base44.auth.updateMe({ worker_credits: newBalance });
-      // Record the transaction
       await base44.entities.CreditTransaction.create({
-        user_id: me.id,
-        amount: -10,
-        type: 'Application_Fee',
+        user_id: me.id, amount: -10, type: 'Application_Fee',
         note: `עלות סטורי פרסום: ${form.title || 'משימה'}`,
-        task_title: form.title || 'משימה',
-        balance_after: newBalance,
+        task_title: form.title || 'משימה', balance_after: newBalance,
       });
     }
 
@@ -690,8 +688,9 @@ export default function CreateTask() {
       client_verified: me?.is_verified || false,
     });
 
+    submitted = true;
     setLoading(false);
-    submittingRef.current = false; // already reset, but ensure it's false
+    submittingRef.current = false;
     localStorage.removeItem(DRAFT_KEY);
     toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {
@@ -702,6 +701,10 @@ export default function CreateTask() {
       setSearchingTaskLocation(form.location_name);
     } else {
       navigate('/');
+    }
+    if (!submitted) {
+      // Ensure ref is reset if we returned early due to validation/moderation errors
+      submittingRef.current = false;
     }
   };
 
