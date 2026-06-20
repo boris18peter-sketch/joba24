@@ -518,6 +518,7 @@ export default function CreateTask() {
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
         setShowErrorBanner(true);
+        submittingRef.current = false;
         return;
       }
       // Gibberish check for edit mode too
@@ -526,6 +527,7 @@ export default function CreateTask() {
       if (tg || dg) {
         setModerationErrors({ title: tg || undefined, description: dg || undefined });
         setShowErrorBanner(true);
+        submittingRef.current = false;
         return;
       }
       setLoading(true);
@@ -533,6 +535,7 @@ export default function CreateTask() {
       const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
       const expires = expiryHoursEdit ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() : null;
       submittingRef.current = false;
+      try {
       await base44.entities.Task.update(editId, {
         title: form.title,
         description: form.description,
@@ -560,13 +563,20 @@ export default function CreateTask() {
         ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
       });
       setLoading(false);
+      submittingRef.current = false;
       toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
       navigate(`/task/${editId}`);
+      } catch (err) {
+        setLoading(false);
+        submittingRef.current = false;
+        toast.error('תקלה בשמירה, נסה שוב');
+      }
       return;
     }
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowErrorBanner(true);
+      submittingRef.current = false;
       const order = ['description', 'price', 'location_name', 'payment_method'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
@@ -587,6 +597,7 @@ export default function CreateTask() {
       setModerationErrors({ description: descGibberish });
       setShowErrorBanner(true);
       setLoading(false);
+      submittingRef.current = false;
       return;
     }
 
@@ -599,6 +610,7 @@ export default function CreateTask() {
       setModerationErrors({ description: 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.' });
       setShowErrorBanner(true);
       setLoading(false);
+      submittingRef.current = false;
       return;
     }
 
@@ -614,6 +626,7 @@ export default function CreateTask() {
       setModerationErrors({ categoryMismatch: mismatch });
       setShowErrorBanner(true);
       setLoading(false);
+      submittingRef.current = false;
       return;
     }
     for (const imgUrl of (form.images || [])) {
@@ -624,11 +637,12 @@ export default function CreateTask() {
         setModerationErrors({ images: 'אחת התמונות שהעלית נחסמה עקב תוכן לא הולם.' });
         setShowErrorBanner(true);
         setLoading(false);
+        submittingRef.current = false;
         return;
       }
     }
 
-    // Deduct 10 credits for story
+    // Story credit check — client-side guard only (server creates task; story deduction is post-creation)
     if (form.is_story) {
       const currentCredits = me?.worker_credits ?? 0;
       if (currentCredits < 10) {
@@ -637,13 +651,6 @@ export default function CreateTask() {
         submittingRef.current = false;
         return;
       }
-      const newBalance = currentCredits - 10;
-      await base44.auth.updateMe({ worker_credits: newBalance });
-      await base44.entities.CreditTransaction.create({
-        user_id: me.id, amount: -10, type: 'Application_Fee',
-        note: `עלות סטורי פרסום: ${form.title || 'משימה'}`,
-        task_title: form.title || 'משימה', balance_after: newBalance,
-      });
     }
 
     const expiryHours = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
@@ -688,6 +695,10 @@ export default function CreateTask() {
       client_verified: me?.is_verified || false,
     });
 
+    // Deduct story credits via backend (idempotent — safe to fire-and-forget)
+    if (form.is_story && created?.id) {
+      base44.functions.invoke('deductStoryCredits', { taskId: created.id, taskTitle: autoTitle }).catch(() => {});
+    }
     submitted = true;
     setLoading(false);
     submittingRef.current = false;
@@ -764,7 +775,7 @@ export default function CreateTask() {
         return;
       }
 
-      // Story credit deduction
+      // Story credit check — guard only (actual deduction via backend after creation)
       if (chatFormData.is_story) {
         const currentCredits = me?.worker_credits ?? 0;
         if (currentCredits < 10) {
@@ -773,16 +784,6 @@ export default function CreateTask() {
           submittingRef.current = false;
           return;
         }
-        const newBalance = currentCredits - 10;
-        await base44.auth.updateMe({ worker_credits: newBalance });
-        await base44.entities.CreditTransaction.create({
-          user_id: me.id,
-          amount: -10,
-          type: 'Application_Fee',
-          note: 'עלות סטורי פרסום: ' + (chatFormData.title || 'משימה'),
-          task_title: chatFormData.title || 'משימה',
-          balance_after: newBalance,
-        });
       }
 
       const expiryHours = chatFormData.expiry_hours === 'custom' 
@@ -835,6 +836,10 @@ export default function CreateTask() {
         client_verified: me?.is_verified || false,
       });
 
+      // Deduct story credits via backend
+      if (chatFormData.is_story && created?.id) {
+        base44.functions.invoke('deductStoryCredits', { taskId: created.id, taskTitle: chatFormData.title }).catch(() => {});
+      }
       setLoading(false);
       submittingRef.current = false;
       localStorage.removeItem(DRAFT_KEY);
