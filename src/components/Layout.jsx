@@ -742,7 +742,7 @@ export default function Layout() {
 
 
       {/* Bottom Nav — rendered as portal to escape CSS transform context (prevents nav sliding during page transitions) */}
-      {!['/map', '/create-task'].includes(location.pathname) && !location.pathname.startsWith('/edit-task') && !location.pathname.startsWith('/task/') && !location.pathname.startsWith('/chat/') && createPortal(
+      {!['/map', '/create-task'].includes(window.location.pathname) && !window.location.pathname.startsWith('/edit-task') && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
           background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)',

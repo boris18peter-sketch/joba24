@@ -73,16 +73,16 @@ function getDepth(pathname) {
 // Pop:  new screen slides in from left, old slides out right
 // Tab switch: no slide — just instant swap (handled by key='root')
 const PUSH_VARIANTS = {
-enter: (dir) => ({
-  x: dir > 0 ? '100%' : '-100%',
-  opacity: 0,
-}),
-center: { x: 0, opacity: 1 },
-exit: (dir) => ({
-  x: dir > 0 ? '-20%' : '20%',
-  opacity: 0,
-  pointerEvents: 'none',
-}),
+  enter: (dir) => ({
+    x: dir > 0 ? '100%' : '-30%',
+    opacity: dir > 0 ? 1 : 0.6,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir) => ({
+    x: dir > 0 ? '-30%' : '100%',
+    opacity: dir > 0 ? 0.6 : 1,
+    pointerEvents: 'none',
+  }),
 };
 
 const AuthenticatedApp = () => {
@@ -123,8 +123,8 @@ const AuthenticatedApp = () => {
           exit={isRootTab ? { opacity: 0 } : 'exit'}
           transition={
             isRootTab
-              ? { duration: 0.18, ease: 'easeOut' }
-              : { type: 'tween', ease: [0.25, 0.46, 0.45, 0.94], duration: 0.28 }
+              ? { duration: 0.15, ease: 'easeOut' }
+              : { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.32 }
           }
           style={{ position: 'absolute', inset: 0, willChange: 'transform' }}
         >
