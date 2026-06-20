@@ -63,59 +63,48 @@ Deno.serve(async (req) => {
     // Deduplicate
     const uniqueTokens = [...new Set(allTokens)];
 
-    // Send to all tokens with iOS + Android compatible payload
+    // Build messages — use data-only payload for web (no top-level notification field).
+    // When a top-level `notification` field is present AND webpush.notification is present,
+    // FCM delivers BOTH, causing duplicate notifications in the browser.
+    // Solution: use data-only at the top level; the SW's onBackgroundMessage renders the notification.
     const messages = uniqueTokens.map(token => ({
       token,
-      notification: {
+      // data-only: SW renders notification via onBackgroundMessage — no automatic duplicate from FCM
+      data: {
         title,
         body: body || '',
+        url: url || '/',
+        tag: tag || 'joba24',
+        click_action: url || '/',
       },
+      // webpush FCM options (link only — notification rendering is done by SW)
       webpush: {
-        notification: {
-          icon: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg',
-          badge: 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg',
-          vibrate: [200, 100, 200],
-          requireInteraction: true,
-          tag: tag || 'joba24',
-          data: {
-            url: url || '/',
-            click_action: url || '/',
-          },
-        },
         fcmOptions: {
           link: url || '/',
         },
       },
       android: {
+        priority: 'high',
         notification: {
           title,
           body: body || '',
           icon: 'ic_launcher',
           channelId: 'joba24',
           clickAction: url || '/',
+          tag: tag || 'joba24',
         },
       },
       apns: {
         payload: {
           aps: {
-            alert: {
-              title,
-              body: body || '',
-            },
+            alert: { title, body: body || '' },
             sound: 'default',
             'mutable-content': 1,
             'content-available': 1,
           },
-          custom_data: {
-            url: url || '/',
-            click_action: url || '/',
-          },
+          url: url || '/',
+          tag: tag || 'joba24',
         },
-      },
-      data: {
-        url: url || '/',
-        tag: tag || 'joba24',
-        click_action: url || '/',
       },
     }));
 

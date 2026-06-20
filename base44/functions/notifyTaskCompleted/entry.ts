@@ -10,12 +10,12 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No worker' });
     }
 
-    // Check if client just marked task as approved (client_confirmed=true and status changes)
-    const statusChanged = old_data?.status !== data?.status;
-    const clientConfirmedTask = data?.status === 'IN_PROGRESS' || data?.status === 'COMPLETED';
+    // Only fire when status transitions TO COMPLETED (not on every update that contains status=COMPLETED)
+    // Using old_data check prevents duplicate fires if the task is updated again after completion
+    const justCompleted = old_data?.status !== 'COMPLETED' && data?.status === 'COMPLETED';
     
-    if (!clientConfirmedTask && !(old_data?.client_confirmed === false && data?.client_confirmed === true)) {
-      return Response.json({ sent: 0, reason: 'Not a completion approval' });
+    if (!justCompleted) {
+      return Response.json({ sent: 0, reason: 'Not a new completion transition' });
     }
 
     // Get worker's tokens

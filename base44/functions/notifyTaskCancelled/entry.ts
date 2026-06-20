@@ -5,8 +5,9 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { data, old_data, event } = await req.json();
 
-    if (data?.status !== 'CANCELLED') {
-      return Response.json({ sent: 0, reason: 'Not cancelled' });
+    // Only fire on transition TO cancelled — old_data guard prevents re-firing on subsequent updates
+    if (data?.status !== 'CANCELLED' || old_data?.status === 'CANCELLED') {
+      return Response.json({ sent: 0, reason: 'Not a new cancellation' });
     }
 
     // worker_id may be nulled in the update payload — fall back to old_data

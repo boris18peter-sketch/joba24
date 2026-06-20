@@ -12,8 +12,13 @@ Deno.serve(async (req) => {
     const { data, event, old_data } = await req.json();
 
     const newStatus = data?.worker_status;
-    if (!newStatus || !STATUS_MESSAGES[newStatus]) {
-      return Response.json({ sent: 0, reason: 'Unnotifiable status' });
+    const oldStatus = old_data?.worker_status;
+
+    // Guard: only fire when worker_status actually changed to a notifiable value
+    // Without this check, any Task update that happens to include worker_status in the payload
+    // (e.g. location ping, price update) would send a duplicate push
+    if (!newStatus || !STATUS_MESSAGES[newStatus] || newStatus === oldStatus) {
+      return Response.json({ sent: 0, reason: 'No status change or unnotifiable status' });
     }
 
     if (!data.client_id || !data.title) {

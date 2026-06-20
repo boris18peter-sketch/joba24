@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken, onForegroundMessage } from '@/lib/fcm';
 
+// Module-level singleton: ensures token init runs ONCE across all hook instances
+let globalInitDone = false;
+let globalInitPromise = null;
+
 export default function usePushNotifications() {
   const [token, setToken] = useState(null);
   const [permission, setPermission] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
@@ -43,26 +47,36 @@ export default function usePushNotifications() {
     return fcmToken;
   }, [saveToken]);
 
-  // Auto-init on mount
+  // Auto-init on mount — runs only once globally to prevent duplicate token registrations
   useEffect(() => {
-    const init = async () => {
+    if (globalInitDone) return;
+    if (globalInitPromise) {
+      globalInitPromise.then((fcmToken) => {
+        if (fcmToken) { setToken(fcmToken); setPermission('granted'); }
+      });
+      return;
+    }
+
+    globalInitPromise = (async () => {
       if (typeof Notification === 'undefined') {
         setPermission('denied');
-        return;
+        return null;
       }
-      
       const perm = Notification.permission;
       setPermission(perm);
+      if (perm !== 'granted') return null;
 
-      if (perm === 'granted') {
-        const fcmToken = await getFCMToken();
-        if (fcmToken) {
-          setToken(fcmToken);
-          await saveToken(fcmToken);
-        }
+      const fcmToken = await getFCMToken();
+      if (fcmToken) {
+        setToken(fcmToken);
+        await saveToken(fcmToken);
+        globalInitDone = true;
+        return fcmToken;
       }
-    };
-    init();
+      return null;
+    })();
+
+    globalInitPromise.catch(() => { globalInitPromise = null; });
   }, [saveToken]);
 
   // Listen for foreground messages

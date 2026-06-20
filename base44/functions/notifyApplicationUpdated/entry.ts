@@ -9,9 +9,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // Only notify on approved or rejected
-    if (data.status !== 'approved' && data.status !== 'rejected') {
-      return Response.json({ sent: false, reason: `Status ${data.status} not notifiable` });
+    // Only notify on approved status — rejected/revoked is handled exclusively by notifyApplicationRevoked
+    // This prevents duplicate pushes when an approved application gets rejected (revoked)
+    if (data.status !== 'approved') {
+      return Response.json({ sent: false, reason: `Status ${data.status} not notifiable here` });
     }
 
     // Get worker's FCM tokens
