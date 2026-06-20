@@ -584,35 +584,74 @@ export default function HomeFeed() {
             {/* Search bar — sticky below tabs */}
             <div style={{ position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 4, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
             <div style={{ position: 'relative' }}>
-              <div style={{ background: 'var(--surface-2)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                 <Search size={12} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0, pointerEvents: 'none' }} />
-                 <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
-                 <div className="cat-scroll" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', minWidth: 0 }}>
-                   <input
-                     placeholder={t('search_placeholder')}
-                     value={search}
-                     onChange={(e) => setSearch(e.target.value)}
-                     onFocus={() => setSearchFocused(true)}
-                     onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-                     onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
-                     style={{ flexShrink: 0, minWidth: filters.categories?.length > 0 ? 50 : 90, border: 'none', background: 'transparent', fontSize: '16px', fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)', height: 28 }}
-                   />
-                   {(filters.categories || []).map(cat => (
-                     <div key={cat} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '2px 6px 2px 5px', borderRadius: 6, background: '#eff6ff', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 10, color: '#1a6fd4', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                       {getCategoryLabel(cat)}
-                       <button onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#60a5fa' }}><X size={8} /></button>
-                     </div>
-                   ))}
-                 </div>
-                 {search && (<button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}><X size={11} color="#94a3b8" /></button>)}
-                 <button onClick={() => setShowCategoryDropdown(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 8, border: `1px solid ${filters.categories?.length > 0 ? '#93c5fd' : 'var(--border-1)'}`, background: filters.categories?.length > 0 ? '#eff6ff' : 'var(--surface-3)', cursor: 'pointer', flexShrink: 0, fontSize: 11, color: filters.categories?.length > 0 ? '#1a6fd4' : 'var(--text-2)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                   {filters.categories?.length > 0 ? `+ ${t('category')}` : t('category')}
-                   {showCategoryDropdown ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                 </button>
-                 <button onClick={() => setShowFilters(true)} style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 6, border: `0.5px solid ${hasSheetFilters ? '#60a5fa' : 'var(--border-1)'}`, background: hasSheetFilters ? '#1a6fd4' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative', transition: 'all 0.15s' }}>
-                   <SlidersHorizontal size={10} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
-                   {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
-                 </button>
+              <div style={{
+                background: 'var(--surface-2)', borderRadius: 14,
+                border: `1.5px solid ${searchFocused ? '#1a6fd4' : 'var(--border-1)'}`,
+                display: 'flex', alignItems: 'center', gap: 0, minWidth: 0,
+                height: 44, boxSizing: 'border-box', overflow: 'hidden',
+                transition: 'border-color 0.15s',
+                boxShadow: searchFocused ? '0 0 0 3px rgba(26,111,212,0.1)' : 'none',
+              }}>
+                {/* Search icon + input + category chips */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 10, paddingLeft: 8, minWidth: 0, overflow: 'hidden' }}>
+                  <Search size={14} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0 }} />
+                  <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
+                  <div className="cat-scroll" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', minWidth: 0 }}>
+                    {(filters.categories || []).map(cat => (
+                      <span key={cat} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, paddingRight: 6, paddingLeft: 4, height: 22, borderRadius: 6, background: '#dbeafe', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1d4ed8', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        {getCategoryLabel(cat)}
+                        <button onClick={(e) => { e.stopPropagation(); setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) })); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#60a5fa', lineHeight: 1, marginTop: 0 }}><X size={9} /></button>
+                      </span>
+                    ))}
+                    <input
+                      placeholder={filters.categories?.length > 0 ? '' : t('search_placeholder')}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+                      style={{ flex: 1, minWidth: 30, border: 'none', background: 'transparent', fontSize: '16px', fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)', height: 28 }}
+                    />
+                  </div>
+                  {search && (
+                    <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}>
+                      <X size={13} color="#94a3b8" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div style={{ width: 1, height: 24, background: 'var(--border-1)', flexShrink: 0 }} />
+
+                {/* Category button */}
+                <button onClick={() => setShowCategoryDropdown(v => !v)} style={{
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  padding: '0 10px', height: '100%',
+                  background: filters.categories?.length > 0 ? '#eff6ff' : 'transparent',
+                  border: 'none', cursor: 'pointer', flexShrink: 0,
+                  fontSize: 12, color: filters.categories?.length > 0 ? '#1a6fd4' : 'var(--text-2)',
+                  fontWeight: 600, whiteSpace: 'nowrap',
+                }}>
+                  {filters.categories?.length > 0
+                    ? <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
+                    : null}
+                  {t('category')}
+                  {showCategoryDropdown ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                </button>
+
+                {/* Divider */}
+                <div style={{ width: 1, height: 24, background: 'var(--border-1)', flexShrink: 0 }} />
+
+                {/* Filters button */}
+                <button onClick={() => setShowFilters(true)} style={{
+                  flexShrink: 0, width: 44, height: '100%',
+                  border: 'none', background: hasSheetFilters ? '#1a6fd4' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', position: 'relative', transition: 'background 0.15s',
+                }}>
+                  <SlidersHorizontal size={14} color={hasSheetFilters ? 'white' : '#64748b'} strokeWidth={1.8} />
+                  {hasSheetFilters && <span style={{ position: 'absolute', top: 6, right: 8, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
+                </button>
               </div>
               {searchFocused && !search && recentSearches.length > 0 && (
                 <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>

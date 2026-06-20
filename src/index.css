@@ -321,6 +321,15 @@
 }
 .j-input:focus { border-color: var(--brand-primary); }
 
+/* ── Z-Index Hierarchy ── */
+/* Bottom nav: 30 | Sticky headers: 49-50 | Sheets/Modals: 9999+ | Portals: 99999+ */
+/* This ensures ALL modals/sheets/popups always appear above the bottom nav */
+.mobile-sheet-overlay,
+[style*="z-index: 9999"],
+[style*="zIndex: 9999"] {
+  z-index: 9999 !important;
+}
+
 /* ── Scrollbars ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
