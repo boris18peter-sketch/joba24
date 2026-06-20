@@ -54,22 +54,30 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.Task.update(taskId, { worker_confirmed: true });
     }
 
-    // Recalculate reviewee's rating stats
-    const allReviews = await base44.asServiceRole.entities.Review.filter({ reviewee_id: revieweeId });
-    const avg = allReviews.length > 0
-      ? allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length
-      : rating;
+    // Update reviewee's rating using running average (O(1)) instead of fetching all reviews
+    // Fetch current user stats to compute incremental update
+    const revieweeUsers = await base44.asServiceRole.entities.User.filter({ id: revieweeId });
+    const revieweeUser = revieweeUsers[0];
+    const oldCount = revieweeUser?.rating_count || 0;
+    const oldRating = revieweeUser?.rating || 0;
+    const newCount = oldCount + 1;
+    const newAvg = oldCount === 0 ? rating : (oldRating * oldCount + rating) / newCount;
 
-    const clientRevs = allReviews.filter(r => r.role === 'client');
-    const withOnTime = clientRevs.filter(r => r.arrived_on_time !== null && r.arrived_on_time !== undefined);
-    const onTimeRate = withOnTime.length >= 2
-      ? Math.round((withOnTime.filter(r => r.arrived_on_time === true).length / withOnTime.length) * 100)
-      : null;
-    const repeatHires = clientRevs.filter(r => r.would_hire_again === true).length;
+    // For on_time_rate and repeat_hires we still need a targeted query, but only for client-role reviews
+    let onTimeRate = null;
+    let repeatHires = revieweeUser?.repeat_hires || 0;
+    if (role === 'client' || isOwner) {
+      const clientRevs = await base44.asServiceRole.entities.Review.filter({ reviewee_id: revieweeId, role: 'client' });
+      const withOnTime = clientRevs.filter(r => r.arrived_on_time !== null && r.arrived_on_time !== undefined);
+      if (withOnTime.length >= 2) {
+        onTimeRate = Math.round((withOnTime.filter(r => r.arrived_on_time === true).length / withOnTime.length) * 100);
+      }
+      repeatHires = clientRevs.filter(r => r.would_hire_again === true).length;
+    }
 
     const userUpdate = {
-      rating: Math.round(avg * 10) / 10,
-      rating_count: allReviews.length,
+      rating: Math.round(newAvg * 10) / 10,
+      rating_count: newCount,
     };
     if (onTimeRate !== null) userUpdate.on_time_rate = onTimeRate;
     if (isOwner) userUpdate.repeat_hires = repeatHires;

@@ -505,6 +505,7 @@ export default function CreateTask() {
 
   const doSubmit = async () => {
     if (submittingRef.current) return;
+    submittingRef.current = true;
     const newErrors = {};
     if (!form.description) newErrors.description = true;
     if (!form.price) newErrors.price = true;
@@ -530,6 +531,7 @@ export default function CreateTask() {
       const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
       const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
       const expires = expiryHoursEdit ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() : null;
+      submittingRef.current = false;
       await base44.entities.Task.update(editId, {
         title: form.title,
         description: form.description,
@@ -576,7 +578,7 @@ export default function CreateTask() {
     setShowErrorBanner(false);
     setErrors({});
     setModerationErrors({});
-    setLoading(true); // disable button immediately to prevent double-clicks
+    setLoading(true);
 
     // Gibberish / meaningless content check (fast, no API) — description only
     const descGibberish = checkGibberish(form.description, 'התיאור');
@@ -689,7 +691,7 @@ export default function CreateTask() {
     });
 
     setLoading(false);
-    submittingRef.current = false;
+    submittingRef.current = false; // already reset, but ensure it's false
     localStorage.removeItem(DRAFT_KEY);
     toast.success('המשימה פורסמה! ⚡');
     if (created?.id) {
@@ -1309,7 +1311,7 @@ export default function CreateTask() {
           {form.estimated_time === 'custom' && (
             <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
               value={form.custom_time} onChange={e => set('custom_time', e.target.value)}
-              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 14, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
+              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
             />
           )}
         </SectionCard>
@@ -1370,7 +1372,7 @@ export default function CreateTask() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>דרישה חופשית</div>
                 <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
               </div>
             </div>
           )}

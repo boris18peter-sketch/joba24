@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -15,6 +16,9 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
   const [showLoginModal, setShowLoginModal] = useState(false);
+  // Refs to store unsubscribe functions — prevents leaked subscriptions on re-auth
+  const unsubUserRef = useRef(null);
+  const unsubCreditRef = useRef(null);
 
   useEffect(() => {
     checkAppState();
@@ -109,15 +113,19 @@ export const AuthProvider = ({ children }) => {
         }
       } catch {}
 
+      // Clean up any previous subscriptions before creating new ones (prevents leaks on re-auth)
+      if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
+      if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
+
       // Subscribe to User entity changes to keep credits up to date in real-time
-      base44.entities.User.subscribe((event) => {
+      unsubUserRef.current = base44.entities.User.subscribe((event) => {
         if (event.data?.id === currentUser?.id || event.id === currentUser?.id) {
           setUser(prev => prev ? { ...prev, ...event.data } : event.data);
         }
       });
 
       // Also subscribe to CreditTransaction — refresh immediately on any credit change
-      base44.entities.CreditTransaction.subscribe(async (event) => {
+      unsubCreditRef.current = base44.entities.CreditTransaction.subscribe(async (event) => {
         if (event.data?.user_id === currentUser?.id) {
           try {
             const fresh = await base44.auth.me();

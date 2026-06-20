@@ -296,16 +296,21 @@ export default function HomeFeed() {
       }
 
       // If it's an application for one of MY published tasks — sync the applicants panel
-      if (isForMyTask) {
-        // Use setQueryData instead of invalidate to avoid extra API calls
-        queryClient.setQueryData(['applications', appData.task_id], (old = []) => {
-          if (!old) return old;
-          if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
-          if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
-          if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
-          return old;
-        });
-        // applicants array already updated by the global handler above
+      // Read from cache (not closed-over myTasks) to always use the live task list
+      {
+        const liveMyTasks = queryClient.getQueryData(['myTasks', me.id]) || [];
+        const isForMyTaskLive = appData.task_id && liveMyTasks.some(t => t.id === appData.task_id);
+        if (isForMyTaskLive) {
+          // Use setQueryData instead of invalidate to avoid extra API calls
+          queryClient.setQueryData(['applications', appData.task_id], (old = []) => {
+            if (!old) return old;
+            if (event.type === 'create') return old.find(a => a.id === appData.id) ? old : [...old, appData];
+            if (event.type === 'update') return old.map(a => a.id === appData.id ? { ...a, ...appData } : a);
+            if (event.type === 'delete') return old.filter(a => a.id !== appData.id);
+            return old;
+          });
+          // applicants array already updated by the global handler above
+        }
       }
     });
 

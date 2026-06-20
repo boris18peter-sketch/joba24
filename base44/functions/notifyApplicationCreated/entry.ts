@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
       title: 'בקשה חדשה! 🔔',
       body: `${data.worker_name || 'עובד'} הגיש בקשה למשימה "${task.title}"`,
       url: `/task/${task.id}`,
-      tag: `application_${data.task_id}`,
+      tag: `application_${data.task_id}_${data.worker_id}`,
     });
 
     return Response.json({ sent: true, result });

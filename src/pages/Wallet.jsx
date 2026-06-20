@@ -59,17 +59,8 @@ export default function Wallet() {
 
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myApplications', me?.id],
-    queryFn: async () => {
-      const apps = await base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50);
-      // Enrich with task titles
-      const taskIds = [...new Set(apps.map(a => a.task_id))];
-      const taskMap = {};
-      await Promise.all(taskIds.map(async (tid) => {
-        const res = await base44.entities.Task.filter({ id: tid });
-        if (res[0]) taskMap[tid] = res[0].title;
-      }));
-      return apps.map(a => ({ ...a, task_title: taskMap[a.task_id] || a.task_id }));
-    },
+    // task_title is already denormalized on TaskApplication at creation time — no N+1 needed
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id,
   });
 

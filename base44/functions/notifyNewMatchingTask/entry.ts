@@ -57,21 +57,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Send in batches of 10 to avoid overwhelming
-    const sent = [];
-    for (const n of notifications.slice(0, 30)) {
+    // Send all at once using a single batched call instead of sequential per-worker calls
+    const batchNotifications = notifications.slice(0, 30);
+    const userIds = batchNotifications.map(n => n.userId);
+
+    // Group by same title/body if possible (all from same task, so one call suffices)
+    let sent = 0;
+    if (userIds.length > 0) {
+      const firstN = batchNotifications[0];
       const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
-        user_ids: [n.userId],
-        title: n.title,
-        body: n.body,
-        url: n.url,
-        tag: n.tag,
-        click_action: n.url,
+        user_ids: userIds,
+        title: firstN.title,
+        body: firstN.body,
+        url: firstN.url,
+        tag: firstN.tag,
+        click_action: firstN.url,
       });
-      if (result?.sent) sent.push(n.userId);
+      sent = result?.sent || 0;
     }
 
-    return Response.json({ sent: sent.length, total: notifications.length });
+    return Response.json({ sent, total: notifications.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
