@@ -43,6 +43,7 @@ import { parseDescription } from '@/lib/descriptionParser';
 import { trackTaskClick } from '@/hooks/useTrackTaskEvent';
 import BoostPill from '@/components/BoostPill';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
+import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const getScanningTexts = (t) => t('scanning_texts');
@@ -253,19 +254,47 @@ export default function TaskDetail() {
     return () => window.removeEventListener('task_reset_to_open', handleReset);
   }, [id, me?.id]);
 
-  // Real-time task subscription — TaskDetail only needs to update its own ['task', id] cache.
-  // Layout is the single broadcaster for all shared caches (workerTasksLayout, myTasks, etc.)
+  // Real-time task subscription — updates ['task', id] cache for TaskDetail.
+  // Subscribes only on `id` (stable) — me?.id is read via ref to avoid re-subscribing on auth load.
+  const meIdRef = useRef(me?.id);
+  useEffect(() => { meIdRef.current = me?.id; }, [me?.id]);
+
   useEffect(() => {
     const unsubTask = base44.entities.Task.subscribe((event) => {
-      if (event.id !== id || !event.data) return;
-      queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...event.data } : event.data);
-      if (event.data.status === 'COMPLETED') {
-        queryClient.invalidateQueries({ queryKey: ['myReview', id, me?.id] });
+      if (event.id !== id) return;
+      if (event.type === 'delete') {
+        queryClient.setQueryData(['task', id], null);
+        return;
+      }
+      if (!event.data) return;
+      // Strip undefined so partial patch never overwrites existing fields with undefined
+      const patch = Object.fromEntries(Object.entries(event.data).filter(([, v]) => v !== undefined));
+      queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...patch } : patch);
+      // Also keep activeWorkerTask / activeClientTask in sync so banner inside TaskDetail is live
+      const currentMeId = meIdRef.current;
+      if (currentMeId) {
+        const TERMINAL = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
+        queryClient.setQueryData(['activeWorkerTask', currentMeId], (old) => {
+          if (!old || old.id !== id) return old;
+          if (patch.status && TERMINAL.includes(patch.status)) return null;
+          return { ...old, ...patch };
+        });
+        queryClient.setQueryData(['activeClientTask', currentMeId], (old) => {
+          if (!old || old.id !== id) return old;
+          if (patch.status && TERMINAL.includes(patch.status)) return null;
+          return { ...old, ...patch };
+        });
+      }
+      if (patch.status === 'COMPLETED') {
+        queryClient.invalidateQueries({ queryKey: ['myReview', id, currentMeId] });
       }
     });
+
     const unsubApp = base44.entities.TaskApplication.subscribe((event) => {
       if (!event.data || event.data.task_id !== id) return;
       const app = event.data;
+      const currentMeId = meIdRef.current;
+
       // applications-pulse for applicant counter
       queryClient.setQueryData(['applications-pulse', id], (old = []) => {
         if (event.type === 'create') return old.find(a => a.id === app.id) ? old : [...old, app];
@@ -274,8 +303,8 @@ export default function TaskDetail() {
         return old;
       });
       // myApp cache for current worker
-      if (me?.id && app.worker_id === me.id) {
-        queryClient.setQueryData(['myApp', id, me.id], (old) => {
+      if (currentMeId && app.worker_id === currentMeId) {
+        queryClient.setQueryData(['myApp', id, currentMeId], (old) => {
           if (event.type === 'delete') return null;
           if (event.type === 'update') {
             if (app.status === 'cancelled' || app.status === 'rejected') return null;
@@ -293,8 +322,9 @@ export default function TaskDetail() {
         return old;
       });
     });
+
     return () => { unsubTask(); unsubApp(); };
-  }, [id, me?.id]);
+  }, [id, queryClient]); // ← stable deps only — me?.id read via ref, no re-subscribe on auth load
 
   // Central update: write to DB — WebSocket event will propagate to Layout (single broadcaster)
   // which updates all shared caches. We only need to update the local ['task', id] cache optimistically.
@@ -614,14 +644,10 @@ export default function TaskDetail() {
       <PageHeader title={task.title} right={null} />
       
 
-      {/* ActiveTaskBanner — shown above the main card, same as HomeFeed */}
+      {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache
+          (same source as HomeFeed) so status updates are always in sync */}
       {task.status === 'TAKEN' && (isOwner || isWorker) && (
-        <div style={{ padding: '0 12px', paddingTop: 8 }}>
-          <ActiveTaskBanner
-            tasks={[{ ...task, _roleHint: isWorker ? 'worker' : 'client' }]}
-            roleHint={isWorker ? 'worker' : 'client'}
-          />
-        </div>
+        <ActiveTaskBannerFromCache taskId={id} isWorker={isWorker} />
       )}
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
