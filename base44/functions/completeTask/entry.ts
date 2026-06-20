@@ -35,8 +35,8 @@ Deno.serve(async (req) => {
       completed_at: new Date().toISOString(),
     });
 
-    // Increment worker's completed tasks count
-    if (task.worker_id) {
+    // Increment worker's completed tasks count — only if not already incremented (idempotency guard)
+    if (task.worker_id && !task.client_confirmed) {
       const workerUsers = await base44.asServiceRole.entities.User.filter({ id: task.worker_id });
       const worker = workerUsers[0];
       if (worker) {

@@ -157,6 +157,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
 
+    // Clean up real-time subscriptions
+    if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
+    if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
+
     // Clear all personal cached data from localStorage
     localStorage.removeItem('joba24_notifications');
     localStorage.removeItem('joba24_draft_task');

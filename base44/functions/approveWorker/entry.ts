@@ -17,14 +17,13 @@ Deno.serve(async (req) => {
 
     console.log('🔄 APPROVAL MUTATION START:', { taskId, workerId });
 
-    // Guard: fetch task first to check it's still OPEN and unassigned
-    const taskCheck = await base44.asServiceRole.entities.Task.filter({ id: taskId });
-    const currentTask = taskCheck[0];
-    if (!currentTask) {
-      return Response.json({ error: 'Task not found' }, { status: 404 });
-    }
+    // STEP 0: Race condition guard — re-fetch task and verify it's still OPEN
+    const freshCheck = await base44.asServiceRole.entities.Task.filter({ id: taskId });
+    const currentTask = freshCheck[0];
+    if (!currentTask) return Response.json({ error: 'Task not found' }, { status: 404 });
     if (currentTask.status !== 'OPEN' || currentTask.worker_id) {
-      return Response.json({ error: 'already_assigned', message: 'Task already has a worker assigned' }, { status: 409 });
+      console.warn('⚠️ approveWorker: task no longer OPEN', { status: currentTask.status, worker_id: currentTask.worker_id });
+      return Response.json({ error: 'task_already_taken', status: currentTask.status }, { status: 409 });
     }
 
     // STEP 1: Update task with worker assignment (ATOMIC)

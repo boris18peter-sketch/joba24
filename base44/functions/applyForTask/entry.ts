@@ -48,21 +48,7 @@ Deno.serve(async (req) => {
 
     const newBalance = currentCredits - creditsRequired;
 
-    // Deduct credits atomically
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
-
-    // Log credit transaction
-    await base44.asServiceRole.entities.CreditTransaction.create({
-      user_id: user.id,
-      amount: -creditsRequired,
-      type: 'Application_Fee',
-      task_id: taskId,
-      task_title: task.title,
-      balance_after: newBalance,
-      note: `הגשת בקשה למשימה: ${task.title}`,
-    });
-
-    // If auto_bump enabled and this is the FIRST active applicant → freeze price
+    // If auto_bump enabled and this is the FIRST active applicant → freeze price (before deduct, no side effects)
     if (task.auto_bump_enabled && task.base_price && task.max_price) {
       const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
       const activeApps = allApps.filter(a => a.status === 'pending' || a.status === 'approved');
@@ -75,7 +61,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create application
+    // Create application FIRST — if this fails, no credits are deducted
     const newApp = await base44.asServiceRole.entities.TaskApplication.create({
       task_id: taskId,
       task_title: task.title,
@@ -89,6 +75,18 @@ Deno.serve(async (req) => {
       images: images || [],
       status: 'pending',
       credits_charged: creditsRequired,
+    });
+
+    // Deduct credits only after application is successfully created
+    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
+    await base44.asServiceRole.entities.CreditTransaction.create({
+      user_id: user.id,
+      amount: -creditsRequired,
+      type: 'Application_Fee',
+      task_id: taskId,
+      task_title: task.title,
+      balance_after: newBalance,
+      note: `הגשת בקשה למשימה: ${task.title}`,
     });
 
     console.log(`✅ Application created: worker ${user.id} → task ${taskId} (${creditsRequired} credits charged)`);
