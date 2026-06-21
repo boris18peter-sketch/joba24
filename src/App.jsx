@@ -14,6 +14,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 
 // Add page imports here
+// App entry — force reload to clear stale dynamic import cache
 // Tab pages — lazy loaded (mounted via Layout.jsx)
 const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
 const MapView = lazy(() => import('@/pages/MapView'));
