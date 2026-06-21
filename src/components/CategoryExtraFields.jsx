@@ -1,98 +1,7 @@
 import { useState, useEffect } from 'react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { MapPin, Navigation, Truck, Layers } from 'lucide-react';
-
-// Category-specific field definitions
-const CATEGORY_CONFIG = {
-  moving: {
-    label: 'פרטי הובלה',
-    emoji: '🚛',
-    fields: [
-      { key: 'to_address', type: 'address', label: 'כתובת יעד — לאן מובילים? *', placeholder: 'עיר, רחוב...' },
-      { key: 'from_floor', type: 'number', label: 'קומת מוצא', placeholder: '0 = קרקע' },
-      { key: 'to_floor', type: 'number', label: 'קומת יעד', placeholder: '0 = קרקע' },
-      { key: 'elevator_from', type: 'toggle', label: 'יש מעלית במוצא' },
-      { key: 'elevator_to', type: 'toggle', label: 'יש מעלית ביעד' },
-      { key: 'needs_truck', type: 'toggle', label: 'דרושה משאית' },
-      { key: 'items', type: 'textarea', label: 'מה מובילים?', placeholder: 'ספה, מקרר, 5 ארגזים...' },
-    ],
-  },
-  delivery: {
-    label: 'פרטי משלוח',
-    emoji: '📦',
-    fields: [
-      { key: 'to_address', type: 'address', label: 'כתובת מסירה *', placeholder: 'לאן מספקים?' },
-      { key: 'item_size', type: 'select', label: 'גודל הפריט', options: ['קטן (כמו ארנק)', 'בינוני (כמו תיק)', 'גדול (כמו מזוודה)', 'ענק (רהיט/ציוד)'] },
-    ],
-  },
-  cleaning: {
-    label: 'פרטי ניקיון',
-    emoji: '🧹',
-    fields: [
-      { key: 'rooms', type: 'number', label: 'מספר חדרים', placeholder: 'למשל: 3' },
-      { key: 'area', type: 'number', label: 'שטח בערך (מ"ר)', placeholder: 'למשל: 80' },
-      { key: 'has_materials', type: 'toggle', label: 'יש חומרי ניקוי' },
-      { key: 'cleaning_type', type: 'select', label: 'סוג ניקוי', options: ['ניקיון שוטף', 'ניקיון לאחר שיפוץ', 'ניקיון לפני מעבר', 'ניקוי חלונות', 'שטיחים'] },
-    ],
-  },
-  babysitting: {
-    label: 'פרטי השמרטפות',
-    emoji: '👶',
-    fields: [
-      { key: 'kids_count', type: 'number', label: 'כמה ילדים?', placeholder: 'למשל: 2' },
-      { key: 'kids_ages', type: 'text', label: 'גילאי הילדים', placeholder: 'למשל: 2, 5, 8' },
-      { key: 'has_pets', type: 'toggle', label: 'יש חיות מחמד' },
-    ],
-  },
-  plumbing: {
-    label: 'פרטי אינסטלציה',
-    emoji: '🔧',
-    fields: [
-      { key: 'issue_type', type: 'select', label: 'סוג הבעיה', options: ['נזילה', 'סתימה', 'התקנת ברז/מכשיר', 'הרחבת צנרת', 'בדיקה', 'אחר'] },
-      { key: 'urgency', type: 'select', label: 'דחיפות', options: ['מיידי (נזילה פעילה)', 'היום', 'תוך יום-יומיים', 'גמיש'] },
-    ],
-  },
-  electricity: {
-    label: 'פרטי עבודת חשמל',
-    emoji: '⚡',
-    fields: [
-      { key: 'issue_type', type: 'select', label: 'סוג העבודה', options: ['תיקון תקלה', 'התקנת שקע/מפסק', 'לוח חשמל', 'חיווט', 'בדיקה', 'אחר'] },
-      { key: 'urgency', type: 'select', label: 'דחיפות', options: ['מיידי', 'היום', 'גמיש'] },
-    ],
-  },
-  ac: {
-    label: 'פרטי מזגן',
-    emoji: '❄️',
-    fields: [
-      { key: 'issue_type', type: 'select', label: 'סוג העבודה', options: ['התקנה', 'תיקון', 'ניקוי', 'פירוק', 'אחר'] },
-      { key: 'units', type: 'number', label: 'כמה יחידות?', placeholder: '1' },
-    ],
-  },
-  carpentry: {
-    label: 'פרטי נגרות',
-    emoji: '🪚',
-    fields: [
-      { key: 'issue_type', type: 'select', label: 'סוג העבודה', options: ['הרכבת רהיטים', 'תיקון', 'ייצור', 'פירוק', 'אחר'] },
-    ],
-  },
-  painting: {
-    label: 'פרטי צביעה',
-    emoji: '🎨',
-    fields: [
-      { key: 'rooms', type: 'number', label: 'כמה חדרים/קירות?', placeholder: 'למשל: 2' },
-      { key: 'area', type: 'number', label: 'שטח משוער (מ"ר)', placeholder: 'למשל: 50' },
-      { key: 'has_paint', type: 'toggle', label: 'יש צבע' },
-    ],
-  },
-  shopping: {
-    label: 'פרטי קניות',
-    emoji: '🛒',
-    fields: [
-      { key: 'store', type: 'text', label: 'איפה לקנות?', placeholder: 'שם חנות / מיקום' },
-      { key: 'items', type: 'textarea', label: 'רשימת קניות', placeholder: 'חלב, לחם, עגבניות...' },
-    ],
-  },
-};
+import { Navigation } from 'lucide-react';
+import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
 
 function distKm(a, b) {
   if (!a || !b) return null;
@@ -104,21 +13,32 @@ function distKm(a, b) {
 }
 
 /**
- * CategoryExtraFields
+ * CategoryExtraFields — pure renderer driven by taskFlowConfig.
+ *
  * Props:
  *   category: string
  *   originLat, originLng: number (source address coords)
+ *   initialValues: object (pre-fill from existing task.category_details — for edit mode)
  *   onChange: (data: object, formattedText: string) => void
  */
-export default function CategoryExtraFields({ category, originLat, originLng, onChange }) {
-  const config = CATEGORY_CONFIG[category];
-  const [values, setValues] = useState({});
+export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
+  const config = getCategoryConfig(category);
+  const fields = config?.extraFields || [];
+  const [values, setValues] = useState(initialValues || {});
   const [destCoords, setDestCoords] = useState(null);
 
+  // Reset when category changes, but preserve initialValues on first mount (edit mode)
   useEffect(() => {
-    setValues({});
+    setValues(initialValues || {});
     setDestCoords(null);
   }, [category]);
+
+  // If initialValues changes (e.g., edit task loaded), update
+  useEffect(() => {
+    if (initialValues && Object.keys(initialValues).length > 0) {
+      setValues(initialValues);
+    }
+  }, [JSON.stringify(initialValues)]);
 
   const distance = (category === 'moving' || category === 'delivery') && originLat && destCoords
     ? distKm({ lat: originLat, lng: originLng }, destCoords)
@@ -127,16 +47,15 @@ export default function CategoryExtraFields({ category, originLat, originLng, on
   const set = (key, val) => {
     const next = { ...values, [key]: val };
     setValues(next);
-    // Build formatted text
-    const lines = formatExtra(next, config?.fields || [], distance);
+    const lines = formatExtra(next, fields, distance);
     onChange?.(next, lines);
   };
 
-  const formatExtra = (vals, fields, dist) => {
+  const formatExtra = (vals, fieldList, dist) => {
     const lines = [];
-    if (config) lines.push(`--- ${config.emoji} ${config.label} ---`);
+    if (config) lines.push(`--- ${config.label} ---`);
     if (dist != null) lines.push(`📍 מרחק: ${dist < 1 ? `${Math.round(dist * 1000)} מטר` : `${dist.toFixed(1)} ק"מ`}`);
-    fields.forEach(f => {
+    fieldList.forEach(f => {
       const v = vals[f.key];
       if (v === undefined || v === '' || v === null) return;
       if (f.type === 'toggle') {
@@ -150,7 +69,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, on
     return lines.join('\n');
   };
 
-  if (!config) return null;
+  if (!config || !fields.length) return null;
 
   const inputStyle = {
     width: '100%', background: 'var(--surface-3)', border: '1.5px solid var(--border-1)',
@@ -161,13 +80,13 @@ export default function CategoryExtraFields({ category, originLat, originLng, on
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: 20, padding: '18px 16px', border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <span style={{ fontSize: 20 }}>{config.emoji}</span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{config.label}</span>
+        <span style={{ fontSize: 20 }}>{config.label.split(' ')[0]}</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{config.label.split(' ').slice(1).join(' ') || config.label}</span>
         <span style={{ fontSize: 11, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '2px 8px', fontWeight: 600 }}>מומלץ למלא</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {config.fields.map(field => (
+        {fields.map(field => (
           <div key={field.key}>
             <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, display: 'block' }}>{field.label}</label>
 
@@ -181,7 +100,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, on
                     const next = { ...values, [field.key]: location_name, [`${field.key}_lat`]: lat, [`${field.key}_lng`]: lng };
                     setValues(next);
                     const d = originLat && lat ? distKm({ lat: originLat, lng: originLng }, { lat, lng }) : null;
-                    const lines = formatExtra(next, config.fields, d);
+                    const lines = formatExtra(next, fields, d);
                     onChange?.(next, lines);
                   }
                 }}

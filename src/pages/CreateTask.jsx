@@ -18,7 +18,8 @@ import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails } from '@/lib/taskFlowConfig';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
@@ -164,6 +165,7 @@ const DEFAULT_FORM = {
   payment_method: '',
   urgency_tag: '',
   custom_expiry_hours: '',
+  category_details: {},
 };
 
 const PAYMENT_METHODS = [
@@ -237,6 +239,7 @@ export default function CreateTask() {
   const [chatMode, setChatMode] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [extraFieldsText, setExtraFieldsText] = useState('');
+  const [categoryDetails, setCategoryDetails] = useState({});
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -316,7 +319,9 @@ export default function CreateTask() {
       urgency_tag: editTask.urgency_tag || '',
       requires_invoice: editTask.requires_invoice || false,
       custom_expiry_hours: '',
+      category_details: editTask.category_details || {},
     });
+    setCategoryDetails(editTask.category_details || {});
     setAddressConfirmed(!!(editTask.lat && editTask.lng));
   }, [editTask?.id]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
@@ -354,23 +359,10 @@ export default function CreateTask() {
     return () => clearTimeout(draftTimerRef.current);
   }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
 
-  // Category-description mismatch keywords
-  const CATEGORY_KEYWORDS = {
-    plumbing: ['אינסטלטור', 'צנרת', 'ברז', 'צינור', 'מים', 'כיור', 'שירותים', 'אסלה', 'דוד', 'נזילה', 'ניקוז', 'ביוב', 'אינסטלציה', 'צינורות', 'קולנית'],
-    electricity: ['חשמל', 'חשמלאי', 'שקע', 'מתג', 'לוח חשמל', 'נורה', 'חיווט', 'מפסק', 'תקע', 'חוט חשמל', 'התקנת שקע', 'לוח ראשי', 'מפל מתח'],
-    gardening: ['גינה', 'גינון', 'צמחים', 'עשב', 'גזם', 'גיזום', 'שיח', 'עשבייה', 'השקיה', 'דשא', 'זבל גינה', 'ערוגה', 'עץ', 'עצים', 'גינת'],
-    cleaning: ['ניקיון', 'לנקות', 'ניקוי', 'שואב אבק', 'מגב', 'חלונות', 'ניקוי עמוק', 'ניקוי בית', 'ניקוי משרד', 'ניקוי דירה', 'מגבון', 'אבק', 'רצפה'],
-    moving: ['הובלה', 'להוביל', 'ארגזים', 'רהיטים', 'מעבר דירה', 'משאית', 'ואן', 'עזרה בהובלה', 'נשיאה', 'לפרק', 'להרכיב', 'להעביר ריהוט'],
-    painting: ['צביעה', 'לצבוע', 'צבע קיר', 'קירות', 'רולר', 'מברשת צבע', 'גג', 'גדר', 'סיוד', 'צבעי', 'ניקוז צבע'],
-    carpentry: ['נגרות', 'נגר', 'ארון', 'מדף', 'ריהוט עץ', 'הרכבת ריהוט', 'תיקון ריהוט', 'דלת עץ', 'מטבח', 'ארונות', 'חיבור עץ'],
-    ac: ['מזגן', 'מיזוג', 'התקנת מזגן', 'תיקון מזגן', 'ניקוי מזגן', 'טכנאי מזגנים', 'קולר', 'מאוורר', 'מזגן מפוצל'],
-    locksmith: ['מנעול', 'מנעולן', 'פריצת מנעול', 'מפתח', 'כספת', 'החלפת מנעול', 'נעילה', 'פריצה', 'ידית דלת'],
-    shopping: ['קניות', 'לקנות', 'סופרמרקט', 'מוצרים', 'רשימת קניות', 'שליח קניות', 'רכישה', 'מכולת', 'קנייה'],
-    delivery: ['משלוח', 'לשלוח', 'להביא חבילה', 'שליח', 'חבילה', 'מסירה', 'אספקה', 'הגעה לכתובת', 'הסעת חבילה'],
-    babysitting: ['ילדים', 'ילד', 'ילדה', 'בייביסיטר', 'שמירה על ילד', 'גן ילדים', 'פעוט', 'תינוק', 'טיפול בילדים', 'לשמור על', 'בבייסיטינג', 'ביביסיטר'],
-    tutoring: ['שיעורים פרטיים', 'שיעור פרטי', 'מורה פרטי', 'לימוד', 'חונך', 'מתמטיקה', 'פיזיקה', 'כימיה', 'תגבור', 'הכנה לבגרות', 'עזרה בשיעורים'],
-    it_support: ['מחשב', 'רשת', 'תמיכה טכנית', 'תוכנה', 'חומרה', 'אינטרנט', 'ווייפיי', 'wifi', 'התקנת תוכנה', 'וירוס', 'טלפון תקוע', 'אפליקציה'],
-  };
+  // Category keywords now live in taskFlowConfig.js — single source of truth
+  const CATEGORY_KEYWORDS = Object.fromEntries(
+    CATEGORIES.filter(c => c.value !== 'other').map(c => [c.value, getCategoryKeywords(c.value)])
+  );
 
   // Check if text looks like gibberish (random key mashing)
   // Returns error string if looks like gibberish, null if ok
@@ -552,6 +544,7 @@ export default function CreateTask() {
         address_notes: form.address_notes || undefined,
         estimated_time: estimatedTime,
         category: form.category,
+        category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : undefined,
         expiry_duration_hours: expiryHoursEdit,
         expires_at: expires,
         images: form.images,
@@ -678,6 +671,7 @@ export default function CreateTask() {
       address_notes: form.address_notes || undefined,
       estimated_time: estimatedTime,
       category: finalCategory,
+      category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : undefined,
       approval_mode: form.approval_mode,
       expiry_duration_hours: expiryHours || null,
       expires_at: expires,
@@ -758,6 +752,7 @@ export default function CreateTask() {
           address_notes: chatFormData.address_notes || undefined,
           estimated_time: estimatedTime,
           category: chatFormData.category || 'other',
+          category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : (chatFormData.category_details || undefined),
           expiry_duration_hours: expiryHoursEdit,
           expires_at: expires,
           images: chatFormData.images,
@@ -819,6 +814,7 @@ export default function CreateTask() {
         address_notes: chatFormData.address_notes || undefined,
         estimated_time: estimatedTime,
         category: chatFormData.category || 'other',
+        category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : (chatFormData.category_details || undefined),
         approval_mode: 'manual',
         expiry_duration_hours: expiryHours || null,
         expires_at: expires,
@@ -861,8 +857,8 @@ export default function CreateTask() {
     }
   };
 
-  // Chat mode rendering
-  if (chatMode && !isEditMode && !isRepost && !isRepostMode) {
+  // Chat mode rendering — available in all modes (create, edit, repost)
+  if (chatMode) {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
         {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
@@ -886,7 +882,8 @@ export default function CreateTask() {
         ) : (
           <TaskChatInterface
             initialForm={form}
-            isEditMode={false}
+            isEditMode={isEditMode}
+            editId={editId}
             onPublish={handleChatPublish}
             onSwitchToForm={() => setChatMode(false)}
           />
@@ -938,19 +935,17 @@ export default function CreateTask() {
               <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
-              {!isEditMode && !isRepost && !isRepostMode && (
-                <button
-                  onClick={() => setChatMode(m => !m)}
-                  style={{
-                    fontSize: 11, fontWeight: 700, color: 'white',
-                    background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
-                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
-                    whiteSpace: 'nowrap', boxShadow: 'none',
-                  }}
-                >
-                  {chatMode ? '📋 טופס' : '💬 צ\'אט'}
-                </button>
-              )}
+              <button
+                onClick={() => setChatMode(m => !m)}
+                style={{
+                  fontSize: 11, fontWeight: 700, color: 'white',
+                  background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
+                  borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
+                  whiteSpace: 'nowrap', boxShadow: 'none',
+                }}
+              >
+                {chatMode ? '📋 טופס' : '💬 צ\'אט'}
+              </button>
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
             {/* Progress bar */}
@@ -1037,7 +1032,8 @@ export default function CreateTask() {
           category={form.category}
           originLat={form.lat}
           originLng={form.lng}
-          onChange={(_data, text) => setExtraFieldsText(text)}
+          initialValues={isEditMode ? form.category_details : undefined}
+          onChange={(data, text) => { setCategoryDetails(data); setExtraFieldsText(text); }}
         />
 
         {/* Description — the main input. Title and category are auto-generated from this. */}
