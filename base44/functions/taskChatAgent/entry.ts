@@ -167,6 +167,78 @@ Line 4: ⚡ Urgency
 - If user says "לא יודע" on price → suggest a range based on category
 - If user is vague → ask ONE clarifying question about the most important missing field`;
 
+// ── Server-side category detection (keyword matching) ──
+// Same keywords as frontend — ensures category is ALWAYS detected correctly
+const CATEGORY_KEYWORDS = {
+  plumbing: ['סתימה', 'נזילה', 'אינסטלטור', 'ברז', 'צנרת', 'שירותים', 'כיור', 'מים', 'צנרת', 'ביוב'],
+  electricity: ['חשמל', 'שקע', 'מפסק', 'תקלה', 'לוח', 'חיווט', 'דוד', 'מתחשמל', 'קצר'],
+  cleaning: ['ניקיון', 'לנקות', 'נקי', 'אבק', 'שטיח', 'שוטף', 'אחרי שיפוץ', 'לפני מעבר'],
+  moving: ['הובלה', 'להעביר', 'מעבר דירה', 'הובלות', 'מוביל', 'ארגזים', 'הובלת'],
+  painting: ['צבע', 'לצבוע', 'צביעה', 'קיר', 'צבעי'],
+  carpentry: ['נגר', 'ארון', 'מדף', 'רהיט', 'מטבח', 'נגרות', 'הרכבת רהיט'],
+  ac: ['מזגן', 'מיזוג', 'מזגנים', 'מזגנ'],
+  locksmith: ['מנעולן', 'מפתח', 'פריצה', 'מנעול', 'כספת', 'שכפול'],
+  gardening: ['גינה', 'גינון', 'דשא', 'גיזום', 'עישוב', 'צמחים'],
+  delivery: ['משלוח', 'שליחות', 'לשלוח', 'חבילה', 'שליח'],
+  shopping: ['קניות', 'סופרמרקט', 'קניון', 'לקנות', 'סופר'],
+  babysitting: ['שמרטף', 'בייביסיטר', 'ילדים', 'תינוק', 'שמרטף'],
+  tutoring: ['שיעורים', 'מורה', 'לימודים', 'בגרות', 'שיעור'],
+  it_support: ['מחשב', 'תוכנה', 'חומרה', 'וירוס', 'לפטופ', 'מחשב נייד', 'רשת'],
+};
+
+function autoDetectCategory(text) {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  let bestCat = null;
+  let bestScore = 0;
+  for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    const score = keywords.filter(kw => lower.includes(kw.toLowerCase())).length;
+    if (score > bestScore) { bestScore = score; bestCat = cat; }
+  }
+  return bestScore >= 1 ? bestCat : null;
+}
+
+// ── Deterministic question generator for each field ──
+// Used to override LLM responses when the LLM asks about the wrong field
+function getFieldQuestion(field, category) {
+  switch (field) {
+    case 'description':
+      return 'מה צריך לעשות? 🚀 תאר בכמה מילים ואני אדאג לכל השאר.';
+    case 'category_details.to_address':
+      if (category === 'moving') return 'לאן מובילים? 📍 מה כתובת היעד?';
+      if (category === 'delivery') return 'לאן לשלוח? 📍 מה כתובת המסירה?';
+      return 'מה כתובת היעד? 📍';
+    case 'category_details.rooms':
+      return 'כמה חדרים מדובר?';
+    case 'category_details.issue_type':
+      if (category === 'plumbing') return 'איזה סוג תיקון? נזילה, סתימה, התקנה או אחר?';
+      if (category === 'electricity') return 'איזה סוג תקלה? תיקון, התקנת שקע, לוח חשמל או אחר?';
+      if (category === 'ac') return 'איזה סוג עבודה? התקנה, תיקון, ניקוי או אחר?';
+      if (category === 'carpentry') return 'איזה סוג עבודה? הרכבת רהיטים, תיקון, ייצור או אחר?';
+      if (category === 'locksmith') return 'איזה סוג עבודה? פריצה, החלפת מנעול, התקנה או אחר?';
+      if (category === 'it_support') return 'איזה סוג תקלה? מחשב איטי, וירוס, בעיית רשת או אחר?';
+      return 'איזה סוג עבודה?';
+    case 'category_details.store':
+      return 'מאיפה לקנות? איזו חנות/סופרמרקט?';
+    case 'category_details.kids_count':
+      return 'כמה ילדים?';
+    case 'category_details.subject':
+      return 'איזה מקצוע?';
+    case 'category_details.garden_type':
+      return 'איזה סוג גינה? פרטית, גינת בניין, מרפסת?';
+    case 'price':
+      return 'כמה תרצה לשלם? 💰';
+    case 'location_name':
+      return 'איפה המשימה? 📍 שתף את הכתובת';
+    case 'payment_method':
+      return 'איך תשלם? מזומן, Bit או PayBox?';
+    case 'estimated_time_urgency':
+      return 'כמה זמן זה ייקח ומתי דרוש העובד?';
+    default:
+      return null;
+  }
+}
+
 // Field completion order (step by step, one at a time)
 const FIELD_ORDER = [
   'description',
@@ -295,6 +367,17 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       if (!parsed.current_field_state) parsed.current_field_state = { field_name: currentFieldStr, state: 'COLLECTING', validation_error: null };
     }
 
+    // ── Server-side category detection fallback ──
+    // If the LLM failed to detect the category, do it ourselves from keywords
+    if (!parsed.category_detected && user_message) {
+      const detected = autoDetectCategory(user_message);
+      if (detected) {
+        parsed.category_detected = detected;
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        if (!parsed.extracted_data.category) parsed.extracted_data.category = detected;
+      }
+    }
+
     // Always recompute the current field from the ACTUAL merged data —
     // never trust the model's self-reported COMPLETE/COLLECTING state.
     const mergedState = { ...current_state, ...parsed.extracted_data };
@@ -312,6 +395,19 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       // There is still a field missing — this becomes "current" for the next turn.
       parsed.current_field_state = { field_name: recomputedField.field, state: 'COLLECTING', validation_error: null };
       parsed.next_field_state = null;
+
+      // ── Override bad LLM responses ──
+      // If the recomputed field is DIFFERENT from what the LLM was asked about,
+      // it means the LLM successfully collected the current field and we need
+      // to move to the next one. Override the LLM's response with a deterministic
+      // question about the ACTUAL next field — prevents the LLM from asking
+      // irrelevant follow-ups (e.g., "תאר יותר" when description is already done).
+      if (recomputedField.field !== currentFieldStr) {
+        const detQuestion = getFieldQuestion(recomputedField.field, mergedCategory);
+        if (detQuestion) {
+          parsed.response = detQuestion;
+        }
+      }
     } else {
       // Nothing left to collect — mark the field that was active as COMPLETE,
       // and signal there is no next field (ready to publish).
