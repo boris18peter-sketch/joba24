@@ -298,6 +298,7 @@ export default function TaskChatInterface({
     to_lng: initialForm.to_lng || null,
     to_building: initialForm.to_building || null,
     to_floor: initialForm.to_floor || null,
+    expiry_duration_hours: initialForm.expiry_duration_hours,
   });
 
   const [enabledFeatures, setEnabledFeatures] = useState({});
@@ -387,7 +388,7 @@ export default function TaskChatInterface({
   }, []);
 
   // Send — STATE-DRIVEN approach
-  const sendMessage = async (text, mediaUrls = []) => {
+  const sendMessage = async (text, mediaUrls = [], overrideDraft = null) => {
     if (!text?.trim() && !mediaUrls.length) return;
     const userMsg = { role: 'user', content: text || '', media: mediaUrls.length > 0 ? mediaUrls : undefined };
     const updatedMessages = [...messages, userMsg];
@@ -400,8 +401,9 @@ export default function TaskChatInterface({
         .map(m => ({ role: m.role === 'agent' ? 'agent' : 'user', content: m.content }));
       
       // STEP 1: Send Task Draft + current field state (conversation state machine)
+      const draftToSend = overrideDraft || taskDraft;
       const response = await base44.functions.invoke('taskChatAgent', {
-        current_state: taskDraft, // Single source of truth
+        current_state: draftToSend, // Single source of truth
         current_field_state: currentFieldState, // Which field we're collecting
         user_message: text + (mediaUrls.length ? '\n[צירפתי ' + mediaUrls.length + ' קבצי מדיה]' : ''),
         conversation_history: conversationHistory.slice(0, -1),
@@ -532,18 +534,41 @@ export default function TaskChatInterface({
 
   const handleSkipRequirements = () => {
     setShowRequirements(false);
-    setTaskDraft(prev => ({ ...prev, flow_stage: 'requirements' }));
-    sendMessage('אין צורך בדרישות נוספות, המשך');
+    const updated = { ...taskDraft, flow_stage: 'requirements' };
+    setTaskDraft(updated);
+    sendMessage('אין צורך בדרישות נוספות, המשך', [], updated);
   };
 
   const handleSkipFeatures = () => {
     setShowFeatures(false);
-    setTaskDraft(prev => ({ ...prev, flow_stage: 'features' }));
-    sendMessage('אין צורך בתכונות, פרסם עכשיו');
+    const updated = { ...taskDraft, flow_stage: 'features' };
+    setTaskDraft(updated);
+    sendMessage('אין צורך בתכונות, פרסם עכשיו', [], updated);
   };
 
   const handleQuickReply = (reply) => {
     setQuickReplies([]);
+    
+    // Handle edit quick replies — reset the field and re-collect
+    if (reply === 'ערוך מחיר') {
+      const updated = { ...taskDraft, price: null, flow_stage: 'collecting' };
+      setTaskDraft(updated);
+      sendMessage('אני רוצה לשנות את המחיר', [], updated);
+      return;
+    }
+    if (reply === 'ערוך כתובת') {
+      const updated = { ...taskDraft, location_name: null, flow_stage: 'collecting' };
+      setTaskDraft(updated);
+      sendMessage('אני רוצה לשנות את הכתובת', [], updated);
+      return;
+    }
+    if (reply === 'ערוך תיאור') {
+      const updated = { ...taskDraft, description: null, flow_stage: 'collecting' };
+      setTaskDraft(updated);
+      sendMessage('אני רוצה לשנות את התיאור', [], updated);
+      return;
+    }
+    
     sendMessage(reply);
   };
 
@@ -608,7 +633,14 @@ export default function TaskChatInterface({
     setPublishing(true);
     try {
       // Use Task Draft as source of truth when publishing
-      await onPublish({ ...taskDraft, ...enabledFeatures, ...featureConfig });
+      // Map expiry_duration_hours → expiry_hours for CreateTask compatibility
+      await onPublish({
+        ...taskDraft,
+        ...enabledFeatures,
+        ...featureConfig,
+        expiry_hours: taskDraft.expiry_duration_hours,
+        title: taskDraft.title || taskDraft.description?.substring(0, 50) || 'משימה חדשה',
+      });
     } catch (err) {
       setMessages(prev => [...prev, { role: 'agent', content: 'הייתה תקלה בפרסום. נסה שוב.' }]);
     } finally { setPublishing(false); }

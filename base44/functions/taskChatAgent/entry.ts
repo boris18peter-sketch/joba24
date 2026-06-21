@@ -233,10 +233,95 @@ function getFieldQuestion(field, category) {
     case 'payment_method':
       return 'איך תשלם? מזומן, Bit או PayBox?';
     case 'estimated_time_urgency':
-      return 'כמה זמן זה ייקח ומתי דרוש העובד?';
+      return 'מתי דרוש העובד וכמה זמן זה ייקח? ⏰';
+    case 'expiry_duration_hours':
+      return 'עד מתי המשימה תהיה פעילה בפיד? ⏰';
     default:
       return null;
   }
+}
+
+// ── Price ranges by category (for suggestions only — NEVER reject a valid price) ──
+const PRICE_RANGES = {
+  cleaning: [150, 400], plumbing: [200, 600], electricity: [200, 500],
+  moving: [300, 800], painting: [300, 1000], ac: [300, 700],
+  carpentry: [200, 600], delivery: [80, 200], shopping: [60, 150],
+  babysitting: [50, 120], tutoring: [80, 150], it_support: [150, 400],
+  gardening: [200, 500], locksmith: [200, 500], other: [100, 500],
+};
+
+// ── Deterministic quick replies based on current field ──
+function getQuickReplies(field, category) {
+  const range = PRICE_RANGES[category] || PRICE_RANGES.other;
+  switch (field) {
+    case 'price':
+      return [String(range[0]), String(Math.round((range[0] + range[1]) / 2)), String(range[1]), 'אחר'];
+    case 'estimated_time_urgency':
+      return ['עכשיו 🔥', 'היום', 'מחר', 'גמיש'];
+    case 'payment_method':
+      return ['מזומן', 'Bit', 'PayBox'];
+    case 'category_details.issue_type':
+      if (category === 'plumbing') return ['נזילה', 'סתימה', 'התקנה', 'אחר'];
+      if (category === 'electricity') return ['תיקון', 'התקנת שקע', 'לוח חשמל', 'אחר'];
+      if (category === 'ac') return ['התקנה', 'תיקון', 'ניקוי', 'אחר'];
+      if (category === 'carpentry') return ['הרכבה', 'תיקון', 'ייצור', 'אחר'];
+      if (category === 'locksmith') return ['פריצה', 'החלפת מנעול', 'שכפול', 'אחר'];
+      if (category === 'it_support') return ['מחשב איטי', 'וירוס', 'רשת', 'אחר'];
+      return [];
+    case 'category_details.rooms':
+      return ['1', '2', '3', '4+'];
+    case 'expiry_duration_hours':
+      return ['שעה', '4 שעות', 'יום', 'ללא תוקף'];
+    default:
+      return [];
+  }
+}
+
+// ── Server-side extraction helpers ──
+function extractPrice(text) {
+  if (!text) return null;
+  const match = text.match(/\b(\d{2,5})\b/);
+  if (match) {
+    const price = parseInt(match[1]);
+    if (price > 0 && price < 50000) return price;
+  }
+  return null;
+}
+
+function extractUrgencyAndTime(text) {
+  if (!text) return {};
+  const result = {};
+  const lower = text.toLowerCase();
+  if (lower.includes('עכשיו') || lower.includes('דחוף') || lower.includes('מיידי') || lower.includes('🔥')) result.urgency_tag = 'immediate';
+  else if (lower.includes('היום') || lower.includes('שעות הקרובות')) result.urgency_tag = 'few_hours';
+  else if (lower.includes('ערב') || lower.includes('לערב')) result.urgency_tag = 'evening';
+  else if (lower.includes('גמיש') || lower.includes('לא לחוץ') || lower.includes('לא דחוף')) result.urgency_tag = 'flexible';
+
+  if (lower.includes('15 דק') || lower.includes('רבע שעה')) result.estimated_time = '15m';
+  else if (lower.includes('חצי שעה') || lower.includes('30 דק')) result.estimated_time = '30m';
+  else if (lower.includes('שעה') && !lower.includes('שעתיים') && !lower.includes('2 שעות')) result.estimated_time = '1h';
+  else if (lower.includes('שעתיים') || lower.includes('2 שעות')) result.estimated_time = '2h';
+  return result;
+}
+
+function extractExpiry(text) {
+  if (!text) return undefined;
+  const msg = text.trim();
+  if (msg === 'שעה' || msg === '1 שעה') return 1;
+  if (msg === '4 שעות') return 4;
+  if (msg === '2 שעות') return 2;
+  if (msg === 'יום' || msg === '24 שעות') return 24;
+  if (msg === 'ללא תוקף' || msg === 'בלי תוקף' || msg === 'ללא') return null;
+  const m = msg.match(/(\d+(?:\.\d+)?)\s*(שעה|שעות|דק|דקות|יום|ימים|שבוע)?/);
+  if (m) {
+    let val = parseFloat(m[1]);
+    const unit = m[2];
+    if (unit === 'יום' || unit === 'ימים') val *= 24;
+    else if (unit === 'שבוע') val *= 168;
+    else if (unit === 'דק' || unit === 'דקות') val /= 60;
+    if (val > 0) return val;
+  }
+  return undefined;
 }
 
 // Field completion order (step by step, one at a time)
@@ -298,6 +383,10 @@ function findCurrentField(taskState, category) {
   // 6. Timing?
   if (!taskState.estimated_time || !taskState.urgency_tag) {
     return { field: 'estimated_time_urgency', state: 'COLLECTING' };
+  }
+  // 7. Expiry?
+  if (taskState.expiry_duration_hours === undefined) {
+    return { field: 'expiry_duration_hours', state: 'COLLECTING' };
   }
   // All mandatory done
   return null;
@@ -368,7 +457,6 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
     }
 
     // ── Server-side category detection fallback ──
-    // If the LLM failed to detect the category, do it ourselves from keywords
     if (!parsed.category_detected && user_message) {
       const detected = autoDetectCategory(user_message);
       if (detected) {
@@ -378,10 +466,62 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       }
     }
 
-    // Always recompute the current field from the ACTUAL merged data —
-    // never trust the model's self-reported COMPLETE/COLLECTING state.
+    // ── Server-side description extraction ──
+    // If description is empty and we're collecting it, use the user's message directly
+    if (!current_state.description && !parsed.extracted_data?.description && user_message && currentFieldStr === 'description') {
+      const cleanMsg = user_message.replace(/\n\[(.*?)\]/g, '').trim(); // remove media annotations
+      if (cleanMsg.length >= 3) {
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        parsed.extracted_data.description = cleanMsg;
+      }
+    }
+
+    // ── Server-side issue_type extraction for plumbing/electricity/etc ──
+    if (currentFieldStr === 'category_details.issue_type' && user_message) {
+      const msg = user_message.trim();
+      const issueMap = {
+        'נזילה': 'נזילה', 'סתימה': 'סתימה', 'התקנה': 'התקנה', 'התקנת': 'התקנה',
+        'תיקון': 'תיקון', 'פריצה': 'פריצה', 'וירוס': 'וירוס', 'מחשב איטי': 'מחשב איטי',
+      };
+      for (const [key, val] of Object.entries(issueMap)) {
+        if (msg.includes(key)) {
+          if (!parsed.extracted_data) parsed.extracted_data = {};
+          if (!parsed.extracted_data.category_details) parsed.extracted_data.category_details = {};
+          parsed.extracted_data.category_details.issue_type = val;
+          break;
+        }
+      }
+    }
+
+    // ── Server-side price extraction (accept ANY positive number) ──
+    if (currentFieldStr === 'price' && user_message) {
+      const price = extractPrice(user_message);
+      if (price && !parsed.extracted_data?.price) {
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        parsed.extracted_data.price = price;
+      }
+    }
+
+    // ── Server-side urgency + estimated_time extraction ──
+    if (currentFieldStr === 'estimated_time_urgency' && user_message) {
+      const timing = extractUrgencyAndTime(user_message);
+      if (Object.keys(timing).length > 0) {
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        Object.assign(parsed.extracted_data, timing);
+      }
+    }
+
+    // ── Server-side expiry extraction ──
+    if (currentFieldStr === 'expiry_duration_hours' && user_message) {
+      const expiry = extractExpiry(user_message);
+      if (expiry !== undefined) {
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        parsed.extracted_data.expiry_duration_hours = expiry;
+      }
+    }
+
+    // ── Merge state (deep-merge category_details) ──
     const mergedState = { ...current_state, ...parsed.extracted_data };
-    // Deep-merge category_details so previously collected fields aren't lost
     if (parsed.extracted_data?.category_details) {
       mergedState.category_details = {
         ...(current_state.category_details || {}),
@@ -389,30 +529,100 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       };
     }
     const mergedCategory = parsed.category_detected || current_state.category;
+
+    // ── Auto-generate title from description ──
+    if (!mergedState.title && mergedState.description) {
+      const title = mergedState.description.substring(0, 50);
+      mergedState.title = title;
+      if (!parsed.extracted_data) parsed.extracted_data = {};
+      parsed.extracted_data.title = title;
+    }
+
+    // ── Recompute current field from ACTUAL merged data ──
     const recomputedField = findCurrentField(mergedState, mergedCategory);
 
+    // ── FULLY DETERMINISTIC FLOW CONTROL ──
+    // The LLM is used ONLY for extraction. The backend controls all flow.
     if (recomputedField) {
-      // There is still a field missing — this becomes "current" for the next turn.
+      // Still collecting mandatory fields
       parsed.current_field_state = { field_name: recomputedField.field, state: 'COLLECTING', validation_error: null };
       parsed.next_field_state = null;
+      parsed.publish_ready = false;
+      parsed.all_mandatory_filled = false;
+      parsed.show_requirements = false;
+      parsed.show_features = false;
 
-      // ── Override bad LLM responses ──
-      // If the recomputed field is DIFFERENT from what the LLM was asked about,
-      // it means the LLM successfully collected the current field and we need
-      // to move to the next one. Override the LLM's response with a deterministic
-      // question about the ACTUAL next field — prevents the LLM from asking
-      // irrelevant follow-ups (e.g., "תאר יותר" when description is already done).
-      if (recomputedField.field !== currentFieldStr) {
-        const detQuestion = getFieldQuestion(recomputedField.field, mergedCategory);
-        if (detQuestion) {
-          parsed.response = detQuestion;
+      // Override response with deterministic question
+      const detQuestion = getFieldQuestion(recomputedField.field, mergedCategory);
+      if (detQuestion) {
+        parsed.response = detQuestion;
+      }
+
+      // Server-side quick replies
+      parsed.quick_replies = getQuickReplies(recomputedField.field, mergedCategory);
+
+      // Server-side address input
+      if (recomputedField.field === 'location_name') {
+        parsed.show_address_input = { type: 'origin', label: '📍 כתובת המשימה' };
+      } else if (recomputedField.field === 'category_details.to_address') {
+        parsed.show_address_input = { type: 'destination', label: '📍 כתובת יעד' };
+      } else {
+        parsed.show_address_input = null;
+      }
+
+      // Server-side media suggestion (when transitioning to price, after category-specific)
+      if (recomputedField.field === 'price' && !current_state.media_suggested) {
+        const mediaCats = ['plumbing', 'electricity', 'moving', 'painting', 'carpentry', 'ac', 'locksmith'];
+        if (mediaCats.includes(mergedCategory)) {
+          parsed.media_suggested = true;
+          if (!parsed.extracted_data) parsed.extracted_data = {};
+          parsed.extracted_data.media_suggested = true;
+          parsed.response += '\n\n💡 רוצה לצרף תמונות? לחץ על אייקון המצלמה — זה יעזור לעובד להבין את הבעיה.';
         }
       }
+
     } else {
-      // Nothing left to collect — mark the field that was active as COMPLETE,
-      // and signal there is no next field (ready to publish).
-      parsed.current_field_state = { field_name: currentFieldStr, state: 'COMPLETE', validation_error: null };
+      // All mandatory fields done — transition: requirements → features → publish
+      parsed.current_field_state = { field_name: 'complete', state: 'COMPLETE', validation_error: null };
       parsed.next_field_state = null;
+      parsed.all_mandatory_filled = true;
+
+      const flowStage = current_state.flow_stage;
+
+      if (!flowStage || flowStage === 'collecting') {
+        // Just finished mandatory — show requirements
+        parsed.show_requirements = true;
+        parsed.show_features = false;
+        parsed.publish_ready = false;
+        parsed.response = 'כל הפרטים החיוניים הושלמו! 🎉\nרוצה להוסיף דרישות מהעובד? (אופציונלי)';
+        parsed.quick_replies = [];
+      } else if (flowStage === 'requirements') {
+        // Requirements done — show features
+        parsed.show_requirements = false;
+        parsed.show_features = true;
+        parsed.publish_ready = false;
+        parsed.response = 'מעולה! 🚀\nרוצה להעלות את המשימה כ-Story או להפעיל העלאת מחיר אוטומטית?';
+        parsed.quick_replies = [];
+      } else if (flowStage === 'features') {
+        // Features done — ready to publish
+        parsed.show_requirements = false;
+        parsed.show_features = false;
+        parsed.publish_ready = true;
+
+        // Generate summary
+        const urgencyLabel = mergedState.urgency_tag === 'immediate' ? 'דחוף 🔥'
+          : mergedState.urgency_tag === 'few_hours' ? 'שעות קרובות'
+          : mergedState.urgency_tag === 'evening' ? 'ערב'
+          : 'גמיש';
+        parsed.summary = [
+          '📋 ' + (mergedState.title || 'משימה'),
+          '📍 ' + (mergedState.location_name || 'לא צוין'),
+          '💰 ₪' + mergedState.price + ' · ' + (mergedState.payment_method || 'מזומן'),
+          '⚡ ' + urgencyLabel,
+        ].join('\n');
+        parsed.response = 'הכל מוכן! ✅\nלחץ על "פרסם משימה" כדי לפרסם לפיד.';
+        parsed.quick_replies = ['ערוך מחיר', 'ערוך כתובת', 'ערוך תיאור'];
+      }
     }
 
     return Response.json(parsed);
