@@ -468,11 +468,18 @@ export default function TaskChatInterface({
       if (agentData.show_address_input?.type) setShowAddressInput(agentData.show_address_input);
       else setShowAddressInput(null);
 
-      if (agentData.show_requirements && !showRequirements) setShowRequirements(true);
-      if (agentData.show_features && !showFeatures) setShowFeatures(true);
-      
-      if (!agentData.show_requirements && showRequirements && agentData.show_features) {
+      // ── Flow stage tracking ──
+      // Backend drives: collecting → requirements → features → publish
+      if (agentData.show_requirements) {
+        setShowRequirements(true);
+        setTaskDraft(prev => ({ ...prev, flow_stage: 'requirements' }));
+      } else if (agentData.show_features) {
         setShowRequirements(false);
+        setShowFeatures(true);
+        setTaskDraft(prev => ({ ...prev, flow_stage: 'features' }));
+      } else if (agentData.publish_ready) {
+        setShowFeatures(false);
+        setTaskDraft(prev => ({ ...prev, flow_stage: 'publish' }));
       }
 
     } catch (err) {
