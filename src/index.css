@@ -324,10 +324,30 @@
 /* ── Z-Index Hierarchy ── */
 /* Bottom nav: 30 | Sticky headers: 49-50 | Sheets/Modals: 9999+ | Portals: 99999+ */
 /* This ensures ALL modals/sheets/popups always appear above the bottom nav */
+
+/* ════════════════════════════════════════════════════════════════════
+   GLOBAL RULE: ALL popups/modals/sheets are ALWAYS above the bottom nav.
+   The bottom nav (z-index 30) is portaled to <body>. Any modal/sheet
+   that is also portaled to <body> with z-index ≥ 9999 will always
+   render above it. This is a hard rule across the entire app.
+   ════════════════════════════════════════════════════════════════════ */
+.j-bottom-nav { z-index: 30 !important; }
+
 .mobile-sheet-overlay,
+.mobile-modal-center,
 [style*="z-index: 9999"],
-[style*="zIndex: 9999"] {
+[style*="zIndex: 9999"],
+[style*="z-index: 99999"],
+[style*="zIndex: 99999"],
+[style*="z-index: 999999"],
+[style*="zIndex: 999999"] {
   z-index: 9999 !important;
+}
+[style*="z-index: 99999"],
+[style*="zIndex: 99999"],
+[style*="z-index: 999999"],
+[style*="zIndex: 999999"] {
+  z-index: 999999 !important;
 }
 
 /* ── Scrollbars ── */
