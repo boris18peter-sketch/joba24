@@ -525,7 +525,14 @@ export default function TaskChatInterface({
 
   const handleSkipRequirements = () => {
     setShowRequirements(false);
-    sendMessage('אין צורך בדרישות נוספות, המשך לפרסום');
+    setTaskDraft(prev => ({ ...prev, flow_stage: 'requirements' }));
+    sendMessage('אין צורך בדרישות נוספות, המשך');
+  };
+
+  const handleSkipFeatures = () => {
+    setShowFeatures(false);
+    setTaskDraft(prev => ({ ...prev, flow_stage: 'features' }));
+    sendMessage('אין צורך בתכונות, פרסם עכשיו');
   };
 
   const handleQuickReply = (reply) => {
@@ -839,6 +846,13 @@ export default function TaskChatInterface({
                 extraConfig={featureConfig}
                 onExtraChange={handleFeatureConfig} />
             ))}
+            <button onClick={handleSkipFeatures} style={{
+              width: '100%', padding: '11px 0', borderRadius: 14,
+              background: 'transparent', color: '#64748b',
+              border: '1.5px solid #e2e8f0', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 6,
+            }}>אין צורך — פרסם ישירות ✓</button>
           </div>
         )}
 
@@ -889,8 +903,8 @@ export default function TaskChatInterface({
           </div>
         )}
 
-        {/* Publish button */}
-        {showFeatures && (
+        {/* Publish button — shows when features are displayed OR when publish is ready (edit mode / post-features) */}
+        {(showFeatures || publishReady) && (
           <div style={{ marginBottom: 8 }}>
             <motion.button
               initial={{ opacity: 0, y: 8 }}
@@ -907,7 +921,7 @@ export default function TaskChatInterface({
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}
             >
-              {publishing ? <><Loader2 size={20} className="animate-spin" /> מפרסם...</> : <><Zap size={20} /> פרסם משימה ✓</>}
+              {publishing ? <><Loader2 size={20} className="animate-spin" /> מפרסם...</> : <><Zap size={20} /> {isEditMode ? 'שמור שינויים ✓' : 'פרסם משימה ✓'}</>}
             </motion.button>
           </div>
         )}
