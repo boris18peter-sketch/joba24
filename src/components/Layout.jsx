@@ -61,10 +61,30 @@ export default function Layout() {
 
   usePushNotifications();
 
+  // ── GLOBAL HARD RULE: hide bottom nav whenever any modal/sheet/popup is open ──
+  // Watches document.body for portaled overlays (z-index ≥ 9999). When one appears,
+  // the footer is removed entirely — guaranteeing no popup is ever obscured by it.
+  useEffect(() => {
+    const checkForModals = () => {
+      const hasModal = Array.from(document.body.children).some(child => {
+        if (child.classList?.contains('j-bottom-nav')) return false;
+        const style = child.getAttribute('style') || '';
+        if (style.includes('pointer-events: none') || style.includes('pointerEvents: none')) return false;
+        return /z-index:\s*9999/.test(style);
+      });
+      setNavHiddenByModal(hasModal);
+    };
+    const observer = new MutationObserver(checkForModals);
+    observer.observe(document.body, { childList: true });
+    checkForModals();
+    return () => observer.disconnect();
+  }, []);
+
   const [notifications, setNotifications] = useState([]);
   const notifQueueRef = useRef([]);
   const notifActiveRef = useRef(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [navHiddenByModal, setNavHiddenByModal] = useState(false);
 
   // Lazy-mount tabs
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter((p) => ROOT_TAB_PATHS.includes(p))));
@@ -429,7 +449,7 @@ export default function Layout() {
       })()}
 
       {/* Bottom Nav */}
-      {!['/map', '/create-task'].includes(window.location.pathname) && !window.location.pathname.startsWith('/edit-task') && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
+      {!navHiddenByModal && !['/map', '/create-task'].includes(window.location.pathname) && !window.location.pathname.startsWith('/edit-task') && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
         <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '6px 8px 4px' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
