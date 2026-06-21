@@ -11,43 +11,19 @@ export default function AgentDashboard() {
   const { user: me } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  // All users referred by this agent
-  const { data: allUsers = [], isLoading: loadingUsers } = useQuery({
-    queryKey: ['agentUsers', me?.agent_code],
-    queryFn: () => base44.entities.User.filter({ referred_by_agent_code: me.agent_code }),
+  // Fetch all agent referral data via backend function (service-role).
+  // Agents can't list other users directly — built-in security blocks it.
+  const { data: referralData, isLoading: isLoadingReferrals } = useQuery({
+    queryKey: ['agentReferrals', me?.agent_code],
+    queryFn: () => base44.functions.invoke('getAgentReferrals', {}),
     enabled: !!me?.agent_code,
     staleTime: 60000,
   });
 
+  const allUsers = referralData?.data?.users || [];
+  const workerTasks = referralData?.data?.workerTasks || [];
+  const clientTasks = referralData?.data?.clientTasks || [];
   const workerIds = allUsers.map(u => u.id);
-
-  // Completed tasks where referred users are WORKERS
-  const { data: workerTasks = [], isLoading: loadingWorkerTasks } = useQuery({
-    queryKey: ['agentWorkerTasks', me?.agent_code, workerIds.join(',')],
-    queryFn: async () => {
-      if (!workerIds.length) return [];
-      const results = await Promise.all(
-        workerIds.map(wid => base44.entities.Task.filter({ worker_id: wid, status: 'COMPLETED' }, '-completed_at', 100))
-      );
-      return results.flat();
-    },
-    enabled: !!me?.agent_code && !loadingUsers,
-    staleTime: 60000,
-  });
-
-  // Completed tasks where referred users are CLIENTS (published tasks that got done)
-  const { data: clientTasks = [], isLoading: loadingClientTasks } = useQuery({
-    queryKey: ['agentClientTasks', me?.agent_code, workerIds.join(',')],
-    queryFn: async () => {
-      if (!workerIds.length) return [];
-      const results = await Promise.all(
-        workerIds.map(cid => base44.entities.Task.filter({ client_id: cid, status: 'COMPLETED' }, '-completed_at', 100))
-      );
-      return results.flat();
-    },
-    enabled: !!me?.agent_code && !loadingUsers,
-    staleTime: 60000,
-  });
 
   if (!me?.agent_code) {
     return (
@@ -74,7 +50,7 @@ export default function AgentDashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isLoading = loadingUsers || loadingWorkerTasks || loadingClientTasks;
+  const isLoading = isLoadingReferrals;
 
   // Count active users (logged in within last 7 days)
   const now = Date.now();

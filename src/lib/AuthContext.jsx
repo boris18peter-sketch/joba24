@@ -104,7 +104,9 @@ export const AuthProvider = ({ children }) => {
           // Clean URL to prevent re-processing
           if (refFromUrl) window.history.replaceState({}, '', window.location.pathname);
         }
-      } catch {}
+      } catch (refErr) {
+        console.error('[Joba24] Auth: failed to apply referral code:', refErr?.message);
+      }
 
       // Clean up any previous subscriptions before creating new ones (prevents leaks on re-auth)
       if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
