@@ -103,7 +103,7 @@ export default function SideMenu({ open, onClose }) {
     <>
       {open &&
       <div onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 10001, backdropFilter: 'blur(2px)' }} />
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 100003, backdropFilter: 'blur(2px)' }} />
 
       }
 
@@ -111,7 +111,7 @@ export default function SideMenu({ open, onClose }) {
         style={{
           position: 'fixed', top: 0, left: 0, bottom: 0, width: 272,
           background: 'linear-gradient(165deg, #091b3e 0%, #0e2660 45%, #183673 100%)',
-          zIndex: 10002,
+          zIndex: 100004,
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.26s cubic-bezier(0.32,0,0.2,1)',
           boxShadow: '8px 0 40px rgba(0,0,0,0.3)',
