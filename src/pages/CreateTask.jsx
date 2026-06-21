@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
-import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails } from '@/lib/taskFlowConfig';
+import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras } from '@/lib/taskFlowConfig';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
@@ -1360,15 +1360,25 @@ export default function CreateTask() {
                 <div key={cat.label}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                    {cat.items.map(({ key, label }) => (
-                      <button key={key} onClick={() => setReq(key, !form.requirements[key])}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', background: form.requirements[key] ? 'rgba(59,130,246,0.08)' : 'var(--surface-3)', border: `1px solid ${form.requirements[key] ? '#bfdbfe' : 'var(--border-1)'}`, transition: 'all 0.15s' }}>
-                        <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${form.requirements[key] ? '#1a6fd4' : 'var(--border-1)'}`, background: form.requirements[key] ? '#1a6fd4' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          {form.requirements[key] && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: form.requirements[key] ? '#1e40af' : 'var(--text-2)' }}>{label}</span>
-                      </button>
-                    ))}
+                    {cat.items.map(({ key, label }) => {
+                      const isSuggested = getSuggestedExtras(form.category).includes(key);
+                      const isActive = !!form.requirements[key];
+                      return (
+                        <button key={key} onClick={() => setReq(key, !form.requirements[key])}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 12, textAlign: 'right', cursor: 'pointer', position: 'relative',
+                            background: isActive ? 'rgba(59,130,246,0.08)' : isSuggested ? '#fffbeb' : 'var(--surface-3)',
+                            border: `1px solid ${isActive ? '#bfdbfe' : isSuggested ? '#fde68a' : 'var(--border-1)'}`,
+                            transition: 'all 0.15s' }}>
+                          <div style={{ width: 16, height: 16, borderRadius: 5, border: `2px solid ${isActive ? '#1a6fd4' : isSuggested ? '#f59e0b' : 'var(--border-1)'}`, background: isActive ? '#1a6fd4' : isSuggested ? '#fffbeb' : 'var(--input-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {isActive && <span style={{ color: 'white', fontSize: 9, lineHeight: 1 }}>✓</span>}
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: isActive ? '#1e40af' : isSuggested ? '#92400e' : 'var(--text-2)' }}>{label}</span>
+                          {isSuggested && !isActive && (
+                            <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'white', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>מומלץ</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

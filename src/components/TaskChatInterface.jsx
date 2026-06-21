@@ -6,6 +6,7 @@ import {
   MapPin, CreditCard, Clock, CheckCircle2, FileText, Target, TrendingUp
 } from 'lucide-react';
 import { getRequirementCategories } from '@/lib/requirements';
+import { getSuggestedExtras } from '@/lib/taskFlowConfig';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import ReactMarkdown from 'react-markdown';
 import BackButton from '@/components/BackButton';
@@ -223,20 +224,24 @@ function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceTogg
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {cat.items.map(({ key, label }) => {
               const active = !!requirements[key];
+              const isSuggested = getSuggestedExtras(category).includes(key);
               return (
                 <button key={key} onClick={() => onToggle(key)} style={{
                   display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px',
-                  borderRadius: 10, cursor: 'pointer',
-                  background: active ? 'rgba(26,111,212,0.08)' : '#f8fafc',
-                  border: `1px solid ${active ? '#bfdbfe' : '#e5e7eb'}`,
+                  borderRadius: 10, cursor: 'pointer', position: 'relative',
+                  background: active ? 'rgba(26,111,212,0.08)' : isSuggested ? '#fffbeb' : '#f8fafc',
+                  border: `1px solid ${active ? '#bfdbfe' : isSuggested ? '#fde68a' : '#e5e7eb'}`,
                 }}>
                   <div style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                    border: `2px solid ${active ? '#1a6fd4' : '#d1d5db'}`,
-                    background: active ? '#1a6fd4' : 'white',
+                    border: `2px solid ${active ? '#1a6fd4' : isSuggested ? '#f59e0b' : '#d1d5db'}`,
+                    background: active ? '#1a6fd4' : isSuggested ? '#fffbeb' : 'white',
                     display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {active && <span style={{ color: 'white', fontSize: 9 }}>✓</span>}
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: active ? '#1e40af' : '#6b7280' }}>{label}</span>
+                  <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: active ? '#1e40af' : isSuggested ? '#92400e' : '#6b7280' }}>{label}</span>
+                  {isSuggested && !active && (
+                    <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'white', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>מומלץ</span>
+                  )}
                 </button>
               );
             })}
