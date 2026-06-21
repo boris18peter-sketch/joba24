@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap } from 'lucide-react';
@@ -246,7 +246,7 @@ function ScanningLabel({ taskId }) {
 }
 
 // ── TaskCard ──────────────────────────────────────────────────────────────────
-export default function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
+function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -798,3 +798,16 @@ export default function TaskCard({ task, myApp, currentUserId, workerName, badge
     </>
   );
 }
+
+export default memo(TaskCard, (prev, next) => {
+  return (
+    prev.task.id === next.task.id &&
+    prev.task.status === next.task.status &&
+    prev.task.price === next.task.price &&
+    prev.task.worker_status === next.task.worker_status &&
+    (prev.task.applicants?.length ?? 0) === (next.task.applicants?.length ?? 0) &&
+    prev.myApp?.status === next.myApp?.status &&
+    prev.currentUserId === next.currentUserId &&
+    prev.isMyPublished === next.isMyPublished
+  );
+});

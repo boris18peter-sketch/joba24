@@ -308,7 +308,7 @@ export default function MapView() {
   const remainTime = navSteps.slice(currentStep).reduce((s, st) => s + (st.duration || 0), 0);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} dir="rtl">
+    <div data-no-zoom style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }} dir="rtl">
       {/* Map fills everything — header overlays on top */}
       <div style={{ position: 'absolute', inset: 0 }}>
         {mounted && mapToken && (

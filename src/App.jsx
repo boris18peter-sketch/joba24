@@ -167,10 +167,10 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
-  // Prevent pinch zoom on iOS
+  // Prevent pinch zoom on iOS — only block on elements that explicitly opt in
   React.useEffect(() => {
     const handleTouchMove = (e) => {
-      if (e.touches.length > 1) {
+      if (e.touches.length > 1 && e.target.closest('[data-no-zoom]')) {
         e.preventDefault();
       }
     };
