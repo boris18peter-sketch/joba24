@@ -70,7 +70,7 @@ Step 9: PUBLISH
 
 ## CATEGORY-SPECIFIC QUESTIONS (ask ONLY these, in order, after description)
 CRITICAL: Extract category-specific answers into extracted_data.category_details object using these EXACT field keys:
-moving: ask in order — 1) to_address (כתובת יעד) 2) from_floor (קומת מוצא) 3) elevator_from (מעלית במוצא?) 4) elevator_to (מעלית ביעד?) 5) items (מה מובילים?)
+moving: ask in order — 1) items (מה מובילים? — השאלה הכי חשובה, תמיד ראשונה!) 2) to_address (כתובת יעד)
 delivery: 1) to_address (כתובת מסירה) 2) item_size (גודל החבילה)
 cleaning: 1) rooms (מספר חדרים) 2) cleaning_type (סוג ניקוי: שוטף/אחרי שיפוץ/לפני מעבר/חלונות/שטיחים) 3) has_materials (יש חומרי ניקוי?)
 plumbing: 1) issue_type (נזילה/סתימה/התקנת ברז/הרחבת צנרת/בדיקה/אחר) — also set urgency_tag from answer
@@ -213,6 +213,8 @@ function getFieldQuestion(field, category) {
   switch (field) {
     case 'description':
       return 'מה צריך לעשות? 🚀 תאר בכמה מילים ואני אדאג לכל השאר.';
+    case 'category_details.items':
+      return 'מה מובילים? 📦';
     case 'category_details.to_address':
       if (category === 'moving') return 'לאן מובילים? 📍 מה כתובת היעד?';
       if (category === 'delivery') return 'לאן לשלוח? 📍 מה כתובת המסירה?';
@@ -240,11 +242,13 @@ function getFieldQuestion(field, category) {
     case 'location_name':
       return 'איפה המשימה? 📍 שתף את הכתובת';
     case 'payment_method':
-      return 'איך תשלם? מזומן, Bit או PayBox?';
-    case 'estimated_time_urgency':
-      return 'מתי דרוש העובד וכמה זמן זה ייקח? ⏰';
+      return 'איך תשלם? 💳';
+    case 'urgency_tag':
+      return 'מתי דרוש העובד? ⏰';
+    case 'estimated_time':
+      return 'כמה זמן זה ייקח? ⏱️';
     case 'expiry_duration_hours':
-      return 'עד מתי המשימה תהיה פעילה בפיד? ⏰';
+      return 'תוקף המשימה? ⏰';
     default:
       return null;
   }
@@ -265,10 +269,12 @@ function getQuickReplies(field, category) {
   switch (field) {
     case 'price':
       return [String(range[0]), String(Math.round((range[0] + range[1]) / 2)), String(range[1]), 'אחר'];
-    case 'estimated_time_urgency':
+    case 'urgency_tag':
       return ['עכשיו 🔥', 'היום', 'מחר', 'גמיש'];
+    case 'estimated_time':
+      return ['15 דקות', 'חצי שעה', 'שעה', '2 שעות'];
     case 'payment_method':
-      return ['מזומן', 'Bit', 'PayBox'];
+      return ['מזומן', 'Bit', 'PayBox', 'אחר'];
     case 'category_details.issue_type':
       if (category === 'plumbing') return ['נזילה', 'סתימה', 'התקנה', 'אחר'];
       if (category === 'electricity') return ['תיקון', 'התקנת שקע', 'לוח חשמל', 'אחר'];
@@ -351,7 +357,8 @@ const FIELD_ORDER = [
   'price',
   'location_name',
   'payment_method',
-  'estimated_time_urgency',
+  'urgency_tag',
+  'estimated_time',
   'requirements',
   'media',
   'features',
@@ -369,6 +376,7 @@ function findCurrentField(taskState, category) {
   if (!category || category === 'other') {
     // no category-specific for 'other'
   } else if (category === 'moving') {
+    if (!cd.items) return { field: 'category_details.items', state: 'COLLECTING' };
     if (!cd.to_address) return { field: 'category_details.to_address', state: 'COLLECTING' };
   } else if (category === 'delivery') {
     if (!cd.to_address) return { field: 'category_details.to_address', state: 'COLLECTING' };
@@ -400,9 +408,13 @@ function findCurrentField(taskState, category) {
   if (!taskState.payment_method) {
     return { field: 'payment_method', state: 'COLLECTING' };
   }
-  // 6. Timing?
-  if (!taskState.estimated_time || !taskState.urgency_tag) {
-    return { field: 'estimated_time_urgency', state: 'COLLECTING' };
+  // 6. When is the worker needed?
+  if (!taskState.urgency_tag) {
+    return { field: 'urgency_tag', state: 'COLLECTING' };
+  }
+  // 7. How long will it take?
+  if (!taskState.estimated_time) {
+    return { field: 'estimated_time', state: 'COLLECTING' };
   }
   // 7. Expiry?
   if (taskState.expiry_duration_hours === undefined) {
@@ -537,12 +549,31 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       }
     }
 
-    // ── Server-side urgency + estimated_time extraction ──
-    if (currentFieldStr === 'estimated_time_urgency' && user_message) {
-      const timing = extractUrgencyAndTime(user_message);
-      if (Object.keys(timing).length > 0) {
+    // ── Server-side items extraction for moving ──
+    if (currentFieldStr === 'category_details.items' && user_message) {
+      const cleanMsg = user_message.replace(/\n\[(.*?)\]/g, '').trim();
+      if (cleanMsg.length >= 2) {
         if (!parsed.extracted_data) parsed.extracted_data = {};
-        Object.assign(parsed.extracted_data, timing);
+        if (!parsed.extracted_data.category_details) parsed.extracted_data.category_details = {};
+        parsed.extracted_data.category_details.items = cleanMsg;
+      }
+    }
+
+    // ── Server-side urgency extraction ──
+    if (currentFieldStr === 'urgency_tag' && user_message) {
+      const timing = extractUrgencyAndTime(user_message);
+      if (timing.urgency_tag) {
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        parsed.extracted_data.urgency_tag = timing.urgency_tag;
+      }
+    }
+
+    // ── Server-side estimated_time extraction ──
+    if (currentFieldStr === 'estimated_time' && user_message) {
+      const timing = extractUrgencyAndTime(user_message);
+      if (timing.estimated_time) {
+        if (!parsed.extracted_data) parsed.extracted_data = {};
+        parsed.extracted_data.estimated_time = timing.estimated_time;
       }
     }
 

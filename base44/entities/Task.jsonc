@@ -94,7 +94,8 @@
       "enum": [
         "Cash",
         "Bit",
-        "PayBox"
+        "PayBox",
+        "Other"
       ]
     },
     "payment_status": {

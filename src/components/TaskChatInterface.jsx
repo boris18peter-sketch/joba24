@@ -3,10 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 import { 
   Mic, MicOff, Loader2, Sparkles, Zap, ArrowUp, Camera,
-  MapPin, CreditCard, Clock, CheckCircle2, FileText, Target, TrendingUp
+  MapPin, CreditCard, Clock, CheckCircle2, FileText, Target, TrendingUp, ChevronDown
 } from 'lucide-react';
 import { getRequirementCategories } from '@/lib/requirements';
-import { getSuggestedExtras } from '@/lib/taskFlowConfig';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import ReactMarkdown from 'react-markdown';
 import BackButton from '@/components/BackButton';
@@ -192,62 +191,73 @@ function FeatureCard({ pill, active, onToggle, extraConfig, onExtraChange }) {
   );
 }
 
-// ── Requirements group ──
+// ── Requirements group — compact dropdown ──
 function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceToggle, invoiceEnabled }) {
+  const [isOpen, setIsOpen] = useState(false);
   const cats = getRequirementCategories(category);
   if (!cats.length) return null;
+  const selectedCount = Object.values(requirements || {}).filter(Boolean).length;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Invoice toggle — always visible */}
       <button onClick={onInvoiceToggle} style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 14px', borderRadius: 16, cursor: 'pointer',
+        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
         border: `1.5px solid ${invoiceEnabled ? '#d8b4fe' : '#e5e7eb'}`,
         background: invoiceEnabled ? '#faf5ff' : 'white',
-        boxShadow: invoiceEnabled ? '0 4px 20px rgba(168,85,247,0.10)' : '0 1px 3px rgba(0,0,0,0.04)',
       }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+        <div style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0,
           background: invoiceEnabled ? '#7c3aed18' : '#f8fafc',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: `1.5px solid ${invoiceEnabled ? '#d8b4fe' : '#e5e7eb'}` }}>
-          <FileText size={18} color={invoiceEnabled ? '#7c3aed' : '#9ca3af'} />
+          <FileText size={16} color={invoiceEnabled ? '#7c3aed' : '#9ca3af'} />
         </div>
         <div style={{ flex: 1, textAlign: 'right' }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: invoiceEnabled ? '#7c3aed' : '#1f2937', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-            {invoiceEnabled && <CheckCircle2 size={14} color="#7c3aed" />}חשבונית מס
+          <div style={{ fontSize: 13, fontWeight: 700, color: invoiceEnabled ? '#7c3aed' : '#1f2937', display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
+            {invoiceEnabled && <CheckCircle2 size={13} color="#7c3aed" />}חשבונית מס
           </div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>דרוש מהעובד חשבונית מס — מתאים לעסקים ועצמאים</div>
         </div>
       </button>
-      {cats.map(cat => (
-        <div key={cat.label}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>{cat.label}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            {cat.items.map(({ key, label }) => {
-              const active = !!requirements[key];
-              const isSuggested = getSuggestedExtras(category).includes(key);
-              return (
-                <button key={key} onClick={() => onToggle(key)} style={{
-                  display: 'flex', alignItems: 'center', gap: 7, padding: '8px 10px',
-                  borderRadius: 10, cursor: 'pointer', position: 'relative',
-                  background: active ? 'rgba(26,111,212,0.08)' : isSuggested ? '#fffbeb' : '#f8fafc',
-                  border: `1px solid ${active ? '#bfdbfe' : isSuggested ? '#fde68a' : '#e5e7eb'}`,
-                }}>
-                  <div style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                    border: `2px solid ${active ? '#1a6fd4' : isSuggested ? '#f59e0b' : '#d1d5db'}`,
-                    background: active ? '#1a6fd4' : isSuggested ? '#fffbeb' : 'white',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {active && <span style={{ color: 'white', fontSize: 9 }}>✓</span>}
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: active ? '#1e40af' : isSuggested ? '#92400e' : '#6b7280' }}>{label}</span>
-                  {isSuggested && !active && (
-                    <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'white', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>מומלץ</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+
+      {/* Requirements dropdown — collapsed by default */}
+      <button onClick={() => setIsOpen(!isOpen)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 12px', borderRadius: 12, cursor: 'pointer',
+        border: `1.5px solid ${isOpen ? '#1a6fd4' : '#e5e7eb'}`,
+        background: isOpen ? '#eff6ff' : 'white',
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: isOpen ? '#1a6fd4' : '#1f2937', display: 'flex', alignItems: 'center', gap: 6 }}>
+          דרישות נוספות
+          {selectedCount > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'white', background: '#1a6fd4', borderRadius: 99, padding: '1px 6px' }}>{selectedCount}</span>}
         </div>
-      ))}
+        <ChevronDown size={16} color={isOpen ? '#1a6fd4' : '#9ca3af'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+
+      {isOpen && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0' }}>
+          {cats.map(cat => (
+            <div key={cat.label}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>{cat.label}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {cat.items.map(({ key, label }) => {
+                  const active = !!requirements[key];
+                  return (
+                    <button key={key} onClick={() => onToggle(key)} style={{
+                      padding: '5px 10px', borderRadius: 99, cursor: 'pointer',
+                      fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                      background: active ? '#1a6fd4' : '#f8fafc',
+                      color: active ? 'white' : '#6b7280',
+                      border: `1px solid ${active ? '#1a6fd4' : '#e5e7eb'}`,
+                    }}>
+                      {active && '✓ '}{label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -420,6 +430,7 @@ export default function TaskChatInterface({
           if (/מזומן|מזומנים|cash/i.test(pm)) data.payment_method = 'Cash';
           else if (/ביט|bit/i.test(pm)) data.payment_method = 'Bit';
           else if (/פייבוקס|paybox/i.test(pm)) data.payment_method = 'PayBox';
+          else if (/אחר|other/i.test(pm)) data.payment_method = 'Other';
         }
         // Merge category_details instead of replacing
         const categoryDetailsMerge = data.category_details
@@ -871,7 +882,7 @@ export default function TaskChatInterface({
               cursor: 'pointer', display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: 6,
               boxShadow: '0 4px 14px rgba(26,111,212,0.25)',
-            }}><ArrowUp size={15} />אין צורך — המשך ✓</button>
+            }}><ArrowUp size={15} />המשך ✓</button>
           </div>
         )}
 
