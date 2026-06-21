@@ -338,20 +338,26 @@ export default function TaskChatInterface({
   // Visual Viewport — handle mobile keyboard resizing
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => {
-      setVisibleHeight(vv.height);
+    const update = () => {
+      setVisibleHeight(vv ? vv.height : window.innerHeight);
       requestAnimationFrame(() => {
         if (messagesContainerRef.current) {
           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
       });
     };
-    vv.addEventListener('resize', onResize);
-    vv.addEventListener('scroll', onResize);
+    if (vv) {
+      vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+    }
+    window.addEventListener('resize', update);
+    update();
     return () => {
-      vv.removeEventListener('resize', onResize);
-      vv.removeEventListener('scroll', onResize);
+      if (vv) {
+        vv.removeEventListener('resize', update);
+        vv.removeEventListener('scroll', update);
+      }
+      window.removeEventListener('resize', update);
     };
   }, []);
 

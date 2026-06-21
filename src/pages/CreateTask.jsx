@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -859,8 +860,8 @@ export default function CreateTask() {
 
   // Chat mode rendering — available in all modes (create, edit, repost)
   if (chatMode) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
+    return createPortal(
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
         {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
         {showNoCreditsModal && <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />}
         {showLoginPrompt && (
@@ -888,7 +889,8 @@ export default function CreateTask() {
             onSwitchToForm={() => setChatMode(false)}
           />
         )}
-      </div>
+      </div>,
+      document.body
     );
   }
 
