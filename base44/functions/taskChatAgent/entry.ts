@@ -33,11 +33,20 @@ Rules:
 
 ## EXTRACTION RULES
 Extract as much as possible from every single message. A message like "צריך מישהו לנקות דירה 4 חדרים בתל אביב מחר ב-200 שקל" extracts:
-- description: "ניקיון דירה 4 חדרים"
-- category: "cleaning"
+- description: "ניקיון דירה 4 חדרים" (the user's ACTUAL request — what they need help with)
+- category: "cleaning" (detected separately, NEVER used as description)
 - city/location: "תל אביב"
 - price: 200
 - urgency_tag: "few_hours" (מחר)
+
+CRITICAL — DESCRIPTION RULES:
+- description MUST be the user's actual request text — what they need help with.
+- NEVER use the category name (אינסטלציה, ניקיון, חשמלאות, הובלה, צביעה, etc.) as the description.
+- Example: user says "סתימה באסלה בשירותים" → description: "תיקון סתימה באסלה בשירותים", category: "plumbing"
+- WRONG: description: "אינסטלציה" ← this is the category, NOT the description!
+- title = short 2-5 word summary of the actual task, derived from description.
+- Example: description "תיקון סתימה באסלה בשירותים" → title: "תיקון סתימה באסלה"
+- NEVER use the category name as the title.
 
 ## STRUCTURED DATA — NOT WORD COUNT
 CRITICAL: NEVER evaluate description quality by length or word count.
@@ -324,6 +333,17 @@ function extractExpiry(text) {
   return undefined;
 }
 
+// ── Generate a clean, short title from the description ──
+// Truncates at ~40 chars at a word boundary, never mid-word
+function generateTitle(description) {
+  if (!description) return 'משימה חדשה';
+  if (description.length <= 40) return description;
+  const truncated = description.substring(0, 40);
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > 15) return truncated.substring(0, lastSpace);
+  return truncated;
+}
+
 // Field completion order (step by step, one at a time)
 const FIELD_ORDER = [
   'description',
@@ -467,6 +487,9 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
     }
 
     // ── Server-side description extraction ──
+    // Category labels (without emojis) — NEVER allowed as description or title
+    const CATEGORY_LABELS = ['אינסטלציה', 'חשמלאות', 'גינון', 'ניקיון', 'הובלה', 'צביעה', 'נגרות', 'מזגנים', 'מנעולן', 'קניות', 'משלוח', 'בייביסיטר', 'שיעורים פרטיים', 'מחשבים', 'אחר'];
+
     // If description is empty and we're collecting it, use the user's message directly
     if (!current_state.description && !parsed.extracted_data?.description && user_message && currentFieldStr === 'description') {
       const cleanMsg = user_message.replace(/\n\[(.*?)\]/g, '').trim(); // remove media annotations
@@ -474,6 +497,18 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
         if (!parsed.extracted_data) parsed.extracted_data = {};
         parsed.extracted_data.description = cleanMsg;
       }
+    }
+
+    // ── Prevent category names from being used as description or title ──
+    if (parsed.extracted_data?.description && CATEGORY_LABELS.includes(parsed.extracted_data.description.trim())) {
+      // LLM used category name as description — override with user's original message
+      const cleanMsg = user_message?.replace(/\n\[(.*?)\]/g, '').trim();
+      if (cleanMsg && cleanMsg.length >= 3) {
+        parsed.extracted_data.description = cleanMsg;
+      }
+    }
+    if (parsed.extracted_data?.title && CATEGORY_LABELS.includes(parsed.extracted_data.title.trim())) {
+      delete parsed.extracted_data.title;
     }
 
     // ── Server-side issue_type extraction for plumbing/electricity/etc ──
@@ -532,7 +567,7 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
 
     // ── Auto-generate title from description ──
     if (!mergedState.title && mergedState.description) {
-      const title = mergedState.description.substring(0, 50);
+      const title = generateTitle(mergedState.description);
       mergedState.title = title;
       if (!parsed.extracted_data) parsed.extracted_data = {};
       parsed.extracted_data.title = title;
