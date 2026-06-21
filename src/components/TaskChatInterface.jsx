@@ -286,6 +286,7 @@ export default function TaskChatInterface({
     auto_bump_enabled: initialForm.auto_bump_enabled || false,
     max_price: initialForm.max_price || null,
     requires_invoice: initialForm.requires_invoice || false,
+    category_details: initialForm.category_details || {},
     to_address: initialForm.to_address || null,
     to_city: initialForm.to_city || null,
     to_lat: initialForm.to_lat || null,
@@ -329,7 +330,15 @@ export default function TaskChatInterface({
     initializedRef.current = true;
     const initMessages = [];
     if (isEditMode && initialForm.title) {
-      initMessages.push({ role: 'agent', content: 'אני רואה שאתה עורך את **"' + initialForm.title + '"**.\n\nתגיד לי מה לשנות ואני אדאג לזה 😊' });
+      // Build a summary of the current task for edit mode
+      const parts = [];
+      parts.push('📋 **' + initialForm.title + '**');
+      if (initialForm.description) parts.push('📝 ' + initialForm.description.substring(0, 80) + (initialForm.description.length > 80 ? '...' : ''));
+      if (initialForm.price) parts.push('💰 ₪' + initialForm.price);
+      if (initialForm.location_name) parts.push('📍 ' + initialForm.location_name);
+      if (initialForm.category) parts.push('🏷️ ' + initialForm.category);
+      const summary = parts.join('\n');
+      initMessages.push({ role: 'agent', content: 'אני רואה שאתה עורך את המשימה הזאת:\n\n' + summary + '\n\nתגיד לי מה לשנות ואני אדאג לזה 😊' });
       setPublishReady(true);
     } else if (initialForm.title) {
       initMessages.push({ role: 'agent', content: 'היי! 👋 ראיתי שיש לך טיוטה של **"' + initialForm.title + '"** — רוצה שנמשיך?' });
@@ -373,9 +382,13 @@ export default function TaskChatInterface({
           else if (/ביט|bit/i.test(pm)) data.payment_method = 'Bit';
           else if (/פייבוקס|paybox/i.test(pm)) data.payment_method = 'PayBox';
         }
+        // Merge category_details instead of replacing
+        const categoryDetailsMerge = data.category_details
+          ? { category_details: { ...(taskDraft.category_details || {}), ...data.category_details } }
+          : {};
         // Update Task Draft atomically
         setTaskDraft(prev => {
-          const updated = { ...prev, ...data };
+          const updated = { ...prev, ...data, ...categoryDetailsMerge };
           draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
           return updated;
         });
@@ -716,9 +729,15 @@ export default function TaskChatInterface({
                  setTaskDraft(prev => {
                    const updated = {
                      ...prev,
-                     to_address: addrData.location_name, to_city: addrData.city,
-                     to_lat: addrData.lat, to_lng: addrData.lng,
-                     to_building: addrData.address_building, to_floor: addrData.address_floor,
+                     category_details: {
+                       ...(prev.category_details || {}),
+                       to_address: addrData.location_name,
+                       to_city: addrData.city,
+                       to_lat: addrData.lat,
+                       to_lng: addrData.lng,
+                       to_building: addrData.address_building,
+                       to_floor: addrData.address_floor,
+                     },
                    };
                    draftHistoryRef.current.push({ timestamp: Date.now(), draft: updated });
                    return updated;

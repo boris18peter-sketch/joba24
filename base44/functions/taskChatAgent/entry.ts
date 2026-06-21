@@ -60,21 +60,32 @@ Step 8: features (Story / AutoBump) — show when all mandatory done
 Step 9: PUBLISH
 
 ## CATEGORY-SPECIFIC QUESTIONS (ask ONLY these, in order, after description)
-moving: 1) "מאיזו קומה? יש מעלית?" 2) "כתובת יעד?" 3) "מה מובילים? (ספה, מקרר...)"
-delivery: 1) "גודל החבילה?" 2) "כתובת מסירה?"
-cleaning: 1) "כמה חדרים ובאיזה סוג ניקוי?" (שוטף / אחרי שיפוץ / לפני מעבר)
-plumbing: 1) "איזה בעיה? (נזילה / סתימה / התקנה)" — also set urgency_tag from answer
-electricity: 1) "מה התקלה? (שקע / מפסק / לוח / אחר)"
-ac: 1) "התקנה, תיקון, או ניקוי? כמה יחידות?"
-painting: 1) "כמה חדרים? יש צבע בבית?"
-carpentry: 1) "הרכבה, תיקון, או ייצור? איזה פריט?"
-locksmith: 1) "נעילה בחוץ? החלפת מנעול?"
-shopping: 1) "רשימת קניות מוכנה? איפה לקנות?"
-babysitting: 1) "כמה ילדים ובאיזה גיל?"
-tutoring: 1) "איזה מקצוע ואיזו כיתה?"
-it_support: 1) "מה הבעיה? (מחשב / וירוס / רשת / התקנה)"
-gardening: 1) "גינה פרטית או בניין? סוג עבודה?"
+CRITICAL: Extract category-specific answers into extracted_data.category_details object using these EXACT field keys:
+moving: ask in order — 1) to_address (כתובת יעד) 2) from_floor (קומת מוצא) 3) elevator_from (מעלית במוצא?) 4) elevator_to (מעלית ביעד?) 5) items (מה מובילים?)
+delivery: 1) to_address (כתובת מסירה) 2) item_size (גודל החבילה)
+cleaning: 1) rooms (מספר חדרים) 2) cleaning_type (סוג ניקוי: שוטף/אחרי שיפוץ/לפני מעבר/חלונות/שטיחים) 3) has_materials (יש חומרי ניקוי?)
+plumbing: 1) issue_type (נזילה/סתימה/התקנת ברז/הרחבת צנרת/בדיקה/אחר) — also set urgency_tag from answer
+electricity: 1) issue_type (תיקון תקלה/התקנת שקע/לוח חשמל/חיווט/בדיקה/אחר) 2) urgency (מיידי/היום/גמיש)
+ac: 1) issue_type (התקנה/תיקון/ניקוי/פירוק/אחר) 2) units (כמה יחידות?)
+painting: 1) rooms (כמה חדרים/קירות) 2) area (שטח במ"ר) 3) has_paint (יש צבע?)
+carpentry: 1) issue_type (הרכבת רהיטים/תיקון/ייצור/פירוק/אחר)
+locksmith: 1) issue_type (פריצה/החלפת מנעול/התקנת מנעול/כספת/שכפול מפתח/אחר)
+shopping: 1) store (איפה לקנות) 2) items (רשימת קניות)
+babysitting: 1) kids_count (כמה ילדים) 2) kids_ages (גילאי הילדים) 3) has_pets (יש חיות מחמד?)
+tutoring: 1) subject (איזה מקצוע) 2) grade_level (יסודי/חטיבת ביניים/תיכון/בגרויות/אקדמיה/אחר) 3) session_duration (45 דקות/שעה/שעה וחצי/2 שעות)
+it_support: 1) issue_type (מחשב איטי/וירוס/בעיית רשת/התקנת תוכנה/גיבוי/אחר) 2) device_type (מחשב נייח/לפטופ/טאבלט/סמארטפון/מספר מכשירים)
+gardening: 1) garden_type (גינה פרטית/גינת בניין/מרפסת/שטח ציבורי) 2) work_type (גיזום/כיסוח דשא/עישוב/השקיה/פינוי פסולת/תכנון גינה)
 other: skip category-specific, go straight to price
+
+## EDIT MODE
+If current_state contains an existing task (isEditMode=true or current_state has title+description+price already set):
+- The user is EDITING an existing task, not creating a new one.
+- current_state already reflects their published task — do NOT re-ask about fields that already have values.
+- Only update fields the user EXPLICITLY mentions changing.
+- If user says "שנה את המחיר ל-300" → only update price, leave everything else as-is.
+- If user says "ערוך את הכתובת" → show address input, only update location.
+- Do NOT ask about fields that already have a value unless the user says to change them.
+- Start by acknowledging what they want to change, then make the change and confirm.
 
 ## SHOW_QUICK_REPLIES — CRITICAL
 Always return quick_replies for these situations:
@@ -98,7 +109,7 @@ location_name filled: +15%
 payment_method filled: +10%
 category not 'other': +10%
 estimated_time filled: +10%
-category-specific fields filled (to_address for moving/delivery, rooms for cleaning, etc): +10%
+category-specific fields filled (category_details.to_address for moving/delivery, category_details.rooms for cleaning, etc): +10%
 urgency_tag filled: +5%
 images or video: +5%
 
@@ -140,8 +151,8 @@ Line 4: ⚡ Urgency
 - category_detected: detect from Hebrew keywords. Map: אינסטלטור/נזילה/סתימה/ברז→plumbing, חשמל/שקע/מפסק→electricity, ניקיון/לנקות→cleaning, הובלה/להעביר/מעבר דירה→moving, צבע/לצבוע→painting, נגר/ארון/מדף/רהיט→carpentry, מזגן/מיזוג→ac, מנעולן/מפתח/פריצה→locksmith, גינה/גינון→gardening, משלוח/שליחות→delivery, קניות/סופרמרקט→shopping, שמרטף/בייביסיטר→babysitting, שיעורים/מורה→tutoring, מחשב/תוכנה/חומרה→it_support
 - show_requirements: true when all mandatory + timing + category-specific done. NEVER before.
 - show_features: true when show_requirements was shown OR user explicitly skipped requirements.
-- show_address_input: {"type":"origin","label":"📍 כתובת המשימה"} when location empty | {"type":"destination","label":"📍 כתובת יעד"} for moving/delivery without to_address | null otherwise
-- publish_ready: description + price + location_name + payment_method + category filled. to_address required for moving/delivery.
+- show_address_input: {"type":"origin","label":"📍 כתובת המשימה"} when location empty | {"type":"destination","label":"📍 כתובת יעד"} for moving/delivery without category_details.to_address | null otherwise
+- publish_ready: description + price + location_name + payment_method + category filled. category_details.to_address required for moving/delivery.
 - quick_replies: array of short button labels the user can tap as shortcuts. Max 4 items. Empty array if no obvious shortcuts.
 - summary: 4-line Hebrew summary ONLY when publish_ready=true
 - media_suggested: true after you suggest photos (moving/plumbing/electricity/painting/carpentry/ac/locksmith). Don't suggest twice.
@@ -177,10 +188,28 @@ function findCurrentField(taskState, category) {
     return { field: 'description', state: 'COLLECTING' };
   }
   // 2. Category-specific (varies) — only ask if the structured field is truly missing
+  const cd = taskState.category_details || {};
   if (!category || category === 'other') {
     // no category-specific for 'other'
-  } else if (category === 'moving' || category === 'delivery') {
-    if (!taskState.to_address) return { field: 'to_address', state: 'COLLECTING' };
+  } else if (category === 'moving') {
+    if (!cd.to_address) return { field: 'category_details.to_address', state: 'COLLECTING' };
+  } else if (category === 'delivery') {
+    if (!cd.to_address) return { field: 'category_details.to_address', state: 'COLLECTING' };
+  } else if (category === 'cleaning') {
+    if (!cd.rooms) return { field: 'category_details.rooms', state: 'COLLECTING' };
+  } else if (category === 'plumbing' || category === 'electricity' || category === 'ac' ||
+             category === 'carpentry' || category === 'locksmith' || category === 'it_support') {
+    if (!cd.issue_type) return { field: 'category_details.issue_type', state: 'COLLECTING' };
+  } else if (category === 'painting') {
+    if (!cd.rooms) return { field: 'category_details.rooms', state: 'COLLECTING' };
+  } else if (category === 'shopping') {
+    if (!cd.store) return { field: 'category_details.store', state: 'COLLECTING' };
+  } else if (category === 'babysitting') {
+    if (!cd.kids_count) return { field: 'category_details.kids_count', state: 'COLLECTING' };
+  } else if (category === 'tutoring') {
+    if (!cd.subject) return { field: 'category_details.subject', state: 'COLLECTING' };
+  } else if (category === 'gardening') {
+    if (!cd.garden_type) return { field: 'category_details.garden_type', state: 'COLLECTING' };
   }
   // 3. Price?
   if (!taskState.price || taskState.price <= 0) {

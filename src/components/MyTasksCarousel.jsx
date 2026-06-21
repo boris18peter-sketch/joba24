@@ -38,7 +38,7 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
 
   const handleEdit = () => {
     onClose();
-    navigate(`/edit-task/${task.id}`);
+    navigate(`/create-task?editId=${task.id}`);
   };
 
   return createPortal(
@@ -119,7 +119,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   const handleReopen = (e, task) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/edit-task/${task.id}`);
+    navigate(`/create-task?editId=${task.id}&repost=1`);
   };
 
   // Empty state: show a "Post Task" button without title (unless user is currently working on a task)

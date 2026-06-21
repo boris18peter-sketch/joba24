@@ -449,7 +449,7 @@ export default function Layout() {
       })()}
 
       {/* Bottom Nav */}
-      {!navHiddenByModal && !['/map', '/create-task'].includes(window.location.pathname) && !window.location.pathname.startsWith('/edit-task') && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
+      {!navHiddenByModal && !['/map', '/create-task'].includes(window.location.pathname) && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
         <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '6px 8px 4px' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {

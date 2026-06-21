@@ -26,7 +26,6 @@ const CreateTask = lazy(() => import('@/pages/CreateTask'));
 const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 const Chat = lazy(() => import('@/pages/Chat'));
 const Wallet = lazy(() => import('@/pages/Wallet'));
-const EditTask = lazy(() => import('@/pages/EditTask'));
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
 const WorkerProfile = lazy(() => import('@/pages/WorkerProfile'));
 const FAQ = lazy(() => import('@/pages/FAQ'));
@@ -143,7 +142,6 @@ const AuthenticatedApp = () => {
               <Route element={<ProtectedRoute />}>
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/edit-task/:id" element={<EditTask />} />
                 <Route path="/worker-profile" element={<WorkerProfile />} />
                 <Route path="/simulator" element={<SimulatorPanel />} />
                 <Route path="/my-tasks" element={<MyTasks />} />
