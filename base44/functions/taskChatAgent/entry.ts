@@ -295,15 +295,28 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       if (!parsed.current_field_state) parsed.current_field_state = { field_name: currentFieldStr, state: 'COLLECTING', validation_error: null };
     }
 
-    // Determine next field only if current is COMPLETE
-    if (parsed.current_field_state?.state === 'COMPLETE') {
-      const nextCurrentField = findCurrentField(
-        { ...current_state, ...parsed.extracted_data },
-        parsed.category_detected || current_state.category
-      );
-      if (nextCurrentField) {
-        parsed.next_field_state = { field_name: nextCurrentField.field, state: 'EMPTY' };
-      }
+    // Always recompute the current field from the ACTUAL merged data —
+    // never trust the model's self-reported COMPLETE/COLLECTING state.
+    const mergedState = { ...current_state, ...parsed.extracted_data };
+    // Deep-merge category_details so previously collected fields aren't lost
+    if (parsed.extracted_data?.category_details) {
+      mergedState.category_details = {
+        ...(current_state.category_details || {}),
+        ...parsed.extracted_data.category_details,
+      };
+    }
+    const mergedCategory = parsed.category_detected || current_state.category;
+    const recomputedField = findCurrentField(mergedState, mergedCategory);
+
+    if (recomputedField) {
+      // There is still a field missing — this becomes "current" for the next turn.
+      parsed.current_field_state = { field_name: recomputedField.field, state: 'COLLECTING', validation_error: null };
+      parsed.next_field_state = null;
+    } else {
+      // Nothing left to collect — mark the field that was active as COMPLETE,
+      // and signal there is no next field (ready to publish).
+      parsed.current_field_state = { field_name: currentFieldStr, state: 'COMPLETE', validation_error: null };
+      parsed.next_field_state = null;
     }
 
     return Response.json(parsed);
