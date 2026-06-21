@@ -577,7 +577,7 @@ export default function Layout() {
       <ChatPushNotification />
       <NotificationsPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
-      <SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
+      {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 
       {/* Portals — rendered directly to body to escape stacking context */}
       {showGiftModal && createPortal(
