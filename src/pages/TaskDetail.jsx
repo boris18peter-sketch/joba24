@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
+import InvoiceViewModal from '@/components/InvoiceViewModal';
 import BoostOverlay from '@/components/BoostOverlay';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import TaskExpiry from '@/components/TaskExpiry';
@@ -144,6 +145,7 @@ export default function TaskDetail() {
   const [showOwnerMenu, setShowOwnerMenu] = useState(false);
   const [showQuickChat, setShowQuickChat] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [showInvoiceView, setShowInvoiceView] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [editingCompletion, setEditingCompletion] = useState(false);
@@ -1028,6 +1030,27 @@ export default function TaskDetail() {
         </div>
         }
 
+        {/* Invoice section — visible to both client and worker when invoice exists */}
+        {task.status === 'COMPLETED' && task.invoice_html && (isOwner || isWorker) && (
+          <div style={{ background: 'linear-gradient(135deg,#faf5ff,#f3e8ff)', borderRadius: 20, border: '1.5px solid #e9d5ff', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(124,58,237,0.3)' }}>
+              <FileText size={22} color="white" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#6d28d9' }}>חשבונית מס / קבלה זמינה</div>
+              <div style={{ fontSize: 12, color: '#7c3aed', marginTop: 2 }}>
+                {isOwner ? 'העובד הפיק חשבונית עבורך · לחץ לצפייה והורדה' : 'החשבונית שהפקת זמינה כאן'}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowInvoiceView(true)}
+              style={{ height: 40, padding: '0 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 12px rgba(124,58,237,0.35)' }}
+            >
+              <FileText size={15} /> צפה והורד
+            </button>
+          </div>
+        )}
+
         {/* Task location map — shown for non-TAKEN tasks with location */}
         {task.status !== 'TAKEN' && task.lat && task.lng &&
         <TaskLocationMap
@@ -1255,6 +1278,11 @@ export default function TaskDetail() {
 
       {showInvoice && task && me && createPortal(
         <InvoiceModal task={task} me={me} onClose={() => setShowInvoice(false)} />,
+        document.body
+      )}
+
+      {showInvoiceView && task?.invoice_html && createPortal(
+        <InvoiceViewModal invoiceHtml={task.invoice_html} onClose={() => setShowInvoiceView(false)} />,
         document.body
       )}
 

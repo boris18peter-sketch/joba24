@@ -92,11 +92,17 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Referral: if user arrived via ?ref=AGENT_CODE, save it to their profile
+      // Read from BOTH URL params and localStorage — CaptureRefCode may not have run yet
+      // (AuthProvider's useEffect runs before CaptureRefCode's, since it's the parent)
       try {
-        const savedRef = localStorage.getItem('joba24_ref_code');
+        const urlParams = new URLSearchParams(window.location.search);
+        const refFromUrl = urlParams.get('ref');
+        const savedRef = refFromUrl || localStorage.getItem('joba24_ref_code');
         if (savedRef && !currentUser.referred_by_agent_code) {
           await base44.auth.updateMe({ referred_by_agent_code: savedRef });
           localStorage.removeItem('joba24_ref_code');
+          // Clean URL to prevent re-processing
+          if (refFromUrl) window.history.replaceState({}, '', window.location.pathname);
         }
       } catch {}
 
