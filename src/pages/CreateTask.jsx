@@ -860,7 +860,7 @@ export default function CreateTask() {
   // Chat mode rendering — available in all modes (create, edit, repost)
   if (chatMode) {
     return (
-      <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
         {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
         {showNoCreditsModal && <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />}
         {showLoginPrompt && (

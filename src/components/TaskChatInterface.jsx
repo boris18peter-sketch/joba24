@@ -100,7 +100,7 @@ function LiveDraftCard({ taskState, completenessPct, enabledFeatures }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       style={{
-        margin: '8px 12px', padding: '12px 14px',
+        margin: '8px 16px', padding: '12px 14px',
         background: 'white', border: '1px solid #e8edf5',
         borderRadius: 16, boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
       }}
@@ -325,9 +325,35 @@ export default function TaskChatInterface({
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
   const draftHistoryRef = useRef([]);
+  const messagesContainerRef = useRef(null);
+  const [visibleHeight, setVisibleHeight] = useState(null);
 
-  // Scroll
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  // Scroll to bottom on new messages / loading
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
+
+  // Visual Viewport — handle mobile keyboard resizing
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      setVisibleHeight(vv.height);
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      });
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
 
   // Init
   useEffect(() => {
@@ -590,7 +616,7 @@ export default function TaskChatInterface({
   const progressPct = completenessPct || 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', position: 'relative' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: visibleHeight ? `${visibleHeight}px` : '100%', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', position: 'relative', overflow: 'hidden' }} dir="rtl">
       
       {/* Header */}
       <div style={{ 
@@ -624,9 +650,10 @@ export default function TaskChatInterface({
       <LiveDraftCard taskState={taskDraft} completenessPct={completenessPct} enabledFeatures={enabledFeatures} />
 
       {/* Messages */}
-      <div style={{ 
-        flex: 1, overflowY: 'auto', padding: '8px 12px 0',
+      <div ref={messagesContainerRef} style={{ 
+        flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 0',
         display: 'flex', flexDirection: 'column', gap: 10,
+        WebkitOverflowScrolling: 'touch',
       }}>
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => (
@@ -828,7 +855,7 @@ export default function TaskChatInterface({
       <div style={{
         flexShrink: 0, background: 'white',
         borderTop: '1px solid #e8edf5',
-        padding: '8px 12px',
+        padding: '8px 16px',
         paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
       }}>
         {/* Quick Replies */}
