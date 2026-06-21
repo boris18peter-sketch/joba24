@@ -14,11 +14,11 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 
 // Add page imports here
-// Tab pages — eagerly loaded (also imported directly by Layout.jsx)
-import HomeFeed from '@/pages/HomeFeed';
-import MapView from '@/pages/MapView';
-import ChatInbox from '@/pages/ChatInbox';
-import Profile from '@/pages/Profile';
+// Tab pages — lazy loaded (mounted via Layout.jsx)
+const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
+const MapView = lazy(() => import('@/pages/MapView'));
+const ChatInbox = lazy(() => import('@/pages/ChatInbox'));
+const Profile = lazy(() => import('@/pages/Profile'));
 
 // All other pages — lazy loaded, fetched only when user navigates there
 const Landing = lazy(() => import('@/pages/Landing'));

@@ -1,10 +1,34 @@
 import { Outlet, Link, useLocation, useNavigate, matchPath } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
-import HomeFeed from '@/pages/HomeFeed';
-import MapView from '@/pages/MapView';
-import ChatInbox from '@/pages/ChatInbox';
-import Profile from '@/pages/Profile';
+import { lazy, Suspense } from 'react';
+
+const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
+const MapView = lazy(() => import('@/pages/MapView'));
+const ChatInbox = lazy(() => import('@/pages/ChatInbox'));
+const Profile = lazy(() => import('@/pages/Profile'));
+
+function TabSkeleton() {
+  return (
+    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} style={{
+          height: 110, borderRadius: 16, background: 'var(--surface-2)',
+          border: '1px solid var(--border-1)',
+          overflow: 'hidden', position: 'relative',
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%)',
+            animation: 'shimmer 1.4s infinite',
+            backgroundSize: '200% 100%',
+          }} />
+        </div>
+      ))}
+      <style>{`@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }`}</style>
+    </div>
+  );
+}
 import SideMenu from '@/components/SideMenu';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
@@ -715,7 +739,9 @@ export default function Layout() {
                         {t('login_now')}
                       </button>
                     </div> :
-                  tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
+                  <Suspense fallback={<TabSkeleton />}>
+                    {tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
+                  </Suspense>}
                   </div>);
 
             })}
