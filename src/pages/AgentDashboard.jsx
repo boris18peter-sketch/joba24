@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 
 function WorkerLinkCopy({ link }) {
   const [copied, setCopied] = useState(false);
@@ -24,8 +25,6 @@ function WorkerLinkCopy({ link }) {
     </div>
   );
 }
-import PageHeader from '@/components/PageHeader';
-
 export default function AgentDashboard() {
   const { user: me } = useAuth();
   const [copied, setCopied] = useState(false);
