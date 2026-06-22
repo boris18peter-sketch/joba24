@@ -32,6 +32,7 @@ const WorkerProfile = lazy(() => import('@/pages/WorkerProfile'));
 const FAQ = lazy(() => import('@/pages/FAQ'));
 const DailyGoal = lazy(() => import('@/pages/DailyGoal'));
 const Presentation = lazy(() => import('@/pages/Presentation'));
+const WorkerOnboarding = lazy(() => import('@/pages/WorkerOnboarding'));
 const SimulatorPanel = lazy(() => import('@/pages/SimulatorPanel'));
 const MyTasks = lazy(() => import('@/pages/MyTasks'));
 const PublicProfile = lazy(() => import('@/pages/PublicProfile'));
@@ -156,6 +157,7 @@ const AuthenticatedApp = () => {
               <Route path="/chat/:taskId" element={<Chat />} />
             </Route>
             <Route path="/presentation" element={<Presentation />} />
+            <Route path="/join" element={<WorkerOnboarding />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </motion.div>

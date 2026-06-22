@@ -137,7 +137,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
             border: `1.5px solid ${borderColor}`,
             background: bgColor,
             padding: '0 42px 0 14px',
-            fontSize: 15,
+            fontSize: 16,
             outline: 'none',
             fontFamily: 'inherit',
             boxSizing: 'border-box',

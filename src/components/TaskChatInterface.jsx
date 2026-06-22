@@ -45,28 +45,26 @@ function AddressChatCard({ label, addressState, onChange, onConfirm }) {
   };
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 p-4 flex flex-col gap-3"
-      style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animation: 'messageIn 0.35s ease' }}>
-      <div className="text-sm font-extrabold text-[#0f2b6b]">{label}</div>
+    <div style={{ borderRadius: 16, background: 'white', border: '1px solid #e8edf5', padding: 12, display: 'flex', flexDirection: 'column', gap: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.05)', animation: 'messageIn 0.35s ease' }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f2b6b' }}>{label}</div>
       <AddressAutocomplete value={addressState.location_name || ''} error={false} onSelect={handleAddressSelect} />
-      <div className="grid grid-cols-2 gap-2">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         {[
-          { label: 'בניין / מספר', ph: '12', val: building, set: (v) => { setBuilding(v); onChange({ ...addressState, address_building: v }); } },
+          { label: 'בניין', ph: '12', val: building, set: (v) => { setBuilding(v); onChange({ ...addressState, address_building: v }); } },
           { label: 'קומה', ph: '3', val: floor, set: (v) => { setFloor(v); onChange({ ...addressState, address_floor: v }); } },
           { label: 'דירה', ph: '5', val: apartment, set: (v) => { setApartment(v); onChange({ ...addressState, address_apartment: v }); } },
           { label: 'הערות', ph: 'כניסה צדדית', val: notes, set: (v) => { setNotes(v); onChange({ ...addressState, address_notes: v }); } },
         ].map((f, i) => (
           <div key={i}>
-            <div className="text-[11px] text-gray-500 font-semibold mb-1">{f.label}</div>
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 3 }}>{f.label}</div>
             <input placeholder={f.ph} value={f.val} onChange={e => f.set(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-[#dce8f5] bg-[#f8fafc] text-[13px] outline-none text-[#1f2937]" />
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: '1px solid #dce8f5', background: '#f8fafc', fontSize: 16, outline: 'none', color: '#1f2937', boxSizing: 'border-box' }} />
           </div>
         ))}
       </div>
       {confirmed && (
         <button onClick={onConfirm}
-          className="w-full py-2.5 rounded-xl text-white font-extrabold text-[13px]"
-          style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+          style={{ width: '100%', padding: '10px 0', borderRadius: 12, color: 'white', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
           ✓ אישור כתובת — המשך
         </button>
       )}
@@ -339,12 +337,12 @@ export default function TaskChatInterface({
   const messagesContainerRef = useRef(null);
   const [visibleHeight, setVisibleHeight] = useState(null);
 
-  // Scroll to bottom on new messages / loading
+  // Scroll to bottom on new messages / loading / address input shown
   useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, [messages, loading]);
+  }, [messages, loading, showAddressInput]);
 
   // Visual Viewport — handle mobile keyboard resizing
   useEffect(() => {
