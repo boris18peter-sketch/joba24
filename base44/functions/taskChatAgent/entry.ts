@@ -176,6 +176,46 @@ Line 4: ⚡ Urgency
 - If user says "לא יודע" on price → suggest a range based on category
 - If user is vague → ask ONE clarifying question about the most important missing field`;
 
+// ── Natural language address extraction ──
+// Extracts "street number, city" patterns from Hebrew text
+function extractAddressFromText(text) {
+  if (!text) return null;
+  // Pattern: Hebrew street name + number + city (e.g. "וינגייט 30 הרצליה", "רחוב הרצל 15 תל אביב")
+  const patterns = [
+    // "רחוב X NUMBER CITY"
+    /(?:רחוב|ברחוב|ב)\s+([א-ת\s]+?)\s+(\d+)[,\s]+([א-ת\s]+?)(?:\s|$|,)/,
+    // "X NUMBER CITY" (street name + number + city)
+    /([א-ת]{2,}(?:\s[א-ת]+)?)\s+(\d+)[,\s]+([א-ת]{2,}(?:\s[א-ת]+)?)/,
+    // "X 30 CITY" short form
+    /([א-ת]+)\s+(\d+)\s+([א-ת]{3,})/,
+  ];
+  for (const pattern of patterns) {
+    const m = text.match(pattern);
+    if (m) {
+      const street = m[1].trim();
+      const num = m[2].trim();
+      const city = m[3].trim();
+      if (street.length >= 2 && city.length >= 2) {
+        return { street, num, city, formatted: `${street} ${num}, ${city}` };
+      }
+    }
+  }
+  return null;
+}
+
+// ── Geocode address using Nominatim (free, no API key) ──
+async function geocodeAddress(addressStr) {
+  const encoded = encodeURIComponent(addressStr + ', Israel');
+  const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=il`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'Joba24App/1.0' } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data && data.length > 0) {
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display_name: data[0].display_name };
+  }
+  return null;
+}
+
 // ── Server-side category detection (keyword matching) ──
 // Same keywords as frontend — ensures category is ALWAYS detected correctly
 const CATEGORY_KEYWORDS = {
@@ -486,6 +526,35 @@ Return ONLY valid JSON, no markdown, no backticks, no extra text:
       parsed = result;
       if (!parsed.quick_replies) parsed.quick_replies = [];
       if (!parsed.current_field_state) parsed.current_field_state = { field_name: currentFieldStr, state: 'COLLECTING', validation_error: null };
+    }
+
+        // ── Auto-price-bump validation ──
+    const mergedPrice = parsed.extracted_data?.price || current_state?.price;
+    const mergedMaxPrice = parsed.extracted_data?.max_price || current_state?.max_price;
+    const autoBump = parsed.extracted_data?.auto_bump_enabled ?? current_state?.auto_bump_enabled;
+    if (autoBump && mergedMaxPrice && mergedPrice && Number(mergedMaxPrice) <= Number(mergedPrice)) {
+      if (parsed.extracted_data) delete parsed.extracted_data.max_price;
+      parsed.response = `מחיר היעד חייב להיות גבוה ממחיר המשימה (₪${mergedPrice}). אנא הזן מחיר מקסימלי גבוה יותר.`;
+    }
+
+    // ── Server-side natural language address extraction ──
+    // Try to detect inline address even if LLM didn't extract it
+    if (!current_state?.location_name && !parsed.extracted_data?.location_name && user_message) {
+      const addrExtracted = extractAddressFromText(user_message);
+      if (addrExtracted) {
+        // Geocode to get coordinates
+        const geo = await geocodeAddress(addrExtracted.formatted).catch(() => null);
+        if (geo) {
+          if (!parsed.extracted_data) parsed.extracted_data = {};
+          parsed.extracted_data.location_name = addrExtracted.formatted;
+          parsed.extracted_data.city = addrExtracted.city;
+          parsed.extracted_data.lat = geo.lat;
+          parsed.extracted_data.lng = geo.lng;
+          // Confirm with user (but proceed — confidence is good)
+          parsed.response = (parsed.response || '') + `\n\n📍 זיהיתי כתובת: **${addrExtracted.formatted}** — האם זה נכון?`;
+          parsed.quick_replies = ['כן, זה נכון ✓', 'לא, תיקון כתובת'];
+        }
+      }
     }
 
     // ── Server-side category detection fallback ──

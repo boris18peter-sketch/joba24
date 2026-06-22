@@ -210,8 +210,8 @@ export default function TaskDetail() {
   const { data: workerUser } = useQuery({
     queryKey: ['publicUser', task?.worker_id],
     queryFn: async () => {const u = await base44.entities.User.filter({ id: task.worker_id });return u[0] || null;},
-    enabled: !!task?.worker_id && task?.status === 'TAKEN',
-    staleTime: 120000
+    enabled: !!task?.worker_id && ['TAKEN', 'COMPLETED', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(task?.status),
+    staleTime: 30000,
   });
 
   // Check if MY application was approved for this task — only active ones
@@ -1051,8 +1051,8 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Task location map — shown for non-TAKEN tasks with location */}
-        {task.status !== 'TAKEN' && task.lat && task.lng &&
+        {/* Task location map — shown for all tasks with location (including TAKEN/active) */}
+        {task.lat && task.lng && !['CANCELLED', 'EXPIRED'].includes(task.status) &&
         <TaskLocationMap
           task={task}
           onGenerateInvoice={task.status === 'COMPLETED' && me?.id === task.worker_id ? () => setShowInvoice(true) : undefined}
@@ -1209,8 +1209,8 @@ export default function TaskDetail() {
         {(() => {
           // Worker sees client's phone only if their application is approved
           const workerSeesPhone = isApproved && task.contactPhone;
-          // Owner sees worker's phone only when task is TAKEN (worker approved)
-          const ownerSeesWorkerPhone = isOwner && task.status === 'TAKEN' && workerUser?.phone;
+          // Owner sees worker's phone when task is active or completed
+          const ownerSeesWorkerPhone = isOwner && ['TAKEN', 'COMPLETED', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(task.status) && workerUser?.phone;
           if (!workerSeesPhone && !ownerSeesWorkerPhone) return null;
           const phone = workerSeesPhone ? task.contactPhone : workerUser?.phone;
           const label = workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד';

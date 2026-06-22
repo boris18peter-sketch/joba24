@@ -513,6 +513,12 @@ export default function CreateTask() {
     if (!form.price) newErrors.price = true;
     if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
     if (!form.payment_method) newErrors.payment_method = true;
+    if (form.auto_bump_enabled && form.max_price && Number(form.max_price) <= Number(form.price)) {
+      newErrors.max_price = true;
+      toast.error('מחיר היעד חייב להיות גבוה ממחיר המשימה');
+      submittingRef.current = false;
+      return;
+    }
 
     // Edit mode: save & navigate
     if (isEditMode) {
@@ -1150,9 +1156,13 @@ export default function CreateTask() {
               <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>מחיר מקסימלי (₪)</Label>
               <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>המחיר יעלה בהדרגה מ-₪{form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.</div>
               <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
-                value={form.max_price} onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
-                style={{ background: 'white', border: '1px solid #fcd34d', borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
+                value={form.max_price}
+                onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
+                style={{ background: 'white', border: `1px solid ${form.max_price && Number(form.max_price) <= Number(form.price) ? '#ef4444' : '#fcd34d'}`, borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
               />
+              {form.max_price && Number(form.max_price) <= Number(form.price) && (
+                <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>⚠️ מחיר היעד חייב להיות גבוה ממחיר המשימה (₪{form.price})</p>
+              )}
             </div>
           )}
         </SectionCard>
