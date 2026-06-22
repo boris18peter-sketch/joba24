@@ -315,7 +315,7 @@ export default function WorkerOnboarding() {
               )}
 
               {currentStep.type === 'chips' && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {CATEGORIES.filter(c => c.value !== 'other').map(cat => {
                     const active = (data.preferred_categories || []).includes(cat.value);
                     return (
@@ -323,12 +323,13 @@ export default function WorkerOnboarding() {
                         key={cat.value}
                         onClick={() => toggleCategory(cat.value)}
                         style={{
-                          padding: '10px 16px', borderRadius: 99, cursor: 'pointer',
-                          fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap',
+                          padding: '6px 12px', borderRadius: 99, cursor: 'pointer',
+                          fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
                           background: active ? '#1a6fd4' : 'var(--surface-2)',
                           color: active ? 'white' : 'var(--text-2)',
                           border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
                           transition: 'all 0.15s',
+                          minHeight: 'unset',
                         }}
                       >
                         {active && '✓ '}{getCategoryLabel(cat.value)}
