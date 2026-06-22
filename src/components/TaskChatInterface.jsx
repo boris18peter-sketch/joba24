@@ -347,8 +347,15 @@ export default function TaskChatInterface({
   // Visual Viewport — handle mobile keyboard resizing
   useEffect(() => {
     const vv = window.visualViewport;
+    const rootEl = document.getElementById('root');
+
     const update = () => {
-      setVisibleHeight(vv ? vv.height : window.innerHeight);
+      const h = vv ? vv.height : window.innerHeight;
+      setVisibleHeight(h);
+      // Push the chat container up when keyboard opens by adjusting offset
+      if (rootEl && vv) {
+        rootEl.style.height = `${h}px`;
+      }
       requestAnimationFrame(() => {
         if (messagesContainerRef.current) {
           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -362,6 +369,7 @@ export default function TaskChatInterface({
     window.addEventListener('resize', update);
     update();
     return () => {
+      if (rootEl) rootEl.style.height = '';
       if (vv) {
         vv.removeEventListener('resize', update);
         vv.removeEventListener('scroll', update);
@@ -677,7 +685,7 @@ export default function TaskChatInterface({
   const progressPct = completenessPct || 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: visibleHeight ? `${visibleHeight}px` : '100%', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', position: 'relative', overflow: 'hidden' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: visibleHeight ? `${visibleHeight}px` : '100dvh', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', position: 'fixed', inset: 0, overflow: 'hidden' }} dir="rtl">
       
       {/* Header */}
       <div style={{ 
@@ -995,8 +1003,8 @@ export default function TaskChatInterface({
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 20,
                 background: '#f8fafc', border: '1.5px solid #e2e8f0',
-                fontSize: 15, outline: 'none', resize: 'none',
-                fontFamily: 'inherit', minHeight: 38, maxHeight: 110,
+                fontSize: 16, outline: 'none', resize: 'none',
+                fontFamily: 'inherit', minHeight: 44, maxHeight: 120,
                 boxSizing: 'border-box', color: '#1f2937',
               }}
             />

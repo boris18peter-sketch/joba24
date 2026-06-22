@@ -5,6 +5,25 @@ import { useAuth } from '@/lib/AuthContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase } from 'lucide-react';
+
+function WorkerLinkCopy({ link }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: 'var(--text-1)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {link}
+      </div>
+      <button onClick={handleCopy} style={{ padding: '8px 14px', borderRadius: 10, background: copied ? '#dcfce7' : '#f0fdf4', border: `1px solid ${copied ? '#bbf7d0' : '#86efac'}`, color: copied ? '#16a34a' : '#15803d', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+        {copied ? <><CheckCircle2 size={13} /> הועתק!</> : <><Copy size={13} /> העתק</>}
+      </button>
+    </div>
+  );
+}
 import PageHeader from '@/components/PageHeader';
 
 export default function AgentDashboard() {
@@ -43,6 +62,7 @@ export default function AgentDashboard() {
   const totalTurnover = workerTasks.reduce((sum, t) => sum + (t.price || 0), 0);
   const commission = totalTurnover * ((me.commission_rate || 0) / 100);
   const referralLink = `${window.location.origin}/?ref=${me.agent_code}`;
+  const workerOnboardingLink = `${window.location.origin}/join?ref=${me.agent_code}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -114,6 +134,15 @@ export default function AgentDashboard() {
           <div style={{ marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
             כל מי שנרשם דרך הלינק הזה מיוחס אליך אוטומטית
           </div>
+        </div>
+
+        {/* Worker Onboarding Link */}
+        <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px', marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8 }}>👷 לינק גיוס עובדים</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
+            שתף לינק זה עם מי שרוצה להתחיל לקבל משימות — יוביל ישירות לדף הצטרפות עובדים
+          </div>
+          <WorkerLinkCopy link={workerOnboardingLink} />
         </div>
 
         {/* Workers List */}

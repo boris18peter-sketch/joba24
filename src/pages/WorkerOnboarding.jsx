@@ -12,7 +12,7 @@ import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
 const STEPS = [
-  { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'לדוגמה: אינסטלטור, חשמלאי, מנקה...', type: 'text', placeholder: 'אינסטלטור' },
+  { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'לדוגמה: אינסטלטור, חשמלאי, מנקה...', type: 'text', placeholder: 'לדוגמה: אינסטלטור' },
   { key: 'preferred_categories', icon: Tag, title: 'באילו תחומים אתה עובד?', subtitle: 'בחר אחד או יותר', type: 'chips' },
   { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'הפרד בפסיק', type: 'text', placeholder: 'תל אביב, רמת גן, גבעתיים' },
   { key: 'bio', icon: FileText, title: 'ספר קצת על עצמך', subtitle: 'ניסיון, התמחות, זמינות...', type: 'textarea', placeholder: 'בעל 10 שנות ניסיון באינסטלציה, מתמחה בתיקון נזילות והתקנת ברזים...' },
@@ -173,7 +173,7 @@ export default function WorkerOnboarding() {
   // ── Done step ──
   if (step >= totalSteps) {
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
         <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
           <Check size={40} color="white" strokeWidth={3} />
@@ -195,7 +195,7 @@ export default function WorkerOnboarding() {
   // ── Welcome step ──
   if (step === -1) {
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}
           style={{ width: 72, height: 72, borderRadius: 22, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 8px 32px rgba(26,111,212,0.3)' }}>
           <Sparkles size={32} color="white" />
@@ -246,7 +246,7 @@ export default function WorkerOnboarding() {
       </div>
 
       {/* ── Step content ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '32px 24px 0', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 20px 0', overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -280,7 +280,8 @@ export default function WorkerOnboarding() {
                   onChange={e => setData(prev => ({ ...prev, [currentStep.key]: e.target.value }))}
                   placeholder={currentStep.placeholder}
                   autoFocus
-                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                  dir="rtl"
+              style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
                 />
               )}
 

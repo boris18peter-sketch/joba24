@@ -59,7 +59,7 @@ export default function ProfileCompletionBanner({ me }) {
       </div>
 
       <button
-        onClick={() => navigate('/worker-profile')}
+        onClick={() => navigate('/join')}
         style={{
           marginTop: 12,
           width: '100%',
