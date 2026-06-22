@@ -337,36 +337,12 @@ export default function TaskChatInterface({
   const fileInputRef = useRef(null);
   const draftHistoryRef = useRef([]);
   const messagesContainerRef = useRef(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
   // Scroll to bottom on new messages / loading / address input shown
   useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages, loading, showAddressInput]);
-
-  // Track keyboard height via visualViewport for padding the input area
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setKeyboardHeight(Math.floor(kb));
-      requestAnimationFrame(() => {
-        if (messagesContainerRef.current) {
-          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
-      });
-    };
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    update();
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, []);
 
   // Init
   useEffect(() => {
@@ -678,8 +654,7 @@ export default function TaskChatInterface({
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      position: 'fixed',
-      inset: 0,
+      height: '100dvh',
       overflow: 'hidden',
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
     }} dir="rtl">
@@ -925,14 +900,12 @@ export default function TaskChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area — always at bottom, lifts with keyboard */}
+      {/* Input area — bottom bar, browser handles keyboard resize via interactive-widget */}
       <div style={{
         flexShrink: 0, background: 'white',
         borderTop: '1px solid #e8edf5',
         padding: '8px 16px',
-        paddingBottom: keyboardHeight > 0
-          ? `${keyboardHeight + 8}px`
-          : 'max(8px, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
       }}>
         {/* Quick Replies */}
         {quickReplies.length > 0 && !loading && (
