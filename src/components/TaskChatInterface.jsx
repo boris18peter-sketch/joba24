@@ -337,8 +337,7 @@ export default function TaskChatInterface({
   const fileInputRef = useRef(null);
   const draftHistoryRef = useRef([]);
   const messagesContainerRef = useRef(null);
-  const [visibleHeight, setVisibleHeight] = useState(null);
-  const [vpOffset, setVpOffset] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Scroll to bottom on new messages / loading / address input shown
   useEffect(() => {
@@ -347,34 +346,25 @@ export default function TaskChatInterface({
     }
   }, [messages, loading, showAddressInput]);
 
-  // Visual Viewport — handle mobile keyboard resizing
+  // Track keyboard height via visualViewport for padding the input area
   useEffect(() => {
     const vv = window.visualViewport;
+    if (!vv) return;
     const update = () => {
-      const offset = vv ? Math.floor(vv.offsetTop) : 0;
-      const h = vv ? vv.height : window.innerHeight;
-      setVpOffset(offset);
-      setVisibleHeight(Math.floor(h));
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardHeight(Math.floor(kb));
       requestAnimationFrame(() => {
         if (messagesContainerRef.current) {
           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
       });
     };
-    if (vv) {
-      vv.addEventListener('resize', update);
-      vv.addEventListener('scroll', update);
-    } else {
-      window.addEventListener('resize', update);
-    }
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
     update();
     return () => {
-      if (vv) {
-        vv.removeEventListener('resize', update);
-        vv.removeEventListener('scroll', update);
-      } else {
-        window.removeEventListener('resize', update);
-      }
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
     };
   }, []);
 
@@ -683,14 +673,13 @@ export default function TaskChatInterface({
   }, []);
 
   const progressPct = completenessPct || 0;
+  const totalMessages = messages.length + (loading ? 1 : 0) + (showAddressInput ? 1 : 0) + (showRequirements ? 1 : 0) + (showFeatures ? 1 : 0);
 
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
       position: 'fixed',
-      top: vpOffset,
-      left: 0, right: 0,
-      height: visibleHeight ? `${visibleHeight}px` : '100dvh',
+      inset: 0,
       overflow: 'hidden',
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
     }} dir="rtl">
@@ -726,10 +715,11 @@ export default function TaskChatInterface({
       {/* Live Draft Card — uses Task Draft, not taskState */}
       <LiveDraftCard taskState={taskDraft} completenessPct={completenessPct} enabledFeatures={enabledFeatures} />
 
-      {/* Messages */}
+      {/* Messages — few messages: justify to bottom so no blank space at top */}
       <div ref={messagesContainerRef} style={{ 
-        flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 0',
+        flex: 1, minHeight: 0, overflowY: 'auto', padding: '8px 16px 12px',
         display: 'flex', flexDirection: 'column', gap: 10,
+        justifyContent: totalMessages < 4 ? 'flex-end' : 'flex-start',
         WebkitOverflowScrolling: 'touch',
       }}>
         <AnimatePresence initial={false}>
@@ -935,12 +925,14 @@ export default function TaskChatInterface({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area — fixed at bottom, no whitespace */}
+      {/* Input area — always at bottom, lifts with keyboard */}
       <div style={{
         flexShrink: 0, background: 'white',
         borderTop: '1px solid #e8edf5',
         padding: '8px 16px',
-        paddingBottom: 'max(4px, env(safe-area-inset-bottom))',
+        paddingBottom: keyboardHeight > 0
+          ? `${keyboardHeight + 8}px`
+          : 'max(8px, env(safe-area-inset-bottom))',
       }}>
         {/* Quick Replies */}
         {quickReplies.length > 0 && !loading && (
