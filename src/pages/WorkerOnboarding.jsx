@@ -230,7 +230,7 @@ export default function WorkerOnboarding() {
   const canSkip = isPhotoStep;
 
   return (
-    <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column' }}>
+    <div dir="rtl" style={{ height: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Header with progress ── */}
       <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
