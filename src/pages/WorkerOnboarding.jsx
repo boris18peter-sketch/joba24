@@ -60,6 +60,14 @@ export default function WorkerOnboarding() {
     }
   }, [me]);
 
+  // Auto-advance to step 0 once authenticated (handles post-OAuth redirect)
+  useEffect(() => {
+    if (isAuthenticated && step === -1) {
+      setDirection(1);
+      setStep(0);
+    }
+  }, [isAuthenticated]);
+
   const totalSteps = STEPS.length;
 
   const handleNext = async () => {
@@ -183,10 +191,13 @@ export default function WorkerOnboarding() {
     );
   }
 
-  // ── Just authenticated — skip welcome, go straight to step 0 ──
+  // ── Just authenticated — useEffect will advance to step 0, show spinner meanwhile ──
   if (step === -1) {
-    // Auto-advance to first step immediately after login
-    setTimeout(() => { setDirection(1); setStep(0); }, 0);
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
+        <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+      </div>
+    );
   }
 
   // ── Done step ──
