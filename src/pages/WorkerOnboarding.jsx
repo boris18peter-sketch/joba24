@@ -6,14 +6,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight, ChevronLeft, Check, Loader2, Camera, Briefcase,
-  MapPin, FileText, Phone, Sparkles, Tag, ArrowLeft, Wrench
+  MapPin, FileText, Phone, Tag, Wrench
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
 const STEPS = [
   { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'לדוגמה: אינסטלטור, חשמלאי, מנקה...', type: 'text', placeholder: 'לדוגמה: אינסטלטור' },
-  { key: 'preferred_categories', icon: Tag, title: 'באילו תחומים אתה עובד?', subtitle: 'בחר אחד או יותר', type: 'chips' },
+  { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי משימות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
   { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'הפרד בפסיק', type: 'text', placeholder: 'תל אביב, רמת גן, גבעתיים' },
   { key: 'bio', icon: FileText, title: 'ספר קצת על עצמך', subtitle: 'ניסיון, התמחות, זמינות...', type: 'textarea', placeholder: 'בעל 10 שנות ניסיון באינסטלציה, מתמחה בתיקון נזילות והתקנת ברזים...' },
   { key: 'phone', icon: Phone, title: 'מספר טלפון', subtitle: 'ליצירת קשר עם לקוחות', type: 'phone', placeholder: '050-1234567' },
@@ -121,7 +121,7 @@ export default function WorkerOnboarding() {
     );
   }
 
-  // ── Not authenticated — landing hero ──
+  // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
       <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #0f2b6b 0%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
@@ -153,21 +153,40 @@ export default function WorkerOnboarding() {
           ))}
         </div>
 
-        <button
-          onClick={() => setShowLogin(true)}
-          style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'white', color: '#0f2b6b', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
-        >
-          קדימה, נתחיל 🚀
-        </button>
+        {/* Step 1: Login button */}
+        <div style={{ width: '100%', maxWidth: 320 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'white', color: '#0f2b6b', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>התחברות לאפליקציה</span>
+          </div>
+          <button
+            onClick={() => setShowLogin(true)}
+            style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: 'white', color: '#0f2b6b', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', marginBottom: 10 }}
+          >
+            התחבר / הרשם 🚀
+          </button>
+
+          {/* Step 2 preview — grayed out */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.5 }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', color: 'white', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>הגדרת הפרופיל (פחות מדקה)</span>
+          </div>
+        </div>
 
         <button
           onClick={() => navigate('/')}
-          style={{ marginTop: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          style={{ marginTop: 20, background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
         >
           חזרה לאפליקציה
         </button>
       </div>
     );
+  }
+
+  // ── Just authenticated — skip welcome, go straight to step 0 ──
+  if (step === -1) {
+    // Auto-advance to first step immediately after login
+    setTimeout(() => { setDirection(1); setStep(0); }, 0);
   }
 
   // ── Done step ──
@@ -187,30 +206,6 @@ export default function WorkerOnboarding() {
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
         >
           לפיד המשימות 🚀
-        </button>
-      </div>
-    );
-  }
-
-  // ── Welcome step ──
-  if (step === -1) {
-    return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}
-          style={{ width: 72, height: 72, borderRadius: 22, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 8px 32px rgba(26,111,212,0.3)' }}>
-          <Sparkles size={32} color="white" />
-        </motion.div>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 8 }}>
-          {me?.full_name ? `שלום ${me.full_name.split(' ')[0]}! 👋` : 'ברוכים הבאים! 👋'}
-        </h1>
-        <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 32, lineHeight: 1.6, maxWidth: 320 }}>
-          בואו נגדיר את הפרופיל שלך כעובד — זה ייקח פחות מדקה.
-        </p>
-        <button
-          onClick={() => { setDirection(1); setStep(0); }}
-          style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
-        >
-          קדימה, נתחיל 🚀
         </button>
       </div>
     );
