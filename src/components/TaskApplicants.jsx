@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck, Phone } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -15,6 +15,16 @@ export default function TaskApplicants({ task, onApprove }) {
   const [showChat, setShowChat] = useState(false);
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
+  // Fetch approved worker's user record to get their phone (for mutual reveal)
+  const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
+  const { data: approvedWorkerUser } = useQuery({
+    queryKey: ['publicUser', approvedWorkerId],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: approvedWorkerId }); return u[0] || null; },
+    enabled: !!approvedWorkerId,
+    staleTime: 120000,
+  });
+
   // Track which application IDs are currently being declined (prevents double-click)
   const decliningRef = useRef(new Set());
   const [decliningIds, setDecliningIds] = useState(new Set());
@@ -286,6 +296,21 @@ export default function TaskApplicants({ task, onApprove }) {
                </div>
                 {app.message && (
                   <p style={{ fontSize: 11, color: '#6b7280', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{app.message}</p>
+                )}
+                {/* Phone reveal — only for approved worker */}
+                {isApproved && approvedWorkerUser?.phone && (
+                  <a href={`tel:${approvedWorkerUser.phone}`} onClick={e => e.stopPropagation()}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 12, fontWeight: 800, color: '#16a34a', textDecoration: 'none', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '3px 8px' }}
+                    dir="ltr"
+                  >
+                    <Phone size={11} color="#16a34a" /> {approvedWorkerUser.phone}
+                  </a>
+                )}
+                {/* Locked phone — pending workers */}
+                {!isApproved && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>
+                    🔒 המספר יוצג לאחר אישור
+                  </span>
                 )}
                 {app.images?.length > 0 && (
                   <div style={{ display: 'flex', gap: 4, marginTop: 5, flexWrap: 'wrap' }}>

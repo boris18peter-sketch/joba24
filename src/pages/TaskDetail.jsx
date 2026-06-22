@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -1204,6 +1204,40 @@ export default function TaskDetail() {
             )}
           </div>
         )}
+
+        {/* Contact Phone — mutual reveal after approval */}
+        {(() => {
+          // Worker sees client's phone only if their application is approved
+          const workerSeesPhone = isApproved && task.contactPhone;
+          // Owner sees worker's phone only when task is TAKEN (worker approved)
+          const ownerSeesWorkerPhone = isOwner && task.status === 'TAKEN' && workerUser?.phone;
+          if (!workerSeesPhone && !ownerSeesWorkerPhone) return null;
+          return (
+            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Phone size={16} color="#16a34a" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 2 }}>
+                  {workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד'}
+                </div>
+                <a
+                  href={`tel:${workerSeesPhone ? task.contactPhone : workerUser?.phone}`}
+                  style={{ fontSize: 17, fontWeight: 900, color: '#16a34a', textDecoration: 'none', fontFamily: 'monospace', letterSpacing: 0.5 }}
+                  dir="ltr"
+                >
+                  {workerSeesPhone ? task.contactPhone : workerUser?.phone}
+                </a>
+              </div>
+              <a
+                href={`tel:${workerSeesPhone ? task.contactPhone : workerUser?.phone}`}
+                style={{ height: 36, padding: '0 14px', borderRadius: 10, background: '#16a34a', color: 'white', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}
+              >
+                <Phone size={12} /> התקשר
+              </a>
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && (

@@ -131,6 +131,10 @@
       "type": "string",
       "description": "HTML \u05e9\u05dc \u05d4\u05d7\u05e9\u05d1\u05d5\u05e0\u05d9\u05ea \u05e9\u05d4\u05d5\u05e4\u05e7\u05d4 \u05e2\u05dc \u05d9\u05d3\u05d9 \u05d4\u05e2\u05d5\u05d1\u05d3"
     },
+    "contactPhone": {
+      "type": "string",
+      "description": "\u05d8\u05dc\u05e4\u05d5\u05df \u05dc\u05d9\u05e6\u05d9\u05e8\u05ea \u05e7\u05e9\u05e8 \u05e2\u05dd \u05d4\u05de\u05e4\u05e8\u05e1\u05dd \u2014 \u05e0\u05d7\u05e9\u05e3 \u05dc\u05e2\u05d5\u05d1\u05d3 \u05d4\u05de\u05d0\u05d5\u05e9\u05e8 \u05d1\u05dc\u05d1\u05d3"
+    },
     "worker_status": {
       "type": "string",
       "enum": [
@@ -256,7 +260,7 @@
     },
     "category_details": {
       "type": "object",
-      "description": "\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05de\u05d5\u05d1\u05e0\u05d9\u05dd \u05de\u05d5\u05ea\u05d0\u05de\u05d9 \u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4 (\u05db\u05ea\u05d5\u05d1\u05ea \u05d9\u05e2\u05d3, \u05e7\u05d5\u05de\u05d4, \u05de\u05e1\u05e4\u05e8 \u05d7\u05d3\u05e8\u05d9\u05dd \u05d5\u05db\u05d5') \u2014 \u05de\u05e9\u05de\u05e9 \u05d0\u05ea CategoryExtraFields \u05d5\u05d4\u05e6\u05d0\u05d8"
+      "description": "\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05de\u05d5\u05d1\u05e0\u05d9\u05dd \u05de\u05d5\u05ea\u05d0\u05de\u05d9 \u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4"
     },
     "category": {
       "type": "string",
@@ -288,23 +292,19 @@
     },
     "views_count": {
       "type": "number",
-      "default": 0,
-      "description": "\u05de\u05e1\u05e4\u05e8 \u05e6\u05e4\u05d9\u05d5\u05ea \u05d9\u05d9\u05d7\u05d5\u05d3\u05d9\u05d5\u05ea"
+      "default": 0
     },
     "clicks_count": {
       "type": "number",
-      "default": 0,
-      "description": "\u05de\u05e1\u05e4\u05e8 \u05db\u05e0\u05d9\u05e1\u05d5\u05ea \u05d9\u05d9\u05d7\u05d5\u05d3\u05d9\u05d5\u05ea \u05dc\u05e4\u05e8\u05d8\u05d9 \u05d4\u05de\u05e9\u05d9\u05de\u05d4"
+      "default": 0
     },
     "last_boost_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "\u05de\u05ea\u05d9 \u05e0\u05e2\u05e9\u05d4 Boost \u05d0\u05d7\u05e8\u05d5\u05df"
+      "format": "date-time"
     },
     "boost_count": {
       "type": "number",
-      "default": 0,
-      "description": "\u05db\u05de\u05d4 \u05e4\u05e2\u05de\u05d9\u05dd \u05e0\u05e2\u05e9\u05d4 Boost"
+      "default": 0
     }
   },
   "required": [

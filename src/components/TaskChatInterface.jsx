@@ -74,7 +74,7 @@ function AddressChatCard({ label, addressState, onChange, onConfirm }) {
 
 // ── Live Draft Card ──
 function LiveDraftCard({ taskState, completenessPct, enabledFeatures }) {
-  const { category, description, price, location_name, payment_method, estimated_time, urgency_tag, is_story, auto_bump_enabled } = taskState;
+  const { category, description, price, location_name, payment_method, estimated_time, urgency_tag, is_story, auto_bump_enabled, contactPhone } = taskState;
   if (!description && !category) return null;
 
   const fields = [
@@ -85,6 +85,7 @@ function LiveDraftCard({ taskState, completenessPct, enabledFeatures }) {
     { show: !!payment_method, icon: '💳', label: 'תשלום', value: payment_method, color: '#2563eb' },
     { show: !!estimated_time, icon: '⏱️', label: 'זמן', value: estimated_time, color: '#0891b2' },
     { show: !!urgency_tag, icon: '⚡', label: 'דחיפות', value: urgency_tag === 'immediate' ? 'דחוף 🔥' : urgency_tag === 'few_hours' ? 'שעות הקרובות' : urgency_tag === 'evening' ? 'ערב' : 'גמיש', color: '#ef4444' },
+    { show: !!contactPhone, icon: '📞', label: 'טלפון', value: contactPhone, color: '#059669' },
   ].filter(f => f.show);
 
   const featuresActive = [];
@@ -307,6 +308,7 @@ export default function TaskChatInterface({
     to_building: initialForm.to_building || null,
     to_floor: initialForm.to_floor || null,
     expiry_duration_hours: initialForm.expiry_duration_hours,
+    contactPhone: initialForm.contactPhone || '',
   });
 
   const [enabledFeatures, setEnabledFeatures] = useState({});
@@ -956,6 +958,25 @@ export default function TaskChatInterface({
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {/* Contact phone — shown when publish is ready */}
+        {publishReady && (
+          <div style={{ marginBottom: 8, padding: '10px 14px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+              📞 טלפון ליצירת קשר
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>(יוצג לעובד המאושר בלבד)</span>
+            </div>
+            <input
+              type="tel"
+              inputMode="tel"
+              dir="ltr"
+              placeholder="05X-XXXXXXX"
+              value={taskDraft.contactPhone || ''}
+              onChange={e => setTaskDraft(prev => ({ ...prev, contactPhone: e.target.value }))}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #86efac', background: 'white', fontSize: 16, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', color: '#1f2937' }}
+            />
           </div>
         )}
 

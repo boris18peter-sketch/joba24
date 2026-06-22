@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users, FileText } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, Car, Wrench, Building2, Users, FileText, Phone } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getRequirementCategories } from '@/lib/requirements';
@@ -146,6 +146,7 @@ const DEFAULT_FORM = {
   max_price: '',
   auto_bump_enabled: false,
   requires_invoice: false,
+  contactPhone: '',
   location_name: '',
   city: '',
   lat: null,
@@ -276,6 +277,12 @@ export default function CreateTask() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
+  // Pre-fill contactPhone from user profile when not edit mode
+  useEffect(() => {
+    if (!me?.phone || isEditMode) return;
+    setForm(p => ({ ...p, contactPhone: p.contactPhone || me.phone }));
+  }, [me?.phone, isEditMode]);
+
   // Edit mode: load existing task
   const { data: editTask } = useQuery({
     queryKey: ['task', editId],
@@ -311,6 +318,7 @@ export default function CreateTask() {
       estimated_time: isCustomTime ? 'custom' : (editTask.estimated_time || '1h'),
       custom_time: isCustomTime ? editTask.estimated_time : '',
       category: editTask.category || 'other',
+      contactPhone: editTask.contactPhone || '',
       approval_mode: 'manual',
       expiry_hours: editTask.expiry_duration_hours || null,
       images: editTask.images || [],
@@ -532,6 +540,7 @@ export default function CreateTask() {
       await base44.entities.Task.update(editId, {
         title: form.title,
         description: form.description,
+        contactPhone: form.contactPhone || undefined,
         price: hasActiveApplications ? editTask.price : Number(form.price),
         max_price: form.auto_bump_enabled && form.max_price ? Number(form.max_price) : undefined,
         auto_bump_enabled: form.auto_bump_enabled,
@@ -654,6 +663,7 @@ export default function CreateTask() {
 
     const created = await base44.entities.Task.create({
       payment_method: form.payment_method,
+      contactPhone: form.contactPhone || undefined,
       title: autoTitle,
       description: extraFieldsText
         ? (form.description ? form.description + '\n\n' + extraFieldsText : extraFieldsText)
@@ -737,6 +747,7 @@ export default function CreateTask() {
 
         await base44.entities.Task.update(editId, {
           title: chatFormData.title,
+          contactPhone: chatFormData.contactPhone || form.contactPhone || undefined,
           description: extraFieldsText
             ? (chatFormData.description ? chatFormData.description + '\n\n' + extraFieldsText : extraFieldsText)
             : chatFormData.description,
@@ -797,6 +808,7 @@ export default function CreateTask() {
 
       const created = await base44.entities.Task.create({
         payment_method: chatFormData.payment_method || 'Cash',
+        contactPhone: chatFormData.contactPhone || form.contactPhone || undefined,
         title: chatFormData.title,
         description: extraFieldsText
           ? (chatFormData.description ? chatFormData.description + '\n\n' + extraFieldsText : extraFieldsText)
@@ -1417,6 +1429,26 @@ export default function CreateTask() {
 
         </SectionCard>
         </div>
+
+        {/* Contact Phone */}
+        <SectionCard>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+            <Phone size={14} color="#94a3b8" strokeWidth={1.8} />
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>טלפון ליצירת קשר</Label>
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
+            המספר יוצג לעובד שתאשר בלבד — לפני האישור הוא נסתר
+          </div>
+          <Input
+            type="tel"
+            inputMode="tel"
+            dir="ltr"
+            placeholder="05X-XXXXXXX"
+            value={form.contactPhone || ''}
+            onChange={e => set('contactPhone', e.target.value)}
+            style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 48, fontSize: 16 }}
+          />
+        </SectionCard>
 
         {/* Submit */}
         {(() => {
