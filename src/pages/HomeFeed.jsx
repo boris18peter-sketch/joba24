@@ -227,9 +227,17 @@ export default function HomeFeed() {
         );
       }
 
-      // 4. Keep activeClientTask in sync (myTasks already updated above) — force re-render
-      if (event.type === 'update' && updatedTask.client_id === me.id) {
-        // Already handled by myTasks update — no extra work needed
+      // 4. Keep activeClientTask cache in sync so ActiveTaskBanner always reflects live state
+      if (event.type === 'update') {
+        queryClient.setQueryData(['activeClientTask', me.id], (old) => {
+          if (!old || old.id !== event.id) return old;
+          const cleanPatch = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
+          if (cleanPatch.status && ['CANCELLED', 'COMPLETED', 'EXPIRED'].includes(cleanPatch.status)) return null;
+          return { ...old, ...cleanPatch };
+        });
+      }
+      if (event.type === 'delete') {
+        queryClient.setQueryData(['activeClientTask', me.id], (old) => old?.id === event.id ? null : old);
       }
     });
 
@@ -277,14 +285,16 @@ export default function HomeFeed() {
       // Always update applicants array for both my tasks and all tasks (for live button color change)
       {
         const updateApplicantsGlobal = (old = []) => {
-          if (!old || !Array.isArray(old)) return old;
+          if (!Array.isArray(old)) return old;
           if (event.type === 'create') {
-            return old.map(t => t.id === appData.task_id
-              ? { ...t, applicants: [...(t.applicants || []).filter(a => a.worker_id !== appData.worker_id), { worker_id: appData.worker_id, worker_name: appData.worker_name }] }
-              : t
-            );
+            return old.map(t => {
+              if (t.id !== appData.task_id) return t;
+              const existing = t.applicants || [];
+              const filtered = existing.filter(a => a.worker_id !== appData.worker_id);
+              return { ...t, applicants: [...filtered, { worker_id: appData.worker_id, worker_name: appData.worker_name }] };
+            });
           }
-          if (event.type === 'update' && (appData.status === 'cancelled' || appData.status === 'rejected')) {
+          if (event.type === 'update' && (appData.status === 'cancelled' || appData.status === 'rejected' || appData.status === 'declined')) {
             return old.map(t => t.id === appData.task_id
               ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== appData.worker_id) }
               : t
@@ -292,8 +302,8 @@ export default function HomeFeed() {
           }
           return old;
         };
-        queryClient.setQueryData(['myTasks', me.id], updateApplicantsGlobal);
-        queryClient.setQueryData(['allTasks'], updateApplicantsGlobal);
+        queryClient.setQueryData(['myTasks', me.id], (old) => updateApplicantsGlobal(old || []));
+        queryClient.setQueryData(['allTasks'], (old) => updateApplicantsGlobal(old || []));
       }
 
       // If it's an application for one of MY published tasks — sync the applicants panel

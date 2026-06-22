@@ -1212,30 +1212,36 @@ export default function TaskDetail() {
           // Owner sees worker's phone only when task is TAKEN (worker approved)
           const ownerSeesWorkerPhone = isOwner && task.status === 'TAKEN' && workerUser?.phone;
           if (!workerSeesPhone && !ownerSeesWorkerPhone) return null;
+          const phone = workerSeesPhone ? task.contactPhone : workerUser?.phone;
+          const label = workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד';
           return (
-            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 11, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Phone size={16} color="#16a34a" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 2 }}>
-                  {workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד'}
+            <a
+              href={`tel:${phone}`}
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <div style={{
+                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                border: '2px solid #16a34a',
+                borderRadius: 20,
+                padding: '16px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 4px 18px rgba(22,163,74,0.18)',
+              }}>
+                <div style={{ width: 48, height: 48, borderRadius: 15, background: 'linear-gradient(135deg,#16a34a,#15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(22,163,74,0.35)' }}>
+                  <Phone size={22} color="white" />
                 </div>
-                <a
-                  href={`tel:${workerSeesPhone ? task.contactPhone : workerUser?.phone}`}
-                  style={{ fontSize: 17, fontWeight: 900, color: '#16a34a', textDecoration: 'none', fontFamily: 'monospace', letterSpacing: 0.5 }}
-                  dir="ltr"
-                >
-                  {workerSeesPhone ? task.contactPhone : workerUser?.phone}
-                </a>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', fontFamily: 'monospace', letterSpacing: 0.5, direction: 'ltr', textAlign: 'right' }}>{phone}</div>
+                  <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2, fontWeight: 600 }}>לחץ להתקשרות ישירה 📞</div>
+                </div>
+                <div style={{ height: 42, padding: '0 16px', borderRadius: 12, background: '#16a34a', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 10px rgba(22,163,74,0.35)' }}>
+                  <Phone size={14} /> התקשר
+                </div>
               </div>
-              <a
-                href={`tel:${workerSeesPhone ? task.contactPhone : workerUser?.phone}`}
-                style={{ height: 36, padding: '0 14px', borderRadius: 10, background: '#16a34a', color: 'white', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}
-              >
-                <Phone size={12} /> התקשר
-              </a>
-            </div>
+            </a>
           );
         })()}
 
