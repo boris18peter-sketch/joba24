@@ -16,15 +16,6 @@ export default function TaskApplicants({ task, onApprove }) {
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  // Fetch approved worker's user record to get their phone (for mutual reveal)
-  const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
-  const { data: approvedWorkerUser } = useQuery({
-    queryKey: ['publicUser', approvedWorkerId],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: approvedWorkerId }); return u[0] || null; },
-    enabled: !!approvedWorkerId,
-    staleTime: 120000,
-  });
-
   // Track which application IDs are currently being declined (prevents double-click)
   const decliningRef = useRef(new Set());
   const [decliningIds, setDecliningIds] = useState(new Set());
@@ -35,6 +26,15 @@ export default function TaskApplicants({ task, onApprove }) {
     queryKey: ['applications', task.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
     staleTime: 60000,
+  });
+
+  // Fetch approved worker's user record to get their phone (for mutual reveal)
+  const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
+  const { data: approvedWorkerUser } = useQuery({
+    queryKey: ['publicUser', approvedWorkerId],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: approvedWorkerId }); return u[0] || null; },
+    enabled: !!approvedWorkerId,
+    staleTime: 120000,
   });
 
   const workerIds = [...new Set(applications.map(a => a.worker_id).filter(Boolean))];
