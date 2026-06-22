@@ -338,6 +338,7 @@ export default function TaskChatInterface({
   const draftHistoryRef = useRef([]);
   const messagesContainerRef = useRef(null);
   const [visibleHeight, setVisibleHeight] = useState(null);
+  const [vpOffset, setVpOffset] = useState(0);
 
   // Scroll to bottom on new messages / loading / address input shown
   useEffect(() => {
@@ -347,13 +348,13 @@ export default function TaskChatInterface({
   }, [messages, loading, showAddressInput]);
 
   // Visual Viewport — handle mobile keyboard resizing
-  // Use visualViewport.height to shrink the chat container so the input stays visible
   useEffect(() => {
     const vv = window.visualViewport;
-
     const update = () => {
+      const offset = vv ? Math.floor(vv.offsetTop) : 0;
       const h = vv ? vv.height : window.innerHeight;
-      setVisibleHeight(h);
+      setVpOffset(offset);
+      setVisibleHeight(Math.floor(h));
       requestAnimationFrame(() => {
         if (messagesContainerRef.current) {
           messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -362,12 +363,18 @@ export default function TaskChatInterface({
     };
     if (vv) {
       vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+    } else {
+      window.addEventListener('resize', update);
     }
-    window.addEventListener('resize', update);
     update();
     return () => {
-      if (vv) vv.removeEventListener('resize', update);
-      window.removeEventListener('resize', update);
+      if (vv) {
+        vv.removeEventListener('resize', update);
+        vv.removeEventListener('scroll', update);
+      } else {
+        window.removeEventListener('resize', update);
+      }
     };
   }, []);
 
@@ -678,7 +685,15 @@ export default function TaskChatInterface({
   const progressPct = completenessPct || 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: visibleHeight ? `${visibleHeight}px` : '100dvh', background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }} dir="rtl">
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      position: 'fixed',
+      top: vpOffset,
+      left: 0, right: 0,
+      height: visibleHeight ? `${visibleHeight}px` : '100dvh',
+      overflow: 'hidden',
+      background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
+    }} dir="rtl">
       
       {/* Header */}
       <div style={{ 
