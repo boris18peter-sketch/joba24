@@ -337,6 +337,29 @@ export default function TaskChatInterface({
   const fileInputRef = useRef(null);
   const draftHistoryRef = useRef([]);
   const messagesContainerRef = useRef(null);
+  // iOS: visualViewport shrinks when keyboard opens — update container bottom
+  const [vpBottom, setVpBottom] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      // Distance from bottom of visual viewport to bottom of layout viewport
+      const bottom = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setVpBottom(Math.floor(bottom));
+      requestAnimationFrame(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      });
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   // Scroll to bottom on new messages / loading / address input shown
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -654,7 +677,8 @@ export default function TaskChatInterface({
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
-      height: '100dvh',
+      position: 'fixed', top: 0, left: 0, right: 0,
+      bottom: vpBottom,
       overflow: 'hidden',
       background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
     }} dir="rtl">
