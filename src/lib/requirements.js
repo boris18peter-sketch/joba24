@@ -150,6 +150,94 @@ export const CATEGORY_REQUIREMENTS = {
       { key: 'vehicle', label: 'רכב לביקורי בית' },
     ]},
   ],
+  handyman: [
+    { label: 'כלי עבודה', items: [
+      { key: 'drill', label: 'מקדחה / אינבורר' },
+      { key: 'tools_basic', label: 'ארגז כלים בסיסי' },
+      { key: 'ladder', label: 'סולם' },
+    ]},
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון בתיקונים' },
+    ]},
+  ],
+  heavy_lifting: [
+    { label: 'כישורים', items: [
+      { key: 'heavy_lifting', label: 'יכולת נשיאת משאות כבדים' },
+      { key: 'two_people', label: '2 אנשים' },
+      { key: 'three_people', label: '3 אנשים' },
+    ]},
+  ],
+  home_maintenance: [
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לפינוי פסולת' },
+    ]},
+    { label: 'כמות אנשים', items: [
+      { key: 'two_people', label: '2 אנשים' },
+    ]},
+  ],
+  transportation: [
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב פרטי' },
+      { key: 'vehicle_commercial', label: 'רכב מסחרי (ואן)' },
+      { key: 'driver', label: 'נהג מוסמך' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'experience', label: 'ניסיון בנהיגה מקצועית' },
+    ]},
+  ],
+  pets: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון עם בעלי חיים' },
+      { key: 'experience_animals', label: 'ניסיון עם כלבים' },
+      { key: 'certified', label: 'הסמכה (מאלף / מטפל)' },
+    ]},
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לנסיעה לווטרינר' },
+    ]},
+  ],
+  elderly_care: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון עם קשישים' },
+      { key: 'certified', label: 'הסמכה / הכשרה' },
+    ]},
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לליווי' },
+    ]},
+  ],
+  fitness: [
+    { label: 'הסמכה', items: [
+      { key: 'certified', label: 'מאמן מוסמך' },
+      { key: 'experience', label: 'ניסיון באימון אישי' },
+    ]},
+  ],
+  photography: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון בצילום מקצועי' },
+      { key: 'certified', label: 'תיק עבודות / הפניות' },
+    ]},
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב לנסיעה לאתר' },
+    ]},
+  ],
+  events: [
+    { label: 'ניסיון', items: [
+      { key: 'experience', label: 'ניסיון באירועים' },
+      { key: 'certified', label: 'הסמכה (ברמן / טבח...)' },
+    ]},
+    { label: 'כמות אנשים', items: [
+      { key: 'two_people', label: '2 אנשים' },
+      { key: 'three_people', label: '3 אנשים' },
+    ]},
+  ],
+  personal_help: [
+    { label: 'כלי רכב', items: [
+      { key: 'vehicle', label: 'רכב פרטי' },
+    ]},
+    { label: 'כישורים', items: [
+      { key: 'experience', label: 'אמינות / ניסיון' },
+      { key: 'english', label: 'אנגלית' },
+    ]},
+  ],
 };
 
 export const DEFAULT_REQUIREMENT_CATEGORIES = [
