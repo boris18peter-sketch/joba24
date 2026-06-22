@@ -252,7 +252,7 @@ export default function WorkerOnboarding() {
       </div>
 
       {/* ── Step content ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 20px 0', overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -266,19 +266,26 @@ export default function WorkerOnboarding() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+            style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
-            {/* Icon */}
-            <div style={{ width: 56, height: 56, borderRadius: 18, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, border: '1px solid #bfdbfe' }}>
-              <Icon size={26} color="#1a6fd4" />
+            {/* Fixed header area — icon + title + subtitle */}
+            <div style={{ padding: '24px 20px 0', flexShrink: 0 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 18, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: '1px solid #bfdbfe' }}>
+                <Icon size={26} color="#1a6fd4" />
+              </div>
+              <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 4, lineHeight: 1.3 }}>{currentStep.title}</h2>
+              <p style={{ fontSize: 14, color: 'var(--text-3)', margin: 0, marginBottom: 16, lineHeight: 1.5 }}>{currentStep.subtitle}</p>
+
+              {/* Selected count badge for chips */}
+              {currentStep.type === 'chips' && (data.preferred_categories || []).length > 0 && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_categories || []).length} נבחרו</span>
+                </div>
+              )}
             </div>
 
-            {/* Title + subtitle */}
-            <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 6, lineHeight: 1.3 }}>{currentStep.title}</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-3)', margin: 0, marginBottom: 24, lineHeight: 1.5 }}>{currentStep.subtitle}</p>
-
-            {/* Input */}
-            <div style={{ flex: 1 }}>
+            {/* Scrollable input area */}
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 20px 16px' }}>
               {currentStep.type === 'text' && (
                 <input
                   type="text"
@@ -287,7 +294,7 @@ export default function WorkerOnboarding() {
                   placeholder={currentStep.placeholder}
                   autoFocus
                   dir="rtl"
-              style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                  style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
                 />
               )}
 
@@ -315,7 +322,7 @@ export default function WorkerOnboarding() {
               )}
 
               {currentStep.type === 'chips' && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {CATEGORIES.filter(c => c.value !== 'other').map(cat => {
                     const active = (data.preferred_categories || []).includes(cat.value);
                     return (
@@ -323,11 +330,12 @@ export default function WorkerOnboarding() {
                         key={cat.value}
                         onClick={() => toggleCategory(cat.value)}
                         style={{
-                          padding: '6px 12px', borderRadius: 99, cursor: 'pointer',
-                          fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+                          padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
                           background: active ? '#1a6fd4' : 'var(--surface-2)',
                           color: active ? 'white' : 'var(--text-2)',
                           border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
+                          boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
                           transition: 'all 0.15s',
                           minHeight: 'unset',
                         }}
@@ -373,13 +381,13 @@ export default function WorkerOnboarding() {
         </AnimatePresence>
       </div>
 
-      {/* ── Footer with Next button ── */}
-      <div style={{ padding: '16px 24px max(16px, env(safe-area-inset-bottom))', background: 'var(--surface-2)', borderTop: '1px solid var(--border-1)' }}>
+      {/* ── Footer with Next button — always visible ── */}
+      <div style={{ flexShrink: 0, padding: '12px 20px max(12px, env(safe-area-inset-bottom))', background: 'var(--surface-2)', borderTop: '1px solid var(--border-1)' }}>
         <button
           onClick={handleNext}
           disabled={saving}
           style={{
-            width: '100%', padding: '16px 0', borderRadius: 16,
+            width: '100%', padding: '15px 0', borderRadius: 16,
             background: saving ? '#94a3b8' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
             color: 'white', fontSize: 17, fontWeight: 900, border: 'none',
             cursor: saving ? 'not-allowed' : 'pointer',
