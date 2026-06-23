@@ -646,8 +646,10 @@ export default function TaskDetail() {
       <PageHeader title={task.title} right={null} />
       
 
-      {/* ActiveTaskBanner is intentionally hidden on TaskDetail — the main task banner below
-          already shows all status info and actions. Showing both would create duplication. */}
+      {/* ActiveTaskBanner — live status tracker for in-progress tasks */}
+      {task.status === 'TAKEN' && (isOwner || isWorker) && (
+        <ActiveTaskBannerFromCache taskId={id} isWorker={isWorker} hideDetailsBtn />
+      )}
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
         {/* Expired banner */}

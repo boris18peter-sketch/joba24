@@ -77,7 +77,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
   );
 }
 
-export default function ActiveTaskBanner({ tasks, roleHint }) {
+export default function ActiveTaskBanner({ tasks, roleHint, hideDetailsBtn = false }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
@@ -353,13 +353,15 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                   );
                 })()}
 
-                {/* Details button */}
-                <button
-                  onClick={() => navigate(`/task/${task.id}`)}
-                  style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {t('details')}
-                </button>
+                {/* Details button — hidden when already on TaskDetail page */}
+                {!hideDetailsBtn && (
+                  <button
+                    onClick={() => navigate(`/task/${task.id}`)}
+                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {t('details')}
+                  </button>
+                )}
               </div>
 
               {/* Worker extra actions row */}

@@ -11,7 +11,7 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
  * This ensures TaskDetail's banner is always in sync with the feed banner
  * without creating a second data source.
  */
-export default function ActiveTaskBannerFromCache({ taskId, isWorker }) {
+export default function ActiveTaskBannerFromCache({ taskId, isWorker, hideDetailsBtn }) {
   const { user: me } = useAuth();
 
   const { data: activeWorkerTask } = useQuery({
@@ -42,6 +42,7 @@ export default function ActiveTaskBannerFromCache({ taskId, isWorker }) {
       <ActiveTaskBanner
         tasks={[{ ...liveTask, _roleHint: isWorker ? 'worker' : 'client' }]}
         roleHint={isWorker ? 'worker' : 'client'}
+        hideDetailsBtn={hideDetailsBtn}
       />
     </div>
   );
