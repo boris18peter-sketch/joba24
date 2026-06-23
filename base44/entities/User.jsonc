@@ -11,33 +11,29 @@
       ],
       "default": "user"
     },
-    "worker_credits": {
-      "type": "number",
-      "default": 0
+    "is_approved": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d4\u05d0\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05d0\u05d5\u05e9\u05e8 \u05dc\u05d2\u05d9\u05e9\u05d4 \u05de\u05dc\u05d0\u05d4 \u05dc\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4 (Pre-launch gate)"
     },
-    "profile_photo": {
-      "type": "string"
+    "is_blocked": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
     },
     "phone": {
       "type": "string"
     },
-    "is_verified": {
-      "type": "boolean",
-      "default": false,
-      "description": "\u05d0\u05d9\u05de\u05d5\u05ea \u05ea\u05e2\u05d5\u05d3\u05ea \u05d6\u05d4\u05d5\u05ea"
-    },
-    "is_phone_verified": {
-      "type": "boolean",
-      "default": false,
-      "description": "\u05d0\u05d9\u05de\u05d5\u05ea \u05de\u05e1\u05e4\u05e8 \u05d8\u05dc\u05e4\u05d5\u05df"
-    },
-    "profession": {
+    "profile_photo": {
       "type": "string"
     },
     "bio": {
       "type": "string"
     },
-    "city": {
+    "profession": {
       "type": "string"
     },
     "preferred_categories": {
@@ -52,106 +48,50 @@
         "type": "string"
       }
     },
-    "certificates": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "certificate_files": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
+    "worker_credits": {
+      "type": "number",
+      "default": 0
     },
     "rating": {
-      "type": "number",
-      "description": "\u05de\u05de\u05d5\u05e6\u05e2 \u05d3\u05d9\u05e8\u05d5\u05d2\u05d9\u05dd"
+      "type": "number"
     },
     "rating_count": {
       "type": "number",
-      "description": "\u05de\u05e1\u05e4\u05e8 \u05d3\u05d9\u05e8\u05d5\u05d2\u05d9\u05dd"
-    },
-    "worker_score": {
-      "type": "number",
-      "description": "\u05e0\u05d9\u05e7\u05d5\u05d3 \u05e2\u05d5\u05d1\u05d3 \u05db\u05d5\u05dc\u05dc"
+      "default": 0
     },
     "score_tasks": {
-      "type": "number"
-    },
-    "score_speed": {
-      "type": "number"
-    },
-    "score_quality": {
-      "type": "number"
-    },
-    "completion_rate": {
       "type": "number",
-      "description": "\u05d0\u05d7\u05d5\u05d6 \u05d4\u05e9\u05dc\u05de\u05ea \u05de\u05e9\u05d9\u05de\u05d5\u05ea (0-100)"
-    },
-    "on_time_rate": {
-      "type": "number",
-      "description": "\u05d0\u05d7\u05d5\u05d6 \u05d4\u05d2\u05e2\u05d5\u05ea \u05d1\u05d6\u05de\u05df (0-100)"
-    },
-    "cancellation_rate": {
-      "type": "number",
-      "description": "\u05d0\u05d7\u05d5\u05d6 \u05d1\u05d9\u05d8\u05d5\u05dc\u05d9\u05dd (0-100)"
-    },
-    "avg_response_minutes": {
-      "type": "number",
-      "description": "\u05d6\u05de\u05df \u05ea\u05d2\u05d5\u05d1\u05d4 \u05de\u05de\u05d5\u05e6\u05e2 \u05d1\u05d3\u05e7\u05d5\u05ea"
-    },
-    "repeat_hires": {
-      "type": "number",
-      "default": 0,
-      "description": "\u05de\u05e1\u05e4\u05e8 \u05de\u05de\u05dc\u05d9\u05e6\u05d9\u05dd / \u05dc\u05e7\u05d5\u05d7\u05d5\u05ea \u05e9\u05d7\u05d5\u05d6\u05e8\u05d9\u05dd"
-    },
-    "last_active_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "\u05d6\u05de\u05df \u05e4\u05e2\u05d9\u05dc\u05d5\u05ea \u05d0\u05d7\u05e8\u05d5\u05df"
-    },
-    "stripe_customer_id": {
-      "type": "string"
-    },
-    "stripe_account_id": {
-      "type": "string"
-    },
-    "stripe_onboarding_complete": {
-      "type": "boolean",
-      "default": false
-    },
-    "daily_goal": {
-      "type": "number"
-    },
-    "daily_radius": {
-      "type": "number"
-    },
-    "is_first_login": {
-      "type": "boolean",
-      "default": true,
-      "description": "\u05d4\u05d0\u05dd \u05d6\u05d5 \u05d4\u05d4\u05ea\u05d7\u05d1\u05e8\u05d5\u05ea \u05d4\u05e8\u05d0\u05e9\u05d5\u05e0\u05d4 \u05e9\u05dc \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+      "default": 0
     },
     "agent_code": {
+      "type": "string"
+    },
+    "agent_id": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 \u05d9\u05d9\u05d7\u05d5\u05d3\u05d9 \u05dc\u05e1\u05d5\u05db\u05df"
+      "description": "ID \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d2\u05d9\u05d9\u05e1 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
     },
     "commission_rate": {
       "type": "number",
-      "default": 0,
-      "description": "\u05d0\u05d7\u05d5\u05d6 \u05e2\u05de\u05dc\u05d4 \u05dc\u05e1\u05d5\u05db\u05df"
+      "default": 0
     },
-    "referred_by_agent_code": {
+    "id_number": {
+      "type": "string"
+    },
+    "id_photo_url": {
+      "type": "string"
+    },
+    "last_active_at": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d4\u05d1\u05d9\u05d0 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+      "format": "date-time"
     },
-    "fcm_tokens": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Firebase Cloud Messaging device tokens for push notifications"
+    "fcm_token": {
+      "type": "string",
+      "description": "Firebase push notification token"
+    },
+    "notifications_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d4\u05d0\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05d0\u05d9\u05e9\u05e8 \u05e7\u05d1\u05dc\u05ea \u05d4\u05ea\u05e8\u05d0\u05d5\u05ea push"
     }
-  },
-  "required": []
+  }
 }

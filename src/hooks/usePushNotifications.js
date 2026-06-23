@@ -6,7 +6,8 @@ import { requestNotificationPermission, getFCMToken, onForegroundMessage } from 
 let globalInitDone = false;
 let globalInitPromise = null;
 
-export default function usePushNotifications() {
+// isApproved: when false, skip token registration (pre-launch gate)
+export default function usePushNotifications(isApproved = true) {
   const [token, setToken] = useState(null);
   const [permission, setPermission] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
   const [foregroundMsg, setForegroundMsg] = useState(null);
@@ -49,6 +50,7 @@ export default function usePushNotifications() {
 
   // Auto-init on mount — runs only once globally to prevent duplicate token registrations
   useEffect(() => {
+    if (!isApproved) return; // Don't register tokens for unapproved users (pre-launch)
     if (globalInitDone) return;
     if (globalInitPromise) {
       globalInitPromise.then((fcmToken) => {

@@ -205,6 +205,41 @@ export default function AgentDashboard() {
                     <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>הצטרף {joinDate}</span>
                   </div>
                 </div>
+                {/* Full profile details from /join */}
+                {(user.phone || user.profession || user.preferred_cities?.length > 0 || user.bio) && (
+                  <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--surface-3)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-2)' }}>
+                    {user.phone && (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>📱</span>
+                        <a href={`tel:${user.phone}`} style={{ color: '#1a6fd4', fontWeight: 600, textDecoration: 'none' }}>{user.phone}</a>
+                      </div>
+                    )}
+                    {user.profession && (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>💼</span>
+                        <span>{user.profession}</span>
+                      </div>
+                    )}
+                    {user.preferred_cities?.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>📍</span>
+                        <span>{user.preferred_cities.join(', ')}</span>
+                      </div>
+                    )}
+                    {user.bio && (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>📝</span>
+                        <span style={{ lineHeight: 1.4 }}>{user.bio}</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <span>{user.is_approved ? '✅' : '⏳'}</span>
+                      <span style={{ fontWeight: 600, color: user.is_approved ? '#059669' : '#d97706' }}>
+                        {user.is_approved ? 'גישה מאושרת' : 'ממתין לאישור'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

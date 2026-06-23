@@ -49,6 +49,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
+import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
 
@@ -59,7 +60,7 @@ export default function Layout() {
   const { isAuthenticated, login } = useAuth();
   const queryClient = useQueryClient();
 
-  usePushNotifications();
+  usePushNotifications(!!(me?.is_approved || me?.role === 'admin' || me?.role === 'agent'));
 
   // ── GLOBAL HARD RULE: hide bottom nav whenever any modal/sheet/popup is open ──
   // Watches document.body for portaled overlays (z-index ≥ 9999). When one appears,
@@ -319,6 +320,13 @@ export default function Layout() {
     enabled: isAuthenticated,
     staleTime: 30000,
   });
+
+  // Pre-launch gate: show waiting page for unapproved users (admins and agents always pass)
+  // Placed AFTER all hooks to comply with Rules of Hooks
+  const isApprovedUser = me?.is_approved || me?.role === 'admin' || me?.role === 'agent';
+  if (isAuthenticated && me && !isApprovedUser) {
+    return <PreLaunchWaitingPage me={me} />;
+  }
 
   const navItems = [
     { to: '/', icon: Home, label: t('nav_feed_short') },

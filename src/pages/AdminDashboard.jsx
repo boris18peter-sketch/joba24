@@ -165,8 +165,36 @@ function UserRow({ user, onToggleBlock, onSetAgent }) {
       </div>
       {open && (
         <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {user.phone && <div><strong>טלפון:</strong> {user.phone}</div>}
+          {/* Full profile fields from /join */}
+          {user.phone && <div><strong>טלפון:</strong> <a href={`tel:${user.phone}`} style={{ color: '#1a6fd4', textDecoration: 'none' }}>{user.phone}</a></div>}
+          {user.profession && <div><strong>מקצוע:</strong> {user.profession}</div>}
+          {user.bio && <div><strong>אודות:</strong> {user.bio}</div>}
+          {user.preferred_cities?.length > 0 && <div><strong>ערים:</strong> {user.preferred_cities.join(', ')}</div>}
+          {user.preferred_categories?.length > 0 && <div><strong>קטגוריות:</strong> {user.preferred_categories.join(', ')}</div>}
           {user.role && <div><strong>תפקיד:</strong> {user.role}</div>}
+          {/* Approval status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <span style={{ fontWeight: 700 }}>סטטוס:</span>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: user.is_approved ? '#dcfce7' : '#fef9c3', color: user.is_approved ? '#166534' : '#854d0e' }}>
+              {user.is_approved ? '✓ מאושר' : '⏳ ממתין לאישור'}
+            </span>
+            {!user.is_approved && (
+              <button
+                onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: true }); }}
+                style={{ padding: '3px 10px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+              >
+                אשר גישה
+              </button>
+            )}
+            {user.is_approved && (
+              <button
+                onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: false }); }}
+                style={{ padding: '3px 10px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+              >
+                בטל גישה
+              </button>
+            )}
+          </div>
           {isAgent && user.agent_code && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f3ff', borderRadius: 8, padding: '6px 10px', marginTop: 4 }}>
               <div style={{ flex: 1, fontSize: 11, color: '#7c3aed', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -317,11 +345,13 @@ export default function AdminDashboard() {
 
   const pendingReports = allReports.filter(r => r.status === 'pending').length;
 
+  const pendingApproval = allUsers.filter(u => !u.is_approved && u.role !== 'admin').length;
+
   const stats = [
     { label: 'משימות', value: allTasks.length, color: '#1a6fd4', bg: '#eff6ff' },
     { label: 'משתמשים', value: allUsers.length, color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'חסומים', value: allUsers.filter(u => u.is_blocked).length, color: '#dc2626', bg: '#fef2f2' },
-    { label: 'דיווחים', value: pendingReports, color: '#d97706', bg: '#fffbeb' },
+    { label: 'ממתינים לאישור', value: pendingApproval, color: '#d97706', bg: '#fffbeb' },
+    { label: 'דיווחים', value: pendingReports, color: '#dc2626', bg: '#fef2f2' },
   ];
 
   return (
@@ -393,10 +423,24 @@ export default function AdminDashboard() {
         {/* USERS TAB */}
         {tab === 'users' && (
           <>
-            <div style={{ position: 'relative', marginBottom: 12 }}>
-              <Search size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="חיפוש לפי שם או אימייל..."
-                style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-2)', color: 'var(--text-1)' }} />
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <Search size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="חיפוש לפי שם או אימייל..."
+                  style={{ width: '100%', height: 36, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 30, paddingLeft: 10, fontSize: 13, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-2)', color: 'var(--text-1)' }} />
+              </div>
+              {pendingApproval > 0 && (
+                <button
+                  onClick={async () => {
+                    const unapproved = allUsers.filter(u => !u.is_approved && u.role !== 'admin');
+                    for (const u of unapproved) { await base44.entities.User.update(u.id, { is_approved: true }); }
+                    queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+                  }}
+                  style={{ height: 36, padding: '0 12px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
+                >
+                  ✓ אשר הכל ({pendingApproval})
+                </button>
+              )}
             </div>
             {loadingUsers ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} className="animate-spin" color="#1a6fd4" /></div>
