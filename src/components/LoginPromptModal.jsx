@@ -28,48 +28,95 @@ function ProviderButton({ icon, label, onClick, bg, color, border }) {
   );
 }
 
-function EmailForm({ onBack }) {
+function EmailForm({ onBack, onSuccess }) {
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [mode, setMode] = useState('credentials'); // 'credentials' | 'otp'
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSend = async () => {
-    if (!email.trim() || !email.includes('@')) return;
+  const handleCredentials = async () => {
+    if (!email.trim() || !email.includes('@') || password.length < 6) return;
     setLoading(true);
-    let redirectUrl = window.location.href;
-    const refCode = localStorage.getItem('joba24_ref_code');
-    if (refCode && !redirectUrl.includes('ref=')) {
-      redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + `ref=${refCode}`;
-    }
+    setError('');
     try {
-      await base44.auth.sendMagicLink(email.trim(), redirectUrl);
-      setSent(true);
-    } catch {
-      base44.auth.redirectToLogin(redirectUrl);
+      // Try login first (existing user)
+      await base44.auth.loginViaEmailPassword(email.trim(), password);
+      onSuccess();
+      return;
+    } catch (loginErr) {
+      // Login failed — maybe new user, try register
+      try {
+        await base44.auth.register({ email: email.trim(), password });
+        setMode('otp');
+      } catch (regErr) {
+        // Register also failed — probably wrong password for existing user
+        setError('סיסמה שגויה. נסה שוב או שכחת סיסמה.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (sent) {
+  const handleVerifyOtp = async () => {
+    if (otp.trim().length < 4) return;
+    setLoading(true);
+    setError('');
+    try {
+      await base44.auth.verifyOtp({ email: email.trim(), otpCode: otp.trim() });
+      await base44.auth.loginViaEmailPassword(email.trim(), password);
+      onSuccess();
+    } catch (err) {
+      setError('קוד אימות שגוי, נסה שוב');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (mode === 'otp') {
     return (
-      <div style={{ textAlign: 'center', padding: '10px 0 20px' }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>📬</div>
-        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>בדוק את האימייל שלך</div>
-        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
-          שלחנו לך קישור כניסה ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>.<br />
-          לחץ על הקישור כדי להתחבר.
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
+          <ArrowLeft size={14} /> חזרה
+        </button>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>אימות באימייל</div>
+        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
+          שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.
         </div>
+        <input
+          type="text"
+          inputMode="numeric"
+          dir="ltr"
+          placeholder="123456"
+          value={otp}
+          onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+          onKeyDown={e => { if (e.key === 'Enter') handleVerifyOtp(); }}
+          autoFocus
+          style={{ width: '100%', height: 52, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 16px', fontSize: 18, letterSpacing: 4, background: 'var(--surface-3)', color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box', textAlign: 'center' }}
+        />
+        {error && <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{error}</div>}
+        <button
+          onClick={handleVerifyOtp}
+          disabled={loading || otp.trim().length < 4}
+          style={{
+            width: '100%', height: 52, borderRadius: 16,
+            background: otp.trim().length >= 4 ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
+            color: otp.trim().length >= 4 ? 'white' : '#94a3b8',
+            fontWeight: 800, fontSize: 15, border: 'none',
+            cursor: otp.trim().length >= 4 ? 'pointer' : 'not-allowed',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          {loading ? <Loader2 size={18} className="animate-spin" /> : 'אמת והתחבר'}
+        </button>
       </div>
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <button
-        onClick={onBack}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}
-      >
+      <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 4px', width: 'fit-content' }}>
         <ArrowLeft size={14} /> חזרה
       </button>
       <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>כניסה עם אימייל</div>
@@ -79,33 +126,35 @@ function EmailForm({ onBack }) {
         placeholder="your@email.com"
         value={email}
         onChange={e => setEmail(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
         autoFocus
-        style={{
-          width: '100%', height: 52, borderRadius: 14,
-          border: '1.5px solid #e2e8f0',
-          padding: '0 16px',
-          fontSize: 15, background: 'var(--surface-3)',
-          color: 'var(--text-1)',
-          outline: 'none', boxSizing: 'border-box',
-        }}
+        style={{ width: '100%', height: 52, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 16px', fontSize: 15, background: 'var(--surface-3)', color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box' }}
       />
+      <input
+        type="password"
+        dir="ltr"
+        placeholder="סיסמה (6 תווים לפחות)"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') handleCredentials(); }}
+        style={{ width: '100%', height: 52, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 16px', fontSize: 15, background: 'var(--surface-3)', color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box' }}
+      />
+      {error && <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{error}</div>}
       <button
-        onClick={handleSend}
-        disabled={loading || !email.includes('@')}
+        onClick={handleCredentials}
+        disabled={loading || !email.includes('@') || password.length < 6}
         style={{
           width: '100%', height: 52, borderRadius: 16,
-          background: email.includes('@') ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
-          color: email.includes('@') ? 'white' : '#94a3b8',
+          background: email.includes('@') && password.length >= 6 ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
+          color: email.includes('@') && password.length >= 6 ? 'white' : '#94a3b8',
           fontWeight: 800, fontSize: 15, border: 'none',
-          cursor: email.includes('@') ? 'pointer' : 'not-allowed',
+          cursor: email.includes('@') && password.length >= 6 ? 'pointer' : 'not-allowed',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           transition: 'all 0.2s',
         }}
       >
-        {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> שלח קישור כניסה</>}
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> המשך</>}
       </button>
-      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>נשלח קישור כניסה לאימייל — ללא סיסמה</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>משתמש חדש? נרשום אותך אוטומטית</div>
     </div>
   );
 }
@@ -169,7 +218,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
         <div style={{ padding: '12px 20px 0' }}>
           {showEmail ? (
-            <EmailForm onBack={() => setShowEmail(false)} />
+            <EmailForm onBack={() => setShowEmail(false)} onSuccess={() => { onLogin?.(); window.location.reload(); }} />
           ) : (
             <>
               {/* Title */}
@@ -194,6 +243,20 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                 />
 
                 <ProviderButton
+                  onClick={() => setShowEmail(true)}
+                  label="המשך עם אימייל"
+                  border="#bfdbfe"
+                  color="#1a6fd4"
+                  icon={<Mail size={16} color="#1a6fd4" />}
+                />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
+                  <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>או</span>
+                  <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
+                </div>
+
+                <ProviderButton
                   onClick={handleApple}
                   bg="#000"
                   color="white"
@@ -207,20 +270,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                   color="white"
                   border="#1877F2"
                   label="המשך עם Facebook"
-                />
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
-                  <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>או</span>
-                  <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
-                </div>
-
-                <ProviderButton
-                  onClick={() => setShowEmail(true)}
-                  label="המשך עם אימייל"
-                  border="#bfdbfe"
-                  color="#1a6fd4"
-                  icon={<Mail size={16} color="#1a6fd4" />}
                 />
               </div>
 

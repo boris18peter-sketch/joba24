@@ -181,20 +181,6 @@ export default function WorkerOnboarding() {
           זה הזמן להירשם ולהכין את הפרופיל שלכם.
         </p>
 
-        {/* Glassmorphism benefits list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 36, width: '100%', maxWidth: 340, position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 18, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-          {[
-            { icon: '📍', text: 'משימות ליד הבית — בזמן אמת' },
-            { icon: '💰', text: 'תשלום מהיר ומאובטח' },
-            { icon: '⭐', text: 'בניית מוניטין ודירוגים' },
-          ].map((b, i, arr) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>{b.icon}</span>
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.92)', textAlign: 'right', lineHeight: 1.4 }}>{b.text}</span>
-            </div>
-          ))}
-        </div>
-
         {/* Single CTA */}
         <div style={{ width: '100%', maxWidth: 340, position: 'relative', zIndex: 1 }}>
           <button
@@ -267,9 +253,13 @@ export default function WorkerOnboarding() {
       {/* ── Header with progress ── */}
       <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <button onClick={handleBack} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ChevronRight size={18} color="var(--text-2)" />
-          </button>
+          {step > 0 ? (
+            <button onClick={handleBack} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ChevronRight size={18} color="var(--text-2)" />
+            </button>
+          ) : (
+            <div style={{ width: 36, height: 36 }} />
+          )}
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }}>{step + 1} / {totalSteps}</span>
           <button onClick={() => navigate('/')} style={{ marginRight: 'auto', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>דלג</button>
         </div>
