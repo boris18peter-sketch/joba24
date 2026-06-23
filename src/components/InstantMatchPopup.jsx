@@ -36,12 +36,13 @@ function calcRelevanceScore({ task, currentUser, userLocation, myApplications, m
   // 4. Currently browsing same category
   if (activeCategory && activeCategory === task.category) score += 50;
 
-  // 5. Distance score (< 3km = full score, 3-8km = partial)
+  // 5. Distance score (< 3km = full score, 3-8km = partial, 8-20km = small bonus)
   if (userLocation && task.lat && task.lng) {
     const dist = getDistanceKm(userLocation.lat, userLocation.lng, task.lat, task.lng);
     if (dist !== null) {
       if (dist <= 3) score += 25;
       else if (dist <= 8) score += 10;
+      else if (dist <= 20) score += 5;
       else return 0; // too far — never show
     }
   }

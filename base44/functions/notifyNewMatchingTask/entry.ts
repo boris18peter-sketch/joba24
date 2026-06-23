@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
       let nearby = false;
       if (taskLat && taskLng && worker.last_lat && worker.last_lng) {
         const dist = Math.hypot(taskLat - worker.last_lat, taskLng - worker.last_lng);
-        nearby = dist < 0.3; // ~30km
+        nearby = dist < 0.18; // ~20km (0.18 degrees ≈ 20km)
       }
 
       const isRelevant = categoryMatch || nearby;
