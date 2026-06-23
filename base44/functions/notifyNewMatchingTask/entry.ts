@@ -84,11 +84,14 @@ Deno.serve(async (req) => {
 
 function getCategoryLabel(cat) {
   const labels = {
-    plumbing: 'אינסטלציה', electricity: 'חשמל', gardening: 'גינון',
-    cleaning: 'ניקיון', moving: 'הובלה', painting: 'צביעה',
-    carpentry: 'נגרות', ac: 'מיזוג', locksmith: 'מנעולן',
-    shopping: 'קניות', delivery: 'שליחויות', babysitting: 'שמרטפות',
-    tutoring: 'שיעורים פרטיים', it_support: 'תמיכה טכנית', other: 'כללי',
+    plumbing: 'אינסטלציה', electricity: 'חשמלאות', handyman: 'הנדימן / תיקונים',
+    cleaning: 'ניקיון', moving: 'הובלה', heavy_lifting: 'עזרה פיזית',
+    painting: 'צביעה', carpentry: 'נגרות', ac: 'מזגנים',
+    locksmith: 'מנעולן', gardening: 'גינון', home_maintenance: 'תחזוקת בית',
+    transportation: 'הסעות וטרמפים', delivery: 'משלוח', shopping: 'קניות',
+    pets: 'בעלי חיים', babysitting: 'בייביסיטר', elderly_care: 'סיוע לקשישים',
+    tutoring: 'שיעורים פרטיים', fitness: 'כושר וספורט', photography: 'צילום ותוכן',
+    events: 'אירועים', personal_help: 'עזרה אישית', it_support: 'מחשבים', other: 'אחר',
   };
   return labels[cat] || cat;
 }
