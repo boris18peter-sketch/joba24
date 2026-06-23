@@ -225,6 +225,13 @@ export default function WorkerOnboarding() {
 
   // ── Done step — bonus already granted in handleNext ──
   if (step >= totalSteps) {
+    const handleGoToApp = async () => {
+      // Force-refresh me so Layout gets fresh is_approved value
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      await queryClient.refetchQueries({ queryKey: ['me'] });
+      navigate('/');
+    };
+
     return (
       <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
         <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
@@ -233,7 +240,7 @@ export default function WorkerOnboarding() {
         </motion.div>
         <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 8 }}>הפרופיל מוכן! 🎉</h1>
         <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
-          {me?.full_name ? `${me.full_name}, ` : ''}אתה מוכן לקבל משימות ולהתחיל להרוויח.
+          {me?.full_name ? `${me.full_name}, ` : ''}הפרופיל שלך נשמר — ממתין לאישור מנהל.
         </p>
         {/* Bonus badge */}
         <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
@@ -242,10 +249,10 @@ export default function WorkerOnboarding() {
           <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>בונוס על מילוי הפרופיל</div>
         </div>
         <button
-          onClick={() => navigate('/')}
+          onClick={handleGoToApp}
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
         >
-          לפיד המשימות 🚀
+          המשך לאפליקציה 🚀
         </button>
       </div>
     );
