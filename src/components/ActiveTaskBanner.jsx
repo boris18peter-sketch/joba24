@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -77,7 +77,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
   );
 }
 
-export default function ActiveTaskBanner({ tasks, roleHint, hideDetailsBtn = false }) {
+export default function ActiveTaskBanner({ tasks, roleHint }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
@@ -92,15 +92,6 @@ export default function ActiveTaskBanner({ tasks, roleHint, hideDetailsBtn = fal
   const [savingMedia, setSavingMedia] = useState(false);
   const [invoiceTask, setInvoiceTask] = useState(null); // task for invoice modal
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-
-  // Fetch worker user data to get their phone (for owner)
-  const workerTaskId = tasks?.[0]?.worker_id;
-  const { data: workerUserData } = useQuery({
-    queryKey: ['publicUser', workerTaskId],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: workerTaskId }); return u[0] || null; },
-    enabled: !!workerTaskId,
-    staleTime: 120000,
-  });
 
   // No local state — read directly from props (which come from React Query cache via Layout/HomeFeed)
   // Layout.jsx is the single broadcaster: it subscribes to WebSocket and updates all caches
@@ -328,40 +319,23 @@ export default function ActiveTaskBanner({ tasks, roleHint, hideDetailsBtn = fal
                     </button>
                 )}
 
-                {/* Chat + Phone button row — after arrived */}
-                {(showChatBtn || tIsOwner) && (() => {
-                  // Phone: worker sees task.contactPhone (publisher's phone), owner sees worker's phone
-                  const phone = tIsWorker ? task.contactPhone : workerUserData?.phone;
-                  return (
-                    <div style={{ flex: 1, display: 'flex', gap: 6 }}>
-                      <button
-                        onClick={() => setShowChat(true)}
-                        style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                      >
-                        <MessageCircle size={15} /> {t('chat')}
-                      </button>
-                      {phone && (
-                        <a
-                          href={`tel:${phone}`}
-                          onClick={e => e.stopPropagation()}
-                          style={{ height: 46, width: 46, borderRadius: 14, background: 'rgba(34,197,94,0.25)', border: '1.5px solid rgba(34,197,94,0.6)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', flexShrink: 0 }}
-                        >
-                          <Phone size={16} />
-                        </a>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Details button — hidden when already on TaskDetail page */}
-                {!hideDetailsBtn && (
+                {/* Chat button — after arrived */}
+                {(showChatBtn || tIsOwner) && (
                   <button
-                    onClick={() => navigate(`/task/${task.id}`)}
-                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={() => setShowChat(true)}
+                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                   >
-                    {t('details')}
-                  </button>
+                    <MessageCircle size={15} /> {t('chat')}
+                    </button>
                 )}
+
+                {/* Details button */}
+                <button
+                  onClick={() => navigate(`/task/${task.id}`)}
+                  style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {t('details')}
+                </button>
               </div>
 
               {/* Worker extra actions row */}

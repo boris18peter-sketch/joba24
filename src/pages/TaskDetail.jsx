@@ -646,9 +646,10 @@ export default function TaskDetail() {
       <PageHeader title={task.title} right={null} />
       
 
-      {/* ActiveTaskBanner — live status tracker for in-progress tasks */}
+      {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache
+          (same source as HomeFeed) so status updates are always in sync */}
       {task.status === 'TAKEN' && (isOwner || isWorker) && (
-        <ActiveTaskBannerFromCache taskId={id} isWorker={isWorker} hideDetailsBtn />
+        <ActiveTaskBannerFromCache taskId={id} isWorker={isWorker} />
       )}
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
@@ -1204,7 +1205,45 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Contact phone is shown inside the action buttons row below — no separate card needed */}
+        {/* Contact Phone — mutual reveal after approval */}
+        {(() => {
+          // Worker sees client's phone only if their application is approved
+          const workerSeesPhone = isApproved && task.contactPhone;
+          // Owner sees worker's phone when task is active or completed
+          const ownerSeesWorkerPhone = isOwner && ['TAKEN', 'COMPLETED', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(task.status) && workerUser?.phone;
+          if (!workerSeesPhone && !ownerSeesWorkerPhone) return null;
+          const phone = workerSeesPhone ? task.contactPhone : workerUser?.phone;
+          const label = workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד';
+          return (
+            <a
+              href={`tel:${phone}`}
+              style={{ textDecoration: 'none', display: 'block' }}
+            >
+              <div style={{
+                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                border: '2px solid #16a34a',
+                borderRadius: 20,
+                padding: '16px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 4px 18px rgba(22,163,74,0.18)',
+              }}>
+                <div style={{ width: 48, height: 48, borderRadius: 15, background: 'linear-gradient(135deg,#16a34a,#15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(22,163,74,0.35)' }}>
+                  <Phone size={22} color="white" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', fontFamily: 'monospace', letterSpacing: 0.5, direction: 'ltr', textAlign: 'right' }}>{phone}</div>
+                  <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2, fontWeight: 600 }}>לחץ להתקשרות ישירה 📞</div>
+                </div>
+                <div style={{ height: 42, padding: '0 16px', borderRadius: 12, background: '#16a34a', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 10px rgba(22,163,74,0.35)' }}>
+                  <Phone size={14} /> התקשר
+                </div>
+              </div>
+            </a>
+          );
+        })()}
 
         {/* Actions */}
         {(canApplyManual || (task.status === 'COMPLETED' && (me?.id === task.client_id || me?.id === task.worker_id)) || (isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task.status)) || (isWorker && task.status === 'TAKEN')) && (
