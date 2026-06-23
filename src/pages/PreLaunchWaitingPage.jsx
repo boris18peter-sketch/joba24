@@ -161,11 +161,14 @@ export default function PreLaunchWaitingPage({ me }) {
 
   return (
     <div dir="rtl" style={{
-      minHeight: '100dvh',
+      height: '100dvh',
+      width: '100%',
+      boxSizing: 'border-box',
       background: 'linear-gradient(160deg, #0a1f4e 0%, #0f2b6b 40%, #1a6fd4 100%)',
       display: 'flex', flexDirection: 'column',
       padding: 'max(40px, env(safe-area-inset-top)) 20px max(40px, env(safe-area-inset-bottom))',
       overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
     }}>
       {/* Logo + Brand */}
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -176,6 +179,7 @@ export default function PreLaunchWaitingPage({ me }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px',
           fontSize: 36,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
         }}>
           🚀
         </div>
@@ -183,11 +187,16 @@ export default function PreLaunchWaitingPage({ me }) {
           Joba24 · Pre-Launch
         </div>
         <h1 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.3 }}>
-          {me?.full_name ? `היי ${me.full_name.split(' ')[0]}!` : 'ברוך הבא!'}
+          {me?.full_name ? `תודה שנרשמת, ${me.full_name.split(' ')[0]}! 🎉` : 'תודה שנרשמת! 🎉'}
         </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 10, lineHeight: 1.6, maxWidth: 300, margin: '10px auto 0' }}>
-          שמרנו לך מקום ברשימת ההמתנה שלנו. נודיע לך ברגע שנפתח לכולם.
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.9)', marginTop: 12, lineHeight: 1.5, maxWidth: 320, margin: '12px auto 0' }}>
+          הפרופיל שלך ממתין לאישור.<br/>בקרוב מאוד תתחיל לקבל המון עבודות חדשות דרך Joba24!
         </p>
+        <div style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 14, padding: '12px', marginTop: 16, maxWidth: 340, margin: '16px auto 0' }}>
+          <p style={{ fontSize: 13, color: '#fbbf24', lineHeight: 1.5, margin: 0, fontWeight: 600 }}>
+            בינתיים, אנו ממליצים בחום להוריד את האפליקציה למסך הבית ולאשר התראות ומיקום כדי שתוכל להיות מעודכן בהשקה ולהיות הראשון לקבל עבודות באזורך.
+          </p>
+        </div>
       </div>
 
       {/* Progress bar */}

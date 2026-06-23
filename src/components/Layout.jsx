@@ -321,8 +321,18 @@ export default function Layout() {
     staleTime: 30000,
   });
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/join');
+    }
+  }, [isAuthenticated, navigate]);
+
   // Pre-launch gate: show waiting page for unapproved users (admins and agents always pass)
   // Placed AFTER all hooks to comply with Rules of Hooks
+  if (!isAuthenticated) {
+    return <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+  }
+
   const isApprovedUser = me?.is_approved || me?.role === 'admin' || me?.role === 'agent';
   if (isAuthenticated && me && !isApprovedUser) {
     return <PreLaunchWaitingPage me={me} />;
