@@ -46,13 +46,25 @@ function EmailForm({ onBack, onSuccess }) {
       onSuccess();
       return;
     } catch (loginErr) {
-      // Login failed — maybe new user, try register
-      try {
-        await base44.auth.register({ email: email.trim(), password });
-        setMode('otp');
-      } catch (regErr) {
-        // Register also failed — probably wrong password for existing user
-        setError('סיסמה שגויה. נסה שוב או שכחת סיסמה.');
+      // Login failed — could be wrong password OR user doesn't exist yet
+      const loginMsg = String(loginErr?.response?.data?.detail || loginErr?.message || '');
+      // If user doesn't exist, try to register
+      if (/not found|doesn't exist|no user|unregistered|invalid credentials/i.test(loginMsg) || loginErr?.response?.status === 404) {
+        try {
+          await base44.auth.register({ email: email.trim(), password });
+          setMode('otp');
+          return;
+        } catch (regErr) {
+          const regMsg = String(regErr?.response?.data?.detail || regErr?.message || '');
+          if (/already|exists|registered/i.test(regMsg)) {
+            setError('כתובת האימייל כבר רשומה. הסיסמה שהזנת שגויה — נסה שוב.');
+          } else {
+            setError(regMsg || 'שגיאה ברישום. נסה שוב.');
+          }
+        }
+      } else {
+        // User exists but wrong password
+        setError('סיסמה שגויה. נסה שוב.');
       }
     } finally {
       setLoading(false);
@@ -68,7 +80,8 @@ function EmailForm({ onBack, onSuccess }) {
       await base44.auth.loginViaEmailPassword(email.trim(), password);
       onSuccess();
     } catch (err) {
-      setError('קוד אימות שגוי, נסה שוב');
+      const msg = String(err?.response?.data?.detail || err?.message || '');
+      setError(msg || 'קוד אימות שגוי, נסה שוב');
     } finally {
       setLoading(false);
     }
@@ -154,7 +167,7 @@ function EmailForm({ onBack, onSuccess }) {
       >
         {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> המשך</>}
       </button>
-      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>משתמש חדש? נרשום אותך אוטומטית</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>משתמש חדש? נרשום אותך אוטומטית — כל אימייל נספר כחשבון אחד</div>
     </div>
   );
 }
