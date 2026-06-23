@@ -15,10 +15,18 @@ Deno.serve(async (req) => {
     const taskLng = data.lng;
     const taskTitle = data.title || 'משימה חדשה';
 
-    // Find workers: get all users who have tasks completed and fcm_tokens
-    // Limit to 30 active workers to avoid spam
-    const allUsers = await base44.asServiceRole.entities.User.list('-created_date', 200);
-    const eligibleWorkers = allUsers.filter(u => 
+    // Fetch all users with FCM tokens (paginate to get everyone)
+    let allUsers = [];
+    let skip = 0;
+    const pageSize = 200;
+    while (true) {
+      const page = await base44.asServiceRole.entities.User.list('-created_date', pageSize, skip);
+      allUsers = allUsers.concat(page);
+      if (page.length < pageSize) break;
+      skip += pageSize;
+    }
+
+    const eligibleWorkers = allUsers.filter(u =>
       u.fcm_tokens?.length > 0 &&
       u.id !== data.client_id &&
       u.role !== 'admin'
@@ -28,55 +36,46 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No eligible workers' });
     }
 
-    // For each worker, check if the task is relevant
-    // Relevance: same category OR nearby location
-    const notifications = [];
-    for (const worker of eligibleWorkers.slice(0, 50)) {
-      // Category match is the strongest signal
-      const categoryMatch = worker.preferred_categories?.includes?.(taskCategory);
-      
-      // Location proximity: check if worker's last known location is close
+    // For each worker, check relevance: category match AND/OR proximity
+    const matchedUserIds = [];
+    for (const worker of eligibleWorkers) {
+      const categoryMatch = Array.isArray(worker.preferred_categories) &&
+        worker.preferred_categories.includes(taskCategory);
+
       let nearby = false;
       if (taskLat && taskLng && worker.last_lat && worker.last_lng) {
         const dist = Math.hypot(taskLat - worker.last_lat, taskLng - worker.last_lng);
-        nearby = dist < 0.18; // ~20km (0.18 degrees ≈ 20km)
+        nearby = dist < 0.18; // ~20km
       }
 
-      const isRelevant = categoryMatch || nearby;
-      if (!isRelevant) continue;
+      if (categoryMatch || nearby) {
+        matchedUserIds.push(worker.id);
+      }
+    }
 
-      // Build message
-      const matchType = categoryMatch && nearby ? 'קרובה ומתאימה' : categoryMatch ? 'מתאימה לך' : 'קרובה אליך';
-      
-      notifications.push({
-        userId: worker.id,
-        title: `משימה ${matchType} 🎯`,
-        body: `${taskTitle} — ${getCategoryLabel(taskCategory)}`,
+    if (!matchedUserIds.length) {
+      return Response.json({ sent: 0, reason: 'No matched workers' });
+    }
+
+    const matchType = taskCategory ? getCategoryLabel(taskCategory) : 'משימה חדשה';
+    let sent = 0;
+
+    // Send in batches of 100 to avoid payload limits
+    const BATCH = 100;
+    for (let i = 0; i < matchedUserIds.length; i += BATCH) {
+      const batch = matchedUserIds.slice(i, i + BATCH);
+      const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
+        user_ids: batch,
+        title: `משימה חדשה מתאימה לך 🎯`,
+        body: `${taskTitle} — ${matchType}`,
         url: `/task/${taskId}`,
         tag: `new_match_${taskId}`,
+        click_action: `/task/${taskId}`,
       });
+      sent += result?.sent || 0;
     }
 
-    // Send all at once using a single batched call instead of sequential per-worker calls
-    const batchNotifications = notifications.slice(0, 30);
-    const userIds = batchNotifications.map(n => n.userId);
-
-    // Group by same title/body if possible (all from same task, so one call suffices)
-    let sent = 0;
-    if (userIds.length > 0) {
-      const firstN = batchNotifications[0];
-      const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
-        user_ids: userIds,
-        title: firstN.title,
-        body: firstN.body,
-        url: firstN.url,
-        tag: firstN.tag,
-        click_action: firstN.url,
-      });
-      sent = result?.sent || 0;
-    }
-
-    return Response.json({ sent, total: notifications.length });
+    return Response.json({ sent, total: matchedUserIds.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
