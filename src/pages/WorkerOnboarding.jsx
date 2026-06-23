@@ -88,22 +88,32 @@ export default function WorkerOnboarding() {
         await base44.auth.updateMe(updateData);
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
-        // On last step — mark join completed + grant 25 credits bonus (once per user)
+        // On last step — mark join completed + grant 25 credits bonus (once per user, server-checked)
         if (isLastStep && me?.id) {
           localStorage.setItem(JOIN_COMPLETED_KEY, '1');
           const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
+          // Fast path: localStorage says already granted
           if (!localStorage.getItem(bonusKey)) {
-            localStorage.setItem(bonusKey, '1');
-            const currentCredits = me.worker_credits ?? 100;
-            await base44.auth.updateMe({ worker_credits: currentCredits + 25 });
-            await base44.entities.CreditTransaction.create({
+            // Server-side guard: check if a Signup_Bonus transaction already exists for this user
+            const existingBonus = await base44.entities.CreditTransaction.filter({
               user_id: me.id,
-              amount: 25,
               type: 'Signup_Bonus',
-              note: 'בונוס מילוי פרופיל עובד',
-              balance_after: currentCredits + 25,
             });
-            queryClient.invalidateQueries({ queryKey: ['me'] });
+            if (existingBonus.length === 0) {
+              const freshMe = await base44.auth.me();
+              const currentCredits = freshMe.worker_credits ?? 100;
+              await base44.auth.updateMe({ worker_credits: currentCredits + 25 });
+              await base44.entities.CreditTransaction.create({
+                user_id: me.id,
+                amount: 25,
+                type: 'Signup_Bonus',
+                note: 'בונוס מילוי פרופיל עובד',
+                balance_after: currentCredits + 25,
+              });
+              queryClient.invalidateQueries({ queryKey: ['me'] });
+            }
+            // Mark locally so we skip the server check next time
+            localStorage.setItem(bonusKey, '1');
           }
         }
       } catch (e) {
