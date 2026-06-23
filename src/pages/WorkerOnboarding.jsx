@@ -171,11 +171,14 @@ export default function WorkerOnboarding() {
           Joba24
         </div>
 
-        <h1 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, marginBottom: 10, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
-          בואו לעבוד איתנו
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: 0, marginBottom: 12, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
+          רוצים יותר עבודות?
         </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 28, lineHeight: 1.6, maxWidth: 320, position: 'relative', zIndex: 1 }}>
-          קבלו משימות ליד הבית, תרוויחו כסף, בנו מוניטין ודירוגים.
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 8, lineHeight: 1.65, maxWidth: 340, position: 'relative', zIndex: 1 }}>
+          הצטרפו ל־Joba24 והיו מוכנים לקבל גישה לאלפי משימות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
+        </p>
+        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 28, lineHeight: 1.65, maxWidth: 340, position: 'relative', zIndex: 1, fontWeight: 700 }}>
+          זה הזמן להירשם ולהכין את הפרופיל שלכם.
         </p>
 
         {/* Glassmorphism benefits list */}
