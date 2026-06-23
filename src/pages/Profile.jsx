@@ -3,11 +3,13 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save } from 'lucide-react';
+
+const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -76,6 +78,7 @@ function ReviewChips({ review }) {
 
 export default function Profile() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -169,11 +172,15 @@ export default function Profile() {
       {/* ── Header ── */}
       <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{t('profile_title')}</span>
-        <Link to="/worker-profile" style={{ textDecoration: 'none' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 20, padding: '5px 14px' }}>
-            ✏️ {t('edit') || 'עריכה'}
-          </div>
-        </Link>
+        <button
+          onClick={() => {
+            const joinCompleted = localStorage.getItem(JOIN_COMPLETED_KEY);
+            navigate(joinCompleted ? '/worker-profile' : '/join');
+          }}
+          style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 20, padding: '5px 14px', cursor: 'pointer' }}
+        >
+          ✏️ {t('edit') || 'עריכה'}
+        </button>
       </div>
 
       {/* ── Avatar + Name Hero ── */}

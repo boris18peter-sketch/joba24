@@ -1,81 +1,75 @@
 import { useNavigate } from 'react-router-dom';
-import { UserCog, X } from 'lucide-react';
-import { useState } from 'react';
-import { useLanguage } from '@/lib/LanguageContext';
+import { Zap } from 'lucide-react';
 
-const DISMISSED_KEY = 'joba24_profile_banner_dismissed';
+const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 
 export default function ProfileCompletionBanner({ me }) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
-  const [dismissed, setDismissed] = useState(() => !!localStorage.getItem(DISMISSED_KEY));
 
-  if (!me || dismissed) return null;
+  if (!me) return null;
 
-  // Show only if profile is incomplete (no preferred_categories or no bio/skills)
-  const isIncomplete = !me.preferred_categories?.length && !me.skills?.length && !me.bio;
-  if (!isIncomplete) return null;
+  // Hide if user already completed the join flow
+  const hasCompletedJoin = !!localStorage.getItem(JOIN_COMPLETED_KEY);
+  if (hasCompletedJoin) return null;
 
-  const handleDismiss = (e) => {
-    e.stopPropagation();
-    localStorage.setItem(DISMISSED_KEY, '1');
-    setDismissed(true);
-  };
+  // Also hide if profile is already complete (has categories AND (bio or skills))
+  const isComplete = me.preferred_categories?.length > 0 && (me.bio || me.skills?.length > 0);
+  if (isComplete) return null;
 
   return (
     <div
       dir="rtl"
+      onClick={() => navigate('/join')}
       style={{
         background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
         borderRadius: 16,
-        padding: '14px 16px',
-        marginBottom: 10,
-        position: 'relative',
+        padding: '16px',
+        marginBottom: 12,
+        cursor: 'pointer',
         overflow: 'hidden',
-        boxShadow: '0 4px 16px rgba(26,111,212,0.25)',
+        position: 'relative',
+        boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
       }}
     >
-      {/* Decorative circle */}
-      <div style={{ position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.07)', pointerEvents: 'none' }} />
+      {/* Decorative circles */}
+      <div style={{ position: 'absolute', top: -24, left: -24, width: 96, height: 96, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -16, right: -16, width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
 
-      {/* Dismiss */}
-      <button
-        onClick={handleDismiss}
-        style={{ position: 'absolute', top: 10, left: 10, width: 26, height: 26, borderRadius: 8, background: 'rgba(255,255,255,0.15)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-      >
-        <X size={13} color="white" />
-      </button>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <UserCog size={22} color="white" strokeWidth={1.8} />
+      {/* Top row — icon + text */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Zap size={22} color="white" strokeWidth={2} fill="white" />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 900, color: 'white', marginBottom: 2 }}>{t('profile_complete_title')}</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.45 }}>
-            {t('profile_complete_sub')}
+          <div style={{ fontSize: 15, fontWeight: 900, color: 'white', marginBottom: 5, lineHeight: 1.3 }}>
+            רוצה להרוויח ולקבל יותר משימות?
+          </div>
+          <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.88)', lineHeight: 1.55 }}>
+            פרופיל מלא עוזר לנו להתאים לך משימות רלוונטיות יותר, ומגדיל את הסיכוי שמפרסמים יסמכו עליך ויבחרו בך מהר יותר.
           </div>
         </div>
       </div>
 
-      <button
-        onClick={() => navigate('/join')}
+      {/* CTA button */}
+      <div
         style={{
-          marginTop: 12,
           width: '100%',
-          height: 40,
-          borderRadius: 11,
+          height: 44,
+          borderRadius: 12,
           background: '#fbbf24',
           color: '#1a3a6b',
           fontWeight: 900,
-          fontSize: 13,
+          fontSize: 14,
           border: 'none',
-          cursor: 'pointer',
-          boxShadow: '0 3px 10px rgba(251,191,36,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          boxShadow: '0 3px 12px rgba(251,191,36,0.45)',
         }}
       >
-        {t('profile_complete_btn')}
-      </button>
+        🎁 השלם פרופיל עובד וקבל בונוס 25 ג'ובות
+      </div>
     </div>
   );
 }

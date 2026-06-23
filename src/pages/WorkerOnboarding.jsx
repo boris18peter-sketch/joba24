@@ -11,6 +11,9 @@ import {
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
+const JOIN_COMPLETED_KEY = 'joba24_join_completed';
+const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
+
 const STEPS = [
   { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'לדוגמה: אינסטלטור, חשמלאי, מנקה...', type: 'text', placeholder: 'לדוגמה: אינסטלטור' },
   { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי משימות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
@@ -71,6 +74,7 @@ export default function WorkerOnboarding() {
   const totalSteps = STEPS.length;
 
   const handleNext = async () => {
+    const isLastStep = step === totalSteps - 1;
     if (step >= 0 && step < totalSteps) {
       const stepKey = STEPS[step].key;
       setSaving(true);
@@ -83,6 +87,25 @@ export default function WorkerOnboarding() {
         }
         await base44.auth.updateMe(updateData);
         queryClient.invalidateQueries({ queryKey: ['me'] });
+
+        // On last step — mark join completed + grant 25 credits bonus (once per user)
+        if (isLastStep && me?.id) {
+          localStorage.setItem(JOIN_COMPLETED_KEY, '1');
+          const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
+          if (!localStorage.getItem(bonusKey)) {
+            localStorage.setItem(bonusKey, '1');
+            const currentCredits = me.worker_credits ?? 100;
+            await base44.auth.updateMe({ worker_credits: currentCredits + 25 });
+            await base44.entities.CreditTransaction.create({
+              user_id: me.id,
+              amount: 25,
+              type: 'Signup_Bonus',
+              note: 'בונוס מילוי פרופיל עובד',
+              balance_after: currentCredits + 25,
+            });
+            queryClient.invalidateQueries({ queryKey: ['me'] });
+          }
+        }
       } catch (e) {
         console.error('Save error:', e);
       }
@@ -200,7 +223,7 @@ export default function WorkerOnboarding() {
     );
   }
 
-  // ── Done step ──
+  // ── Done step — bonus already granted in handleNext ──
   if (step >= totalSteps) {
     return (
       <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
@@ -209,9 +232,15 @@ export default function WorkerOnboarding() {
           <Check size={40} color="white" strokeWidth={3} />
         </motion.div>
         <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 8 }}>הפרופיל מוכן! 🎉</h1>
-        <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 32, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
           {me?.full_name ? `${me.full_name}, ` : ''}אתה מוכן לקבל משימות ולהתחיל להרוויח.
         </p>
+        {/* Bonus badge */}
+        <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
+          <div style={{ fontSize: 28, marginBottom: 4 }}>🎁</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>קיבלת 25 ג'ובות!</div>
+          <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>בונוס על מילוי הפרופיל</div>
+        </div>
         <button
           onClick={() => navigate('/')}
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
