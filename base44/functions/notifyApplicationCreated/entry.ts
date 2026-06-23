@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const { data, event } = await req.json();
 
     if (!data || !data.task_id || !data.worker_id) {
-      return Response.json({ error: 'Invalid payload' }, { status: 400 });
+      return Response.json({ sent: 0, reason: 'Missing task_id or worker_id' });
     }
 
     // Get task to find the client
