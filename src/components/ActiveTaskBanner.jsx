@@ -268,21 +268,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 </div>
               )}
 
-              {/* ── Row 4: Stats (owner only, in TaskDetail context) ── */}
-              {extraInfo?.isOwner && (
-                <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                  {[
-                    { val: extraInfo.viewsCount || 0, label: 'צפיות' },
-                    { val: extraInfo.clicksCount || 0, label: 'כניסות' },
-                    { val: extraInfo.applicationCount || 0, label: 'מועמדים' },
-                  ].map(({ val, label }, i) => (
-                    <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.11)', borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
-                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: 600 }}>{label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+
 
               {/* ── Row 5: 3-step progress ── */}
               <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: 14, padding: '0 4px' }}>
@@ -399,7 +385,26 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 )}
               </div>
 
-              {/* ── Row 7: Worker secondary actions ── */}
+              {/* ── Row 7: Stats (owner only, TaskDetail context) ── */}
+              {extraInfo?.isOwner && (
+                <div onClick={e => e.stopPropagation()} style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 10 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5, marginBottom: 6, textAlign: 'center' }}>נתוני פרסום משימה</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[
+                      { val: extraInfo.viewsCount || 0, label: 'צפיות' },
+                      { val: extraInfo.clicksCount || 0, label: 'כניסות' },
+                      { val: extraInfo.applicationCount || 0, label: 'מועמדים' },
+                    ].map(({ val, label }, i) => (
+                      <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: '7px 6px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 17, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: 600 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Row 8: Worker secondary actions ── */}
               {tIsWorker && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={e => e.stopPropagation()}>
                   <button
