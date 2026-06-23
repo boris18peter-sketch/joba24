@@ -60,8 +60,6 @@ export default function Layout() {
   const { isAuthenticated, login } = useAuth();
   const queryClient = useQueryClient();
 
-  usePushNotifications(!!(me?.is_approved || me?.role === 'admin' || me?.role === 'agent'));
-
   // ── GLOBAL HARD RULE: hide bottom nav whenever any modal/sheet/popup is open ──
   // Watches document.body for portaled overlays (z-index ≥ 9999). When one appears,
   // the footer is removed entirely — guaranteeing no popup is ever obscured by it.
@@ -310,6 +308,8 @@ export default function Layout() {
   }, [myPublishedTasks, me?.id]);
 
   const activeClientTask = useMemo(() => myPublishedTasks.find((t) => t.status === 'TAKEN') || null, [myPublishedTasks]);
+
+  usePushNotifications();
 
   const { data: unreadNotifCount = 0 } = useQuery({
     queryKey: ['notifUnread'],
