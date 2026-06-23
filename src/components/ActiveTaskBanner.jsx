@@ -373,7 +373,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 {phoneNumber && (
                   <a href={`tel:${phoneNumber}`} onClick={e => e.stopPropagation()} style={{ textDecoration: 'none', flex: 1 }}>
                     <button style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(34,197,94,0.25)', border: '1.5px solid rgba(34,197,94,0.5)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      <Phone size={14} /> חייג
+                      <Phone size={14} /> {phoneNumber}
                     </button>
                   </a>
                 )}

@@ -648,10 +648,10 @@ export default function TaskDetail() {
 
       {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache
           (same source as HomeFeed) so status updates are always in sync */}
-      {task.status === 'TAKEN' && (isOwner || isWorker) && (
+      {task.status === 'TAKEN' && (isOwner || me?.id === task.worker_id) && (
         <ActiveTaskBannerFromCache
           taskId={id}
-          isWorker={isWorker}
+          isWorker={me?.id === task.worker_id}
           extraInfo={{
             clientName: task.client_name,
             clientId: task.client_id,
