@@ -211,236 +211,209 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;
           const showChatBtn = tIsWorker && tStepIdx >= 1;
 
+          // Phone numbers for action buttons
+          const workerPhone = tIsWorker && extraInfo?.contactPhone ? extraInfo.contactPhone : null;
+          const ownerPhone = tIsOwner && extraInfo?.workerUser?.phone ? extraInfo.workerUser.phone : null;
+          const phoneNumber = workerPhone || ownerPhone;
+
+          // Person info row
+          const personName = tIsWorker ? task.client_name : task.worker_name;
+          const personId = tIsWorker ? task.client_id : task.worker_id;
+          const personRating = tIsWorker ? task.client_rating : task.worker_rating;
+          const personVerified = tIsWorker ? task.client_verified : task.worker_verified;
+          const personLabel = tIsWorker ? 'מפרסם' : 'עובד';
+
           return (
             <div
               key={task.id}
-              style={{ flex: '0 0 100%', background: gradient, borderRadius: 22, padding: '16px', boxShadow: '0 8px 32px rgba(26,111,212,0.3)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
+              style={{ flex: '0 0 100%', background: gradient, borderRadius: 20, padding: '14px 16px 16px', boxShadow: '0 6px 24px rgba(26,111,212,0.28)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
               onClick={() => navigate(`/task/${task.id}`)}
             >
-              {/* Live dot + badge */}
-              <div style={{ position: 'absolute', top: 14, left: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-                  <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white', display: 'inline-flex' }} />
-                </span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 700, letterSpacing: 0.3 }}>
-                  {tIsWorker ? t('active_task_worker') || 'Active task' : t('active_task_client') || 'In execution'}
-                </span>
-              </div>
+              {/* Decorative blobs */}
+              <div style={{ position: 'absolute', bottom: -30, left: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
-              {/* Decorative circle */}
-              <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-              <div style={{ height: 20 }} />
-
-              {/* Title + price */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
-                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 600, marginBottom: 3 }}>{statusText}</div>
-                  <div style={{ color: 'white', fontWeight: 900, fontSize: 17, lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
-                    {tIsWorker ? (
-                      <>
-                        <span onClick={e => { e.stopPropagation(); if (task.client_id) navigate(`/public-profile?id=${task.client_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>מעסיק: {task.client_name}</span>
-                        {task.client_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.client_rating.toFixed(1)}</span>}
-                                                 {task.client_verified && <VerifiedBadge size="sm" />}
-                      </>
-                    ) : (
-                      <>
-                        <span onClick={e => { e.stopPropagation(); if (task.worker_id) navigate(`/public-profile?id=${task.worker_id}`); }} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>עובד: {task.worker_name}</span>
-                        {task.worker_rating > 0 && <span style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '1px 6px', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>⭐ {task.worker_rating.toFixed(1)}</span>}
-                                                 {task.worker_verified && <VerifiedBadge size="sm" />}
-                      </>
-                    )}
-                  </div>
+              {/* ── Row 1: Live badge + Price ── */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8, flexShrink: 0 }}>
+                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.5s ease-in-out infinite' }} />
+                    <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600 }}>
+                    {tIsWorker ? 'משימה פעילה' : 'בביצוע'}
+                  </span>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', flexShrink: 0 }}>
-                  <div style={{ color: 'white', fontWeight: 900, fontSize: 22, lineHeight: 1 }}>₪{task.price}</div>
+                <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '5px 12px' }}>
+                  <span style={{ color: 'white', fontWeight: 900, fontSize: 19 }}>₪{task.price}</span>
                 </div>
               </div>
 
-              {/* 3-step progress bar */}
-              <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: 14, padding: '0 8px' }}>
-                {/* Track */}
-                <div style={{ position: 'absolute', top: 16, right: 8, left: 8, height: 3, background: 'rgba(255,255,255,0.25)', borderRadius: 2 }} />
-                {/* Fill */}
+              {/* ── Row 2: Title + status label ── */}
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 600, marginBottom: 2, letterSpacing: 0.2 }}>{statusText}</div>
+                <div style={{ color: 'white', fontWeight: 800, fontSize: 16, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+              </div>
+
+              {/* ── Row 3: Person pill ── */}
+              {personName && (
+                <div
+                  onClick={e => { e.stopPropagation(); if (personId) navigate(`/public-profile?id=${personId}`); }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.13)', borderRadius: 20, padding: '5px 12px', marginBottom: 12, cursor: 'pointer', maxWidth: '100%' }}
+                >
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{personLabel}:</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>{personName}</span>
+                  {personRating > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.85)', flexShrink: 0 }}>⭐ {personRating.toFixed(1)}</span>}
+                  {personVerified && <VerifiedBadge size="sm" />}
+                </div>
+              )}
+
+              {/* ── Row 4: Stats (owner only, in TaskDetail context) ── */}
+              {extraInfo?.isOwner && (
+                <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                  {[
+                    { val: extraInfo.viewsCount || 0, label: 'צפיות' },
+                    { val: extraInfo.clicksCount || 0, label: 'כניסות' },
+                    { val: extraInfo.applicationCount || 0, label: 'מועמדים' },
+                  ].map(({ val, label }, i) => (
+                    <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.11)', borderRadius: 10, padding: '8px 6px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
+                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: 600 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Row 5: 3-step progress ── */}
+              <div style={{ display: 'flex', alignItems: 'center', position: 'relative', marginBottom: 14, padding: '0 4px' }}>
+                <div style={{ position: 'absolute', top: 15, right: 4, left: 4, height: 2, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
                 <div style={{
-                  position: 'absolute', top: 16, right: 8, height: 3,
+                  position: 'absolute', top: 15, right: 4, height: 2,
                   width: tStepIdx < 0 ? '0%' : tStepIdx === 0 ? '16%' : tStepIdx === 1 ? '50%' : '84%',
-                  background: 'rgba(255,255,255,0.9)', borderRadius: 2,
+                  background: 'rgba(255,255,255,0.85)', borderRadius: 2,
                   transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 }} />
                 {[
-                   { Icon: Navigation, label: t('on_the_way') },
-                   { Icon: MapPin,     label: t('arrived') },
-                   { Icon: CheckCircle,label: t('finished')  },
+                  { Icon: Navigation, label: t('on_the_way') || 'בדרך' },
+                  { Icon: MapPin,     label: t('arrived') || 'הגיע' },
+                  { Icon: CheckCircle, label: t('finished') || 'סיים' },
                 ].map(({ Icon, label }, stepIdx) => {
                   const done   = tStepIdx >= 0 && stepIdx <= tStepIdx;
                   const active = tStepIdx >= 0 && stepIdx === tStepIdx;
                   return (
                     <div key={stepIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
                       <div style={{
-                        width: 32, height: 32, borderRadius: '50%',
-                        background: done ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)',
-                        border: `2px solid ${done ? 'white' : 'rgba(255,255,255,0.35)'}`,
+                        width: 30, height: 30, borderRadius: '50%',
+                        background: done ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.12)',
+                        border: `2px solid ${done ? 'white' : 'rgba(255,255,255,0.28)'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.2)' : 'none',
+                        boxShadow: active ? '0 0 0 4px rgba(255,255,255,0.18)' : 'none',
                         transition: 'all 0.3s',
                       }}>
-                        <Icon size={14} color={done ? '#1a6fd4' : 'rgba(255,255,255,0.6)'} strokeWidth={active ? 2.5 : 1.8} />
+                        <Icon size={13} color={done ? '#1a6fd4' : 'rgba(255,255,255,0.55)'} strokeWidth={active ? 2.5 : 1.8} />
                       </div>
-                      <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.5)', marginTop: 4 }}>{label}</div>
+                      <div style={{ fontSize: 9, fontWeight: active ? 800 : 500, color: done ? 'white' : 'rgba(255,255,255,0.45)', marginTop: 4 }}>{label}</div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* ── Extra info section (only in TaskDetail context) ── */}
-              {extraInfo && (
-                <div onClick={e => e.stopPropagation()} style={{ marginBottom: 10 }}>
-                  {/* Publisher + location + time row */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                    {extraInfo.clientName && (
-                      <div
-                        onClick={e => { e.stopPropagation(); if (extraInfo.clientId) navigate(`/public-profile?id=${extraInfo.clientId}`); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px', cursor: 'pointer' }}
-                      >
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{extraInfo.clientName}</span>
-                        {extraInfo.clientRating > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.9)' }}>⭐ {extraInfo.clientRating.toFixed(1)}</span>}
-                        {extraInfo.clientVerified && <VerifiedBadge size="sm" />}
-                      </div>
-                    )}
-                    {extraInfo.locationName && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '4px 10px' }}>
-                        <MapPin size={10} /> {extraInfo.locationName.split(',')[0]}
-                      </span>
-                    )}
-                    {extraInfo.createdDate && getRelativeTime(extraInfo.createdDate) && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '4px 10px' }}>
-                        <Clock size={10} /> {getRelativeTime(extraInfo.createdDate)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Stats row — owner only */}
-                  {extraInfo.isOwner && (
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                      {[
-                        { icon: Eye, val: extraInfo.viewsCount || 0, label: 'צפיות' },
-                        { icon: MousePointerClick, val: extraInfo.clicksCount || 0, label: 'כניסות' },
-                        { icon: Users, val: extraInfo.applicationCount || 0, label: 'מועמדויות' },
-                      ].map(({ icon: Ic, val, label }, i) => (
-                        <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '7px 8px', textAlign: 'center' }}>
-                          <div style={{ fontSize: 17, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
-                          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Action row */}
+              {/* ── Row 6: Primary action buttons ── */}
               <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
 
-                {/* Owner: confirm completion when worker says done */}
+                {/* Owner: confirm completion */}
                 {tIsOwner && task.worker_status === 'done' && (
                   <button
                     onClick={() => handleOwnerConfirmComplete(task)}
                     disabled={completingTaskId === task.id}
-                    style={{ flex: 2, height: 46, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 2px 12px rgba(5,150,105,0.4)' }}
+                    style={{ flex: 2, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#059669,#047857)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, boxShadow: '0 2px 10px rgba(5,150,105,0.4)' }}
                   >
-                    {completingTaskId === task.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> {t('confirm_done_work')}</>}
+                    {completingTaskId === task.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle size={15} /> {t('confirm_done_work') || 'אשר סיום'}</>}
                   </button>
                 )}
 
-                {/* Quick action (worker only, not done) */}
+                {/* Quick action (worker) */}
                 {tIsWorker && quickAction && (
                   <button
-                    onClick={() => setPendingAction({ task: task, action: { ...quickAction, color: quickAction.color } })}
-                    style={{ flex: 2, height: 46, borderRadius: 14, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}
+                    onClick={() => setPendingAction({ task, action: { ...quickAction } })}
+                    style={{ flex: 2, height: 44, borderRadius: 12, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.18)' }}
                   >
                     {quickAction.nextKey === 'arrived' ? <MapPin size={15} /> : quickAction.nextKey === 'done' ? <CheckCircle size={15} /> : <Navigation size={15} />}
                     {quickAction.label}
                   </button>
                 )}
 
-                {/* Nav button — only when on_the_way */}
+                {/* Nav button */}
                 {showNavBtn && (
                   <button
                     onClick={() => {
-                    const dst = task.lat && task.lng ? `${task.lat},${task.lng}` : encodeURIComponent(task.location_name);
-                    const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
-                    const mapsUrl = task.lat && task.lng ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
-                    const choice = window.confirm(t('navigate_choice') || 'Navigate with Waze?\nClick cancel for Google Maps');
-                    window.open(choice ? wazeUrl : mapsUrl, '_blank');
+                      const dst = task.lat && task.lng ? `${task.lat},${task.lng}` : encodeURIComponent(task.location_name);
+                      const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
+                      const mapsUrl = task.lat && task.lng ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
+                      const choice = window.confirm(t('navigate_choice') || 'Navigate with Waze?\nClick cancel for Google Maps');
+                      window.open(choice ? wazeUrl : mapsUrl, '_blank');
                     }}
-                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
-                    <Navigation size={15} /> {t('navigate')}
-                    </button>
+                    <Navigation size={14} /> {t('navigate') || 'נווט'}
+                  </button>
                 )}
 
-                {/* Chat button — after arrived */}
+                {/* Chat */}
                 {(showChatBtn || tIsOwner) && (
                   <button
                     onClick={() => extraInfo?.onQuickChat ? extraInfo.onQuickChat() : setShowChat(true)}
-                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
-                    <MessageCircle size={15} /> {t('chat')}
+                    <MessageCircle size={14} /> {t('chat') || 'צ׳אט'}
                   </button>
                 )}
 
-                {/* Phone button — mutual reveal after approval */}
-                {(() => {
-                  const workerPhone = tIsWorker && extraInfo?.contactPhone ? extraInfo.contactPhone : null;
-                  const ownerPhone = tIsOwner && extraInfo?.workerUser?.phone ? extraInfo.workerUser.phone : null;
-                  const phone = workerPhone || ownerPhone;
-                  if (!phone) return null;
-                  return (
-                    <a href={`tel:${phone}`} onClick={e => e.stopPropagation()} style={{ textDecoration: 'none', flex: 1 }}>
-                      <button style={{ width: '100%', height: 46, borderRadius: 14, background: 'rgba(34,197,94,0.3)', border: '1.5px solid rgba(34,197,94,0.6)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                        <Phone size={15} /> חייג
-                      </button>
-                    </a>
-                  );
-                })()}
+                {/* Phone */}
+                {phoneNumber && (
+                  <a href={`tel:${phoneNumber}`} onClick={e => e.stopPropagation()} style={{ textDecoration: 'none', flex: 1 }}>
+                    <button style={{ width: '100%', height: 44, borderRadius: 12, background: 'rgba(34,197,94,0.25)', border: '1.5px solid rgba(34,197,94,0.5)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                      <Phone size={14} /> חייג
+                    </button>
+                  </a>
+                )}
 
-                {/* 3-dot menu for owner */}
+                {/* 3-dot menu */}
                 {extraInfo?.isOwner && extraInfo?.onOwnerMenu && (
                   <button
                     onClick={e => { e.stopPropagation(); extraInfo.onOwnerMenu(); }}
-                    style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                   >
-                    <MoreVertical size={17} />
+                    <MoreVertical size={16} />
                   </button>
                 )}
 
-                {/* Details button — only if NOT in TaskDetail context */}
+                {/* Details (HomeFeed only) */}
                 {!extraInfo && (
                   <button
                     onClick={() => navigate(`/task/${task.id}`)}
-                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    {t('details')}
+                    {t('details') || 'פרטים'}
                   </button>
                 )}
               </div>
 
-              {/* Worker extra actions row */}
+              {/* ── Row 7: Worker secondary actions ── */}
               {tIsWorker && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => { setMediaTask(task); setMediaPhotos([...(task.completion_photos || [])]); setMediaVideo(task.completion_video_url || ''); }}
-                    style={{ flex: 1, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
-                    <Camera size={13} /> הוכחת ביצוע {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
+                    <Camera size={12} /> הוכחת ביצוע {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
                   </button>
                   {task.requires_invoice && (
                     <button
                       onClick={() => setInvoiceTask(task)}
-                      style={{ flex: 1, height: 38, borderRadius: 12, background: task.invoice_html ? 'rgba(124,58,237,0.35)' : 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                      style={{ flex: 1, height: 36, borderRadius: 10, background: task.invoice_html ? 'rgba(124,58,237,0.3)' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                     >
-                      <FileText size={13} /> חשבונית {task.invoice_html ? '✓' : ''}
+                      <FileText size={12} /> חשבונית {task.invoice_html ? '✓' : ''}
                     </button>
                   )}
                 </div>
