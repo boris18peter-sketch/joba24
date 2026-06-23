@@ -117,6 +117,15 @@ export default function Layout() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
 
+  // Poll the real is_approved / is_blocked status from the database (JWT is stale after admin changes)
+  const { data: approvalStatus } = useQuery({
+    queryKey: ['approvalStatus', me?.id],
+    queryFn: () => base44.functions.invoke('checkApprovalStatus', {}),
+    enabled: !!me?.id && isAuthenticated,
+    refetchInterval: 15000,
+    staleTime: 0,
+  });
+
   // Show signup gift modal for brand-new users
   const [showGiftModal, setShowGiftModal] = useState(false);
   useEffect(() => {
@@ -333,7 +342,12 @@ export default function Layout() {
     return <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
   }
 
-  const isApprovedUser = me?.is_approved || me?.role === 'admin' || me?.role === 'agent';
+  const isBlocked = approvalStatus?.data?.is_blocked;
+  const dbIsApproved = approvalStatus?.data?.is_approved;
+  // Use DB value if available (freshest); fall back to JWT value while loading
+  const isApprovedUser = isBlocked
+    ? false
+    : (dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin' || me?.role === 'agent';
   if (isAuthenticated && me && !isApprovedUser) {
     return <PreLaunchWaitingPage me={me} />;
   }
