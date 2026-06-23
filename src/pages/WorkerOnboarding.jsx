@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight, ChevronLeft, Check, Loader2, Camera, Briefcase,
-  MapPin, FileText, Phone, Tag, Wrench
+  MapPin, FileText, Phone, Tag
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -155,61 +155,55 @@ export default function WorkerOnboarding() {
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(160deg, #0f2b6b 0%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
-        {/* Logo */}
-        <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, border: '1.5px solid rgba(255,255,255,0.2)' }}>
-          <Wrench size={32} color="white" />
+        {/* Decorative blurred glow circles */}
+        <div style={{ position: 'absolute', top: '-10%', right: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', left: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.3) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
+
+        {/* Brand logo */}
+        <div style={{ width: 80, height: 80, borderRadius: 22, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', position: 'relative', zIndex: 1 }}>
+          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: 0, marginBottom: 12, lineHeight: 1.3 }}>
-          בואו לעבוד עם Joba24
+        <div style={{ fontSize: 15, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 8, position: 'relative', zIndex: 1 }}>
+          Joba24
+        </div>
+
+        <h1 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, marginBottom: 10, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
+          בואו לעבוד איתנו
         </h1>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 32, lineHeight: 1.6, maxWidth: 320 }}>
-          קבלו משימות ליד הבית, תעדו כסף, בנו מוניטין ודירוגים.
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 28, lineHeight: 1.6, maxWidth: 320, position: 'relative', zIndex: 1 }}>
+          קבלו משימות ליד הבית, תרוויחו כסף, בנו מוניטין ודירוגים.
         </p>
 
-        {/* Benefits */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 36, width: '100%', maxWidth: 320 }}>
+        {/* Glassmorphism benefits list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 36, width: '100%', maxWidth: 340, position: 'relative', zIndex: 1, background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderRadius: 18, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden' }}>
           {[
-            { icon: '📍', text: 'משימות ליד הבית' },
+            { icon: '📍', text: 'משימות ליד הבית — בזמן אמת' },
             { icon: '💰', text: 'תשלום מהיר ומאובטח' },
             { icon: '⭐', text: 'בניית מוניטין ודירוגים' },
-          ].map((b, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <span style={{ fontSize: 20 }}>{b.icon}</span>
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'white', textAlign: 'right' }}>{b.text}</span>
+          ].map((b, i, arr) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{b.icon}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.92)', textAlign: 'right', lineHeight: 1.4 }}>{b.text}</span>
             </div>
           ))}
         </div>
 
-        {/* Step 1: Login button */}
-        <div style={{ width: '100%', maxWidth: 320 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'white', color: '#0f2b6b', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>התחברות לאפליקציה</span>
-          </div>
+        {/* Single CTA */}
+        <div style={{ width: '100%', maxWidth: 340, position: 'relative', zIndex: 1 }}>
           <button
             onClick={() => setShowLogin(true)}
-            style={{ width: '100%', padding: '16px 0', borderRadius: 16, background: 'white', color: '#0f2b6b', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', marginBottom: 10 }}
+            style={{ width: '100%', padding: '18px 0', borderRadius: 16, background: 'white', color: '#0f2b6b', fontSize: 18, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
           >
-            התחבר / הרשם 🚀
+            הרשם עכשיו 🚀
           </button>
-
-          {/* Step 2 preview — grayed out */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.5 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', color: 'white', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>הגדרת הפרופיל (פחות מדקה)</span>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+            *הגדרת פרופיל לוקחת פחות מדקה
           </div>
         </div>
-
-        <button
-          onClick={() => navigate('/')}
-          style={{ marginTop: 20, background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-        >
-          חזרה לאפליקציה
-        </button>
       </div>
     );
   }
