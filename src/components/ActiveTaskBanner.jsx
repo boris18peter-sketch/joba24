@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -10,6 +10,22 @@ import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 import InvoiceModal from '@/components/InvoiceModal';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+
+function getRelativeTime(date) {
+  if (!date) return null;
+  const s = String(date);
+  const normalized = s.includes('T') && !s.endsWith('Z') && !s.includes('+') ? s + 'Z' : s;
+  const ms = Date.now() - new Date(normalized).getTime();
+  if (ms < 0) return 'עכשיו';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return 'עכשיו';
+  if (minutes < 60) return `לפני ${minutes} דקות`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `לפני ${hours} שעות`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `לפני ${days} ימים`;
+  return null;
+}
 
 const STATUS_STEPS = {
   on_the_way: { label: 'בדרך',         ownerLabel: 'בדרך אליך',          step: 0 },
@@ -77,7 +93,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
   );
 }
 
-export default function ActiveTaskBanner({ tasks, roleHint }) {
+export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
@@ -278,6 +294,51 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 })}
               </div>
 
+              {/* ── Extra info section (only in TaskDetail context) ── */}
+              {extraInfo && (
+                <div onClick={e => e.stopPropagation()} style={{ marginBottom: 10 }}>
+                  {/* Publisher + location + time row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                    {extraInfo.clientName && (
+                      <div
+                        onClick={e => { e.stopPropagation(); if (extraInfo.clientId) navigate(`/public-profile?id=${extraInfo.clientId}`); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 10px', cursor: 'pointer' }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'white' }}>{extraInfo.clientName}</span>
+                        {extraInfo.clientRating > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.9)' }}>⭐ {extraInfo.clientRating.toFixed(1)}</span>}
+                        {extraInfo.clientVerified && <VerifiedBadge size="sm" />}
+                      </div>
+                    )}
+                    {extraInfo.locationName && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.1)', borderRadius: 20, padding: '4px 10px' }}>
+                        <MapPin size={10} /> {extraInfo.locationName.split(',')[0]}
+                      </span>
+                    )}
+                    {extraInfo.createdDate && getRelativeTime(extraInfo.createdDate) && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: '4px 10px' }}>
+                        <Clock size={10} /> {getRelativeTime(extraInfo.createdDate)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Stats row — owner only */}
+                  {extraInfo.isOwner && (
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                      {[
+                        { icon: Eye, val: extraInfo.viewsCount || 0, label: 'צפיות' },
+                        { icon: MousePointerClick, val: extraInfo.clicksCount || 0, label: 'כניסות' },
+                        { icon: Users, val: extraInfo.applicationCount || 0, label: 'מועמדויות' },
+                      ].map(({ icon: Ic, val, label }, i) => (
+                        <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.13)', borderRadius: 10, padding: '7px 8px', textAlign: 'center' }}>
+                          <div style={{ fontSize: 17, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
+                          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.65)', marginTop: 2, fontWeight: 600 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Action row */}
               <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
 
@@ -322,20 +383,47 @@ export default function ActiveTaskBanner({ tasks, roleHint }) {
                 {/* Chat button — after arrived */}
                 {(showChatBtn || tIsOwner) && (
                   <button
-                    onClick={() => setShowChat(true)}
+                    onClick={() => extraInfo?.onQuickChat ? extraInfo.onQuickChat() : setShowChat(true)}
                     style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                   >
                     <MessageCircle size={15} /> {t('chat')}
-                    </button>
+                  </button>
                 )}
 
-                {/* Details button */}
-                <button
-                  onClick={() => navigate(`/task/${task.id}`)}
-                  style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {t('details')}
-                </button>
+                {/* Phone button — mutual reveal after approval */}
+                {(() => {
+                  const workerPhone = tIsWorker && extraInfo?.contactPhone ? extraInfo.contactPhone : null;
+                  const ownerPhone = tIsOwner && extraInfo?.workerUser?.phone ? extraInfo.workerUser.phone : null;
+                  const phone = workerPhone || ownerPhone;
+                  if (!phone) return null;
+                  return (
+                    <a href={`tel:${phone}`} onClick={e => e.stopPropagation()} style={{ textDecoration: 'none', flex: 1 }}>
+                      <button style={{ width: '100%', height: 46, borderRadius: 14, background: 'rgba(34,197,94,0.3)', border: '1.5px solid rgba(34,197,94,0.6)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                        <Phone size={15} /> חייג
+                      </button>
+                    </a>
+                  );
+                })()}
+
+                {/* 3-dot menu for owner */}
+                {extraInfo?.isOwner && extraInfo?.onOwnerMenu && (
+                  <button
+                    onClick={e => { e.stopPropagation(); extraInfo.onOwnerMenu(); }}
+                    style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                  >
+                    <MoreVertical size={17} />
+                  </button>
+                )}
+
+                {/* Details button — only if NOT in TaskDetail context */}
+                {!extraInfo && (
+                  <button
+                    onClick={() => navigate(`/task/${task.id}`)}
+                    style={{ flex: 1, height: 46, borderRadius: 14, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {t('details')}
+                  </button>
+                )}
               </div>
 
               {/* Worker extra actions row */}

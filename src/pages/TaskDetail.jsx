@@ -649,7 +649,26 @@ export default function TaskDetail() {
       {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache
           (same source as HomeFeed) so status updates are always in sync */}
       {task.status === 'TAKEN' && (isOwner || isWorker) && (
-        <ActiveTaskBannerFromCache taskId={id} isWorker={isWorker} />
+        <ActiveTaskBannerFromCache
+          taskId={id}
+          isWorker={isWorker}
+          extraInfo={{
+            clientName: task.client_name,
+            clientId: task.client_id,
+            clientRating: task.client_rating,
+            clientVerified: task.client_verified,
+            workerUser: workerUser,
+            locationName: task.location_name,
+            createdDate: task.created_date,
+            viewsCount: task.views_count,
+            clicksCount: task.clicks_count,
+            applicationCount,
+            contactPhone: task.contactPhone,
+            isOwner,
+            onOwnerMenu: () => setShowOwnerMenu(v => !v),
+            onQuickChat: () => setShowQuickChat(true),
+          }}
+        />
       )}
 
       <div style={{ padding: '8px 12px 0' }} className="space-y-2">
@@ -696,8 +715,8 @@ export default function TaskDetail() {
 
 
 
-        {/* Main Task Banner */}
-        <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+        {/* Main Task Banner — hidden when task is TAKEN and user is owner/worker (ActiveTaskBanner shown instead) */}
+        <div style={{ background: taskGradient, borderRadius: 22, color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', display: (task.status === 'TAKEN' && (isOwner || isWorker)) ? 'none' : 'block' }}>
           <div style={{ position: 'absolute', bottom: -20, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
 
 
@@ -1205,13 +1224,15 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Contact Phone — mutual reveal after approval */}
+        {/* Contact Phone — mutual reveal after approval; hidden when TAKEN (shown in banner instead) */}
         {(() => {
           // Worker sees client's phone only if their application is approved
           const workerSeesPhone = isApproved && task.contactPhone;
           // Owner sees worker's phone when task is active or completed
           const ownerSeesWorkerPhone = isOwner && ['TAKEN', 'COMPLETED', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'].includes(task.status) && workerUser?.phone;
           if (!workerSeesPhone && !ownerSeesWorkerPhone) return null;
+          // Hide the standalone phone card when TAKEN — phone is already in the ActiveTaskBanner above
+          if (task.status === 'TAKEN' && (isOwner || isWorker)) return null;
           const phone = workerSeesPhone ? task.contactPhone : workerUser?.phone;
           const label = workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד';
           return (
