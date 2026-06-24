@@ -111,8 +111,8 @@ export default function HomeFeed() {
     queryKey: ['myApplicationsFeed', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 100),
     enabled: !!me?.id,
-    staleTime: 5000,
-    refetchOnWindowFocus: true,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: tasks = [], isLoading } = useQuery({

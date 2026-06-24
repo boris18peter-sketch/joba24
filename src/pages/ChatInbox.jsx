@@ -19,14 +19,16 @@ export default function ChatInbox() {
     queryKey: ['chatInboxWorker', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-updated_date', 50),
     enabled: !!me?.id,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: clientTasks = [] } = useQuery({
     queryKey: ['chatInboxClient', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-updated_date', 50),
     enabled: !!me?.id,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Real-time task status sync for inbox

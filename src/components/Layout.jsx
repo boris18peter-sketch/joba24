@@ -122,8 +122,9 @@ export default function Layout() {
     queryKey: ['approvalStatus', me?.id],
     queryFn: () => base44.functions.invoke('checkApprovalStatus', {}),
     enabled: !!me?.id && isAuthenticated,
-    refetchInterval: 15000,
-    staleTime: 0,
+    refetchInterval: 60000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   // Show signup gift modal for brand-new users
