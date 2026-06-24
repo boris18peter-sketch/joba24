@@ -136,6 +136,18 @@ export default function Layout() {
     if (me.worker_credits === null || me.worker_credits === undefined) setShowGiftModal(true);
   }, [me?.id, isAuthenticated]);
 
+  // Send welcome email for brand-new users (covers all registration methods)
+  useEffect(() => {
+    if (!me?.id || !isAuthenticated) return;
+    const emailKey = `joba24_welcome_email_${me.id}`;
+    if (localStorage.getItem(emailKey)) return;
+    localStorage.setItem(emailKey, '1');
+    if (!me.created_date) return;
+    const createdMs = new Date(me.created_date).getTime();
+    if (isNaN(createdMs) || Date.now() - createdMs > 2 * 60 * 1000) return;
+    base44.functions.invoke('sendWelcomeEmail', {}).catch(() => {});
+  }, [me?.id, isAuthenticated]);
+
   // Update last_active_at once per calendar day
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;

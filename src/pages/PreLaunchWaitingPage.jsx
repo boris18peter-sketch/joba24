@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bell, MapPin, Smartphone, CheckCircle2, Clock, Zap, TrendingUp, Shield, Star, DollarSign, ChevronLeft } from 'lucide-react';
+import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { base44 } from '@/api/base44Client';
+import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
+import InstallGuide from '@/components/InstallGuide';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
@@ -12,37 +15,52 @@ function isIOS() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-function isAndroid() {
-  return /android/i.test(navigator.userAgent);
-}
-
 export default function PreLaunchWaitingPage({ me }) {
   const navigate = useNavigate();
   const [isPWA, setIsPWA] = useState(false);
-  const [showInstallGuide, setShowInstallGuide] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [notifPerm, setNotifPerm] = useState('default');
+  const [locPerm, setLocPerm] = useState('default');
 
   useEffect(() => {
     setIsPWA(isInStandaloneMode());
-
-    const handler = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    if (typeof Notification !== 'undefined') {
+      setNotifPerm(Notification.permission);
+    }
   }, []);
 
-  const handleInstallPWA = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') setIsPWA(true);
-      setDeferredPrompt(null);
-    } else {
-      setShowInstallGuide(v => !v);
+  // ── Notification permission — triggers native OS dialog ──
+  const handleEnableNotifications = async () => {
+    const perm = await requestNotificationPermission();
+    setNotifPerm(perm);
+    if (perm === 'granted') {
+      const token = await getFCMToken();
+      if (token) {
+        try {
+          const meData = await base44.auth.me();
+          const existing = meData.fcm_tokens || [];
+          if (!existing.includes(token)) {
+            await base44.auth.updateMe({ fcm_tokens: [...existing, token] });
+          }
+        } catch {}
+      }
     }
   };
+
+  // ── Location permission — triggers native OS dialog ──
+  const handleEnableLocation = () => {
+    if (!navigator.geolocation) {
+      setLocPerm('denied');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      () => setLocPerm('granted'),
+      (err) => setLocPerm(err.code === err.PERMISSION_DENIED ? 'denied' : 'default'),
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  };
+
+  const notifSupported = typeof Notification !== 'undefined';
+  const showNotifInstallHint = isIOS() && !isPWA;
 
   return (
     <div dir="rtl" style={{
@@ -55,7 +73,7 @@ export default function PreLaunchWaitingPage({ me }) {
       <div style={{ position: 'absolute', top: '-8%', right: '-12%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)', filter: 'blur(35px)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '-8%', left: '-12%', width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.3) 0%, transparent 70%)', filter: 'blur(35px)', pointerEvents: 'none' }} />
 
-      {/* Scrollable inner content */}
+      {/* Scrollable content */}
       <div style={{
         flex: 1, overflowY: 'auto', overflowX: 'hidden',
         WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
@@ -64,80 +82,124 @@ export default function PreLaunchWaitingPage({ me }) {
       }}>
 
         {/* Brand + Hero */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18, overflow: 'hidden',
-            margin: '0 auto 16px',
-            border: '2px solid rgba(255,255,255,0.2)',
+            margin: '0 auto 16px', border: '2px solid rgba(255,255,255,0.2)',
             boxShadow: '0 8px 28px rgba(0,0,0,0.3)',
           }}>
             <img src={BRAND_LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.5)', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 8 }}>
             Joba24
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.3 }}>
-            {me?.full_name ? `${me.full_name.split(' ')[0]}, תודה שנרשמת! 🎉` : 'תודה שנרשמת! 🎉'}
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.3 }}>
+            {me?.full_name ? `${me.full_name.split(' ')[0]}, אתה ברשימת ההשקה!` : 'אתה ברשימת ההשקה!'}
           </h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', margin: '8px auto 0', lineHeight: 1.6, maxWidth: 300 }}>
-            הפרופיל שלך ממתין לאישור. בקרוב תקבל <strong style={{ color: '#fbbf24' }}>המון עבודות</strong> באזורך.
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#fbbf24', margin: '10px auto 0', lineHeight: 1.5, maxWidth: 320 }}>
+            הפרופיל שלך נשמר בהצלחה.
           </p>
-        </div>
-
-        {/* Benefits — compact glass card */}
-        <div style={{
-          background: 'rgba(255,255,255,0.06)',
-          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 16, padding: '14px 16px', marginBottom: 20,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <TrendingUp size={14} color="#fbbf24" />
-            <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5, textTransform: 'uppercase' }}>למה כדאי לך להיות מוכן</span>
-          </div>
-          {[
-            { icon: <DollarSign size={14} color="#34d399" />, text: 'הראשונים שמקבלים עבודות — מרוויחים יותר' },
-            { icon: <Star size={14} color="#fbbf24" />, text: 'בניית מוניטין מוקדם = יותר לקוחות חוזרים' },
-            { icon: <Shield size={14} color="#60a5fa" />, text: 'קהילה מאומתת ומהימנה של עובדים' },
-          ].map(({ icon, text }, i, arr) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-              <div style={{ width: 26, height: 26, borderRadius: 8, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
-              <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', fontWeight: 500, lineHeight: 1.4 }}>{text}</span>
-            </div>
-          ))}
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', margin: '8px auto 0', lineHeight: 1.7, maxWidth: 320 }}>
+            ברגע ש-Joba24 תיפתח באזור שלך תקבל התראה מיידית ותוכל להתחיל לקבל עבודות.
+          </p>
         </div>
 
         {/* Readiness header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
           <Zap size={15} color="#fbbf24" />
-          <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>התכונן להשקה</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>התכונן להשקה ב-2 צעדים</span>
         </div>
 
-        {/* PWA install — the only actionable step (browser supports it) */}
+        {/* Step 1: Install to home screen */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>צעד 1</div>
+          <InstallGuide isIOS={isIOS()} isPWA={isPWA} />
+        </div>
+
+        {/* Step 2: Enable notifications — triggers native dialog */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>צעד 2</div>
+          <div style={{
+            background: notifPerm === 'granted' ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.07)',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            border: `1.5px solid ${notifPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.12)'}`,
+            borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+              background: notifPerm === 'granted' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${notifPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.15)'}`,
+            }}>
+              {notifPerm === 'granted'
+                ? <CheckCircle2 size={20} color="#34d399" />
+                : <Bell size={20} color="rgba(255,255,255,0.8)" />}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2 }}>אפשר התראות</div>
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                {notifPerm === 'granted'
+                  ? 'מעולה! תקבל עדכון על כל עבודה חדשה.'
+                  : showNotifInstallHint
+                    ? 'התקן את האפליקציה (צעד 1) ואז אפשר התראות.'
+                    : notifPerm === 'denied'
+                      ? 'הפעל התראות מהגדרות הטלפון → Joba24'
+                      : 'קבל עדכון מיידי על כל עבודה חדשה באזורך.'}
+              </div>
+            </div>
+            {notifPerm === 'granted' ? (
+              <span style={{ fontSize: 18 }}>✅</span>
+            ) : notifSupported && !showNotifInstallHint && notifPerm === 'default' ? (
+              <button
+                onClick={handleEnableNotifications}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, flexShrink: 0,
+                  background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)',
+                  color: '#fbbf24', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                אפשר
+                <ChevronLeft size={12} />
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Location — triggers native dialog */}
         <div style={{
-          background: 'rgba(255,255,255,0.07)',
+          background: locPerm === 'granted' ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.07)',
           backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-          border: `1.5px solid ${isPWA ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.12)'}`,
-          borderRadius: 14, padding: '14px 16px', marginBottom: 10,
+          border: `1.5px solid ${locPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.12)'}`,
+          borderRadius: 14, padding: '14px 16px', marginBottom: 20,
           display: 'flex', alignItems: 'center', gap: 12,
         }}>
           <div style={{
             width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-            background: isPWA ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)',
+            background: locPerm === 'granted' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: `1px solid ${isPWA ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.15)'}`,
+            border: `1px solid ${locPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.15)'}`,
           }}>
-            {isPWA ? <CheckCircle2 size={20} color="#34d399" /> : <Smartphone size={20} color="rgba(255,255,255,0.8)" />}
+            {locPerm === 'granted'
+              ? <CheckCircle2 size={20} color="#34d399" />
+              : <MapPin size={20} color="rgba(255,255,255,0.8)" />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2 }}>שמור במסך הבית</div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2 }}>אפשר גישה למיקום</div>
             <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
-              {isPWA ? 'מעולה! האפליקציה מותקנת.' : 'התקן כדי לקבל התראות push וחוויה מלאה.'}
+              {locPerm === 'granted'
+                ? 'מעולה! נציג לך עבודות רלוונטיות באזורך.'
+                : locPerm === 'denied'
+                  ? 'הפעל מיקום מהגדרות הטלפון → Joba24'
+                  : 'אפשר גישה למיקום כדי לקבל עבודות רלוונטיות באזורך.'}
             </div>
           </div>
-          {!isPWA && (
+          {locPerm === 'granted' ? (
+            <span style={{ fontSize: 18 }}>✅</span>
+          ) : locPerm === 'default' ? (
             <button
-              onClick={handleInstallPWA}
+              onClick={handleEnableLocation}
               style={{
                 padding: '8px 14px', borderRadius: 10, flexShrink: 0,
                 background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)',
@@ -145,68 +207,10 @@ export default function PreLaunchWaitingPage({ me }) {
                 display: 'inline-flex', alignItems: 'center', gap: 5,
               }}
             >
-              {showInstallGuide ? 'הסתר' : (deferredPrompt ? 'התקן' : 'הוראות')}
-              {!showInstallGuide && <ChevronLeft size={12} />}
+              אפשר
+              <ChevronLeft size={12} />
             </button>
-          )}
-        </div>
-
-        {/* Install instructions — collapsible */}
-        {!isPWA && showInstallGuide && (
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 12, padding: '12px 14px', marginBottom: 10,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>
-              {isIOS() ? 'הוסף למסך הבית (iPhone):' : isAndroid() ? 'הוסף למסך הבית (Android):' : 'הוסף למסך הבית:'}
-            </div>
-            {[
-              isIOS() ? 'לחץ על כפתור השיתוף ⬆️' : 'לחץ על התפריט ⋮ בדפדפן',
-              isIOS() ? 'בחר "Add to Home Screen" 📱' : 'בחר "Add to Home screen" 📲',
-              'לחץ "Add" ✅',
-            ].map((text, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fbbf24', flexShrink: 0 }}>{i + 1}</div>
-                <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.65)' }}>{text}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Notifications — informational only (not clickable) */}
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 12, padding: '12px 14px', marginBottom: 8,
-          display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bell size={16} color="rgba(255,255,255,0.7)" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 1 }}>הפעלת התראות</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-              לאחר ההשקה, אפשר התראות מהגדרות הטלפון כדי לקבל עדכון על כל עבודה חדשה.
-            </div>
-          </div>
-        </div>
-
-        {/* Location — informational only (not clickable) */}
-        <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 12, padding: '12px 14px', marginBottom: 20,
-          display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <MapPin size={16} color="rgba(255,255,255,0.7)" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 1 }}>גישה למיקום</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-              אפשר גישה למיקום מהגדרות הטלפון כדי שנציג לך עבודות רלוונטיות באזורך.
-            </div>
-          </div>
+          ) : null}
         </div>
 
         {/* Waiting status badge */}
