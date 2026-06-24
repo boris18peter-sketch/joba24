@@ -27,6 +27,7 @@ const Landing = lazy(() => import('@/pages/Landing'));
 const CreateTask = lazy(() => import('@/pages/CreateTask'));
 const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 const Chat = lazy(() => import('@/pages/Chat'));
+const SupportChat = lazy(() => import('@/pages/SupportChat'));
 const Wallet = lazy(() => import('@/pages/Wallet'));
 const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
 const WorkerProfile = lazy(() => import('@/pages/WorkerProfile'));
@@ -162,6 +163,7 @@ const AuthenticatedApp = () => {
             </Route>
             <Route element={<ProtectedRoute />}>
               <Route path="/chat/:taskId" element={<Chat />} />
+              <Route path="/support" element={<SupportChat />} />
             </Route>
             <Route path="/presentation" element={<Presentation />} />
             <Route path="/join" element={<WorkerOnboarding />} />

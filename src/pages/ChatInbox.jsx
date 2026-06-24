@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2 } from 'lucide-react';
-import BackButton from '@/components/BackButton';
+import { MessageCircle, Loader2, LifeBuoy } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { formatDistanceToNow } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 
+const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
+
 export default function ChatInbox() {
   const { t, isRTL } = useLanguage();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-
   const queryClient = useQueryClient();
 
-  // Get all tasks where I'm involved (as worker or client) — all statuses with messages
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['chatInboxWorker', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-updated_date', 50),
@@ -31,16 +30,24 @@ export default function ChatInbox() {
     refetchOnWindowFocus: false,
   });
 
+  const { data: supportMsgs = [] } = useQuery({
+    queryKey: ['supportMsgs', me?.id],
+    queryFn: () => base44.entities.SupportMessage.filter({ user_id: me.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
   // Real-time task status sync for inbox
   useEffect(() => {
     if (!me?.id) return;
     const unsub = base44.entities.Task.subscribe((event) => {
-      const t = event.data || {};
+      const taskData = event.data || {};
       const updateInbox = (key, matchFn) => {
         queryClient.setQueryData([key, me.id], (old = []) => {
           if (event.type === 'update') {
-            if (matchFn(t) && !old.find(x => x.id === event.id)) return [t, ...old];
-            return old.map(x => x.id === event.id ? { ...x, ...t } : x);
+            if (matchFn(taskData) && !old.find(x => x.id === event.id)) return [taskData, ...old];
+            return old.map(x => x.id === event.id ? { ...x, ...taskData } : x);
           }
           if (event.type === 'delete') return old.filter(x => x.id !== event.id);
           return old;
@@ -52,72 +59,84 @@ export default function ChatInbox() {
     return unsub;
   }, [me?.id, queryClient]);
 
-  // Merge and deduplicate — filter out tasks where I'm both client and worker (edge case)
+  // Merge and deduplicate
   const allTasks = useMemo(() => {
     const map = {};
     [...workerTasks, ...clientTasks].forEach(t => { map[t.id] = t; });
     return Object.values(map).sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
   }, [workerTasks, clientTasks]);
 
-  // Fetch last message per task — only show tasks that have messages
+  // Visible = tasks with active engagement (worker assigned)
+  const visibleTasks = useMemo(() => {
+    return allTasks.filter(t => ACTIVE_STATUSES.includes(t.status));
+  }, [allTasks]);
+
+  // Stable dependency string — only re-fetch when task set changes
+  const taskIdString = useMemo(() => visibleTasks.map(t => t.id).sort().join(','), [visibleTasks]);
+
+  // Fetch last messages + unread counts
   const [lastMessages, setLastMessages] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
-  const [tasksWithMessages, setTasksWithMessages] = useState(new Set());
-
-  // Only tasks with actual messages
-  const visibleTasks = useMemo(() => {
-    if (tasksWithMessages.size === 0 && allTasks.length > 0) return []; // still loading
-    return allTasks.filter(t => tasksWithMessages.has(t.id));
-  }, [allTasks, tasksWithMessages]);
-
-  const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (!allTasks.length || !me?.id) return;
-    // Only run once on initial load; real-time subscription handles updates
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-
+    if (!taskIdString || !me?.id) return;
     let cancelled = false;
+
     const run = async () => {
+      const taskIds = taskIdString.split(',').filter(Boolean);
+      if (!taskIds.length) {
+        setLastMessages({});
+        setUnreadCounts({});
+        return;
+      }
+
       const newLastMessages = {};
       const newUnreadCounts = {};
-      const withMsgs = new Set();
-      const tasks = allTasks.slice(0, 20);
-      const taskIds = tasks.map(t => t.id);
 
-      // Single query for all messages across all conversations (avoids N+1)
-      const allMsgs = await base44.entities.ChatMessage.filter(
-        { task_id: { $in: taskIds } },
-        '-created_date',
-        200
-      ).catch(() => []);
+      try {
+        const allMsgs = await base44.entities.ChatMessage.filter(
+          { task_id: { $in: taskIds } },
+          '-created_date',
+          500
+        );
 
-      // Group by task_id — messages are already sorted by -created_date
-      const byTask = {};
-      allMsgs.forEach(m => {
-        if (!byTask[m.task_id]) byTask[m.task_id] = [];
-        byTask[m.task_id].push(m);
-      });
+        const byTask = {};
+        allMsgs.forEach(m => {
+          if (!byTask[m.task_id]) byTask[m.task_id] = [];
+          byTask[m.task_id].push(m);
+        });
 
-      Object.entries(byTask).forEach(([taskId, msgs]) => {
-        withMsgs.add(taskId);
-        newLastMessages[taskId] = msgs[0]; // first = latest (sorted -created_date)
-        newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-      });
+        Object.entries(byTask).forEach(([taskId, msgs]) => {
+          newLastMessages[taskId] = msgs[0];
+          newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+        });
+      } catch {
+        // Fallback: individual queries per task
+        const results = await Promise.all(
+          taskIds.slice(0, 20).map(id =>
+            base44.entities.ChatMessage.filter({ task_id: id }, '-created_date', 50)
+              .catch(() => [])
+          )
+        );
+        results.forEach((msgs, i) => {
+          if (msgs.length > 0) {
+            const taskId = taskIds[i];
+            newLastMessages[taskId] = msgs[0];
+            newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+          }
+        });
+      }
 
       if (!cancelled) {
         setLastMessages(newLastMessages);
         setUnreadCounts(newUnreadCounts);
-        setTasksWithMessages(withMsgs);
       }
     };
     run();
     return () => { cancelled = true; };
-  // dependency: allTasks.length (numeric) ensures re-run when tasks load after me
-  }, [allTasks.length, me?.id]);
+  }, [taskIdString, me?.id]);
 
-  // Real-time updates
+  // Real-time message updates
   useEffect(() => {
     if (!me?.id) return;
     const unsub = base44.entities.ChatMessage.subscribe(event => {
@@ -132,89 +151,149 @@ export default function ChatInbox() {
     return unsub;
   }, [me?.id]);
 
+  // Support chat preview
+  const supportUnread = useMemo(() =>
+    supportMsgs.filter(m => m.sender_role === 'admin' && !m.read).length,
+  [supportMsgs]);
+  const lastSupportMsg = supportMsgs[0];
+
   const isLoading = !me;
+  const totalChats = visibleTasks.length + 1; // +1 for support
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      <PageHeader title={t('messages')} right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{visibleTasks.length} {t('chats')}</span>} />
+      <PageHeader title={t('messages')} right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{totalChats} {t('chats')}</span>} />
 
       <div style={{ padding: '16px 16px 100px' }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} className="animate-spin text-primary mx-auto" /></div>
-        ) : visibleTasks.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-            <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 16 }}>{t('no_active_conversations')}</p>
-            <p style={{ color: '#888', fontSize: 13, marginTop: 6 }}>{t('conversations_appear')}</p>
-          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {visibleTasks.map(task => {
-              const isMyTask = task.client_id === me?.id;
-              const otherName = isMyTask ? (task.worker_name || t('worker')) : (task.client_name || t('client'));
-              const lastMsg = lastMessages[task.id];
-              const unread = unreadCounts[task.id] || 0;
-
-              return (
-                <Link key={task.id} to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}
-                  onClick={() => setUnreadCounts(prev => ({ ...prev, [task.id]: 0 }))}
-                >
-                  <div style={{
-                    background: 'var(--card-bg)',
-                    borderRadius: 18,
-                    padding: '14px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    border: unread > 0 ? '1.5px solid #bfdbfe' : `1px solid var(--border-1)`,
-                    boxShadow: unread > 0 ? '0 2px 12px rgba(26,111,212,0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
-                    marginBottom: 8,
-                  }}>
-                    {/* Avatar */}
+            {/* ── Support chat — always at top ── */}
+            <Link to="/support" style={{ textDecoration: 'none' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                borderRadius: 18,
+                padding: '14px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                border: '1.5px solid #bfdbfe',
+                boxShadow: '0 2px 12px rgba(26,111,212,0.1)',
+                marginBottom: 8,
+              }}>
+                <div style={{
+                  width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+                  background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative',
+                }}>
+                  <LifeBuoy size={22} color="white" />
+                  {supportUnread > 0 && (
                     <div style={{
-                      width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-                      background: isMyTask ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                      position: 'absolute', top: -2, right: -2,
+                      width: 18, height: 18, borderRadius: '50%',
+                      background: '#dc2626', border: '2px solid white',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 18, color: 'white', fontWeight: 900,
-                      position: 'relative',
-                    }}>
-                      {otherName.charAt(0)}
-                      {unread > 0 && (
-                        <div style={{
-                          position: 'absolute', top: -2, right: -2,
-                          width: 18, height: 18, borderRadius: '50%',
-                          background: '#dc2626', border: '2px solid white',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 9, fontWeight: 900, color: 'white',
-                        }}>{unread > 9 ? '9+' : unread}</div>
-                      )}
-                    </div>
+                      fontSize: 9, fontWeight: 900, color: 'white',
+                    }}>{supportUnread > 9 ? '9+' : supportUnread}</div>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                    <span style={{ fontWeight: 900, color: 'var(--text-1)', fontSize: 14 }}>תמיכת Joba24</span>
+                    {lastSupportMsg?.created_date && (
+                      <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
+                        {formatDistanceToNow(new Date(lastSupportMsg.created_date), { addSuffix: true })}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {lastSupportMsg
+                      ? (lastSupportMsg.sender_role === 'admin' ? '' : '← ') + lastSupportMsg.content
+                      : 'צוות התמיכה של Joba24 זמין עבורך 🎧'
+                    }
+                  </div>
+                </div>
+                <MessageCircle size={16} color="#1a6fd4" style={{ flexShrink: 0 }} />
+              </div>
+            </Link>
 
-                    {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                        <span style={{ fontWeight: unread > 0 ? 900 : 700, color: 'var(--text-1)', fontSize: 14 }}>{otherName}</span>
-                        {lastMsg?.created_date && (
-                          <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
-                            {formatDistanceToNow(new Date(lastMsg.created_date), { addSuffix: true })}
-                          </span>
+            {/* ── Task chats ── */}
+            {visibleTasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
+                <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 15 }}>אין צ'אטים פעילים כרגע</p>
+                <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>צ'אטים עם לקוחות/עובדים יופיעו כאן כשעבודה תתחיל</p>
+              </div>
+            ) : (
+              visibleTasks.map(task => {
+                const isMyTask = task.client_id === me?.id;
+                const otherName = isMyTask ? (task.worker_name || t('worker')) : (task.client_name || t('client'));
+                const lastMsg = lastMessages[task.id];
+                const unread = unreadCounts[task.id] || 0;
+
+                return (
+                  <Link key={task.id} to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}
+                    onClick={() => setUnreadCounts(prev => ({ ...prev, [task.id]: 0 }))}
+                  >
+                    <div style={{
+                      background: 'var(--card-bg)',
+                      borderRadius: 18,
+                      padding: '14px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 14,
+                      border: unread > 0 ? '1.5px solid #bfdbfe' : `1px solid var(--border-1)`,
+                      boxShadow: unread > 0 ? '0 2px 12px rgba(26,111,212,0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
+                      marginBottom: 8,
+                    }}>
+                      {/* Avatar */}
+                      <div style={{
+                        width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+                        background: isMyTask ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 18, color: 'white', fontWeight: 900,
+                        position: 'relative',
+                      }}>
+                        {otherName.charAt(0)}
+                        {unread > 0 && (
+                          <div style={{
+                            position: 'absolute', top: -2, right: -2,
+                            width: 18, height: 18, borderRadius: '50%',
+                            background: '#dc2626', border: '2px solid white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 9, fontWeight: 900, color: 'white',
+                          }}>{unread > 9 ? '9+' : unread}</div>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span style={{ color: 'var(--text-3)', marginLeft: 4 }}>{task.title}</span>
-                      </div>
-                      {lastMsg && (
-                        <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                          {lastMsg.sender_id === me?.id ? '← ' : ''}{lastMsg.content}
-                        </div>
-                      )}
-                    </div>
 
-                    <MessageCircle size={16} color={unread > 0 ? '#1a6fd4' : '#ccc'} style={{ flexShrink: 0 }} />
-                  </div>
-                </Link>
-              );
-            })}
+                      {/* Content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                          <span style={{ fontWeight: unread > 0 ? 900 : 700, color: 'var(--text-1)', fontSize: 14 }}>{otherName}</span>
+                          {lastMsg?.created_date && (
+                            <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
+                              {formatDistanceToNow(new Date(lastMsg.created_date), { addSuffix: true })}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {task.title}
+                        </div>
+                        {lastMsg && (
+                          <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                            {lastMsg.sender_id === me?.id ? '← ' : ''}{lastMsg.content}
+                          </div>
+                        )}
+                      </div>
+
+                      <MessageCircle size={16} color={unread > 0 ? '#1a6fd4' : '#ccc'} style={{ flexShrink: 0 }} />
+                    </div>
+                  </Link>
+                );
+              })
+            )}
           </div>
         )}
       </div>
