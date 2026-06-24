@@ -44,10 +44,23 @@ Deno.serve(async (req) => {
       initializeApp({ credential: cert(serviceAccount) });
     }
 
-    // Get tokens for target users
+    // Get tokens for target users — ONLY approved users (or admins/agents) receive push.
+    // Pre-launch / unapproved users who enabled notifications will NOT receive them until approved.
     const users = await base44.asServiceRole.entities.User.filter({
-      id: { $in: user_ids }
+      id: { $in: user_ids },
+      is_blocked: { $ne: true },
+      $or: [
+        { is_approved: true },
+        { role: 'admin' },
+        { role: 'agent' }
+      ]
     });
+
+    const requestedCount = user_ids.length;
+    const approvedCount = users.length;
+    if (approvedCount < requestedCount) {
+      console.log(`[Push] Filtered out ${requestedCount - approvedCount} unapproved/blocked users (pre-launch gate)`);
+    }
 
     const allTokens = [];
     for (const u of users) {
@@ -57,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     if (!allTokens.length) {
-      return Response.json({ sent: 0, reason: 'No device tokens found' });
+      return Response.json({ sent: 0, reason: 'No device tokens found (or all target users are unapproved)' });
     }
 
     // Deduplicate
