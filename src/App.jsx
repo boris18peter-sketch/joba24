@@ -43,6 +43,7 @@ const PublicProfile = lazy(() => import('@/pages/PublicProfile'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
+const QADashboard = lazy(() => import('@/pages/QADashboard'));
 const Terms = lazy(() => import('@/pages/Terms'));
 
 function ScrollToTop() {
@@ -162,6 +163,7 @@ const AuthenticatedApp = () => {
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/agent-dashboard" element={<AgentDashboard />} />
+                <Route path="/qa" element={<QADashboard />} />
               </Route>
             </Route>
             <Route element={<ProtectedRoute />}>
