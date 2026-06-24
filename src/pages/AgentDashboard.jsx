@@ -42,6 +42,8 @@ export default function AgentDashboard() {
   const workerTasks = referralData?.data?.workerTasks || [];
   const clientTasks = referralData?.data?.clientTasks || [];
   const workerIds = allUsers.map(u => u.id);
+  const referralClicks = referralData?.data?.referral_clicks || 0;
+  const totalCreditsUsed = referralData?.data?.totalCreditsUsed || 0;
 
   if (!me?.agent_code) {
     return (
@@ -59,7 +61,6 @@ export default function AgentDashboard() {
   const allTasks = Object.values(allTasksMap);
 
   const totalTurnover = workerTasks.reduce((sum, t) => sum + (t.price || 0), 0);
-  const commission = totalTurnover * ((me.commission_rate || 0) / 100);
   const referralLink = `${window.location.origin}/?ref=${me.agent_code}`;
   const workerOnboardingLink = `${window.location.origin}/join?ref=${me.agent_code}`;
 
@@ -81,9 +82,9 @@ export default function AgentDashboard() {
 
   const stats = [
     { label: 'עובדים שגויסו', value: allUsers.length, color: '#7c3aed' },
-    { label: 'פעילים (7 ימים)', value: activeUsersCount, color: '#059669' },
-    { label: 'משימות הושלמו', value: allTasks.length, color: '#1a6fd4' },
-    { label: `עמלה (${me.commission_rate || 0}%)`, value: `₪${Math.round(commission).toLocaleString()}`, color: '#d97706' },
+    { label: 'לחיצות על לינק', value: referralClicks, color: '#d97706' },
+    { label: 'סך מחירי משימות', value: `₪${Math.round(totalTurnover).toLocaleString()}`, color: '#059669' },
+    { label: 'קרדיטים שהשתמשו', value: totalCreditsUsed, color: '#1a6fd4' },
   ];
 
   const formatLastActive = (dateStr) => {
@@ -278,7 +279,6 @@ export default function AgentDashboard() {
                   </div>
                   <div style={{ textAlign: 'left', flexShrink: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 900, color: '#059669' }}>₪{task.price}</div>
-                    {isWorkerReferred && <div style={{ fontSize: 10, color: '#94a3b8' }}>עמלה: ₪{((task.price || 0) * (me.commission_rate || 0) / 100).toFixed(0)}</div>}
                   </div>
                 </div>
               </div>

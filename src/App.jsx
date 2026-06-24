@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import { useEffect, useRef } from 'react';
 import React, { lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { base44 } from '@/api/base44Client';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
@@ -58,6 +59,12 @@ function CaptureRefCode() {
     const ref = params.get('ref');
     if (ref) {
       localStorage.setItem('joba24_ref_code', ref);
+      // Track the click (once per session per ref code)
+      const clickKey = `joba24_ref_click_${ref}`;
+      if (!sessionStorage.getItem(clickKey)) {
+        sessionStorage.setItem(clickKey, '1');
+        base44.functions.invoke('trackReferralClick', { agent_code: ref }).catch(() => {});
+      }
     }
   }, []);
   return null;

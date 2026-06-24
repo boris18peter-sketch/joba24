@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 
@@ -286,8 +286,58 @@ export default function AdminDashboard() {
     staleTime: 60000,
   });
 
+  const { data: supportMessages = [], refetch: refetchSupport } = useQuery({
+    queryKey: ['adminSupport'],
+    queryFn: () => base44.entities.SupportMessage.list('-created_date', 500),
+    enabled: me?.role === 'admin' && tab === 'support',
+    staleTime: 15000,
+    refetchOnWindowFocus: false,
+  });
+
+  const [selectedSupportUser, setSelectedSupportUser] = useState(null);
+  const [supportReply, setSupportReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
   const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url);
   const fakeVerified = allUsers.filter(u => u.is_verified && !u.id_number);
+
+  // Group support messages by user_id
+  const supportConversations = useMemo(() => {
+    const map = {};
+    supportMessages.forEach(m => {
+      if (!map[m.user_id]) {
+        map[m.user_id] = { user_id: m.user_id, user_name: m.user_name, messages: [], unread: 0 };
+      }
+      map[m.user_id].messages.push(m);
+      if (m.sender_role === 'user' && !m.read) map[m.user_id].unread++;
+    });
+    // Sort conversations by latest message
+    return Object.values(map).sort((a, b) => {
+      const aLast = a.messages[a.messages.length - 1]?.created_date || '';
+      const bLast = b.messages[b.messages.length - 1]?.created_date || '';
+      return bLast.localeCompare(aLast);
+    });
+  }, [supportMessages]);
+
+  const unreadSupportCount = supportConversations.reduce((sum, c) => sum + c.unread, 0);
+
+  const selectedConversation = supportConversations.find(c => c.user_id === selectedSupportUser);
+
+  const handleSendReply = async () => {
+    if (!supportReply.trim() || !selectedSupportUser) return;
+    setSendingReply(true);
+    try {
+      await base44.entities.SupportMessage.create({
+        user_id: selectedSupportUser,
+        user_name: selectedConversation?.user_name || '',
+        sender_role: 'admin',
+        content: supportReply.trim(),
+      });
+      setSupportReply('');
+      refetchSupport();
+    } catch {}
+    setSendingReply(false);
+  };
 
   // Guard: admin only — AFTER all hooks
   if (me && me.role !== 'admin') {
@@ -394,6 +444,10 @@ export default function AdminDashboard() {
         <TabButton active={tab === 'kyc'} onClick={() => setTab('kyc')}>
           <Shield size={13} style={{ display: 'inline', marginLeft: 4 }} /> KYC
           {kycUsers.length > 0 && <span style={{ marginRight: 4, background: '#7c3aed', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{kycUsers.length}</span>}
+        </TabButton>
+        <TabButton active={tab === 'support'} onClick={() => setTab('support')}>
+          <Headphones size={13} style={{ display: 'inline', marginLeft: 4 }} /> תמיכה
+          {unreadSupportCount > 0 && <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{unreadSupportCount}</span>}
         </TabButton>
       </div>
 
@@ -539,6 +593,98 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {/* SUPPORT TAB */}
+        {tab === 'support' && (
+          <>
+            {supportConversations.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🎧</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f2b6b' }}>אין הודעות תמיכה</div>
+              </div>
+            ) : !selectedSupportUser ? (
+              supportConversations.map(conv => {
+                const lastMsg = conv.messages[conv.messages.length - 1];
+                return (
+                  <div key={conv.user_id} onClick={() => setSelectedSupportUser(conv.user_id)}
+                    style={{ background: 'var(--surface-2)', borderRadius: 14, border: `1px solid ${conv.unread > 0 ? '#bfdbfe' : 'var(--border-1)'}`, padding: '12px 16px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                      {conv.user_name?.[0] || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>{conv.user_name || 'משתמש'}</span>
+                        {conv.unread > 0 && <span style={{ background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 10 }}>{conv.unread}</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+                        {lastMsg?.sender_role === 'admin' ? 'אתה: ' : ''}{lastMsg?.content}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#cbd5e1', flexShrink: 0 }}>
+                      {lastMsg?.created_date ? format(new Date(lastMsg.created_date), 'dd/MM HH:mm') : ''}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div>
+                {/* Back button */}
+                <button onClick={() => setSelectedSupportUser(null)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: '#1a6fd4', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 12, padding: 0 }}>
+                  ← חזרה לרשימה
+                </button>
+
+                {/* Conversation header */}
+                <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 16px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14 }}>
+                    {selectedConversation?.user_name?.[0] || '?'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14 }}>{selectedConversation?.user_name || 'משתמש'}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{selectedConversation?.messages.length} הודעות</div>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                  {selectedConversation?.messages.map(msg => (
+                    <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender_role === 'admin' ? 'flex-start' : 'flex-end' }}>
+                      <div style={{
+                        maxWidth: '80%', padding: '8px 12px', borderRadius: msg.sender_role === 'admin' ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
+                        background: msg.sender_role === 'admin' ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)',
+                        color: msg.sender_role === 'admin' ? 'white' : 'var(--text-1)',
+                        fontSize: 13, lineHeight: 1.5, wordBreak: 'break-word',
+                      }}>
+                        {msg.content}
+                        <div style={{ fontSize: 9, marginTop: 2, opacity: 0.6 }}>{msg.created_date ? format(new Date(msg.created_date), 'HH:mm') : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reply input */}
+                <div style={{ display: 'flex', gap: 8, position: 'sticky', bottom: 0, background: 'var(--surface-1)', padding: '8px 0' }}>
+                  <input
+                    type="text"
+                    value={supportReply}
+                    onChange={e => setSupportReply(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSendReply(); }}
+                    placeholder="כתוב תשובה..."
+                    dir="rtl"
+                    style={{ flex: 1, height: 42, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', color: 'var(--text-1)', padding: '0 14px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    onClick={handleSendReply}
+                    disabled={!supportReply.trim() || sendingReply}
+                    style={{ width: 42, height: 42, borderRadius: 12, background: supportReply.trim() ? '#1a6fd4' : 'var(--surface-3)', border: 'none', cursor: supportReply.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                  >
+                    {sendingReply ? <Loader2 size={18} className="animate-spin" color="white" /> : <Send size={18} color={supportReply.trim() ? 'white' : 'var(--text-3)'} />}
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -9,15 +9,17 @@ import {
   MapPin, FileText, Phone, Tag
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { PROFESSIONS } from '@/lib/professions';
+import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
 
 const STEPS = [
-  { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'לדוגמה: אינסטלטור, חשמלאי, מנקה...', type: 'text', placeholder: 'לדוגמה: אינסטלטור' },
+  { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'בחר מהרשימה — הפרופיל שלך יותאם בהתאם', type: 'profession' },
   { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי משימות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
-  { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'הפרד בפסיק', type: 'text', placeholder: 'תל אביב, רמת גן, גבעתיים' },
+  { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'בחר ערים מהרשימה', type: 'cities' },
   { key: 'bio', icon: FileText, title: 'ספר קצת על עצמך', subtitle: 'ניסיון, התמחות, זמינות...', type: 'textarea', placeholder: 'בעל 10 שנות ניסיון באינסטלציה, מתמחה בתיקון נזילות והתקנת ברזים...' },
   { key: 'phone', icon: Phone, title: 'מספר טלפון', subtitle: 'ליצירת קשר עם לקוחות', type: 'phone', placeholder: '050-1234567' },
   { key: 'profile_photo', icon: Camera, title: 'תמונת פרופיל', subtitle: 'אופציונלי — אבל מומלץ!', type: 'photo' },
@@ -41,6 +43,9 @@ export default function WorkerOnboarding() {
     profile_photo: '',
   });
   const photoInputRef = useRef(null);
+  const [showProfessionOther, setShowProfessionOther] = useState(false);
+  const [showCityOther, setShowCityOther] = useState(false);
+  const [customCity, setCustomCity] = useState('');
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -61,6 +66,10 @@ export default function WorkerOnboarding() {
         phone: me.phone || '',
         profile_photo: me.profile_photo || '',
       });
+      // If existing profession is not in the list, show "Other" input
+      if (me.profession && !PROFESSIONS.includes(me.profession)) {
+        setShowProfessionOther(true);
+      }
     }
   }, [me]);
 
@@ -81,11 +90,7 @@ export default function WorkerOnboarding() {
       setSaving(true);
       try {
         const updateData = {};
-        if (stepKey === 'preferred_cities') {
-          updateData.preferred_cities = (data.preferred_cities || '').split(',').map(c => c.trim()).filter(Boolean);
-        } else {
-          updateData[stepKey] = data[stepKey];
-        }
+        updateData[stepKey] = data[stepKey];
         await base44.auth.updateMe(updateData);
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
@@ -141,6 +146,26 @@ export default function WorkerOnboarding() {
     });
   };
 
+  const toggleCity = (city) => {
+    setData(prev => {
+      const cities = prev.preferred_cities || [];
+      return {
+        ...prev,
+        preferred_cities: cities.includes(city) ? cities.filter(c => c !== city) : [...cities, city],
+      };
+    });
+  };
+
+  const addCustomCity = () => {
+    if (!customCity.trim()) return;
+    setData(prev => {
+      const cities = prev.preferred_cities || [];
+      if (cities.includes(customCity.trim())) return prev;
+      return { ...prev, preferred_cities: [...cities, customCity.trim()] };
+    });
+    setCustomCity('');
+  };
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -166,7 +191,7 @@ export default function WorkerOnboarding() {
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
         {/* Decorative blurred glow circles */}
@@ -174,33 +199,33 @@ export default function WorkerOnboarding() {
         <div style={{ position: 'absolute', bottom: '-10%', left: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.3) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
 
         {/* Brand logo */}
-        <div style={{ width: 80, height: 80, borderRadius: 22, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', position: 'relative', zIndex: 1 }}>
+        <div style={{ width: 88, height: 88, borderRadius: 24, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', position: 'relative', zIndex: 1 }}>
           <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
-        <div style={{ fontSize: 15, fontWeight: 900, color: 'rgba(255,255,255,0.6)', letterSpacing: 4, textTransform: 'uppercase', marginBottom: 8, position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: 5, textTransform: 'uppercase', marginBottom: 12, position: 'relative', zIndex: 1 }}>
           Joba24
         </div>
 
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: 0, marginBottom: 12, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 900, color: 'white', margin: 0, marginBottom: 16, lineHeight: 1.2, position: 'relative', zIndex: 1 }}>
           רוצים יותר עבודות?
         </h1>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 8, lineHeight: 1.65, maxWidth: 340, position: 'relative', zIndex: 1 }}>
+        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380, position: 'relative', zIndex: 1 }}>
           הצטרפו ל־Joba24 והיו מוכנים לקבל גישה לאלפי משימות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
         </p>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', margin: 0, marginBottom: 28, lineHeight: 1.65, maxWidth: 340, position: 'relative', zIndex: 1, fontWeight: 700 }}>
+        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 36, lineHeight: 1.6, maxWidth: 380, position: 'relative', zIndex: 1, fontWeight: 700 }}>
           זה הזמן להירשם ולהכין את הפרופיל שלכם.
         </p>
 
         {/* Single CTA */}
-        <div style={{ width: '100%', maxWidth: 340, position: 'relative', zIndex: 1 }}>
+        <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
           <button
             onClick={() => setShowLogin(true)}
-            style={{ width: '100%', padding: '18px 0', borderRadius: 16, background: 'white', color: '#0f2b6b', fontSize: 18, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
+            style={{ width: '100%', padding: '20px 0', borderRadius: 18, background: 'white', color: '#0f2b6b', fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
           >
             הרשם עכשיו 🚀
           </button>
-          <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
+          <div style={{ marginTop: 14, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
             *הגדרת פרופיל לוקחת פחות מדקה
           </div>
         </div>
@@ -316,6 +341,12 @@ export default function WorkerOnboarding() {
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_categories || []).length} נבחרו</span>
                 </div>
               )}
+              {/* Selected count badge for cities */}
+              {currentStep.type === 'cities' && (data.preferred_cities || []).length > 0 && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_cities || []).length} נבחרו</span>
+                </div>
+              )}
             </div>
 
             {/* Scrollable input area */}
@@ -353,6 +384,123 @@ export default function WorkerOnboarding() {
                   dir="ltr"
                   style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', textAlign: 'right' }}
                 />
+              )}
+
+              {currentStep.type === 'profession' && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {PROFESSIONS.map(prof => {
+                    const isOther = prof === 'אחר';
+                    const isSelected = isOther ? showProfessionOther : data.profession === prof;
+                    return (
+                      <button
+                        key={prof}
+                        onClick={() => {
+                          if (isOther) {
+                            setShowProfessionOther(true);
+                            setData(prev => ({ ...prev, profession: '' }));
+                          } else {
+                            setShowProfessionOther(false);
+                            setData(prev => ({ ...prev, profession: prof }));
+                          }
+                        }}
+                        style={{
+                          padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
+                          background: isSelected ? '#1a6fd4' : 'var(--surface-2)',
+                          color: isSelected ? 'white' : 'var(--text-2)',
+                          border: `1.5px solid ${isSelected ? '#1a6fd4' : 'var(--border-1)'}`,
+                          boxShadow: isSelected ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
+                          transition: 'all 0.15s',
+                          minHeight: 'unset',
+                        }}
+                      >
+                        {isSelected && '✓ '}{prof}
+                      </button>
+                    );
+                  })}
+                  {showProfessionOther && (
+                    <input
+                      type="text"
+                      value={data.profession || ''}
+                      onChange={e => setData(prev => ({ ...prev, profession: e.target.value }))}
+                      placeholder="הקלד את המקצוע שלך"
+                      autoFocus
+                      dir="rtl"
+                      style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', marginTop: 4 }}
+                    />
+                  )}
+                </div>
+              )}
+
+              {currentStep.type === 'cities' && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {ISRAELI_CITIES.map(city => {
+                    const isOther = city === 'אחר';
+                    const active = isOther ? showCityOther : (data.preferred_cities || []).includes(city);
+                    return (
+                      <button
+                        key={city}
+                        onClick={() => {
+                          if (isOther) {
+                            setShowCityOther(v => !v);
+                          } else {
+                            toggleCity(city);
+                          }
+                        }}
+                        style={{
+                          padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
+                          background: active ? '#1a6fd4' : 'var(--surface-2)',
+                          color: active ? 'white' : 'var(--text-2)',
+                          border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
+                          boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : '0 1px 3px rgba(0,0,0,0.04)',
+                          transition: 'all 0.15s',
+                          minHeight: 'unset',
+                        }}
+                      >
+                        {active && !isOther && '✓ '}{city}
+                      </button>
+                    );
+                  })}
+                  {showCityOther && (
+                    <div style={{ display: 'flex', gap: 8, width: '100%', marginTop: 4 }}>
+                      <input
+                        type="text"
+                        value={customCity}
+                        onChange={e => setCustomCity(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomCity(); } }}
+                        placeholder="הקלד עיר ולחץ Enter"
+                        autoFocus
+                        dir="rtl"
+                        style={{ flex: 1, padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                      />
+                      <button
+                        onClick={addCustomCity}
+                        disabled={!customCity.trim()}
+                        style={{ padding: '0 16px', borderRadius: 14, background: customCity.trim() ? '#1a6fd4' : 'var(--surface-3)', color: customCity.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 700, fontSize: 14, cursor: customCity.trim() ? 'pointer' : 'not-allowed', minHeight: 'unset', minWidth: 'unset' }}
+                      >
+                        הוסף
+                      </button>
+                    </div>
+                  )}
+                  {/* Show custom cities that were added (not in the predefined list) */}
+                  {(data.preferred_cities || []).filter(c => !ISRAELI_CITIES.includes(c)).map(city => (
+                    <button
+                      key={city}
+                      onClick={() => toggleCity(city)}
+                      style={{
+                        padding: '8px 14px', borderRadius: 99, cursor: 'pointer',
+                        fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
+                        background: '#1a6fd4', color: 'white',
+                        border: '1.5px solid #1a6fd4',
+                        boxShadow: '0 2px 8px rgba(26,111,212,0.25)',
+                        minHeight: 'unset',
+                      }}
+                    >
+                      ✓ {city} ✕
+                    </button>
+                  ))}
+                </div>
               )}
 
               {currentStep.type === 'chips' && (
