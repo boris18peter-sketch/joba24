@@ -59,10 +59,10 @@ export default function Landing() {
         <div className="max-w-2xl mx-auto text-center">
           <div style={{ fontSize: 80, marginBottom: 24, animation: 'float 3s ease-in-out infinite' }}>⚡</div>
           <h2 className="text-5xl font-black mb-6 text-white leading-tight">
-            יש לך משימה?<br />אנחנו מחברים אותך לפתרון
+            יש לך עבודה?<br />אנחנו מחברים אותך לפתרון
           </h2>
           <p className="text-xl text-white/90 mb-10 leading-relaxed">
-            בין אם זה הובלה, תיקון, ניקיון או כל משימה אחרת — מצא עוזר מוכשר בתוך דקות ובמחיר הוגן.
+            בין אם זה הובלה, תיקון, ניקיון או כל עבודה אחרת — מצא עוזר מוכשר בתוך דקות ובמחיר הוגן.
           </p>
           <a href="#signup" className="inline-block">
             <Button className="h-14 px-10 text-base font-bold rounded-2xl bg-white hover:bg-gray-100 text-primary shadow-xl">
@@ -92,7 +92,7 @@ export default function Landing() {
               <div style={{ width: 80, height: 80, borderRadius: 20, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 36 }}>
                 ✏️
               </div>
-              <h4 className="font-bold text-xl mb-3" style={{ color: '#0f2b6b' }}>1. תאר את המשימה</h4>
+              <h4 className="font-bold text-xl mb-3" style={{ color: '#0f2b6b' }}>1. תאר את העבודה</h4>
               <p className="text-gray-600 text-sm leading-relaxed">
                 בחר קטגוריה, תן כותרת, מחיר ומיקום. ממש כמו לשלוח הודעה בוואטס.
               </p>
@@ -105,7 +105,7 @@ export default function Landing() {
               </div>
               <h4 className="font-bold text-xl mb-3" style={{ color: '#0f2b6b' }}>2. עובדים מגיבים</h4>
               <p className="text-gray-600 text-sm leading-relaxed">
-                תוך דקות יתחילו עובדים לבקש את המשימה. בחר את המתאים ביותר.
+                תוך דקות יתחילו עובדים לבקש את העבודה. בחר את המתאים ביותר.
               </p>
             </div>
 
@@ -114,7 +114,7 @@ export default function Landing() {
               <div style={{ width: 80, height: 80, borderRadius: 20, background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 36 }}>
                 ✅
               </div>
-              <h4 className="font-bold text-xl mb-3" style={{ color: '#0f2b6b' }}>3. המשימה הושלמה</h4>
+              <h4 className="font-bold text-xl mb-3" style={{ color: '#0f2b6b' }}>3. העבודה הושלמה</h4>
               <p className="text-gray-600 text-sm leading-relaxed">
                 העובד מבצע, אתה מאשר, והוא מקבל תשלום. אתה שומר דירוג.
               </p>
@@ -140,7 +140,7 @@ export default function Landing() {
                 מהיר וקל
               </h4>
               <p className="text-sm text-gray-600">
-                פרסם משימה בדקה. תוך רגעים יקבל עובד המבקש עזרה.
+                פרסם עבודה בדקה. תוך רגעים יקבל עובד המבקש עזרה.
               </p>
             </div>
 
@@ -173,13 +173,13 @@ export default function Landing() {
 
           {/* Examples of Tasks */}
           <h3 className="text-3xl font-black text-center mb-14" style={{ color: '#0f2b6b' }}>
-            משימות קטנות וגדולות
+            עבודות קטנות וגדולות
           </h3>
           
           {/* Big Tasks */}
           <div className="mb-12">
             <h4 className="text-lg font-bold mb-6 text-gray-700 flex items-center gap-2">
-              <span style={{ fontSize: 24 }}>🏗️</span> משימות גדולות
+              <span style={{ fontSize: 24 }}>🏗️</span> עבודות גדולות
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
@@ -203,7 +203,7 @@ export default function Landing() {
           {/* Small Tasks */}
           <div>
             <h4 className="text-lg font-bold mb-6 text-gray-700 flex items-center gap-2">
-              <span style={{ fontSize: 24 }}>⚡</span> משימות קטנות וקצרות
+              <span style={{ fontSize: 24 }}>⚡</span> עבודות קטנות וקצרות
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
@@ -255,7 +255,7 @@ export default function Landing() {
             הרשם לגישה מוקדמת
           </h3>
           <p className="text-center text-gray-600 mb-10">
-            היה בין הראשונים שיגישו ויקבלו משימות בפלטפורמה החדשה
+            היה בין הראשונים שיגישו ויקבלו עבודות בפלטפורמה החדשה
           </p>
 
           {submitted ? (

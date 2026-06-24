@@ -204,7 +204,7 @@ export default function PreLaunchWaitingPage({ me }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginBottom: 1 }}>גישה למיקום</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
-              אפשר גישה למיקום מהגדרות הטלפון כדי שנציג לך משימות רלוונטיות באזורך.
+              אפשר גישה למיקום מהגדרות הטלפון כדי שנציג לך עבודות רלוונטיות באזורך.
             </div>
           </div>
         </div>

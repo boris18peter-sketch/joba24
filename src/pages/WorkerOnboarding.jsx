@@ -9,7 +9,6 @@ import {
   MapPin, FileText, Phone, Tag
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
-import { PROFESSIONS } from '@/lib/professions';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
@@ -18,7 +17,7 @@ const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
 
 const STEPS = [
   { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'בחר מהרשימה — הפרופיל שלך יותאם בהתאם', type: 'profession' },
-  { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי משימות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
+  { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי עבודות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
   { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'בחר ערים מהרשימה', type: 'cities' },
   { key: 'bio', icon: FileText, title: 'ספר קצת על עצמך', subtitle: 'ניסיון, התמחות, זמינות...', type: 'textarea', placeholder: 'בעל 10 שנות ניסיון באינסטלציה, מתמחה בתיקון נזילות והתקנת ברזים...' },
   { key: 'phone', icon: Phone, title: 'מספר טלפון', subtitle: 'ליצירת קשר עם לקוחות', type: 'phone', placeholder: '050-1234567' },
@@ -66,8 +65,9 @@ export default function WorkerOnboarding() {
         phone: me.phone || '',
         profile_photo: me.profile_photo || '',
       });
-      // If existing profession is not in the list, show "Other" input
-      if (me.profession && !PROFESSIONS.includes(me.profession)) {
+      // If existing profession is not in the category list, show "Other" input
+      const categoryLabels = CATEGORIES.map(c => c.label);
+      if (me.profession && !categoryLabels.includes(me.profession)) {
         setShowProfessionOther(true);
       }
     }
@@ -211,7 +211,7 @@ export default function WorkerOnboarding() {
           רוצים יותר עבודות?
         </h1>
         <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380, position: 'relative', zIndex: 1 }}>
-          הצטרפו ל־Joba24 והיו מוכנים לקבל גישה לאלפי משימות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
+          הצטרפו ל־Joba24 והיו מוכנים לקבל גישה לאלפי עבודות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
         </p>
         <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 36, lineHeight: 1.6, maxWidth: 380, position: 'relative', zIndex: 1, fontWeight: 700 }}>
           זה הזמן להירשם ולהכין את הפרופיל שלכם.
@@ -388,19 +388,19 @@ export default function WorkerOnboarding() {
 
               {currentStep.type === 'profession' && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {PROFESSIONS.map(prof => {
-                    const isOther = prof === 'אחר';
-                    const isSelected = isOther ? showProfessionOther : data.profession === prof;
+                  {CATEGORIES.map(cat => {
+                    const isOther = cat.value === 'other';
+                    const isSelected = isOther ? showProfessionOther : data.profession === cat.label;
                     return (
                       <button
-                        key={prof}
+                        key={cat.value}
                         onClick={() => {
                           if (isOther) {
                             setShowProfessionOther(true);
                             setData(prev => ({ ...prev, profession: '' }));
                           } else {
                             setShowProfessionOther(false);
-                            setData(prev => ({ ...prev, profession: prof }));
+                            setData(prev => ({ ...prev, profession: cat.label }));
                           }
                         }}
                         style={{
@@ -414,7 +414,7 @@ export default function WorkerOnboarding() {
                           minHeight: 'unset',
                         }}
                       >
-                        {isSelected && '✓ '}{prof}
+                        {isSelected && '✓ '}{cat.label}
                       </button>
                     );
                   })}
@@ -505,7 +505,7 @@ export default function WorkerOnboarding() {
 
               {currentStep.type === 'chips' && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {CATEGORIES.filter(c => c.value !== 'other').map(cat => {
+                  {CATEGORIES.map(cat => {
                     const active = (data.preferred_categories || []).includes(cat.value);
                     return (
                       <button
