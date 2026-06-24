@@ -51,25 +51,19 @@ function EmailForm({ onBack, onSuccess }) {
       onSuccess();
       return;
     } catch (loginErr) {
-      // Login failed — could be wrong password OR user doesn't exist yet
-      const loginMsg = String(loginErr?.response?.data?.detail || loginErr?.message || '');
-      // If user doesn't exist, try to register
-      if (/not found|doesn't exist|no user|unregistered|invalid credentials/i.test(loginMsg) || loginErr?.response?.status === 404) {
-        try {
-          await base44.auth.register({ email: email.trim(), password });
-          setMode('otp');
-          return;
-        } catch (regErr) {
-          const regMsg = String(regErr?.response?.data?.detail || regErr?.message || '');
-          if (/already|exists|registered/i.test(regMsg)) {
-            setError('כתובת האימייל כבר רשומה. הסיסמה שהזנת שגויה — נסה שוב.');
-          } else {
-            setError(regMsg || 'שגיאה ברישום. נסה שוב.');
-          }
+      // Login failed — try to register as a new user
+      try {
+        await base44.auth.register({ email: email.trim(), password });
+        setMode('otp');
+        return;
+      } catch (regErr) {
+        const regMsg = String(regErr?.response?.data?.detail || regErr?.message || '');
+        if (/already|exists|registered/i.test(regMsg)) {
+          // User exists but password is wrong (or registered via Google without password)
+          setError('האימייל כבר רשום אך הסיסמה שגויה. אם שכחת סיסמה — לחץ על "שכחת סיסמה?". אם נרשמת דרך Google — השתמש בכניסה עם Google.');
+        } else {
+          setError(regMsg || 'שגיאה ברישום. ייתכן שאימות אימייל אינו מופעל — בדוק בדאשבורד ← הגדרות ← Authentication.');
         }
-      } else {
-        // User exists but wrong password
-        setError('סיסמה שגויה. נסה שוב או לחץ על "שכחת סיסמה?".');
       }
     } finally {
       setLoading(false);
