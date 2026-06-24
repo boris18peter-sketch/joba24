@@ -72,13 +72,22 @@ export default function WorkerOnboarding() {
     }
   }, [me]);
 
-  // Auto-advance to step 0 once authenticated (handles post-OAuth redirect)
+  // Auto-advance once authenticated — but skip onboarding entirely if the user
+  // already completed it (has categories/cities on their profile entity).
+  // This persists across devices/sessions because it checks the server-side user record.
   useEffect(() => {
-    if (isAuthenticated && step === -1) {
-      setDirection(1);
-      setStep(0);
+    if (!isAuthenticated || step !== -1) return;
+    if (!me) return; // wait for user data to load
+
+    // Already completed onboarding → skip straight to the app
+    if (me.preferred_categories?.length > 0 || me.preferred_cities?.length > 0) {
+      localStorage.setItem(JOIN_COMPLETED_KEY, '1');
+      navigate('/');
+      return;
     }
-  }, [isAuthenticated]);
+    setDirection(1);
+    setStep(0);
+  }, [isAuthenticated, me, navigate]);
 
   const totalSteps = STEPS.length;
 

@@ -7,8 +7,7 @@ import { useState, useEffect } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/LanguageContext';
-import { requestNotificationPermission } from '@/lib/fcm';
-import SystemPermissionModal from '@/components/SystemPermissionModal';
+import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 
 
 // navItems built inside component using t()
@@ -21,7 +20,6 @@ export default function SideMenu({ open, onClose }) {
   const { t } = useLanguage();
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [permissionModal, setPermissionModal] = useState(null);
 
   const navItems = [
     { to: '/', icon: Home, label: t('nav_feed') },
@@ -57,46 +55,59 @@ export default function SideMenu({ open, onClose }) {
     return () => window.removeEventListener('notif_permission_changed', updatePermissions);
   }, []);
 
+  // Toggle location — directly triggers the native geolocation permission dialog.
+  // No custom popup before the OS dialog. If already denied, does nothing.
   const handleLocationToggle = async () => {
     if (locationEnabled) {
       localStorage.removeItem('joba24_location_enabled');
       setLocationEnabled(false);
-    } else {
-      setPermissionModal('location');
+      return;
     }
+    // Only request if not already denied by the browser
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        localStorage.setItem('joba24_location_enabled', '1');
+        setLocationEnabled(true);
+      },
+      () => {
+        // User denied or permission blocked — silently update state
+        setLocationEnabled(false);
+      }
+    );
   };
 
-  const handleLocationConfirm = async () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          localStorage.setItem('joba24_location_enabled', '1');
-          setLocationEnabled(true);
-          setPermissionModal(null);
-        },
-        () => {
-          setPermissionModal(null);
-        }
-      );
-    }
-  };
-
+  // Toggle notifications — directly triggers the native notification permission dialog.
+  // No custom popup before the OS dialog. If already denied, does nothing.
   const handleNotificationsToggle = async () => {
     if (notificationsEnabled) {
       localStorage.setItem('joba24_notif_disabled', '1');
       setNotificationsEnabled(false);
-    } else {
-      setPermissionModal('notifications');
+      return;
     }
-  };
+    if (typeof Notification === 'undefined') return;
+    // Only request if permission status is still 'default' (not determined)
+    if (Notification.permission !== 'default') return;
 
-  const handleNotificationsConfirm = async () => {
     const perm = await requestNotificationPermission();
-    if (perm === 'granted') {
-      localStorage.removeItem('joba24_notif_disabled');
-      setNotificationsEnabled(true);
+    if (perm !== 'granted') return;
+
+    localStorage.removeItem('joba24_notif_disabled');
+    setNotificationsEnabled(true);
+
+    // Register FCM token
+    try {
+      const token = await getFCMToken();
+      if (!token) return;
+      const me = await base44.auth.me();
+      if (!me) return;
+      const existingTokens = me.fcm_tokens || [];
+      if (!existingTokens.includes(token)) {
+        await base44.auth.updateMe({ fcm_tokens: [...existingTokens, token] });
+      }
+    } catch (err) {
+      console.error('[Notif] Token save failed:', err?.message);
     }
-    setPermissionModal(null);
   };
 
   return (
@@ -354,24 +365,6 @@ export default function SideMenu({ open, onClose }) {
         </div>
       </div>
       {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
-
-      {/* System Permission Modal */}
-      {permissionModal === 'location' && (
-        <SystemPermissionModal
-          type="location"
-          isOpen={permissionModal === 'location'}
-          onConfirm={handleLocationConfirm}
-          onCancel={() => setPermissionModal(null)}
-        />
-      )}
-      {permissionModal === 'notifications' && (
-        <SystemPermissionModal
-          type="notifications"
-          isOpen={permissionModal === 'notifications'}
-          onConfirm={handleNotificationsConfirm}
-          onCancel={() => setPermissionModal(null)}
-        />
-      )}
     </>);
 
 }

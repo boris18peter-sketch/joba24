@@ -1,173 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
-import { useLanguage } from '@/lib/LanguageContext';
+import { useEffect } from 'react';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { base44 } from '@/api/base44Client';
 
+/**
+ * Silent permission requester — directly triggers the native OS dialog.
+ * No custom popup is shown. Only fires when:
+ *  - Notifications API is supported
+ *  - Permission status is still 'default' (not determined)
+ *  - We haven't already asked on this device
+ *
+ * If already granted → re-registers the FCM token silently.
+ * If already denied → does nothing (user must re-enable via browser/OS settings).
+ */
 export default function NotificationsPermissionPrompt() {
-  const { t, isRTL } = useLanguage();
-  const [show, setShow] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
   useEffect(() => {
-    // Show prompt only if Notifications are supported and not yet requested
-    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) {
-      return;
-    }
+    if (typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (Notification.permission !== 'default') return;
+    if (localStorage.getItem('joba24_notif_prompt_shown')) return;
 
-    const alreadyAsked = localStorage.getItem('joba24_notif_prompt_shown');
-    if (!alreadyAsked && Notification.permission === 'default') {
-      setShow(true);
-      localStorage.setItem('joba24_notif_prompt_shown', '1');
-    }
+    localStorage.setItem('joba24_notif_prompt_shown', '1');
+
+    (async () => {
+      try {
+        // Directly trigger the native system permission dialog — no custom UI
+        const perm = await requestNotificationPermission();
+        if (perm !== 'granted') return;
+
+        const token = await getFCMToken();
+        if (!token) return;
+
+        const me = await base44.auth.me();
+        if (!me) return;
+
+        const existingTokens = me.fcm_tokens || [];
+        if (!existingTokens.includes(token)) {
+          await base44.auth.updateMe({ fcm_tokens: [...existingTokens, token] });
+        }
+        window.dispatchEvent(new Event('notif_permission_changed'));
+      } catch (err) {
+        console.error('[Notif] Auto-request failed:', err?.message);
+      }
+    })();
   }, []);
 
-  const handleAllow = async () => {
-    setIsLoading(true);
-    const perm = await requestNotificationPermission();
-    setShow(false);
-    
-    if (perm === 'granted') {
-      // Get FCM token and save to user using updateMe (not asServiceRole)
-      const token = await getFCMToken();
-      if (token) {
-        try {
-          const me = await base44.auth.me();
-          if (me) {
-            console.log('[Notif] Got token, saving:', token.substring(0, 30) + '...');
-            const existingTokens = me.fcm_tokens || [];
-            if (!existingTokens.includes(token)) {
-              // Use auth.updateMe() for user-scoped update (not asServiceRole)
-              await base44.auth.updateMe({
-                fcm_tokens: [...existingTokens, token]
-              });
-              console.log('[Notif] ✅ FCM token saved to user');
-            } else {
-              console.log('[Notif] Token already saved');
-            }
-          }
-        } catch (err) {
-          console.error('[Notif] ❌ Failed to save token:', err.message);
-        }
-      } else {
-        console.warn('[Notif] No token returned from getFCMToken()');
-      }
-      // Notify SideMenu to update toggle
-      window.dispatchEvent(new Event('notif_permission_changed'));
-    }
-    setIsLoading(false);
-  };
-
-  const handleDeny = () => {
-    setShow(false);
-  };
-
-  if (!show) return null;
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        background: 'rgba(5,15,40,0.65)',
-        backdropFilter: 'blur(6px)',
-        animation: 'sheetFadeIn 0.22s ease both',
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleDeny();
-      }}
-    >
-      <div
-        dir={isRTL ? 'rtl' : 'ltr'}
-        style={{
-          width: '100%',
-          maxWidth: 340,
-          borderRadius: '28px',
-          background: 'var(--surface-2)',
-          padding: '28px 24px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-          animation: 'scaleIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close button */}
-        <button
-          onClick={handleDeny}
-          style={{
-            position: 'absolute',
-            top: 16,
-            right: isRTL ? 'auto' : 16,
-            left: isRTL ? 16 : 'auto',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
-            display: 'flex',
-            color: 'var(--text-2)',
-          }}
-        >
-          <X size={20} />
-        </button>
-
-        {/* Icon */}
-        <div style={{ fontSize: 48, marginBottom: 16, textAlign: 'center' }}>🔔</div>
-
-        {/* Title */}
-        <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8, textAlign: 'center' }}>
-          {t('notif_permission_title')}
-        </div>
-
-        {/* Body */}
-        <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 24, textAlign: 'center' }}>
-          {t('notif_permission_body')}
-        </div>
-
-        {/* Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            onClick={handleAllow}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              height: 52,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
-              border: 'none',
-              color: 'white',
-              fontWeight: 900,
-              fontSize: 15,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.7 : 1,
-              boxShadow: '0 4px 16px rgba(26,111,212,0.35)',
-            }}
-          >
-            {isLoading ? '⏳' : '✓'} {t('notif_permission_allow')}
-          </button>
-          <button
-            onClick={handleDeny}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              height: 48,
-              borderRadius: 16,
-              background: 'var(--surface-3)',
-              border: '1px solid var(--border-1)',
-              color: 'var(--text-1)',
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.5 : 1,
-            }}
-          >
-            {t('maybe_later')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

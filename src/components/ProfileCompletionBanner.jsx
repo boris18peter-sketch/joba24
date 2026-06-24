@@ -8,12 +8,9 @@ export default function ProfileCompletionBanner({ me }) {
 
   if (!me) return null;
 
-  // Hide if user already completed the join flow
-  const hasCompletedJoin = !!localStorage.getItem(JOIN_COMPLETED_KEY);
-  if (hasCompletedJoin) return null;
-
-  // Also hide if profile is already complete (has categories AND (bio or skills))
-  const isComplete = me.preferred_categories?.length > 0 && (me.bio || me.skills?.length > 0);
+  // Single source of truth: user entity. If the user already has categories AND cities,
+  // onboarding is complete — never show the banner again (works across devices).
+  const isComplete = me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0;
   if (isComplete) return null;
 
   return (

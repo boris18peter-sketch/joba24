@@ -32,14 +32,19 @@ function EmailForm({ onBack, onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [mode, setMode] = useState('credentials'); // 'credentials' | 'otp'
+  const [mode, setMode] = useState('credentials'); // 'credentials' | 'otp' | 'forgot'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+
+  const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  const validatePassword = (val) => val.length >= 6;
 
   const handleCredentials = async () => {
-    if (!email.trim() || !email.includes('@') || password.length < 6) return;
+    if (!validateEmail(email) || !validatePassword(password)) return;
     setLoading(true);
     setError('');
+    setInfo('');
     try {
       // Try login first (existing user)
       await base44.auth.loginViaEmailPassword(email.trim(), password);
@@ -64,8 +69,28 @@ function EmailForm({ onBack, onSuccess }) {
         }
       } else {
         // User exists but wrong password
-        setError('סיסמה שגויה. נסה שוב.');
+        setError('סיסמה שגויה. נסה שוב או לחץ על "שכחת סיסמה?".');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!validateEmail(email)) {
+      setError('הזן כתובת אימייל תקינה כדי לאפס סיסמה.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setInfo('');
+    try {
+      await base44.auth.resetPasswordRequest(email.trim());
+      setInfo(`אימייל לאיפוס סיסמה נשלח ל-${email.trim()}. בדוק את תיבת הדואר (כולל ספאם).`);
+      setMode('credentials');
+    } catch (err) {
+      const msg = String(err?.response?.data?.detail || err?.message || '');
+      setError(msg || 'שגיאה בשליחת אימייל האיפוס. נסה שוב.');
     } finally {
       setLoading(false);
     }
@@ -152,22 +177,30 @@ function EmailForm({ onBack, onSuccess }) {
         style={{ width: '100%', height: 52, borderRadius: 14, border: '1.5px solid #e2e8f0', padding: '0 16px', fontSize: 15, background: 'var(--surface-3)', color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box' }}
       />
       {error && <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{error}</div>}
+      {info && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, lineHeight: 1.5 }}>{info}</div>}
       <button
         onClick={handleCredentials}
-        disabled={loading || !email.includes('@') || password.length < 6}
+        disabled={loading || !validateEmail(email) || !validatePassword(password)}
         style={{
           width: '100%', height: 52, borderRadius: 16,
-          background: email.includes('@') && password.length >= 6 ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
-          color: email.includes('@') && password.length >= 6 ? 'white' : '#94a3b8',
+          background: validateEmail(email) && validatePassword(password) ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : '#e2e8f0',
+          color: validateEmail(email) && validatePassword(password) ? 'white' : '#94a3b8',
           fontWeight: 800, fontSize: 15, border: 'none',
-          cursor: email.includes('@') && password.length >= 6 ? 'pointer' : 'not-allowed',
+          cursor: validateEmail(email) && validatePassword(password) ? 'pointer' : 'not-allowed',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           transition: 'all 0.2s',
         }}
       >
         {loading ? <Loader2 size={18} className="animate-spin" /> : <><Mail size={16} /> המשך</>}
       </button>
-      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>משתמש חדש? נרשום אותך אוטומטית — כל אימייל נספר כחשבון אחד</div>
+      <button
+        onClick={handleForgotPassword}
+        disabled={loading}
+        style={{ background: 'none', border: 'none', color: '#1a6fd4', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', padding: 0, textAlign: 'center', width: '100%' }}
+      >
+        שכחת סיסמה?
+      </button>
+      <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>משתמש חדש? נרשום אותך אוטומטית — כל אימייל נספר כחשבון אחד. הסיסמה חייבת להכיל לפחות 6 תווים.</div>
     </div>
   );
 }

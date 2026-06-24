@@ -174,7 +174,7 @@ export default function Profile() {
         <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{t('profile_title')}</span>
         <button
           onClick={() => {
-            const joinCompleted = localStorage.getItem(JOIN_COMPLETED_KEY);
+            const joinCompleted = me?.preferred_categories?.length > 0 && me?.preferred_cities?.length > 0;
             navigate(joinCompleted ? '/worker-profile' : '/join');
           }}
           style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 20, padding: '5px 14px', cursor: 'pointer' }}

@@ -14,6 +14,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
+import ResetPassword from '@/pages/ResetPassword';
 
 // Add page imports here
 // App entry — force reload to clear stale dynamic import cache
@@ -168,6 +169,7 @@ const AuthenticatedApp = () => {
               <Route path="/support" element={<SupportChat />} />
             </Route>
             <Route path="/presentation" element={<Presentation />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/join" element={<WorkerOnboarding />} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
