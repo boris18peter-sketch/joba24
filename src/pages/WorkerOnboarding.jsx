@@ -190,7 +190,7 @@ export default function WorkerOnboarding() {
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(40px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', position: 'fixed', inset: 0, overflowY: 'auto' }}>
+      <div dir="rtl" style={{ position: 'fixed', inset: 0, background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(36px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', overflow: 'hidden' }}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
         {/* Decorative blurred glow circles */}
@@ -288,7 +288,7 @@ export default function WorkerOnboarding() {
   const canSkip = isPhotoStep;
 
   return (
-    <div dir="rtl" style={{ height: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div dir="rtl" style={{ position: 'fixed', inset: 0, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Header with progress ── */}
       <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
