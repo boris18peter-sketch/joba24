@@ -84,27 +84,27 @@ export default function ChatInbox() {
       const newUnreadCounts = {};
       const withMsgs = new Set();
       const tasks = allTasks.slice(0, 20);
+      const taskIds = tasks.map(t => t.id);
 
-      // Batch in groups of 8 to avoid server overload
-      const BATCH_SIZE = 8;
-      for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
-        if (cancelled) return;
-        const batch = tasks.slice(i, i + BATCH_SIZE);
-        const results = await Promise.all(
-          batch.map(task =>
-            base44.entities.ChatMessage.filter({ task_id: task.id }, '-created_date', 10)
-              .then(msgs => ({ taskId: task.id, msgs }))
-              .catch(() => ({ taskId: task.id, msgs: [] }))
-          )
-        );
-        results.forEach(({ taskId, msgs }) => {
-          if (msgs.length > 0) {
-            withMsgs.add(taskId);
-            newLastMessages[taskId] = msgs[0];
-            newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-          }
-        });
-      }
+      // Single query for all messages across all conversations (avoids N+1)
+      const allMsgs = await base44.entities.ChatMessage.filter(
+        { task_id: { $in: taskIds } },
+        '-created_date',
+        200
+      ).catch(() => []);
+
+      // Group by task_id — messages are already sorted by -created_date
+      const byTask = {};
+      allMsgs.forEach(m => {
+        if (!byTask[m.task_id]) byTask[m.task_id] = [];
+        byTask[m.task_id].push(m);
+      });
+
+      Object.entries(byTask).forEach(([taskId, msgs]) => {
+        withMsgs.add(taskId);
+        newLastMessages[taskId] = msgs[0]; // first = latest (sorted -created_date)
+        newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+      });
 
       if (!cancelled) {
         setLastMessages(newLastMessages);

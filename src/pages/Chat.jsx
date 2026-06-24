@@ -30,7 +30,7 @@ function useOnlineStatus(userId) {
       } catch { setIsOnline(false); }
     };
     check();
-    const interval = setInterval(check, 20000);
+    const interval = setInterval(check, 60000);
     // Also subscribe to real-time presence updates
     const unsub = base44.entities.UserPresence.subscribe(event => {
       if (event.data?.user_id === userId && event.data?.last_seen) {
@@ -58,7 +58,7 @@ function usePingPresence(userId) {
       } catch {}
     };
     ping();
-    const interval = setInterval(ping, 30000);
+    const interval = setInterval(ping, 60000);
     return () => clearInterval(interval);
   }, [userId]);
 }
@@ -181,11 +181,13 @@ export default function Chat() {
     });
   }, [fetchedMessages]);
 
-  // Mark incoming messages as read
+  // Mark incoming messages as read — only once per message
+  const markedReadRef = useRef(new Set());
   useEffect(() => {
     if (!me?.id || !messages.length) return;
-    const unread = messages.filter(m => m.sender_id !== me.id && !m.read);
+    const unread = messages.filter(m => m.sender_id !== me.id && !m.read && !markedReadRef.current.has(m.id));
     unread.forEach(m => {
+      markedReadRef.current.add(m.id);
       base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {});
     });
   }, [messages, me?.id]);

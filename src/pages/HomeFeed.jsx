@@ -350,10 +350,15 @@ export default function HomeFeed() {
       );
       if (!bumpableTasks.length) return;
 
+      // Single query for all bumpable tasks' applications (avoids N+1)
+      const allApps = await base44.entities.TaskApplication.filter({
+        task_id: { $in: bumpableTasks.map(t => t.id) },
+        status: { $in: ['pending', 'approved'] }
+      });
+      const tasksWithActiveApps = new Set(allApps.map(a => a.task_id));
+
       for (const task of bumpableTasks) {
-        const existingApps = await base44.entities.TaskApplication.filter({ task_id: task.id });
-        const hasActiveApp = existingApps.some(a => a.status === 'pending' || a.status === 'approved');
-        if (hasActiveApp) continue;
+        if (tasksWithActiveApps.has(task.id)) continue;
 
         // Calculate how many 5-min intervals since task was created
         const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
