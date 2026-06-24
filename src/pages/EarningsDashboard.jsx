@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-// EarningsDashboard — re-export fix for dynamic import cache
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Cell } from 'recharts';
 import { TrendingUp, Wallet, Loader2, Target, Calendar } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
