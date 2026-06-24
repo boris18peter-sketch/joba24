@@ -46,7 +46,8 @@ export default function WorkerOnboarding() {
     queryKey: ['me'],
     queryFn: () => base44.auth.me(),
     enabled: isAuthenticated,
-    staleTime: 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   // Pre-fill from existing profile

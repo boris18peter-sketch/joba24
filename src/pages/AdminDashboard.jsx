@@ -259,21 +259,24 @@ export default function AdminDashboard() {
     queryKey: ['adminTasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 200),
     enabled: me?.role === 'admin',
-    staleTime: 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ['adminUsers'],
     queryFn: () => base44.entities.User.list('-created_date', 200),
     enabled: me?.role === 'admin',
-    staleTime: 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: allReports = [], isLoading: loadingReports, refetch: refetchReports } = useQuery({
     queryKey: ['adminReports'],
     queryFn: () => base44.entities.Report.list('-created_date', 100),
     enabled: me?.role === 'admin',
-    staleTime: 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: allReviews = [] } = useQuery({

@@ -188,8 +188,7 @@ export default function TaskDetail() {
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
     select: (data) => data[0],
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 30000,
     refetchOnWindowFocus: false
   });
 

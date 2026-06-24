@@ -31,7 +31,8 @@ export default function MyTasks() {
     queryKey: ['myTasksPage', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 100),
     enabled: !!me?.id,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Real-time task sync
@@ -69,7 +70,8 @@ export default function MyTasks() {
       return results.flat();
     },
     enabled: openTaskIds.length > 0,
-    staleTime: 30000,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Real-time sync for applications

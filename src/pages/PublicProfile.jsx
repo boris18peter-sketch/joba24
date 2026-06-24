@@ -67,7 +67,8 @@ export default function PublicProfile() {
       return null;
     },
     enabled: !!userId,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: completedTasks = [] } = useQuery({
