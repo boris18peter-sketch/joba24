@@ -61,13 +61,10 @@ export default function MyTasks() {
   const openTaskIds = tasks.filter(t => t.status === 'OPEN').map(t => t.id);
 
   const { data: allApps = [] } = useQuery({
-    queryKey: ['allMyTaskApps', me?.id],
+    queryKey: ['allMyTaskApps', me?.id, openTaskIds.join(',')],
     queryFn: async () => {
       if (!openTaskIds.length) return [];
-      const results = await Promise.all(
-        openTaskIds.map(id => base44.entities.TaskApplication.filter({ task_id: id, status: 'pending' }))
-      );
-      return results.flat();
+      return base44.entities.TaskApplication.filter({ task_id: { $in: openTaskIds }, status: 'pending' });
     },
     enabled: openTaskIds.length > 0,
     staleTime: 60000,

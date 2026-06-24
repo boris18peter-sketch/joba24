@@ -104,14 +104,11 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
     queryKey: ['carouselPendingApps', openTaskIds.join(',')],
     queryFn: async () => {
       if (!openTaskIds.length) return [];
-      const results = await Promise.all(
-        openTaskIds.map(id => base44.entities.TaskApplication.filter({ task_id: id, status: 'pending' }))
-      );
-      return results.flat();
+      return base44.entities.TaskApplication.filter({ task_id: { $in: openTaskIds }, status: 'pending' });
     },
     enabled: openTaskIds.length > 0,
-    refetchInterval: 8000,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const pendingCountForTask = (taskId) => pendingApps.filter(a => a.task_id === taskId).length;
