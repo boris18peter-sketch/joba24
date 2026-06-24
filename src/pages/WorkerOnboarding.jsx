@@ -190,34 +190,38 @@ export default function WorkerOnboarding() {
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div dir="rtl" style={{ minHeight: '100dvh', background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(40px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', position: 'fixed', inset: 0, overflowY: 'auto' }}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
         {/* Decorative blurred glow circles */}
         <div style={{ position: 'absolute', top: '-10%', right: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '-10%', left: '-15%', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.3) 0%, transparent 70%)', filter: 'blur(30px)', pointerEvents: 'none' }} />
 
-        {/* Brand logo */}
-        <div style={{ width: 88, height: 88, borderRadius: 24, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', position: 'relative', zIndex: 1 }}>
-          <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        {/* Top — Brand */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1, flexShrink: 0 }}>
+          <div style={{ width: 88, height: 88, borderRadius: 24, overflow: 'hidden', marginBottom: 20, border: '2px solid rgba(255,255,255,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.3)' }}>
+            <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: 5, textTransform: 'uppercase' }}>
+            Joba24
+          </div>
         </div>
 
-        <div style={{ fontSize: 18, fontWeight: 900, color: 'rgba(255,255,255,0.7)', letterSpacing: 5, textTransform: 'uppercase', marginBottom: 12, position: 'relative', zIndex: 1 }}>
-          Joba24
+        {/* Middle — Headline */}
+        <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
+          <h1 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, marginBottom: 16, lineHeight: 1.2 }}>
+            רוצה יותר עבודות?
+          </h1>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380 }}>
+            הצטרף ל־Joba24 ותהיה מוכן לקבל גישה לאלפי עבודות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
+          </p>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.95)', margin: 0, lineHeight: 1.6, maxWidth: 380, fontWeight: 700 }}>
+            זה הזמן להירשם ולהכין את הפרופיל שלך.
+          </p>
         </div>
 
-        <h1 style={{ fontSize: 34, fontWeight: 900, color: 'white', margin: 0, marginBottom: 16, lineHeight: 1.2, position: 'relative', zIndex: 1 }}>
-          רוצים יותר עבודות?
-        </h1>
-        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380, position: 'relative', zIndex: 1 }}>
-          הצטרפו ל־Joba24 והיו מוכנים לקבל גישה לאלפי עבודות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
-        </p>
-        <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 36, lineHeight: 1.6, maxWidth: 380, position: 'relative', zIndex: 1, fontWeight: 700 }}>
-          זה הזמן להירשם ולהכין את הפרופיל שלכם.
-        </p>
-
-        {/* Single CTA */}
-        <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
+        {/* Bottom — CTA */}
+        <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1, flexShrink: 0, paddingBottom: 8 }}>
           <button
             onClick={() => setShowLogin(true)}
             style={{ width: '100%', padding: '20px 0', borderRadius: 18, background: 'white', color: '#0f2b6b', fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
