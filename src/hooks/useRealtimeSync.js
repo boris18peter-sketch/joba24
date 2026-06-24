@@ -190,8 +190,10 @@ export default function useRealtimeSync({
       if (event.type !== 'create' || !event.data) return;
       const tx = event.data;
       if (tx.user_id !== me.id) return;
-      // Invalidate credits on every transaction
-      queryClient.invalidateQueries({ queryKey: ['me'] });
+      // Update credits in cache directly from the transaction's balance_after (avoids refetch)
+      if (tx.balance_after != null) {
+        queryClient.setQueryData(['me'], (old) => old ? { ...old, worker_credits: tx.balance_after } : old);
+      }
       if (tx.type === 'Loyalty_Reward') {
         notify({ type: 'new_review', taskId: tx.task_id, actorId: 'system', preview: t('loyalty_reward_notif').replace('{n}', tx.amount) });
       }

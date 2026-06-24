@@ -128,29 +128,33 @@ export default function SimulatorPanel() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: me, refetch: refetchMe } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: me, refetch: refetchMe } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), staleTime: 30000, refetchOnWindowFocus: false });
   const { data: allTasks = [], refetch: refetchTasks } = useQuery({
     queryKey: ['sim_tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 100),
-    staleTime: 10000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
   const { data: myApps = [] } = useQuery({
     queryKey: ['sim_apps'],
     queryFn: () => me?.id ? base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50) : [],
     enabled: !!me?.id,
-    staleTime: 10000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
   const { data: creditTxs = [] } = useQuery({
     queryKey: ['sim_credit_txs'],
     queryFn: () => me?.id ? base44.entities.CreditTransaction.filter({ user_id: me.id }, '-created_date', 20) : [],
     enabled: !!me?.id,
-    staleTime: 10000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
   const { data: allReviews = [] } = useQuery({
     queryKey: ['sim_reviews'],
     queryFn: () => me?.id ? base44.entities.Review.filter({ reviewee_id: me.id }, '-created_date', 20) : [],
     enabled: !!me?.id,
-    staleTime: 30000,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const [popup, setPopup] = useState(null);

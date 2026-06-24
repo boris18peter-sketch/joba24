@@ -143,7 +143,8 @@ export default function MapView() {
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 100),
-    staleTime: 20000,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag);

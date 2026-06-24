@@ -120,7 +120,6 @@ export default function HomeFeed() {
     queryFn: () => base44.entities.Task.list('-created_date', 200),
     staleTime: 60000,
     gcTime: 300000,
-    refetchOnMount: true,
     refetchOnWindowFocus: false,
     retry: 1,
   });

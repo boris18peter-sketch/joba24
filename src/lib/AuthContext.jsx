@@ -119,13 +119,10 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      // Also subscribe to CreditTransaction — refresh immediately on any credit change
-      unsubCreditRef.current = base44.entities.CreditTransaction.subscribe(async (event) => {
-        if (event.data?.user_id === currentUser?.id) {
-          try {
-            const fresh = await base44.auth.me();
-            setUser(prev => prev ? { ...prev, worker_credits: fresh.worker_credits } : fresh);
-          } catch {}
+      // Also subscribe to CreditTransaction — update credits from the transaction's balance_after
+      unsubCreditRef.current = base44.entities.CreditTransaction.subscribe((event) => {
+        if (event.data?.user_id === currentUser?.id && event.data.balance_after != null) {
+          setUser(prev => prev ? { ...prev, worker_credits: event.data.balance_after } : prev);
         }
       });
     } catch (error) {
