@@ -13,6 +13,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
+import EarningsDashboard from '@/pages/EarningsDashboard';
 
 // Add page imports here
 // App entry — force reload to clear stale dynamic import cache
@@ -42,7 +43,6 @@ const Notifications = lazy(() => import('@/pages/Notifications'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
 const Terms = lazy(() => import('@/pages/Terms'));
-const EarningsDashboard = lazy(() => import('@/pages/EarningsDashboard'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
