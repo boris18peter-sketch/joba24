@@ -807,7 +807,7 @@ export default function TaskDetail() {
 
             {/* Description */}
             {mainDescription &&
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 10 }}>
+            <div className="selectable-text" style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 10 }}>
                 {mainDescription.length > 180 ? mainDescription.slice(0, 180) + '…' : mainDescription}
               </div>
             }

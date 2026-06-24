@@ -412,21 +412,21 @@ export default function Chat() {
                     onClick={() => window.open(imgUrl, '_blank')}
                   />
                 ) : (
-                  <div style={{
-                    padding: '9px 13px',
-                    borderRadius: isMe
-                      ? (isContinuation ? '14px 14px 14px 4px' : '18px 18px 18px 4px')
-                      : (isContinuation ? '14px 14px 4px 14px' : '18px 18px 4px 18px'),
-                    background: isMe ? '#1e293b' : 'var(--surface-2)',
-                    color: isMe ? 'white' : 'var(--text-1)',
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                    boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
-                    border: isMe ? 'none' : '1px solid var(--border-1)',
-                    wordBreak: 'break-word',
-                  }}>
-                    {msg.content}
-                  </div>
+                  <div className="selectable-text" style={{
+                     padding: '9px 13px',
+                     borderRadius: isMe
+                       ? (isContinuation ? '14px 14px 14px 4px' : '18px 18px 18px 4px')
+                       : (isContinuation ? '14px 14px 4px 14px' : '18px 18px 4px 18px'),
+                     background: isMe ? '#1e293b' : 'var(--surface-2)',
+                     color: isMe ? 'white' : 'var(--text-1)',
+                     fontSize: 14,
+                     lineHeight: 1.5,
+                     boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
+                     border: isMe ? 'none' : '1px solid var(--border-1)',
+                     wordBreak: 'break-word',
+                   }}>
+                     {msg.content}
+                   </div>
                 )}
 
                 {/* Timestamp + read */}

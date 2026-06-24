@@ -197,6 +197,13 @@
   button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   button:active { opacity: 0.85; transform: scale(0.97); }
 
+  /* ── Selectable text content (overrides global user-select: none) ── */
+  .selectable-text {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
   /* ── Global minimum tap targets (WCAG / Apple HIG: 44×44pt) ── */
   button, [role="button"] {
     min-height: 44px;
