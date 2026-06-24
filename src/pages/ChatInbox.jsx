@@ -111,20 +111,24 @@ export default function ChatInbox() {
           newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
         });
       } catch {
-        // Fallback: individual queries per task
-        const results = await Promise.all(
-          taskIds.slice(0, 20).map(id =>
-            base44.entities.ChatMessage.filter({ task_id: id }, '-created_date', 50)
-              .catch(() => [])
-          )
-        );
-        results.forEach((msgs, i) => {
-          if (msgs.length > 0) {
-            const taskId = taskIds[i];
-            newLastMessages[taskId] = msgs[0];
-            newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-          }
-        });
+        // If $in not supported, fetch messages in small sequential batches (max 3 at a time)
+        const batchSize = 3;
+        for (let i = 0; i < taskIds.length && i < 15; i += batchSize) {
+          const batch = taskIds.slice(i, i + batchSize);
+          const results = await Promise.all(
+            batch.map(id =>
+              base44.entities.ChatMessage.filter({ task_id: id }, '-created_date', 50)
+                .catch(() => [])
+            )
+          );
+          results.forEach((msgs, j) => {
+            if (msgs.length > 0) {
+              const taskId = batch[j];
+              newLastMessages[taskId] = msgs[0];
+              newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
+            }
+          });
+        }
       }
 
       if (!cancelled) {
