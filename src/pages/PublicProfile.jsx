@@ -142,7 +142,16 @@ export default function PublicProfile() {
           <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{user.full_name}</span>
           {user.is_verified && <VerifiedBadge size="md" />}
         </div>
-        {user.profession && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{user.profession}</div>}
+        {user.preferred_categories?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: 300 }}>
+            {user.preferred_categories.slice(0, 4).map(cat => (
+              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>{getCategoryLabel(cat)}</span>
+            ))}
+            {user.preferred_categories.length > 4 && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', padding: '2px 4px' }}>+{user.preferred_categories.length - 4}</span>
+            )}
+          </div>
+        )}
 
 
 

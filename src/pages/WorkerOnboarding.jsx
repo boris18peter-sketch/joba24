@@ -16,7 +16,6 @@ const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
 
 const STEPS = [
-  { key: 'profession', icon: Briefcase, title: 'מה המקצוע שלך?', subtitle: 'בחר מהרשימה — הפרופיל שלך יותאם בהתאם', type: 'profession' },
   { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי עבודות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
   { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'בחר ערים מהרשימה', type: 'cities' },
   { key: 'bio', icon: FileText, title: 'ספר קצת על עצמך', subtitle: 'ניסיון, התמחות, זמינות...', type: 'textarea', placeholder: 'בעל 10 שנות ניסיון באינסטלציה, מתמחה בתיקון נזילות והתקנת ברזים...' },

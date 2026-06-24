@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, User, ChevronLeft } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { toast } from 'sonner';
 
 const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
@@ -207,7 +207,16 @@ export default function WorkerProfile() {
           <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{currentUser?.full_name}</span>
           {currentUser?.is_verified && <VerifiedBadge size="md" />}
         </div>
-        {form.profession && <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{form.profession}</div>}
+        {currentUser?.preferred_categories?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: 300 }}>
+            {currentUser.preferred_categories.slice(0, 4).map(cat => (
+              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>{getCategoryLabel(cat)}</span>
+            ))}
+            {currentUser.preferred_categories.length > 4 && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', padding: '2px 4px' }}>+{currentUser.preferred_categories.length - 4}</span>
+            )}
+          </div>
+        )}
 
         {/* Mini stats */}
         {isViewingOther && (

@@ -217,8 +217,15 @@ export default function Profile() {
           {(me?.is_verified && me?.id_number) && <VerifiedBadge size="md" />}
         </div>
 
-        {me?.profession && (
-          <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 4 }}>{me.profession}</div>
+        {me?.preferred_categories?.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: 300, marginBottom: 4 }}>
+            {me.preferred_categories.slice(0, 4).map(cat => (
+              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>{getCategoryLabel(cat)}</span>
+            ))}
+            {me.preferred_categories.length > 4 && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', padding: '2px 4px' }}>+{me.preferred_categories.length - 4}</span>
+            )}
+          </div>
         )}
         <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{me?.email}</div>
 
