@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save } from 'lucide-react';
+import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save, BarChart3 } from 'lucide-react';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 import TaskCard from '@/components/TaskCard';
@@ -273,6 +273,8 @@ export default function Profile() {
           <MenuRow icon={Briefcase} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
           <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
           <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
+          <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
+          <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי ימים, שבועות וחודשים'} to="/earnings" />
           <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
           <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('task_history')} sub={`${completedCount} ${t('tasks_completed')}`} onClick={() => setShowTaskHistory(true)} />
           {reviews.length > 0 && <>

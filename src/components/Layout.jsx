@@ -50,7 +50,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
-import SupportChatButton from '@/components/SupportChatButton';
+
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
 
@@ -360,7 +360,6 @@ export default function Layout() {
       <ChatPushNotification />
       <NotificationsPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
-      <SupportChatButton />
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 
       {showGiftModal && createPortal(<SignupGiftModal onClose={() => setShowGiftModal(false)} />, document.body)}

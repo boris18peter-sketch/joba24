@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation } from 'lucide-react';
+import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getCategoryLabel } from '@/lib/categories';
+import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -25,6 +25,8 @@ export default function DailyGoal() {
   const [userLocation, setUserLocation] = useState(null);
   const [aiPlan, setAiPlan] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: tasks = [] } = useQuery({
@@ -57,6 +59,10 @@ export default function DailyGoal() {
 
   const openTasksNearby = tasks.filter(t => {
     if (t.status !== 'OPEN') return false;
+    // Exclude tasks the user published themselves
+    if (me?.id && t.client_id === me.id) return false;
+    // Filter by selected categories
+    if (selectedCategories.length > 0 && !selectedCategories.includes(t.category)) return false;
     if (!userLocation) return true;
     const dist = getDistance(userLocation.lat, userLocation.lng, t.lat, t.lng);
     return dist === null || dist <= radius;
@@ -76,6 +82,10 @@ export default function DailyGoal() {
       location: t.location_name,
     }));
 
+    const categoryFilterNote = selectedCategories.length > 0
+      ? `העובד ביקש לקבל משימות רק מהקטגוריות הבאות: ${selectedCategories.map(c => getCategoryLabel(c)).join(', ')}`
+      : 'אין הגבלת קטגוריות — כל הקטגוריות רלוונטיות.';
+
     const res = await base44.integrations.Core.InvokeLLM({
       prompt: `אתה עוזר לעובד עצמאי בפלטפורמת Joba24 לתכנן את יום העבודה שלו.
       
@@ -83,6 +93,7 @@ export default function DailyGoal() {
 הכנסה עד כה היום: ₪${earned}
 נותר להרוויח: ₪${remaining}
 רדיוס חיפוש: ${radius} ק"מ
+${categoryFilterNote}
 
 משימות פתוחות זמינות באזור:
 ${JSON.stringify(tasksSummary, null, 2)}
@@ -216,6 +227,32 @@ ${JSON.stringify(tasksSummary, null, 2)}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa', marginTop: 4 }}>
               <span>1 {t('km')}</span><span>50 {t('km')}</span>
             </div>
+          </div>
+
+          {/* Category filter */}
+          <div style={{ marginBottom: 16 }}>
+            <button onClick={() => setShowCategoryFilter(v => !v)}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 14, border: `1px solid ${selectedCategories.length > 0 ? '#1a6fd4' : '#dce8f5'}`, background: selectedCategories.length > 0 ? '#eff6ff' : '#f4f7fb', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: selectedCategories.length > 0 ? '#1a6fd4' : '#666' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Filter size={14} />
+                {selectedCategories.length > 0 ? `${selectedCategories.length} ${t('categories_selected')}` : t('filter_by_categories')}
+              </span>
+              <span style={{ fontSize: 11, color: selectedCategories.length > 0 ? '#1a6fd4' : '#aaa' }}>{selectedCategories.length > 0 ? '✓' : '+'}</span>
+            </button>
+            {showCategoryFilter && (
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 200, overflowY: 'auto', padding: 4 }}>
+                {CATEGORIES.map(cat => {
+                  const active = selectedCategories.includes(cat.value);
+                  return (
+                    <button key={cat.value} onClick={() => setSelectedCategories(prev => active ? prev.filter(c => c !== cat.value) : [...prev, cat.value])}
+                      style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                        background: active ? '#1a6fd4' : 'white', color: active ? 'white' : '#666', border: `1px solid ${active ? '#1a6fd4' : '#dce8f5'}` }}>
+                      {active && '✓ '}{cat.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <button onClick={handleSetGoal} disabled={!goal || loadingPlan}

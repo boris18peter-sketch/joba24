@@ -42,12 +42,10 @@ export default function Leaderboard() {
         profile_photo: userRecord?.profile_photo || null,
         is_verified: userRecord?.is_verified || false,
         profession: userRecord?.profession || '',
-        earnings: 0,
         count: 0,
         ratings: [],
       };
     }
-    board[t.worker_id].earnings += t.price || 0;
     board[t.worker_id].count += 1;
   });
 
@@ -59,7 +57,7 @@ export default function Leaderboard() {
 
   const sorted = Object.values(board)
     .map(u => ({ ...u, avg: u.ratings.length ? u.ratings.reduce((a, b) => a + b, 0) / u.ratings.length : 0 }))
-    .sort((a, b) => b.count - a.count || b.earnings - a.earnings)
+    .sort((a, b) => b.count - a.count)
     .slice(0, 20);
 
   const medals = ['🥇', '🥈', '🥉'];
@@ -160,10 +158,6 @@ export default function Leaderboard() {
                     </span>
                   )}
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="font-black text-base" style={{ color: '#1a6fd4' }}>₪{user.earnings.toLocaleString()}</div>
-                <div className="text-xs text-gray-400">{t('earnings')}</div>
               </div>
             </div>
           ))

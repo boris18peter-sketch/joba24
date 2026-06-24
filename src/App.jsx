@@ -42,6 +42,7 @@ const Notifications = lazy(() => import('@/pages/Notifications'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
 const Terms = lazy(() => import('@/pages/Terms'));
+const EarningsDashboard = lazy(() => import('@/pages/EarningsDashboard'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -144,6 +145,7 @@ const AuthenticatedApp = () => {
               <Route path="/map" element={<MapView />} />
               <Route path="/task/:id" element={<TaskDetail />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/earnings" element={<EarningsDashboard />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/create-task" element={<CreateTask />} />

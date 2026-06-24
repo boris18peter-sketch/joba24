@@ -737,9 +737,9 @@ export default function HomeFeed() {
           const filteredPub = myTasks.filter(t => pubTab?.statuses.includes(t.status));
           return (
             <div>
-              {/* Sub-tabs bar — sticky below tabs bar */}
+              {/* Sub-tabs bar — only show tabs that have content (always show 'active') */}
               <div style={{ display: 'flex', gap: 6, marginBottom: 14, position: 'sticky', top: 49, zIndex: 49, background: 'var(--surface-1)', paddingTop: 12, paddingBottom: 8, marginTop: -12, marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}>
-                {MY_PUB_TABS.map(t => {
+                {MY_PUB_TABS.filter(t => t.key === 'active' || myTasks.some(x => t.statuses.includes(x.status))).map(t => {
                   const count = myTasks.filter(x => t.statuses.includes(x.status)).length;
                   const active = myPubTab === t.key;
                   return (
