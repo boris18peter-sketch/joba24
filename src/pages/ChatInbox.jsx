@@ -14,8 +14,9 @@ export default function ChatInbox() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const queryClient = useQueryClient();
 
+  // Reuse Layout's existing queries — avoids duplicate API calls
   const { data: workerTasks = [] } = useQuery({
-    queryKey: ['chatInboxWorker', me?.id],
+    queryKey: ['workerTasksLayout', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-updated_date', 50),
     enabled: !!me?.id,
     staleTime: 60000,
@@ -23,7 +24,7 @@ export default function ChatInbox() {
   });
 
   const { data: clientTasks = [] } = useQuery({
-    queryKey: ['chatInboxClient', me?.id],
+    queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-updated_date', 50),
     enabled: !!me?.id,
     staleTime: 60000,
@@ -38,26 +39,8 @@ export default function ChatInbox() {
     refetchOnWindowFocus: false,
   });
 
-  // Real-time task status sync for inbox
-  useEffect(() => {
-    if (!me?.id) return;
-    const unsub = base44.entities.Task.subscribe((event) => {
-      const taskData = event.data || {};
-      const updateInbox = (key, matchFn) => {
-        queryClient.setQueryData([key, me.id], (old = []) => {
-          if (event.type === 'update') {
-            if (matchFn(taskData) && !old.find(x => x.id === event.id)) return [taskData, ...old];
-            return old.map(x => x.id === event.id ? { ...x, ...taskData } : x);
-          }
-          if (event.type === 'delete') return old.filter(x => x.id !== event.id);
-          return old;
-        });
-      };
-      updateInbox('chatInboxWorker', t => t.worker_id === me.id);
-      updateInbox('chatInboxClient', t => t.client_id === me.id);
-    });
-    return unsub;
-  }, [me?.id, queryClient]);
+  // Layout's useRealtimeSync already updates workerTasksLayout & myPublishedTasks caches via WebSocket.
+  // No need for a duplicate subscription here.
 
   // Merge and deduplicate
   const allTasks = useMemo(() => {

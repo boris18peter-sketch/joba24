@@ -198,14 +198,7 @@ export default function Layout() {
       else if (!prevTasksRef.current[task.id]) prevTasksRef.current[task.id] = task;
     });
   }, [workerTasks]);
-  useEffect(() => {
-    if (!me?.id) return;
-    base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50).then((tasks) => {
-      tasks.forEach((task) => {
-        if (task.status === 'TAKEN') { prevTasksRef.current[task.id] = task; takenWorkerRef.current[task.id] = task.worker_id; }
-      });
-    });
-  }, [me?.id]);
+  // Redundant API call removed — workerTasks query (line 156) already fetches this data
 
   // Live refs for subscriptions
   const myPublishedTasksRef = useRef(myPublishedTasks);

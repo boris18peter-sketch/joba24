@@ -284,6 +284,7 @@ export default function AdminDashboard() {
     queryFn: () => base44.entities.Review.list('-created_date', 200),
     enabled: me?.role === 'admin' && tab === 'users',
     staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: supportMessages = [], refetch: refetchSupport } = useQuery({
