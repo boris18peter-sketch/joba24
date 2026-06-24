@@ -19,7 +19,8 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['quickChat', task.id],
     queryFn: () => base44.entities.ChatMessage.filter({ task_id: task.id }, 'created_date', 100),
-    refetchInterval: 3000,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
 
   // Real-time subscription
