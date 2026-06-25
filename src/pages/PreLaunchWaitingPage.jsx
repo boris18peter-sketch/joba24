@@ -1,28 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
-import InstallGuide from '@/components/InstallGuide';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
-function isInStandaloneMode() {
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-}
-
-function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
 export default function PreLaunchWaitingPage({ me }) {
-  const navigate = useNavigate();
-  const [isPWA, setIsPWA] = useState(false);
   const [notifPerm, setNotifPerm] = useState('default');
   const [locPerm, setLocPerm] = useState('default');
 
   useEffect(() => {
-    setIsPWA(isInStandaloneMode());
     if (typeof Notification !== 'undefined') {
       setNotifPerm(Notification.permission);
     }
@@ -60,7 +47,6 @@ export default function PreLaunchWaitingPage({ me }) {
   };
 
   const notifSupported = typeof Notification !== 'undefined';
-  const showNotifInstallHint = isIOS() && !isPWA;
 
   return (
     <div dir="rtl" style={{
@@ -110,15 +96,9 @@ export default function PreLaunchWaitingPage({ me }) {
           <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>התכונן להשקה ב-2 צעדים</span>
         </div>
 
-        {/* Step 1: Install to home screen */}
+        {/* Step 1: Enable notifications — triggers native dialog */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>צעד 1</div>
-          <InstallGuide isIOS={isIOS()} isPWA={isPWA} />
-        </div>
-
-        {/* Step 2: Enable notifications — triggers native dialog */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>צעד 2</div>
           <div style={{
             background: notifPerm === 'granted' ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.07)',
             backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
@@ -141,16 +121,14 @@ export default function PreLaunchWaitingPage({ me }) {
               <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
                 {notifPerm === 'granted'
                   ? 'מעולה! תקבל עדכון על כל עבודה חדשה.'
-                  : showNotifInstallHint
-                    ? 'התקן את האפליקציה (צעד 1) ואז אפשר התראות.'
-                    : notifPerm === 'denied'
-                      ? 'הפעל התראות מהגדרות הטלפון → Joba24'
-                      : 'קבל עדכון מיידי על כל עבודה חדשה באזורך.'}
+                  : notifPerm === 'denied'
+                    ? 'הפעל התראות מהגדרות הטלפון → Joba24'
+                    : 'קבל עדכון מיידי על כל עבודה חדשה באזורך.'}
               </div>
             </div>
             {notifPerm === 'granted' ? (
               <span style={{ fontSize: 18 }}>✅</span>
-            ) : notifSupported && !showNotifInstallHint && notifPerm === 'default' ? (
+            ) : notifSupported && notifPerm === 'default' ? (
               <button
                 onClick={handleEnableNotifications}
                 style={{
@@ -167,50 +145,53 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         </div>
 
-        {/* Location — triggers native dialog */}
-        <div style={{
-          background: locPerm === 'granted' ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-          border: `1.5px solid ${locPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.12)'}`,
-          borderRadius: 14, padding: '14px 16px', marginBottom: 20,
-          display: 'flex', alignItems: 'center', gap: 12,
-        }}>
+        {/* Step 2: Location — triggers native dialog */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>צעד 2</div>
           <div style={{
-            width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-            background: locPerm === 'granted' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: `1px solid ${locPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.15)'}`,
+            background: locPerm === 'granted' ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.07)',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            border: `1.5px solid ${locPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.12)'}`,
+            borderRadius: 14, padding: '14px 16px',
+            display: 'flex', alignItems: 'center', gap: 12,
           }}>
-            {locPerm === 'granted'
-              ? <CheckCircle2 size={20} color="#34d399" />
-              : <MapPin size={20} color="rgba(255,255,255,0.8)" />}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2 }}>אפשר גישה למיקום</div>
-            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+            <div style={{
+              width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+              background: locPerm === 'granted' ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${locPerm === 'granted' ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.15)'}`,
+            }}>
               {locPerm === 'granted'
-                ? 'מעולה! נציג לך עבודות רלוונטיות באזורך.'
-                : locPerm === 'denied'
-                  ? 'הפעל מיקום מהגדרות הטלפון → Joba24'
-                  : 'אפשר גישה למיקום כדי לקבל עבודות רלוונטיות באזורך.'}
+                ? <CheckCircle2 size={20} color="#34d399" />
+                : <MapPin size={20} color="rgba(255,255,255,0.8)" />}
             </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2 }}>אפשר גישה למיקום</div>
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                {locPerm === 'granted'
+                  ? 'מעולה! נציג לך עבודות רלוונטיות באזורך.'
+                  : locPerm === 'denied'
+                    ? 'הפעל מיקום מהגדרות הטלפון → Joba24'
+                    : 'אפשר גישה למיקום כדי לקבל עבודות רלוונטיות באזורך.'}
+              </div>
+            </div>
+            {locPerm === 'granted' ? (
+              <span style={{ fontSize: 18 }}>✅</span>
+            ) : locPerm === 'default' ? (
+              <button
+                onClick={handleEnableLocation}
+                style={{
+                  padding: '8px 14px', borderRadius: 10, flexShrink: 0,
+                  background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)',
+                  color: '#fbbf24', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                אפשר
+                <ChevronLeft size={12} />
+              </button>
+            ) : null}
           </div>
-          {locPerm === 'granted' ? (
-            <span style={{ fontSize: 18 }}>✅</span>
-          ) : locPerm === 'default' ? (
-            <button
-              onClick={handleEnableLocation}
-              style={{
-                padding: '8px 14px', borderRadius: 10, flexShrink: 0,
-                background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)',
-                color: '#fbbf24', fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              אפשר
-              <ChevronLeft size={12} />
-            </button>
-          ) : null}
         </div>
 
         {/* Waiting status badge */}

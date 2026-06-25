@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const SIGNUP_BONUS = 100;
+const SIGNUP_BONUS = 60;
 
 Deno.serve(async (req) => {
   try {
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       amount: SIGNUP_BONUS,
       type: 'Signup_Bonus',
       balance_after: SIGNUP_BONUS,
-      note: 'בונוס הצטרפות - 100 ג\'ובות במתנה',
+      note: "בונוס הצטרפות - 60 ג'ובות במתנה",
     });
 
     console.log(`✅ Signup bonus granted to user ${user.id}`);

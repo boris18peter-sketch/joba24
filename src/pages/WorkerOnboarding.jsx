@@ -102,27 +102,27 @@ export default function WorkerOnboarding() {
         await base44.auth.updateMe(updateData);
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
-        // On last step — mark join completed + grant 25 credits bonus (once per user, server-checked)
+        // On last step — mark join completed + grant 20 credits profile bonus (once per user, server-checked)
         if (isLastStep && me?.id) {
           localStorage.setItem(JOIN_COMPLETED_KEY, '1');
           const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
           // Fast path: localStorage says already granted
           if (!localStorage.getItem(bonusKey)) {
-            // Server-side guard: check if a Signup_Bonus transaction already exists for this user
+            // Server-side guard: check if a Loyalty_Reward (profile bonus) transaction already exists
             const existingBonus = await base44.entities.CreditTransaction.filter({
               user_id: me.id,
-              type: 'Signup_Bonus',
+              type: 'Loyalty_Reward',
             });
             if (existingBonus.length === 0) {
               const freshMe = await base44.auth.me();
-              const currentCredits = freshMe.worker_credits ?? 100;
-              await base44.auth.updateMe({ worker_credits: currentCredits + 25 });
+              const currentCredits = freshMe.worker_credits ?? 60;
+              await base44.auth.updateMe({ worker_credits: currentCredits + 20 });
               await base44.entities.CreditTransaction.create({
                 user_id: me.id,
-                amount: 25,
-                type: 'Signup_Bonus',
+                amount: 20,
+                type: 'Loyalty_Reward',
                 note: 'בונוס מילוי פרופיל עובד',
-                balance_after: currentCredits + 25,
+                balance_after: currentCredits + 20,
               });
               queryClient.invalidateQueries({ queryKey: ['me'] });
             }
@@ -276,7 +276,7 @@ export default function WorkerOnboarding() {
         {/* Bonus badge */}
         <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
           <div style={{ fontSize: 28, marginBottom: 4 }}>🎁</div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>קיבלת 25 ג'ובות!</div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>קיבלת 20 ג'ובות!</div>
           <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>בונוס על מילוי הפרופיל</div>
         </div>
         <button

@@ -45,6 +45,7 @@ const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
 const QADashboard = lazy(() => import('@/pages/QADashboard'));
 const Terms = lazy(() => import('@/pages/Terms'));
+const ReferralRedirect = lazy(() => import('@/pages/ReferralRedirect'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -141,6 +142,7 @@ const AuthenticatedApp = () => {
           style={{ position: 'absolute', inset: 0, willChange: 'transform' }}
         >
           <Routes location={location}>
+            <Route path="/r/:code" element={<ReferralRedirect />} />
             <Route path="/lp" element={<Landing />} />
             <Route element={<Layout />}>
               <Route path="/" element={<HomeFeed />} />

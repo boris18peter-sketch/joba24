@@ -61,7 +61,7 @@ export default function AgentDashboard() {
   const allTasks = Object.values(allTasksMap);
 
   const totalTurnover = workerTasks.reduce((sum, t) => sum + (t.price || 0), 0);
-  const referralLink = `${window.location.origin}/?ref=${me.agent_code}`;
+  const referralLink = `${window.location.origin}/r/${me.agent_code}`;
   const workerOnboardingLink = `${window.location.origin}/join?ref=${me.agent_code}`;
 
   const handleCopy = () => {

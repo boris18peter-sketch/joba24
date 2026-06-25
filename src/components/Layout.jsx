@@ -44,7 +44,7 @@ import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import RatingModal from '@/components/RatingModal';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
-import SignupGiftModal from '@/components/SignupGiftModal';
+
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
@@ -127,14 +127,6 @@ export default function Layout() {
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
-
-  // Show signup gift modal for brand-new users
-  const [showGiftModal, setShowGiftModal] = useState(false);
-  useEffect(() => {
-    if (!me || !isAuthenticated) return;
-    if (localStorage.getItem('joba24_gift_claimed')) return;
-    if (me.worker_credits === null || me.worker_credits === undefined) setShowGiftModal(true);
-  }, [me?.id, isAuthenticated]);
 
   // Send welcome email for brand-new users (covers all registration methods)
   useEffect(() => {
@@ -374,7 +366,6 @@ export default function Layout() {
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 
-      {showGiftModal && createPortal(<SignupGiftModal onClose={() => setShowGiftModal(false)} />, document.body)}
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {revokedTask && createPortal(<ApprovalRevokedPopup task={revokedTask} onClose={() => setRevokedTask(null)} />, document.body)}
       {cancelledTask && createPortal(<WorkerCancelledPopup task={cancelledTask} onClose={() => setCancelledTask(null)} />, document.body)}
