@@ -166,10 +166,10 @@ export default function SimulatorPanel() {
   const [bulkCount, setBulkCount] = useState(20);
   const [bulkMinPrice, setBulkMinPrice] = useState(100);
   const [bulkMaxPrice, setBulkMaxPrice] = useState(2000);
-  const bulkTasks = myTasks.filter(t => t.title?.startsWith('🧪🏙️'));
 
   const myTasks = allTasks.filter(t => t.client_id === me?.id);
   const testTasks = myTasks.filter(t => t.title?.includes('🧪'));
+  const bulkTasks = myTasks.filter(t => t.title?.startsWith('🧪🏙️'));
   const openTasks = allTasks.filter(t => t.status === 'OPEN');
   const myOpenTasks = myTasks.filter(t => t.status === 'OPEN');
   const takenByMe = allTasks.filter(t => t.worker_id === me?.id && ['TAKEN', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'APPROVED_PENDING_DEPARTURE'].includes(t.status));
