@@ -122,53 +122,7 @@
   }
 }
 
-/* ── DARK MODE ─────────────────────────────────────────────────────── */
 @layer base {
-  .dark {
-    --background:          222 25% 10%;
-    --surface-1:    #0c1422;
-    --surface-2:    #132038;
-    --surface-3:    #192d4a;
-    --surface-4:    #1e3558;
-    --text-1:       #e0e8f8;
-    --text-2:       #8da4c4;
-    --text-3:       #536a8a;
-    --border-1:     #1d3356;
-    --border-2:     #1d3356;
-    --header-bg:    rgba(12,20,34,0.97);
-    --nav-bg:       #0c1422;
-    --modal-bg:     #132038;
-    --sheet-bg:     #132038;
-    --card-bg:      #132038;
-    --input-bg:     #192d4a;
-    --overlay-bg:   rgba(3,8,20,0.82);
-    --tag-bg:       #192d4a;
-    --tag-muted:    #223a59;
-    --white-text:   #e0e8f8;
-    --danger-bg:    #2c1012;
-    --danger-border:#7f1d1d;
-    --success-bg:   #0b2212;
-    --warning-bg:   #271b06;
-    --foreground:   210 20% 92%;
-    --card:         222 25% 13%;
-    --card-foreground: 210 20% 92%;
-    --popover:      222 25% 13%;
-    --popover-foreground: 210 20% 92%;
-    --primary:      213 80% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary:    222 20% 18%;
-    --secondary-foreground: 210 15% 80%;
-    --muted:        222 20% 16%;
-    --muted-foreground: 215 12% 55%;
-    --accent:       213 80% 58%;
-    --accent-foreground: 0 0% 100%;
-    --destructive:  0 72% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border:       222 20% 20%;
-    --input:        222 20% 20%;
-    --ring:         213 80% 58%;
-  }
-
   * { @apply border-border outline-ring/50; }
 
   html, body {
@@ -183,7 +137,6 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-inter);
     box-sizing: border-box;
-    padding-top: max(0px, env(safe-area-inset-top));
     padding-bottom: max(0px, env(safe-area-inset-bottom));
     padding-left: max(0px, env(safe-area-inset-left));
     padding-right: max(0px, env(safe-area-inset-right));
@@ -342,19 +295,31 @@
 
 .mobile-sheet-overlay,
 .mobile-modal-center,
+[style*="z-index: 999"],
+[style*="zIndex: 999"],
+[style*="z-index: 1000"],
+[style*="zIndex: 1000"],
+[style*="z-index: 1001"],
+[style*="zIndex: 1001"],
 [style*="z-index: 9999"],
 [style*="zIndex: 9999"],
-[style*="z-index: 99999"],
-[style*="zIndex: 99999"],
-[style*="z-index: 999999"],
-[style*="zIndex: 999999"] {
+[style*="z-index: 10000"],
+[style*="zIndex: 10000"],
+[style*="z-index: 10001"],
+[style*="zIndex: 10001"],
+[style*="z-index: 10002"],
+[style*="zIndex: 10002"],
+[style*="z-index: 10010"],
+[style*="zIndex: 10010"],
+[style*="z-index: 100000"],
+[style*="zIndex: 100000"],
+[style*="z-index: 100001"],
+[style*="zIndex: 100001"],
+[style*="z-index: 9999998"],
+[style*="zIndex: 9999998"],
+[style*="z-index: 9999999"],
+[style*="zIndex: 9999999"] {
   z-index: 9999 !important;
-}
-[style*="z-index: 99999"],
-[style*="zIndex: 99999"],
-[style*="z-index: 999999"],
-[style*="zIndex: 999999"] {
-  z-index: 999999 !important;
 }
 
 /* ── Scrollbars ── */
@@ -454,113 +419,3 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 @keyframes newTaskGlow    { 0%,100%{box-shadow:0 0 0 2px rgba(26,111,212,0.18),0 4px 24px rgba(26,111,212,0.08)} 50%{box-shadow:0 0 0 4px rgba(26,111,212,0.55),0 6px 40px rgba(26,111,212,0.32)} }
 
 .pin-bounce { animation: pin-bounce 2s ease-in-out infinite; }
-
-/* ════════════════════════════════════════════════════════════════════
-   DARK MODE — attribute overrides
-   (applied when .dark class is on <html>)
-   ════════════════════════════════════════════════════════════════════ */
-
-/* Hardcoded white / light backgrounds → surface-2 */
-.dark .mobile-sheet,
-.dark [style*="background: white"],
-.dark [style*="background:white"],
-.dark [style*="background: #ffffff"],
-.dark [style*="background: #fff"],
-.dark [style*="background:#ffffff"],
-.dark [style*="background:#fff"],
-.dark [style*="background-color: white"],
-.dark [style*="background-color: #ffffff"],
-.dark [style*="background-color: #fff"] {
-  background: var(--surface-2) !important;
-  color: var(--text-1) !important;
-}
-
-.dark input:not([type="range"]), .dark textarea, .dark select {
-  background: var(--input-bg) !important;
-  color: var(--text-1) !important;
-  border-color: var(--border-1) !important;
-}
-
-/* Light surface backgrounds */
-.dark [style*="background: #f4f7fb"], .dark [style*="background: #f2f5fb"],
-.dark [style*="background: #f1f5f9"], .dark [style*="background: #f8fafc"],
-.dark [style*="background: #eff4fb"], .dark [style*="background: #eef3fc"],
-.dark [style*="background: #f0f2f7"], .dark [style*="background: #f3f4f6"],
-.dark [style*="background: #e8edf5"], .dark [style*="background: #f0f4f8"],
-.dark [style*="background: #f8faff"], .dark [style*="background: #f9fafb"],
-.dark [style*="background: #f8fafc"] { background: var(--surface-3) !important; }
-
-/* Dark text → light */
-.dark [style*="color: #0f1e40"], .dark [style*="color: #0d1e40"],
-.dark [style*="color: #0f2b6b"], .dark [style*="color: #0a1f4e"],
-.dark [style*="color: #1f2937"], .dark [style*="color: #374151"],
-.dark [style*="color: #1a1a1a"], .dark [style*="color: #111827"] { color: var(--text-1) !important; }
-.dark [style*="color: #6b7280"], .dark [style*="color: #64748b"],
-.dark [style*="color: #475569"], .dark [style*="color: #9ca3af"],
-.dark [style*="color: #94a3b8"], .dark [style*="color: #4b6083"] { color: var(--text-2) !important; }
-.dark [style*="color: #a0b8d8"], .dark [style*="color: #b0c4d8"],
-.dark [style*="color: #d1d5db"]  { color: var(--text-3) !important; }
-
-/* Borders */
-.dark [style*="border: 1px solid #e8edf5"],   .dark [style*="border: 1.5px solid #e8edf5"],
-.dark [style*="border: 1px solid #e4eaf5"],   .dark [style*="border: 1.5px solid #e4eaf5"],
-.dark [style*="border: 1px solid #dce8f5"],   .dark [style*="border: 1.5px solid #dce8f5"],
-.dark [style*="border: 1px solid #f1f5f9"],   .dark [style*="border: 1.5px solid #f1f5f9"],
-.dark [style*="border: 1px solid #e2e8f0"],   .dark [style*="border: 1.5px solid #e2e8f0"],
-.dark [style*="border: 1px solid #e5e7eb"],   .dark [style*="border: 1.5px solid #e5e7eb"],
-.dark [style*="border: 1px solid #e5e9f5"],   .dark [style*="border: 1.5px solid #e5e9f5"],
-.dark [style*="border-color: #e8edf5"],        .dark [style*="border-color: #dce8f5"],
-.dark [style*="border-bottom: 1.5px solid #e8edf5"],
-.dark [style*="border-top: 1px solid #e8edf5"] { border-color: var(--border-1) !important; }
-
-.dark [style*="border: 1px solid white"], .dark [style*="border: 1.5px solid white"],
-.dark [style*="border: 2px solid white"], .dark [style*="border-color: white"],
-.dark [style*="border-color: #fff"], .dark [style*="border-color: #ffffff"] { border-color: var(--border-1) !important; }
-
-/* Overlays & sheet */
-.dark .mobile-sheet-overlay,
-.dark [style*="background: rgba(5,15,40"], .dark [style*="background: rgba(5, 15, 40"] { background: var(--overlay-bg) !important; }
-
-/* Status tints */
-.dark [style*="background: #fff7ed"], .dark [style*="background: #fffbeb"] { background: var(--warning-bg) !important; border-color: #92400e !important; }
-.dark [style*="background: #fee2e2"], .dark [style*="background: #fef2f2"],
-.dark [style*="background: #fff1f2"] { background: var(--danger-bg) !important; border-color: var(--danger-border) !important; }
-.dark [style*="background: #f0fdf4"], .dark [style*="background: #dcfce7"] { background: var(--success-bg) !important; }
-.dark [style*="background: #eff6ff"], .dark [style*="background: #dbeafe"] { background: rgba(26,65,110,0.5) !important; border-color: var(--border-2) !important; }
-.dark [style*="background: #f1f5f9"] { background: var(--surface-3) !important; }
-
-/* Separator lines / dividers */
-.dark [style*="background: #e5e7eb"], .dark [style*="background: #e8edf5"],
-.dark [style*="background: #dde3ee"], .dark [style*="background: #d1dde8"],
-.dark [style*="background: #edf0f7"], .dark [style*="background: #f0f2f7"],
-.dark [style*="background: #e5e9f5"], .dark [style*="background: #e4e8f0"],
-.dark [style*="background: #e4eaf5"] { background: var(--border-1) !important; }
-
-/* White pill / badge bg */
-.dark [style*="background: rgba(255,255,255"],
-.dark [style*="background: rgba(255, 255, 255"] { background: rgba(255,255,255,0.07) !important; }
-
-/* Divider border lines */
-.dark [style*="border-top: 1px solid"], .dark [style*="border-bottom: 1px solid"],
-.dark [style*="border-top: 1.5px solid"], .dark [style*="border-bottom: 1.5px solid"] { border-color: var(--border-1) !important; }
-
-/* Stats / secondary text */
-.dark [style*="color: #64748b"], .dark [style*="color: #6b7280"],
-.dark [style*="color: #718096"], .dark [style*="color: #475569"] { color: var(--text-2) !important; }
-.dark [style*="color: #94a3b8"], .dark [style*="color: #9ca3af"] { color: var(--text-3) !important; }
-.dark [style*="color: #e2e8f0"], .dark [style*="color: #e8edf5"],
-.dark [style*="color: #e4eaf5"] { color: var(--border-1) !important; }
-
-/* Blue-tinted info */
-.dark [style*="background: #eff6ff"] { background: rgba(26,111,212,0.18) !important; }
-.dark [style*="background: #f8faff"], .dark [style*="background: #f8fafc"],
-.dark [style*="background: #f9fafb"] { background: var(--surface-3) !important; }
-
-/* tag/chip */
-.dark [style*="background: #eff4fb"], .dark [style*="background: #eef2f8"],
-.dark [style*="background: #f0f4fb"], .dark [style*="background: #eef3fc"] { background: var(--surface-3) !important; }
-
-/* Credits modal non-popular cards */
-.dark .pkg-card:not(.pkg-glow) {
-  background: var(--surface-3) !important; border-color: var(--border-1) !important; color: var(--text-1) !important;
-}
