@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, User, ChevronLeft } from 'lucide-react';
+import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, User, ChevronLeft, Phone } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
@@ -48,14 +48,15 @@ export default function WorkerProfile() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const viewUserId = searchParams.get('id');
+  const taskId = searchParams.get('taskId');
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: viewUser } = useQuery({
-    queryKey: ['user', viewUserId],
+    queryKey: ['publicUser', viewUserId, taskId],
     queryFn: async () => {
       if (!viewUserId) return null;
-      const users = await base44.entities.User.list();
-      return users.find(u => u.id === viewUserId);
+      const res = await base44.functions.invoke('getPublicUserProfile', { userId: viewUserId, taskId });
+      return res.data?.user || null;
     },
     enabled: !!viewUserId,
   });
@@ -269,6 +270,18 @@ export default function WorkerProfile() {
         {isViewingOther && form.bio && (
           <SectionCard title="אודות">
             <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{form.bio}</p>
+          </SectionCard>
+        )}
+
+        {/* Phone — revealed only for approved worker on caller's task */}
+        {isViewingOther && currentUser?.phone && (
+          <SectionCard title="יצירת קשר">
+            <a href={`tel:${currentUser.phone}`} dir="ltr" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Phone size={18} color="#16a34a" />
+              </div>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#16a34a' }}>{currentUser.phone}</span>
+            </a>
           </SectionCard>
         )}
 

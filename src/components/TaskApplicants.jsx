@@ -31,8 +31,11 @@ export default function TaskApplicants({ task, onApprove }) {
   // Fetch approved worker's user record to get their phone (for mutual reveal)
   const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
   const { data: approvedWorkerUser } = useQuery({
-    queryKey: ['publicUser', approvedWorkerId],
-    queryFn: async () => { const u = await base44.entities.User.filter({ id: approvedWorkerId }); return u[0] || null; },
+    queryKey: ['publicUser', approvedWorkerId, task.id],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getPublicUserProfile', { userId: approvedWorkerId, taskId: task.id });
+      return res.data?.user || null;
+    },
     enabled: !!approvedWorkerId,
     staleTime: 120000,
   });
@@ -268,7 +271,7 @@ export default function TaskApplicants({ task, onApprove }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div
-                onClick={() => navigate(`/public-profile?id=${app.worker_id}`)}
+                onClick={() => navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`)}
                 style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 900, color: 'white', cursor: 'pointer', flexShrink: 0 }}
               >
                 {app.worker_name?.[0]?.toUpperCase() || '?'}
@@ -276,7 +279,7 @@ export default function TaskApplicants({ task, onApprove }) {
 
               <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                 <span onClick={() => navigate(`/public-profile?id=${app.worker_id}`)} style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40', cursor: 'pointer' }}>
+                 <span onClick={() => navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`)} style={{ fontSize: 13, fontWeight: 800, color: '#0f1e40', cursor: 'pointer' }}>
                    {app.worker_name}
                  </span>
                  {app.worker_verified && (

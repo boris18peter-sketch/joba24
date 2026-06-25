@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X } from 'lucide-react';
+import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
 import { getCategoryLabel } from '@/lib/categories';
@@ -46,25 +46,14 @@ export default function PublicProfile() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('id');
+  const taskId = searchParams.get('taskId');
 
   const { data: user, isLoading } = useQuery({
-    queryKey: ['publicProfileUser', userId],
+    queryKey: ['publicProfileUser', userId, taskId],
     queryFn: async () => {
       if (!userId) return null;
-      try {
-        const users = await base44.entities.User.filter({ id: userId });
-        if (users?.length > 0) return users[0];
-      } catch (_) {}
-      try {
-        const workerTasks = await base44.entities.Task.filter({ worker_id: userId }, '-created_date', 1);
-        const clientTasks = await base44.entities.Task.filter({ client_id: userId }, '-created_date', 1);
-        const task = workerTasks[0] || clientTasks[0];
-        if (task) {
-          const isWorker = task.worker_id === userId;
-          return { id: userId, full_name: isWorker ? task.worker_name : task.client_name, rating: isWorker ? task.worker_rating : task.client_rating, is_verified: isWorker ? task.worker_verified : task.client_verified };
-        }
-      } catch (_) {}
-      return null;
+      const res = await base44.functions.invoke('getPublicUserProfile', { userId, taskId });
+      return res.data?.user || null;
     },
     enabled: !!userId,
     staleTime: 60000,
@@ -172,6 +161,14 @@ export default function PublicProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Phone — revealed only for approved worker on caller's task */}
+        {user.phone && (
+          <a href={`tel:${user.phone}`} dir="ltr"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 800, fontSize: 15, textDecoration: 'none', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}>
+            <Phone size={18} color="white" /> {user.phone}
+          </a>
+        )}
 
         {/* Trust bar */}
         <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
