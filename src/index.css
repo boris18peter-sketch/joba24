@@ -183,6 +183,7 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-inter);
     box-sizing: border-box;
+    padding-top: max(0px, env(safe-area-inset-top));
     padding-bottom: max(0px, env(safe-area-inset-bottom));
     padding-left: max(0px, env(safe-area-inset-left));
     padding-right: max(0px, env(safe-area-inset-right));
@@ -341,15 +342,12 @@
 
 .mobile-sheet-overlay,
 .mobile-modal-center,
-[style*="z-index: 1000"], [style*="zIndex: 1000"],
-[style*="z-index: 1001"], [style*="zIndex: 1001"],
-[style*="z-index: 10000"], [style*="zIndex: 10000"],
-[style*="z-index: 10001"], [style*="zIndex: 10001"],
-[style*="z-index: 100001"], [style*="zIndex: 100001"],
-[style*="z-index: 9999"], [style*="zIndex: 9999"],
-[style*="z-index: 99999"], [style*="zIndex: 99999"],
-[style*="z-index: 999999"], [style*="zIndex: 999999"],
-[style*="z-index: 9999999"], [style*="zIndex: 9999999"] {
+[style*="z-index: 9999"],
+[style*="zIndex: 9999"],
+[style*="z-index: 99999"],
+[style*="zIndex: 99999"],
+[style*="z-index: 999999"],
+[style*="zIndex: 999999"] {
   z-index: 9999 !important;
 }
 [style*="z-index: 99999"],
