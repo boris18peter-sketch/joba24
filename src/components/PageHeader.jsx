@@ -13,10 +13,7 @@ export default function PageHeader({ title, right, backTo }) {
       position: 'sticky', top: 0, zIndex: 50,
       background: 'var(--header-bg)',
       backdropFilter: 'blur(8px)',
-      paddingTop: 'calc(env(safe-area-inset-top) + 7px)',
-      paddingRight: 12,
-      paddingBottom: 6,
-      paddingLeft: 12,
+      padding: '7px 12px 6px',
       borderBottom: '1px solid var(--border-1)',
       display: 'flex', alignItems: 'center', gap: 12
     }}>

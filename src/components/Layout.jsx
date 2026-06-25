@@ -70,8 +70,7 @@ export default function Layout() {
         if (child.classList?.contains('j-bottom-nav')) return false;
         const style = child.getAttribute('style') || '';
         if (style.includes('pointer-events: none') || style.includes('pointerEvents: none')) return false;
-        const zMatch = style.match(/z-?index:\s*(\d+)/i);
-        return zMatch && parseInt(zMatch[1]) >= 9999;
+        return /z-index:\s*9999/.test(style);
       });
       setNavHiddenByModal(hasModal);
     };
