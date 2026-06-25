@@ -15,6 +15,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
 import ResetPassword from '@/pages/ResetPassword';
+import useDarkMode from '@/hooks/useDarkMode';
 
 // Add page imports here
 // App entry — force reload to clear stale dynamic import cache
@@ -185,6 +186,9 @@ const AuthenticatedApp = () => {
 };
 
 function App() {
+  // System dark mode — syncs .dark class on <html> with OS preference
+  useDarkMode();
+
   // Prevent pinch zoom on iOS — only block on elements that explicitly opt in
   React.useEffect(() => {
     const handleTouchMove = (e) => {

@@ -35,6 +35,7 @@ export default function AppHeader({ onOpenMenu }) {
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           height: 60,
+          paddingTop: 'max(0px, env(safe-area-inset-top))',
           display: 'flex', alignItems: 'center',
           paddingRight: 14, paddingLeft: 14,
           justifyContent: 'space-between',
