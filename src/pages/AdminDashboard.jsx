@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 
@@ -103,10 +103,56 @@ function SetAgentModal({ user, onClose, onSave }) {
   );
 }
 
-function UserRow({ user, onToggleBlock, onSetAgent }) {
+function SendCreditsModal({ user, onClose, onSave }) {
+  const [amount, setAmount] = useState(10);
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    setLoading(true);
+    try {
+      await onSave(user, Number(amount), note.trim());
+      onClose();
+    } catch (e) {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface-2)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 }} dir="rtl">
+        <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Coins size={18} color="#d97706" /> שליחת קרדיטים
+        </div>
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>{user.full_name} · {user.email}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 16, padding: '8px 10px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
+          יתרה נוכחית: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong> ג'ובות
+        </div>
+        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>כמות קרדיטים (חיובי להוספה, שלילי להפחתה)</label>
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+          style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 16, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 12 }} />
+        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>הערה (אופציונלי)</label>
+        <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="פיצוי, בונוס, תיקון..."
+          style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 16 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleSend} disabled={loading || !amount || amount === '0'}
+            style={{ flex: 1, height: 42, borderRadius: 12, background: Number(amount) >= 0 ? '#d97706' : '#dc2626', color: 'white', border: 'none', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <><Coins size={14} /> שלח {amount > 0 ? '+' : ''}{amount || 0}</>}
+          </button>
+          <button onClick={onClose} style={{ height: 42, padding: '0 14px', borderRadius: 12, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+            ביטול
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const isAgent = user.role === 'agent';
 
@@ -173,6 +219,15 @@ function UserRow({ user, onToggleBlock, onSetAgent }) {
           {user.preferred_categories?.length > 0 && <div><strong>קטגוריות:</strong> {user.preferred_categories.join(', ')}</div>}
           {user.role && <div><strong>תפקיד:</strong> {user.role}</div>}
           {/* Approval status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>ג'ובות: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong></span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowCreditsModal(true); }}
+              style={{ padding: '3px 10px', borderRadius: 10, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              <Coins size={11} /> שלח קרדיטים
+            </button>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
             <span style={{ fontWeight: 700 }}>סטטוס:</span>
             <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: user.is_approved ? '#dcfce7' : '#fef9c3', color: user.is_approved ? '#166534' : '#854d0e' }}>
@@ -213,6 +268,7 @@ function UserRow({ user, onToggleBlock, onSetAgent }) {
       )}
     </div>
     {showAgentModal && <SetAgentModal user={user} onClose={() => setShowAgentModal(false)} onSave={onSetAgent} />}
+    {showCreditsModal && <SendCreditsModal user={user} onClose={() => setShowCreditsModal(false)} onSave={onSendCredits} />}
     </>
   );
 }
@@ -355,6 +411,16 @@ export default function AdminDashboard() {
     await base44.entities.User.update(user.id, { is_blocked: !user.is_blocked });
     queryClient.setQueryData(['adminUsers'], (old = []) =>
       old.map(u => u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u)
+    );
+  };
+
+  const handleSendCredits = async (user, amount, note) => {
+    const res = await base44.functions.invoke('sendCreditsToUser', {
+      targetUserId: user.id, amount, note,
+    });
+    if (res.data?.error) throw new Error(res.data.error);
+    queryClient.setQueryData(['adminUsers'], (old = []) =>
+      old.map(u => u.id === user.id ? { ...u, worker_credits: res.data.newBalance } : u)
     );
   };
 
@@ -506,7 +572,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{filteredUsers.length} משתמשים</div>
             )}
             {filteredUsers.map(user => (
-              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} />
+              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} />
             ))}
           </>
         )}

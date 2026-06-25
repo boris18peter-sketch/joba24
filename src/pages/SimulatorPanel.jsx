@@ -17,8 +17,9 @@ import {
   CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp,
   Play, Zap, Clock, User, Wallet, Star, MessageCircle, ShieldCheck,
   Sparkles, Bell, Map, List, CreditCard, Flag, Navigation,
-  Eye, AlertTriangle, Gift, Phone, BarChart3, Layers
+  Eye, AlertTriangle, Gift, Phone, BarChart3, Layers, Building2
 } from 'lucide-react';
+import { ISRAELI_CITIES } from '@/lib/israeliCities';
 
 /* ─── Reusable UI ─────────────────────────── */
 function Section({ title, icon, children, danger, defaultOpen = false, badge }) {
@@ -159,6 +160,13 @@ export default function SimulatorPanel() {
 
   const [popup, setPopup] = useState(null);
   const closePopup = () => setPopup(null);
+
+  // Bulk task generator state
+  const [bulkCity, setBulkCity] = useState('תל אביב');
+  const [bulkCount, setBulkCount] = useState(20);
+  const [bulkMinPrice, setBulkMinPrice] = useState(100);
+  const [bulkMaxPrice, setBulkMaxPrice] = useState(2000);
+  const bulkTasks = myTasks.filter(t => t.title?.startsWith('🧪🏙️'));
 
   const myTasks = allTasks.filter(t => t.client_id === me?.id);
   const testTasks = myTasks.filter(t => t.title?.includes('🧪'));
@@ -804,6 +812,72 @@ export default function SimulatorPanel() {
         {allTasks.slice(0, 8).map(t => (
           <TaskPill key={t.id} task={t} onClick={() => navigate(`/task/${t.id}`)} />
         ))}
+      </Section>
+
+      {/* ── Bulk Task Generator ── */}
+      <Section title="🏙️ מחולל משימות בכמות" icon={<Building2 size={14} color="#0891b2" />} defaultOpen badge={bulkTasks.length}>
+        <div style={{ fontSize: 11, color: '#0e7490', padding: '6px 10px', background: '#ecfeff', borderRadius: 8, border: '1px solid #a5f3fc', lineHeight: 1.5 }}>
+          צור משימות רנדומליות בעיר נבחרת, במיקומים רנדומליים ובמחירים בטווח שתבחר. ניתן למחוק הכל בכפתור אחד.
+        </div>
+
+        {/* City selector */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>עיר</label>
+          <select value={bulkCity} onChange={e => setBulkCity(e.target.value)}
+            style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b' }}>
+            {ISRAELI_CITIES.filter(c => c !== 'אחר').map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        {/* Count */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>מספר משימות (1-100)</label>
+          <input type="number" value={bulkCount} onChange={e => setBulkCount(Math.min(100, Math.max(1, Number(e.target.value) || 1)))} min={1} max={100}
+            style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b', boxSizing: 'border-box' }} />
+        </div>
+
+        {/* Price range */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>מחיר מינ\' (₪)</label>
+            <input type="number" value={bulkMinPrice} onChange={e => setBulkMinPrice(Number(e.target.value) || 0)} min={0}
+              style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>מחיר מקס\' (₪)</label>
+            <input type="number" value={bulkMaxPrice} onChange={e => setBulkMaxPrice(Number(e.target.value) || 0)} min={0}
+              style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b', boxSizing: 'border-box' }} />
+          </div>
+        </div>
+
+        {/* Generate */}
+        <Btn label="🚀 צור משימות" color="#0891b2"
+          onClick={async () => {
+            if (bulkMinPrice > bulkMaxPrice) { toast.error('מחיר מינימום גבוה ממקסימום'); return; }
+            const res = await base44.functions.invoke('bulkSimulatorTasks', {
+              action: 'generate', city: bulkCity, count: bulkCount,
+              minPrice: bulkMinPrice, maxPrice: bulkMaxPrice,
+            });
+            if (res.data?.error) throw new Error(res.data.error);
+            toast.success(`✅ נוצרו ${res.data.count} משימות ב${bulkCity}`);
+          }} />
+
+        {/* Stats */}
+        {bulkTasks.length > 0 && (
+          <div style={{ fontSize: 11, color: '#0e7490', padding: '5px 10px', background: '#ecfeff', borderRadius: 8, border: '1px solid #a5f3fc' }}>
+            נוצרו עד כה: <strong>{bulkTasks.length}</strong> משימות סימולציה ({bulkTasks.filter(t => t.status === 'OPEN').length} פתוחות)
+          </div>
+        )}
+
+        {/* Delete all bulk tasks */}
+        {bulkTasks.length > 0 && (
+          <Btn label={`🗑️ מחק את כל ${bulkTasks.length} המשימות`} color="#dc2626"
+            onClick={async () => {
+              const res = await base44.functions.invoke('bulkSimulatorTasks', { action: 'cleanup' });
+              if (res.data?.error) throw new Error(res.data.error);
+              toast.success(`🗑️ נמחקו ${res.data.deleted} משימות`);
+            }} />
+        )}
       </Section>
 
       {/* ── Cleanup ── */}
