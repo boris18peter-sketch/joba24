@@ -1,13 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp, MapPin } from 'lucide-react';
+import { X, Home, Map, Plus, User, Trophy, Target, MessageCircle, Bell, ShieldCheck, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLanguage } from '@/lib/LanguageContext';
-import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 
 
 // navItems built inside component using t()
@@ -18,8 +17,6 @@ export default function SideMenu({ open, onClose }) {
   const { isAuthenticated } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const { t } = useLanguage();
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   const navItems = [
     { to: '/', icon: Home, label: t('nav_feed') },
@@ -35,80 +32,6 @@ export default function SideMenu({ open, onClose }) {
     queryFn: () => base44.auth.me(),
     enabled: isAuthenticated
   });
-
-  // Check permissions on mount and listen for changes
-  useEffect(() => {
-    const updatePermissions = () => {
-      const isLocEnabled = localStorage.getItem('joba24_location_enabled') === '1';
-      setLocationEnabled(isLocEnabled);
-
-      if (typeof Notification !== 'undefined') {
-        const isNotifEnabled = Notification.permission === 'granted';
-        setNotificationsEnabled(isNotifEnabled);
-      }
-    };
-
-    updatePermissions();
-
-    // Listen for permission changes from NotificationsPermissionPrompt
-    window.addEventListener('notif_permission_changed', updatePermissions);
-    return () => window.removeEventListener('notif_permission_changed', updatePermissions);
-  }, []);
-
-  // Toggle location — directly triggers the native geolocation permission dialog.
-  // No custom popup before the OS dialog. If already denied, does nothing.
-  const handleLocationToggle = async () => {
-    if (locationEnabled) {
-      localStorage.removeItem('joba24_location_enabled');
-      setLocationEnabled(false);
-      return;
-    }
-    // Only request if not already denied by the browser
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        localStorage.setItem('joba24_location_enabled', '1');
-        setLocationEnabled(true);
-      },
-      () => {
-        // User denied or permission blocked — silently update state
-        setLocationEnabled(false);
-      }
-    );
-  };
-
-  // Toggle notifications — directly triggers the native notification permission dialog.
-  // No custom popup before the OS dialog. If already denied, does nothing.
-  const handleNotificationsToggle = async () => {
-    if (notificationsEnabled) {
-      localStorage.setItem('joba24_notif_disabled', '1');
-      setNotificationsEnabled(false);
-      return;
-    }
-    if (typeof Notification === 'undefined') return;
-    // Only request if permission status is still 'default' (not determined)
-    if (Notification.permission !== 'default') return;
-
-    const perm = await requestNotificationPermission();
-    if (perm !== 'granted') return;
-
-    localStorage.removeItem('joba24_notif_disabled');
-    setNotificationsEnabled(true);
-
-    // Register FCM token
-    try {
-      const token = await getFCMToken();
-      if (!token) return;
-      const me = await base44.auth.me();
-      if (!me) return;
-      const existingTokens = me.fcm_tokens || [];
-      if (!existingTokens.includes(token)) {
-        await base44.auth.updateMe({ fcm_tokens: [...existingTokens, token] });
-      }
-    } catch (err) {
-      console.error('[Notif] Token save failed:', err?.message);
-    }
-  };
 
   return (
     <>
@@ -247,97 +170,6 @@ export default function SideMenu({ open, onClose }) {
         </nav>
         
         <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          {/* Toggles for Location & Notifications — compact inline */}
-          <div style={{ marginBottom: 16, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
-            {/* Location Toggle */}
-            <button
-              onClick={handleLocationToggle}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 10px',
-                background: 'rgba(255,255,255,0.06)',
-                borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.08)',
-                cursor: 'pointer',
-              }}
-            >
-              <MapPin size={16} color={locationEnabled ? '#10b981' : '#60a5fa'} />
-              <span style={{ fontSize: 11, color: '#bfdbfe', fontWeight: 500 }}>{t('location')}</span>
-              <div
-                style={{
-                  marginLeft: 'auto',
-                  width: 28,
-                  height: 16,
-                  borderRadius: 8,
-                  background: locationEnabled ? '#10b981' : '#4b5563',
-                  position: 'relative',
-                  transition: 'background 0.2s',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: 14,
-                    height: 14,
-                    borderRadius: 6,
-                    background: 'white',
-                    top: 1,
-                    left: locationEnabled ? 13 : 1,
-                    transition: 'left 0.2s',
-                  }}
-                />
-              </div>
-            </button>
-
-            {/* Notifications Toggle */}
-            <button
-              onClick={handleNotificationsToggle}
-              disabled={typeof Notification === 'undefined'}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 10px',
-                background: 'rgba(255,255,255,0.06)',
-                borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.08)',
-                cursor: typeof Notification === 'undefined' ? 'not-allowed' : 'pointer',
-                opacity: typeof Notification === 'undefined' ? 0.5 : 1,
-              }}
-            >
-              <Bell size={16} color={notificationsEnabled ? '#f59e0b' : '#60a5fa'} />
-              <span style={{ fontSize: 11, color: '#bfdbfe', fontWeight: 500 }}>{t('notifications')}</span>
-              <div
-                style={{
-                  marginLeft: 'auto',
-                  width: 28,
-                  height: 16,
-                  borderRadius: 8,
-                  background: notificationsEnabled ? '#10b981' : '#4b5563',
-                  position: 'relative',
-                  transition: 'background 0.2s',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: 14,
-                    height: 14,
-                    borderRadius: 6,
-                    background: 'white',
-                    top: 1,
-                    left: notificationsEnabled ? 13 : 1,
-                    transition: 'left 0.2s',
-                  }}
-                />
-              </div>
-            </button>
-          </div>
-
           {/* Joba24 yellow CTA button — same as AppHeader */}
           <Link
             to="/create-task"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
-import { CheckCircle, Zap, Users, Star, X } from 'lucide-react';
+import { CheckCircle, Star, X } from 'lucide-react';
 
 function SignalRow({ icon, label, value, sub, score, color }) {
   return (
@@ -33,16 +33,6 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
   const idScore = user.is_verified ? 100 : user.is_phone_verified ? 50 : 0;
   const idValue = user.is_verified ? '✓ אומת' : user.is_phone_verified ? 'טלפון' : 'לא';
   const idSub = user.is_verified ? 'מסמכי זהות אומתו' : null;
-
-  const respMins = user.avg_response_minutes || null;
-  const speedScore = respMins ? Math.max(0, Math.round(100 - Math.min(respMins / 60, 1) * 80)) : 0;
-  const speedValue = respMins ? (respMins < 60 ? `${Math.round(respMins)} דק׳` : `${Math.round(respMins / 60)}h`) : '—';
-  const speedSub = speedScore >= 70 ? 'מגיב במהירות' : speedScore > 0 ? 'מענה בסבירות' : null;
-
-  const hires = user.repeat_hires || 0;
-  const hiresScore = Math.min(hires * 20, 100);
-  const hiresValue = `${hires}`;
-  const hiresSub = hires >= 3 ? 'לקוחות בוחרים בו שוב' : hires > 0 ? 'התחיל לצבור' : 'עדיין לא חזרו';
 
   const rating = user.rating || 0;
   const ratingCount = user.rating_count || reviews.length;
@@ -93,8 +83,6 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
         </div>
         <SignalRow icon={<CheckCircle size={15} color={mainColor} strokeWidth={2.5} />} label="משימות שבוצעו" value={taskValue} sub={taskSub} score={taskScore} color={mainColor} />
         <SignalRow icon={<CheckCircle size={15} color={mainColor} strokeWidth={2.5} />} label="זהות מאומתת" value={idValue} sub={idSub} score={idScore} color={mainColor} />
-        <SignalRow icon={<Zap size={15} color={mainColor} strokeWidth={2.5} />} label="מהירות מענה" value={speedValue} sub={speedSub} score={speedScore} color={mainColor} />
-        <SignalRow icon={<Users size={15} color={mainColor} strokeWidth={2} />} label="ממליצים" value={hiresValue} sub={hiresSub} score={hiresScore} color={mainColor} />
         <SignalRow icon={<Star size={15} color={mainColor} strokeWidth={2} fill={mainColor} />} label="שירות" value={serviceValue} sub={serviceSub} score={serviceScore} color={mainColor} />
       </div>
     </div>,
@@ -166,7 +154,6 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מציון</span>
             <span style={{ fontSize: 18, fontWeight: 900, color: barColor, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>מד אמינות</span>

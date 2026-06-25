@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save, BarChart3 } from 'lucide-react';
+import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save, BarChart3, Pencil } from 'lucide-react';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 import TaskCard from '@/components/TaskCard';
@@ -177,9 +177,10 @@ export default function Profile() {
             const joinCompleted = me?.preferred_categories?.length > 0 && me?.preferred_cities?.length > 0;
             navigate(joinCompleted ? '/worker-profile' : '/join');
           }}
-          style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 20, padding: '5px 14px', cursor: 'pointer' }}
+          style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(26,111,212,0.3)' }}
         >
-          ✏️ {t('edit') || 'עריכה'}
+          <Pencil size={14} color="white" />
+          {t('edit') || 'עריכה'}
         </button>
       </div>
 
