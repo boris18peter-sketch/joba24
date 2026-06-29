@@ -21,6 +21,29 @@ Deno.serve(async (req) => {
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
     if (task.client_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
+    // Only OPEN tasks can be boosted
+    if (task.status !== 'OPEN') {
+      return Response.json({ error: 'task_not_open', note: 'ניתן לבצע איתות רק למשימות פתוחות' }, { status: 409 });
+    }
+
+    // Enforce 1-hour cooldown — server-side hard limit, applies in ALL cases
+    const HOUR_MS = 60 * 60 * 1000;
+    if (task.last_boost_at) {
+      const s = String(task.last_boost_at);
+      const lastMs = (s.endsWith('Z') || s.includes('+')) ? new Date(s).getTime() : new Date(s + 'Z').getTime();
+      if (lastMs && !isNaN(lastMs)) {
+        const elapsed = Date.now() - lastMs;
+        if (elapsed < HOUR_MS) {
+          const minutesLeft = Math.ceil((HOUR_MS - elapsed) / 60000);
+          return Response.json({
+            error: 'boost_cooldown',
+            minutes_left: minutesLeft,
+            message: `יש להמתין ${minutesLeft} דקות לפני איתות נוסף`,
+          }, { status: 429 });
+        }
+      }
+    }
+
     // Fetch fresh user data for credits check
     const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
     const userData = users[0];

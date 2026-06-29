@@ -77,6 +77,19 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
         toast.error(t('boost_insufficient').replace('{n}', BOOST_COST));
         return;
       }
+      if (res.data?.error === 'boost_cooldown') {
+        toast.error(res.data.message || `יש להמתין ${res.data.minutes_left} דקות לפני איתות נוסף`);
+        // Force re-sync the pill state from server data
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] });
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        setPct(0);
+        setCharged(false);
+        return;
+      }
+      if (res.data?.error === 'task_not_open') {
+        toast.error('ניתן לבצע איתות רק למשימות פתוחות');
+        return;
+      }
       if (!res.data?.success) {
         toast.error(t('boost_error'));
         return;
