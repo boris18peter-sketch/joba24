@@ -163,7 +163,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         ) : (
           <>
             <Shield size={17} />
-            אשר תשלום ₪{pkg.price.toFixed(2)}
+            המשך לתשלום · ₪{pkg.price.toFixed(2)}
           </>
         )}
       </button>

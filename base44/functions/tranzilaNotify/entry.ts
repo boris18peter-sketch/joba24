@@ -3,17 +3,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 /**
  * tranzilaNotify — Webhook endpoint called by Tranzila after payment processing.
  * Per official guide: MUST return "OK" with status 200 — otherwise Tranzila retries.
- * Accepts POST with application/x-www-form-urlencoded data.
  *
- * The payment_id is passed as a query param in the notify_url:
- *   .../tranzilaNotify?payment_id=<id>
+ * Handles TWO scenarios:
+ *   1. First payment (payment status = "pending") → mark completed, grant credits
+ *   2. Recurring monthly charge (payment already "completed") → grant credits again
  *
- * Key fields from Tranzila:
- *   Response: "000" = success, anything else = failed
- *   index: Tranzila transaction ID
- *   sum: amount charged
- *   ConfirmationCode: bank confirmation code
- *   TranzilaTK: token (for recurring charges)
+ * The payment_id is passed as a query param in the notify_url.
  */
 Deno.serve(async (req) => {
   try {
@@ -23,7 +18,6 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    // Get payment_id from query string
     const url = new URL(req.url);
     const paymentId = url.searchParams.get('payment_id');
 
@@ -35,7 +29,6 @@ Deno.serve(async (req) => {
         notify[key] = value;
       }
     } catch {
-      // Fallback: try URL-encoded text body
       const text = await req.text();
       const params = new URLSearchParams(text);
       for (const [k, v] of params.entries()) {
@@ -43,37 +36,66 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('📋 Tranzila Notification Received:', JSON.stringify(notify, null, 2));
-    console.log(`📋 Payment ID from query: ${paymentId}`);
+    console.log('📋 Tranzila Notification:', JSON.stringify(notify, null, 2));
+    console.log(`📋 Payment ID: ${paymentId}`);
 
     const responseCode = notify['Response'] || '';
     const index = notify['index'] || '';
     const tranzilaToken = notify['TranzilaTK'] || '';
+    const isSuccess = responseCode === '000';
 
     if (!paymentId) {
-      console.error('❌ Missing payment_id in Tranzila notification query');
-      return new Response('OK', { status: 200 }); // Still return OK to avoid retries
+      console.error('❌ Missing payment_id in query');
+      return new Response('OK', { status: 200 });
     }
 
-    // Find the payment by ID
     const payment = await base44.asServiceRole.entities.TranzilaPayment.get(paymentId);
-
     if (!payment) {
-      console.error(`❌ Payment not found for id: ${paymentId}`);
-      return new Response('OK', { status: 200 }); // Still return OK
+      console.error(`❌ Payment not found: ${paymentId}`);
+      return new Response('OK', { status: 200 });
     }
 
-    // Idempotency — skip if already processed
+    // === RECURRING CHARGE (subscription monthly) ===
+    // Payment already completed + subscription type + not cancelled → grant credits again
+    if (payment.status === 'completed' && payment.type === 'subscription') {
+      if (payment.subscription_status === 'cancelled') {
+        console.log(`ℹ️ Subscription ${payment.id} cancelled — ignoring recurring charge`);
+        return new Response('OK', { status: 200 });
+      }
+
+      if (!isSuccess) {
+        console.log(`❌ Recurring charge failed for ${payment.id} — Response: ${responseCode}`);
+        return new Response('OK', { status: 200 });
+      }
+
+      // Grant credits for the recurring monthly charge
+      const users = await base44.asServiceRole.entities.User.filter({ id: payment.user_id });
+      const user = users?.[0];
+      if (user) {
+        const newBalance = (user.worker_credits ?? 0) + payment.credits;
+        await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
+
+        await base44.asServiceRole.entities.CreditTransaction.create({
+          user_id: user.id,
+          amount: payment.credits,
+          type: 'Purchase',
+          balance_after: newBalance,
+          note: `חידוש מנוי חודשי — ${payment.credits} קרדיטים (Tranzila)`,
+        });
+
+        console.log(`✅ Recurring charge: ${payment.credits} credits granted to ${payment.user_id}, balance: ${newBalance}`);
+      }
+
+      return new Response('OK', { status: 200 });
+    }
+
+    // === FIRST PAYMENT ===
     if (payment.status === 'completed') {
       console.log(`ℹ️ Payment ${payment.id} already completed — skipping`);
       return new Response('OK', { status: 200 });
     }
 
-    // Response "000" = success
-    const isSuccess = responseCode === '000';
-
     if (isSuccess) {
-      // Grant credits to user
       const users = await base44.asServiceRole.entities.User.filter({ id: payment.user_id });
       const user = users?.[0];
 
@@ -86,33 +108,36 @@ Deno.serve(async (req) => {
           amount: payment.credits,
           type: 'Purchase',
           balance_after: newBalance,
-          note: `רכישת ${payment.credits} קרדיטים — Tranzila (${payment.type === 'subscription' ? 'מנוי' : 'חד-פעמי'})`,
+          note: `רכישת ${payment.credits} קרדיטים — Tranzila (${payment.type === 'subscription' ? 'מנוי חודשי' : 'חד-פעמי'})`,
         });
 
-        console.log(`✅ Payment ${payment.id} completed — ${payment.credits} credits granted to ${payment.user_id}, new balance: ${newBalance}`);
+        console.log(`✅ Payment ${payment.id} completed — ${payment.credits} credits granted, balance: ${newBalance}`);
       } else {
-        console.error(`❌ User ${payment.user_id} not found for payment ${payment.id}`);
+        console.error(`❌ User ${payment.user_id} not found`);
       }
 
-      await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, {
+      const updateData = {
         status: 'completed',
         tranzila_index: index,
         thtk: tranzilaToken || payment.thtk,
-      });
+      };
+      if (payment.type === 'subscription') {
+        updateData.subscription_status = 'active';
+      }
+
+      await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, updateData);
     } else {
       await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, {
         status: 'failed',
         tranzila_index: index,
       });
-      console.log(`❌ Payment ${payment.id} failed — Response code: ${responseCode}`);
+      console.log(`❌ Payment ${payment.id} failed — Response: ${responseCode}`);
     }
 
-    // CRITICAL: Tranzila requires "OK" with 200 to stop retrying
     return new Response('OK', { status: 200 });
 
   } catch (error) {
     console.error('❌ tranzilaNotify error:', error);
-    // Still return OK to avoid infinite Tranzila retries
     return new Response('OK', { status: 200 });
   }
 });

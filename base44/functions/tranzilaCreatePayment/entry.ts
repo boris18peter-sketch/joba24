@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     }
 
     // Create pending payment record
-    const payment = await base44.asServiceRole.entities.TranzilaPayment.create({
+    const paymentData = {
       user_id: user.id,
       amount: sum,
       credits: credits || 0,
@@ -34,7 +34,11 @@ Deno.serve(async (req) => {
       type: is_subscription ? 'subscription' : 'one_time',
       status: 'pending',
       package_id: package_id || '',
-    });
+    };
+    if (is_subscription) {
+      paymentData.subscription_status = 'active';
+    }
+    const payment = await base44.asServiceRole.entities.TranzilaPayment.create(paymentData);
 
     console.log(`✅ Payment record created: ${payment.id} for user ${user.id}, sum=${sum}, credits=${credits}`);
 

@@ -6,6 +6,7 @@ import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, X
 import CreditIcon from '@/components/CreditIcon';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
+import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import { useLanguage } from '@/lib/LanguageContext';
 
 // STATUS_TABS defined inside component to use translations
@@ -112,6 +113,9 @@ export default function Wallet() {
       </div>
 
       <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Active subscriptions */}
+        <SubscriptionManager />
+
         {/* Credits History */}
         {creditTxns.length > 0 && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
