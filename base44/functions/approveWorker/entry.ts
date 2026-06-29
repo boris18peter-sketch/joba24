@@ -58,30 +58,9 @@ Deno.serve(async (req) => {
     });
     console.log('✅ APPLICATION APPROVED');
 
-    // Refund all OTHER pending applications (only the approved worker keeps credits deducted)
-    const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    const otherPending = allApps.filter(a => a.status === 'pending' && a.id !== applicationId);
-    for (const app of otherPending) {
-      await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'rejected' });
-      if (app.credits_charged > 0) {
-        const workers = await base44.asServiceRole.entities.User.filter({ id: app.worker_id });
-        const w = workers[0];
-        if (w) {
-          const newBalance = (w.worker_credits ?? 0) + app.credits_charged;
-          await base44.asServiceRole.entities.User.update(w.id, { worker_credits: newBalance });
-          await base44.asServiceRole.entities.CreditTransaction.create({
-            user_id: app.worker_id,
-            amount: app.credits_charged,
-            type: 'Refund_Rejection',
-            task_id: taskId,
-            task_title: task.title,
-            balance_after: newBalance,
-            note: `הבקשה למשימה "${task.title}" לא נבחרה — ${app.credits_charged} ג'ובות הוחזרו`,
-          });
-          console.log(`✅ Refunded ${app.credits_charged} credits to worker ${app.worker_id} (not selected)`);
-        }
-      }
-    }
+    // NOTE: Other pending applications are NOT refunded here.
+    // They stay "pending" so they remain valid if the approved worker is later cancelled.
+    // Credits are only refunded at terminal states: COMPLETED, CANCELLED, or EXPIRED.
 
     // Fetch FRESH task data to return
     const freshTaskData = await base44.asServiceRole.entities.Task.filter({ id: taskId });

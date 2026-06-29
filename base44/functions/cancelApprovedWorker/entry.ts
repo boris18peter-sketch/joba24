@@ -25,22 +25,19 @@ Deno.serve(async (req) => {
 
     const cancelledWorkerId = task.worker_id;
 
-    // Fetch ALL active applications in parallel
+    // Only refund the APPROVED worker — pending applications stay valid so the
+    // publisher can approve another worker after the task resets to OPEN.
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    const activeApps = apps.filter(a => a.status === 'approved' || a.status === 'pending');
+    const approvedApps = apps.filter(a => a.status === 'approved');
 
-    // Batch-fetch all worker records to avoid N+1 queries
-    const workerIds = [...new Set(activeApps.filter(a => (a.credits_charged || 0) > 0).map(a => a.worker_id))];
+    // Batch-fetch worker records for approved apps
+    const workerIds = [...new Set(approvedApps.filter(a => (a.credits_charged || 0) > 0).map(a => a.worker_id))];
     const workerResults = await Promise.all(workerIds.map(id => base44.asServiceRole.entities.User.filter({ id })));
     const workerMap = {};
     workerResults.forEach(res => { if (res[0]) workerMap[res[0].id] = res[0]; });
 
-    // Refund all active applicants in parallel
-    await Promise.all(activeApps.map(async (app) => {
-      const note = app.status === 'approved'
-        ? 'החזר קרדיטים - בעל המשימה ביטל את בחירתך'
-        : 'החזר קרדיטים - בעל המשימה ביטל את המשימה';
-
+    // Refund only the approved worker
+    await Promise.all(approvedApps.map(async (app) => {
       await base44.asServiceRole.entities.TaskApplication.update(app.id, { status: 'rejected' });
 
       const creditsToRefund = app.credits_charged || 0;
@@ -58,10 +55,12 @@ Deno.serve(async (req) => {
         task_id: taskId,
         task_title: task.title,
         balance_after: newBalance,
-        note,
+        note: 'החזר קרדיטים - בעל המשימה ביטל את בחירתך',
       });
-      console.log(`✅ Refunded ${creditsToRefund} credits to worker ${worker.id} (was ${app.status})`);
+      console.log(`✅ Refunded ${creditsToRefund} credits to approved worker ${worker.id}`);
     }));
+
+    // Pending applications are NOT touched — they remain valid for re-approval.
 
     // Reset task to OPEN
     await base44.asServiceRole.entities.Task.update(taskId, {

@@ -149,6 +149,16 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
         </div>
 
+        {/* Credit refund explanation */}
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 14, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים הקרדיטים?</div>
+          הקרדיטים מופרדים בעת ההגשה אך <strong>מוחזרים אוטומטית</strong> אם:<br />
+          • הבקשה שלך לא אושרה על ידי המפרסם<br />
+          • המשימה בוטלה או פג תוקפה<br />
+          • נבחר עובד אחר לביצוע המשימה<br />
+          <strong>התשלום בפועל נספר רק אם תבצע את המשימה והיא תאושר.</strong>
+        </div>
+
         <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>{t('add_message')}</p>
           <textarea
