@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, CreditCard, Apple, Shield, Lock } from 'lucide-react';
+import { ArrowRight, CreditCard, Apple, Shield, Lock, RefreshCw } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
 /**
@@ -68,6 +68,38 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           )}
         </div>
       </div>
+
+      {/* Subscription explanation */}
+      {isSubscription && (
+        <div style={{
+          background: 'var(--brand-primary-light)',
+          border: '1px solid #bfdbfe',
+          borderRadius: 'var(--r-md)',
+          padding: '14px 16px',
+          marginBottom: 20,
+        }}>
+          <div style={{
+            fontSize: 13, fontWeight: 800, color: 'var(--brand-primary)',
+            marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <RefreshCw size={14} /> איך עובד המנוי החודשי?
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+              <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
+              <span>עכשיו תחויב <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> עבור החודש הנוכחי והקרדיטים יתווספו מיד</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+              <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
+              <span>בכל חודש תחויב אוטומטית <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> והקרדיטים יתווספו לארנק</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
+              <span>ניתן לבטל את המנוי בכל עת מהגדרות החשבון</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment methods */}
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 10 }}>
