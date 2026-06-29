@@ -123,6 +123,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         credits: selectedPkg.credits,
         package_id: selectedPkg.id,
         is_subscription: isSubscription,
+        pay_method: payMethod,
       });
       setTranzilaData({ ...res.data, payMethod });
       setStep('iframe');
