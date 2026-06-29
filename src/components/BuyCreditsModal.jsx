@@ -8,6 +8,8 @@ import useCountUp from '@/hooks/useCountUp';
 import CreditPackageCard from '@/components/credits/CreditPackageCard';
 import PaymentConfirm from '@/components/credits/PaymentConfirm';
 import PurchaseSuccess from '@/components/credits/PurchaseSuccess';
+import TranzilaIframe from '@/components/credits/TranzilaIframe';
+import { base44 } from '@/api/base44Client';
 
 const SHIMMER_STYLE = `
   @keyframes shimmerWipe {
@@ -59,8 +61,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
 
   const [tab, setTab] = useState('oneTime');
   const [selectedPkg, setSelectedPkg] = useState(null);
-  const [step, setStep] = useState('browse'); // 'browse' | 'confirm' | 'success'
+  const [step, setStep] = useState('browse'); // 'browse' | 'confirm' | 'iframe' | 'success'
   const [loading, setLoading] = useState(false);
+  const [tranzilaData, setTranzilaData] = useState(null);
 
   // Inject shimmer keyframes once
   useEffect(() => {
@@ -101,11 +104,20 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
 
   const handleConfirm = async () => {
     setLoading(true);
-    // TODO: Wire to Tranzila payment when secrets are set
-    // For now, simulate success after a brief delay
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setStep('success');
+    try {
+      const res = await base44.functions.invoke('tranzilaCreateHandshake', {
+        sum: selectedPkg.price,
+        credits: selectedPkg.credits,
+        package_id: selectedPkg.id,
+        is_subscription: isSubscription,
+      });
+      setTranzilaData(res.data);
+      setStep('iframe');
+    } catch (err) {
+      console.error('Tranzila handshake failed:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -285,6 +297,18 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             onBack={() => setStep('browse')}
             onConfirm={handleConfirm}
             loading={loading}
+          />
+        )}
+
+        {/* Step: Tranzila iframe */}
+        {step === 'iframe' && tranzilaData && (
+          <TranzilaIframe
+            thtk={tranzilaData.thtk}
+            supplier={tranzilaData.supplier}
+            sum={tranzilaData.sum}
+            paymentId={tranzilaData.payment_id}
+            onClose={() => { setStep('browse'); setTranzilaData(null); }}
+            onSuccess={() => setStep('success')}
           />
         )}
 

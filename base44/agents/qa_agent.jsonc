@@ -62,7 +62,7 @@
       ]
     },
     {
-      "entity_name": "StripeAccount",
+      "entity_name": "TranzilaPayment",
       "allowed_operations": [
         "read"
       ]
