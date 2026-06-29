@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, Shield } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { appParams } from '@/lib/app-params';
 
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
@@ -23,8 +24,10 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
   const pollRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
-  // Notify URL — Tranzila will POST the transaction result here
-  const notifyUrl = `https://api.base44.com/api/apps/${base44.appId}/functions/tranzilaNotify?payment_id=${paymentId}`;
+  // Notify URL — Tranzila will POST the transaction result here.
+  // Must use the app's own domain (not api.base44.com) per Base44 webhook URL format.
+  const appOrigin = appParams.appBaseUrl || window.location.origin;
+  const notifyUrl = `${appOrigin}/functions/tranzilaNotify?payment_id=${paymentId}`;
 
   // Submit the hidden form INTO the iframe once mounted
   useEffect(() => {
