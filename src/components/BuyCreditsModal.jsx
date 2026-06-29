@@ -101,7 +101,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
 
   const handleConfirm = async () => {
     setLoading(true);
-    // TODO: Wire to Stripe checkout backend function when ready
+    // TODO: Wire to Tranzila payment when secrets are set
     // For now, simulate success after a brief delay
     await new Promise(r => setTimeout(r, 1200));
     setLoading(false);
@@ -272,7 +272,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             </div>
 
             <div style={{ padding: '4px 20px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', color: 'var(--text-3)', fontSize: 11 }}>
-              רכישה מאובטחת · תשלום דרך Stripe
+              רכישה מאובטחת · תשלום דרך Tranzila
             </div>
           </>
         )}
