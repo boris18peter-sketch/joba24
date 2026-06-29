@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מאשר תשלום...</title>
+  <style>
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100vh; margin: 0; font-family: 'Inter', -apple-system, sans-serif;
+      background: #f2f5fb; color: #0d1e40;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 4px solid #e4eaf5; border-top-color: #1a6fd4;
+      border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { font-size: 14px; font-weight: 600; color: #4b6083; }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p>מאשר תשלום, ממתין...</p>
+  <script>
+    // Tranzila redirects here after payment, appending transaction result params.
+    // We read them and postMessage to the parent window (TranzilaIframe component).
+    (function() {
+      var params = {};
+      var search = window.location.search.substring(1);
+      var pairs = search.split('&');
+      for (var i = 0; i < pairs.length; i++) {
+        var pair = pairs[i].split('=');
+        if (pair[0]) params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+      }
+      // Send to parent — TranzilaIframe listens for this
+      window.parent.postMessage({
+        source: 'tranzila-callback',
+        params: params
+      }, '*');
+    })();
+  </script>
+</body>
+</html>

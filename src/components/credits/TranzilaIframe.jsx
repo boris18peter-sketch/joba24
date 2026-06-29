@@ -7,13 +7,17 @@ import { appParams } from '@/lib/app-params';
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
  *
- * The iframe is loaded via a hidden POST form (so parameters aren't visible in the URL).
- * No handshake (thtk) needed — the terminal doesn't have handshake enabled.
+ * CREDIT-GRANTING MECHANISM:
+ *   1. PRIMARY: Tranzila redirects the iframe to /tranzila-callback.html after payment.
+ *      That page reads the transaction result params and postMessages them to us.
+ *      We then call verifyTranzilaPayment to grant credits.
+ *   2. FALLBACK: We also poll checkTranzilaPayment every 3s in case the webhook
+ *      (notify_url) fires and updates the payment status server-side.
  *
  * Props:
  *   supplier      — Tranzila terminal name (joba24)
  *   sum           — Payment amount
- *   paymentId     — TranzilaPayment record ID (for polling)
+ *   paymentId     — TranzilaPayment record ID
  *   isSubscription — Whether this is a recurring subscription
  *   pkg           — Package object { credits, price, id }
  *   onClose       — Called when user closes
@@ -23,11 +27,18 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
   const formRef = useRef(null);
   const pollRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const processedRef = useRef(false);
 
-  // Notify URL — Tranzila will POST the transaction result here.
-  // Must use the app's own domain (not api.base44.com) per Base44 webhook URL format.
+  // App origin — used for both notify_url (webhook) and u71 (redirect)
   const appOrigin = appParams.appBaseUrl || window.location.origin;
+
+  // Notify URL — Tranzila POSTs transaction result here (server-to-server).
+  // Kept as a fallback in case it works.
   const notifyUrl = `${appOrigin}/functions/tranzilaNotify?payment_id=${paymentId}`;
+
+  // Redirect URL — Tranzila redirects the iframe here after payment (browser).
+  // This is the PRIMARY mechanism. Uses our static callback page.
+  const redirectUrl = `${appOrigin}/tranzila-callback.html?payment_id=${paymentId}`;
 
   // Submit the hidden form INTO the iframe once mounted
   useEffect(() => {
@@ -39,18 +50,66 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
     return () => clearTimeout(timer);
   }, []);
 
-  // Poll payment status every 3 seconds
+  // PRIMARY: Listen for postMessage from tranzila-callback.html
+  useEffect(() => {
+    const handleMessage = async (event) => {
+      // Only accept messages from our own origin
+      if (event.origin !== window.location.origin && event.origin !== appOrigin) return;
+
+      const data = event.data;
+      if (!data || data.source !== 'tranzila-callback') return;
+      if (processedRef.current) return;
+      processedRef.current = true;
+
+      const params = data.params || {};
+      const responseCode = params['Response'] || '';
+      const index = params['index'] || '';
+      const token = params['TranzilaTK'] || '';
+
+      try {
+        const res = await base44.functions.invoke('verifyTranzilaPayment', {
+          payment_id: paymentId,
+          response_code: responseCode,
+          index,
+          token,
+        });
+
+        if (res.data?.success) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          onSuccess();
+        } else {
+          if (pollRef.current) clearInterval(pollRef.current);
+          onClose();
+        }
+      } catch (err) {
+        console.error('verifyTranzilaPayment failed:', err);
+        // Don't close — let the user try again or close manually
+        processedRef.current = false;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [paymentId, onSuccess, onClose, appOrigin]);
+
+  // FALLBACK: Poll payment status every 3 seconds (in case webhook fires)
   useEffect(() => {
     pollRef.current = setInterval(async () => {
       try {
         const res = await base44.functions.invoke('checkTranzilaPayment', { payment_id: paymentId });
         const status = res.data?.status;
         if (status === 'completed') {
-          clearInterval(pollRef.current);
-          onSuccess();
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (!processedRef.current) {
+            processedRef.current = true;
+            onSuccess();
+          }
         } else if (status === 'failed') {
-          clearInterval(pollRef.current);
-          onClose();
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (!processedRef.current) {
+            processedRef.current = true;
+            onClose();
+          }
         }
       } catch {
         // ignore polling errors — will retry
@@ -123,12 +182,16 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
 
-        {/* Notify URL — Tranzila POSTs transaction result here */}
+        {/* Notify URL — Tranzila POSTs transaction result here (server-to-server fallback) */}
         <input type="hidden" name="notify_url" value={notifyUrl} />
 
-        {/* Subscription: recurring monthly charge.
-            Tranzila displays: "Immediate payment X ₪ + monthly payment Y ₪"
-            This is correct — first charge now, then auto-charged monthly. */}
+        {/* Redirect URLs — PRIMARY mechanism.
+            Tranzila redirects the iframe to our callback page after payment.
+            The callback page reads params and postMessages them to us. */}
+        <input type="hidden" name="u71" value={redirectUrl} />
+        <input type="hidden" name="u72" value={redirectUrl} />
+
+        {/* Subscription: recurring monthly charge */}
         {isSubscription && (
           <>
             <input type="hidden" name="recur_transaction" value="4_approved" />
