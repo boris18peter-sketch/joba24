@@ -940,8 +940,13 @@ export default function TaskDetail() {
               
                 <Send size={15} strokeWidth={1.8} />
                 {t('apply_to_task')} — {Math.max(1, Math.round((Math.round(calculateCurrentPrice(task)) || 0) * 0.05))} <CreditIcon size={14} />
-              </button>
-            }
+                </button>
+                }
+                {canApplyManual && !showApplyForm && (
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 4, fontWeight: 600, lineHeight: 1.4 }}>
+                 💡 הקרדיטים מוחזרים אוטומטית אם הבקשה לא תאושר או המשימה תבוטל
+                </div>
+                )}
 
             {/* Pending pill */}
             {hasPendingApp && !isOwner &&

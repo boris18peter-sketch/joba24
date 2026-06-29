@@ -52,6 +52,16 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{task?.title}</div>
         </div>
 
+        {/* Credit refund explanation */}
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים הקרדיטים?</div>
+          הקרדיטים מופרדים בעת ההגשה אך <strong>מוחזרים אוטומטית</strong> אם:<br />
+          • הבקשה שלך לא אושרה על ידי המפרסם<br />
+          • המשימה בוטלה או פג תוקפה<br />
+          • נבחר עובד אחר לביצוע המשימה<br />
+          <strong>התשלום בפועל נספר רק אם תבצע את המשימה והיא תאושר.</strong>
+        </div>
+
         {/* Message */}
         <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>

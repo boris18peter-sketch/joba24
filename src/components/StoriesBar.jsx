@@ -382,10 +382,21 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
 
   useEffect(() => {
     const unsub = base44.entities.Task.subscribe((event) => {
+      // Any task create/update/delete can affect stories — invalidate to refresh
+      if (event.type === 'create' || event.type === 'delete') {
+        queryClient.invalidateQueries({ queryKey: ['stories'] });
+        return;
+      }
       if (event.type === 'update' && event.data) {
+        const patch = event.data;
+        // Update story data in cache (price, status, story_expires_at, etc.)
         queryClient.setQueryData(['stories'], (old = []) =>
-          old.map(t => t.id === event.data.id ? { ...t, price: event.data.price } : t)
+          old.map(t => t.id === event.id ? { ...t, ...patch } : t)
         );
+        // If story status changed or expired, refetch to filter properly
+        if (patch.status || patch.story_expires_at || patch.is_story === false) {
+          queryClient.invalidateQueries({ queryKey: ['stories'] });
+        }
       }
     });
     return unsub;
@@ -398,8 +409,8 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
       const now = new Date();
       return tasks.filter(t => t.story_expires_at && new Date(t.story_expires_at) > now && t.status === 'OPEN');
     },
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
+    staleTime: 15000,
+    refetchOnWindowFocus: true,
   });
 
   // Filter by category if specified; for 'all' (null), show stories matching user's context

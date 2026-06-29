@@ -625,19 +625,9 @@ export default function CreateTask() {
 
     // Auto-generated fields
     const autoTitle = autoGenerateTitle(form.description);
-    // Auto-detect category if still "other"
-    const detectedCat = form.category === 'other' ? autoDetectCategory(form.description) : null;
-    const finalCategory = detectedCat || form.category || 'other';
+    // Respect user's explicit category choice — do NOT auto-detect on submit
+    const finalCategory = form.category || 'other';
 
-    // Check category-description mismatch
-    const mismatch = checkCategoryDescriptionMatch(finalCategory, form.description);
-    if (mismatch) {
-      setModerationErrors({ categoryMismatch: mismatch });
-      setShowErrorBanner(true);
-      setLoading(false);
-      submittingRef.current = false;
-      return;
-    }
     for (const imgUrl of (form.images || [])) {
       setCheckingModeration('images');
       const imgCheck = await moderateImage(imgUrl);
@@ -1085,11 +1075,7 @@ export default function CreateTask() {
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
               checkFieldModeration('description', form.description);
-              // Auto-detect category from description
-              const detected = autoDetectCategory(form.description);
-              if (detected && detected !== form.category && form.category === 'other') {
-                set('category', detected);
-              }
+              // Don't auto-change category from "other" — respect user's explicit choice
               const mismatch = checkCategoryDescriptionMatch(form.category, form.description, form.title);
               setModerationErrors(p => ({ ...p, categoryMismatch: mismatch }));
             }}

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Cell } from 'recharts';
-import { TrendingUp, Wallet, Loader2, Target, Calendar } from 'lucide-react';
+import { TrendingUp, Wallet, Loader2, Target, Calendar, Coins } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -21,6 +21,25 @@ export default function EarningsDashboard() {
     staleTime: 60000,
     refetchOnWindowFocus: false,
   });
+
+  // Fetch credit transactions for credits-used summary
+  const { data: creditTxns = [] } = useQuery({
+    queryKey: ['earningsCredits', me?.id],
+    queryFn: () => base44.entities.CreditTransaction.filter({ user_id: me.id }, '-created_date', 100),
+    enabled: !!me?.id,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+  });
+
+  const creditsData = useMemo(() => {
+    const completedTaskIds = new Set(tasks.map(t => t.id));
+    const fees = creditTxns.filter(tx => tx.type === 'Application_Fee' && tx.amount < 0 && completedTaskIds.has(tx.task_id));
+    const refunds = creditTxns.filter(tx => (tx.type === 'Refund_Rejection' || tx.type === 'Refund_Expiration') && completedTaskIds.has(tx.task_id));
+    const totalUsed = fees.reduce((s, tx) => s + Math.abs(tx.amount), 0);
+    const totalRefunded = refunds.reduce((s, tx) => s + tx.amount, 0);
+    const netUsed = totalUsed - totalRefunded;
+    return { totalUsed, totalRefunded, netUsed, fees, count: fees.length };
+  }, [creditTxns, tasks]);
 
   const earningsData = useMemo(() => {
     return tasks
@@ -200,6 +219,55 @@ export default function EarningsDashboard() {
             </ResponsiveContainer>
           )}
         </div>
+      </div>
+
+      {/* Credits used section */}
+      <div style={{ padding: '0 16px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 20, padding: 18, border: '1px solid #fde68a', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 13, background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(251,191,36,0.3)' }}>
+              <Coins size={20} color="white" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#92400e' }}>ג'ובות ששומשו</div>
+              <div style={{ fontSize: 11, color: '#b45309', marginTop: 1 }}>לפי משימות שבוצעו</div>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#92400e', lineHeight: 1 }}>{creditsData.netUsed}</div>
+              <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>ג'ובות</div>
+            </div>
+          </div>
+          {creditsData.totalRefunded > 0 && (
+            <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#92400e', fontWeight: 600 }}>
+              <span>הופרדו: <strong>{creditsData.totalUsed}</strong></span>
+              <span style={{ color: '#059669' }}>הוחזרו: <strong>{creditsData.totalRefunded}</strong></span>
+            </div>
+          )}
+        </div>
+
+        {creditsData.fees.length > 0 && (
+          <>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>פירוט ג'ובות שהופרדו</div>
+            <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 16 }}>
+              {creditsData.fees.slice(0, 10).map((tx, idx, arr) => {
+                const diffDays = Math.floor((Date.now() - new Date(tx.created_date + (tx.created_date?.endsWith('Z') || tx.created_date?.includes('+') ? '' : 'Z')).getTime()) / 86400000);
+                const dateLabel = diffDays === 0 ? t('today_label') : diffDays === 1 ? t('yesterday') : new Date(tx.created_date).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+                return (
+                  <div key={tx.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 10, background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Coins size={16} color="#d97706" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.task_title || 'משימה'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{dateLabel}</div>
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: '#d97706', flexShrink: 0 }}>{tx.amount}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Recent earnings list */}

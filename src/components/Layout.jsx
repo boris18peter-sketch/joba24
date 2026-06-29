@@ -219,6 +219,7 @@ export default function Layout() {
     const key = `rated_${task.id}_${me.id}`;
     if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) return;
     shownRatingRef.current.add(task.id);
+    localStorage.setItem(key, '1');
     setTimeout(() => setRatingTask(task), 800);
   }, [me?.id]);
 

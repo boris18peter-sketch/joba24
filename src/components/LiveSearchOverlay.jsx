@@ -11,6 +11,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
+import { autoDetectCategory } from '@/lib/taskFlowConfig';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -18,9 +19,13 @@ const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5
 const CATEGORY_NAME_PLURAL = {
   plumbing: 'אינסטלטורים', electricity: 'חשמלאים', gardening: 'גננים',
   cleaning: 'מנקים', moving: 'עוזרי הובלה', painting: 'צבעים',
-  carpentry: 'נגרים', ac: 'טכנאי מזגנים', locksmith: 'מנעולנים',
+  carpentry: 'מרכיבי רהיטים / נגרים', ac: 'טכנאי מזגנים', locksmith: 'מנעולנים',
   shopping: 'שליחים', delivery: 'שליחים', babysitting: 'מטפלים',
-  tutoring: 'מורים פרטיים', it_support: 'תומכי IT', other: 'עובדים'
+  tutoring: 'מורים פרטיים', it_support: 'תומכי IT', handyman: 'הנדימנים',
+  heavy_lifting: 'עוזרים פיזיים', home_maintenance: 'אנשי תחזוקה',
+  transportation: 'נהגים', pets: 'מטפלים בחיות', elderly_care: 'מטפלים בקשישים',
+  fitness: 'מאמנים', photography: 'צלמים', events: 'צוות אירועים',
+  personal_help: 'עוזרים אישיים', other: 'עובדים'
 };
 
 // ── CSS (injected once) ───────────────────────────────────────────────────────
@@ -514,6 +519,12 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
   const [firstAppReceived,  setFirstAppReceived]   = useState(false);
   const [statusMsg,         setStatusMsg]           = useState('שולח התראות לעובדים...');
 
+  // When category is "other", detect the best matching worker type from the title
+  const effectiveCategory = taskCategory === 'other'
+    ? (autoDetectCategory(taskTitle || '') || 'other')
+    : taskCategory;
+  const workerLabel = CATEGORY_NAME_PLURAL[effectiveCategory] || 'עובדים';
+
   const goToTask = () => {
     onNavigate?.();
     navigate(`/?newTaskId=${taskId}`);
@@ -542,8 +553,8 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
 
   useEffect(() => {
     const msgs = [
-      'מאותת לעובדים...',
-      'סורק עובדים בקרבת מקום',
+      `מאותת ל${workerLabel}...`,
+      `סורק ${workerLabel} בקרבת מקום`,
       'מחפש התאמות',
       'מגביר חשיפה',
       'מפיץ את המשימה',
@@ -697,7 +708,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'dotBlink2 1.2s .1s infinite' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-              {CATEGORY_NAME_PLURAL[taskCategory] || 'עובדים'} מקבלים עדכון
+              {workerLabel} מקבלים עדכון
             </span>
           </div>
         )}
