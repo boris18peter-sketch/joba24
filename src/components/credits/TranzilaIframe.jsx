@@ -118,7 +118,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [paymentId, onSuccess, onClose]);
 
-  const iframeUrl = `https://direct.tranzila.com/${encodeURIComponent(supplier)}/iframenew.php`;
+  const iframeUrl = `https://directng.tranzila.com/${encodeURIComponent(supplier)}/iframenew.php`;
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column' }}>
@@ -205,6 +205,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         name="tranzila-frame"
         id="tranzila-frame"
         onLoad={() => setLoading(false)}
+        allow="payment *"
         allowPaymentRequest={true}
         style={{ width: '100%', flex: 1, border: 'none' }}
         title="Tranzila Payment"
