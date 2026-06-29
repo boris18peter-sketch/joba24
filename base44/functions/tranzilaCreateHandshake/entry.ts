@@ -2,49 +2,50 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
  * tranzilaCreateHandshake
- * Creates a Tranzila handshake token (thtk) for a one-time credit purchase.
- * Also creates a pending TranzilaPayment record to track the transaction.
+ * Creates a Tranzila handshake token (thtk) for one-time or subscription payments.
+ * Per official Tranzila Base44 integration guide.
  *
  * Input: { sum, credits, package_id, is_subscription }
- * Returns: { thtk, supplier, payment_id, sum }
+ * Returns: { thtk, supplier, sum, payment_id }
  */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
 
     const { sum, credits, package_id, is_subscription } = await req.json();
 
-    if (!sum || sum <= 0 || !credits || credits <= 0) {
-      return Response.json({ error: 'Invalid sum or credits' }, { status: 400 });
+    if (!sum || sum <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid sum' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     const supplier = Deno.env.get('supplier');
     const TranzilaPW = Deno.env.get('TranzilaPW');
 
     if (!supplier || !TranzilaPW) {
-      return Response.json({ error: 'Tranzila credentials not configured' }, { status: 500 });
+      console.error('Missing Tranzila credentials in environment variables.');
+      return new Response(JSON.stringify({ error: 'Server configuration error: Missing Tranzila credentials' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Create a pending payment record
+    // Create pending payment record BEFORE calling Tranzila
     const payment = await base44.asServiceRole.entities.TranzilaPayment.create({
       user_id: user.id,
       amount: sum,
-      credits,
+      credits: credits || 0,
       thtk: '',
       type: is_subscription ? 'subscription' : 'one_time',
       status: 'pending',
       package_id: package_id || '',
     });
 
-    // Construct the Tranzila handshake URL
-    const handshakeUrl = `https://api.tranzila.com/v1/handshake/create?supplier=${encodeURIComponent(supplier)}&sum=${sum}&TranzilaPW=${encodeURIComponent(TranzilaPW)}`;
+    // Construct the Tranzila Handshake URL (exactly per official guide)
+    const handshakeUrl = `https://api.tranzila.com/v1/handshake/create?supplier=${supplier}&sum=${sum}&TranzilaPW=${TranzilaPW}`;
 
     const response = await fetch(handshakeUrl);
     const data = await response.text();
 
-    // Extract thtk from response (format: "thtk=<token>")
+    // Extract thtk — response is plain text: "thtk=<token>"
     const thtkPrefix = 'thtk=';
     let thtk = data.trim();
     if (thtk.startsWith(thtkPrefix)) {
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
 
     if (!thtk || thtk.length < 5) {
       console.error('Tranzila handshake failed — response:', data);
-      return Response.json({ error: 'Failed to create Tranzila handshake' }, { status: 502 });
+      return new Response(JSON.stringify({ error: 'Failed to create Tranzila handshake', raw: data }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
     // Update payment record with thtk
@@ -61,14 +62,15 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Handshake created for payment ${payment.id}, thtk=${thtk.substring(0, 8)}...`);
 
-    return Response.json({
+    return new Response(JSON.stringify({
       thtk,
       supplier,
-      payment_id: payment.id,
       sum,
-    });
+      payment_id: payment.id,
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
   } catch (error) {
     console.error('❌ tranzilaCreateHandshake error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 });

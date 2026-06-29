@@ -2,49 +2,49 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
  * tranzilaNotify — Webhook endpoint called by Tranzila after payment processing.
- * No user auth (called by Tranzila server). Uses service role.
+ * Per official guide: MUST return "OK" with status 200 — otherwise Tranzila retries.
+ * Accepts POST with application/x-www-form-urlencoded data.
  *
- * Tranzila sends POST with form-urlencoded data including:
- *   Response (000 = success), thtk, index, sum, ConfirmationCode, etc.
- *
- * On success: grants credits to the user and marks payment as completed.
+ * Key fields from Tranzila:
+ *   Response: "000" or "0" = success, anything else = failed
+ *   thtk: handshake token (used to match our TranzilaPayment record)
+ *   index: Tranzila transaction ID
+ *   sum: amount charged
+ *   ConfirmationCode: bank confirmation code
  */
 Deno.serve(async (req) => {
   try {
+    if (req.method !== 'POST') {
+      return new Response('Method Not Allowed', { status: 405 });
+    }
+
     const base44 = createClientFromRequest(req);
 
-    // Parse form data from Tranzila
-    const contentType = req.headers.get('content-type') || '';
-    let params;
-
-    if (contentType.includes('application/x-www-form-urlencoded')) {
-      const text = await req.text();
-      params = new URLSearchParams(text);
-    } else if (contentType.includes('application/json')) {
-      const body = await req.json();
-      params = new URLSearchParams();
-      for (const [k, v] of Object.entries(body)) {
-        params.append(k, String(v));
-      }
-    } else {
-      // Try form data
+    // Parse form data — Tranzila sends application/x-www-form-urlencoded
+    let notify = {};
+    try {
       const formData = await req.formData();
-      params = new URLSearchParams();
-      for (const [k, v] of formData.entries()) {
-        params.append(k, String(v));
+      for (const [key, value] of formData.entries()) {
+        notify[key] = value;
+      }
+    } catch {
+      // Fallback: try URL-encoded text body
+      const text = await req.text();
+      const params = new URLSearchParams(text);
+      for (const [k, v] of params.entries()) {
+        notify[k] = v;
       }
     }
 
-    const responseCode = params.get('Response') || '';
-    const thtk = params.get('thtk') || '';
-    const index = params.get('index') || '';
-    const sum = params.get('sum') || '';
-    const confirmationCode = params.get('ConfirmationCode') || '';
+    console.log('📋 Tranzila Notification Received:', JSON.stringify(notify, null, 2));
 
-    console.log(`📋 Tranzila notify received — Response: ${responseCode}, thtk: ${thtk?.substring(0, 8)}..., index: ${index}`);
+    const responseCode = notify['Response'] || '';
+    const thtk = notify['thtk'] || '';
+    const index = notify['index'] || '';
 
     if (!thtk) {
-      return Response.json({ error: 'Missing thtk' }, { status: 400 });
+      console.error('❌ Missing thtk in Tranzila notification');
+      return new Response('OK', { status: 200 }); // Still return OK to avoid retries
     }
 
     // Find the payment by thtk
@@ -53,17 +53,19 @@ Deno.serve(async (req) => {
 
     if (!payment) {
       console.error(`❌ Payment not found for thtk: ${thtk}`);
-      return Response.json({ error: 'Payment not found' }, { status: 404 });
+      return new Response('OK', { status: 200 }); // Still return OK
     }
 
-    // Already processed
+    // Idempotency — skip if already processed
     if (payment.status === 'completed') {
       console.log(`ℹ️ Payment ${payment.id} already completed — skipping`);
-      return Response.json({ success: true, message: 'Already processed' });
+      return new Response('OK', { status: 200 });
     }
 
-    // Response=000 means success
-    if (responseCode === '000') {
+    // Response "000" or "0" = success
+    const isSuccess = responseCode === '000' || responseCode === '0';
+
+    if (isSuccess) {
       // Grant credits to user
       const users = await base44.asServiceRole.entities.User.filter({ id: payment.user_id });
       const user = users?.[0];
@@ -77,7 +79,7 @@ Deno.serve(async (req) => {
           amount: payment.credits,
           type: 'Purchase',
           balance_after: newBalance,
-          note: `רכישת ${payment.credits} קרדיטים — Tranzila`,
+          note: `רכישת ${payment.credits} קרדיטים — Tranzila (${payment.type === 'subscription' ? 'מנוי' : 'חד-פעמי'})`,
         });
 
         console.log(`✅ Payment ${payment.id} completed — ${payment.credits} credits granted to ${payment.user_id}, new balance: ${newBalance}`);
@@ -90,7 +92,6 @@ Deno.serve(async (req) => {
         tranzila_index: index,
       });
     } else {
-      // Payment failed
       await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, {
         status: 'failed',
         tranzila_index: index,
@@ -98,9 +99,12 @@ Deno.serve(async (req) => {
       console.log(`❌ Payment ${payment.id} failed — Response code: ${responseCode}`);
     }
 
-    return Response.json({ success: true });
+    // CRITICAL: Tranzila requires "OK" with 200 to stop retrying
+    return new Response('OK', { status: 200 });
+
   } catch (error) {
     console.error('❌ tranzilaNotify error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    // Still return OK to avoid infinite Tranzila retries
+    return new Response('OK', { status: 200 });
   }
 });
