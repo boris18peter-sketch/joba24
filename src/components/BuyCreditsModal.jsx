@@ -468,6 +468,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             isSubscription={isSubscription}
             pkg={selectedPkg}
             payMethod={tranzilaData.payMethod}
+            thtk={tranzilaData.thtk}
             onClose={() => { setStep('browse'); setTranzilaData(null); }}
             onSuccess={() => setStep('success')}
           />

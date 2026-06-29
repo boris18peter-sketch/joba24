@@ -23,7 +23,7 @@ import { appParams } from '@/lib/app-params';
  *   onClose       — Called when user closes
  *   onSuccess     — Called when payment confirmed completed
  */
-export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, payMethod, onClose, onSuccess }) {
+export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, payMethod, thtk, onClose, onSuccess }) {
   const formRef = useRef(null);
   const pollRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -118,9 +118,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [paymentId, onSuccess, onClose]);
 
-  // Token/subscription terminals use the classic endpoint; others use directng
-  const tranzilaBase = supplier === 'joba24tok' ? 'direct.tranzila.com' : 'directng.tranzila.com';
-  const iframeUrl = `https://${tranzilaBase}/${encodeURIComponent(supplier)}/iframenew.php`;
+  const iframeUrl = `https://directng.tranzila.com/${encodeURIComponent(supplier)}/iframenew.php`;
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column' }}>
@@ -183,6 +181,8 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <input type="hidden" name="pdesc" value={`קרדיטים Joba24${pkg ? ` — ${pkg.credits} קרדיטים` : ''}${payMethod ? ` (${payMethod})` : ''}`} />
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
+        {/* Handshake token — required for token terminals (subscriptions) */}
+        {thtk && <input type="hidden" name="thtk" value={thtk} />}
 
         {/* Notify URL — Tranzila POSTs transaction result here (server-to-server fallback) */}
         <input type="hidden" name="notify_url" value={notifyUrl} />

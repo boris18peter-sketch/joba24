@@ -5,12 +5,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * Creates a pending TranzilaPayment record and returns the iframe parameters.
  *
  * Terminal routing:
- *   - Subscription  → joba24tok
+ *   - Subscription  → joba24tok (requires V2 handshake — IP whitelist needed)
+ *     FALLBACK: joba24 with recur params if V2 handshake not available
  *   - One-time card → joba24
  *   - One-time alt  → joba24ch (Bit, Apple Pay, Google Pay, PayPal, phone)
  *
  * Input: { sum, credits, package_id, is_subscription, pay_method }
- * Returns: { supplier, sum, payment_id, pay_method }
+ * Returns: { supplier, sum, payment_id, pay_method, thtk }
  */
 Deno.serve(async (req) => {
   try {
@@ -49,13 +50,54 @@ Deno.serve(async (req) => {
     }
     const payment = await base44.asServiceRole.entities.TranzilaPayment.create(paymentData);
 
-    console.log(`✅ Payment record created: ${payment.id} | terminal=${supplier} | sum=${sum} | credits=${credits} | method=${pay_method || 'card'}`);
+    // === For subscriptions (token terminal): try V1 handshake to get thtk ===
+    let thtk = '';
+    if (is_subscription) {
+      const TranzilaPW = Deno.env.get('TranzilaPW');
+      if (TranzilaPW) {
+        const handshakeUrl = `https://secure5.tranzila.com/cgi-bin/tranzila71dt.cgi?sum=${sum}&TranzilaPW=${encodeURIComponent(TranzilaPW)}&supplier=${encodeURIComponent(supplier)}&op=1`;
+
+        try {
+          const hsResponse = await fetch(handshakeUrl);
+          const hsData = await hsResponse.text();
+
+          // Response is plain text: "thtk=<token>"
+          const thtkPrefix = 'thtk=';
+          thtk = hsData.trim();
+          if (thtk.startsWith(thtkPrefix)) {
+            thtk = thtk.substring(thtkPrefix.length);
+          }
+
+          // Check if handshake succeeded (thtk should be a token, not HTML/error)
+          if (!thtk || thtk.length < 5 || thtk.startsWith('{') || thtk.startsWith('<')) {
+            console.warn(`⚠️ V1 handshake failed — falling back to joba24 with recur params`);
+            thtk = '';
+            // Fall back to regular terminal with recurring params
+            supplier = 'joba24';
+          } else {
+            // Handshake succeeded — update payment with thtk
+            await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, { thtk });
+            console.log(`✅ Handshake created for payment ${payment.id}, thtk=${thtk.substring(0, 8)}...`);
+          }
+        } catch (hsErr) {
+          console.warn(`⚠️ Handshake request failed — falling back to joba24 with recur params:`, hsErr);
+          thtk = '';
+          supplier = 'joba24';
+        }
+      } else {
+        console.warn(`⚠️ No TranzilaPW secret — using joba24 with recur params for subscription`);
+        supplier = 'joba24';
+      }
+    }
+
+    console.log(`✅ Payment record created: ${payment.id} | terminal=${supplier} | sum=${sum} | credits=${credits} | method=${pay_method || 'card'} | thtk=${thtk ? 'yes' : 'no'}`);
 
     return new Response(JSON.stringify({
       supplier,
       sum,
       payment_id: payment.id,
       pay_method: pay_method || 'card',
+      thtk,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {
