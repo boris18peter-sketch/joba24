@@ -28,9 +28,9 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
               ? '2px solid #a855f7'
               : '1.5px solid var(--border-1)',
         borderRadius: 'var(--r-xl)',
-        padding: '20px 14px 14px',
+        padding: '22px 14px 14px',
         cursor: 'pointer',
-        overflow: 'visible',
+        overflow: 'hidden',
         boxShadow: selected
           ? '0 12px 36px rgba(26,111,212,0.4)'
           : isPopular || isBest
@@ -42,24 +42,22 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         alignItems: 'center',
         gap: 6,
         textAlign: 'center',
-        minHeight: 168,
+        minHeight: 176,
+        width: '100%',
       }}
     >
       {/* Badge */}
       {(isPopular || isBest) && (
         <div style={{
-          position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', top: 0, left: 0, right: 0,
           background: isBest
             ? 'linear-gradient(90deg, #7c3aed, #a855f7)'
             : 'linear-gradient(90deg, var(--brand-accent-dark), var(--brand-accent))',
           color: isBest ? 'white' : '#7c2d00',
           fontWeight: 900, fontSize: 10,
-          padding: '5px 16px', borderRadius: 99,
+          padding: '5px 0',
           whiteSpace: 'nowrap',
-          boxShadow: isBest
-            ? '0 4px 14px rgba(124,58,237,0.45)'
-            : '0 4px 12px rgba(251,191,36,0.45)',
-          display: 'flex', alignItems: 'center', gap: 4,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
           zIndex: 10,
           letterSpacing: 0.3,
         }}>
@@ -71,10 +69,11 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
       {/* Selected checkmark */}
       {selected && (
         <div style={{
-          position: 'absolute', top: 10, right: 10,
+          position: 'absolute', top: 8, right: 8,
           width: 24, height: 24, borderRadius: '50%',
           background: 'rgba(255,255,255,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 5,
         }}>
           <Check size={14} color="white" strokeWidth={3} />
         </div>
@@ -82,15 +81,15 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
 
       {/* Credits count with glow */}
       <div style={{
-        fontSize: 32, fontWeight: 900,
+        fontSize: 34, fontWeight: 900,
         color: selected ? 'white' : 'var(--text-1)',
         letterSpacing: -0.5, lineHeight: 1,
         display: 'flex', alignItems: 'center', gap: 6,
-        marginTop: 6,
+        marginTop: isPopular || isBest ? 14 : 8,
         textShadow: selected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
       }}>
         {pkg.credits}
-        <CreditIcon size={20} />
+        <CreditIcon size={22} />
       </div>
 
       {/* Label */}
@@ -107,6 +106,8 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         fontSize: 10, fontWeight: 700,
         color: selected ? 'rgba(255,255,255,0.6)' : 'var(--color-success)',
         marginTop: 2,
+        background: selected ? 'rgba(255,255,255,0.1)' : 'var(--color-success-bg)',
+        padding: '2px 8px', borderRadius: 99,
       }}>
         <TrendingDown size={10} />
         ₪{pricePerCredit} לקרדיט

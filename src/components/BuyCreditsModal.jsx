@@ -1,9 +1,9 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
-import { X, Zap, Shield, RotateCcw, CreditCard } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useAuth } from '@/lib/AuthContext';
-import { useLanguage } from '@/lib/LanguageContext';
 import useCountUp from '@/hooks/useCountUp';
 import CreditPackageCard from '@/components/credits/CreditPackageCard';
 import PaymentConfirm from '@/components/credits/PaymentConfirm';
@@ -20,7 +20,7 @@ const SHIMMER_STYLE = `
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: var(--r-lg);
+    border-radius: var(--r-xl);
     background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
     transform: translateX(-120%) skewX(-15deg);
     pointer-events: none;
@@ -49,23 +49,37 @@ const SUBSCRIPTION_PACKAGES = [
 ];
 
 const TRUST_FEATURES = [
-  { icon: Shield,    title: 'רכישה מאובטחת',    desc: 'המידע הפיננסי מוצפן ומאובטח בתקנים המחמירים ביותר' },
+  { icon: Shield,     title: 'רכישה מאובטחת',    desc: 'המידע הפיננסי מוצפן ומאובטח בתקנים המחמירים ביותר' },
   { icon: RotateCcw, title: 'החזר אוטומטי',    desc: 'לא נבחרת למשימה? הקרדיטים חוזרים מיידית לארנק' },
   { icon: CreditCard, title: 'גמישות מלאה',     desc: 'ניתן לבטל מנוי בכל עת ישירות מהגדרות החשבון' },
 ];
 
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
-  const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
 
   const [tab, setTab] = useState('oneTime');
   const [selectedPkg, setSelectedPkg] = useState(null);
-  const [step, setStep] = useState('browse'); // 'browse' | 'confirm' | 'iframe' | 'success'
+  const [step, setStep] = useState('browse');
   const [loading, setLoading] = useState(false);
   const [tranzilaData, setTranzilaData] = useState(null);
+  const [cancelSub, setCancelSub] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
 
-  // Inject shimmer keyframes once
+  // Fetch active subscriptions
+  const { data: subscriptions = [] } = useQuery({
+    queryKey: ['mySubscriptions', me?.id],
+    queryFn: () => base44.entities.TranzilaPayment.filter({
+      user_id: me.id,
+      type: 'subscription',
+      status: 'completed',
+      subscription_status: 'active',
+    }, '-created_date', 10),
+    enabled: !!me?.id,
+  });
+
   useEffect(() => {
     const id = 'buy-credits-styles';
     if (!document.getElementById(id)) {
@@ -76,7 +90,6 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     }
   }, []);
 
-  // Trigger shimmer periodically on visible cards
   useEffect(() => {
     if (step !== 'browse') return;
     const trigger = () => {
@@ -120,6 +133,24 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     }
   };
 
+  const handleCancelSub = async () => {
+    if (!cancelSub) return;
+    setCancelling(true);
+    try {
+      await base44.functions.invoke('cancelTranzilaSubscription', { payment_id: cancelSub.id });
+      await queryClient.invalidateQueries({ queryKey: ['mySubscriptions'] });
+      setCancelled(true);
+      setTimeout(() => {
+        setCancelSub(null);
+        setCancelled(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Cancel failed:', err);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const handleClose = () => {
     if (step === 'success') {
       onClose();
@@ -131,16 +162,17 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
 
   return createPortal(
     <div
+      dir="rtl"
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
         background: 'rgba(5,15,40,0.65)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',
+        overflowX: 'hidden',
       }}
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
       <div
-        dir="rtl"
         style={{
           background: 'var(--sheet-bg)',
           borderRadius: '28px 28px 0 0',
@@ -148,14 +180,15 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           maxWidth: 480,
           maxHeight: '92vh',
           overflowY: 'auto',
+          overflowX: 'hidden',
           boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
           paddingBottom: step === 'success' ? 'max(32px, env(safe-area-inset-bottom))' : 0,
+          boxSizing: 'border-box',
         }}
       >
         {/* Header — only on browse step */}
         {step === 'browse' && (
           <>
-            {/* Premium hero banner with balance */}
             <div style={{
               background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
               padding: '20px 20px 22px',
@@ -163,7 +196,6 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               position: 'relative',
               overflow: 'hidden',
             }}>
-              {/* Decorative circles */}
               <div style={{
                 position: 'absolute', top: -30, left: -20,
                 width: 120, height: 120, borderRadius: '50%',
@@ -176,7 +208,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               }} />
 
               <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ width: 40, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.3)', margin: '0 auto 14px' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                     <div style={{
@@ -197,7 +229,6 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     </div>
                   </div>
 
-                  {/* Balance card */}
                   <div style={{
                     background: 'rgba(255,255,255,0.1)',
                     borderRadius: 14, padding: '12px 16px',
@@ -244,6 +275,70 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 </button>
               </div>
             </div>
+
+            {/* Active subscriptions section */}
+            {subscriptions && subscriptions.length > 0 && (
+              <div style={{ padding: '16px 20px 0' }}>
+                <div style={{
+                  background: 'var(--surface-2)',
+                  borderRadius: 'var(--r-lg)',
+                  border: '1px solid var(--border-1)',
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid var(--border-1)',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <RefreshCw size={15} color="var(--brand-primary)" />
+                    <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>
+                      המנוי הפעיל שלך
+                    </span>
+                    <span style={{
+                      background: 'var(--color-success-bg)',
+                      color: 'var(--color-success)',
+                      fontSize: 10, fontWeight: 800,
+                      padding: '2px 8px', borderRadius: 99,
+                      border: '1px solid var(--color-success-border)',
+                    }}>
+                      פעיל
+                    </span>
+                  </div>
+                  {subscriptions.map((sub) => (
+                    <div key={sub.id} style={{
+                      padding: '14px 16px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <CreditIcon size={22} />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
+                            {sub.credits} קרדיטים לחודש
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
+                            ₪{sub.amount.toFixed(2)} / חודש · חידוש אוטומטי
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { setCancelSub(sub); setCancelled(false); }}
+                        style={{
+                          background: 'var(--color-danger-bg)',
+                          color: 'var(--color-danger)',
+                          border: '1px solid var(--color-danger-border)',
+                          borderRadius: 10,
+                          padding: '7px 14px',
+                          fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', flexShrink: 0,
+                        }}
+                      >
+                        בטל מנוי
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Tabs */}
             <div style={{ padding: '16px 20px 0' }}>
@@ -385,6 +480,94 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           />
         )}
       </div>
+
+      {/* Cancel subscription confirmation modal */}
+      {cancelSub && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000000,
+            background: 'rgba(5,15,40,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(6px)', padding: 20,
+          }}
+          onClick={(e) => e.target === e.currentTarget && !cancelling && setCancelSub(null)}
+        >
+          <div
+            style={{
+              background: 'var(--surface-2)',
+              borderRadius: 24,
+              maxWidth: 380, width: '100%',
+              padding: 28, textAlign: 'center',
+              boxShadow: 'var(--shadow-xl)',
+            }}
+          >
+            {cancelled ? (
+              <>
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%',
+                  background: 'var(--color-success-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}>
+                  <CheckCircle2 size={32} color="var(--color-success)" />
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>
+                  המנוי בוטל
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
+                  החיוב האוטומטי הופסק. הקרדיטים שכבר נרכשו נשארים בארנק שלך.
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%',
+                  background: 'var(--color-danger-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}>
+                  <AlertTriangle size={26} color="var(--color-danger)" />
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>
+                  ביטול המנוי?
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 24 }}>
+                  החיוב האוטומטי החודשי יופסק. תוכל להמשיך להשתמש בקרדיטים שכבר נרכשו.
+                  ניתן לרכוש מנוי מחדש בכל עת.
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={() => setCancelSub(null)}
+                    disabled={cancelling}
+                    style={{
+                      flex: 1, height: 48, borderRadius: 12,
+                      background: 'var(--surface-3)', color: 'var(--text-2)',
+                      border: '1px solid var(--border-1)',
+                      fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >
+                    חזור
+                  </button>
+                  <button
+                    onClick={handleCancelSub}
+                    disabled={cancelling}
+                    style={{
+                      flex: 1, height: 48, borderRadius: 12,
+                      background: 'var(--color-danger)', color: 'white',
+                      border: 'none', fontSize: 14, fontWeight: 800, cursor: cancelling ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    {cancelling ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : 'אשר ביטול'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

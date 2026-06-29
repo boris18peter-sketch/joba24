@@ -21,19 +21,18 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const paymentId = url.searchParams.get('payment_id');
 
-    // Parse form data — Tranzila sends application/x-www-form-urlencoded
+    // Parse form data — Tranzila sends application/x-www-form-urlencoded.
+    // Read body as text ONCE (req.text() consumes the stream), then parse with URLSearchParams.
+    // This avoids "Body has already been used" errors when formData() fails.
     let notify = {};
     try {
-      const formData = await req.formData();
-      for (const [key, value] of formData.entries()) {
-        notify[key] = value;
-      }
-    } catch {
       const text = await req.text();
       const params = new URLSearchParams(text);
       for (const [k, v] of params.entries()) {
         notify[k] = v;
       }
+    } catch (parseErr) {
+      console.error('Failed to parse notification body:', parseErr);
     }
 
     console.log('📋 Tranzila Notification:', JSON.stringify(notify, null, 2));
