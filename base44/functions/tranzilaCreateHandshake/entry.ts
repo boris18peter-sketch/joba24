@@ -2,8 +2,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
  * tranzilaCreateHandshake
- * Creates a Tranzila handshake token (thtk) for one-time or subscription payments.
- * Per official Tranzila Base44 integration guide.
+ * Creates a Tranzila handshake token (thtk) using the V1 API.
+ *
+ * V1 Handshake URL: https://secure5.tranzila.com/cgi-bin/tranzila71dt.cgi
+ * Parameters: sum, TranzilaPW, supplier, op=1
  *
  * Input: { sum, credits, package_id, is_subscription }
  * Returns: { thtk, supplier, sum, payment_id }
@@ -39,21 +41,28 @@ Deno.serve(async (req) => {
       package_id: package_id || '',
     });
 
-    // Construct the Tranzila Handshake URL (exactly per official guide)
-    const handshakeUrl = `https://api.tranzila.com/v1/handshake/create?supplier=${supplier}&sum=${sum}&TranzilaPW=${TranzilaPW}`;
+    // V1 Handshake API — per official Tranzila integration guide
+    // URL: https://secure5.tranzila.com/cgi-bin/tranzila71dt.cgi
+    // Params: sum, TranzilaPW, supplier, op=1
+    const handshakeUrl = `https://secure5.tranzila.com/cgi-bin/tranzila71dt.cgi?sum=${sum}&TranzilaPW=${encodeURIComponent(TranzilaPW)}&supplier=${encodeURIComponent(supplier)}&op=1`;
+
+    console.log(`🔗 Handshake URL: ${handshakeUrl.replace(TranzilaPW, '***')}`);
 
     const response = await fetch(handshakeUrl);
     const data = await response.text();
 
-    // Extract thtk — response is plain text: "thtk=<token>"
+    console.log(`📋 Tranzila handshake response: ${data}`);
+
+    // Response is plain text: "thtk=<token>"
+    // On error: {"error_code":400,"message":"Invalid request, TranzilaPW"}
     const thtkPrefix = 'thtk=';
     let thtk = data.trim();
     if (thtk.startsWith(thtkPrefix)) {
       thtk = thtk.substring(thtkPrefix.length);
     }
 
-    if (!thtk || thtk.length < 5) {
-      console.error('Tranzila handshake failed — response:', data);
+    if (!thtk || thtk.length < 5 || thtk.startsWith('{')) {
+      console.error('❌ Tranzila handshake failed — response:', data);
       return new Response(JSON.stringify({ error: 'Failed to create Tranzila handshake', raw: data }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
