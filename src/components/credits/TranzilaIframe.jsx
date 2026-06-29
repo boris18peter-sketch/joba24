@@ -118,7 +118,9 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [paymentId, onSuccess, onClose]);
 
-  const iframeUrl = `https://directng.tranzila.com/${encodeURIComponent(supplier)}/iframenew.php`;
+  // Token/subscription terminals use the classic endpoint; others use directng
+  const tranzilaBase = supplier === 'joba24tok' ? 'direct.tranzila.com' : 'directng.tranzila.com';
+  const iframeUrl = `https://${tranzilaBase}/${encodeURIComponent(supplier)}/iframenew.php`;
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column' }}>
