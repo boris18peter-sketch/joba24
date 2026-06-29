@@ -123,14 +123,13 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         {/* Notify URL — Tranzila POSTs transaction result here */}
         <input type="hidden" name="notify_url" value={notifyUrl} />
 
-        {/* Subscription-specific fields */}
-        {isSubscription && (
-          <>
-            {/* recur_transaction=4 = monthly recurring */}
-            <input type="hidden" name="recur_transaction" value="4_approved" />
-            <input type="hidden" name="recur_sum" value={sum} />
-          </>
-        )}
+        {/* 
+          Note: We intentionally do NOT send recur_transaction / recur_sum here.
+          Those parameters cause Tranzila to display confusing "immediate + monthly" text.
+          Instead, the first payment is a simple one-time charge. The TranzilaTK token
+          returned in the notification can be used later for recurring billing via a
+          scheduled automation.
+        */}
       </form>
 
       {/* The actual Tranzila iframe */}
