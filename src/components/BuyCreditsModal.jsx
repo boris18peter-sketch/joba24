@@ -105,7 +105,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('tranzilaCreateHandshake', {
+      const res = await base44.functions.invoke('tranzilaCreatePayment', {
         sum: selectedPkg.price,
         credits: selectedPkg.credits,
         package_id: selectedPkg.id,
@@ -114,7 +114,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
       setTranzilaData(res.data);
       setStep('iframe');
     } catch (err) {
-      console.error('Tranzila handshake failed:', err);
+      console.error('Tranzila payment init failed:', err);
     } finally {
       setLoading(false);
     }
@@ -303,7 +303,6 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         {/* Step: Tranzila iframe */}
         {step === 'iframe' && tranzilaData && (
           <TranzilaIframe
-            thtk={tranzilaData.thtk}
             supplier={tranzilaData.supplier}
             sum={tranzilaData.sum}
             paymentId={tranzilaData.payment_id}

@@ -6,15 +6,11 @@ import { base44 } from '@/api/base44Client';
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
  *
- * Per official Tranzila Base44 guide:
- * - Base URL: https://direct.tranzila.com/[supplier]/iframenew.php
- * - Method: POST (via a hidden HTML form that targets the iframe)
- * - One-time: cred_type=1, tranmode=A, new_process=1
- * - Subscription: cred_type=1, tranmode=A, new_process=1, recur_transaction=4, recur_payments, recur_sum
+ * The iframe is loaded via a hidden POST form (so parameters aren't visible in the URL).
+ * No handshake (thtk) needed — the terminal doesn't have handshake enabled.
  *
  * Props:
- *   thtk          — Tranzila handshake token
- *   supplier      — Tranzila terminal name (Joba24)
+ *   supplier      — Tranzila terminal name (joba24)
  *   sum           — Payment amount
  *   paymentId     — TranzilaPayment record ID (for polling)
  *   isSubscription — Whether this is a recurring subscription
@@ -22,11 +18,13 @@ import { base44 } from '@/api/base44Client';
  *   onClose       — Called when user closes
  *   onSuccess     — Called when payment confirmed completed
  */
-export default function TranzilaIframe({ thtk, supplier, sum, paymentId, isSubscription, pkg, onClose, onSuccess }) {
+export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, onClose, onSuccess }) {
   const formRef = useRef(null);
-  const iframeRef = useRef(null);
   const pollRef = useRef(null);
   const [loading, setLoading] = useState(true);
+
+  // Notify URL — Tranzila will POST the transaction result here
+  const notifyUrl = `https://api.base44.com/api/apps/${base44.appId}/functions/tranzilaNotify?payment_id=${paymentId}`;
 
   // Submit the hidden form INTO the iframe once mounted
   useEffect(() => {
@@ -101,7 +99,7 @@ export default function TranzilaIframe({ thtk, supplier, sum, paymentId, isSubsc
 
       {/*
         Hidden form that POSTs directly into the iframe.
-        Per official guide: action = https://direct.tranzila.com/[supplier]/iframenew.php
+        action = https://direct.tranzila.com/[supplier]/iframenew.php
         target = the iframe name.
       */}
       <form
@@ -112,34 +110,31 @@ export default function TranzilaIframe({ thtk, supplier, sum, paymentId, isSubsc
         style={{ display: 'none' }}
         autoComplete="off"
       >
-        {/* Required core fields */}
+        {/* Core payment fields */}
         <input type="hidden" name="sum" value={sum} />
         <input type="hidden" name="currency" value="1" />
         <input type="hidden" name="cred_type" value="1" />
         <input type="hidden" name="tranmode" value="A" />
-        <input type="hidden" name="new_process" value="1" />
-        <input type="hidden" name="thtk" value={thtk} />
         <input type="hidden" name="lang" value="il" />
-        <input type="hidden" name="buttonLabel" value="שלם עכשיו" />
         <input type="hidden" name="pdesc" value={`קרדיטים Joba24${pkg ? ` — ${pkg.credits} קרדיטים` : ''}`} />
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
 
+        {/* Notify URL — Tranzila POSTs transaction result here */}
+        <input type="hidden" name="notify_url" value={notifyUrl} />
+
         {/* Subscription-specific fields */}
         {isSubscription && (
           <>
-            {/* recur_transaction=4 = monthly, not customer choice */}
+            {/* recur_transaction=4 = monthly recurring */}
             <input type="hidden" name="recur_transaction" value="4_approved" />
-            {/* recur_sum = same as initial sum (monthly charge) */}
             <input type="hidden" name="recur_sum" value={sum} />
-            {/* No recur_payments = unlimited until cancelled */}
           </>
         )}
       </form>
 
       {/* The actual Tranzila iframe */}
       <iframe
-        ref={iframeRef}
         name="tranzila-frame"
         id="tranzila-frame"
         onLoad={() => setLoading(false)}

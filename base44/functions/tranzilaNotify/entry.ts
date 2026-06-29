@@ -5,12 +5,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * Per official guide: MUST return "OK" with status 200 — otherwise Tranzila retries.
  * Accepts POST with application/x-www-form-urlencoded data.
  *
+ * The payment_id is passed as a query param in the notify_url:
+ *   .../tranzilaNotify?payment_id=<id>
+ *
  * Key fields from Tranzila:
- *   Response: "000" or "0" = success, anything else = failed
- *   thtk: handshake token (used to match our TranzilaPayment record)
+ *   Response: "000" = success, anything else = failed
  *   index: Tranzila transaction ID
  *   sum: amount charged
  *   ConfirmationCode: bank confirmation code
+ *   TranzilaTK: token (for recurring charges)
  */
 Deno.serve(async (req) => {
   try {
@@ -19,6 +22,10 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
+
+    // Get payment_id from query string
+    const url = new URL(req.url);
+    const paymentId = url.searchParams.get('payment_id');
 
     // Parse form data — Tranzila sends application/x-www-form-urlencoded
     let notify = {};
@@ -37,22 +44,22 @@ Deno.serve(async (req) => {
     }
 
     console.log('📋 Tranzila Notification Received:', JSON.stringify(notify, null, 2));
+    console.log(`📋 Payment ID from query: ${paymentId}`);
 
     const responseCode = notify['Response'] || '';
-    const thtk = notify['thtk'] || '';
     const index = notify['index'] || '';
+    const tranzilaToken = notify['TranzilaTK'] || '';
 
-    if (!thtk) {
-      console.error('❌ Missing thtk in Tranzila notification');
+    if (!paymentId) {
+      console.error('❌ Missing payment_id in Tranzila notification query');
       return new Response('OK', { status: 200 }); // Still return OK to avoid retries
     }
 
-    // Find the payment by thtk
-    const payments = await base44.asServiceRole.entities.TranzilaPayment.filter({ thtk });
-    const payment = payments?.[0];
+    // Find the payment by ID
+    const payment = await base44.asServiceRole.entities.TranzilaPayment.get(paymentId);
 
     if (!payment) {
-      console.error(`❌ Payment not found for thtk: ${thtk}`);
+      console.error(`❌ Payment not found for id: ${paymentId}`);
       return new Response('OK', { status: 200 }); // Still return OK
     }
 
@@ -62,8 +69,8 @@ Deno.serve(async (req) => {
       return new Response('OK', { status: 200 });
     }
 
-    // Response "000" or "0" = success
-    const isSuccess = responseCode === '000' || responseCode === '0';
+    // Response "000" = success
+    const isSuccess = responseCode === '000';
 
     if (isSuccess) {
       // Grant credits to user
@@ -90,6 +97,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, {
         status: 'completed',
         tranzila_index: index,
+        thtk: tranzilaToken || payment.thtk,
       });
     } else {
       await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, {
