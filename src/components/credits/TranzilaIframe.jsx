@@ -23,7 +23,7 @@ import { appParams } from '@/lib/app-params';
  *   onClose       — Called when user closes
  *   onSuccess     — Called when payment confirmed completed
  */
-export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, onClose, onSuccess }) {
+export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, payMethod, onClose, onSuccess }) {
   const formRef = useRef(null);
   const pollRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -178,7 +178,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <input type="hidden" name="cred_type" value="1" />
         <input type="hidden" name="tranmode" value="A" />
         <input type="hidden" name="lang" value="il" />
-        <input type="hidden" name="pdesc" value={`קרדיטים Joba24${pkg ? ` — ${pkg.credits} קרדיטים` : ''}`} />
+        <input type="hidden" name="pdesc" value={`קרדיטים Joba24${pkg ? ` — ${pkg.credits} קרדיטים` : ''}${payMethod ? ` (${payMethod})` : ''}`} />
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
 

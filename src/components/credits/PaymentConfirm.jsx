@@ -1,20 +1,47 @@
-import { ArrowRight, CreditCard, Shield, Lock, RefreshCw, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, CreditCard, Shield, Lock, RefreshCw, Smartphone, Check } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
-/**
- * PaymentConfirm — second step: confirm purchase.
- * All payment methods (card, Bit, Apple Pay, Google Pay, PayPal) are available
- * on the Tranzila payment page itself — this screen shows the available options
- * and proceeds to the Tranzila iframe.
- *
- * Props:
- *   pkg: { credits, price }
- *   isSubscription: boolean
- *   onBack: () => void
- *   onConfirm: () => void  — called when user confirms (should trigger actual payment)
- *   loading: boolean
- */
+const PAYMENT_METHODS = [
+  { id: 'card', label: 'כרטיס אשראי', icon: 'card' },
+  { id: 'bit', label: 'Bit', icon: 'bit' },
+  { id: 'paypal', label: 'PayPal', icon: 'paypal' },
+  { id: 'apple', label: 'Apple Pay', icon: 'apple' },
+  { id: 'google', label: 'Google Pay', icon: 'google' },
+  { id: 'phone', label: 'חיוב סלולרי', icon: 'phone' },
+];
+
+function MethodIcon({ type }) {
+  switch (type) {
+    case 'card':
+      return <CreditCard size={16} />;
+    case 'bit':
+      return <span style={{ fontSize: 14, fontWeight: 900, color: '#0055a5', letterSpacing: 0.5 }}>Bit</span>;
+    case 'paypal':
+      return <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-2)', letterSpacing: 0.3 }}>Pay<span style={{ color: '#003087' }}>Pal</span></span>;
+    case 'apple':
+      return <span style={{ fontSize: 14, fontWeight: 800 }}> Apple Pay</span>;
+    case 'google':
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700 }}>
+          <span style={{ width: 14, height: 14, borderRadius: '50%', background: 'conic-gradient(from 0deg, #4285f4, #34a853, #fbbc05, #ea4335, #4285f4)', display: 'inline-block', flexShrink: 0 }} />
+          G Pay
+        </span>
+      );
+    case 'phone':
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700 }}>
+          <Smartphone size={15} /> סלולרי
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm, loading }) {
+  const [payMethod, setPayMethod] = useState('card');
+
   return (
     <div style={{ padding: '8px 20px 0' }}>
       {/* Back */}
@@ -102,84 +129,59 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         </div>
       )}
 
-      {/* Payment methods — all available on the Tranzila payment page */}
+      {/* Payment methods — clickable selection */}
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 10 }}>
-        אמצעי תשלום זמינים
+        בחר אמצעי תשלום
       </div>
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-        gap: 8, marginBottom: 8,
+        gap: 8, marginBottom: 12,
       }}>
-        <div style={{
-          height: 48, borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border-1)',
-          background: 'var(--surface-2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          fontSize: 12, fontWeight: 700, color: 'var(--text-2)',
-        }}>
-          <CreditCard size={14} /> כרטיס אשראי
-        </div>
-        <div style={{
-          height: 48, borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border-1)',
-          background: 'var(--surface-2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          fontSize: 12, fontWeight: 800, color: '#0055a5',
-        }}>
-          Bit
-        </div>
-        <div style={{
-          height: 48, borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border-1)',
-          background: 'var(--surface-2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          fontSize: 12, fontWeight: 800, color: 'var(--text-2)',
-        }}>
-           Pay<span style={{ color: '#003087' }}>Pal</span>
-        </div>
-        <div style={{
-          height: 48, borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border-1)',
-          background: 'var(--surface-2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          fontSize: 12, fontWeight: 700, color: 'var(--text-1)',
-        }}>
-          <span style={{ fontSize: 14 }}></span> Apple Pay
-        </div>
-        <div style={{
-          height: 48, borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border-1)',
-          background: 'var(--surface-2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-          fontSize: 12, fontWeight: 700, color: 'var(--text-1)',
-        }}>
-          <span style={{
-            width: 14, height: 14, borderRadius: '50%',
-            background: 'conic-gradient(from 0deg, #4285f4, #34a853, #fbbc05, #ea4335, #4285f4)',
-            display: 'inline-block', flexShrink: 0,
-          }} />
-          Google Pay
-        </div>
-        <div style={{
-          height: 48, borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border-1)',
-          background: 'var(--surface-2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          fontSize: 12, fontWeight: 700, color: 'var(--text-2)',
-        }}>
-          <Smartphone size={14} /> חיוב סלולרי
-        </div>
+        {PAYMENT_METHODS.map((method) => {
+          const selected = payMethod === method.id;
+          return (
+            <button
+              key={method.id}
+              onClick={() => setPayMethod(method.id)}
+              style={{
+                height: 52, borderRadius: 'var(--r-md)',
+                border: selected
+                  ? '2px solid var(--brand-primary)'
+                  : '1.5px solid var(--border-1)',
+                background: selected ? 'var(--brand-primary-light)' : 'var(--surface-2)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                fontSize: 12, fontWeight: 700,
+                color: selected ? 'var(--brand-primary)' : 'var(--text-2)',
+                transition: 'all 0.15s',
+                position: 'relative',
+              }}
+            >
+              <MethodIcon type={method.icon} />
+              {selected && (
+                <span style={{
+                  position: 'absolute', top: 4, left: 4,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: 'var(--brand-primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Check size={10} color="white" strokeWidth={3} />
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
       <div style={{
         fontSize: 11, color: 'var(--text-3)', fontWeight: 600,
         marginBottom: 20, textAlign: 'center',
       }}>
-        תבחר/י את אמצעי התשלום בעמוד התשלום המאובטח של Tranzila
+        תועבר/י לעמוד התשלום המאובטח של Tranzila להשלמת הרכישה
       </div>
 
       {/* Confirm button */}
       <button
-        onClick={onConfirm}
+        onClick={() => onConfirm(payMethod)}
         disabled={loading}
         style={{
           width: '100%', height: 54, borderRadius: 'var(--r-md)',

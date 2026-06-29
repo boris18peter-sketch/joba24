@@ -115,7 +115,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     setStep('confirm');
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (payMethod) => {
     setLoading(true);
     try {
       const res = await base44.functions.invoke('tranzilaCreatePayment', {
@@ -124,7 +124,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         package_id: selectedPkg.id,
         is_subscription: isSubscription,
       });
-      setTranzilaData(res.data);
+      setTranzilaData({ ...res.data, payMethod });
       setStep('iframe');
     } catch (err) {
       console.error('Tranzila payment init failed:', err);
@@ -466,6 +466,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             paymentId={tranzilaData.payment_id}
             isSubscription={isSubscription}
             pkg={selectedPkg}
+            payMethod={tranzilaData.payMethod}
             onClose={() => { setStep('browse'); setTranzilaData(null); }}
             onSuccess={() => setStep('success')}
           />
