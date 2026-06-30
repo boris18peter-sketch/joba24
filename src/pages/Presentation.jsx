@@ -69,8 +69,30 @@ function StepBadge({ num, label, active }) {
 // ═══════════════════════════════════════════════════════════════════
 function Slide1() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      <img src={BANNER} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 24px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <img src={LOGO} alt="" style={{ position: 'absolute', top: 32, right: 24, width: 44, height: 44, borderRadius: 13, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
+      <div style={{ position: 'absolute', top: 24, left: 24, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SEED · 2026</div>
+
+      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 76, left: 12, width: 90, borderRadius: 10, opacity: 0.85, boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
+
+      <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
+        <Chip gold>The Real-Time Marketplace for Local Work</Chip>
+        <div style={{ marginTop: 12, fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95 }}>
+          Need help?<br />Open Joba<span style={{ color: GOLD }}>24</span>.
+        </div>
+        <div style={{ marginTop: 12, fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+          מצא עובד או עבודה תוך דקות.
+        </div>
+        <div style={{ marginTop: 24, display: 'flex', gap: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          {[['₪8B', 'שוק ישראל'], ['3M+', 'פרילנסרים'], ['60s', 'לג\'ובה חיה']].map(([v, l]) => (
+            <div key={l} style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 900, color: GOLD }}>{v}</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -224,7 +246,7 @@ function Slide6() {
           { icon: '🛡️', text: 'אמינות ודירוג' },
           { icon: '⭐', text: 'היסטוריית ביצועים' },
           { icon: '🏷️', text: 'התאמת קטגוריה' },
-          { icon: '📊', text: 'מוניטין צברי' },
+          { icon: '📊', text: 'מוניטין ציבורי' },
         ].map(({ icon, text }) => (
           <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
             <span style={{ fontSize: 15 }}>{icon}</span>
