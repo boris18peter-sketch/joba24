@@ -572,6 +572,113 @@ function Slide11() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SLIDE 11b — Go To Market Phase 3 (The Master Plan)
+// ═══════════════════════════════════════════════════════════════════
+function Slide11b() {
+  const steps = [
+    { num: '1', title: 'גיוס מסיבי לפני ההשקה', desc: 'מכל המקצועות והתחומים', accent: '#fbbf24', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.3)' },
+    { num: '2', title: 'מורידים · מאשרים התראות · ממלאים פרטים', desc: 'מוכנים לקבל עבודות', accent: '#60a5fa', bg: 'rgba(96,165,250,0.08)', border: 'rgba(96,165,250,0.3)' },
+    { num: '3', title: 'פרסום אגרסיבי למפרסמים', desc: 'ביום אחד — שני הצדדים נפגשים', accent: '#4ade80', bg: 'rgba(74,222,128,0.08)', border: 'rgba(74,222,128,0.3)' },
+  ];
+
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
+      <Chip gold>Go To Market · Phase 3</Chip>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 4px', lineHeight: 1.25 }}>
+        התוכנית.<br /><span style={{ color: GOLD }}>3,000 עובדים מוכנים.</span>
+      </h2>
+      <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: 14 }}>
+        מכל המקצועות — לפני ההשקה.
+      </div>
+
+      {/* Goal hero number */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(26,111,212,0.08))',
+        borderRadius: 18, padding: '18px 20px', border: '1px solid rgba(251,191,36,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 14,
+      }}>
+        <div style={{
+          fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 900, color: GOLD,
+          letterSpacing: -2, lineHeight: 1,
+          textShadow: '0 0 30px rgba(251,191,36,0.4)',
+        }}>3,000</div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: FS.body, fontWeight: 800, color: 'white' }}>בעלי מקצוע</div>
+          <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)' }}>מוכנים לעבודה</div>
+        </div>
+      </div>
+
+      {/* Three steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minHeight: 0 }}>
+        {steps.map((step, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 16px', borderRadius: 14,
+            background: step.bg, border: `1px solid ${step.border}`,
+            flex: 1, minHeight: 0,
+          }}>
+            <div style={{
+              width: 'clamp(32px, 4vw, 42px)', height: 'clamp(32px, 4vw, 42px)', borderRadius: 12,
+              background: 'rgba(255,255,255,0.06)', border: `1px solid ${step.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 'clamp(15px, 1.8vw, 20px)', fontWeight: 900, color: step.accent,
+              flexShrink: 0,
+            }}>{step.num}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 'clamp(13px, 1.5vw, 16px)', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{step.title}</div>
+              <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 2 }}>{step.desc}</div>
+            </div>
+            {i < steps.length - 1 && (
+              <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+                <div style={{ width: 2, height: 8, background: 'rgba(255,255,255,0.1)', margin: '0 auto' }} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Why easy + why attractive */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <div style={{
+          flex: 1, background: 'rgba(74,222,128,0.08)', borderRadius: 12,
+          padding: '12px 14px', border: '1px solid rgba(74,222,128,0.2)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          <div style={{ fontSize: FS.bodySm, fontWeight: 800, color: '#4ade80', lineHeight: 1.3 }}>קל לגיוס</div>
+          <div style={{ fontSize: 'clamp(11px, 1.3vw, 13px)', color: 'rgba(255,255,255,0.55)', fontWeight: 600, lineHeight: 1.35 }}>
+            יש סיבה טובה להוריד — הכנסה נוספת מיידית
+          </div>
+        </div>
+        <div style={{
+          flex: 1, background: 'rgba(251,191,36,0.08)', borderRadius: 12,
+          padding: '12px 14px', border: '1px solid rgba(251,191,36,0.2)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          <div style={{ fontSize: FS.bodySm, fontWeight: 800, color: GOLD, lineHeight: 1.3 }}>גישה ללקוחות</div>
+          <div style={{ fontSize: 'clamp(11px, 1.3vw, 13px)', color: 'rgba(255,255,255,0.55)', fontWeight: 600, lineHeight: 1.35 }}>
+            קבועים פוטנציאליים · עבודות נוספות
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom punchline */}
+      <div style={{
+        marginTop: 10, background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(251,191,36,0.15))',
+        borderRadius: 14, padding: '12px 18px', border: '1px solid rgba(251,191,36,0.3)',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: FS.body, fontWeight: 900, color: 'white' }}>
+          מי לא ירצה עוד עבודה?
+        </div>
+        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginTop: 3 }}>
+          תוכנית עם סיבה אמיתית להורדה — <strong style={{ color: GOLD }}>מנצחת מההתחלה.</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SLIDE — Integrations
 // ═══════════════════════════════════════════════════════════════════
 function SlideIntegrations() {
@@ -740,6 +847,7 @@ const SLIDES = [
   { id: 'revenue',     component: <Slide9 /> },
   { id: 'gtm1',        component: <Slide10 /> },
   { id: 'gtm2',        component: <Slide11 /> },
+  { id: 'gtm3',        component: <Slide11b /> },
   { id: 'network',     component: <Slide12 /> },
   { id: 'integrations', component: <SlideIntegrations /> },
   { id: 'traction',    component: <Slide13 /> },
