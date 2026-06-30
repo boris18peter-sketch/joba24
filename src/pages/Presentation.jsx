@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import PhoneMockup from '@/components/presentation/PhoneMockup';
 
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -17,26 +16,39 @@ const DARK_BG = '#050d1f';
 const BLUE = '#1a6fd4';
 const GOLD = '#fbbf24';
 
+// ── Responsive font sizes ──
+const FS = {
+  chip:   'clamp(11px, 1.3vw, 14px)',
+  h2:     'clamp(22px, 2.8vw, 32px)',
+  h2sm:   'clamp(20px, 2.5vw, 28px)',
+  body:   'clamp(13px, 1.6vw, 17px)',
+  bodySm: 'clamp(12px, 1.4vw, 15px)',
+  small:  'clamp(10px, 1.2vw, 13px)',
+  stat:   'clamp(22px, 2.8vw, 32px)',
+  micro:  'clamp(9px, 1.1vw, 12px)',
+};
+const PAD = 'clamp(28px, 4vw, 48px) clamp(18px, 3vw, 36px)';
+
 function Chip({ children, gold }) {
   return (
     <span dir="auto" style={{
-      display: 'inline-block', fontSize: 10, fontWeight: 800, letterSpacing: 1.4,
+      display: 'inline-block', fontSize: FS.chip, fontWeight: 800, letterSpacing: 1.2,
       textTransform: 'uppercase',
       color: gold ? GOLD : '#93c5fd',
       background: gold ? 'rgba(251,191,36,0.1)' : 'rgba(147,197,253,0.1)',
       border: `1px solid ${gold ? 'rgba(251,191,36,0.3)' : 'rgba(147,197,253,0.25)'}`,
-      borderRadius: 20, padding: '4px 12px',
+      borderRadius: 20, padding: '5px 14px',
     }}>{children}</span>
   );
 }
 
-function Row({ icon, text, sub, accent }) {
+function Row({ text, sub, accent }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: accent || 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'rgba(255,255,255,0.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ width: 10, height: 10, borderRadius: '50%', background: accent ? accent.replace('0.12', '0.5').replace('0.1', '0.4') : 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, color: 'white', fontSize: 12.5, lineHeight: 1.3 }}>{text}</div>
-        {sub && <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{sub}</div>}
+        <div style={{ fontWeight: 700, color: 'white', fontSize: FS.body, lineHeight: 1.3 }}>{text}</div>
+        {sub && <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -44,24 +56,24 @@ function Row({ icon, text, sub, accent }) {
 
 function StatBox({ val, label, gold }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '12px 6px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <div style={{ fontSize: 24, fontWeight: 900, color: gold ? GOLD : '#60a5fa', letterSpacing: -1 }}>{val}</div>
-      <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', marginTop: 4, lineHeight: 1.3 }}>{label}</div>
+    <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ fontSize: FS.stat, fontWeight: 900, color: gold ? GOLD : '#60a5fa', letterSpacing: -1 }}>{val}</div>
+      <div style={{ fontSize: FS.small, color: 'rgba(255,255,255,0.5)', marginTop: 6, lineHeight: 1.3 }}>{label}</div>
     </div>
   );
 }
 
 function StepBadge({ num, label, active }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
       <div style={{
-        width: 32, height: 32, borderRadius: '50%',
+        width: 'clamp(32px, 4vw, 44px)', height: 'clamp(32px, 4vw, 44px)', borderRadius: '50%',
         background: active ? `linear-gradient(135deg, ${BLUE}, ${GOLD})` : 'rgba(255,255,255,0.08)',
         border: active ? 'none' : '1px solid rgba(255,255,255,0.15)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, fontWeight: 900, color: 'white',
+        fontSize: 'clamp(13px, 1.5vw, 17px)', fontWeight: 900, color: 'white',
       }}>{num}</div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: active ? 'white' : 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.2 }}>{label}</div>
+      <div style={{ fontSize: FS.small, fontWeight: 700, color: active ? 'white' : 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.2 }}>{label}</div>
     </div>
   );
 }
@@ -71,26 +83,24 @@ function StepBadge({ num, label, active }) {
 // ═══════════════════════════════════════════════════════════════════
 function Slide1() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 20px', position: 'relative', overflow: 'hidden' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: PAD, position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <img src={LOGO} alt="" style={{ position: 'absolute', top: 32, right: 24, width: 44, height: 44, borderRadius: 13, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
-      <div dir="ltr" style={{ position: 'absolute', top: 24, left: 24, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SEED · 2026</div>
+      <img src={LOGO} alt="" style={{ position: 'absolute', top: 'clamp(24px, 3vw, 36px)', right: 'clamp(18px, 3vw, 36px)', width: 'clamp(40px, 5vw, 52px)', height: 'clamp(40px, 5vw, 52px)', borderRadius: 14, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
 
-      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 68, left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 40px)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }} />
+      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 'clamp(64px, 8vw, 90px)', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 40px)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }} />
 
       <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
-        <Chip gold>The Real-Time Marketplace for Local Work</Chip>
-        <div dir="ltr" style={{ marginTop: 12, fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95, textAlign: 'right' }}>
+        <div dir="ltr" style={{ fontSize: 'clamp(34px, 7vw, 54px)', fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95, textAlign: 'left' }}>
           Need help?<br />Open Joba<span style={{ color: GOLD }}>24</span>.
         </div>
-        <div style={{ marginTop: 12, fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+        <div style={{ marginTop: 'clamp(10px, 1.5vw, 16px)', fontSize: 'clamp(14px, 1.8vw, 20px)', fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
           מצא עובד או עבודה תוך דקות.
         </div>
-        <div style={{ marginTop: 24, display: 'flex', gap: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ marginTop: 'clamp(18px, 2.5vw, 28px)', display: 'flex', gap: 'clamp(12px, 2vw, 24px)', paddingTop: 'clamp(12px, 2vw, 20px)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           {[['₪8B', 'שוק ישראל'], ['3M+', 'פרילנסרים'], ['60s', 'לג\'ובה חיה']].map(([v, l]) => (
             <div key={l} style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: GOLD }}>{v}</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{l}</div>
+              <div style={{ fontSize: 'clamp(16px, 2vw, 24px)', fontWeight: 900, color: GOLD }}>{v}</div>
+              <div style={{ fontSize: FS.small, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{l}</div>
             </div>
           ))}
         </div>
@@ -104,25 +114,21 @@ function Slide1() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide2() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>הבעיה</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         הדרך למצוא עזרה<br />
         <span style={{ color: '#ef4444' }}>עדיין איטית, מבוזרת ולא אמינה</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-        <Row icon="📞" text="מתקשרים להרבה בעלי מקצוע" sub="משווים מחירים, מחכים לחזרות" accent="rgba(239,68,68,0.1)" />
-        <Row icon="💸" text="מנסים להבין מחיר הוגן" sub="בלי שקיפות, בלי אמינות" accent="rgba(239,68,68,0.1)" />
-        <Row icon="⏰" text="ממתינים שעות לעזרה" sub="WhatsApp, פרוטקציות, קבוצות שכונה" accent="rgba(239,68,68,0.1)" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <Row text="מתקשרים להרבה בעלי מקצוע" sub="משווים מחירים, מחכים לחזרות" accent="rgba(239,68,68,0.12)" />
+        <Row text="מנסים להבין מחיר הוגן" sub="בלי שקיפות, בלי אמינות" accent="rgba(239,68,68,0.12)" />
+        <Row text="ממתינים שעות לעזרה" sub="WhatsApp, פרוטקציות, קבוצות שכונה" accent="rgba(239,68,68,0.12)" />
       </div>
 
-      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.15), rgba(251,191,36,0.1))', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(251,191,36,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
-        <strong style={{ color: GOLD }}>ב-Joba24:</strong> אתה אומר כמה אתה מוכן לשלם — ומי שרוצה, מגיע ומבצע.<br />
-        <strong style={{ color: 'white' }}>כוח לאיש הפשוט שצריך עזרה.</strong>
-      </div>
-      <div style={{ marginTop: 8, background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-        ובו בזמן — <strong style={{ color: '#4ade80' }}>עבודה יומיומית</strong> לאלפי בעלי מקצוע, פרילנסרים וצעירים שפותחים את האפליקציה ומרוויחים.
+      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.15), rgba(251,191,36,0.1))', borderRadius: 14, padding: '16px 18px', border: '1px solid rgba(251,191,36,0.2)', fontSize: FS.body, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
+        <strong style={{ color: GOLD }}>ב-Joba24:</strong> אתה מגדיר את המשימה וכמה אתה מוכן לשלם — מי שרוצה מגיש בקשה, אתה מאשר את העובד המתאים, הוא מגיע ומבצע.
       </div>
     </div>
   );
@@ -133,21 +139,21 @@ function Slide2() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide3() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 70% 80%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 70% 80%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>הזדמנות</Chip>
-      <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.2 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.2 }}>
         ישראל בלבד.<br /><span style={{ color: GOLD }}>ואז — כל עיר בעולם.</span>
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <StatBox val="+3M" label="פרילנסרים בישראל" gold />
         <StatBox val="₪8B+" label="שוק שירותים מקומיים" />
         <StatBox val="70%" label="עסקאות עדיין לא דיגיטליות" />
         <StatBox val="0" label="שחקן מוביל בקטגוריה" gold />
       </div>
 
-      <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(251,191,36,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
-        🚀 <strong style={{ color: GOLD }}>Window of Opportunity:</strong> רוב שוק השירותים המקומיים עדיין לא מנוהל בזמן אמת.
+      <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 14, padding: '16px 18px', border: '1px solid rgba(251,191,36,0.2)', fontSize: FS.body, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
+        <strong style={{ color: GOLD }}>Window of Opportunity:</strong> רוב שוק השירותים המקומיים עדיין לא מנוהל בזמן אמת.
       </div>
     </div>
   );
@@ -158,31 +164,28 @@ function Slide3() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide4() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>The Experience</Chip>
-      <h2 dir="ltr" style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
+      <h2 dir="ltr" style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
         From "I need help"<br />
         <span style={{ color: GOLD }}>to "someone is on the way"</span>
       </h2>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 8 }}>
         <StepBadge num={1} label="צריך עזרה" active />
-        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>←</div>
         <StepBadge num={2} label="מפרסמים" active />
-        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>←</div>
         <StepBadge num={3} label="מקבלים בקשות" active />
-        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>←</div>
         <StepBadge num={4} label="בדרך!" active />
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
-        <PhoneMockup src={FEED_SS} width={110} label="Feed" />
-        <PhoneMockup src={MAP_SS} width={110} label="Map" />
+      <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginBottom: 16 }}>
+        <PhoneMockup src={FEED_SS} width={130} label="Feed" />
+        <PhoneMockup src={MAP_SS} width={130} label="Map" />
       </div>
 
-      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.2), rgba(251,191,36,0.1))', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>תוך דקות. לא שעות.</div>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>כל המסע — באפליקציה אחת</div>
+      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.2), rgba(251,191,36,0.1))', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+        <div style={{ fontSize: FS.body, fontWeight: 800, color: 'white' }}>תוך דקות. לא שעות.</div>
+        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>כל המסע — באפליקציה אחת</div>
       </div>
     </div>
   );
@@ -193,12 +196,12 @@ function Slide4() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide5a() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>פרסום משימה · דרך 1 מתוך 2</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
-        <span style={{ color: '#60a5fa' }}>📝 טופס ידני</span>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+        <span style={{ color: '#60a5fa' }}>טופס ידני</span>
       </h2>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
+      <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
         מילוי שדות — מהיר ומוכר
       </div>
 
@@ -214,12 +217,12 @@ function Slide5a() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide5b() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>פרסום משימה · דרך 2 מתוך 2</Chip>
-      <h2 dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
-        <span style={{ color: GOLD }}>✨ AI Publishing</span>
+      <h2 dir="ltr" style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
+        <span style={{ color: GOLD }}>AI Publishing</span>
       </h2>
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
+      <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
         פשוט מדברים — כמו ChatGPT
       </div>
 
@@ -235,30 +238,30 @@ function Slide5b() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide6() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 60% 40%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 60% 40%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>AI Matching Engine</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         לא פיד רגיל.<br /><span style={{ color: '#60a5fa' }}>המערכת מדרגת חכם.</span>
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         {[
-          { icon: '📍', text: 'מרחק גיאוגרפי' },
-          { icon: '🎯', text: 'ניסיון בקטגוריה' },
-          { icon: '🛡️', text: 'אמינות ודירוג' },
-          { icon: '⭐', text: 'היסטוריית ביצועים' },
-          { icon: '🏷️', text: 'התאמת קטגוריה' },
-          { icon: '📊', text: 'מוניטין ציבורי' },
-        ].map(({ icon, text }) => (
-          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: 15 }}>{icon}</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>{text}</span>
+          'מרחק גיאוגרפי',
+          'ניסיון בקטגוריה',
+          'אמינות ודירוג',
+          'היסטוריית ביצועים',
+          'התאמת קטגוריה',
+          'מוניטין ציבורי',
+        ].map(text => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#60a5fa', flexShrink: 0 }} />
+            <span style={{ fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ background: 'rgba(96,165,250,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(96,165,250,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: 600, lineHeight: 1.5 }}>
-        המערכת מתאימה לכל עובד את המשימות <strong style={{ color: '#60a5fa' }}>הכי רלוונטיות אליו</strong><br />כדי ליצור כמה שיותר matches.
+      <div style={{ background: 'rgba(96,165,250,0.08)', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(96,165,250,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: 600, lineHeight: 1.5 }}>
+        המערכת מתאימה לכל עובד את המשימות <strong style={{ color: '#60a5fa' }}>הכי רלוונטיות אליו</strong> כדי ליצור כמה שיותר matches.
       </div>
     </div>
   );
@@ -269,21 +272,21 @@ function Slide6() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide7() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>Liquidity</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         עובד רואה<br /><span style={{ color: GOLD }}>עבודות זמינות במפה</span>
       </h2>
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0, marginBottom: 12 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0, marginBottom: 14 }}>
         <video src={MAP_VIDEO} autoPlay muted loop playsInline style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 16, border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'center' }}>
         {['פותח מפה', 'רואה משימות', 'מגיש בקשה'].map((step, i) => (
-          <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {i > 0 && <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 14 }}>←</span>}
-            <span style={{ fontSize: 12, fontWeight: 700, color: i === 2 ? GOLD : 'rgba(255,255,255,0.6)' }}>{step}</span>
+          <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {i > 0 && <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 10 }}>·</span>}
+            <span style={{ fontSize: FS.bodySm, fontWeight: 700, color: i === 2 ? GOLD : 'rgba(255,255,255,0.6)' }}>{step}</span>
           </div>
         ))}
       </div>
@@ -296,13 +299,13 @@ function Slide7() {
 // ═══════════════════════════════════════════════════════════════════
 function SlideDailyGoal() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>מטרת היום</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 12px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 14px', lineHeight: 1.25 }}>
         העובד קובע יעד<br /><span style={{ color: GOLD }}>והמערכת בונה תוכנית</span>
       </h2>
 
-      <div style={{ flex: 1, display: 'flex', gap: 8, minHeight: 0 }}>
+      <div style={{ flex: 1, display: 'flex', gap: 10, minHeight: 0 }}>
         <div style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
           <video src={DAILY_GOAL_VIDEO} autoPlay muted loop playsInline style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 12, border: '2px solid rgba(251,191,36,0.2)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }} />
         </div>
@@ -311,7 +314,7 @@ function SlideDailyGoal() {
         </div>
       </div>
 
-      <div style={{ marginTop: 8, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+      <div style={{ marginTop: 10, textAlign: 'center', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
         יעד יומי · תוכנית מותאמת · לוח מובילים
       </div>
     </div>
@@ -323,26 +326,26 @@ function SlideDailyGoal() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide8() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>Trust Layer</Chip>
-      <h2 dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
+      <h2 dir="ltr" style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
         Why this becomes<br /><span style={{ color: '#a78bfa' }}>harder to copy every month</span>
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         {[
-          { icon: '✅', text: 'אימות עובדים', accent: 'rgba(74,222,128,0.12)' },
-          { icon: '⭐', text: 'דירוגים דו-כיווניים', accent: 'rgba(251,191,36,0.12)' },
-          { icon: '🎯', text: 'Worker Score', accent: 'rgba(96,165,250,0.12)' },
-          { icon: '📍', text: 'GPS בזמן אמת', accent: 'rgba(52,211,153,0.12)' },
-          { icon: '💬', text: 'צ\'אט מובנה', accent: 'rgba(167,139,250,0.12)' },
-          { icon: '📸', text: 'תמונות הוכחה', accent: 'rgba(244,63,94,0.1)' },
-          { icon: '🤖', text: 'AI Moderation', accent: 'rgba(96,165,250,0.12)' },
-          { icon: '🛡️', text: 'Badge מאומת', accent: 'rgba(74,222,128,0.12)' },
-        ].map(({ icon, text, accent }) => (
-          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: accent, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: 15 }}>{icon}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
+          { text: 'אימות עובדים', accent: 'rgba(74,222,128,0.12)' },
+          { text: 'דירוגים דו-כיווניים', accent: 'rgba(251,191,36,0.12)' },
+          { text: 'Worker Score', accent: 'rgba(96,165,250,0.12)' },
+          { text: 'GPS בזמן אמת', accent: 'rgba(52,211,153,0.12)' },
+          { text: 'צ\'אט מובנה', accent: 'rgba(167,139,250,0.12)' },
+          { text: 'תמונות הוכחה', accent: 'rgba(244,63,94,0.1)' },
+          { text: 'AI Moderation', accent: 'rgba(96,165,250,0.12)' },
+          { text: 'Badge מאומת', accent: 'rgba(74,222,128,0.12)' },
+        ].map(({ text, accent }) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: accent, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+            <span style={{ fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
           </div>
         ))}
       </div>
@@ -355,50 +358,48 @@ function Slide8() {
 // ═══════════════════════════════════════════════════════════════════
 function SlideDiff() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: '#0b0c10', display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: '#0b0c10', display: 'flex', flexDirection: 'column', padding: PAD }}>
       <div style={{ textAlign: 'center', marginBottom: 10 }}>
         <Chip gold>What Makes Us Different</Chip>
       </div>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
         הלקוח <span style={{ color: GOLD }}>קובע את המחיר.</span> עובדים מתחרים.
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, flex: 1, minHeight: 0 }}>
-        {/* מפרסם המשימה */}
-        <div style={{ background: '#1c1d22', borderRadius: 14, padding: '12px 10px', border: '1px solid rgba(96,165,250,0.25)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 10, fontWeight: 900, color: '#60a5fa', letterSpacing: 0.5, marginBottom: 8, textAlign: 'center' }}>מפרסם המשימה</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
+        <div style={{ background: '#1c1d22', borderRadius: 16, padding: '16px 14px', border: '1px solid rgba(96,165,250,0.25)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: FS.small, fontWeight: 900, color: '#60a5fa', letterSpacing: 0.5, marginBottom: 10, textAlign: 'center' }}>מפרסם המשימה</div>
           {[
-            { icon: '💰', text: 'קובע את המחיר בעצמו' },
-            { icon: '🏆', text: 'עובדים מתחרים על המשימה' },
-            { icon: '⭐', text: 'בוחר לפי דירוגים וביקורות' },
-            { icon: '🛡️', text: 'מוגן מהונאות וביטולים' },
-          ].map(({ icon, text }) => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
-              <span style={{ fontSize: 13, flexShrink: 0 }}>{icon}</span>
+            'קובע את המחיר בעצמו',
+            'עובדים מתחרים על המשימה',
+            'בוחר לפי דירוגים וביקורות',
+            'מוגן מהונאות וביטולים',
+          ].map(text => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa', flexShrink: 0 }} />
               <span>{text}</span>
             </div>
           ))}
         </div>
 
-        {/* עובד */}
-        <div style={{ background: '#1c1d22', borderRadius: 14, padding: '12px 10px', border: '1px solid rgba(251,191,36,0.25)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 10, fontWeight: 900, color: GOLD, letterSpacing: 0.5, marginBottom: 8, textAlign: 'center' }}>עובד</div>
+        <div style={{ background: '#1c1d22', borderRadius: 16, padding: '16px 14px', border: '1px solid rgba(251,191,36,0.25)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: FS.small, fontWeight: 900, color: GOLD, letterSpacing: 0.5, marginBottom: 10, textAlign: 'center' }}>עובד</div>
           {[
-            { icon: '📱', text: 'פותח אפליקציה ומקבל עבודה' },
-            { icon: '🎯', text: 'משימות מותאמות אליו אישית' },
-            { icon: '⚡', text: 'הכנסה מיידית ויומית' },
-            { icon: '📈', text: 'בונה מוניטין ודירוג' },
-          ].map(({ icon, text }) => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
-              <span style={{ fontSize: 13, flexShrink: 0 }}>{icon}</span>
+            'פותח אפליקציה ומקבל עבודה',
+            'משימות מותאמות אליו אישית',
+            'הכנסה מיידית ויומית',
+            'בונה מוניטין ודירוג',
+          ].map(text => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
               <span>{text}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{ marginTop: 10, background: 'rgba(251,191,36,0.08)', borderRadius: 99, padding: '8px 16px', border: '1px solid rgba(251,191,36,0.3)', textAlign: 'center', fontSize: 12, fontWeight: 800, color: GOLD }}>
-        🏆 תחרות אמיתית = תמחור הוגן · שני צדדים מרוויחים
+      <div style={{ marginTop: 12, background: 'rgba(251,191,36,0.08)', borderRadius: 99, padding: '10px 20px', border: '1px solid rgba(251,191,36,0.3)', textAlign: 'center', fontSize: FS.bodySm, fontWeight: 800, color: GOLD }}>
+        תחרות אמיתית = תמחור הוגן · שני צדדים מרוויחים
       </div>
     </div>
   );
@@ -409,20 +410,20 @@ function SlideDiff() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide9() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>מודל עסקי</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         מודל הכנסות<br /><span style={{ color: GOLD }}>פשוט וברור.</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        <Row icon="🪙" text="עמלת הצלחה על משימות" sub="עובד משלם בג'ובות רק לאחר ביצוע" accent="rgba(251,191,36,0.12)" />
-        <Row icon="📦" text="חבילות ג'ובות חד-פעמיות" sub="₪10–₪200 לפי כמות קרדיטים" accent="rgba(96,165,250,0.12)" />
-        <Row icon="🔄" text="מנויים חודשיים לעובדים פעילים" sub="₪25–₪200/חודש · חידוש אוטומטי" accent="rgba(52,211,153,0.12)" />
-        <Row icon="🚀" text="Boosts ו-Stories לקידום משימות" sub="מפרסמים משלמים לחשיפה מוגברת" accent="rgba(167,139,250,0.12)" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Row text="עמלת הצלחה על משימות" sub="עובד משלם בג'ובות רק לאחר ביצוע" accent="rgba(251,191,36,0.12)" />
+        <Row text="חבילות ג'ובות חד-פעמיות" sub="₪10–₪200 לפי כמות קרדיטים" accent="rgba(96,165,250,0.12)" />
+        <Row text="מנויים חודשיים לעובדים פעילים" sub="₪25–₪200/חודש · חידוש אוטומטי" accent="rgba(52,211,153,0.12)" />
+        <Row text="Boosts ו-Stories לקידום משימות" sub="מפרסמים משלמים לחשיפה מוגברת" accent="rgba(167,139,250,0.12)" />
       </div>
 
-      <div style={{ marginTop: 14, background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textAlign: 'center' }}>
+      <div style={{ marginTop: 16, background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '12px 18px', border: '1px solid rgba(74,222,128,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textAlign: 'center' }}>
         שני צדדים משלמים · הכנסה מהיום הראשון
       </div>
     </div>
@@ -434,38 +435,38 @@ function Slide9() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide10() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 70%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 70%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>Go To Market · Phase 1</Chip>
-      <h2 style={{ fontSize: 21, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         סוכנים מגייסים עובדים<br /><span style={{ color: GOLD }}>ומרוויחים עמלות</span>
       </h2>
 
-      <div style={{ display: 'flex', gap: 10, flex: 1, minHeight: 0 }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: 14, flex: 1, minHeight: 0 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
           {[
-            { icon: '👤', text: 'סוכן מגייס עובדים', accent: 'rgba(251,191,36,0.12)' },
-            { icon: '💰', text: 'עמלה על רווחי העובדים', accent: 'rgba(74,222,128,0.12)' },
-            { icon: '🔗', text: 'Affiliate Program מובנה', accent: 'rgba(96,165,250,0.12)' },
-            { icon: '📊', text: 'דשבורד למעקב בזמן אמת', accent: 'rgba(167,139,250,0.12)' },
-          ].map(({ icon, text, accent }) => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: accent, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
-              <span style={{ fontSize: 14 }}>{icon}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
+            { text: 'סוכן מגייס עובדים', accent: 'rgba(251,191,36,0.12)' },
+            { text: 'עמלה על רווחי העובדים', accent: 'rgba(74,222,128,0.12)' },
+            { text: 'Affiliate Program מובנה', accent: 'rgba(96,165,250,0.12)' },
+            { text: 'דשבורד למעקב בזמן אמת', accent: 'rgba(167,139,250,0.12)' },
+          ].map(({ text, accent }) => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: accent, borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <span style={{ fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
             </div>
           ))}
         </div>
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-          <img src={AGENT_DASH} alt="Agent Dashboard" style={{ width: 120, borderRadius: 12, border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 36px rgba(0,0,0,0.5)' }} />
+          <img src={AGENT_DASH} alt="Agent Dashboard" style={{ width: 140, borderRadius: 12, border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 36px rgba(0,0,0,0.5)' }} />
         </div>
       </div>
 
-      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 10, padding: '7px 10px', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14 }}>🎁</span>
-          <span style={{ fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>קרדיטים חינם על הרשמה + מילוי פרטים</span>
+      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
+          <span style={{ fontSize: FS.bodySm, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>קרדיטים חינם על הרשמה + מילוי פרטים</span>
         </div>
-        <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.25), rgba(251,191,36,0.12))', borderRadius: 10, padding: '7px 10px', border: '1px solid rgba(251,191,36,0.2)', textAlign: 'center' }}>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: 'white' }}>מסה ראשונית → תאוצה → בלי חסם</div>
+        <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.25), rgba(251,191,36,0.12))', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(251,191,36,0.2)', textAlign: 'center' }}>
+          <div style={{ fontSize: FS.bodySm, fontWeight: 800, color: 'white' }}>מסה ראשונית → תאוצה → בלי חסם</div>
         </div>
       </div>
     </div>
@@ -477,24 +478,24 @@ function Slide10() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide11() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>Go To Market · Phase 2</Chip>
-      <h2 style={{ fontSize: 23, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         הולכים רק על<br /><span style={{ color: GOLD }}>אזור אחד.</span>
       </h2>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
         {['תל אביב', 'רמת גן', 'גבעתיים', 'הרצליה', 'פ"ת'].map(city => (
-          <span key={city} style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', borderRadius: 20, padding: '6px 14px' }}>{city}</span>
+          <span key={city} style={{ fontSize: FS.bodySm, fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', borderRadius: 20, padding: '8px 16px' }}>{city}</span>
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-        <Row icon="✅" text="כל עובד כבר מוכן" accent="rgba(74,222,128,0.12)" />
-        <Row icon="📣" text="מתחילים לפרסם — מקבלים בקשות תוך דקות" accent="rgba(251,191,36,0.12)" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <Row text="כל עובד כבר מוכן" accent="rgba(74,222,128,0.12)" />
+        <Row text="מתחילים לפרסם — מקבלים בקשות תוך דקות" accent="rgba(251,191,36,0.12)" />
       </div>
 
-      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'center' }}>
+      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(74,222,128,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'center' }}>
         לא צריך לבנות Marketplace משני הצדדים.<br />
         <strong style={{ color: '#4ade80' }}>צד אחד כבר מחכה.</strong>
       </div>
@@ -507,19 +508,19 @@ function Slide11() {
 // ═══════════════════════════════════════════════════════════════════
 function SlideIntegrations() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>Integrations</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         תשתית טכנולוגית<br /><span style={{ color: GOLD }}>מבוססת ופעילה</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <Row icon="💳" text="Tranzila" sub="סליקת אשראי · Bit · Apple Pay · Google Pay" accent="rgba(96,165,250,0.12)" />
-        <Row icon="🔔" text="Firebase" sub="התראות Push בזמן אמת לכל המשתמשים" accent="rgba(251,191,36,0.12)" />
-        <Row icon="🗺️" text="MapBox" sub="מפה דינמית · מיקום עובדים ומשימות" accent="rgba(74,222,128,0.12)" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Row text="Tranzila" sub="סליקת אשראי · Bit · Apple Pay · Google Pay" accent="rgba(96,165,250,0.12)" />
+        <Row text="Firebase" sub="התראות Push בזמן אמת לכל המשתמשים" accent="rgba(251,191,36,0.12)" />
+        <Row text="MapBox" sub="מפה דינמית · מיקום עובדים ומשימות" accent="rgba(74,222,128,0.12)" />
       </div>
 
-      <div style={{ marginTop: 14, background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textAlign: 'center' }}>
+      <div style={{ marginTop: 16, background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '12px 18px', border: '1px solid rgba(74,222,128,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textAlign: 'center' }}>
         כל האינטגרציות פעילות בProduction ✓
       </div>
     </div>
@@ -531,27 +532,27 @@ function SlideIntegrations() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide12() {
   const steps = [
-    { icon: '👷', text: 'יותר עובדים' },
-    { icon: '⚡', text: 'זמן תגובה יורד' },
-    { icon: '📢', text: 'יותר מפרסמים' },
-    { icon: '📋', text: 'יותר משימות' },
+    'יותר עובדים',
+    'זמן תגובה יורד',
+    'יותר מפרסמים',
+    'יותר משימות',
   ];
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>Network Effect</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
         הלופ שמנצח<br /><span style={{ color: GOLD }}>בכל עיר.</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-        {steps.map(({ icon, text }, i) => (
-          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '80%' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{text}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+        {steps.map((text, i) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '80%' }}>
+            <div style={{ width: 'clamp(36px, 4vw, 44px)', height: 'clamp(36px, 4vw, 44px)', borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'clamp(14px, 1.6vw, 18px)', fontWeight: 900, color: GOLD, flexShrink: 0 }}>{i + 1}</div>
+            <div style={{ fontSize: FS.body, fontWeight: 700, color: 'white' }}>{text}</div>
           </div>
         ))}
-        <div style={{ fontSize: 20, color: GOLD, fontWeight: 900 }}>↻</div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>וחוזר — חזק יותר בכל סיבוב</div>
+        <div style={{ fontSize: 'clamp(18px, 2.2vw, 24px)', color: GOLD, fontWeight: 900, marginTop: 4 }}>↻</div>
+        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>וחוזר — חזק יותר בכל סיבוב</div>
       </div>
     </div>
   );
@@ -562,21 +563,21 @@ function Slide12() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide13() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 20% 60%, rgba(16,185,129,0.1) 0%, ${DARK_BG} 55%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 20% 60%, rgba(16,185,129,0.1) 0%, ${DARK_BG} 55%)`, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip>Traction</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         לא MVP.<br /><span style={{ color: '#4ade80' }}>מוצר חי.</span>
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
         <StatBox val="✓" label="סוכנים מגייסים עובדים" gold />
         <StatBox val="✓" label="מוצר חי ב-Production" gold />
         <StatBox val="✓" label="עובדים נרשמים" />
         <StatBox val="✓" label="משימות נסגרות בזמן אמת" />
       </div>
 
-      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 600, textAlign: 'center' }}>
-        🔥 עשרות פיצ'רים מושקעים · תשלומים · AI · GPS
+      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(74,222,128,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.8)', fontWeight: 600, textAlign: 'center' }}>
+        עשרות פיצ'רים מושקעים · תשלומים · AI · GPS
       </div>
     </div>
   );
@@ -587,26 +588,26 @@ function Slide13() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide14() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px', alignItems: 'center', textAlign: 'center' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: PAD, alignItems: 'center', textAlign: 'center' }}>
       <Chip gold>Vision</Chip>
-      <h2 dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, maxWidth: 280 }}>
+      <h2 dir="ltr" style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, maxWidth: 'clamp(240px, 30vw, 340px)' }}>
         Joba24 is building the<br /><span style={{ color: GOLD }}>operating system</span><br />for local work.
       </h2>
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24, letterSpacing: 0.5 }}>
+      <div dir="ltr" style={{ fontSize: FS.body, color: 'rgba(255,255,255,0.5)', marginBottom: 'clamp(18px, 2.5vw, 28px)', letterSpacing: 0.5 }}>
         Every city. Every task. Real time.
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
         {[
           { flag: '🇮🇱', text: 'ישראל', year: '2026' },
           { flag: '🇪🇺', text: 'אירופה', year: '2027' },
           { flag: '🇺🇸', text: 'ארה"ב', year: '2028' },
           { flag: '🌍', text: 'Every City', year: '→' },
         ].map(({ flag, text, year }) => (
-          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', width: '80%', margin: '0 auto' }}>
-            <span style={{ fontSize: 18 }}>{flag}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'white', flex: 1, textAlign: 'right' }}>{text}</span>
-            <span style={{ fontSize: 11, fontWeight: 800, color: GOLD }}>{year}</span>
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', background: 'rgba(255,255,255,0.04)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', width: '80%', margin: '0 auto' }}>
+            <span style={{ fontSize: 'clamp(16px, 2vw, 22px)' }}>{flag}</span>
+            <span style={{ fontSize: FS.body, fontWeight: 700, color: 'white', flex: 1, textAlign: 'right' }}>{text}</span>
+            <span style={{ fontSize: FS.bodySm, fontWeight: 800, color: GOLD }}>{year}</span>
           </div>
         ))}
       </div>
@@ -619,16 +620,16 @@ function Slide14() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide15() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: '#0b0c0f', display: 'flex', flexDirection: 'column', padding: '32px 20px', alignItems: 'center', textAlign: 'center' }}>
+    <div dir="rtl" style={{ height: '100%', background: '#0b0c0f', display: 'flex', flexDirection: 'column', padding: PAD, alignItems: 'center', textAlign: 'center' }}>
       <Chip>Why Now</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 8px', lineHeight: 1.25 }}>
         כל תעשייה עברה את המהפכה שלה.
       </h2>
-      <div style={{ fontSize: 13, color: '#888991', marginBottom: 22 }}>
+      <div style={{ fontSize: FS.body, color: '#888991', marginBottom: 'clamp(18px, 2.5vw, 26px)' }}>
         עכשיו תורם של המשימות היומיומיות.
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
         {[
           { old: 'Taxi', neu: 'Uber', highlight: false },
           { old: 'Food', neu: 'Wolt', highlight: false },
@@ -637,15 +638,15 @@ function Slide15() {
           { old: 'Tasks', neu: 'Joba24', highlight: true },
         ].map(({ old, neu, highlight }) => (
           <div key={old} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-            padding: '11px 16px', borderRadius: 12,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+            padding: '14px 20px', borderRadius: 14,
             background: highlight ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)',
             border: highlight ? '1px solid rgba(251,191,36,0.4)' : '1px solid #26272e',
             boxShadow: highlight ? '0 0 20px rgba(251,191,36,0.1)' : 'none',
           }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>{old}</span>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.2)' }}>→</span>
-            <span style={{ fontSize: 15, fontWeight: 900, color: highlight ? GOLD : 'white' }}>{neu}</span>
+            <span style={{ fontSize: FS.body, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>{old}</span>
+            <span style={{ fontSize: FS.body, color: 'rgba(255,255,255,0.2)' }}>←</span>
+            <span style={{ fontSize: 'clamp(15px, 1.8vw, 20px)', fontWeight: 900, color: highlight ? GOLD : 'white' }}>{neu}</span>
           </div>
         ))}
       </div>
@@ -678,14 +679,29 @@ const SLIDES = [
   { id: 'why-now',     component: <Slide15 /> },
 ];
 
-const LABELS = ['Cover', 'Problem', 'Market', 'Experience', 'Form', 'AI Publish', 'Matching', 'Liquidity', 'Daily Goal', 'Trust', 'Different', 'Revenue', 'GTM 1', 'GTM 2', 'Network', 'Integrations', 'Traction', 'Vision', 'Why Now'];
-
 // ═══════════════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════════════
 export default function Presentation() {
   const [current, setCurrent] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth > 900);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') setCurrent(i => Math.min(SLIDES.length - 1, i + 1));
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') setCurrent(i => Math.max(0, i - 1));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const prev = () => setCurrent(i => Math.max(0, i - 1));
   const next = () => setCurrent(i => Math.min(SLIDES.length - 1, i + 1));
@@ -706,7 +722,8 @@ export default function Presentation() {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         style={{
-          width: '100%', maxWidth: 420, height: '100vh', maxHeight: isWide ? 780 : '100vh',
+          width: '100%', maxWidth: isDesktop ? 720 : 420,
+          height: '100vh', maxHeight: isDesktop ? 900 : (isWide ? 780 : '100vh'),
           position: 'relative', overflow: 'hidden',
           boxShadow: isWide ? '0 40px 100px rgba(0,0,0,0.9)' : 'none',
           borderRadius: isWide ? 40 : 0,
@@ -717,40 +734,15 @@ export default function Presentation() {
         </div>
 
         {current > 0 && (
-          <div onClick={prev} style={{ position: 'absolute', top: 0, right: 0, width: '22%', height: '100%', cursor: 'pointer', zIndex: 20 }} />
+          <div onClick={prev} style={{ position: 'absolute', top: 0, right: 0, width: '25%', height: '100%', cursor: 'pointer', zIndex: 20 }} />
         )}
         {current < SLIDES.length - 1 && (
-          <div onClick={next} style={{ position: 'absolute', top: 0, left: 0, width: '22%', height: '100%', cursor: 'pointer', zIndex: 20 }} />
+          <div onClick={next} style={{ position: 'absolute', top: 0, left: 0, width: '25%', height: '100%', cursor: 'pointer', zIndex: 20 }} />
         )}
 
-        {current > 0 && (
-          <button onClick={prev} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
-            <ChevronRight size={15} color="white" />
-          </button>
-        )}
-        {current < SLIDES.length - 1 && (
-          <button onClick={next} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
-            <ChevronLeft size={15} color="white" />
-          </button>
-        )}
-
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.1)', zIndex: 40 }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.1)', zIndex: 40 }}>
           <div style={{ height: '100%', width: `${((current + 1) / SLIDES.length) * 100}%`, background: GOLD, transition: 'width 0.3s ease' }} />
         </div>
-
-        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', zIndex: 40, pointerEvents: 'none' }}>
-          {LABELS[current]}
-        </div>
-
-        <div style={{ position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, zIndex: 30 }}>
-          {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 18 : 4, height: 4, borderRadius: 3, background: i === current ? GOLD : 'rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'all 0.25s' }} />
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.2)', fontSize: 10, letterSpacing: 1 }}>
-        {current + 1} / {SLIDES.length}
       </div>
     </div>
   );
