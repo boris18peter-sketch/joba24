@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import moment from 'moment';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { RefreshCw, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, X, AlertTriangle, CheckCircle2, Calendar } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
 /**
@@ -88,6 +89,14 @@ export default function SubscriptionManager() {
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                   ₪{sub.amount.toFixed(2)} / חודש · חידוש אוטומטי
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Calendar size={10} /> הופעל: {moment(sub.created_date).format('DD/MM/YYYY HH:mm')}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <RefreshCw size={10} /> חידוש הבא: {moment(sub.created_date).add(1, 'month').format('DD/MM/YYYY')}
+                  </span>
                 </div>
               </div>
             </div>

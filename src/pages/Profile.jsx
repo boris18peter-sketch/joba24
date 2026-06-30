@@ -9,6 +9,7 @@ import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
+import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -268,6 +269,9 @@ export default function Profile() {
 
         {/* ── Trust Bar ── */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
+
+        {/* ── Active Subscriptions ── */}
+        <SubscriptionManager />
 
         {/* ── Main Menu ── */}
         <SectionCard>
