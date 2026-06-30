@@ -109,10 +109,12 @@ Deno.serve(async (req) => {
     }
 
     // === Terminal selection ===
-    // Subscriptions use joba24 with recur params (joba24tok iFrame not enabled in Tranzila dashboard)
+    // Subscriptions → joba24tok (token terminal with V2 handshake)
+    // One-time card → joba24
+    // One-time alt  → joba24ch (Bit, Apple Pay, Google Pay, PayPal, phone)
     let supplier;
     if (is_subscription) {
-      supplier = 'joba24';
+      supplier = 'joba24tok';
     } else if (pay_method && pay_method !== 'card') {
       supplier = 'joba24ch';
     } else {
@@ -134,34 +136,29 @@ Deno.serve(async (req) => {
     }
     const payment = await base44.asServiceRole.entities.TranzilaPayment.create(paymentData);
 
-    // === For subscriptions: create V2 handshake token (for token terminal) ===
-    // NOTE: joba24tok iFrame must be enabled in Tranzila dashboard to use thtk.
-    // Until then, we use joba24 with recur_transaction params (no thtk needed).
+    // === For subscriptions: create V2 handshake token ===
+    // The thtk is required by the joba24tok terminal (Handshake enabled).
+    // It authorizes the transaction on the iframe.
     let thtk = '';
     if (is_subscription) {
       try {
         thtk = await v2Handshake('joba24tok', sum);
         console.log(`✅ V2 handshake success for payment ${payment.id}, thtk=${thtk.substring(0, 8)}...`);
-        // thtk created — but we still use joba24 terminal for the iframe
-        // because joba24tok iFrame is not enabled in Tranzila dashboard yet.
-        // The recur_transaction params on joba24 handle the recurring billing.
         await base44.asServiceRole.entities.TranzilaPayment.update(payment.id, { thtk });
       } catch (v2Err) {
-        console.warn(`⚠️ V2 handshake failed (subscription will use recur params only): ${v2Err.message}`);
-        thtk = '';
+        console.warn(`⚠️ V2 handshake failed: ${v2Err.message}`);
+        return new Response(JSON.stringify({ error: 'Handshake failed: ' + v2Err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
       }
     }
 
     console.log(`✅ Payment record created: ${payment.id} | terminal=${supplier} | sum=${sum} | credits=${credits} | method=${pay_method || 'card'} | thtk=${thtk ? 'yes' : 'no'}`);
 
-    // Don't pass thtk to iframe — we use joba24 terminal with recur params for subscriptions.
-    // The thtk from joba24tok is stored in DB for future use when iFrame is enabled on that terminal.
     return new Response(JSON.stringify({
       supplier,
       sum,
       payment_id: payment.id,
       pay_method: pay_method || 'card',
-      thtk: '',
+      thtk,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
   } catch (error) {
