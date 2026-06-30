@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useAuth } from '@/lib/AuthContext';
 import useCountUp from '@/hooks/useCountUp';
@@ -159,7 +159,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           <>
             <div style={{
               background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
-              padding: '20px 20px 22px',
+              padding: '14px 20px 16px',
               borderRadius: '0 0 28px 28px',
               position: 'relative',
               overflow: 'hidden',
@@ -178,43 +178,34 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ width: 40, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.3)', margin: '0 auto 14px' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <div style={{
-                      width: 40, height: 40, borderRadius: 12,
+                      width: 34, height: 34, borderRadius: 10,
                       background: 'rgba(255,255,255,0.15)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       border: '1px solid rgba(255,255,255,0.2)',
                     }}>
-                      <CreditIcon size={24} />
+                      <CreditIcon size={20} />
                     </div>
-                    <div>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: 'white', letterSpacing: -0.3 }}>
-                        חנות הקרדיטים
-                      </div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
-                        Joba24 Credits Store
-                      </div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3 }}>
+                      חנות הקרדיטים
                     </div>
                   </div>
 
                   <div style={{
                     background: 'rgba(255,255,255,0.1)',
-                    borderRadius: 14, padding: '12px 16px',
+                    borderRadius: 12, padding: '8px 14px',
                     border: '1px solid rgba(255,255,255,0.15)',
                     backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', gap: 6,
                   }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 700, marginBottom: 4 }}>
-                      היתרה שלך
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 28, fontWeight: 900, color: 'white', letterSpacing: -0.5 }}>
-                        {animatedCredits}
-                      </span>
-                      <CreditIcon size={20} />
-                      <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginRight: 4 }}>
-                        קרדיטים
-                      </span>
-                    </div>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -0.5 }}>
+                      {animatedCredits}
+                    </span>
+                    <CreditIcon size={16} />
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>
+                      קרדיטים בארנק
+                    </span>
                   </div>
 
                   {creditsNeeded && (
@@ -291,7 +282,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         {/* Step: Browse packages */}
         {step === 'browse' && (
           <>
-            <div style={{ padding: '14px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '8px 16px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>
                 {isSubscription ? 'בחר מנוי חודשי' : 'בחר חבילה'}
               </span>
@@ -300,8 +291,8 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               </span>
             </div>
             <div style={{
-              padding: '14px 14px 0',
-              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
+              padding: '10px 12px 0',
+              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8,
             }}>
               {packages.map(pkg => (
                 <CreditPackageCard
@@ -314,44 +305,67 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               ))}
             </div>
 
-            {/* Trust features */}
-            <div style={{ padding: '20px 20px 8px' }}>
+            {/* Earning potential banner */}
+            <div style={{ padding: '10px 16px 0' }}>
               <div style={{
-                background: 'var(--surface-3)',
-                borderRadius: 'var(--r-lg)',
-                padding: '4px 16px',
+                background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                borderRadius: 'var(--r-md)',
+                padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: 10,
+                boxShadow: '0 4px 16px rgba(251,191,36,0.25)',
               }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'rgba(255,255,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <TrendingUp size={20} color="white" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
+                    קרדיטים = עבודות = הכנסה 🚀
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 600, marginTop: 2, lineHeight: 1.4 }}>
+                    כל קרדיט מאפשר הגשת מועמדות · פוטנציאל רווח פי 10 מההשקעה
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Trust features — compact */}
+            <div style={{ padding: '10px 16px 0' }}>
+              <div style={{ display: 'flex', gap: 6 }}>
                 {TRUST_FEATURES.map((feat, i) => (
                   <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '14px 0',
-                    borderBottom: i < TRUST_FEATURES.length - 1 ? '1px solid var(--border-1)' : 'none',
+                    flex: 1, textAlign: 'center',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border-1)',
+                    borderRadius: 'var(--r-md)',
+                    padding: '10px 4px',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                   }}>
                     <div style={{
-                      width: 38, height: 38, borderRadius: 11,
+                      width: 30, height: 30, borderRadius: 9,
                       background: 'var(--brand-primary-light)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      border: '1px solid #bfdbfe',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <feat.icon size={18} color="var(--brand-primary)" strokeWidth={1.8} />
+                      <feat.icon size={15} color="var(--brand-primary)" strokeWidth={1.8} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>{feat.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.5 }}>{feat.desc}</div>
-                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.2 }}>{feat.title}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             <div style={{
-              padding: '4px 20px max(32px, env(safe-area-inset-bottom))',
+              padding: '4px 20px max(20px, env(safe-area-inset-bottom))',
               textAlign: 'center',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              color: 'var(--text-3)', fontSize: 11, fontWeight: 600,
+              color: 'var(--text-3)', fontSize: 10, fontWeight: 600,
             }}>
-              <Shield size={12} color="var(--text-3)" />
-              רכישה מאובטחת · תשלום דרך Tranzila · PCI DSS Level 1
+              <Shield size={11} color="var(--text-3)" />
+              רכישה מאובטחת · Tranzila · PCI DSS Level 1
             </div>
           </>
         )}

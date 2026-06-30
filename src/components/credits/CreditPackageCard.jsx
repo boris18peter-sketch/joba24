@@ -2,7 +2,7 @@ import CreditIcon from '@/components/CreditIcon';
 import { Star, Crown, Check, TrendingDown } from 'lucide-react';
 
 /**
- * CreditPackageCard — premium-style package tile.
+ * CreditPackageCard — compact package tile (3-column grid friendly).
  */
 export default function CreditPackageCard({ pkg, selected, onSelect, isSubscription }) {
   const isPopular = pkg.badge === 'popular';
@@ -27,22 +27,22 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
             : isBest
               ? '2px solid #a855f7'
               : '1.5px solid var(--border-1)',
-        borderRadius: 'var(--r-xl)',
-        padding: '22px 14px 14px',
+        borderRadius: 'var(--r-lg)',
+        padding: '14px 6px 8px',
         cursor: 'pointer',
         overflow: 'hidden',
         boxShadow: selected
-          ? '0 12px 36px rgba(26,111,212,0.4)'
+          ? '0 8px 24px rgba(26,111,212,0.35)'
           : isPopular || isBest
-            ? 'var(--shadow-md)'
+            ? 'var(--shadow-sm)'
             : 'var(--shadow-xs)',
         transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 6,
+        gap: 3,
         textAlign: 'center',
-        minHeight: 176,
+        minHeight: 124,
         width: '100%',
       }}
     >
@@ -54,63 +54,61 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
             ? 'linear-gradient(90deg, #7c3aed, #a855f7)'
             : 'linear-gradient(90deg, var(--brand-accent-dark), var(--brand-accent))',
           color: isBest ? 'white' : '#7c2d00',
-          fontWeight: 900, fontSize: 10,
-          padding: '5px 0',
+          fontWeight: 900, fontSize: 9,
+          padding: '3px 0',
           whiteSpace: 'nowrap',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
           zIndex: 10,
-          letterSpacing: 0.3,
         }}>
-          {isBest ? <Crown size={11} fill="currentColor" /> : <Star size={10} fill="currentColor" />}
-          {isBest ? 'המשתלם ביותר' : 'פופולרי'}
+          {isBest ? <Crown size={9} fill="currentColor" /> : <Star size={9} fill="currentColor" />}
+          {isBest ? 'הכי משתלם' : 'פופולרי'}
         </div>
       )}
 
       {/* Selected checkmark */}
       {selected && (
         <div style={{
-          position: 'absolute', top: 8, right: 8,
-          width: 24, height: 24, borderRadius: '50%',
+          position: 'absolute', top: 6, right: 6,
+          width: 20, height: 20, borderRadius: '50%',
           background: 'rgba(255,255,255,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 5,
         }}>
-          <Check size={14} color="white" strokeWidth={3} />
+          <Check size={12} color="white" strokeWidth={3} />
         </div>
       )}
 
-      {/* Credits count with glow */}
+      {/* Credits count */}
       <div style={{
-        fontSize: 34, fontWeight: 900,
+        fontSize: 24, fontWeight: 900,
         color: selected ? 'white' : 'var(--text-1)',
         letterSpacing: -0.5, lineHeight: 1,
-        display: 'flex', alignItems: 'center', gap: 6,
-        marginTop: isPopular || isBest ? 14 : 8,
-        textShadow: selected ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+        display: 'flex', alignItems: 'center', gap: 4,
+        marginTop: isPopular || isBest ? 10 : 4,
       }}>
         {pkg.credits}
-        <CreditIcon size={22} />
+        <CreditIcon size={16} />
       </div>
 
       {/* Label */}
       <div style={{
-        fontSize: 11, fontWeight: 700,
+        fontSize: 9, fontWeight: 700,
         color: selected ? 'rgba(255,255,255,0.7)' : 'var(--text-3)',
       }}>
-        {isSubscription ? 'קרדיטים לחודש' : 'קרדיטים'}
+        {isSubscription ? 'לחודש' : 'קרדיטים'}
       </div>
 
-      {/* Price-per-credit value indicator */}
+      {/* Price-per-credit */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 3,
-        fontSize: 10, fontWeight: 700,
+        display: 'flex', alignItems: 'center', gap: 2,
+        fontSize: 8, fontWeight: 700,
         color: selected ? 'rgba(255,255,255,0.6)' : 'var(--color-success)',
-        marginTop: 2,
+        marginTop: 1,
         background: selected ? 'rgba(255,255,255,0.1)' : 'var(--color-success-bg)',
-        padding: '2px 8px', borderRadius: 99,
+        padding: '1px 5px', borderRadius: 99,
       }}>
-        <TrendingDown size={10} />
-        ₪{pricePerCredit} לקרדיט
+        <TrendingDown size={9} />
+        ₪{pricePerCredit}
       </div>
 
       {/* Price */}
@@ -121,23 +119,21 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           : isPopular || isBest
             ? 'var(--brand-primary-light)'
             : 'var(--surface-3)',
-        borderRadius: 'var(--r-sm)', padding: '9px 6px',
-        transition: 'background 0.15s',
+        borderRadius: 'var(--r-xs)', padding: '5px 4px',
       }}>
         <div style={{
-          fontSize: 20, fontWeight: 900,
+          fontSize: 15, fontWeight: 900,
           color: selected ? 'white' : 'var(--brand-primary-dark)',
           letterSpacing: -0.3,
         }}>
-          ₪{pkg.price.toFixed(2)}
+          ₪{pkg.price.toFixed(0)}
         </div>
         {isSubscription && (
           <div style={{
-            fontSize: 9, fontWeight: 700,
+            fontSize: 8, fontWeight: 700,
             color: selected ? 'rgba(255,255,255,0.55)' : 'var(--text-3)',
-            marginTop: 1,
           }}>
-            לחודש
+            /חודש
           </div>
         )}
       </div>
