@@ -196,12 +196,17 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
 
         {/* Notify URL — Tranzila POSTs transaction result here (server-to-server fallback) */}
         <input type="hidden" name="notify_url" value={notifyUrl} />
+        <input type="hidden" name="notify_url_address" value={notifyUrl} />
 
         {/* Redirect URLs — PRIMARY mechanism.
             Tranzila redirects the iframe to our callback page after payment.
-            The callback page reads params and postMessages them to us. */}
+            The callback page reads params and postMessages them to us.
+            We pass both naming conventions (u71/u72 and success_url_address/fail_url_address)
+            to ensure compatibility with all Tranzila terminal configurations. */}
         <input type="hidden" name="u71" value={redirectUrl} />
         <input type="hidden" name="u72" value={redirectUrl} />
+        <input type="hidden" name="success_url_address" value={redirectUrl} />
+        <input type="hidden" name="fail_url_address" value={redirectUrl} />
 
         {/* Subscription: recurring monthly charge */}
         {isSubscription && (
