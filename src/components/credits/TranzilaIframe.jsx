@@ -181,6 +181,16 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <input type="hidden" name="pdesc" value={`קרדיטים Joba24${pkg ? ` — ${pkg.credits} קרדיטים` : ''}${payMethod ? ` (${payMethod})` : ''}`} />
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
+        {/* Payment method — tells Tranzila which method to pre-select */}
+        {payMethod && payMethod !== 'card' && (
+          <input type="hidden" name="payme" value={
+            payMethod === 'bit' ? 'bit' :
+            payMethod === 'paypal' ? 'paypal' :
+            payMethod === 'apple' ? 'applepay' :
+            payMethod === 'google' ? 'google' :
+            payMethod === 'phone' ? 'pelephone' : 'cc'
+          } />
+        )}
         {/* Handshake token — required for token terminals (subscriptions) */}
         {thtk && <input type="hidden" name="thtk" value={thtk} />}
 
