@@ -10,6 +10,8 @@ const FORM_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653
 const AI_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/1e3412262_2026-06-30-140619.mov';
 const MAP_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/07d58199a_2026-06-30-141222.mov';
 const AGENT_DASH = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/a7d159985_2026-06-30-135738.png';
+const DAILY_GOAL_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/ca8b68ce3_2026-06-30-163701.mov';
+const LEADERBOARD_SS = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/e061865c5_2026-06-30-163958.png';
 
 const DARK_BG = '#050d1f';
 const BLUE = '#1a6fd4';
@@ -17,7 +19,7 @@ const GOLD = '#fbbf24';
 
 function Chip({ children, gold }) {
   return (
-    <span style={{
+    <span dir="auto" style={{
       display: 'inline-block', fontSize: 10, fontWeight: 800, letterSpacing: 1.4,
       textTransform: 'uppercase',
       color: gold ? GOLD : '#93c5fd',
@@ -72,13 +74,13 @@ function Slide1() {
     <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 20px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <img src={LOGO} alt="" style={{ position: 'absolute', top: 32, right: 24, width: 44, height: 44, borderRadius: 13, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
-      <div style={{ position: 'absolute', top: 24, left: 24, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SEED · 2026</div>
+      <div dir="ltr" style={{ position: 'absolute', top: 24, left: 24, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SEED · 2026</div>
 
-      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)', width: 260, borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }} />
+      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 68, left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 40px)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }} />
 
       <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
         <Chip gold>The Real-Time Marketplace for Local Work</Chip>
-        <div style={{ marginTop: 12, fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95 }}>
+        <div dir="ltr" style={{ marginTop: 12, fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95, textAlign: 'right' }}>
           Need help?<br />Open Joba<span style={{ color: GOLD }}>24</span>.
         </div>
         <div style={{ marginTop: 12, fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
@@ -158,7 +160,7 @@ function Slide4() {
   return (
     <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>The Experience</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 dir="ltr" style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
         From "I need help"<br />
         <span style={{ color: GOLD }}>to "someone is on the way"</span>
       </h2>
@@ -214,7 +216,7 @@ function Slide5b() {
   return (
     <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip gold>פרסום משימה · דרך 2 מתוך 2</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
         <span style={{ color: GOLD }}>✨ AI Publishing</span>
       </h2>
       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
@@ -290,13 +292,40 @@ function Slide7() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SLIDE — Daily Goal + Leaderboard
+// ═══════════════════════════════════════════════════════════════════
+function SlideDailyGoal() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+      <Chip gold>מטרת היום</Chip>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 12px', lineHeight: 1.25 }}>
+        העובד קובע יעד<br /><span style={{ color: GOLD }}>והמערכת בונה תוכנית</span>
+      </h2>
+
+      <div style={{ flex: 1, display: 'flex', gap: 8, minHeight: 0 }}>
+        <div style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+          <video src={DAILY_GOAL_VIDEO} autoPlay muted loop playsInline style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 12, border: '2px solid rgba(251,191,36,0.2)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+          <img src={LEADERBOARD_SS} alt="Leaderboard" style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 12, border: '2px solid rgba(255,255,255,0.1)', boxShadow: '0 12px 36px rgba(0,0,0,0.5)' }} />
+        </div>
+      </div>
+
+      <div style={{ marginTop: 8, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+        יעד יומי · תוכנית מותאמת · לוח מובילים
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SLIDE 8 — Trust Layer (Moat)
 // ═══════════════════════════════════════════════════════════════════
 function Slide8() {
   return (
     <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>Trust Layer</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
+      <h2 dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'right' }}>
         Why this becomes<br /><span style={{ color: '#a78bfa' }}>harder to copy every month</span>
       </h2>
 
@@ -560,7 +589,7 @@ function Slide14() {
   return (
     <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px', alignItems: 'center', textAlign: 'center' }}>
       <Chip gold>Vision</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, maxWidth: 280 }}>
+      <h2 dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, maxWidth: 280 }}>
         Joba24 is building the<br /><span style={{ color: GOLD }}>operating system</span><br />for local work.
       </h2>
       <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24, letterSpacing: 0.5 }}>
@@ -636,6 +665,7 @@ const SLIDES = [
   { id: 'publish-ai',  component: <Slide5b /> },
   { id: 'matching',    component: <Slide6 /> },
   { id: 'liquidity',   component: <Slide7 /> },
+  { id: 'daily-goal',  component: <SlideDailyGoal /> },
   { id: 'trust',       component: <Slide8 /> },
   { id: 'different',   component: <SlideDiff /> },
   { id: 'revenue',     component: <Slide9 /> },
@@ -648,7 +678,7 @@ const SLIDES = [
   { id: 'why-now',     component: <Slide15 /> },
 ];
 
-const LABELS = ['Cover', 'Problem', 'Market', 'Experience', 'Form', 'AI Publish', 'Matching', 'Liquidity', 'Trust', 'Different', 'Revenue', 'GTM 1', 'GTM 2', 'Network', 'Integrations', 'Traction', 'Vision', 'Why Now'];
+const LABELS = ['Cover', 'Problem', 'Market', 'Experience', 'Form', 'AI Publish', 'Matching', 'Liquidity', 'Daily Goal', 'Trust', 'Different', 'Revenue', 'GTM 1', 'GTM 2', 'Network', 'Integrations', 'Traction', 'Vision', 'Why Now'];
 
 // ═══════════════════════════════════════════════════════════════════
 // MAIN
