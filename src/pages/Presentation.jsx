@@ -69,12 +69,12 @@ function StepBadge({ num, label, active }) {
 // ═══════════════════════════════════════════════════════════════════
 function Slide1() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 24px', position: 'relative', overflow: 'hidden' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 20px', position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <img src={LOGO} alt="" style={{ position: 'absolute', top: 32, right: 24, width: 44, height: 44, borderRadius: 13, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
       <div style={{ position: 'absolute', top: 24, left: 24, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SEED · 2026</div>
 
-      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 76, left: 12, width: 90, borderRadius: 10, opacity: 0.85, boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
+      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)', width: 260, borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }} />
 
       <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
         <Chip gold>The Real-Time Marketplace for Local Work</Chip>
@@ -102,9 +102,9 @@ function Slide1() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide2() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>הבעיה</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 18px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         הדרך למצוא עזרה<br />
         <span style={{ color: '#ef4444' }}>עדיין איטית, מבוזרת ולא אמינה</span>
       </h2>
@@ -131,9 +131,9 @@ function Slide2() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide3() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 70% 80%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 70% 80%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip gold>הזדמנות</Chip>
-      <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '12px 0 20px', lineHeight: 1.2 }}>
+      <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.2 }}>
         ישראל בלבד.<br /><span style={{ color: GOLD }}>ואז — כל עיר בעולם.</span>
       </h2>
 
@@ -156,9 +156,9 @@ function Slide3() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide4() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>The Experience</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 20px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         From "I need help"<br />
         <span style={{ color: GOLD }}>to "someone is on the way"</span>
       </h2>
@@ -191,9 +191,9 @@ function Slide4() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide5a() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '28px 16px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>פרסום משימה · דרך 1 מתוך 2</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '8px 0 4px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         <span style={{ color: '#60a5fa' }}>📝 טופס ידני</span>
       </h2>
       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
@@ -212,9 +212,9 @@ function Slide5a() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide5b() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '28px 16px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip gold>פרסום משימה · דרך 2 מתוך 2</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '8px 0 4px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         <span style={{ color: GOLD }}>✨ AI Publishing</span>
       </h2>
       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
@@ -233,9 +233,9 @@ function Slide5b() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide6() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 60% 40%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 60% 40%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>AI Matching Engine</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         לא פיד רגיל.<br /><span style={{ color: '#60a5fa' }}>המערכת מדרגת חכם.</span>
       </h2>
 
@@ -267,9 +267,9 @@ function Slide6() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide7() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '28px 16px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip gold>Liquidity</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '8px 0 14px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         עובד רואה<br /><span style={{ color: GOLD }}>עבודות זמינות במפה</span>
       </h2>
 
@@ -294,9 +294,9 @@ function Slide7() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide8() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>Trust Layer</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         Why this becomes<br /><span style={{ color: '#a78bfa' }}>harder to copy every month</span>
       </h2>
 
@@ -326,11 +326,11 @@ function Slide8() {
 // ═══════════════════════════════════════════════════════════════════
 function SlideDiff() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: '#0b0c10', display: 'flex', flexDirection: 'column', padding: '28px 20px' }}>
+    <div dir="rtl" style={{ height: '100%', background: '#0b0c10', display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <div style={{ textAlign: 'center', marginBottom: 10 }}>
         <Chip gold>What Makes Us Different</Chip>
       </div>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '0 0 14px', lineHeight: 1.25, textAlign: 'center' }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
         הלקוח <span style={{ color: GOLD }}>קובע את המחיר.</span> עובדים מתחרים.
       </h2>
 
@@ -380,9 +380,9 @@ function SlideDiff() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide9() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip gold>מודל עסקי</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         מודל הכנסות<br /><span style={{ color: GOLD }}>פשוט וברור.</span>
       </h2>
 
@@ -405,9 +405,9 @@ function Slide9() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide10() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 70%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '28px 16px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 70%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>Go To Market · Phase 1</Chip>
-      <h2 style={{ fontSize: 21, fontWeight: 900, color: 'white', margin: '8px 0 12px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 21, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         סוכנים מגייסים עובדים<br /><span style={{ color: GOLD }}>ומרוויחים עמלות</span>
       </h2>
 
@@ -448,9 +448,9 @@ function Slide10() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide11() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip gold>Go To Market · Phase 2</Chip>
-      <h2 style={{ fontSize: 23, fontWeight: 900, color: 'white', margin: '10px 0 16px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 23, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         הולכים רק על<br /><span style={{ color: GOLD }}>אזור אחד.</span>
       </h2>
 
@@ -478,9 +478,9 @@ function Slide11() {
 // ═══════════════════════════════════════════════════════════════════
 function SlideIntegrations() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>Integrations</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         תשתית טכנולוגית<br /><span style={{ color: GOLD }}>מבוססת ופעילה</span>
       </h2>
 
@@ -508,9 +508,9 @@ function Slide12() {
     { icon: '📋', text: 'יותר משימות' },
   ];
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>Network Effect</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 24px', lineHeight: 1.25, textAlign: 'center' }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
         הלופ שמנצח<br /><span style={{ color: GOLD }}>בכל עיר.</span>
       </h2>
 
@@ -533,9 +533,9 @@ function Slide12() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide13() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 20% 60%, rgba(16,185,129,0.1) 0%, ${DARK_BG} 55%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 20% 60%, rgba(16,185,129,0.1) 0%, ${DARK_BG} 55%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
       <Chip>Traction</Chip>
-      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         לא MVP.<br /><span style={{ color: '#4ade80' }}>מוצר חי.</span>
       </h2>
 
@@ -558,9 +558,9 @@ function Slide13() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide14() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px', alignItems: 'center', textAlign: 'center' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', padding: '32px 20px', alignItems: 'center', textAlign: 'center' }}>
       <Chip gold>Vision</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 8px', lineHeight: 1.25, maxWidth: 280 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, maxWidth: 280 }}>
         Joba24 is building the<br /><span style={{ color: GOLD }}>operating system</span><br />for local work.
       </h2>
       <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24, letterSpacing: 0.5 }}>
@@ -590,9 +590,9 @@ function Slide14() {
 // ═══════════════════════════════════════════════════════════════════
 function Slide15() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: '#0b0c0f', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px', alignItems: 'center', textAlign: 'center' }}>
+    <div dir="rtl" style={{ height: '100%', background: '#0b0c0f', display: 'flex', flexDirection: 'column', padding: '32px 20px', alignItems: 'center', textAlign: 'center' }}>
       <Chip>Why Now</Chip>
-      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 4px', lineHeight: 1.25 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
         כל תעשייה עברה את המהפכה שלה.
       </h2>
       <div style={{ fontSize: 13, color: '#888991', marginBottom: 22 }}>
