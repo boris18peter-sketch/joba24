@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import PhoneMockup from '@/components/presentation/PhoneMockup';
 
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
+const FEED_SS = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/671b7126f_2026-06-25-182139.png';
+const MAP_SS = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/b3dd362cb_2026-06-25-181044.png';
+const VIDEO_URL = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/19f9214e4_2026-06-26-20558.mov';
 
-// ─── Design tokens ─────────────────────────────────────────────────────
 const DARK_BG = '#050d1f';
 const BLUE = '#1a6fd4';
 const GOLD = '#fbbf24';
 
-// ─── Helper ────────────────────────────────────────────────────────────
 function Chip({ children, gold }) {
   return (
     <span style={{
@@ -24,11 +26,11 @@ function Chip({ children, gold }) {
 
 function Row({ icon, text, sub, accent }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
-      <div style={{ width: 40, height: 40, borderRadius: 12, background: accent || 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{icon}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: accent || 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, color: 'white', fontSize: 13, lineHeight: 1.3 }}>{text}</div>
-        {sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{sub}</div>}
+        <div style={{ fontWeight: 700, color: 'white', fontSize: 12.5, lineHeight: 1.3 }}>{text}</div>
+        {sub && <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -36,43 +38,55 @@ function Row({ icon, text, sub, accent }) {
 
 function StatBox({ val, label, gold }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: '14px 8px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <div style={{ fontSize: 28, fontWeight: 900, color: gold ? GOLD : '#60a5fa', letterSpacing: -1 }}>{val}</div>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 4, lineHeight: 1.3 }}>{label}</div>
+    <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: '12px 6px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ fontSize: 24, fontWeight: 900, color: gold ? GOLD : '#60a5fa', letterSpacing: -1 }}>{val}</div>
+      <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.45)', marginTop: 4, lineHeight: 1.3 }}>{label}</div>
     </div>
   );
 }
 
-// ─── SLIDE 1 — Cover ──────────────────────────────────────────────────
+function StepBadge({ num, label, active }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: '50%',
+        background: active ? `linear-gradient(135deg, ${BLUE}, ${GOLD})` : 'rgba(255,255,255,0.08)',
+        border: active ? 'none' : '1px solid rgba(255,255,255,0.15)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, fontWeight: 900, color: 'white',
+      }}>{num}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: active ? 'white' : 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 1.2 }}>{label}</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 1 — Cover
+// ═══════════════════════════════════════════════════════════════════
 function Slide1() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '36px 28px', position: 'relative', overflow: 'hidden' }}>
-      {/* Glow */}
-      <div style={{ position: 'absolute', top: -120, right: -100, width: 380, height: 380, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.25) 0%, transparent 70%)', pointerEvents: 'none' }} />
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '32px 24px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <img src={LOGO} alt="" style={{ position: 'absolute', top: 32, right: 24, width: 44, height: 44, borderRadius: 13, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
+      <div style={{ position: 'absolute', top: 24, left: 24, fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SEED · 2026</div>
 
-      {/* Logo */}
-      <img src={LOGO} alt="" style={{ position: 'absolute', top: 38, right: 28, width: 52, height: 52, borderRadius: 16, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
+      <div style={{ position: 'absolute', top: 80, left: -10, opacity: 0.35 }}>
+        <PhoneMockup src={FEED_SS} width={130} />
+      </div>
 
-      {/* Big number/year top-left as design element */}
-      <div style={{ position: 'absolute', top: 28, left: 28, fontSize: 11, color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: 2 }}>SERIES A · 2026</div>
-
-      {/* Main content */}
       <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
-        <Chip>שוק הג'ובות</Chip>
-        <div style={{ marginTop: 12, fontSize: 54, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95 }}>
-          Joba<span style={{ color: GOLD }}>24</span>
+        <Chip gold>The Real-Time Marketplace for Local Work</Chip>
+        <div style={{ marginTop: 12, fontSize: 44, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95 }}>
+          Need help?<br />Open Joba<span style={{ color: GOLD }}>24</span>.
         </div>
-        <div style={{ marginTop: 14, fontSize: 17, fontWeight: 600, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
-          Uber לג'ובות —<br />
-          <span style={{ color: 'white', fontWeight: 800 }}>תוך 60 שניות</span>
+        <div style={{ marginTop: 12, fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+          מצא עובד או עבודה תוך דקות.
         </div>
-
-        {/* Bottom stats bar */}
-        <div style={{ marginTop: 32, display: 'flex', gap: 20, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          {[['₪8B', 'גודל שוק'], ['3M+', 'פרילנסרים'], ['60s', 'לג\'ובה חיה']].map(([v, l]) => (
+        <div style={{ marginTop: 24, display: 'flex', gap: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          {[['₪8B', 'שוק ישראל'], ['3M+', 'פרילנסרים'], ['60s', 'לג\'ובה חיה']].map(([v, l]) => (
             <div key={l} style={{ flex: 1 }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: GOLD }}>{v}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{l}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: GOLD }}>{v}</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{l}</div>
             </div>
           ))}
         </div>
@@ -81,232 +95,493 @@ function Slide1() {
   );
 }
 
-// ─── SLIDE 2 — Problem ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 2 — Problem
+// ═══════════════════════════════════════════════════════════════════
 function Slide2() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
       <Chip>הבעיה</Chip>
-      <h2 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: '12px 0 28px', lineHeight: 1.2 }}>
-        שוק של ₪8 מיליארד<br />
-        <span style={{ color: '#ef4444' }}>— ללא פתרון דיגיטלי</span>
+      <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '12px 0 22px', lineHeight: 1.25 }}>
+        הדרך למצוא עזרה<br />
+        <span style={{ color: '#ef4444' }}>עדיין איטית, מבוזרת ולא אמינה</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>
         {[
-          { icon: '😤', text: 'אין פלטפורמה לג\'ובות מיידיות', sub: 'כוח האדם לא מנוצל' },
-          { icon: '💸', text: '70% מהעסקאות — בשחור', sub: 'ללא ביטחון, ללא שקיפות' },
-          { icon: '⏰', text: 'ממוצע 4 שעות למצוא עובד', sub: 'WhatsApp, טלפונים, בזבוז זמן' },
-          { icon: '❌', text: 'אין אמינות בין הצדדים', sub: 'ביטולים, אי-הגעה, הונאות' },
-        ].map(({ icon, text, sub }) => (
-          <Row key={text} icon={icon} text={text} sub={sub} />
+          { icon: '💬', text: 'WhatsApp' },
+          { icon: '📘', text: 'Facebook' },
+          { icon: '🤝', text: 'פרוטקציות' },
+          { icon: '🏘️', text: 'קבוצות שכונה' },
+          { icon: '📰', text: 'יד2' },
+          { icon: '📞', text: 'טלפונים' },
+        ].map(({ icon, text }) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: 16 }}>{icon}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{text}</span>
+          </div>
         ))}
+      </div>
+
+      <div style={{ background: 'rgba(239,68,68,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(239,68,68,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, marginBottom: 10 }}>
+        ⏰ <strong style={{ color: '#ef4444' }}>ממוצע 4 שעות</strong> למצוא עובד. ביטולים, אי-הגעה, הונאות.
+      </div>
+      <div style={{ background: 'rgba(96,165,250,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(96,165,250,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>
+        מצד שני — <strong style={{ color: '#60a5fa' }}>מיליוני אנשים</strong> רוצים להרוויח ממשימות קטנות.<br />
+        אין מערכת שמחברת ביניהם <strong style={{ color: 'white' }}>בזמן אמת</strong>.
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 3 — Market ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 3 — Opportunity
+// ═══════════════════════════════════════════════════════════════════
 function Slide3() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 70% 80%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 70% 80%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
       <Chip gold>הזדמנות</Chip>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '12px 0 24px', lineHeight: 1.2 }}>
-        שוק ענק.<br /><span style={{ color: GOLD }}>ראשונים בו.</span>
+      <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '12px 0 20px', lineHeight: 1.2 }}>
+        ישראל בלבד.<br /><span style={{ color: GOLD }}>ואז — כל עיר בעולם.</span>
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        <StatBox val="₪8B+" label="שוק שירותים שנתי בישראל" gold />
-        <StatBox val="3M+" label="עצמאיים ופרילנסרים" />
-        <StatBox val="70%" label="עסקאות בשחור היום" />
-        <StatBox val="0" label="מתחרה ישיר רציני" gold />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+        <StatBox val="+3M" label="פרילנסרים בישראל" gold />
+        <StatBox val="₪8B+" label="שוק שירותים מקומיים" />
+        <StatBox val="70%" label="עסקאות עדיין לא דיגיטליות" />
+        <StatBox val="0" label="שחקן מוביל בקטגוריה" gold />
       </div>
 
-      <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 14, padding: '13px 16px', border: '1px solid rgba(251,191,36,0.2)', fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
-        🚀 <strong style={{ color: GOLD }}>Window of Opportunity:</strong> אנחנו הראשונים בשוק הזה — עם תשתית ב-Production ומשתמשים אמיתיים.
+      <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(251,191,36,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
+        🚀 <strong style={{ color: GOLD }}>Window of Opportunity:</strong> רוב שוק השירותים המקומיים עדיין לא מנוהל בזמן אמת.
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 4 — Solution ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 4 — The Experience
+// ═══════════════════════════════════════════════════════════════════
 function Slide4() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
-      <Chip>הפתרון</Chip>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '12px 0 24px', lineHeight: 1.2 }}>
-        Joba24 — <span style={{ color: '#60a5fa' }}>שוק גיג</span><br />בזמן אמת
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '32px 24px' }}>
+      <Chip>The Experience</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 20px', lineHeight: 1.25 }}>
+        From "I need help"<br />
+        <span style={{ color: GOLD }}>to "someone is on the way"</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {[
-          { icon: '📱', text: 'פרסם ג\'ובה תוך 60 שניות', sub: 'כותרת, מחיר, מיקום — זהו', accent: 'rgba(96,165,250,0.15)' },
-          { icon: '⚡', text: 'עובד מגיש בקשה מיידית', sub: 'אישור ידני או אוטומטי לפי בחירה', accent: 'rgba(251,191,36,0.12)' },
-          { icon: '📍', text: 'WorkerTracker — GPS בזמן אמת', sub: 'הלקוח רואה את העובד כמו ב-Waze', accent: 'rgba(52,211,153,0.12)' },
-          { icon: '💬', text: 'צ\'אט + הודעות דחיפה', sub: 'תקשורת ישירה לכל אורך הדרך', accent: 'rgba(167,139,250,0.12)' },
-          { icon: '⭐', text: 'דירוג דו-כיווני + אמינות', sub: 'ציון אמון, badge מאומת, היסטוריה', accent: 'rgba(244,63,94,0.1)' },
-        ].map(({ icon, text, sub, accent }) => (
-          <Row key={text} icon={icon} text={text} sub={sub} accent={accent} />
-        ))}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, gap: 4 }}>
+        <StepBadge num={1} label="צריך עזרה" active />
+        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>←</div>
+        <StepBadge num={2} label="מפרסמים" active />
+        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>←</div>
+        <StepBadge num={3} label="מקבלים בקשות" active />
+        <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.2)', marginTop: 10 }}>←</div>
+        <StepBadge num={4} label="בדרך!" active />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
+        <PhoneMockup src={FEED_SS} width={110} label="Feed" />
+        <PhoneMockup src={MAP_SS} width={110} label="Map" />
+      </div>
+
+      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.2), rgba(251,191,36,0.1))', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>תוך דקות. לא שעות.</div>
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>כל המסע — באפליקציה אחת</div>
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 5 — Traction ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 5 — AI Publishing
+// ═══════════════════════════════════════════════════════════════════
 function Slide5() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 20% 60%, rgba(16,185,129,0.12) 0%, ${DARK_BG} 55%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
-      <Chip>Product — Live</Chip>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '12px 0 22px', lineHeight: 1.2 }}>
-        המוצר רץ.<br /><span style={{ color: '#4ade80' }}>עכשיו.</span>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 20px' }}>
+      <Chip>AI Publishing</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 6px', lineHeight: 1.25 }}>
+        לא טופס.<br />
+        <span style={{ color: GOLD }}>פשוט מדברים.</span>
       </h2>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-        {[
-          { icon: '✅', text: 'אפליקציה פעילה ב-Production', accent: 'rgba(74,222,128,0.12)' },
-          { icon: '🗺️', text: 'מפת ג\'ובות חיה + GPS Tracking', accent: 'rgba(96,165,250,0.12)' },
-          { icon: '📖', text: 'Stories, Leaderboard, DailyGoal', accent: 'rgba(251,191,36,0.1)' },
-          { icon: '🪙', text: 'מערכת קרדיטים + עסקאות', accent: 'rgba(167,139,250,0.12)' },
-          { icon: '🛡️', text: 'מודרציה AI + Verification', accent: 'rgba(244,63,94,0.1)' },
-        ].map(({ icon, text, accent }) => (
-          <Row key={text} icon={icon} text={text} accent={accent} />
-        ))}
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 1.5 }}>
+        כמו ChatGPT — ומקבלים משימה מלאה.
       </div>
 
-      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '11px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>
-        🔥 לא MVP — מוצר מלא עם עשרות פיצ'רים מושקעים
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+        <video
+          src={VIDEO_URL}
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{
+            maxWidth: '100%', maxHeight: '100%',
+            borderRadius: 16,
+            border: '2px solid rgba(255,255,255,0.1)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+          }}
+        />
+      </div>
+
+      <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+        {['כותרת', 'מחיר', 'מיקום', 'קטגוריה', 'תמונות'].map(tag => (
+          <div key={tag} style={{ flex: 1, textAlign: 'center', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '6px 2px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            {tag}
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 8, textAlign: 'center', fontSize: 10, color: GOLD, fontWeight: 700 }}>
+        ✨ AI ממלא את הכל אוטומטית
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 6 — Business Model ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 6 — AI Matching Engine
+// ═══════════════════════════════════════════════════════════════════
 function Slide6() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
-      <Chip gold>מודל עסקי</Chip>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '12px 0 22px', lineHeight: 1.2 }}>
-        4 מנועי הכנסה.<br /><span style={{ color: GOLD }}>מהיום הראשון.</span>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 60% 40%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip>AI Matching Engine</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+        לא פיד רגיל.<br /><span style={{ color: '#60a5fa' }}>המערכת מדרגת חכם.</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
         {[
-          { icon: '🪙', text: 'קרדיטים — עמלת הגשה', sub: 'עובד משלם 5% מהמחיר = skin in the game', accent: 'rgba(251,191,36,0.12)' },
-          { icon: '📣', text: 'Stories — קידום ממומן', sub: 'ג\'ובה בשורת Stories: 10 קרדיטים ל-24h', accent: 'rgba(167,139,250,0.12)' },
-          { icon: '👑', text: 'פרמיום לעובדים', sub: 'Badge + חשיפה מוגברת + כלים מתקדמים', accent: 'rgba(96,165,250,0.12)' },
-          { icon: '🏢', text: 'B2B — עסקים בכמות', sub: 'תשלום חודשי קבוע לפרסום בלתי מוגבל', accent: 'rgba(52,211,153,0.12)' },
-        ].map(({ icon, text, sub, accent }) => (
-          <Row key={text} icon={icon} text={text} sub={sub} accent={accent} />
+          { icon: '📍', text: 'מרחק' },
+          { icon: '🎯', text: 'ניסיון' },
+          { icon: '🟢', text: 'זמינות' },
+          { icon: '🛡️', text: 'אמינות' },
+          { icon: '⭐', text: 'דירוג' },
+          { icon: '⚡', text: 'מהירות תגובה' },
+          { icon: '🏷️', text: 'קטגוריה' },
+          { icon: '📊', text: 'היסטוריה' },
+        ].map(({ icon, text }) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontSize: 15 }}>{icon}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>{text}</span>
+          </div>
         ))}
       </div>
 
-      <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
-        {[['Unit Economics', 'חיובי מהיום'], ['LTV/CAC', '> 5x'], ['Retention', 'גבוה — Trust']].map(([k, v]) => (
-          <div key={k} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '8px 6px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: GOLD }}>{v}</div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{k}</div>
-          </div>
-        ))}
+      <div style={{ background: 'rgba(96,165,250,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(96,165,250,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: 600 }}>
+        כל משתמש רואה <strong style={{ color: '#60a5fa' }}>Feed אחר</strong> — מותאם אליו.
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 7 — Moat ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 7 — Liquidity Visibility
+// ═══════════════════════════════════════════════════════════════════
 function Slide7() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
-      <Chip>יתרון תחרותי</Chip>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '12px 0 22px', lineHeight: 1.2 }}>
-        למה <span style={{ color: '#a78bfa' }}>Joba24</span><br />ולא מישהו אחר?
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: '32px 24px' }}>
+      <Chip gold>Liquidity Visibility</Chip>
+      <h2 style={{ fontSize: 23, fontWeight: 900, color: 'white', margin: '10px 0 14px', lineHeight: 1.25 }}>
+        המפרסם רואה<br /><span style={{ color: GOLD }}>שוק חי — לא צריך לנחש</span>
       </h2>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0, marginBottom: 14 }}>
+        <PhoneMockup src={MAP_SS} width={140} label="Map" />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        {[['18', 'מובילים זמינים'], ['42', 'חשמלאים'], ['12', 'אינסטלטורים']].map(([v, l]) => (
+          <div key={l} style={{ flex: 1, background: 'rgba(251,191,36,0.08)', borderRadius: 12, padding: '10px 6px', textAlign: 'center', border: '1px solid rgba(251,191,36,0.2)' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: GOLD }}>{v}</div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+        "אולי מישהו יראה" → <strong style={{ color: 'white' }}>"18 עובדים מחכים עכשיו"</strong>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 8 — Trust Layer (Moat)
+// ═══════════════════════════════════════════════════════════════════
+function Slide8() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 80% 20%, #1a1060 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip>Trust Layer</Chip>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+        Why this becomes<br /><span style={{ color: '#a78bfa' }}>harder to copy every month</span>
+      </h2>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {[
-          { icon: '⚡', text: 'מהירות — הגיג Economy עובד במיידי', sub: 'רמת UX של Uber — לא של Fiverr', accent: 'rgba(167,139,250,0.12)' },
-          { icon: '🔗', text: 'Network Effect — Two-Sided', sub: 'יותר לקוחות → יותר עובדים → loop', accent: 'rgba(96,165,250,0.12)' },
-          { icon: '🛡️', text: 'מערכת אמון מובנית', sub: 'WorkerTracker + Verification + Scoring', accent: 'rgba(52,211,153,0.12)' },
-          { icon: '🇮🇱', text: 'First Mover בישראל', sub: 'כבר בפרודקשן — המתחרים ישנים', accent: 'rgba(251,191,36,0.1)' },
-          { icon: '🤖', text: 'AI-Powered Matching + Moderation', sub: 'חיבור חכם בין ביקוש להיצע', accent: 'rgba(244,63,94,0.1)' },
-        ].map(({ icon, text, sub, accent }) => (
-          <Row key={text} icon={icon} text={text} sub={sub} accent={accent} />
+          { icon: '✅', text: 'אימות עובדים', accent: 'rgba(74,222,128,0.12)' },
+          { icon: '⭐', text: 'דירוגים דו-כיווניים', accent: 'rgba(251,191,36,0.12)' },
+          { icon: '🎯', text: 'Worker Score', accent: 'rgba(96,165,250,0.12)' },
+          { icon: '📍', text: 'GPS בזמן אמת', accent: 'rgba(52,211,153,0.12)' },
+          { icon: '💬', text: 'צ\'אט מובנה', accent: 'rgba(167,139,250,0.12)' },
+          { icon: '📸', text: 'תמונות הוכחה', accent: 'rgba(244,63,94,0.1)' },
+          { icon: '🤖', text: 'AI Moderation', accent: 'rgba(96,165,250,0.12)' },
+          { icon: '🛡️', text: 'Badge מאומת', accent: 'rgba(74,222,128,0.12)' },
+        ].map(({ icon, text, accent }) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: accent, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontSize: 15 }}>{icon}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 8 — Vision ─────────────────────────────────────────────────
-function Slide8() {
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 9 — Business Model
+// ═══════════════════════════════════════════════════════════════════
+function Slide9() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
-      <Chip gold>חזון</Chip>
-      <h2 style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '12px 0 10px', lineHeight: 1.2 }}>
-        מישראל —<br />
-        <span style={{ color: GOLD }}>לכל שוק גיג בעולם</span>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip gold>מודל עסקי</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+        מודל הכנסות<br /><span style={{ color: GOLD }}>פשוט וברור.</span>
       </h2>
 
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 22, lineHeight: 1.6 }}>
-        כל עיר בעולם סובלת מאותה בעיה.<br />Joba24 הוא הפתרון הסקלבילי.
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <Row icon="🪙" text="עמלת הצלחה על משימות" sub="עובד משלם בג'ובות רק לאחר ביצוע" accent="rgba(251,191,36,0.12)" />
+        <Row icon="📦" text="חבילות ג'ובות חד-פעמיות" sub="₪10–₪200 לפי כמות קרדיטים" accent="rgba(96,165,250,0.12)" />
+        <Row icon="🔄" text="מנויים חודשיים לעובדים פעילים" sub="₪25–₪200/חודש · חידוש אוטומטי" accent="rgba(52,211,153,0.12)" />
+        <Row icon="🚀" text="Boosts ו-Stories לקידום משימות" sub="מפרסמים משלמים לחשיפה מוגברת" accent="rgba(167,139,250,0.12)" />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+      <div style={{ marginTop: 14, background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 600, textAlign: 'center' }}>
+        שני צדדים משלמים · הכנסה מהיום הראשון
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 10 — Go To Market Phase 1
+// ═══════════════════════════════════════════════════════════════════
+function Slide10() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 70%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip>Go To Market · Phase 1</Chip>
+      <h2 style={{ fontSize: 23, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+        קודם כל —<br /><span style={{ color: GOLD }}>לגייס עובדים.</span>
+      </h2>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
         {[
-          { year: '2026', text: 'הכנסה חיובית, גדילה אורגנית בישראל' },
-          { year: '2027', text: 'Series A · הרחבה לעיר 1 באירופה' },
-          { year: '2028', text: 'Platform Play — ×10 עסקאות' },
-        ].map(({ year, text }) => (
-          <div key={year} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 14px', background: 'rgba(255,255,255,0.04)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: GOLD, minWidth: 36 }}>{year}</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 600 }}>{text}</div>
+          { icon: '👤', text: 'סוכנים מגייסים עובדים', accent: 'rgba(251,191,36,0.12)' },
+          { icon: '📝', text: 'עובדים נרשמים + משלימים פרופיל', accent: 'rgba(96,165,250,0.12)' },
+          { icon: '🔔', text: 'מפעילים התראות', accent: 'rgba(52,211,153,0.12)' },
+          { icon: '🏷️', text: 'בוחרים קטגוריות + ערים', accent: 'rgba(167,139,250,0.12)' },
+        ].map(({ icon, text, accent }) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: accent, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontSize: 16 }}>{icon}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{text}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(251,191,36,0.15))', borderRadius: 16, padding: '14px 16px', border: '1px solid rgba(251,191,36,0.2)', textAlign: 'center' }}>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>Total Addressable Market</div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: GOLD }}>$400B+</div>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Global Gig Economy</div>
+      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.25), rgba(251,191,36,0.12))', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(251,191,36,0.2)', textAlign: 'center' }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>אלפי עובדים שמחכים</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>לפני שפותחים מפרסם אחד</div>
       </div>
     </div>
   );
 }
 
-// ─── SLIDE 9 — Ask/CTA ────────────────────────────────────────────────
-function Slide9() {
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 11 — Go To Market Phase 2
+// ═══════════════════════════════════════════════════════════════════
+function Slide11() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 30%, #0d2e6e 0%, ${DARK_BG} 70%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 28px' }}>
-      {/* Logo centered top */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <img src={LOGO} alt="" style={{ width: 48, height: 48, borderRadius: 14, objectFit: 'cover' }} />
-        <div style={{ fontSize: 26, fontWeight: 900, color: 'white' }}>Joba<span style={{ color: GOLD }}>24</span></div>
-      </div>
-
-      <Chip gold>Investment Ask</Chip>
-      <h2 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: '12px 0 8px', lineHeight: 1.2 }}>
-        מחפשים שותפים<br />
-        <span style={{ color: GOLD }}>לצמיחה.</span>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip gold>Go To Market · Phase 2</Chip>
+      <h2 style={{ fontSize: 23, fontWeight: 900, color: 'white', margin: '10px 0 16px', lineHeight: 1.25 }}>
+        הולכים רק על<br /><span style={{ color: GOLD }}>אזור אחד.</span>
       </h2>
-      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
-        Round: Seed · $500K–$1.5M
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+        {['תל אביב', 'רמת גן', 'גבעתיים', 'הרצליה', 'פ"ת'].map(city => (
+          <span key={city} style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', borderRadius: 20, padding: '6px 14px' }}>{city}</span>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+        <Row icon="✅" text="כל עובד כבר מוכן" accent="rgba(74,222,128,0.12)" />
+        <Row icon="📣" text="מתחילים לפרסם — מקבלים בקשות תוך דקות" accent="rgba(251,191,36,0.12)" />
+      </div>
+
+      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'center' }}>
+        לא צריך לבנות Marketplace משני הצדדים.<br />
+        <strong style={{ color: '#4ade80' }}>צד אחד כבר מחכה.</strong>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 12 — Network Effect
+// ═══════════════════════════════════════════════════════════════════
+function Slide12() {
+  const steps = [
+    { icon: '👷', text: 'יותר עובדים' },
+    { icon: '⚡', text: 'זמן תגובה יורד' },
+    { icon: '📢', text: 'יותר מפרסמים' },
+    { icon: '📋', text: 'יותר משימות' },
+  ];
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip>Network Effect</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 24px', lineHeight: 1.25, textAlign: 'center' }}>
+        הלופ שמנצח<br /><span style={{ color: GOLD }}>בכל עיר.</span>
+      </h2>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+        {steps.map(({ icon, text }, i) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '80%' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{text}</div>
+          </div>
+        ))}
+        <div style={{ fontSize: 20, color: GOLD, fontWeight: 900 }}>↻</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>וחוזר — חזק יותר בכל סיבוב</div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 13 — Traction
+// ═══════════════════════════════════════════════════════════════════
+function Slide13() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 20% 60%, rgba(16,185,129,0.1) 0%, ${DARK_BG} 55%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip>Traction</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+        לא MVP.<br /><span style={{ color: '#4ade80' }}>מוצר חי.</span>
+      </h2>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+        <StatBox val="✓" label="סוכנים מגייסים עובדים" gold />
+        <StatBox val="✓" label="מוצר חי ב-Production" gold />
+        <StatBox val="✓" label="עובדים נרשמים" />
+        <StatBox val="✓" label="משימות נסגרות בזמן אמת" />
+      </div>
+
+      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(74,222,128,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 600, textAlign: 'center' }}>
+        🔥 עשרות פיצ'רים מושקעים · תשלומים · AI · GPS
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 14 — Vision
+// ═══════════════════════════════════════════════════════════════════
+function Slide14() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px', alignItems: 'center', textAlign: 'center' }}>
+      <Chip gold>Vision</Chip>
+      <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '12px 0 8px', lineHeight: 1.25, maxWidth: 280 }}>
+        Joba24 is building the<br /><span style={{ color: GOLD }}>operating system</span><br />for local work.
+      </h2>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24, letterSpacing: 0.5 }}>
+        Every city. Every task. Real time.
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+        {[
+          { flag: '🇮🇱', text: 'ישראל', year: '2026' },
+          { flag: '🇪🇺', text: 'אירופה', year: '2027' },
+          { flag: '🇺🇸', text: 'ארה"ב', year: '2028' },
+          { flag: '🌍', text: 'Every City', year: '→' },
+        ].map(({ flag, text, year }) => (
+          <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'rgba(255,255,255,0.04)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', width: '80%', margin: '0 auto' }}>
+            <span style={{ fontSize: 18 }}>{flag}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'white', flex: 1, textAlign: 'right' }}>{text}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: GOLD }}>{year}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 15 — Why Now
+// ═══════════════════════════════════════════════════════════════════
+function Slide15() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <Chip>Why Now</Chip>
+      <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: '10px 0 18px', lineHeight: 1.25 }}>
+        למה דווקא<br /><span style={{ color: GOLD }}>עכשיו?</span>
+      </h2>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 18 }}>
+        {[
+          { icon: '🤖', text: 'AI', sub: 'יצירת משימות אוטומטית' },
+          { icon: '📍', text: 'GPS', sub: 'מעקב בזמן אמת' },
+          { icon: '🔔', text: 'Push', sub: 'התראות מיידיות' },
+          { icon: '💳', text: 'Payments', sub: 'תשלום דיגיטלי' },
+        ].map(({ icon, text, sub }) => (
+          <div key={text} style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>{icon}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{text}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(251,191,36,0.2)', fontSize: 12, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'center' }}>
+        כולם קיימים.<br />
+        רק אף אחד עדיין לא <strong style={{ color: GOLD }}>חיבר אותם נכון.</strong>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE 16 — Live Demo / Ask
+// ═══════════════════════════════════════════════════════════════════
+function Slide16() {
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 30%, #0d2e6e 0%, ${DARK_BG} 70%)`, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '36px 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+        <img src={LOGO} alt="" style={{ width: 42, height: 42, borderRadius: 12, objectFit: 'cover' }} />
+        <div style={{ fontSize: 22, fontWeight: 900, color: 'white' }}>Joba<span style={{ color: GOLD }}>24</span></div>
+      </div>
+
+      <Chip gold>Live Demo</Chip>
+      <h2 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: '10px 0 6px', lineHeight: 1.2 }}>
+        נסו עכשיו.
+      </h2>
+      <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 20 }}>
+        Seed · $500K–$1.5M
+      </div>
+
+      <div style={{ background: 'linear-gradient(135deg, #0d2e6e, #1a6fd4)', borderRadius: 14, padding: '14px', border: '1px solid rgba(255,255,255,0.15)', marginBottom: 14, textAlign: 'center' }}>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>Live App</div>
+        <div style={{ fontSize: 15, fontWeight: 900, color: 'white', letterSpacing: 0.5 }}>joba24.base44.app</div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
         {[
           { pct: '40%', text: 'Growth — Marketing & User Acquisition' },
           { pct: '35%', text: 'R&D — AI, Payments, Scale' },
           { pct: '25%', text: 'Operations & Expansion' },
         ].map(({ pct, text }) => (
-          <div key={pct} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: GOLD, minWidth: 44 }}>{pct}</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{text}</div>
+          <div key={pct} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: GOLD, minWidth: 38 }}>{pct}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{text}</div>
           </div>
         ))}
-      </div>
-
-      <div style={{ background: 'linear-gradient(135deg, #0d2e6e, #1a6fd4)', borderRadius: 16, padding: '16px', border: '1px solid rgba(255,255,255,0.15)', marginBottom: 12 }}>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>Live App — נסו עכשיו</div>
-        <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: 0.5 }}>joba24.base44.app</div>
       </div>
 
       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
@@ -316,22 +591,33 @@ function Slide9() {
   );
 }
 
-// ─── Slide registry ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SLIDE REGISTRY
+// ═══════════════════════════════════════════════════════════════════
 const SLIDES = [
-  { id: 'cover',    component: <Slide1 /> },
-  { id: 'problem',  component: <Slide2 /> },
-  { id: 'market',   component: <Slide3 /> },
-  { id: 'solution', component: <Slide4 /> },
-  { id: 'product',  component: <Slide5 /> },
-  { id: 'business', component: <Slide6 /> },
-  { id: 'moat',     component: <Slide7 /> },
-  { id: 'vision',   component: <Slide8 /> },
-  { id: 'ask',      component: <Slide9 /> },
+  { id: 'cover',      component: <Slide1 /> },
+  { id: 'problem',    component: <Slide2 /> },
+  { id: 'market',     component: <Slide3 /> },
+  { id: 'experience', component: <Slide4 /> },
+  { id: 'ai-publish', component: <Slide5 /> },
+  { id: 'matching',   component: <Slide6 /> },
+  { id: 'liquidity',  component: <Slide7 /> },
+  { id: 'trust',      component: <Slide8 /> },
+  { id: 'revenue',    component: <Slide9 /> },
+  { id: 'gtm1',       component: <Slide10 /> },
+  { id: 'gtm2',       component: <Slide11 /> },
+  { id: 'network',    component: <Slide12 /> },
+  { id: 'traction',   component: <Slide13 /> },
+  { id: 'vision',     component: <Slide14 /> },
+  { id: 'why-now',    component: <Slide15 /> },
+  { id: 'demo',       component: <Slide16 /> },
 ];
 
-const LABELS = ['Cover', 'Problem', 'Market', 'Solution', 'Product', 'Revenue', 'Moat', 'Vision', 'Ask'];
+const LABELS = ['Cover', 'Problem', 'Market', 'Experience', 'AI Publish', 'Matching', 'Liquidity', 'Trust', 'Revenue', 'GTM 1', 'GTM 2', 'Network', 'Traction', 'Vision', 'Why Now', 'Demo'];
 
-// ─── Main ──────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// MAIN
+// ═══════════════════════════════════════════════════════════════════
 export default function Presentation() {
   const [current, setCurrent] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
@@ -361,12 +647,10 @@ export default function Presentation() {
           borderRadius: isWide ? 40 : 0,
         }}
       >
-        {/* Slide */}
         <div style={{ width: '100%', height: '100%' }}>
           {SLIDES[current].component}
         </div>
 
-        {/* Tap zones — RTL: right=prev, left=next */}
         {current > 0 && (
           <div onClick={prev} style={{ position: 'absolute', top: 0, right: 0, width: '22%', height: '100%', cursor: 'pointer', zIndex: 20 }} />
         )}
@@ -374,37 +658,32 @@ export default function Presentation() {
           <div onClick={next} style={{ position: 'absolute', top: 0, left: 0, width: '22%', height: '100%', cursor: 'pointer', zIndex: 20 }} />
         )}
 
-        {/* Arrow buttons — RTL */}
         {current > 0 && (
-          <button onClick={prev} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
-            <ChevronRight size={16} color="white" />
+          <button onClick={prev} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
+            <ChevronRight size={15} color="white" />
           </button>
         )}
         {current < SLIDES.length - 1 && (
-          <button onClick={next} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
-            <ChevronLeft size={16} color="white" />
+          <button onClick={next} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 }}>
+            <ChevronLeft size={15} color="white" />
           </button>
         )}
 
-        {/* Progress bar */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'rgba(255,255,255,0.1)', zIndex: 40 }}>
           <div style={{ height: '100%', width: `${((current + 1) / SLIDES.length) * 100}%`, background: GOLD, transition: 'width 0.3s ease' }} />
         </div>
 
-        {/* Slide label top-right */}
-        <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', zIndex: 40, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', zIndex: 40, pointerEvents: 'none' }}>
           {LABELS[current]}
         </div>
 
-        {/* Dots */}
-        <div style={{ position: 'absolute', bottom: 22, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 5, zIndex: 30 }}>
+        <div style={{ position: 'absolute', bottom: 18, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4, zIndex: 30 }}>
           {SLIDES.map((_, i) => (
-            <div key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 20 : 5, height: 5, borderRadius: 3, background: i === current ? GOLD : 'rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'all 0.25s' }} />
+            <div key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 18 : 4, height: 4, borderRadius: 3, background: i === current ? GOLD : 'rgba(255,255,255,0.2)', cursor: 'pointer', transition: 'all 0.25s' }} />
           ))}
         </div>
       </div>
 
-      {/* Counter */}
       <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.2)', fontSize: 10, letterSpacing: 1 }}>
         {current + 1} / {SLIDES.length}
       </div>
