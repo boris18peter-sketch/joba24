@@ -11,6 +11,8 @@ const MAP_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a
 const AGENT_DASH = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/a7d159985_2026-06-30-135738.png';
 const DAILY_GOAL_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/ca8b68ce3_2026-06-30-163701.mov';
 const LEADERBOARD_SS = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/e061865c5_2026-06-30-163958.png';
+const DEMO_CLIENT_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/38a5f8cd6_WhatsAppVideo2026-06-30at175043.mp4';
+const DEMO_WORKER_VIDEO = 'https://media.base44.com/videos/public/69e6bdb4986a04a256653a23/303030594_WhatsAppVideo2026-06-30at174456.mp4';
 
 const DARK_BG = '#050d1f';
 const BLUE = '#1a6fd4';
@@ -146,14 +148,14 @@ function Slide3() {
       </h2>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-        <StatBox val="+3M" label="פרילנסרים בישראל" gold />
-        <StatBox val="₪8B+" label="שוק שירותים מקומיים" />
-        <StatBox val="70%" label="עסקאות עדיין לא דיגיטליות" />
+        <StatBox val="450K" label="פרילנסרים בישראל" gold />
+        <StatBox val="₪20B+" label="שוק שירותים מקומיים במגזר הפרטי" />
         <StatBox val="0" label="שחקן מוביל בקטגוריה" gold />
       </div>
 
       <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 14, padding: '16px 18px', border: '1px solid rgba(251,191,36,0.2)', fontSize: FS.body, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
-        <strong style={{ color: GOLD }}>Window of Opportunity:</strong> רוב שוק השירותים המקומיים עדיין לא מנוהל בזמן אמת.
+        <strong style={{ color: GOLD }}>Window of Opportunity:</strong> רוב שוק השירותים המקומיים עדיין לא מנוהל בזמן אמת.<br />
+        <span style={{ color: 'rgba(255,255,255,0.6)' }}>עם התפתחות ה-AI, יותר ויותר אנשים מצטרפים לעבודות ידניות ונכנסים לעולם של שוק שירותים מקומיים.</span>
       </div>
     </div>
   );
@@ -171,21 +173,31 @@ function Slide4() {
         <span style={{ color: GOLD }}>to "someone is on the way"</span>
       </h2>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 8 }}>
         <StepBadge num={1} label="צריך עזרה" active />
         <StepBadge num={2} label="מפרסמים" active />
         <StepBadge num={3} label="מקבלים בקשות" active />
         <StepBadge num={4} label="בדרך!" active />
       </div>
 
-      <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginBottom: 16 }}>
-        <PhoneMockup src={FEED_SS} width={130} label="Feed" />
-        <PhoneMockup src={MAP_SS} width={130} label="Map" />
+      <div style={{ flex: 1, display: 'flex', gap: 12, minHeight: 0, marginBottom: 12 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 0 }}>
+          <div style={{ fontSize: FS.small, fontWeight: 800, color: '#60a5fa', textAlign: 'center', letterSpacing: 0.5 }}>מפרסם המשימה</div>
+          <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden', border: '2px solid rgba(96,165,250,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)', background: '#000', minHeight: 0 }}>
+            <video src={DEMO_CLIENT_VIDEO} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 0 }}>
+          <div style={{ fontSize: FS.small, fontWeight: 800, color: GOLD, textAlign: 'center', letterSpacing: 0.5 }}>העובד</div>
+          <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden', border: '2px solid rgba(251,191,36,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)', background: '#000', minHeight: 0 }}>
+            <video src={DEMO_WORKER_VIDEO} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        </div>
       </div>
 
-      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.2), rgba(251,191,36,0.1))', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.2), rgba(251,191,36,0.1))', borderRadius: 14, padding: '12px 18px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
         <div style={{ fontSize: FS.body, fontWeight: 800, color: 'white' }}>תוך דקות. לא שעות.</div>
-        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>כל המסע — באפליקציה אחת</div>
+        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>אינטראקציה חיה בין שני הצדדים — באפליקציה אחת</div>
       </div>
     </div>
   );
@@ -357,42 +369,52 @@ function Slide8() {
 // SLIDE — What Makes Us Different
 // ═══════════════════════════════════════════════════════════════════
 function SlideDiff() {
+  const publisherBenefits = [
+    { title: 'מהירות שלא הכרת', sub: 'מקבל עזרה תוך דקות — בלי לחכות לחזרות' },
+    { title: 'קובע את המחיר בעצמו', sub: 'בלי השוואות, בלי ויכוחים, בלי בזבוז זמן' },
+    { title: 'עובדים מתחרים על המשימה', sub: 'בוחר את הכי טוב לפי דירוגים וביקורות' },
+    { title: 'מוגן ובטוח', sub: 'תשלום מאובטח, הגנה מהונאות וביטולים' },
+  ];
+  const workerBenefits = [
+    { title: 'משימות בקרבתך', sub: 'התראות חיות על עבודות לידך בזמן אמת' },
+    { title: 'הכנסה מיידית', sub: 'מרוויח כסף מהרגע הראשון, כל יום מחדש' },
+    { title: 'מותאם אליך אישית', sub: 'המערכת מציגה רק משימות רלוונטיות אליך' },
+    { title: 'בונה מוניטין', sub: 'כל משימה מעלה את הדירוג ופותחת דלתות' },
+  ];
   return (
     <div dir="rtl" style={{ height: '100%', background: '#0b0c10', display: 'flex', flexDirection: 'column', padding: PAD }}>
-      <div style={{ textAlign: 'center', marginBottom: 10 }}>
+      <div style={{ textAlign: 'center', marginBottom: 6 }}>
         <Chip gold>What Makes Us Different</Chip>
       </div>
-      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25, textAlign: 'center' }}>
+      <h2 style={{ fontSize: FS.h2sm, fontWeight: 900, color: 'white', margin: '10px 0 14px', lineHeight: 1.25, textAlign: 'center' }}>
         הלקוח <span style={{ color: GOLD }}>קובע את המחיר.</span> עובדים מתחרים.
       </h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
-        <div style={{ background: '#1c1d22', borderRadius: 16, padding: '16px 14px', border: '1px solid rgba(96,165,250,0.25)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: FS.small, fontWeight: 900, color: '#60a5fa', letterSpacing: 0.5, marginBottom: 10, textAlign: 'center' }}>מפרסם המשימה</div>
-          {[
-            'קובע את המחיר בעצמו',
-            'עובדים מתחרים על המשימה',
-            'בוחר לפי דירוגים וביקורות',
-            'מוגן מהונאות וביטולים',
-          ].map(text => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa', flexShrink: 0 }} />
-              <span>{text}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, flex: 1, minHeight: 0 }}>
+        {/* Publisher */}
+        <div style={{ background: 'linear-gradient(160deg, rgba(96,165,250,0.1), rgba(28,29,34,0.95))', borderRadius: 18, padding: '18px 16px', border: '1px solid rgba(96,165,250,0.3)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottom: '1px solid rgba(96,165,250,0.15)' }}>
+            <div style={{ width: 'clamp(28px, 3vw, 36px)', height: 'clamp(28px, 3vw, 36px)', borderRadius: 10, background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'clamp(14px, 1.6vw, 18px)', fontWeight: 900, color: '#60a5fa', flexShrink: 0 }}>1</div>
+            <div style={{ fontSize: 'clamp(13px, 1.5vw, 17px)', fontWeight: 900, color: '#60a5fa', letterSpacing: 0.3 }}>מפרסם המשימה</div>
+          </div>
+          {publisherBenefits.map((b, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ fontSize: 'clamp(13px, 1.5vw, 16px)', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{b.title}</div>
+              <div style={{ fontSize: 'clamp(11px, 1.3vw, 14px)', fontWeight: 500, color: 'rgba(255,255,255,0.5)', lineHeight: 1.35 }}>{b.sub}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: '#1c1d22', borderRadius: 16, padding: '16px 14px', border: '1px solid rgba(251,191,36,0.25)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: FS.small, fontWeight: 900, color: GOLD, letterSpacing: 0.5, marginBottom: 10, textAlign: 'center' }}>עובד</div>
-          {[
-            'פותח אפליקציה ומקבל עבודה',
-            'משימות מותאמות אליו אישית',
-            'הכנסה מיידית ויומית',
-            'בונה מוניטין ודירוג',
-          ].map(text => (
-            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: FS.bodySm, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
-              <span>{text}</span>
+        {/* Worker */}
+        <div style={{ background: 'linear-gradient(160deg, rgba(251,191,36,0.1), rgba(28,29,34,0.95))', borderRadius: 18, padding: '18px 16px', border: '1px solid rgba(251,191,36,0.3)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottom: '1px solid rgba(251,191,36,0.15)' }}>
+            <div style={{ width: 'clamp(28px, 3vw, 36px)', height: 'clamp(28px, 3vw, 36px)', borderRadius: 10, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'clamp(14px, 1.6vw, 18px)', fontWeight: 900, color: GOLD, flexShrink: 0 }}>2</div>
+            <div style={{ fontSize: 'clamp(13px, 1.5vw, 17px)', fontWeight: 900, color: GOLD, letterSpacing: 0.3 }}>העובד</div>
+          </div>
+          {workerBenefits.map((b, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ fontSize: 'clamp(13px, 1.5vw, 16px)', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>{b.title}</div>
+              <div style={{ fontSize: 'clamp(11px, 1.3vw, 14px)', fontWeight: 500, color: 'rgba(255,255,255,0.5)', lineHeight: 1.35 }}>{b.sub}</div>
             </div>
           ))}
         </div>
