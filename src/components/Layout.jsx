@@ -173,6 +173,13 @@ export default function Layout() {
     queryClient.setQueryData(['activeWorkerTask', me.id], (old) => old !== undefined ? old : takenTask);
   }, [workerTasks, me?.id]);
 
+  // Seed activeClientTask cache on load — ensures TaskDetail banner works from first render
+  useEffect(() => {
+    if (!me?.id || myPublishedTasks.length === 0) return;
+    const takenTask = myPublishedTasks.find((t) => t.status === 'TAKEN') || null;
+    queryClient.setQueryData(['activeClientTask', me.id], (old) => old !== undefined ? old : takenTask);
+  }, [myPublishedTasks, me?.id]);
+
   const { data: myPublishedTasks = [] } = useQuery({
     queryKey: ['myPublishedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me?.id }, '-created_date', 50),

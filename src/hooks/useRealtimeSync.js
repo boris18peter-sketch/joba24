@@ -75,28 +75,40 @@ export default function useRealtimeSync({
       updateListCache('myTasks');
       updateListCache('tasks');
 
-      // activeWorkerTask
+      // activeWorkerTask — synced across all pages via shared cache
       queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
           if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
           return { ...old, ...cleanPatch };
         }
-        if (event.type === 'update' && !old && cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
+        // Not tracking yet — try to populate full task data from list caches
+        if (event.type === 'update' && !old && cleanPatch.status === 'TAKEN' && cleanPatch.worker_id === me.id) {
+          const allTasks = queryClient.getQueryData(['allTasks']) || [];
+          const fullTask = allTasks.find(t => t.id === event.id);
+          if (fullTask) return { ...fullTask, ...cleanPatch };
+          const wTasks = queryClient.getQueryData(['workerTasksLayout', me.id]) || [];
+          const wTask = wTasks.find(t => t.id === event.id);
+          if (wTask) return { ...wTask, ...cleanPatch };
+          // Fallback: partial patch — refetch for complete data
+          setTimeout(() => queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] }), 200);
           return cleanPatch;
         }
         return old;
       });
 
-      // activeClientTask
+      // activeClientTask — synced across all pages via shared cache
       queryClient.setQueryData(['activeClientTask', me.id], (old) => {
         if (event.type === 'delete') return old?.id === event.id ? null : old;
         if (event.type === 'update' && old?.id === event.id) {
           if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) return null;
           return { ...old, ...cleanPatch };
         }
-        if (event.type === 'update' && !old && cleanPatch.client_id === me.id && cleanPatch.status === 'TAKEN') {
-          return cleanPatch;
+        // Not tracking yet — populate from myPublishedTasks cache (full data, just updated above)
+        if (event.type === 'update' && !old && cleanPatch.status === 'TAKEN') {
+          const pubTasks = queryClient.getQueryData(['myPublishedTasks', me.id]) || [];
+          const fullTask = pubTasks.find(t => t.id === event.id);
+          if (fullTask && fullTask.client_id === me.id) return fullTask;
         }
         return old;
       });

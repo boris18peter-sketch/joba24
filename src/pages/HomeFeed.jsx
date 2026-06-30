@@ -214,7 +214,12 @@ export default function HomeFeed() {
             return next;
           }
           if (cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
-            console.log('[HomeFeed WS] → new TAKEN task assigned');
+            // Try to get full task data from allTasks cache for complete banner
+            const allTasksData = queryClient.getQueryData(['allTasks']) || [];
+            const fullTask = allTasksData.find(t => t.id === event.id);
+            if (fullTask) return { ...fullTask, ...cleanPatch };
+            // Fallback: partial patch — refetch for complete data
+            setTimeout(() => queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] }), 200);
             return cleanPatch;
           }
           return old;
@@ -228,11 +233,19 @@ export default function HomeFeed() {
 
       // 4. Keep activeClientTask cache in sync so ActiveTaskBanner always reflects live state
       if (event.type === 'update') {
+        const cleanPatchCT = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
         queryClient.setQueryData(['activeClientTask', me.id], (old) => {
-          if (!old || old.id !== event.id) return old;
-          const cleanPatch = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
-          if (cleanPatch.status && ['CANCELLED', 'COMPLETED', 'EXPIRED'].includes(cleanPatch.status)) return null;
-          return { ...old, ...cleanPatch };
+          if (old?.id === event.id) {
+            if (cleanPatchCT.status && ['CANCELLED', 'COMPLETED', 'EXPIRED'].includes(cleanPatchCT.status)) return null;
+            return { ...old, ...cleanPatchCT };
+          }
+          // Not tracking — try to populate from myTasks cache (just updated above)
+          if (!old && cleanPatchCT.status === 'TAKEN') {
+            const liveMyTasks = queryClient.getQueryData(['myTasks', me.id]) || [];
+            const fullTask = liveMyTasks.find(t => t.id === event.id);
+            if (fullTask && fullTask.client_id === me.id) return fullTask;
+          }
+          return old;
         });
       }
       if (event.type === 'delete') {
