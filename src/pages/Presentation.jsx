@@ -87,7 +87,7 @@ function Slide1() {
   return (
     <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: PAD, position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <img src={LOGO} alt="" style={{ position: 'absolute', top: 'clamp(24px, 3vw, 36px)', right: 'clamp(18px, 3vw, 36px)', width: 'clamp(40px, 5vw, 52px)', height: 'clamp(40px, 5vw, 52px)', borderRadius: 14, objectFit: 'cover', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }} />
+      <div style={{ position: 'absolute', top: 'clamp(24px, 3vw, 36px)', right: 'clamp(18px, 3vw, 36px)', fontSize: 'clamp(14px, 2vw, 20px)', fontWeight: 700, color: 'white', letterSpacing: 1 }}>בס״ד</div>
 
       <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 'clamp(64px, 8vw, 90px)', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 40px)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)' }} />
 
@@ -183,14 +183,14 @@ function Slide4() {
       <div style={{ flex: 1, display: 'flex', gap: 12, minHeight: 0, marginBottom: 12 }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 0 }}>
           <div style={{ fontSize: FS.small, fontWeight: 800, color: '#60a5fa', textAlign: 'center', letterSpacing: 0.5 }}>מפרסם המשימה</div>
-          <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden', border: '2px solid rgba(96,165,250,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)', background: '#000', minHeight: 0 }}>
-            <video src={DEMO_CLIENT_VIDEO} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', background: '#000', minHeight: 0 }}>
+            <video src={DEMO_CLIENT_VIDEO} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minHeight: 0 }}>
           <div style={{ fontSize: FS.small, fontWeight: 800, color: GOLD, textAlign: 'center', letterSpacing: 0.5 }}>העובד</div>
-          <div style={{ flex: 1, borderRadius: 16, overflow: 'hidden', border: '2px solid rgba(251,191,36,0.25)', boxShadow: '0 12px 40px rgba(0,0,0,0.5)', background: '#000', minHeight: 0 }}>
-            <video src={DEMO_WORKER_VIDEO} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ flex: 1, borderRadius: 12, overflow: 'hidden', background: '#000', minHeight: 0 }}>
+            <video src={DEMO_WORKER_VIDEO} autoPlay muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
         </div>
       </div>
@@ -483,12 +483,16 @@ function Slide10() {
       </div>
 
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: GOLD, flexShrink: 0 }} />
-          <span style={{ fontSize: FS.bodySm, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>קרדיטים חינם על הרשמה + מילוי פרטים</span>
+        <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 12, padding: '12px 16px', border: '1px solid rgba(74,222,128,0.2)' }}>
+          <div style={{ fontSize: FS.bodySm, fontWeight: 700, color: 'rgba(255,255,255,0.9)', lineHeight: 1.5 }}>
+            <strong style={{ color: '#4ade80' }}>5+ סוכנים צעירים</strong> מוכנים לצרף ידנית בעלי מקצוע ועובדים באזור המרכז.
+          </div>
+          <div style={{ fontSize: FS.bodySm, fontWeight: 700, color: 'rgba(255,255,255,0.9)', lineHeight: 1.5, marginTop: 4 }}>
+            דרך סוכן 1 כבר <strong style={{ color: GOLD }}>200+ בעלי מקצוע</strong> בתל אביב והמרכז מוכנים להוריד את האפליקציה.
+          </div>
         </div>
-        <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.25), rgba(251,191,36,0.12))', borderRadius: 12, padding: '10px 14px', border: '1px solid rgba(251,191,36,0.2)', textAlign: 'center' }}>
-          <div style={{ fontSize: FS.bodySm, fontWeight: 800, color: 'white' }}>מסה ראשונית → תאוצה → בלי חסם</div>
+        <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.25), rgba(251,191,36,0.12))', borderRadius: 12, padding: '10px 16px', border: '1px solid rgba(251,191,36,0.2)', textAlign: 'center' }}>
+          <div style={{ fontSize: FS.body, fontWeight: 900, color: 'white' }}>מי לא רוצה עוד עבודה?</div>
         </div>
       </div>
     </div>
@@ -499,26 +503,68 @@ function Slide10() {
 // SLIDE 11 — Go To Market Phase 2
 // ═══════════════════════════════════════════════════════════════════
 function Slide11() {
+  const cities = [
+    { name: 'תל אביב', x: 50, y: 50, isCenter: true },
+    { name: 'רמת גן', x: 67, y: 54 },
+    { name: 'גבעתיים', x: 68, y: 63 },
+    { name: 'הרצליה', x: 40, y: 28 },
+    { name: 'פ"ת', x: 25, y: 47 },
+  ];
   return (
     <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: PAD }}>
       <Chip gold>Go To Market · Phase 2</Chip>
-      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 16px', lineHeight: 1.25 }}>
-        הולכים רק על<br /><span style={{ color: GOLD }}>אזור אחד.</span>
+      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 14px', lineHeight: 1.25 }}>
+        מתחילים ב<span style={{ color: GOLD }}>תל אביב</span><br />ומתרחבים למרכז.
       </h2>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-        {['תל אביב', 'רמת גן', 'גבעתיים', 'הרצליה', 'פ"ת'].map(city => (
-          <span key={city} style={{ fontSize: FS.bodySm, fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.25)', borderRadius: 20, padding: '8px 16px' }}>{city}</span>
+      <div style={{ flex: 1, position: 'relative', minHeight: 0, background: 'radial-gradient(ellipse at center, rgba(26,111,212,0.1) 0%, transparent 70%)', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <style>{`
+          @keyframes bubbleExpand {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(18); opacity: 0; }
+          }
+          @keyframes cityAppear {
+            0%, 35% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            55%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          }
+        `}</style>
+
+        {/* Expanding rings from Tel Aviv */}
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            position: 'absolute', left: '50%', top: '50%',
+            width: 30, height: 30, borderRadius: '50%',
+            border: `2px solid ${GOLD}`,
+            animation: `bubbleExpand 3.5s ease-out infinite ${i * 1.15}s`,
+          }} />
+        ))}
+
+        {/* City dots and labels */}
+        {cities.map((city, i) => (
+          <div key={city.name} style={{
+            position: 'absolute', left: `${city.x}%`, top: `${city.y}%`,
+            animation: city.isCenter ? 'none' : `cityAppear 3.5s ease-out infinite ${i * 0.6}s`,
+            opacity: city.isCenter ? 1 : undefined,
+            zIndex: city.isCenter ? 3 : 2,
+          }}>
+            <div style={{
+              width: city.isCenter ? 18 : 11, height: city.isCenter ? 18 : 11,
+              borderRadius: '50%',
+              background: city.isCenter ? GOLD : '#60a5fa',
+              boxShadow: city.isCenter ? `0 0 20px ${GOLD}` : '0 0 8px rgba(96,165,250,0.4)',
+              margin: '0 auto',
+            }} />
+            <div style={{
+              fontSize: 'clamp(11px, 1.3vw, 14px)', fontWeight: 800,
+              color: city.isCenter ? GOLD : 'rgba(255,255,255,0.7)',
+              textAlign: 'center', marginTop: 5, whiteSpace: 'nowrap',
+            }}>{city.name}</div>
+          </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-        <Row text="כל עובד כבר מוכן" accent="rgba(74,222,128,0.12)" />
-        <Row text="מתחילים לפרסם — מקבלים בקשות תוך דקות" accent="rgba(251,191,36,0.12)" />
-      </div>
-
-      <div style={{ background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(74,222,128,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'center' }}>
-        לא צריך לבנות Marketplace משני הצדדים.<br />
+      <div style={{ marginTop: 12, background: 'rgba(74,222,128,0.08)', borderRadius: 14, padding: '14px 18px', border: '1px solid rgba(74,222,128,0.2)', fontSize: FS.bodySm, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, textAlign: 'center' }}>
+        בועה אחת שמתנפחת — מתל אביב לשאר הערים.<br />
         <strong style={{ color: '#4ade80' }}>צד אחד כבר מחכה.</strong>
       </div>
     </div>
