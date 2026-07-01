@@ -89,34 +89,7 @@ function Slide1() {
       <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', top: 'clamp(24px, 3vw, 36px)', right: 'clamp(18px, 3vw, 36px)', fontSize: 'clamp(14px, 2vw, 20px)', fontWeight: 700, color: 'white', letterSpacing: 1 }}>בס״ד</div>
 
-      {/* Custom banner — large, readable, on-brand */}
-      <div style={{
-        position: 'absolute', top: 'clamp(58px, 7.5vw, 80px)', left: '50%', transform: 'translateX(-50%)',
-        width: 'calc(100% - 24px)', borderRadius: 20, overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 45%, #2563eb 100%)',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.12)',
-        padding: 'clamp(22px, 3.5vw, 38px) clamp(16px, 3vw, 30px)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(6px, 1vw, 12px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 'clamp(42px, 6.5vw, 62px)', height: 'clamp(42px, 6.5vw, 62px)', borderRadius: 16,
-            background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 'clamp(24px, 3.8vw, 36px)', fontWeight: 900, color: GOLD, flexShrink: 0,
-            textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-          }}>J</div>
-          <div style={{ fontSize: 'clamp(30px, 5.5vw, 48px)', fontWeight: 900, color: 'white', letterSpacing: -1.5, textShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>
-            Joba<span style={{ color: GOLD }}>24</span>
-          </div>
-        </div>
-        <div dir="ltr" style={{ fontSize: 'clamp(15px, 2.3vw, 22px)', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: 0.5 }}>
-          Need help? Open Joba24.
-        </div>
-        <div style={{ fontSize: 'clamp(13px, 1.9vw, 17px)', fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>
-          מצא עובד או עבודה תוך דקות
-        </div>
-      </div>
+      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 'clamp(50px, 6.5vw, 70px)', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 12px)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)' }} />
 
       <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
         <div dir="ltr" style={{ fontSize: 'clamp(34px, 7vw, 54px)', fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95, textAlign: 'left' }}>
@@ -281,38 +254,64 @@ function SlidePower() {
     'קניות לשבת', 'הקפצת מסמך', 'תיקון חשמל', 'ניקיון חלונות',
     'הרכבת ארון', 'טיפול בכלב', 'מעבר דירה', 'צביעת קיר',
     'סתימת צנרת', 'תליית וילון', 'פינוי פסולת', 'השקיית גינה',
+    'הרכבת מיטה', 'תיקון דוד', 'גינון', 'סידור מחסן',
   ];
+  const bubbles = examples.map((ex, i) => {
+    const left = (i * 37 + 5) % 88;
+    const size = 0.8 + (i % 3) * 0.25;
+    const duration = 9 + (i % 4) * 3;
+    const delay = -(i * 2.1);
+    const c = i % 3;
+    return { ex, left, size, duration, delay, c };
+  });
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', padding: PAD, alignItems: 'center', textAlign: 'center' }}>
-      <Chip gold>The Power</Chip>
-      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 6px', lineHeight: 1.2, textAlign: 'center' }}>
-        כל דבר שעולה לך לראש.<br />
-        <span style={{ color: GOLD }}>מישהו יבוא תוך דקות.</span>
-      </h2>
-      <div style={{ fontSize: FS.body, color: 'rgba(255,255,255,0.5)', marginBottom: 'clamp(14px, 2vw, 20px)', fontWeight: 600 }}>
-        לא משנה מה — העזרה מגיעה אליך
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 50%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', padding: PAD, alignItems: 'center', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <style>{`
+        @keyframes floatUp {
+          0% { transform: translateY(110%) scale(0.5); opacity: 0; }
+          10% { opacity: 0.8; }
+          90% { opacity: 0.4; }
+          100% { transform: translateY(-520px) scale(1); opacity: 0; }
+        }
+      `}</style>
+      {/* Floating bubbles */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+        {bubbles.map((b, i) => (
+          <div key={i} style={{
+            position: 'absolute', bottom: -40, left: `${b.left}%`,
+            padding: `${Math.round(6 * b.size)}px ${Math.round(14 * b.size)}px`, borderRadius: 99,
+            background: b.c === 0 ? 'rgba(251,191,36,0.12)' : b.c === 1 ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${b.c === 0 ? 'rgba(251,191,36,0.3)' : b.c === 1 ? 'rgba(96,165,250,0.3)' : 'rgba(255,255,255,0.12)'}`,
+            fontSize: `${Math.round(14 * b.size)}px`, fontWeight: 700,
+            color: b.c === 0 ? GOLD : b.c === 1 ? '#60a5fa' : 'rgba(255,255,255,0.7)',
+            whiteSpace: 'nowrap',
+            animation: `floatUp ${b.duration}s linear infinite`,
+            animationDelay: `${b.delay}s`,
+          }}>{b.ex}</div>
+        ))}
       </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, justifyContent: 'center', maxWidth: '92%', flex: 1, alignContent: 'center', marginBottom: 'clamp(14px, 2vw, 20px)' }}>
-        {examples.map((ex, i) => {
-          const c = i % 3;
-          return (
-            <div key={i} style={{
-              padding: '6px 13px', borderRadius: 99,
-              background: c === 0 ? 'rgba(251,191,36,0.1)' : c === 1 ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${c === 0 ? 'rgba(251,191,36,0.25)' : c === 1 ? 'rgba(96,165,250,0.25)' : 'rgba(255,255,255,0.1)'}`,
-              fontSize: FS.bodySm, fontWeight: 700,
-              color: c === 0 ? GOLD : c === 1 ? '#60a5fa' : 'rgba(255,255,255,0.7)',
-            }}>{ex}</div>
-          );
-        })}
-      </div>
-
-      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.25), rgba(251,191,36,0.12))', borderRadius: 16, padding: '14px 20px', border: '1px solid rgba(251,191,36,0.2)', width: '100%' }}>
-        <div style={{ fontSize: FS.body, fontWeight: 800, color: 'white', lineHeight: 1.5, textAlign: 'center' }}>
-          פרסם → קבל בקשות → אשר → <span style={{ color: GOLD }}>מישהו בדרך</span>
+      {/* Content overlay */}
+      <div style={{ position: 'relative', zIndex: 2, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Chip gold>The Power</Chip>
+        <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 6px', lineHeight: 1.2, textAlign: 'center', textShadow: '0 4px 20px rgba(0,0,0,0.8)' }}>
+          כל דבר שעולה לך לראש.<br />
+          <span style={{ color: GOLD }}>מישהו יבוא תוך דקות.</span>
+        </h2>
+        <div style={{ fontSize: FS.body, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>
+          לא משנה מה — העזרה מגיעה אליך
         </div>
-        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginTop: 5, fontWeight: 600, textAlign: 'center' }}>
+      </div>
+      <div style={{ flex: 1 }} />
+      {/* Bottom flow with downward arrows */}
+      <div style={{ position: 'relative', zIndex: 2, width: '100%', background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(251,191,36,0.15))', borderRadius: 16, padding: '14px 20px', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+        {['פרסם', 'קבל בקשות', 'אשר'].map((step) => (
+          <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ fontSize: FS.body, fontWeight: 800, color: 'white' }}>{step}</div>
+            <div style={{ color: GOLD, fontSize: 16, lineHeight: 1 }}>↓</div>
+          </div>
+        ))}
+        <div style={{ fontSize: FS.body, fontWeight: 900, color: GOLD }}>מישהו בדרך</div>
+        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', marginTop: 6, fontWeight: 600, textAlign: 'center' }}>
           הכל תוך דקות. ממש כל דבר.
         </div>
       </div>
@@ -910,40 +909,28 @@ function Slide15() {
 function SlideQR() {
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https%3A%2F%2Fjoba24.com&bgcolor=ffffff&color=050d1f&margin=0';
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 0%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: PAD, textAlign: 'center' }}>
-      <Chip gold>התחל עכשיו</Chip>
-      <h2 style={{ fontSize: FS.h2, fontWeight: 900, color: 'white', margin: '12px 0 6px', lineHeight: 1.2, textAlign: 'center' }}>
-        מוכן לכבוש<br />
-        <span style={{ color: GOLD }}>את השוק?</span>
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 30%, #0d2e6e 0%, ${DARK_BG} 60%)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: PAD, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      {/* Glow effect */}
+      <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      {/* Headline */}
+      <h2 style={{ fontSize: 'clamp(36px, 6vw, 56px)', fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, textAlign: 'center', letterSpacing: -1.5, textShadow: '0 4px 30px rgba(0,0,0,0.5)' }}>
+        יאללה<br /><span style={{ color: GOLD }}>לעבודה.</span>
       </h2>
-      <div style={{ fontSize: FS.body, color: 'rgba(255,255,255,0.5)', marginBottom: 'clamp(18px, 2.5vw, 26px)', fontWeight: 600 }}>
-        סרוק · הורד · התחל להרוויח
+      {/* Motivation message */}
+      <div style={{ fontSize: 'clamp(15px, 2.2vw, 21px)', fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: 'clamp(16px, 2.5vw, 24px) 0', textAlign: 'center', lineHeight: 1.4, maxWidth: '88%' }}>
+        Joba24 תהיה ה<span style={{ color: GOLD, fontWeight: 900 }}>Uber</span> של המשימות והעזרות.
       </div>
-
+      {/* QR Code */}
       <div style={{
         background: 'white', borderRadius: 24, padding: 'clamp(14px, 2vw, 22px)',
-        boxShadow: '0 0 50px rgba(251,191,36,0.35), 0 8px 32px rgba(0,0,0,0.4)',
+        boxShadow: '0 0 60px rgba(251,191,36,0.4), 0 8px 32px rgba(0,0,0,0.5)',
+        border: '2px solid rgba(251,191,36,0.2)',
       }}>
-        <img src={qrUrl} alt="QR — Joba24" style={{ width: 'clamp(170px, 24vw, 260px)', height: 'clamp(170px, 24vw, 260px)', display: 'block' }} />
+        <img src={qrUrl} alt="QR — Joba24" style={{ width: 'clamp(160px, 22vw, 230px)', height: 'clamp(160px, 22vw, 230px)', display: 'block' }} />
       </div>
-
-      <div style={{ marginTop: 'clamp(16px, 2.5vw, 24px)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
-        <div style={{ fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 900, color: GOLD, letterSpacing: -0.5 }}>
-          joba24.com
-        </div>
-        <div style={{ fontSize: FS.bodySm, color: 'rgba(255,255,255,0.5)', fontWeight: 600, maxWidth: '85%', lineHeight: 1.5 }}>
-          הצטרף עכשיו · קבל עבודות מיידיות · בנה מוניטין
-        </div>
-      </div>
-
-      <div style={{
-        marginTop: 'clamp(18px, 2.5vw, 28px)',
-        background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(251,191,36,0.15))',
-        borderRadius: 16, padding: '14px 28px', border: '1px solid rgba(251,191,36,0.3)',
-      }}>
-        <div style={{ fontSize: FS.body, fontWeight: 900, color: 'white' }}>
-          העתיד של העבודה המקומית מתחיל כאן.
-        </div>
+      {/* URL */}
+      <div style={{ marginTop: 'clamp(14px, 2vw, 20px)', fontSize: 'clamp(16px, 2.2vw, 22px)', fontWeight: 900, color: GOLD, letterSpacing: -0.5 }}>
+        joba24.com
       </div>
     </div>
   );
