@@ -189,12 +189,12 @@ export default function SideMenu({ open, onClose }) {
           <div style={{ marginBottom: 12 }}>
             <LanguageSwitcher onClose={onClose} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 24, paddingTop: 2 }}>
-            <Link to="/faq" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>{t('nav_faq')}</Link>
-            <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 12 }}>|</span>
-            <Link to="/terms" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>{t('nav_terms')}</Link>
-            <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 12 }}>|</span>
-            <Link to="/privacy" onClick={onClose} style={{ fontSize: 12, color: '#93c5fd', textDecoration: 'none', fontWeight: 600 }}>פרטיות</Link>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, paddingTop: 2, flexWrap: 'nowrap' }}>
+            <Link to="/faq" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('nav_faq')}</Link>
+            <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 10 }}>|</span>
+            <Link to="/terms" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('nav_terms')}</Link>
+            <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 10 }}>|</span>
+            <Link to="/privacy" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>פרטיות</Link>
           </div>
         </div>
       </div>
