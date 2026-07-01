@@ -1,6 +1,8 @@
 import PageHeader from '@/components/PageHeader';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Terms() {
+  const { isAuthenticated } = useAuth();
   const sections = [
     {
       title: 'מהות הפלטפורמה',
@@ -313,7 +315,7 @@ Joba24 אינה מבצעת בדיקות רקע מלאות לכל המשתמשי�
 
   return (
     <div style={{ background: '#f8f9fc', minHeight: '100vh' }} dir="rtl">
-      <PageHeader title="תנאי שימוש" />
+      <PageHeader title="תנאי שימוש" backTo={!isAuthenticated ? '/join' : undefined} />
       
       {/* Intro Section */}
       <div style={{ padding: '20px 16px' }}>

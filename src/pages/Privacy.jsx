@@ -1,6 +1,8 @@
 import PageHeader from '@/components/PageHeader';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Privacy() {
+  const { isAuthenticated } = useAuth();
   const sections = [
     {
       title: 'מבוא',
@@ -178,7 +180,7 @@ export default function Privacy() {
 
   return (
     <div style={{ background: '#f8f9fc', minHeight: '100vh' }} dir="rtl">
-      <PageHeader title="מדיניות פרטיות" />
+      <PageHeader title="מדיניות פרטיות" backTo={!isAuthenticated ? '/join' : undefined} />
       
       {/* Intro Section */}
       <div style={{ padding: '20px 16px' }}>

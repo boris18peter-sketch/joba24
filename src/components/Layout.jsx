@@ -54,6 +54,9 @@ import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
 
+// Pages accessible without authentication — render with minimal layout (no nav/header)
+const PUBLIC_PAGES = ['/terms', '/privacy'];
+
 export default function Layout() {
   const { t } = useLanguage();
   const location = useLocation();
@@ -338,14 +341,25 @@ export default function Layout() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    const isPublicPage = PUBLIC_PAGES.includes(location.pathname);
+    if (!isAuthenticated && !isPublicPage) {
       navigate('/join');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location.pathname]);
 
   // Pre-launch gate: show waiting page for unapproved users (admins and agents always pass)
   // Placed AFTER all hooks to comply with Rules of Hooks
   if (!isAuthenticated) {
+    // Public pages: render with minimal layout (no header, no bottom nav, no side menu)
+    if (PUBLIC_PAGES.includes(location.pathname)) {
+      return (
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
+          <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+            <Outlet />
+          </div>
+        </div>
+      );
+    }
     return <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
   }
 
