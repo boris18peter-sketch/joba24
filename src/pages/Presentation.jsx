@@ -87,7 +87,7 @@ function Slide1() {
   return (
     <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', top: 'clamp(18px, 2.5vw, 32px)', right: 'clamp(16px, 2.5vw, 32px)', fontSize: 'clamp(13px, 1.8vw, 18px)', fontWeight: 700, color: 'white', letterSpacing: 1, zIndex: 10 }}>בס״ד</div>
-      <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d0b1169e1_image7.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+      <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/2e9ef4b78_Gemini_Generated_Image_d63lhid63lhid63l.png" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
     </div>
   );
 }
