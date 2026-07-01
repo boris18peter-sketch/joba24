@@ -45,6 +45,7 @@ const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
 const QADashboard = lazy(() => import('@/pages/QADashboard'));
 const Terms = lazy(() => import('@/pages/Terms'));
+const Privacy = lazy(() => import('@/pages/Privacy'));
 const ReferralRedirect = lazy(() => import('@/pages/ReferralRedirect'));
 
 function ScrollToTop() {
@@ -152,6 +153,7 @@ const AuthenticatedApp = () => {
               <Route path="/earnings" element={<EarningsDashboard />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/create-task" element={<CreateTask />} />
               <Route path="/daily-goal" element={<DailyGoal />} />
               <Route path="/public-profile" element={<PublicProfile />} />
