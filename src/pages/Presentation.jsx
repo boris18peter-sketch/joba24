@@ -918,6 +918,104 @@ function SlideQR() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SLIDE — Revenue Engine (Every Worker = Monthly Revenue)
+// ═══════════════════════════════════════════════════════════════════
+function SlideRevenueEngine() {
+  const flow = [
+    { icon: '👷', text: 'עובד מצטרף' },
+    { icon: '📲', text: 'פותח כל בוקר' },
+    { icon: '📍', text: 'מקבל משימות' },
+    { icon: '✅', text: 'מבצע' },
+    { icon: '⭐', text: 'בונה מוניטין' },
+    { icon: '💰', text: 'מרוויח חודשית' },
+  ];
+  const stats = [
+    { icon: '🔧', role: 'אינסטלטור', amount: '₪30,000' },
+    { icon: '⚡', role: 'חשמלאי', amount: '₪25,000' },
+    { icon: '🚛', role: 'מוביל', amount: '₪35,000' },
+    { icon: '🧹', role: 'מנקה', amount: '₪18,000' },
+  ];
+  const prog = [
+    { count: '1', label: 'עובד', sub: 'עסקאות חודשיות' },
+    { count: '100', label: 'עובדים', sub: 'מאות עבודות/חודש' },
+    { count: '1K', label: 'עובדים', sub: 'מיליוני ₪/שנה' },
+    { count: '10K', label: 'עובדים', sub: 'שוק עבודה ארצי' },
+  ];
+  return (
+    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 50% 25%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', padding: 'clamp(14px, 2.2vw, 26px) clamp(12px, 2vw, 22px)', overflow: 'hidden' }}>
+      <style>{`@keyframes arrowPulse { 0%,100%{opacity:0.4;transform:translateX(0)} 50%{opacity:1;transform:translateX(-3px)} }`}</style>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: 10 }}>
+        <Chip gold>Revenue Engine</Chip>
+        <h2 style={{ fontSize: 'clamp(16px, 2.2vw, 24px)', fontWeight: 900, color: 'white', margin: '8px 0 4px', lineHeight: 1.2 }}>
+          כל עובד הוא <span style={{ color: GOLD }}>מנוע הכנסה חודשי</span>
+        </h2>
+        <div style={{ fontSize: 'clamp(10px, 1.3vw, 13px)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, maxWidth: '92%', margin: '0 auto', fontWeight: 600 }}>
+          לא לעזור למצוא עבודה אחת — אלא להיות הפלטפורמה שבה אנשים מתפרנסים
+        </div>
+      </div>
+
+      {/* Section 1: Worker Flow */}
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, marginBottom: 10, padding: '8px 6px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+        {flow.map((step, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1 }}>
+              <div style={{ fontSize: 'clamp(13px, 1.6vw, 18px)' }}>{step.icon}</div>
+              <div style={{ fontSize: 'clamp(7px, 0.85vw, 9px)', fontWeight: 800, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 1.1 }}>{step.text}</div>
+            </div>
+            {i < flow.length - 1 && (
+              <div style={{ color: GOLD, fontSize: 'clamp(8px, 1vw, 11px)', fontWeight: 900, animation: `arrowPulse 1.4s ease-in-out infinite ${i * 0.15}s` }}>←</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Section 2: Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+        {stats.map((s, i) => (
+          <div key={i} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '10px 8px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', transition: 'transform 0.2s' }}>
+            <div style={{ fontSize: 'clamp(15px, 1.8vw, 20px)' }}>{s.icon}</div>
+            <div style={{ fontSize: 'clamp(10px, 1.2vw, 13px)', fontWeight: 700, color: 'rgba(255,255,255,0.65)', marginTop: 3 }}>{s.role}</div>
+            <div style={{ fontSize: 'clamp(15px, 2.2vw, 22px)', fontWeight: 900, color: GOLD, marginTop: 2, letterSpacing: -0.5 }}>₪{s.amount.replace('₪','')}</div>
+            <div style={{ fontSize: 'clamp(7px, 0.85vw, 9px)', color: 'rgba(255,255,255,0.35)', marginTop: 2, fontWeight: 600 }}>היקף עבודה חודשי</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 'clamp(8px, 1vw, 11px)', color: 'rgba(255,255,255,0.35)', textAlign: 'center', marginBottom: 10, fontWeight: 500, lineHeight: 1.3 }}>
+        דוגמאות לפוטנציאל ההשתכרות של בעלי מקצוע בפלטפורמה · לא נתוני שוק
+      </div>
+
+      {/* Section 3: Progression */}
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 3, marginBottom: 10 }}>
+        {prog.map((p, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+            <div style={{ flex: 1, textAlign: 'center', background: i === prog.length - 1 ? 'rgba(251,191,36,0.1)' : 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '7px 3px', border: i === prog.length - 1 ? '1px solid rgba(251,191,36,0.35)' : '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: 'clamp(14px, 2vw, 20px)', fontWeight: 900, color: i === prog.length - 1 ? GOLD : '#60a5fa', letterSpacing: -0.5 }}>{p.count}</div>
+              <div style={{ fontSize: 'clamp(7px, 0.85vw, 10px)', fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>{p.label}</div>
+              <div style={{ fontSize: 'clamp(6px, 0.75vw, 8px)', color: 'rgba(255,255,255,0.4)', marginTop: 2, lineHeight: 1.1, fontWeight: 600 }}>{p.sub}</div>
+            </div>
+            {i < prog.length - 1 && (
+              <div style={{ color: GOLD, fontSize: 'clamp(7px, 0.9vw, 10px)', fontWeight: 900, animation: `arrowPulse 1.4s ease-in-out infinite ${i * 0.2}s` }}>←</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Closing card */}
+      <div style={{ background: 'linear-gradient(135deg, rgba(26,111,212,0.3), rgba(251,191,36,0.15))', borderRadius: 16, padding: '12px 16px', border: '1px solid rgba(251,191,36,0.3)', textAlign: 'center', marginTop: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+        <div style={{ fontSize: 'clamp(18px, 2.2vw, 26px)', marginBottom: 4 }}>🚀</div>
+        <div style={{ fontSize: 'clamp(11px, 1.4vw, 15px)', fontWeight: 800, color: 'white', lineHeight: 1.3 }}>
+          אנחנו לא בונים לוח עבודות נוסף.
+        </div>
+        <div style={{ fontSize: 'clamp(11px, 1.4vw, 15px)', fontWeight: 900, color: GOLD, lineHeight: 1.3, marginTop: 3 }}>
+          אנחנו בונים את מערכת ההפעלה לעבודה מקומית.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SLIDE REGISTRY
 // ═══════════════════════════════════════════════════════════════════
 const SLIDES = [
@@ -940,6 +1038,7 @@ const SLIDES = [
   { id: 'network',     component: <Slide12 /> },
   { id: 'integrations', component: <SlideIntegrations /> },
   { id: 'traction',    component: <Slide13 /> },
+  { id: 'revenue-engine', component: <SlideRevenueEngine /> },
   { id: 'vision',      component: <Slide14 /> },
   { id: 'why-now',     component: <Slide15 /> },
   { id: 'qr',           component: <SlideQR /> },
