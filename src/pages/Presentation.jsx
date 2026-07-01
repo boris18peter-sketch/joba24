@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PhoneMockup from '@/components/presentation/PhoneMockup';
+import { HardHat, ClipboardCheck, Zap, Users, Shield, MessageCircle } from 'lucide-react';
 
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 const BANNER = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/05e2e227e_2026-06-25-184231.png';
@@ -84,10 +85,70 @@ function StepBadge({ num, label, active }) {
 // SLIDE 1 — Cover
 // ═══════════════════════════════════════════════════════════════════
 function Slide1() {
+  const MASCOT_URL = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/388ecd0da_generated_image.png';
   return (
-    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 'clamp(18px, 2.5vw, 32px)', right: 'clamp(16px, 2.5vw, 32px)', fontSize: 'clamp(13px, 1.8vw, 18px)', fontWeight: 700, color: 'white', letterSpacing: 1, zIndex: 10 }}>בס״ד</div>
-      <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d0b1169e1_image7.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+    <div dir="rtl" style={{ height: '100%', background: 'radial-gradient(ellipse at 50% 50%, #051330 0%, #00040f 100%)', display: 'flex', flexDirection: 'column', padding: 'clamp(14px, 2vw, 22px)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 'clamp(12px, 1.8vw, 18px)', right: 'clamp(12px, 1.8vw, 18px)', fontSize: 'clamp(12px, 1.5vw, 15px)', fontWeight: 700, color: 'white', zIndex: 10 }}>בס״ד</div>
+
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: 'clamp(8px, 1.2vw, 14px)' }}>
+        <div style={{ fontSize: 'clamp(26px, 3.8vw, 40px)', fontWeight: 900, color: 'white', letterSpacing: -1, lineHeight: 1 }}>
+          Joba<span style={{ color: GOLD }}>24</span>
+        </div>
+        <div style={{ fontSize: 'clamp(12px, 1.6vw, 16px)', fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+          כל עבודה. מישהו כבר בדרך.
+        </div>
+      </div>
+
+      {/* Two top cards */}
+      <div style={{ display: 'flex', gap: 'clamp(6px, 1vw, 10px)', marginBottom: 'clamp(8px, 1.2vw, 14px)' }}>
+        <div style={{ flex: 1, background: 'rgba(13,46,110,0.5)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: 12, padding: 'clamp(8px, 1.2vw, 12px) clamp(10px, 1.5vw, 14px)', display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 10px)' }}>
+          <div style={{ width: 'clamp(28px, 3.5vw, 36px)', height: 'clamp(28px, 3.5vw, 36px)', borderRadius: 10, background: 'rgba(251,191,36,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <HardHat size={18} color={GOLD} />
+          </div>
+          <div>
+            <div style={{ fontSize: 'clamp(12px, 1.5vw, 15px)', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>קחו עבודות</div>
+            <div style={{ fontSize: 'clamp(9px, 1.1vw, 11px)', color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>והרוויחו יותר</div>
+          </div>
+        </div>
+        <div style={{ flex: 1, background: 'rgba(13,46,110,0.5)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: 12, padding: 'clamp(8px, 1.2vw, 12px) clamp(10px, 1.5vw, 14px)', display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 10px)' }}>
+          <div style={{ width: 'clamp(28px, 3.5vw, 36px)', height: 'clamp(28px, 3.5vw, 36px)', borderRadius: 10, background: 'rgba(251,191,36,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ClipboardCheck size={18} color={GOLD} />
+          </div>
+          <div>
+            <div style={{ fontSize: 'clamp(12px, 1.5vw, 15px)', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>פרסמו משימה</div>
+            <div style={{ fontSize: 'clamp(9px, 1.1vw, 11px)', color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>וקבלו עזרה מהר</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Center: mascot */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+        <img src={MASCOT_URL} alt="Joba24 Mascot" style={{ maxHeight: '100%', maxWidth: 'clamp(130px, 20vw, 200px)', objectFit: 'contain' }} />
+      </div>
+
+      {/* Bottom: phone mockup + feature blocks */}
+      <div style={{ display: 'flex', gap: 'clamp(6px, 1vw, 10px)', marginTop: 'clamp(8px, 1.2vw, 14px)' }}>
+        <div style={{ width: 'clamp(70px, 10.5vw, 96px)', borderRadius: 14, overflow: 'hidden', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+          <img src={MAP_SS} alt="Map" style={{ width: '100%', display: 'block' }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'clamp(4px, 0.6vw, 6px)' }}>
+          {[
+            { Icon: Zap, title: 'מעלים משימה', sub: 'תוך 30 שניות', color: '#fbbf24' },
+            { Icon: Users, title: 'אלפי בעלי מקצוע', sub: 'ואנשים בקרבתך מוכנים לעזור', color: '#60a5fa' },
+            { Icon: Shield, title: 'כל העובדים', sub: 'אמינים ומומלץ', color: '#4ade80' },
+            { Icon: MessageCircle, title: 'מעקב בזמן אמת', sub: 'עד להשלמת המשימה', color: '#a78bfa' },
+          ].map(({ Icon, title, sub, color }) => (
+            <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)', background: 'rgba(13,46,110,0.5)', border: '1px solid rgba(96,165,250,0.2)', borderRadius: 8, padding: 'clamp(5px, 0.8vw, 7px) clamp(8px, 1.2vw, 10px)', flex: 1, minHeight: 0 }}>
+              <Icon size={14} color={color} style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 'clamp(10px, 1.2vw, 13px)', fontWeight: 700, color: 'white', lineHeight: 1.1 }}>{title}</div>
+                <div style={{ fontSize: 'clamp(8px, 1vw, 10px)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.1, marginTop: 1 }}>{sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
