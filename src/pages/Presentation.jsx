@@ -895,7 +895,7 @@ function SlideQR() {
       <div style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
       {/* Headline */}
       <h2 style={{ fontSize: 'clamp(36px, 6vw, 56px)', fontWeight: 900, color: 'white', margin: 0, lineHeight: 1, textAlign: 'center', letterSpacing: -1.5, textShadow: '0 4px 30px rgba(0,0,0,0.5)' }}>
-        יאללה<br /><span style={{ color: GOLD }}>לעבודה.</span>
+        יאללה<br /><span style={{ color: GOLD }}>לעבודה.</span><br /><span style={{ fontSize: 'clamp(13px, 2vw, 19px)', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>בעזרת השם</span>
       </h2>
       {/* Motivation message */}
       <div style={{ fontSize: 'clamp(15px, 2.2vw, 21px)', fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: 'clamp(16px, 2.5vw, 24px) 0', textAlign: 'center', lineHeight: 1.4, maxWidth: '88%' }}>
