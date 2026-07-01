@@ -85,28 +85,9 @@ function StepBadge({ num, label, active }) {
 // ═══════════════════════════════════════════════════════════════════
 function Slide1() {
   return (
-    <div dir="rtl" style={{ height: '100%', background: `radial-gradient(ellipse at 30% 20%, #0d2e6e 0%, ${DARK_BG} 65%)`, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end', padding: PAD, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: -100, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,111,212,0.2) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 'clamp(24px, 3vw, 36px)', right: 'clamp(18px, 3vw, 36px)', fontSize: 'clamp(14px, 2vw, 20px)', fontWeight: 700, color: 'white', letterSpacing: 1 }}>בס״ד</div>
-
-      <img src={BANNER} alt="Joba24" style={{ position: 'absolute', top: 'clamp(50px, 6.5vw, 70px)', left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 12px)', borderRadius: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)' }} />
-
-      <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
-        <div dir="ltr" style={{ fontSize: 'clamp(34px, 7vw, 54px)', fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 0.95, textAlign: 'left' }}>
-          Need help?<br />Open Joba<span style={{ color: GOLD }}>24</span>.
-        </div>
-        <div style={{ marginTop: 'clamp(10px, 1.5vw, 16px)', fontSize: 'clamp(14px, 1.8vw, 20px)', fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
-          מצא עובד או עבודה תוך דקות.
-        </div>
-        <div style={{ marginTop: 'clamp(18px, 2.5vw, 28px)', display: 'flex', gap: 'clamp(12px, 2vw, 24px)', paddingTop: 'clamp(12px, 2vw, 20px)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          {[['₪8B', 'שוק ישראל'], ['3M+', 'פרילנסרים'], ['60s', 'לג\'ובה חיה']].map(([v, l]) => (
-            <div key={l} style={{ flex: 1 }}>
-              <div style={{ fontSize: 'clamp(16px, 2vw, 24px)', fontWeight: 900, color: GOLD }}>{v}</div>
-              <div style={{ fontSize: FS.small, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div dir="rtl" style={{ height: '100%', background: DARK_BG, display: 'flex', flexDirection: 'column', padding: 0, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 'clamp(18px, 2.5vw, 32px)', right: 'clamp(16px, 2.5vw, 32px)', fontSize: 'clamp(13px, 1.8vw, 18px)', fontWeight: 700, color: 'white', letterSpacing: 1, zIndex: 10 }}>בס״ד</div>
+      <img src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d0b1169e1_image7.jpg" alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
     </div>
   );
 }
