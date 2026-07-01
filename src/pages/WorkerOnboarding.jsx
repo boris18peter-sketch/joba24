@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -239,6 +239,11 @@ export default function WorkerOnboarding() {
           </button>
           <div style={{ marginTop: 14, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
             *הגדרת פרופיל לוקחת פחות מדקה
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, flexWrap: 'nowrap' }}>
+            <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>תנאי שימוש</Link>
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
+            <Link to="/privacy" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>מדיניות פרטיות</Link>
           </div>
         </div>
       </div>
