@@ -21,6 +21,16 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, bonus: 0, note: 'Rating < 5, no bonus' });
     }
 
+    // Idempotency: check if bonus already granted for this task+worker
+    const existingBonus = await base44.asServiceRole.entities.CreditTransaction.filter({
+      user_id: workerId,
+      task_id: taskId,
+      type: 'Loyalty_Reward',
+    });
+    if (existingBonus.length > 0) {
+      return Response.json({ success: true, bonus: 0, note: 'Bonus already granted', new_balance: existingBonus[0].balance_after });
+    }
+
     // Find the application for this worker+task (approved OR any status — worker was already assigned)
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({
       task_id: taskId,

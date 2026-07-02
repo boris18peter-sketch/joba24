@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
         repeat_hires: targetUser.repeat_hires,
         avg_response_minutes: targetUser.avg_response_minutes,
         on_time_rate: targetUser.on_time_rate,
+        instagram_username: targetUser.instagram_verified ? targetUser.instagram_username : undefined,
+        instagram_verified: targetUser.instagram_verified || false,
         created_date: targetUser.created_date,
       },
     });

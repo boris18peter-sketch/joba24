@@ -152,6 +152,36 @@ export default function Layout() {
     base44.auth.updateMe({ last_active_at: new Date().toISOString() }).catch(() => {});
   }, [me?.id, isAuthenticated]);
 
+  // PWA: refetch critical data when app returns to foreground (fixes slow sync after backgrounding)
+  useEffect(() => {
+    let lastVisible = Date.now();
+    const handleResume = () => {
+      if (document.visibilityState !== 'visible') return;
+      // Only refetch if app was backgrounded for more than 3 seconds (avoids redundant refetch on quick tab switches)
+      if (Date.now() - lastVisible < 3000) return;
+      if (!isAuthenticated || !me?.id) return;
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['myPublishedTasks', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['approvalStatus', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['notifUnread'] });
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        lastVisible = Date.now();
+      } else {
+        handleResume();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleResume);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleResume);
+    };
+  }, [isAuthenticated, me?.id, queryClient]);
+
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [revokedTask, setRevokedTask] = useState(null);

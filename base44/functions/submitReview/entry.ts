@@ -26,9 +26,19 @@ Deno.serve(async (req) => {
     const task = tasks?.[0];
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
 
-    // Prevent duplicate reviews
+    // Prevent duplicate reviews — but retry loyalty bonus if it was missed on first attempt
     const existing = await base44.asServiceRole.entities.Review.filter({ task_id: taskId, reviewer_id: user.id });
     if (existing.length > 0) {
+      const existingReview = existing[0];
+      // Retry: if the existing review was 5-star from the client, ensure the bonus was granted
+      if (isOwner && existingReview.rating === 5 && task.worker_id) {
+        await base44.functions.invoke('grantLoyaltyReward', {
+          taskId,
+          workerId: task.worker_id,
+          rating: 5,
+          taskTitle: task.title,
+        }).catch(err => console.warn('⚠️ grantLoyaltyReward retry failed:', err?.message));
+      }
       return Response.json({ success: true, note: 'Already reviewed' });
     }
 
@@ -83,14 +93,18 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.User.update(revieweeId, userUpdate);
     console.log(`✅ Review saved. Reviewee ${revieweeId} new rating: ${userUpdate.rating} (${userUpdate.rating_count} reviews)`);
 
-    // Loyalty bonus for 5-star worker review
+    // Loyalty bonus for 5-star worker review — awaited (not fire-and-forget) for reliability
     if (isOwner && rating === 5 && task.worker_id) {
-      base44.functions.invoke('grantLoyaltyReward', {
-        taskId,
-        workerId: task.worker_id,
-        rating,
-        taskTitle: task.title,
-      }).catch(err => console.warn('⚠️ grantLoyaltyReward failed:', err?.message));
+      try {
+        await base44.functions.invoke('grantLoyaltyReward', {
+          taskId,
+          workerId: task.worker_id,
+          rating,
+          taskTitle: task.title,
+        });
+      } catch (err) {
+        console.warn('⚠️ grantLoyaltyReward failed:', err?.message);
+      }
     }
 
     return Response.json({ success: true, new_rating: userUpdate.rating });
