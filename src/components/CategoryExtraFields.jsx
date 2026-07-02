@@ -23,7 +23,8 @@ function distKm(a, b) {
  */
 export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
   const config = getCategoryConfig(category);
-  const fields = config?.extraFields || [];
+  // Filter out urgency fields — urgency is already handled in the main form (Expiry + Urgency section)
+  const fields = (config?.extraFields || []).filter(f => f.key !== 'urgency');
   const [values, setValues] = useState(initialValues || {});
   const [destCoords, setDestCoords] = useState(null);
 

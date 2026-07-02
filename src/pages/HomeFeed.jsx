@@ -15,6 +15,7 @@ import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
+import TaskCompletedCelebration from '@/components/TaskCompletedCelebration';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link } from 'react-router-dom';
@@ -103,6 +104,27 @@ export default function HomeFeed() {
 
   // Active task I published that is currently TAKEN
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
+
+  // ── Completion celebration — when worker's active task becomes COMPLETED ──
+  const prevActiveWorkerTaskRef = useRef(null);
+  const [completedCelebration, setCompletedCelebration] = useState(null);
+  useEffect(() => {
+    const prev = prevActiveWorkerTaskRef.current;
+    if (prev && !activeWorkerTask && me?.id) {
+      const allTasksData = queryClient.getQueryData(['allTasks']) || [];
+      const taskData = allTasksData.find(t => t.id === prev.id);
+      if (taskData?.status === 'COMPLETED' && taskData?.worker_id === me.id) {
+        setCompletedCelebration(prev);
+      }
+    }
+    prevActiveWorkerTaskRef.current = activeWorkerTask;
+  }, [activeWorkerTask, me?.id, queryClient]);
+
+  useEffect(() => {
+    if (!completedCelebration) return;
+    const timer = setTimeout(() => setCompletedCelebration(null), 5500);
+    return () => clearTimeout(timer);
+  }, [completedCelebration]);
 
   // Rating popup is handled globally by Layout via WebSocket — no local logic needed here
 
@@ -201,17 +223,12 @@ export default function HomeFeed() {
       if (event.type === 'update') {
         // Strip undefined fields so partial payloads never overwrite existing values with undefined
         const cleanPatch = Object.fromEntries(Object.entries(updatedTask).filter(([, v]) => v !== undefined));
-        console.log('[HomeFeed WS] update event.id:', event.id, 'cleanPatch:', JSON.stringify(cleanPatch));
         queryClient.setQueryData(['activeWorkerTask', me.id], (old) => {
-          console.log('[HomeFeed WS] activeWorkerTask old:', old?.id, old?.status, old?.worker_status, '| matching:', old?.id === event.id);
           if (old?.id === event.id) {
             if (cleanPatch.status && TERMINAL_STATUSES.includes(cleanPatch.status)) {
-              console.log('[HomeFeed WS] → TERMINAL, setting null');
               return null;
             }
-            const next = { ...old, ...cleanPatch };
-            console.log('[HomeFeed WS] → merging, new worker_status:', next.worker_status, 'status:', next.status);
-            return next;
+            return { ...old, ...cleanPatch };
           }
           if (cleanPatch.worker_id === me.id && cleanPatch.status === 'TAKEN') {
             // Try to get full task data from allTasks cache for complete banner
@@ -530,7 +547,7 @@ export default function HomeFeed() {
   // ── New task highlight: auto-tab + scroll + glow ──────────────────────────
   useEffect(() => {
     if (!highlightTaskId) return;
-    setActiveTabRaw('my_published');
+    setActiveTab('my_published');
     setMyPubTab('active');
     // Clean URL without reload
     window.history.replaceState({}, '', '/');
@@ -606,6 +623,11 @@ export default function HomeFeed() {
       {activeTab === 'my_published' && activeClientTask && (
         <div style={{ padding: '10px 16px 0' }}>
           <ActiveTaskBanner tasks={[{ ...activeClientTask, _roleHint: 'client' }]} roleHint="client" />
+        </div>
+      )}
+      {activeTab === 'available' && !activeWorkerTask && completedCelebration && (
+        <div style={{ padding: '10px 16px 0' }}>
+          <TaskCompletedCelebration task={completedCelebration} onDismiss={() => setCompletedCelebration(null)} />
         </div>
       )}
 

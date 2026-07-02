@@ -255,10 +255,10 @@ export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategor
   const [step, setStep] = useState('launch'); // 'launch' | 'scanner'
   const navigate = useNavigate();
 
-  const handleDismiss = () => { onDismiss?.(); navigate(`/task/${taskId}`); };
+  const handleDismiss = () => { onDismiss?.(); };
 
   return createPortal(
-    <div onClick={(e) => { if (e.target === e.currentTarget) handleDismiss(); }} dir="rtl" style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }} onClick={(e) => e.stopPropagation()}>
+    <div onClick={(e) => { if (e.target === e.currentTarget) handleDismiss(); }} dir="rtl" style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div onClick={(e) => e.stopPropagation()}>
         <AnimatePresence mode="wait">
           {step === 'launch' ? (

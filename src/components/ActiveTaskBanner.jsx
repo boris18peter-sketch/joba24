@@ -49,9 +49,9 @@ function getQuickAction(stepIdx, workerStatus) {
 function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
   const { t, isRTL } = useLanguage();
   if (!action) return null;
-  return (
+  return createPortal(
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(5,15,40,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.55)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
       onClick={onCancel}
     >
       <div
@@ -86,11 +86,12 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
              style={{ width: '100%', height: 44, borderRadius: 14, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
            >
              {t('cancel_btn')}
-           </button>
-         </div>
-      </div>
-    </div>
-  );
+             </button>
+             </div>
+             </div>
+             </div>,
+             document.body
+             );
 }
 
 export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
@@ -121,7 +122,6 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
     setUpdating(true);
 
     const update = { worker_status: action.nextKey };
-    console.log('[Banner] handleQuickAction START — task.id:', task.id, 'update:', update);
     if (action.nextKey === 'on_the_way' && !task.on_the_way_at) {
       update.on_the_way_at = new Date().toISOString();
     } else if (action.nextKey === 'arrived' && !task.arrived_at) {
@@ -135,7 +135,6 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
     queryClient.setQueryData(['task', task.id], optimisticTask);
     // Also update activeWorkerTask cache optimistically so banner stays up-to-date
     queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
-      console.log('[Banner] optimistic activeWorkerTask — old:', old?.worker_status, '→ new:', update.worker_status);
       return old?.id === task.id ? { ...old, ...update } : old;
     });
 
@@ -161,7 +160,6 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
       );
       } else {
         await base44.entities.Task.update(task.id, update);
-        console.log('[Banner] DB write done, invalidating task query');
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       }
     } catch {
