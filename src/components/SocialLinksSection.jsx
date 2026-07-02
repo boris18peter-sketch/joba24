@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Instagram, Facebook, Loader2, Check, X, ExternalLink, ShieldCheck, Music2 } from 'lucide-react';
+import { Instagram, Facebook, Loader2, Check, X, ExternalLink, ShieldCheck, Copy, Music2, ArrowRight } from 'lucide-react';
 
-const INSTAGRAM_CONNECTOR_ID = '6a461cba44174744ca6f4c1c';
 const TIKTOK_CONNECTOR_ID = '6a461cbcb8f2b9b391f70d9e';
 
 const PLATFORMS = [
@@ -14,9 +13,7 @@ const PLATFORMS = [
     icon: Instagram,
     color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
     url: (u) => `https://instagram.com/${u}`,
-    oauth: true,
-    connectorId: INSTAGRAM_CONNECTOR_ID,
-    note: 'עובד עם חשבונות Business/Creator בלבד',
+    mode: 'code',
   },
   {
     key: 'tiktok',
@@ -24,9 +21,7 @@ const PLATFORMS = [
     icon: Music2,
     color: '#000000',
     url: (u) => `https://tiktok.com/@${u}`,
-    oauth: true,
-    connectorId: TIKTOK_CONNECTOR_ID,
-    note: '',
+    mode: 'oauth',
   },
   {
     key: 'facebook',
@@ -34,71 +29,86 @@ const PLATFORMS = [
     icon: Facebook,
     color: '#1877F2',
     url: (u) => `https://facebook.com/${u}`,
-    oauth: false,
-    connectorId: null,
-    note: '',
+    mode: 'code',
   },
 ];
 
 export default function SocialLinksSection({ user }) {
   const queryClient = useQueryClient();
-  const [activePlatform, setActivePlatform] = useState(null);
+  const [activeKey, setActiveKey] = useState(null);
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState('');
+  const [success, setSuccess] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['me'] });
 
   const getData = (key) => ({
     username: user?.[`${key}_username`],
     verified: user?.[`${key}_verified`],
+    code: user?.[`${key}_verify_code`],
   });
 
-  // ── OAuth connect (Instagram, TikTok) ──
-  const handleOAuthConnect = async (platformKey, connectorId) => {
+  // ── TikTok OAuth connect ──
+  const handleOAuthConnect = async () => {
     setLoading(true);
     setError('');
-    setResult('');
     try {
-      const url = await base44.connectors.connectAppUser(connectorId);
+      const url = await base44.connectors.connectAppUser(TIKTOK_CONNECTOR_ID);
       const popup = window.open(url, '_blank');
       const timer = setInterval(async () => {
         if (!popup || popup.closed) {
           clearInterval(timer);
-          // OAuth completed — fetch the profile from the backend
           try {
-            const res = await base44.functions.invoke('verifyInstagram', { action: 'fetch_profile', platform: platformKey });
+            const res = await base44.functions.invoke('verifyInstagram', { action: 'fetch_profile', platform: 'tiktok' });
             if (res.data?.success) {
               await refresh();
-              setResult('אומת בהצלחה! 🎉');
-              setTimeout(() => { setResult(''); setActivePlatform(null); }, 1500);
+              setSuccess('אומת בהצלחה! 🎉');
+              setTimeout(() => { setSuccess(''); setActiveKey(null); }, 1500);
             } else {
-              setError(res.data?.error || 'החיבור נכשל — נסה שוב');
+              setError(res.data?.error || 'החיבור נכשל');
             }
-          } catch (e) {
+          } catch {
             setError('החיבור נכשל — ודא שאישרת את ההרשאה');
           }
           setLoading(false);
         }
       }, 500);
     } catch (e) {
-      setError(e?.response?.data?.error || e?.message || 'שגיאה');
+      setError(e?.message || 'שגיאה');
       setLoading(false);
     }
   };
 
-  // ── Manual connect (Facebook) ──
-  const handleManualConnect = async () => {
+  // ── Instagram/Facebook: connect with code ──
+  const handleCodeConnect = async () => {
     const clean = username.replace(/^@/, '').trim();
     if (!clean) return;
     setLoading(true);
     setError('');
     try {
-      await base44.functions.invoke('verifyInstagram', { action: 'connect_manual', platform: activePlatform, username: clean });
+      await base44.functions.invoke('verifyInstagram', { action: 'connect_code', platform: activeKey, username: clean });
       await refresh();
-      setActivePlatform(null);
-      setUsername('');
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || 'שגיאה');
+    }
+    setLoading(false);
+  };
+
+  // ── Instagram/Facebook: verify code in bio ──
+  const handleVerifyCode = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await base44.functions.invoke('verifyInstagram', { action: 'verify_code', platform: activeKey });
+      if (res.data?.verified) {
+        await refresh();
+        setSuccess('אומת בהצלחה! 🎉');
+        setTimeout(() => { setSuccess(''); setActiveKey(null); }, 1500);
+      } else {
+        setError(res.data?.note || 'הקוד לא נמצא. ודא שהוספת את הקוד לביו ושהפרופיל ציבורי.');
+      }
     } catch (e) {
       setError(e?.response?.data?.error || e?.message || 'שגיאה');
     }
@@ -106,25 +116,32 @@ export default function SocialLinksSection({ user }) {
   };
 
   // ── Disconnect ──
-  const handleDisconnect = async (platform) => {
+  const handleDisconnect = async (key) => {
     setLoading(true);
     setError('');
     try {
-      const config = PLATFORMS.find(p => p.key === platform);
-      if (config?.oauth && config?.connectorId) {
-        try { await base44.connectors.disconnectAppUser(config.connectorId); } catch {}
+      const config = PLATFORMS.find(p => p.key === key);
+      if (config?.mode === 'oauth') {
+        try { await base44.connectors.disconnectAppUser(TIKTOK_CONNECTOR_ID); } catch {}
       }
-      await base44.functions.invoke('verifyInstagram', { action: 'disconnect', platform });
+      await base44.functions.invoke('verifyInstagram', { action: 'disconnect', platform: key });
       await refresh();
-      setActivePlatform(null);
+      setActiveKey(null);
+      setUsername('');
     } catch (e) {
       setError(e?.response?.data?.error || e?.message || 'שגיאה');
     }
     setLoading(false);
   };
 
-  const activeConfig = PLATFORMS.find(p => p.key === activePlatform);
-  const activeData = activePlatform ? getData(activePlatform) : null;
+  const copyCode = (code) => {
+    navigator.clipboard?.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const activeConfig = PLATFORMS.find(p => p.key === activeKey);
+  const activeData = activeKey ? getData(activeKey) : null;
   const verifiedCount = PLATFORMS.filter(p => getData(p.key)?.verified).length;
 
   return (
@@ -139,16 +156,15 @@ export default function SocialLinksSection({ user }) {
           </div>
         </div>
         <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {PLATFORMS.map(({ key, label, icon: Icon, color, url, oauth, note }) => {
+          {PLATFORMS.map(({ key, label, icon: Icon, color }) => {
             const data = getData(key);
             const isVerified = data?.verified;
             const hasUsername = !!data?.username;
-
             return (
               <div key={key} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 12px', borderRadius: 14,
-                background: isVerified ? '#f0fdf4' : hasUsername ? 'var(--surface-3)' : 'var(--surface-3)',
+                background: isVerified ? '#f0fdf4' : 'var(--surface-3)',
                 border: `1px solid ${isVerified ? '#bbf7d0' : 'var(--border-1)'}`,
               }}>
                 <div style={{
@@ -167,23 +183,20 @@ export default function SocialLinksSection({ user }) {
                         {isVerified && <ShieldCheck size={13} color="#059669" />}
                       </div>
                       <div style={{ fontSize: 11, color: isVerified ? '#059669' : 'var(--text-3)', fontWeight: 600 }}>
-                        {isVerified ? 'מאומת ✓' : oauth ? 'לא מאומת' : 'מחובר'}
+                        {isVerified ? 'מאומת ✓' : 'ממתין לאימות'}
                       </div>
                     </>
                   ) : (
-                    <>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>{label}</div>
-                      {note && <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{note}</div>}
-                    </>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>{label}</div>
                   )}
                 </div>
                 {hasUsername ? (
-                  <button onClick={() => { setActivePlatform(key); setError(''); setResult(''); }}
+                  <button onClick={() => { setActiveKey(key); setError(''); setSuccess(''); }}
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                     <span style={{ fontSize: 14, color: 'var(--text-3)' }}>⋯</span>
                   </button>
                 ) : (
-                  <button onClick={() => { setActivePlatform(key); setError(''); setResult(''); }}
+                  <button onClick={() => { setActiveKey(key); setError(''); setSuccess(''); setUsername(''); }}
                     style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', cursor: 'pointer', flexShrink: 0 }}>
                     חבר
                   </button>
@@ -195,119 +208,153 @@ export default function SocialLinksSection({ user }) {
       </div>
 
       {/* Bottom sheet */}
-      {activePlatform && activeConfig && activeData && createPortal(
-        <BottomSheet onClose={() => { setActivePlatform(null); setError(''); setResult(''); setUsername(''); }}>
-          {/* Success state */}
-          {result && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 0' }}>
+      {activeKey && activeConfig && activeData && createPortal(
+        <Sheet onClose={() => { setActiveKey(null); setError(''); setSuccess(''); setUsername(''); }}>
+          {/* Success */}
+          {success && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '24px 0' }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #bbf7d0' }}>
                 <Check size={32} color="#059669" strokeWidth={3} />
               </div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{result}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{success}</div>
             </div>
           )}
 
-          {/* Not connected — OAuth platform */}
-          {!result && !activeData.username && activeConfig.oauth && (
+          {/* === TikTok OAuth === */}
+          {!success && activeConfig.mode === 'oauth' && !activeData.username && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ textAlign: 'center', marginBottom: 4 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: activeConfig.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                  <activeConfig.icon size={28} color="white" />
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>חבר את {activeConfig.label} שלך</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>
-                  תתחבר עם הסיסמה שלך ל{activeConfig.label}, ואנחנו נאמת אוטומטית שהחשבון שלך.
-                </p>
-                {activeConfig.note && (
-                  <div style={{ fontSize: 11, color: '#d97706', fontWeight: 600, marginTop: 8, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 10px' }}>
-                    ⚠️ {activeConfig.note}
-                  </div>
-                )}
-              </div>
-              {error && <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{error}</div>}
-              <button onClick={() => handleOAuthConnect(activePlatform, activeConfig.connectorId)} disabled={loading}
-                style={{ height: 50, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <SheetHeader icon={activeConfig.icon} color={activeConfig.color} title={`חבר את ${activeConfig.label}`} subtitle="התחבר עם הסיסמה שלך לטיקטוק ונאמת אוטומטית" />
+              {error && <ErrorBox text={error} />}
+              <button onClick={handleOAuthConnect} disabled={loading}
+                style={btnPrimary(loading || !username.trim())}>
                 {loading ? <><Loader2 size={18} className="animate-spin" /> מחכה לאישור...</> : <><activeConfig.icon size={18} /> התחבר ל{activeConfig.label}</>}
               </button>
             </div>
           )}
 
-          {/* Not connected — Manual platform (Facebook) */}
-          {!result && !activeData.username && !activeConfig.oauth && (
+          {/* === Instagram/Facebook: Step 1 — Enter username === */}
+          {!success && activeConfig.mode === 'code' && !activeData.username && !activeData.code && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ textAlign: 'center', marginBottom: 4 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: activeConfig.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                  <activeConfig.icon size={28} color="white" />
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>חבר את {activeConfig.label} שלך</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>הזן את שם המשתמש שלך ב{activeConfig.label}</p>
-              </div>
+              <SheetHeader icon={activeConfig.icon} color={activeConfig.color} title={`חבר את ${activeConfig.label}`} subtitle={`הזן את שם המשתמש שלך ב${activeConfig.label}`} />
               <input
-                type="text"
-                dir="ltr"
-                placeholder="username"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                autoFocus
+                type="text" dir="ltr" placeholder="username" value={username}
+                onChange={e => setUsername(e.target.value)} autoFocus
                 style={{ width: '100%', height: 50, borderRadius: 14, border: '1.5px solid var(--border-1)', padding: '0 16px', fontSize: 16, background: 'var(--surface-3)', color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box', textAlign: 'right' }}
               />
-              {error && <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{error}</div>}
-              <button onClick={handleManualConnect} disabled={loading || !username.trim()}
-                style={{ height: 50, borderRadius: 14, background: username.trim() ? 'linear-gradient(135deg, #1a6fd4, #0a52b0)' : 'var(--surface-3)', color: username.trim() ? 'white' : 'var(--text-3)', fontWeight: 800, fontSize: 15, border: 'none', cursor: username.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'שמור'}
+              {error && <ErrorBox text={error} />}
+              <button onClick={handleCodeConnect} disabled={loading || !username.trim()}
+                style={btnPrimary(loading || !username.trim())}>
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <>המשך <ArrowRight size={16} /></>}
               </button>
             </div>
           )}
 
-          {/* Connected — manage */}
-          {!result && activeData.username && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ textAlign: 'center', marginBottom: 4 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: activeConfig.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                  <activeConfig.icon size={28} color="white" />
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>{activeConfig.label}</h3>
-                <a href={activeConfig.url(activeData.username)} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 14, color: '#1a6fd4', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                  @{activeData.username} <ExternalLink size={12} />
-                </a>
+          {/* === Instagram/Facebook: Step 2 — Code verification === */}
+          {!success && activeConfig.mode === 'code' && activeData.username && activeData.code && !activeData.verified && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <SheetHeader icon={activeConfig.icon} color={activeConfig.color} title={`אימות @{activeData.username}`} subtitle={`הוסף את הקוד לביו ב${activeConfig.label} שלך, ואז לחץ "אמת"`} />
+
+              {/* OTP Code box */}
+              <div onClick={() => copyCode(activeData.code)} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                background: 'var(--surface-3)', borderRadius: 16, padding: '20px',
+                border: '2px dashed var(--border-2)', cursor: 'pointer',
+              }}>
+                <code style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-1)', letterSpacing: 8 }}>{activeData.code}</code>
+                {copied ? <Check size={20} color="#059669" /> : <Copy size={20} color="var(--text-3)" />}
               </div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', fontWeight: 600 }}>{copied ? 'הקוד הועתק ✓' : 'לחץ על הקוד להעתקה'}</div>
+
+              {/* Instructions */}
+              <div style={{ background: '#eff6ff', borderRadius: 14, padding: '14px 16px', border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: 13, color: '#1a6fd4', fontWeight: 800, marginBottom: 8 }}>איך מאמתים?</div>
+                <ol style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 2, margin: 0, paddingRight: 18 }}>
+                  <li>פתח את <a href={activeConfig.url(activeData.username)} target="_blank" rel="noopener noreferrer" style={{ color: '#1a6fd4', fontWeight: 700 }}>הפרופיל שלך</a> ב{activeConfig.label}</li>
+                  <li>ערוך פרופיל ← הוסף את הקוד <strong>{activeData.code}</strong> לביו</li>
+                  <li>ודא שהפרופיל <strong>ציבורי</strong> (לא פרטי)</li>
+                  <li>חזור לכאן ולחץ "אמת"</li>
+                </ol>
+              </div>
+
+              {error && <ErrorBox text={error} />}
+
+              <button onClick={handleVerifyCode} disabled={loading}
+                style={btnPrimary(loading)}>
+                {loading ? <><Loader2 size={18} className="animate-spin" /> בודק... יכול לקחת כמה שניות</> : <><Check size={18} /> אמת</>}
+              </button>
+
+              <button onClick={() => handleDisconnect(activeKey)} disabled={loading}
+                style={{ height: 42, borderRadius: 12, background: 'none', border: 'none', color: 'var(--text-3)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                ביטול והתחל מחדש
+              </button>
+            </div>
+          )}
+
+          {/* === Connected: Manage === */}
+          {!success && activeData.username && (activeData.verified || activeConfig.mode === 'oauth') && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <SheetHeader icon={activeConfig.icon} color={activeConfig.color} title={activeConfig.label} subtitle={`@${activeData.username}`} link={activeConfig.url(activeData.username)} />
               {activeData.verified ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#f0fdf4', borderRadius: 14, border: '1px solid #bbf7d0' }}>
-                  <ShieldCheck size={18} color="#059669" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px', background: '#f0fdf4', borderRadius: 14, border: '1px solid #bbf7d0' }}>
+                  <ShieldCheck size={20} color="#059669" />
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#065f46' }}>החשבון מאומת</div>
-                    <div style={{ fontSize: 12, color: '#059669' }}>הבעלות אומתה באמצעות התחברות</div>
+                    <div style={{ fontSize: 12, color: '#059669' }}>הבעלות אומתה בהצלחה</div>
                   </div>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--surface-3)', borderRadius: 14, border: '1px solid var(--border-1)' }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)' }}>חשבון מחובר</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{activeConfig.oauth ? 'לא מאומת' : 'חיבור ידני ללא אימות'}</div>
-                  </div>
-                </div>
-              )}
-              {error && <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{error}</div>}
-              <button onClick={() => handleDisconnect(activePlatform)} disabled={loading}
+              ) : null}
+              {error && <ErrorBox text={error} />}
+              <button onClick={() => handleDisconnect(activeKey)} disabled={loading}
                 style={{ height: 48, borderRadius: 14, background: '#fff1f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <><X size={16} /> נתק חשבון</>}
               </button>
             </div>
           )}
-        </BottomSheet>,
+        </Sheet>,
         document.body
       )}
     </>
   );
 }
 
-function BottomSheet({ children, onClose }) {
+// ── Helpers ──
+function btnPrimary(disabled) {
+  return {
+    height: 50, borderRadius: 14,
+    background: disabled ? 'var(--surface-3)' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+    color: disabled ? 'var(--text-3)' : 'white',
+    fontWeight: 800, fontSize: 15, border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  };
+}
+
+function ErrorBox({ text }) {
+  return <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 600, lineHeight: 1.5, background: '#fff1f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 12px' }}>{text}</div>;
+}
+
+function SheetHeader({ icon: Icon, color, title, subtitle, link }) {
   return (
-    <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.72)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)' }}
-    >
+    <div style={{ textAlign: 'center', marginBottom: 4 }}>
+      <div style={{ width: 56, height: 56, borderRadius: 16, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+        <Icon size={28} color="white" />
+      </div>
+      <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>{title}</h3>
+      {link ? (
+        <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, color: '#1a6fd4', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+          {subtitle} <ExternalLink size={12} />
+        </a>
+      ) : (
+        <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.5 }}>{subtitle}</p>
+      )}
+    </div>
+  );
+}
+
+function Sheet({ children, onClose }) {
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.72)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
       <div dir="rtl" style={{ background: 'var(--sheet-bg)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, boxShadow: '0 -24px 120px rgba(0,0,0,0.3)', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', maxHeight: '90dvh', overflowY: 'auto' }}>
         <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
         <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
