@@ -115,6 +115,20 @@ export default function SocialLinksSection({ user }) {
     setLoading(false);
   };
 
+  // ── Reset username (go back to step 1, keep sheet open) ──
+  const handleResetUsername = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await base44.functions.invoke('verifyInstagram', { action: 'disconnect', platform: activeKey });
+      await refresh();
+      setUsername('');
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || 'שגיאה');
+    }
+    setLoading(false);
+  };
+
   // ── Disconnect ──
   const handleDisconnect = async (key) => {
     setLoading(true);
@@ -253,6 +267,9 @@ export default function SocialLinksSection({ user }) {
           {!success && activeConfig.mode === 'code' && activeData.username && activeData.code && !activeData.verified && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <SheetHeader icon={activeConfig.icon} color={activeConfig.color} title={`אימות @{activeData.username}`} subtitle={`הוסף את הקוד לביו ב${activeConfig.label} שלך, ואז לחץ "אמת"`} />
+              <button onClick={handleResetUsername} disabled={loading} style={{ all: 'unset', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#1a6fd4', marginBottom: 2 }}>
+                <ArrowRight size={14} style={{ transform: 'rotate(180deg)' }} /> שנה משתמש
+              </button>
 
               {/* OTP Code box */}
               <div onClick={() => copyCode(activeData.code)} style={{
@@ -283,7 +300,7 @@ export default function SocialLinksSection({ user }) {
                 {loading ? <><Loader2 size={18} className="animate-spin" /> בודק... יכול לקחת כמה שניות</> : <><Check size={18} /> אמת</>}
               </button>
 
-              <button onClick={() => handleDisconnect(activeKey)} disabled={loading}
+              <button onClick={handleResetUsername} disabled={loading}
                 style={{ height: 42, borderRadius: 12, background: 'none', border: 'none', color: 'var(--text-3)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
                 ביטול והתחל מחדש
               </button>
