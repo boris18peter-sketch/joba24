@@ -48,6 +48,10 @@ Deno.serve(async (req) => {
         on_time_rate: targetUser.on_time_rate,
         instagram_username: targetUser.instagram_verified ? targetUser.instagram_username : undefined,
         instagram_verified: targetUser.instagram_verified || false,
+        facebook_username: targetUser.facebook_verified ? targetUser.facebook_username : undefined,
+        facebook_verified: targetUser.facebook_verified || false,
+        tiktok_username: targetUser.tiktok_verified ? targetUser.tiktok_username : undefined,
+        tiktok_verified: targetUser.tiktok_verified || false,
         created_date: targetUser.created_date,
       },
     });

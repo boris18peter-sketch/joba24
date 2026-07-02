@@ -1,110 +1,155 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 /**
- * verifyInstagram — Connect, verify, and disconnect Instagram accounts.
+ * verifyInstagram — Connect, verify, and disconnect social media accounts.
+ * Supports: instagram, facebook, tiktok
  *
  * Actions:
- *   "connect"    — Save username + generate verification code
- *   "verify"     — Check if the verification code is in the Instagram bio
- *   "disconnect" — Remove Instagram data from user
+ *   "connect"    — Save username + generate 6-digit OTP code
+ *   "verify"     — Check if the OTP code is in the social media bio
+ *   "disconnect" — Remove social media data from user
+ *
+ * Payload: { action, platform, username }
  */
+
+const PLATFORMS = {
+  instagram: {
+    url: (u) => `https://www.instagram.com/${u}/`,
+    label: 'Instagram',
+  },
+  facebook: {
+    url: (u) => `https://www.facebook.com/${u}`,
+    label: 'Facebook',
+  },
+  tiktok: {
+    url: (u) => `https://www.tiktok.com/@${u}`,
+    label: 'TikTok',
+  },
+};
+
+function generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { action, username } = await req.json();
+    const { action, platform, username } = await req.json();
 
-    // ── Connect: save username + generate verification code ──
+    if (!platform || !PLATFORMS[platform]) {
+      return Response.json({ error: 'פלטפורמה לא תקינה' }, { status: 400 });
+    }
+
+    const p = PLATFORMS[platform];
+    const usernameField = `${platform}_username`;
+    const verifiedField = `${platform}_verified`;
+    const codeField = `${platform}_verify_code`;
+
+    // ── Connect: save username + generate OTP ──
     if (action === 'connect') {
-      const cleanUsername = (username || '').replace(/^@/, '').trim().toLowerCase();
-      if (!cleanUsername || !/^[a-z0-9._]{1,30}$/.test(cleanUsername)) {
+      let cleanUsername = (username || '').trim();
+      // Remove @ prefix for instagram/facebook, keep for tiktok without @
+      cleanUsername = cleanUsername.replace(/^@/, '').trim().toLowerCase();
+      if (!cleanUsername || cleanUsername.length < 2 || cleanUsername.length > 50) {
         return Response.json({ error: 'שם משתמש לא תקין' }, { status: 400 });
       }
 
-      const verifyCode = `joba24-${Math.random().toString(36).substring(2, 10)}`;
-      await base44.asServiceRole.entities.User.update(user.id, {
-        instagram_username: cleanUsername,
-        instagram_verified: false,
-        instagram_verify_code: verifyCode,
-      });
+      const otpCode = generateOtp();
+      const updateData = {
+        [usernameField]: cleanUsername,
+        [verifiedField]: false,
+        [codeField]: otpCode,
+      };
+      await base44.asServiceRole.entities.User.update(user.id, updateData);
 
-      return Response.json({ success: true, verifyCode, username: cleanUsername });
+      return Response.json({ success: true, otpCode, username: cleanUsername, platform });
     }
 
-    // ── Verify: check if code is in Instagram bio ──
+    // ── Verify: check if OTP is in the social media bio ──
     if (action === 'verify') {
       const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
       const currentUser = users[0];
-      const igUsername = currentUser?.instagram_username;
-      const verifyCode = currentUser?.instagram_verify_code;
+      const socialUsername = currentUser?.[usernameField];
+      const otpCode = currentUser?.[codeField];
 
-      if (!igUsername || !verifyCode) {
+      if (!socialUsername || !otpCode) {
         return Response.json({ error: 'אין בקשת אימות פעילה' }, { status: 400 });
       }
 
+      const profileUrl = p.url(socialUsername);
       let isVerified = false;
+      let method = '';
 
-      // Method 1: Direct fetch of Instagram profile page
+      // Method 1: LLM with web search (PRIMARY — uses gemini_3_flash which supports add_context_from_internet)
       try {
-        const response = await fetch(`https://www.instagram.com/${igUsername}/`, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-            'Accept-Language': 'en-US,en;q=0.9',
+        const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: `Search the web for the ${p.label} profile at this URL: ${profileUrl}. Look at the profile bio/description. Check if the number "${otpCode}" appears anywhere in the bio or profile description. Return a JSON object with "found" (boolean) and "bio" (string containing the bio text you found, or empty string if you couldn't access it).`,
+          add_context_from_internet: true,
+          model: 'gemini_3_flash',
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              found: { type: 'boolean' },
+              bio: { type: 'string' },
+            },
           },
-          redirect: 'follow',
         });
-        if (response.ok) {
-          const html = await response.text();
-          isVerified = html.includes(verifyCode);
+        if (llmResult?.found === true) {
+          isVerified = true;
+          method = 'llm';
         }
-      } catch (fetchErr) {
-        console.warn('Instagram fetch failed:', fetchErr?.message);
+      } catch (llmErr) {
+        console.warn('LLM verification failed:', llmErr?.message);
       }
 
-      // Method 2: Fallback to LLM with web search
+      // Method 2: Direct fetch of profile page (SECONDARY)
       if (!isVerified) {
         try {
-          const llmResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
-            prompt: `Search for the Instagram profile "@${igUsername}". Check if the text "${verifyCode}" appears anywhere in their profile bio or description. Return a JSON object with "found" (boolean) and "bio" (string of the bio text you found).`,
-            add_context_from_internet: true,
-            response_json_schema: {
-              type: 'object',
-              properties: {
-                found: { type: 'boolean' },
-                bio: { type: 'string' },
-              },
+          const response = await fetch(profileUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
             },
+            redirect: 'follow',
           });
-          if (llmResult?.found === true) {
-            isVerified = true;
+          if (response.ok) {
+            const html = await response.text();
+            // Check if OTP appears anywhere in the page HTML (bio is embedded in meta tags / JSON)
+            if (html.includes(otpCode)) {
+              isVerified = true;
+              method = 'fetch';
+            }
           }
-        } catch (llmErr) {
-          console.warn('LLM verification failed:', llmErr?.message);
+        } catch (fetchErr) {
+          console.warn('Profile fetch failed:', fetchErr?.message);
         }
       }
 
       if (isVerified) {
         await base44.asServiceRole.entities.User.update(user.id, {
-          instagram_verified: true,
+          [verifiedField]: true,
         });
+        console.log(`✅ ${p.label} verified for user ${user.id} via ${method}`);
         return Response.json({ success: true, verified: true });
       } else {
         return Response.json({
           success: true,
           verified: false,
-          note: 'הקוד לא נמצא בפרופיל האינסטגרם. ודא שהוספת את הקוד לביו ונסה שוב בעוד מספר דקות.',
+          note: `הקוד ${otpCode} לא נמצא בפרופיל ה${p.label}. ודא שהוספת את הקוד לביו ושהפרופיל ציבורי, ונסה שוב בעוד דקה.`,
         });
       }
     }
 
-    // ── Disconnect: remove Instagram data ──
+    // ── Disconnect: remove social media data ──
     if (action === 'disconnect') {
       await base44.asServiceRole.entities.User.update(user.id, {
-        instagram_username: '',
-        instagram_verified: false,
-        instagram_verify_code: '',
+        [usernameField]: '',
+        [verifiedField]: false,
+        [codeField]: '',
       });
       return Response.json({ success: true });
     }

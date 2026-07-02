@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, ExternalLink } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
 import { getCategoryLabel } from '@/lib/categories';
@@ -180,27 +180,59 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* Instagram — only shown if verified */}
-        {user.instagram_verified && user.instagram_username && (
-          <SectionCard title="Instagram">
-            <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noopener noreferrer"
-              style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-              <div style={{
-                width: 42, height: 42, borderRadius: 13,
-                background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <Instagram size={20} color="white" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>@{user.instagram_username}</span>
-                  <ShieldCheck size={14} color="#059669" />
-                </div>
-                <div style={{ fontSize: 11, color: '#059669', fontWeight: 700, marginTop: 2 }}>חשבון מאומת ✓</div>
-              </div>
-              <ExternalLink size={16} color="var(--text-3)" />
-            </a>
+        {/* Social Links — only shown if verified */}
+        {(user.instagram_verified || user.facebook_verified || user.tiktok_verified) && (
+          <SectionCard title="רשתות חברתיות">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {user.instagram_verified && user.instagram_username && (
+                <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Instagram size={18} color="white" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{user.instagram_username}</span>
+                      <ShieldCheck size={13} color="#059669" />
+                    </div>
+                    <div style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>מאומת</div>
+                  </div>
+                  <ExternalLink size={14} color="var(--text-3)" />
+                </a>
+              )}
+              {user.facebook_verified && user.facebook_username && (
+                <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: '#1877F2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Facebook size={18} color="white" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{user.facebook_username}</span>
+                      <ShieldCheck size={13} color="#059669" />
+                    </div>
+                    <div style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>מאומת</div>
+                  </div>
+                  <ExternalLink size={14} color="var(--text-3)" />
+                </a>
+              )}
+              {user.tiktok_verified && user.tiktok_username && (
+                <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Music2 size={18} color="white" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{user.tiktok_username}</span>
+                      <ShieldCheck size={13} color="#059669" />
+                    </div>
+                    <div style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>מאומת</div>
+                  </div>
+                  <ExternalLink size={14} color="var(--text-3)" />
+                </a>
+              )}
+            </div>
           </SectionCard>
         )}
 
