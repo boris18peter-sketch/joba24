@@ -48,9 +48,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If this was the only pending applicant and task has auto_bump, unfreeze price
+    // Sync applicants array on task so feed cards stay in sync
     const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
     const task = tasks[0];
+    if (task) {
+      const currentApplicants = Array.isArray(task.applicants) ? task.applicants : [];
+      await base44.asServiceRole.entities.Task.update(taskId, {
+        applicants: currentApplicants.filter(a => a.worker_id !== user.id),
+      });
+    }
+
+    // If this was the only pending applicant and task has auto_bump, unfreeze price
     if (task?.auto_bump_enabled && task?.base_price) {
       const remaining = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
       const activeRemaining = remaining.filter(a => a.status === 'pending' || a.status === 'approved');

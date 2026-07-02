@@ -43,6 +43,12 @@ Deno.serve(async (req) => {
     // Mark application as rejected
     await base44.asServiceRole.entities.TaskApplication.update(applicationId, { status: 'rejected' });
 
+    // Remove from task's applicants array so feed cards stay in sync
+    const currentApplicants = Array.isArray(task.applicants) ? task.applicants : [];
+    await base44.asServiceRole.entities.Task.update(taskId, {
+      applicants: currentApplicants.filter(a => a.worker_id !== app.worker_id),
+    });
+
     // Refund credits to worker
     const creditsToRefund = app.credits_charged || 0;
     if (creditsToRefund > 0) {
