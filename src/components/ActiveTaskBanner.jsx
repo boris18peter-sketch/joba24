@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -27,22 +28,17 @@ function getRelativeTime(date) {
   return null;
 }
 
-const STATUS_STEPS = {
-  on_the_way: { label: 'בדרך',         ownerLabel: 'בדרך אליך',          step: 0 },
-  delayed:    { label: 'מתעכב',        ownerLabel: 'מתעכב',               step: 0 },
-  parking:    { label: 'מחפש חניה',    ownerLabel: 'מחפש חניה',           step: 0 },
-  arrived:    { label: 'הגעתי',        ownerLabel: 'הגיע',                step: 1 },
-  starting:   { label: 'מתחיל עבודה',  ownerLabel: 'בעבודה',              step: 1 },
-  finishing:  { label: 'מסיים עבודה',  ownerLabel: 'מסיים',               step: 1 },
-  done:       { label: 'ממתין לאישור', ownerLabel: 'ממתין לאישורך',       step: 2 },
+const ICON_MAP = {
+  navigation: Navigation, map_pin: MapPin, check: CheckCircle,
+  package: Package, truck: Truck, heart: Heart, book: BookOpen, camera: Camera,
 };
 
-// Quick Action config per step
-function getQuickAction(stepIdx, workerStatus) {
-  if (stepIdx < 0)   return { label: 'יצאתי לדרך',  nextKey: 'on_the_way', color: '#1a6fd4' };
-  if (stepIdx === 0) return { label: 'הגעתי למיקום', nextKey: 'arrived',    color: '#059669' };
-  if (stepIdx === 1) return { label: 'סיימתי המשימה', nextKey: 'done',      color: '#059669' };
-  return null; // done
+// Quick Action config per step — uses category config for labels, icons, and confirm text
+function getQuickAction(config, stepIdx) {
+  if (stepIdx < 0)   return { ...config.actions.start,  nextKey: 'on_the_way', color: '#1a6fd4' };
+  if (stepIdx === 0) return { ...config.actions.arrive, nextKey: 'arrived',    color: '#059669' };
+  if (stepIdx === 1) return { ...config.actions.done,   nextKey: 'done',       color: '#059669' };
+  return null;
 }
 
 // ── Confirm Bottom Sheet ────────────────────────────────────────────────────────
@@ -62,15 +58,13 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
         <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 36, marginBottom: 8 }}>
-            {action.nextKey === 'arrived' ? '📍' : action.nextKey === 'done' ? '✅' : '🚀'}
+            {action.emoji}
           </div>
           <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 6 }}>
-            {action.nextKey === 'arrived' ? t('confirm_arrival') || 'Confirm arrival' : action.nextKey === 'done' ? t('confirm_done') || 'Confirm completion' : t('leaving_now') || 'Leaving now'}
+            {action.confirmTitle}
           </div>
           <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-            {action.nextKey === 'arrived' ? t('owner_gets_update_arrived') || 'Owner will get an update' :
-             action.nextKey === 'done' ? t('owner_gets_update_done') || 'Owner will get an update' :
-             t('lets_update_leaving') || 'Let\'s update that you\'re leaving!'}
+            {action.confirmSub}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -190,20 +184,22 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ paddingBottom: 0 }}>
       <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', paddingBottom: 6 }}>
         {taskList.map((task, idx) => {
-          const tStatusInfo = STATUS_STEPS[task.worker_status] || null;
+          const catConfig = getCategoryConfig(task.category);
+          const tStatusInfo = catConfig.statusMap[task.worker_status] || null;
           const tRole = task._roleHint || roleHint;
           const tIsWorker = tRole === 'worker' || (tRole !== 'client' && me?.id === task.worker_id);
           const tIsOwner  = tRole === 'client' || (tRole !== 'worker' && me?.id === task.client_id);
           const tStepIdx  = tStatusInfo?.step ?? -1;
           // If task is no longer TAKEN (cancelled by publisher), worker cannot update status
           const isTaskActive = task.status === 'TAKEN';
-          const quickAction = tIsWorker && isTaskActive ? getQuickAction(tStepIdx, task.worker_status) : null;
+          const quickAction = tIsWorker && isTaskActive ? getQuickAction(catConfig, tStepIdx) : null;
+          const QuickActionIcon = quickAction ? (ICON_MAP[quickAction.icon] || Navigation) : null;
 
           const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
           const statusText = tIsOwner
             ? tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד'
-            : tStatusInfo?.label || 'לחץ יצאתי לדרך';
+            : tStatusInfo?.label || catConfig.actions.start.label;
 
           // Nav button → show only when on_the_way. After arrived → show chat.
           const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;
@@ -277,11 +273,9 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   background: 'rgba(255,255,255,0.85)', borderRadius: 2,
                   transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)',
                 }} />
-                {[
-                  { Icon: Navigation, label: t('on_the_way') || 'בדרך' },
-                  { Icon: MapPin,     label: t('arrived') || 'הגיע' },
-                  { Icon: CheckCircle, label: t('finished') || 'סיים' },
-                ].map(({ Icon, label }, stepIdx) => {
+                {catConfig.steps.map((step, stepIdx) => {
+                  const Icon = ICON_MAP[step.icon] || Navigation;
+                  const label = step.label;
                   const done   = tStepIdx >= 0 && stepIdx <= tStepIdx;
                   const active = tStepIdx >= 0 && stepIdx === tStepIdx;
                   return (
@@ -322,7 +316,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                     onClick={() => setPendingAction({ task, action: { ...quickAction } })}
                     style={{ flex: 2, height: 44, borderRadius: 12, background: quickAction.color, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, boxShadow: '0 2px 10px rgba(0,0,0,0.18)' }}
                   >
-                    {quickAction.nextKey === 'arrived' ? <MapPin size={15} /> : quickAction.nextKey === 'done' ? <CheckCircle size={15} /> : <Navigation size={15} />}
+                    {QuickActionIcon && <QuickActionIcon size={15} />}
                     {quickAction.label}
                   </button>
                 )}
@@ -409,7 +403,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                     onClick={() => { setMediaTask(task); setMediaPhotos([...(task.completion_photos || [])]); setMediaVideo(task.completion_video_url || ''); }}
                     style={{ flex: 1, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
-                    <Camera size={12} /> הוכחת ביצוע {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
+                    <Camera size={12} /> {catConfig.proofLabel} {(task.completion_photos?.length > 0 || task.completion_video_url) ? '✓' : ''}
                   </button>
                   {task.requires_invoice && (
                     <button
@@ -445,8 +439,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
         >
           <div dir="rtl" onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg,white)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '80dvh', overflowY: 'auto' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 16px' }} />
-            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1,#0f1e40)', marginBottom: 4 }}>📸 הוכחת ביצוע</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>התמונות/סרטון יוצגו למפרסם המשימה</div>
+            <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1,#0f1e40)', marginBottom: 4 }}>📸 {getCategoryConfig(mediaTask.category).proofLabel}</div>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>{getCategoryConfig(mediaTask.category).proofSub}</div>
             <WorkerCompletionPhoto
               photos={mediaPhotos}
               videoUrl={mediaVideo}

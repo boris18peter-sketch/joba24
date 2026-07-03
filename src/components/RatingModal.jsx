@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Star, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { moderateText } from '@/hooks/useModeration';
+import { getCategoryConfig } from '@/lib/categoryConfig';
 
 export default function RatingModal({ task, me, onClose }) {
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ export default function RatingModal({ task, me, onClose }) {
   const toggleStructured = (key) => setStructured(s => ({ ...s, [key]: s[key] === true ? null : true }));
 
   const isOwner = me?.id === task.client_id;
+  const catConfig = getCategoryConfig(task.category);
   const revieweeId = isOwner ? task.worker_id : task.client_id;
   const revieweeName = isOwner ? task.worker_name : task.client_name;
   const role = isOwner ? 'client' : 'worker';
@@ -29,7 +31,7 @@ export default function RatingModal({ task, me, onClose }) {
   const handleSubmit = async () => {
     if (loading || !canSubmit) return;
     if (!paymentConfirmed) {
-      toast.error(isOwner ? 'יש לאשר שהעבודה הושלמה כראוי' : 'יש לאשר שסיימת את הג״ובה');
+      toast.error(isOwner ? catConfig.rating.ownerErrorToast : catConfig.rating.workerErrorToast);
       return;
     }
     setLoading(true);
@@ -110,7 +112,7 @@ export default function RatingModal({ task, me, onClose }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
-            {isOwner ? `איך היה עם ${revieweeName}?` : 'דרג את בעל המשימה'}
+            {isOwner ? catConfig.rating.ownerHeader(revieweeName) : catConfig.rating.workerHeader}
           </h2>
           <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 'var(--r-sm)', background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X size={18} color="#6b7280" />
@@ -118,7 +120,7 @@ export default function RatingModal({ task, me, onClose }) {
         </div>
 
         <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-          {isOwner ? 'הביקורת שלך עוזרת לעובדים אחרים לקבל החלטות טובות יותר' : 'הביקורת תעזור לבעל המשימה לשפר את החוויה עבור עובדים עתידיים'}
+          {isOwner ? catConfig.rating.ownerSub : catConfig.rating.workerSub}
         </p>
 
         {/* Stars */}
@@ -141,21 +143,10 @@ export default function RatingModal({ task, me, onClose }) {
         {rating > 0 && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>
-              {isOwner ? 'מה היה טוב? (לא חובה)' : 'איך היה הלקוח?'}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {(isOwner ? [
-                { key: 'arrivedOnTime', label: '⏱️ הגיע בזמן' },
-                { key: 'professional', label: '💼 מקצועי' },
-                { key: 'goodCommunication', label: '💬 תקשורת טובה' },
-                { key: 'fairPricing', label: '💰 מחיר הוגן' },
-                { key: 'wouldHireAgain', label: '🔁 אשכור שוב' },
-              ] : [
-                { key: 'arrivedOnTime', label: '⏱️ תיאם בזמן' },
-                { key: 'goodCommunication', label: '💬 תקשורת ברורה' },
-                { key: 'fairPricing', label: '💰 שילם כמוסכם' },
-                { key: 'wouldHireAgain', label: '🔁 אעבוד שוב' },
-              ]).map(item => (
+              {isOwner ? catConfig.rating.ownerChipsLabel : catConfig.rating.workerChipsLabel}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+              {(isOwner ? catConfig.rating.ownerChips : catConfig.rating.workerChips).map(item => (
                 <button key={item.key} onClick={() => toggleStructured(item.key)}
                   style={{ padding: '6px 13px', borderRadius: 'var(--r-full)', fontSize: 12, fontWeight: 700, border: `1.5px solid ${structured[item.key] ? 'var(--brand-primary)' : 'var(--border-1)'}`, background: structured[item.key] ? 'var(--brand-primary-light)' : 'var(--surface-2)', color: structured[item.key] ? 'var(--brand-primary)' : 'var(--text-2)', cursor: 'pointer', transition: 'all 0.15s' }}>
                   {item.label}
@@ -173,10 +164,10 @@ export default function RatingModal({ task, me, onClose }) {
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: paymentConfirmed ? '#065f46' : '#1e293b' }}>
-              {isOwner ? '✅ העבודה בוצעה לשביעות רצוני' : '✅ ביצעתי את העבודה בהצלחה'}
+              {isOwner ? catConfig.rating.ownerConfirmTitle : catConfig.rating.workerConfirmTitle}
             </div>
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-              {isOwner ? 'אשר שהתשלום יבוצע כמוסכם ושני הצדדים הסתדרו' : 'אשר שסיימת את הג\'ובה והתשלום יתקבל כמוסכם'}
+              {isOwner ? catConfig.rating.ownerConfirmSub : catConfig.rating.workerConfirmSub}
             </div>
           </div>
         </button>
