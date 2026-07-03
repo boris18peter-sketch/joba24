@@ -34,11 +34,23 @@ function decodeEntities(str) {
     .replace(/&nbsp;/g, ' ');
 }
 
+// ── Fetch with timeout ──
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // ── Instagram bio fetch: multiple methods ──
 async function getInstagramContent(username) {
   // Method 1: Instagram internal API (most reliable)
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
       {
         headers: {
@@ -59,7 +71,7 @@ async function getInstagramContent(username) {
 
   // Method 2: Page fetch + parse meta tags
   try {
-    const res = await fetch(`https://www.instagram.com/${username}/`, {
+    const res = await fetchWithTimeout(`https://www.instagram.com/${username}/`, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -95,7 +107,7 @@ async function getInstagramContent(username) {
 // ── Facebook bio fetch ──
 async function getFacebookContent(username) {
   try {
-    const res = await fetch(`https://www.facebook.com/${username}`, {
+    const res = await fetchWithTimeout(`https://www.facebook.com/${username}`, {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -119,10 +131,10 @@ async function getFacebookContent(username) {
   return null;
 }
 
-// ── LLM verification with web search (backup) ──
+// ── LLM verification with web search (backup, with 30s timeout) ──
 async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) {
   try {
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    const llmPromise = base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `Visit the ${platformLabel} profile at this URL: ${profileUrl}. Look at the profile bio/description/intro section. Check if the 6-digit code "${code}" appears anywhere in the bio or profile text. Return a JSON object with "found" (boolean) and "bio" (string containing the bio text you found, or empty string).`,
       add_context_from_internet: true,
       model: 'gemini_3_flash',
@@ -134,8 +146,13 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
         },
       },
     });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('LLM timeout')), 30000)
+    );
+    const result = await Promise.race([llmPromise, timeoutPromise]);
     return result?.found === true;
-  } catch {
+  } catch (e) {
+    console.log(`verifyInstagram: LLM verification failed: ${e?.message || e}`);
     return false;
   }
 }
@@ -189,6 +206,7 @@ Deno.serve(async (req) => {
       // Method 1: Direct fetch
       if (platform === 'instagram') {
         const content = await getInstagramContent(socialUsername);
+        console.log(`verifyInstagram: instagram content for ${socialUsername}:`, content ? `${content.source} bio=${content.bio?.length || 0}chars` : 'null');
         if (content) {
           if (content.bio && content.bio.includes(code)) {
             isVerified = true;

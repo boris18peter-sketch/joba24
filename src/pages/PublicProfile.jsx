@@ -132,17 +132,6 @@ export default function PublicProfile() {
           <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{user.full_name}</span>
           {user.is_verified && <VerifiedBadge size="md" />}
         </div>
-        {user.preferred_categories?.length > 0 && (
-          <div className="profile-cat-scroll" style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%', padding: '0 4px' }}>
-            <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
-            {user.preferred_categories.map(cat => (
-              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>{getCategoryLabel(cat)}</span>
-            ))}
-          </div>
-        )}
-
-
-
         {/* Stats */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>
           {[
@@ -172,83 +161,45 @@ export default function PublicProfile() {
         {/* Trust bar */}
         <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
 
-        {/* Bio + Intro Video */}
-        {(user.bio || user.intro_video_url) && (
+        {/* Bio */}
+        {user.bio && (
           <SectionCard title="אודות">
-            {user.bio && <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0, marginBottom: user.intro_video_url ? 12 : 0 }}>{user.bio}</p>}
-            {user.intro_video_url && (
-              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
-                <video src={user.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
-              </div>
-            )}
+            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{user.bio}</p>
           </SectionCard>
         )}
 
-        {/* Media Gallery */}
-        {user.profile_media?.length > 0 && (
+        {/* Media Gallery (unified with intro video) */}
+        {(user.profile_media?.length > 0 || user.intro_video_url) && (
           <SectionCard title="גלריית מדיה">
-            <ProfileMediaGallery media={user.profile_media} isEditing={false} />
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.5 }}>סרטונים ומדיה שמסבירים עלייך - מגדילים אמון פי 3</div>
+            <ProfileMediaGallery
+              media={[
+                ...(user.intro_video_url ? [{ type: 'video', url: user.intro_video_url }] : []),
+                ...(user.profile_media || [])
+              ]}
+              isEditing={false}
+            />
           </SectionCard>
         )}
 
-        {/* Social Links — shown if any username exists */}
+        {/* Social Links — compact horizontal row */}
         {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
           <SectionCard title="רשתות חברתיות">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {user.instagram_username && (
-                <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Instagram size={18} color="white" />
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[
+                { key: 'instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
+                { key: 'facebook', username: user.facebook_username, verified: user.facebook_verified, url: `https://facebook.com/${user.facebook_username}`, icon: Facebook, color: '#1877F2' },
+                { key: 'tiktok', username: user.tiktok_username, verified: user.tiktok_verified, url: `https://tiktok.com/@${user.tiktok_username}`, icon: Music2, color: '#000' },
+              ].filter(p => p.username).map(p => (
+                <a key={p.key} href={p.url} target="_blank" rel="noopener noreferrer"
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 4px', borderRadius: 14, textDecoration: 'none', border: `1px solid ${p.verified ? '#bbf7d0' : 'var(--border-1)'}`, background: p.verified ? '#f0fdf4' : 'var(--surface-3)' }}>
+                  <div style={{ position: 'relative', width: 34, height: 34, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p.icon size={17} color="white" />
+                    {p.verified && <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#059669', border: '2px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={9} color="white" /></span>}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{user.instagram_username}</span>
-                      {user.instagram_verified && <ShieldCheck size={13} color="#059669" />}
-                    </div>
-                    <div style={{ fontSize: 10, color: user.instagram_verified ? '#059669' : 'var(--text-3)', fontWeight: 600 }}>
-                      {user.instagram_verified ? 'מאומת' : 'מחובר'}
-                    </div>
-                  </div>
-                  <ExternalLink size={14} color="var(--text-3)" />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: p.verified ? '#059669' : 'var(--text-3)' }}>{p.verified ? 'מאומת' : 'מחובר'}</span>
                 </a>
-              )}
-              {user.facebook_username && (
-                <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: '#1877F2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Facebook size={18} color="white" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{user.facebook_username}</span>
-                      {user.facebook_verified && <ShieldCheck size={13} color="#059669" />}
-                    </div>
-                    <div style={{ fontSize: 10, color: user.facebook_verified ? '#059669' : 'var(--text-3)', fontWeight: 600 }}>
-                      {user.facebook_verified ? 'מאומת' : 'מחובר'}
-                    </div>
-                  </div>
-                  <ExternalLink size={14} color="var(--text-3)" />
-                </a>
-              )}
-              {user.tiktok_username && (
-                <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Music2 size={18} color="white" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{user.tiktok_username}</span>
-                      {user.tiktok_verified && <ShieldCheck size={13} color="#059669" />}
-                    </div>
-                    <div style={{ fontSize: 10, color: user.tiktok_verified ? '#059669' : 'var(--text-3)', fontWeight: 600 }}>
-                      {user.tiktok_verified ? 'מאומת' : 'מחובר'}
-                    </div>
-                  </div>
-                  <ExternalLink size={14} color="var(--text-3)" />
-                </a>
-              )}
+              ))}
             </div>
           </SectionCard>
         )}
@@ -260,6 +211,19 @@ export default function PublicProfile() {
               {user.preferred_cities.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <MapPin size={11} /> {c}
+                </span>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Categories */}
+        {user.preferred_categories?.length > 0 && (
+          <SectionCard title="תחומי עיסוק">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {user.preferred_categories.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
+                  {getCategoryLabel(c)}
                 </span>
               ))}
             </div>
@@ -330,20 +294,6 @@ export default function PublicProfile() {
               </button>
             )}
           </div>
-        )}
-
-        {/* Categories (moved to bottom) */}
-        {user.preferred_categories?.length > 0 && (
-          <SectionCard title="תחומי עיסוק">
-            <div className="profile-cat-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
-              <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
-              {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                  {getCategoryLabel(c)}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
         )}
 
         {/* Empty */}

@@ -221,16 +221,6 @@ export default function Profile() {
           {(me?.is_verified && me?.id_number) && <VerifiedBadge size="md" />}
         </div>
 
-        {me?.preferred_categories?.length > 0 && (
-          <div className="profile-cat-scroll" style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%', padding: '0 4px', marginBottom: 4 }}>
-            <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
-            {me.preferred_categories.map(cat => (
-              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>{getCategoryLabel(cat)}</span>
-            ))}
-          </div>
-        )}
-        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{me?.email}</div>
-
         {/* Stats row */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>
           {[
@@ -270,24 +260,40 @@ export default function Profile() {
         {/* ── Trust Bar ── */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
 
-        {/* ── About (bio + intro video) — visible to self ── */}
-        {(me?.bio || me?.intro_video_url) && (
+        {/* ── About (bio only) ── */}
+        {me?.bio && (
           <SectionCard style={{ padding: '16px' }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>אודות</div>
-            {me?.bio && <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0, marginBottom: me?.intro_video_url ? 12 : 0 }}>{me.bio}</p>}
-            {me?.intro_video_url && (
-              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
-                <video src={me.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
-              </div>
-            )}
+            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{me.bio}</p>
           </SectionCard>
         )}
 
-        {/* ── Media Gallery ── */}
-        {me?.profile_media?.length > 0 && (
+        {/* ── Skills ── */}
+        {me?.preferred_categories?.length > 0 && (
           <SectionCard style={{ padding: '16px' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>גלריית מדיה</div>
-            <ProfileMediaGallery media={me?.profile_media} isEditing={false} />
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>{t('categories') || 'תחומים'}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {me.preferred_categories.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
+                  {getCategoryLabel(c)}
+                </span>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* ── Media Gallery (unified with intro video) ── */}
+        {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
+          <SectionCard style={{ padding: '16px' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>גלריית מדיה</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12, lineHeight: 1.5 }}>סרטונים ומדיה שמסבירים עלייך - מגדילים אמון פי 3</div>
+            <ProfileMediaGallery
+              media={[
+                ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
+                ...(me?.profile_media || [])
+              ]}
+              isEditing={false}
+            />
           </SectionCard>
         )}
 
@@ -334,21 +340,6 @@ export default function Profile() {
             <MenuRow icon={Star} iconBg="#fffbeb" iconColor="#f59e0b" label={t('recent_reviews') || 'ביקורות'} sub={`${reviews.length} ביקורות`} onClick={() => setShowAllReviews(true)} />
           </>}
         </SectionCard>
-
-        {/* ── Skills ── */}
-        {me?.preferred_categories?.length > 0 && (
-          <SectionCard style={{ padding: '16px' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>{t('categories') || 'תחומים'}</div>
-            <div className="profile-cat-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
-              <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
-              {me.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                  {getCategoryLabel(c)}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
-        )}
 
         {/* ── Logout / Delete ── */}
         <SectionCard>

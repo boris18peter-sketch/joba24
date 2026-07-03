@@ -169,53 +169,27 @@ export default function SocialLinksSection({ user }) {
             )}
           </div>
         </div>
-        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
           {PLATFORMS.map(({ key, label, icon: Icon, color }) => {
             const data = getData(key);
             const isVerified = data?.verified;
             const hasUsername = !!data?.username;
             return (
-              <div key={key} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 12px', borderRadius: 14,
-                background: isVerified ? '#f0fdf4' : 'var(--surface-3)',
-                border: `1px solid ${isVerified ? '#bbf7d0' : 'var(--border-1)'}`,
-              }}>
-                <div style={{
-                  width: 38, height: 38, borderRadius: 11,
-                  background: hasUsername ? 'var(--surface-2)' : color,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  border: hasUsername ? '1px solid var(--border-1)' : 'none',
+              <button key={key} onClick={() => { setActiveKey(key); setError(''); setSuccess(''); setUsername(''); }}
+                style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                  padding: '12px 4px', borderRadius: 14, cursor: 'pointer', transition: 'all 0.15s',
+                  border: `1px solid ${isVerified ? '#bbf7d0' : 'var(--border-1)'}`,
+                  background: isVerified ? '#f0fdf4' : 'var(--surface-3)',
                 }}>
-                  <Icon size={18} color={hasUsername ? 'var(--text-2)' : 'white'} />
+                <div style={{ position: 'relative', width: 36, height: 36, borderRadius: 11, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={18} color="white" />
+                  {isVerified && <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#059669', border: '2px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={9} color="white" /></span>}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {hasUsername ? (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>@{data.username}</span>
-                        {isVerified && <ShieldCheck size={13} color="#059669" />}
-                      </div>
-                      <div style={{ fontSize: 11, color: isVerified ? '#059669' : 'var(--text-3)', fontWeight: 600 }}>
-                        {isVerified ? 'מאומת ✓' : 'ממתין לאימות'}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)' }}>{label}</div>
-                  )}
-                </div>
-                {hasUsername ? (
-                  <button onClick={() => { setActiveKey(key); setError(''); setSuccess(''); }}
-                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                    <span style={{ fontSize: 14, color: 'var(--text-3)' }}>⋯</span>
-                  </button>
-                ) : (
-                  <button onClick={() => { setActiveKey(key); setError(''); setSuccess(''); setUsername(''); }}
-                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', cursor: 'pointer', flexShrink: 0 }}>
-                    חבר
-                  </button>
-                )}
-              </div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: isVerified ? '#059669' : hasUsername ? 'var(--text-2)' : 'var(--text-3)' }}>
+                  {isVerified ? 'מאומת' : hasUsername ? 'מחובר' : 'חבר'}
+                </span>
+              </button>
             );
           })}
         </div>
@@ -240,7 +214,7 @@ export default function SocialLinksSection({ user }) {
               <SheetHeader icon={activeConfig.icon} color={activeConfig.color} title={`חבר את ${activeConfig.label}`} subtitle="התחבר עם הסיסמה שלך לטיקטוק ונאמת אוטומטית" />
               {error && <ErrorBox text={error} />}
               <button onClick={handleOAuthConnect} disabled={loading}
-                style={btnPrimary(loading || !username.trim())}>
+                style={btnPrimary(loading)}>
                 {loading ? <><Loader2 size={18} className="animate-spin" /> מחכה לאישור...</> : <><activeConfig.icon size={18} /> התחבר ל{activeConfig.label}</>}
               </button>
             </div>

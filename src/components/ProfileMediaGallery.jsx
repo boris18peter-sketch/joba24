@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Plus, Trash2, Loader2, Video, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ProfileMediaGallery({ media = [], isEditing, onChange }) {
+export default function ProfileMediaGallery({ media = [], isEditing, onChange, subtitle }) {
   const inputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox] = useState(null);
@@ -37,8 +37,18 @@ export default function ProfileMediaGallery({ media = [], isEditing, onChange })
 
   return (
     <>
+      {subtitle && (
+        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.5 }}>{subtitle}</div>
+      )}
       <div className="profile-media-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
         <style>{`.profile-media-scroll::-webkit-scrollbar{display:none}`}</style>
+        {/* Add media button — always FIRST */}
+        {isEditing && (
+          <button onClick={() => inputRef.current?.click()} disabled={uploading}
+            style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 14, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', color: '#1a6fd4' }}>
+            {uploading ? <Loader2 size={20} className="animate-spin" /> : <><Plus size={22} /><span style={{ fontSize: 12, fontWeight: 700 }}>הוסף מדיה</span></>}
+          </button>
+        )}
         {allMedia.map(item => (
           <div key={item.url} style={{ position: 'relative', flexShrink: 0, width: 130, height: 130, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)', background: '#000' }}>
             {item.type === 'video' ? (
@@ -58,12 +68,6 @@ export default function ProfileMediaGallery({ media = [], isEditing, onChange })
             )}
           </div>
         ))}
-        {isEditing && (
-          <button onClick={() => inputRef.current?.click()} disabled={uploading}
-            style={{ flexShrink: 0, width: 130, height: 130, borderRadius: 14, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', color: '#1a6fd4' }}>
-            {uploading ? <Loader2 size={20} className="animate-spin" /> : <><Plus size={22} /><span style={{ fontSize: 12, fontWeight: 700 }}>הוסף מדיה</span></>}
-          </button>
-        )}
       </div>
       <input ref={inputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleUpload} />
       {lightbox && (

@@ -129,7 +129,10 @@ export default function WorkerProfile() {
       phone: currentUser.phone || '',
       intro_video_url: currentUser.intro_video_url || '',
       certificate_files: currentUser.certificate_files || [],
-      profile_media: currentUser.profile_media || [],
+      profile_media: [
+        ...(currentUser.intro_video_url ? [{ type: 'video', url: currentUser.intro_video_url }] : []),
+        ...(currentUser.profile_media || [])
+      ],
       preferred_categories: currentUser.preferred_categories || [],
       preferred_cities: currentUser.preferred_cities || [],
     });
@@ -223,15 +226,6 @@ export default function WorkerProfile() {
           <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{currentUser?.full_name}</span>
           {currentUser?.is_verified && <VerifiedBadge size="md" />}
         </div>
-        {currentUser?.preferred_categories?.length > 0 && (
-          <div className="profile-cat-scroll" style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%', padding: '0 4px' }}>
-            <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
-            {currentUser.preferred_categories.map(cat => (
-              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>{getCategoryLabel(cat)}</span>
-            ))}
-          </div>
-        )}
-
         {/* Mini stats */}
         {isViewingOther && (
           <div style={{ display: 'flex', gap: 0, marginTop: 16, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 300 }}>
@@ -269,51 +263,25 @@ export default function WorkerProfile() {
                 className="bg-secondary border-0 rounded-xl h-12"
                 type="tel"
               />
-              {/* Intro video upload */}
-              <input ref={videoInputRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={handleVideoUpload} />
-              {form.intro_video_url ? (
-                <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
-                  <video src={form.intro_video_url} controls style={{ width: '100%', maxHeight: 240, display: 'block', background: '#000' }} />
-                  <button
-                    onClick={() => setForm(f => ({ ...f, intro_video_url: '' }))}
-                    style={{ position: 'absolute', top: 8, left: 8, width: 32, height: 32, borderRadius: 10, background: 'rgba(0,0,0,0.6)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <Trash2 size={15} color="white" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => videoInputRef.current?.click()}
-                  disabled={uploadingVideo}
-                  style={{ width: '100%', height: 52, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}
-                >
-                  {uploadingVideo ? <Loader2 size={16} className="animate-spin" /> : <><Video size={16} /> העלה סרטון היכרות</>}
-                </button>
-              )}
-              <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center' }}>סרטון קצר שמסביר עליך — מגדיל אמון פי 3</div>
             </div>
           </SectionCard>
         )}
 
-        {/* ── About: view mode (bio + video) ── */}
-        {isViewingOther && (form.bio || currentUser?.intro_video_url) && (
+        {/* ── About: view mode (bio only) ── */}
+        {isViewingOther && form.bio && (
           <SectionCard title="אודות">
-            {form.bio && <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0, marginBottom: currentUser?.intro_video_url ? 12 : 0 }}>{form.bio}</p>}
-            {currentUser?.intro_video_url && (
-              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
-                <video src={currentUser.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
-              </div>
-            )}
+            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{form.bio}</p>
           </SectionCard>
         )}
 
-        {/* ── Media Gallery ── */}
+        {/* ── Media Gallery (unified with intro video) ── */}
         {(!isViewingOther || (form.profile_media || []).length > 0) && (
           <SectionCard title="גלריית מדיה">
             <ProfileMediaGallery
               media={form.profile_media}
               isEditing={!isViewingOther}
               onChange={(newMedia) => setForm(f => ({ ...f, profile_media: newMedia }))}
+              subtitle="סרטונים ומדיה שמסבירים עלייך - מגדילים אמון פי 3"
             />
           </SectionCard>
         )}
@@ -329,6 +297,27 @@ export default function WorkerProfile() {
             </a>
           </SectionCard>
         )}
+
+        {/* ── Categories ── */}
+        <SectionCard title="סוגי משימות">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {CATEGORIES.map(c => {
+              const sel = form.preferred_categories.includes(c.value);
+              return (
+                <button key={c.value}
+                  onClick={() => !isViewingOther && toggleCategory(c.value)}
+                  disabled={isViewingOther}
+                  style={{
+                    padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
+                    background: sel ? '#1a6fd4' : 'var(--surface-3)',
+                    color: sel ? 'white' : 'var(--text-2)',
+                    borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
+                  }}
+                >{c.label}</button>
+              );
+            })}
+          </div>
+        </SectionCard>
 
         {/* ── Unified Certificates section ── */}
         {(!isViewingOther || hasCerts) && (
@@ -448,28 +437,6 @@ export default function WorkerProfile() {
             </div>
           </SectionCard>
         )}
-
-        {/* ── Categories (moved to bottom) ── */}
-        <SectionCard title="סוגי משימות">
-          <div className="profile-cat-scroll" style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
-            <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
-            {CATEGORIES.map(c => {
-              const sel = form.preferred_categories.includes(c.value);
-              return (
-                <button key={c.value}
-                  onClick={() => !isViewingOther && toggleCategory(c.value)}
-                  disabled={isViewingOther}
-                  style={{
-                    padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s', flexShrink: 0, whiteSpace: 'nowrap',
-                    background: sel ? '#1a6fd4' : 'var(--surface-3)',
-                    color: sel ? 'white' : 'var(--text-2)',
-                    borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
-                  }}
-                >{c.label}</button>
-              );
-            })}
-          </div>
-        </SectionCard>
 
         {/* ── Save button (bottom, edit mode) ── */}
         {!isViewingOther && (
