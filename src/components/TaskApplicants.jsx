@@ -111,6 +111,13 @@ export default function TaskApplicants({ task, onApprove }) {
     },
     onSuccess: async () => {
       setShowCancelWorkerConfirm(false);
+      // Optimistic: remove cancelled worker from applicants array so badge count updates immediately
+      const cancelledWorkerId = task.worker_id;
+      const patchTask = (t) => t ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== cancelledWorkerId), worker_id: null, worker_name: null, worker_status: null, status: 'OPEN' } : t;
+      queryClient.setQueryData(['task', task.id], patchTask);
+      queryClient.setQueryData(['allTasks'], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
+      queryClient.setQueryData(['myTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
+      queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });

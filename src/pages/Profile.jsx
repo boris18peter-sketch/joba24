@@ -11,6 +11,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
+import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -182,7 +183,7 @@ export default function Profile() {
           style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(26,111,212,0.3)' }}
         >
           <Pencil size={14} color="white" />
-          {t('edit') || 'עריכה'}
+          עריכה
         </button>
       </div>
 
@@ -221,13 +222,11 @@ export default function Profile() {
         </div>
 
         {me?.preferred_categories?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: 300, marginBottom: 4 }}>
-            {me.preferred_categories.slice(0, 4).map(cat => (
-              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>{getCategoryLabel(cat)}</span>
+          <div className="profile-cat-scroll" style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%', padding: '0 4px', marginBottom: 4 }}>
+            <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
+            {me.preferred_categories.map(cat => (
+              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>{getCategoryLabel(cat)}</span>
             ))}
-            {me.preferred_categories.length > 4 && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', padding: '2px 4px' }}>+{me.preferred_categories.length - 4}</span>
-            )}
           </div>
         )}
         <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{me?.email}</div>
@@ -284,6 +283,14 @@ export default function Profile() {
           </SectionCard>
         )}
 
+        {/* ── Media Gallery ── */}
+        {me?.profile_media?.length > 0 && (
+          <SectionCard style={{ padding: '16px' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>גלריית מדיה</div>
+            <ProfileMediaGallery media={me?.profile_media} isEditing={false} />
+          </SectionCard>
+        )}
+
         {/* ── Certificates (unified) — visible to self ── */}
         {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
           <SectionCard style={{ padding: '16px' }}>
@@ -332,9 +339,10 @@ export default function Profile() {
         {me?.preferred_categories?.length > 0 && (
           <SectionCard style={{ padding: '16px' }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>{t('categories') || 'תחומים'}</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div className="profile-cat-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+              <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
               {me.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe', flexShrink: 0, whiteSpace: 'nowrap' }}>
                   {getCategoryLabel(c)}
                 </span>
               ))}

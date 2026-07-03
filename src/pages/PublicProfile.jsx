@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, ExternalLink } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
+import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import { getCategoryLabel } from '@/lib/categories';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 
@@ -132,13 +133,11 @@ export default function PublicProfile() {
           {user.is_verified && <VerifiedBadge size="md" />}
         </div>
         {user.preferred_categories?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', maxWidth: 300 }}>
-            {user.preferred_categories.slice(0, 4).map(cat => (
-              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px' }}>{getCategoryLabel(cat)}</span>
+          <div className="profile-cat-scroll" style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%', padding: '0 4px' }}>
+            <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
+            {user.preferred_categories.map(cat => (
+              <span key={cat} style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '2px 8px', flexShrink: 0, whiteSpace: 'nowrap' }}>{getCategoryLabel(cat)}</span>
             ))}
-            {user.preferred_categories.length > 4 && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', padding: '2px 4px' }}>+{user.preferred_categories.length - 4}</span>
-            )}
           </div>
         )}
 
@@ -182,6 +181,13 @@ export default function PublicProfile() {
                 <video src={user.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
               </div>
             )}
+          </SectionCard>
+        )}
+
+        {/* Media Gallery */}
+        {user.profile_media?.length > 0 && (
+          <SectionCard title="גלריית מדיה">
+            <ProfileMediaGallery media={user.profile_media} isEditing={false} />
           </SectionCard>
         )}
 
@@ -243,19 +249,6 @@ export default function PublicProfile() {
                   <ExternalLink size={14} color="var(--text-3)" />
                 </a>
               )}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* Categories */}
-        {user.preferred_categories?.length > 0 && (
-          <SectionCard title="תחומי עיסוק">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
-                  {getCategoryLabel(c)}
-                </span>
-              ))}
             </div>
           </SectionCard>
         )}
@@ -337,6 +330,20 @@ export default function PublicProfile() {
               </button>
             )}
           </div>
+        )}
+
+        {/* Categories (moved to bottom) */}
+        {user.preferred_categories?.length > 0 && (
+          <SectionCard title="תחומי עיסוק">
+            <div className="profile-cat-scroll" style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+              <style>{`.profile-cat-scroll::-webkit-scrollbar{display:none}`}</style>
+              {user.preferred_categories.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  {getCategoryLabel(c)}
+                </span>
+              ))}
+            </div>
+          </SectionCard>
         )}
 
         {/* Empty */}

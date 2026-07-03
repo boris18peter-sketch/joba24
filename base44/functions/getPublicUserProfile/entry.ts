@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
         preferred_cities: targetUser.preferred_cities,
         certificates: targetUser.certificates,
         certificate_files: targetUser.certificate_files,
+        profile_media: targetUser.profile_media,
         repeat_hires: targetUser.repeat_hires,
         avg_response_minutes: targetUser.avg_response_minutes,
         on_time_rate: targetUser.on_time_rate,
