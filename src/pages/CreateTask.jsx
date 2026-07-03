@@ -29,6 +29,8 @@ import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 import TaskChatInterface from '@/components/TaskChatInterface';
+import VerticalTaskFields from '@/components/VerticalTaskFields';
+import { useVerticalConfig, hasSpecializedVertical } from '@/lib/verticalEngine';
 
 const DRAFT_KEY = 'joba24_create_task_draft';
 const timeOptions = ['15m', '30m', '1h', '2h', 'custom'];
@@ -334,6 +336,7 @@ export default function CreateTask() {
     setAddressConfirmed(!!(editTask.lat && editTask.lng));
   }, [editTask?.id]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+  const { config: verticalConfig } = useVerticalConfig(form.category);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const [errors, setErrors] = useState({});
@@ -1036,15 +1039,24 @@ export default function CreateTask() {
 
         {/* Worker count hint — removed per design decision */}
 
-        {/* Smart Category Extra Fields — right below category picker */}
-        <CategoryExtraFields
-          key={form.category}
-          category={form.category}
-          originLat={form.lat}
-          originLng={form.lng}
-          initialValues={isEditMode ? form.category_details : undefined}
-          onChange={(data, text) => { setCategoryDetails(data); setExtraFieldsText(text); }}
-        />
+        {/* Vertical-specific fields for specialized categories (e.g. plumbing) */}
+        {hasSpecializedVertical(form.category) ? (
+          <VerticalTaskFields
+            key={form.category}
+            category={form.category}
+            initialValues={categoryDetails}
+            onChange={(data, text) => { setCategoryDetails(data); setExtraFieldsText(text); }}
+          />
+        ) : (
+          <CategoryExtraFields
+            key={form.category}
+            category={form.category}
+            originLat={form.lat}
+            originLng={form.lng}
+            initialValues={isEditMode ? form.category_details : undefined}
+            onChange={(data, text) => { setCategoryDetails(data); setExtraFieldsText(text); }}
+          />
+        )}
 
         {/* Description — the main input. Title and category are auto-generated from this. */}
         <div ref={fieldRefs.description}>
@@ -1070,7 +1082,7 @@ export default function CreateTask() {
               {t('recording_press_stop')}
             </div>
           )}
-          <Textarea placeholder="לדוגמה: צריך צבעי לצבוע את הסלון ושני חדרי שינה בדירה ברחוב הרצל 15 תל אביב, הקירות לבנים ויש כבר צבע בבית. מוכן לשלם 800 ש״ח במזומן."
+          <Textarea placeholder={hasSpecializedVertical(form.category) ? "תאר את התקלה בפירוט: מה הבעיה, איפה בבית, מתי התחילה, וכל פרט שיעזור לעובד להגיע מוכן" : "לדוגמה: צריך צבעי לצבוע את הסלון ושני חדרי שינה בדירה ברחוב הרצל 15 תל אביב, הקירות לבנים ויש כבר צבע בבית. מוכן לשלם 800 ש״ח במזומן."}
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
@@ -1123,6 +1135,11 @@ export default function CreateTask() {
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
           </div>
+          {hasSpecializedVertical(form.category) && verticalConfig?.task_form?.validation_rules?.price_range && form.price && (Number(form.price) < verticalConfig.task_form.validation_rules.price_range.min || Number(form.price) > verticalConfig.task_form.validation_rules.price_range.max) && (
+            <p style={{ fontSize: 11, color: '#f97316', marginTop: 4, marginBottom: 8, fontWeight: 600 }}>
+              💡 טווח מחירים מומלץ ל{verticalConfig.general.name}: ₪{verticalConfig.task_form.validation_rules.price_range.min}–₪{verticalConfig.task_form.validation_rules.price_range.max}
+            </p>
+          )}
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
 
           {/* Auto bump */}

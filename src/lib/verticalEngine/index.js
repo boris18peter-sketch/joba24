@@ -82,6 +82,9 @@ async function loadCache() {
   return _loadPromise;
 }
 
+// Re-export specialized vertical utilities
+export { hasSpecializedVertical, getSpecializedVerticalIds } from './verticals';
+
 // ── Public API ────────────────────────────────────────────────────────────
 
 /**
