@@ -48,13 +48,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Sync applicants array on task so feed cards stay in sync
+    // Rebuild applicants array from actual TaskApplication records (single source of truth)
     const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
     const task = tasks[0];
     if (task) {
-      const currentApplicants = Array.isArray(task.applicants) ? task.applicants : [];
+      const allAppsAfter = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
+      const activeAppsAfter = allAppsAfter.filter(a => a.status === 'pending' || a.status === 'approved');
       await base44.asServiceRole.entities.Task.update(taskId, {
-        applicants: currentApplicants.filter(a => a.worker_id !== user.id),
+        applicants: activeAppsAfter.map(a => ({
+          worker_id: a.worker_id,
+          worker_name: a.worker_name,
+          applied_at: a.created_date,
+        })),
       });
     }
 

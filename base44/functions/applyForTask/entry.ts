@@ -77,13 +77,15 @@ Deno.serve(async (req) => {
       credits_charged: creditsRequired,
     });
 
-    // Sync applicants array on task so feed cards show live applicant count
-    const currentApplicants = Array.isArray(task.applicants) ? task.applicants : [];
+    // Rebuild applicants array from actual TaskApplication records (single source of truth)
+    const allAppsAfter = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
+    const activeAppsAfter = allAppsAfter.filter(a => a.status === 'pending' || a.status === 'approved');
     await base44.asServiceRole.entities.Task.update(taskId, {
-      applicants: [
-        ...currentApplicants.filter(a => a.worker_id !== user.id),
-        { worker_id: user.id, worker_name: user.full_name, applied_at: new Date().toISOString() },
-      ],
+      applicants: activeAppsAfter.map(a => ({
+        worker_id: a.worker_id,
+        worker_name: a.worker_name,
+        applied_at: a.created_date,
+      })),
     });
 
     // Deduct credits only after application is successfully created

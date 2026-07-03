@@ -23,7 +23,8 @@ export default function TaskApplicants({ task, onApprove }) {
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['applications', task.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }, '-created_date', 20),
-    staleTime: 60000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch ALL applicant profiles in parallel — includes profile_photo, bio, etc.
@@ -147,6 +148,10 @@ export default function TaskApplicants({ task, onApprove }) {
         return;
       }
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
+
+      // Immediately sync applicant count (don't wait for fade animation)
+      queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
+      queryClient.invalidateQueries({ queryKey: ['task', task.id] });
 
       setFadingIds(prev => new Set([...prev, app.id]));
       setTimeout(() => {

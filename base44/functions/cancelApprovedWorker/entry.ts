@@ -62,8 +62,9 @@ Deno.serve(async (req) => {
 
     // Pending applications are NOT touched — they remain valid for re-approval.
 
-    // Remove cancelled worker from task's applicants array so feed card badge stays in sync
-    const currentApplicants = Array.isArray(task.applicants) ? task.applicants : [];
+    // Rebuild applicants array from actual TaskApplication records (single source of truth)
+    // `apps` was fetched above; after rejecting approved apps, only pending remain active
+    const activeAppsAfter = apps.filter(a => a.status === 'pending');
 
     // Reset task to OPEN
     await base44.asServiceRole.entities.Task.update(taskId, {
@@ -73,7 +74,11 @@ Deno.serve(async (req) => {
       worker_status: null,
       worker_rating: null,
       worker_verified: null,
-      applicants: currentApplicants.filter(a => a.worker_id !== cancelledWorkerId),
+      applicants: activeAppsAfter.map(a => ({
+        worker_id: a.worker_id,
+        worker_name: a.worker_name,
+        applied_at: a.created_date,
+      })),
     });
 
     console.log(`✅ cancelApprovedWorker: task ${taskId} reset to OPEN, ${approvedApps.length} apps refunded`);

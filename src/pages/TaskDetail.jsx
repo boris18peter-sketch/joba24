@@ -180,7 +180,8 @@ export default function TaskDetail() {
     queryKey: ['applications-pulse', id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
     enabled: !!id,
-    staleTime: 60000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
   const applicationCount = taskApplications.filter((a) => a.status === 'pending' || a.status === 'approved').length;
 
@@ -434,6 +435,8 @@ export default function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me?.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['applications-pulse', id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', id] });
       toast.success(t('app_cancelled_credits_back'));
     },
     onError: () => {
@@ -467,6 +470,8 @@ export default function TaskDetail() {
         return [...without, newApp];
       });
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['applications-pulse', id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', id] });
       setShowApplyForm(false);
       setHasApplied(true);
       toast.success(t('app_sent_n_credits').replace('{n}', data.credits_charged));

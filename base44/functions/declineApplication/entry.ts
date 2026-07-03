@@ -43,10 +43,15 @@ Deno.serve(async (req) => {
     // Mark application as rejected
     await base44.asServiceRole.entities.TaskApplication.update(applicationId, { status: 'rejected' });
 
-    // Remove from task's applicants array so feed cards stay in sync
-    const currentApplicants = Array.isArray(task.applicants) ? task.applicants : [];
+    // Rebuild applicants array from actual TaskApplication records (single source of truth)
+    const allAppsAfter = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
+    const activeAppsAfter = allAppsAfter.filter(a => a.status === 'pending' || a.status === 'approved');
     await base44.asServiceRole.entities.Task.update(taskId, {
-      applicants: currentApplicants.filter(a => a.worker_id !== app.worker_id),
+      applicants: activeAppsAfter.map(a => ({
+        worker_id: a.worker_id,
+        worker_name: a.worker_name,
+        applied_at: a.created_date,
+      })),
     });
 
     // Refund credits to worker
@@ -70,11 +75,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check if any active applications remain; if none — unfreeze auto-bump
-    const remaining = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-    const activeRemaining = remaining.filter(a => a.status === 'pending' || a.status === 'approved');
-
-    if (activeRemaining.length === 0 && task.auto_bump_enabled && task.base_price) {
+    // Reuse activeAppsAfter (already queried above) for auto-bump check
+    if (activeAppsAfter.length === 0 && task.auto_bump_enabled && task.base_price) {
       // Reset price back to base_price so auto-bump can continue
       await base44.asServiceRole.entities.Task.update(taskId, { price: task.base_price });
     }
@@ -82,7 +84,7 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       refunded: creditsToRefund,
-      auto_bump_resumed: activeRemaining.length === 0 && task.auto_bump_enabled,
+      auto_bump_resumed: activeAppsAfter.length === 0 && task.auto_bump_enabled,
     });
 
   } catch (error) {
