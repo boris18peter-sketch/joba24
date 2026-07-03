@@ -867,20 +867,21 @@ export default function TaskDetail() {
                     onClick={() => document.getElementById('task-applicants-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     style={{
                       flex: 1,
-                      background: 'rgba(255,165,0,0.22)',
+                      background: 'linear-gradient(135deg,#f59e0b,#d97706)',
                       borderRadius: 14,
-                      border: '1.5px solid rgba(255,165,0,0.75)',
+                      border: 'none',
                       color: 'white', fontWeight: 800, fontSize: 13,
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '0 14px',
                       cursor: 'pointer',
                       textAlign: 'right',
+                      boxShadow: '0 4px 14px rgba(245,158,11,0.35)',
                     }}
                   >
                     <span style={{ fontSize: 18, lineHeight: 1 }}>🟠</span>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>{applicationCount} {t('applications')}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{t('click_to_view_approve')}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', marginTop: 1 }}>{t('click_to_view_approve')}</div>
                     </div>
                   </button>
                 )}

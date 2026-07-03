@@ -4,7 +4,6 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
@@ -141,12 +140,11 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
 
 // ── Boost Scanner ──────────────────────────────────────────────────────────────
 function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }) {
-  const navigate = useNavigate();
   const [workerCount, setWorkerCount] = useState(0);
   const [pulseWorkers, setPulseWorkers] = useState([]);
   const [statusMsg, setStatusMsg] = useState('שולח פופאפ לעובדים מתאימים...');
 
-  const goToTask = () => { onNavigate?.(); navigate(`/task/${taskId}`); };
+  const goToTask = () => { onNavigate?.(); };
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['workerPool'],
@@ -253,7 +251,6 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
 // ── Main Export ───────────────────────────────────────────────────────────────
 export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategory, onDismiss }) {
   const [step, setStep] = useState('launch'); // 'launch' | 'scanner'
-  const navigate = useNavigate();
 
   const handleDismiss = () => { onDismiss?.(); };
 

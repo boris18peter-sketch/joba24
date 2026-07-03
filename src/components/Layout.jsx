@@ -425,6 +425,7 @@ export default function Layout() {
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
           localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
+          window.dispatchEvent(new CustomEvent('rating_modal_closed', { detail: { taskId: ratingTask.id } }));
           setRatingTask(null);
         }} />,
         document.body

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck, Phone, Lock } from 'lucide-react';
+import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck, Phone, Lock, Briefcase } from 'lucide-react';
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
@@ -26,16 +26,24 @@ export default function TaskApplicants({ task, onApprove }) {
     staleTime: 60000,
   });
 
-  const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
-  const { data: approvedWorkerUser } = useQuery({
-    queryKey: ['publicUser', approvedWorkerId, task.id],
+  // Fetch ALL applicant profiles in parallel — includes profile_photo, bio, etc.
+  const { data: applicantProfiles = {} } = useQuery({
+    queryKey: ['applicantProfiles', task.id],
     queryFn: async () => {
-      const res = await base44.functions.invoke('getPublicUserProfile', { userId: approvedWorkerId, taskId: task.id });
-      return res.data?.user || null;
+      const profiles = {};
+      await Promise.all(applications.map(async (app) => {
+        try {
+          const res = await base44.functions.invoke('getPublicUserProfile', { userId: app.worker_id, taskId: task.id });
+          if (res.data?.user) profiles[app.worker_id] = res.data.user;
+        } catch {}
+      }));
+      return profiles;
     },
-    enabled: !!approvedWorkerId,
+    enabled: applications.length > 0,
     staleTime: 120000,
   });
+
+  const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
 
   const approveMutation = useMutation({
     mutationFn: async (app) => {
@@ -176,9 +184,11 @@ export default function TaskApplicants({ task, onApprove }) {
   }
 
   const sortedPending = [...pending].sort((a, b) => {
-    if (a.worker_verified && !b.worker_verified) return -1;
-    if (!a.worker_verified && b.worker_verified) return 1;
-    return (b.worker_rating || 0) - (a.worker_rating || 0);
+    const aProfile = applicantProfiles[a.worker_id];
+    const bProfile = applicantProfiles[b.worker_id];
+    if (aProfile?.is_verified && !bProfile?.is_verified) return -1;
+    if (!aProfile?.is_verified && bProfile?.is_verified) return 1;
+    return (bProfile?.rating || b.worker_rating || 0) - (aProfile?.rating || a.worker_rating || 0);
   });
 
   const visibleApps = [
@@ -186,20 +196,8 @@ export default function TaskApplicants({ task, onApprove }) {
     ...sortedPending,
   ];
 
-  const btnBase = {
-    height: 34,
-    borderRadius: 10,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    cursor: 'pointer',
-    flexShrink: 0,
-    transition: 'opacity 0.15s, transform 0.1s',
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
       {/* Cancel Worker Confirmation Modal */}
       {showCancelWorkerConfirm && createPortal(
@@ -241,14 +239,20 @@ export default function TaskApplicants({ task, onApprove }) {
         document.body
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', letterSpacing: 0.3 }}>עובדים שמבקשים לבצע ({visibleApps.length})</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>מועמדים ({visibleApps.length})</span>
       </div>
 
       {visibleApps.map(app => {
         const isApproved = app.status === 'approved';
         const isBeingDeclined = decliningIds.has(app.id);
         const isFading = fadingIds.has(app.id);
+        const profile = applicantProfiles[app.worker_id];
+        const photo = profile?.profile_photo;
+        const rating = profile?.rating || app.worker_rating || 0;
+        const isVerified = profile?.is_verified || app.worker_verified;
+        const tasksCompleted = profile?.tasks_completed ?? app.worker_tasks_count ?? 0;
+        const phone = isApproved ? profile?.phone : null;
 
         return (
           <div
@@ -256,158 +260,179 @@ export default function TaskApplicants({ task, onApprove }) {
             style={{
               background: isApproved ? '#f0fdf4' : 'var(--surface-2)',
               border: isApproved ? '1.5px solid #86efac' : '1px solid var(--border-1)',
-              borderRadius: 14,
-              padding: '10px 12px',
+              borderRadius: 16,
+              overflow: 'hidden',
               boxShadow: 'var(--shadow-xs)',
               transition: 'opacity 0.35s ease, transform 0.35s ease',
               opacity: isFading ? 0 : 1,
-              transform: isFading ? 'translateX(20px)' : 'translateX(0)',
+              transform: isFading ? 'translateX(30px)' : 'translateX(0)',
               pointerEvents: isFading ? 'none' : 'auto',
             }}
           >
-            {/* ── Main row: avatar + info + actions ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {/* Avatar */}
+            {/* ── Top section: avatar + info + actions ── */}
+            <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              {/* Avatar — circular with photo or gradient fallback */}
               <div
                 onClick={() => navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`)}
                 style={{
-                  width: 40, height: 40, borderRadius: 12,
-                  background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  width: 48, height: 48, borderRadius: '50%',
+                  background: photo ? 'var(--surface-3)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16, fontWeight: 900, color: 'white', cursor: 'pointer', flexShrink: 0,
+                  fontSize: 18, fontWeight: 900, color: 'white', cursor: 'pointer', flexShrink: 0,
+                  overflow: 'hidden', position: 'relative',
+                  border: isVerified ? '2px solid #16a34a' : '2px solid transparent',
+                  boxShadow: isVerified ? '0 0 0 2px rgba(22,163,74,0.15)' : 'none',
                 }}
               >
-                {app.worker_name?.[0]?.toUpperCase() || '?'}
+                {photo ? (
+                  <img src={photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  app.worker_name?.[0]?.toUpperCase() || '?'
+                )}
               </div>
 
-              {/* Name + badges + privacy */}
+              {/* Name + badges */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   <span
                     onClick={() => navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`)}
-                    style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', cursor: 'pointer' }}
+                    style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', cursor: 'pointer' }}
                   >
                     {app.worker_name}
                   </span>
-                  {app.worker_verified && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 20, padding: '1px 6px' }}>
-                      <ShieldCheck size={10} /> מאומת
+                  {isApproved && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: '#059669', background: '#dcfce7', border: '1px solid #86efac', borderRadius: 20, padding: '2px 8px' }}>
+                      <CheckCircle2 size={11} /> אושר
                     </span>
-                  )}
-                  {app.worker_rating > 0 && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#b45309', background: '#fff3e0', border: '1px solid #fcd34d', borderRadius: 20, padding: '1px 7px' }}>
-                      <Star size={10} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
-                      {app.worker_rating.toFixed(1)}
-                    </span>
-                  )}
-                  {app.worker_tasks_count > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>✅ {app.worker_tasks_count}</span>
                   )}
                 </div>
 
-                {/* Privacy note or phone */}
-                {!isApproved ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>
+                {/* Stats row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                  {rating > 0 && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, color: '#b45309' }}>
+                      <Star size={11} style={{ fill: '#f59e0b', color: '#f59e0b' }} />
+                      {rating.toFixed(1)}
+                    </span>
+                  )}
+                  {isVerified && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#059669' }}>
+                      <ShieldCheck size={11} /> מאומת
+                    </span>
+                  )}
+                  {tasksCompleted > 0 && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>
+                      <Briefcase size={10} /> {tasksCompleted} משימות
+                    </span>
+                  )}
+                </div>
+
+                {/* Phone (approved only) or privacy note */}
+                {isApproved && phone ? (
+                  <a href={`tel:${phone}`} onClick={e => e.stopPropagation()} dir="ltr"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 13, fontWeight: 800, color: '#16a34a', textDecoration: 'none', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '3px 10px' }}>
+                    <Phone size={12} color="#16a34a" /> {phone}
+                  </a>
+                ) : !isApproved ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>
                     <Lock size={9} color="#d97706" /> המספר יוצג לאחר אישור
                   </div>
-                ) : approvedWorkerUser?.phone ? (
-                  <a href={`tel:${approvedWorkerUser.phone}`} onClick={e => e.stopPropagation()} dir="ltr"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: 12, fontWeight: 800, color: '#16a34a', textDecoration: 'none', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '2px 8px' }}>
-                    <Phone size={11} color="#16a34a" /> {approvedWorkerUser.phone}
-                  </a>
                 ) : null}
               </div>
 
-              {/* Action buttons */}
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                {/* Chat */}
-                <button
-                  onClick={() => setShowChat(true)}
-                  style={{ ...btnBase, width: 34, background: '#eff6ff', border: '1px solid #bfdbfe' }}
-                >
-                  <MessageCircle size={15} color="#1a6fd4" />
-                </button>
-
-                {isApproved ? (
-                  !workerStarted && (
-                    <button
-                      onClick={() => setShowCancelWorkerConfirm(true)}
-                      style={{ ...btnBase, padding: '0 12px', background: 'var(--surface-2)', border: '1.5px solid #fca5a5', color: '#dc2626', fontWeight: 700, fontSize: 12 }}
-                    >
-                      <UserX size={13} /> בטל
-                    </button>
-                  )
-                ) : !approvedApp ? (
-                  <>
-                    {/* Decline */}
-                    <button
-                      onClick={() => handleDecline(app)}
-                      disabled={isBeingDeclined}
-                      style={{
-                        ...btnBase,
-                        padding: '0 12px',
-                        background: 'var(--surface-2)',
-                        border: '1px solid var(--border-1)',
-                        color: isBeingDeclined ? 'var(--text-3)' : 'var(--text-2)',
-                        fontWeight: 700, fontSize: 12,
-                        cursor: isBeingDeclined ? 'not-allowed' : 'pointer',
-                        opacity: isBeingDeclined ? 0.6 : 1,
-                      }}
-                    >
-                      {isBeingDeclined ? <Loader2 size={13} className="animate-spin" /> : <><X size={13} /> דחה</>}
-                    </button>
-
-                    {/* Approve */}
-                    <button
-                      onClick={() => approveMutation.mutate(app)}
-                      disabled={approveMutation.isPending}
-                      style={{
-                        ...btnBase,
-                        padding: '0 14px',
-                        background: 'linear-gradient(135deg,#059669,#047857)',
-                        border: 'none', color: 'white', fontWeight: 800, fontSize: 12,
-                        opacity: approveMutation.isPending ? 0.6 : 1,
-                        boxShadow: '0 2px 8px rgba(5,150,105,0.3)',
-                      }}
-                    >
-                      {approveMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <><CheckCircle2 size={14} /> אשר</>}
-                    </button>
-                  </>
-                ) : null}
-
-                {isApproved && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#166534', padding: '0 4px' }}>
-                    <CheckCircle2 size={16} color="#16a34a" />
-                    <span>{workerStarted ? 'יצא לדרך' : 'אושר'}</span>
-                  </div>
-                )}
-              </div>
+              {/* Quick action: chat */}
+              <button
+                onClick={() => setShowChat(true)}
+                style={{
+                  width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+                  background: '#eff6ff', border: '1px solid #bfdbfe',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <MessageCircle size={16} color="#1a6fd4" />
+              </button>
             </div>
 
-            {/* Message (if any) */}
+            {/* ── Message (if any) ── */}
             {app.message && (
-              <p style={{ fontSize: 12, color: 'var(--text-2)', margin: '8px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{app.message}</p>
+              <div style={{ padding: '0 14px 8px' }}>
+                <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                  {app.message}
+                </div>
+              </div>
             )}
 
-            {/* Images (if any) */}
+            {/* ── Images (if any) ── */}
             {app.images?.length > 0 && (
-              <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
-                {app.images.slice(0, 4).map((url, i) => (
+              <div style={{ padding: '0 14px 10px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {app.images.slice(0, 5).map((url, i) => (
                   <button
                     key={i}
                     onClick={() => setLightbox({ open: true, images: app.images, index: i })}
-                    style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: '1.5px solid var(--border-1)', padding: 0, cursor: 'pointer', position: 'relative', background: 'var(--surface-3)', flexShrink: 0 }}
+                    style={{ width: 44, height: 44, borderRadius: 10, overflow: 'hidden', border: '1.5px solid var(--border-1)', padding: 0, cursor: 'pointer', position: 'relative', background: 'var(--surface-3)', flexShrink: 0 }}
                   >
                     <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    {i === 3 && app.images.length > 4 && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: 'white' }}>
-                        +{app.images.length - 4}
+                    {i === 4 && app.images.length > 5 && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'white' }}>
+                        +{app.images.length - 5}
                       </div>
                     )}
                   </button>
                 ))}
               </div>
             )}
+
+            {/* ── Action bar ── */}
+            <div style={{ borderTop: `1px solid ${isApproved ? '#bbf7d0' : 'var(--border-1)'}`, padding: '8px 14px', display: 'flex', gap: 8 }}>
+              {isApproved ? (
+                !workerStarted && (
+                  <button
+                    onClick={() => setShowCancelWorkerConfirm(true)}
+                    style={{
+                      flex: 1, height: 40, borderRadius: 11,
+                      background: '#fff1f2', border: '1.5px solid #fca5a5',
+                      color: '#dc2626', fontWeight: 700, fontSize: 13,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    <UserX size={15} /> בטל עובד
+                  </button>
+                )
+              ) : !approvedApp ? (
+                <>
+                  <button
+                    onClick={() => handleDecline(app)}
+                    disabled={isBeingDeclined}
+                    style={{
+                      flex: 1, height: 40, borderRadius: 11,
+                      background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+                      color: isBeingDeclined ? 'var(--text-3)' : 'var(--text-2)',
+                      fontWeight: 700, fontSize: 13,
+                      cursor: isBeingDeclined ? 'not-allowed' : 'pointer',
+                      opacity: isBeingDeclined ? 0.6 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    {isBeingDeclined ? <Loader2 size={15} className="animate-spin" /> : <><X size={15} /> דחה</>}
+                  </button>
+                  <button
+                    onClick={() => approveMutation.mutate(app)}
+                    disabled={approveMutation.isPending}
+                    style={{
+                      flex: 1.5, height: 40, borderRadius: 11,
+                      background: approveMutation.isPending ? '#86efac' : 'linear-gradient(135deg,#059669,#047857)',
+                      border: 'none', color: 'white', fontWeight: 800, fontSize: 13,
+                      cursor: 'pointer', opacity: approveMutation.isPending ? 0.7 : 1,
+                      boxShadow: '0 2px 10px rgba(5,150,105,0.3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    {approveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> אשר עובד</>}
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
         );
       })}

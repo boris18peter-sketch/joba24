@@ -105,20 +105,42 @@ export default function HomeFeed() {
   // Active task I published that is currently TAKEN
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
 
-  // ── Completion celebration — when worker's active task becomes COMPLETED ──
+  // ── Completion celebration — shows AFTER rating modal closes (not immediately) ──
   const prevActiveWorkerTaskRef = useRef(null);
+  const pendingCelebrationRef = useRef(null);
   const [completedCelebration, setCompletedCelebration] = useState(null);
+
+  // Detect task completion — store in pending ref, don't show yet
   useEffect(() => {
     const prev = prevActiveWorkerTaskRef.current;
     if (prev && !activeWorkerTask && me?.id) {
       const allTasksData = queryClient.getQueryData(['allTasks']) || [];
       const taskData = allTasksData.find(t => t.id === prev.id);
       if (taskData?.status === 'COMPLETED' && taskData?.worker_id === me.id) {
-        setCompletedCelebration(prev);
+        pendingCelebrationRef.current = prev;
+        // Fallback: if no rating modal shows within 3s (user already rated), show celebration
+        setTimeout(() => {
+          if (pendingCelebrationRef.current) {
+            setCompletedCelebration(pendingCelebrationRef.current);
+            pendingCelebrationRef.current = null;
+          }
+        }, 3000);
       }
     }
     prevActiveWorkerTaskRef.current = activeWorkerTask;
   }, [activeWorkerTask, me?.id, queryClient]);
+
+  // Show celebration when rating modal closes
+  useEffect(() => {
+    const handler = () => {
+      if (pendingCelebrationRef.current) {
+        setCompletedCelebration(pendingCelebrationRef.current);
+        pendingCelebrationRef.current = null;
+      }
+    };
+    window.addEventListener('rating_modal_closed', handler);
+    return () => window.removeEventListener('rating_modal_closed', handler);
+  }, []);
 
   useEffect(() => {
     if (!completedCelebration) return;
