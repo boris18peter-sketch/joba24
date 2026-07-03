@@ -11,10 +11,10 @@
  */
 
 const WEIGHTS = {
-  distance:        0.30,
-  recent_activity: 0.20,
-  task_relevance:  0.20,
-  personal_fit:    0.20,
+  distance:        0.25,
+  recent_activity: 0.15,
+  task_relevance:  0.35,
+  personal_fit:    0.15,
   urgency:         0.05,
   reliability_fit: 0.05,
 };
@@ -116,6 +116,11 @@ export function buildBehavioralProfile(applications = [], completedTasks = []) {
 function scorePersonalFit(task, profile) {
   if (!profile || !profile.hasStrongPattern) return 0.3; // neutral
 
+  // If user has explicit preferred categories and task doesn't match — strong penalty
+  if (profile.preferredCategories?.length > 0 && task.category && !profile.preferredCategories.includes(task.category)) {
+    return 0.05;
+  }
+
   let score = 0;
   let signals = 0;
 
@@ -201,9 +206,15 @@ function scoreTaskRelevance(task, workerProfile) {
   const { preferredCategories = [], categoryHistory = {} } = workerProfile;
   const cat = task.category || '';
   let catScore;
-  if (preferredCategories.includes(cat)) {
-    catScore = 1.0;
+  if (preferredCategories.length > 0) {
+    // User has explicit preferred categories — strongly penalize non-matching tasks
+    if (preferredCategories.includes(cat)) {
+      catScore = 1.0;
+    } else {
+      catScore = 0.05;
+    }
   } else {
+    // No explicit preferences — use behavioral history affinity
     const maxCount = Math.max(...Object.values(categoryHistory), 1);
     const affinity = (categoryHistory[cat] || 0) / maxCount;
     catScore = affinity > 0 ? 0.4 + affinity * 0.5 : 0.25;

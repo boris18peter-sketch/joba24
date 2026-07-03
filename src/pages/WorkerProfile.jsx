@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
+import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { toast } from 'sonner';
@@ -393,48 +394,10 @@ export default function WorkerProfile() {
           </div>
         </SectionCard>
 
-        {/* ── Task history (viewing other) ── */}
-        {isViewingOther && completedCount > 0 && (
-          <SectionCard title={`היסטוריית משימות · ${completedCount} הושלמו`}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {workerTasks.filter(t => t.status === 'COMPLETED').slice(0, 6).map((task, idx, arr) => {
-                const date = new Date(task.completed_at || task.updated_date);
-                const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-                const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
-                return (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingTop: idx > 0 ? 12 : 0, paddingBottom: idx < arr.length - 1 ? 12 : 0, borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{dateLabel} · ₪{task.price}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* ── Reviews (viewing other) ── */}
-        {isViewingOther && workerReviews.length > 0 && (
-          <SectionCard title={`ביקורות · ${workerReviews.length}`}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {workerReviews.slice(0, 5).map((review, i) => (
-                <div key={review.id}>
-                  {i > 0 && <div style={{ height: 1, background: 'var(--border-1)', marginBottom: 14 }} />}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
-                    ))}
-                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 'auto' }}>
-                      {new Date(review.created_date).toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: '2-digit' })}
-                    </span>
-                  </div>
-                  {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>"{review.comment}"</p>}
-                  <ReviewChips review={review} />
-                </div>
-              ))}
-            </div>
+        {/* ── Unified History & Reviews (viewing other) ── */}
+        {isViewingOther && (completedCount > 0 || workerReviews.length > 0) && (
+          <SectionCard title={`היסטוריה וביקורות · ${completedCount} משימות · ${workerReviews.length} ביקורות`}>
+            <TaskReviewHistory tasks={workerTasks.filter(t => t.status === 'COMPLETED')} reviews={workerReviews} />
           </SectionCard>
         )}
 

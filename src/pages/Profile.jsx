@@ -12,6 +12,7 @@ import TrustCard from '@/components/TrustCard';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
+import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -85,9 +86,8 @@ export default function Profile() {
   const { t, isRTL } = useLanguage();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showTaskHistory, setShowTaskHistory] = useState(false);
+  const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const photoInputRef = useRef(null);
@@ -334,11 +334,7 @@ export default function Profile() {
           <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
           <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי ימים, שבועות וחודשים'} to="/earnings" />
           <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
-          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('task_history')} sub={`${completedCount} ${t('tasks_completed')}`} onClick={() => setShowTaskHistory(true)} />
-          {reviews.length > 0 && <>
-            <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />
-            <MenuRow icon={Star} iconBg="#fffbeb" iconColor="#f59e0b" label={t('recent_reviews') || 'ביקורות'} sub={`${reviews.length} ביקורות`} onClick={() => setShowAllReviews(true)} />
-          </>}
+          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label="היסטוריה וביקורות" sub={`${completedCount} משימות · ${reviews.length} ביקורות`} onClick={() => setShowUnifiedHistory(true)} />
         </SectionCard>
 
         {/* ── Logout / Delete ── */}
@@ -351,65 +347,18 @@ export default function Profile() {
         <div style={{ height: 24 }} />
       </div>
 
-      {/* ── Task History Sheet ── */}
-      {showTaskHistory && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowTaskHistory(false)}>
+      {/* ── Unified History & Reviews Sheet ── */}
+      {showUnifiedHistory && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
           <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('task_history')} ({completedCount})</span>
-              <button onClick={() => setShowTaskHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריה וביקורות</span>
+              <button onClick={() => setShowUnifiedHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={16} color="#64748b" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 0 }} dir="rtl">
-              {completedCount === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('no_completed_tasks_yet')}</div>
-                </div>
-              ) : workerTasks.filter(task => task.status === 'COMPLETED').map((task, idx, arr) => {
-                const date = new Date(task.completed_at || task.updated_date);
-                const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-                const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
-                return (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingTop: idx > 0 ? 14 : 0, paddingBottom: idx < arr.length - 1 ? 14 : 0, borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>{dateLabel} · ₪{task.price}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ── All Reviews Sheet ── */}
-      {showAllReviews && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowAllReviews(false)}>
-          <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('all_my_reviews')} ({reviews.length})</span>
-              <button onClick={() => setShowAllReviews(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={16} color="#64748b" />
-              </button>
-            </div>
-            <div style={{ overflowY: 'auto', padding: '12px 20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {reviews.map(review => (
-                <div key={review.id} style={{ background: 'var(--surface-3)', borderRadius: 14, padding: '14px', border: '1px solid var(--border-1)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} size={13} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
-                    ))}
-                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 'auto' }}>{review.role === 'worker' ? t('from_client') : t('from_worker')}</span>
-                  </div>
-                  {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{review.comment}</p>}
-                  <ReviewChips review={review} />
-                </div>
-              ))}
+            <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
+              <TaskReviewHistory tasks={workerTasks.filter(t => t.status === 'COMPLETED')} reviews={reviews} />
             </div>
           </div>
         </div>,

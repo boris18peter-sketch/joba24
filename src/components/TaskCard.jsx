@@ -704,32 +704,22 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           </div>
         </div>
 
-        {/* Details toggle — subtle trapezoid strip at bottom center */}
-        <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
+        {/* Details toggle — clean, natural footer */}
+        <div style={{ paddingBottom: 10 }} onClick={e => e.stopPropagation()}>
           <button
             onClick={e => { e.stopPropagation(); setShowDetails(v => !v); }}
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-              width: '100%', height: 26, background: 'none', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              width: '100%', height: 30, background: 'none', border: 'none',
               cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              position: 'relative',
             }}
           >
-            {/* Trapezoid shape */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: showDetails ? '#f0f4fb' : '#f8fafc',
-              borderRadius: '0 0 12px 12px',
-              borderTop: '1px solid #eef2f8',
-              clipPath: 'polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)',
-              transition: 'background 0.15s',
-            }} />
-            <span style={{ position: 'relative', zIndex: 1, fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: 0.3 }}>
-               {showDetails ? t('less') : t('details')}
-             </span>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
+              {showDetails ? t('less') : t('details')}
+            </span>
             {showDetails
-              ? <ChevronUp size={11} color="#94a3b8" style={{ position: 'relative', zIndex: 1 }} />
-              : <ChevronDown size={11} color="#94a3b8" style={{ position: 'relative', zIndex: 1 }} />}
+              ? <ChevronUp size={12} color="var(--text-3)" />
+              : <ChevronDown size={12} color="var(--text-3)" />}
           </button>
         </div>
         {showDetails && (

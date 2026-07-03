@@ -410,8 +410,18 @@ export default function HomeFeed() {
       const task = tasks.find(t => t.id === a.task_id);
       return task || { category: null, price: null };
     });
-    return buildBehavioralProfile(appliedTaskDetails, completedTasks);
-  }, [myApplications, myTasks, tasks, me?.id]);
+    const profile = buildBehavioralProfile(appliedTaskDetails, completedTasks);
+    // Merge user's explicit preferred categories into behavioral profile
+    if (me?.preferred_categories?.length > 0) {
+      profile.preferredCategories = [...new Set([...(profile.preferredCategories || []), ...me.preferred_categories])];
+      profile.catCount = { ...profile.catCount };
+      me.preferred_categories.forEach(cat => {
+        if (!profile.catCount[cat]) profile.catCount[cat] = 1;
+      });
+      profile.hasStrongPattern = true;
+    }
+    return profile;
+  }, [myApplications, myTasks, tasks, me?.id, me?.preferred_categories]);
 
   // Categorize my applications — memoized to avoid recomputing every render
   const { approvedTaskIds, pendingTaskIds } = useMemo(() => {

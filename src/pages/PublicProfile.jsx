@@ -7,6 +7,7 @@ import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagra
 import VerifiedBadge from '@/components/VerifiedBadge';
 import TrustCard from '@/components/TrustCard';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
+import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { getCategoryLabel } from '@/lib/categories';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 
@@ -79,8 +80,7 @@ export default function PublicProfile() {
     enabled: !!userId,
   });
 
-  const [showTaskHistory, setShowTaskHistory] = useState(false);
-  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
 
   if (isLoading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
@@ -255,44 +255,24 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* History & Reviews menu buttons */}
+        {/* Unified History & Reviews button */}
         {(completedTasks.length > 0 || allReviews.length > 0) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
-            {completedTasks.length > 0 && (
-              <button onClick={() => setShowTaskHistory(true)}
-                style={{ all: 'unset', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', cursor: 'pointer' }}
-                onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
-                onPointerUp={e => { e.currentTarget.style.background = ''; }}
-                onPointerLeave={e => { e.currentTarget.style.background = ''; }}
-              >
-                <div style={{ width: 42, height: 42, borderRadius: 13, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={18} color="#7c3aed" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>היסטוריית משימות</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length} משימות הושלמו</div>
-                </div>
-                <ChevronLeft size={16} color="var(--text-3)" />
-              </button>
-            )}
-            {completedTasks.length > 0 && allReviews.length > 0 && <div style={{ height: 1, background: 'var(--border-1)', margin: '0 16px' }} />}
-            {allReviews.length > 0 && (
-              <button onClick={() => setShowAllReviews(true)}
-                style={{ all: 'unset', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', cursor: 'pointer' }}
-                onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
-                onPointerUp={e => { e.currentTarget.style.background = ''; }}
-                onPointerLeave={e => { e.currentTarget.style.background = ''; }}
-              >
-                <div style={{ width: 42, height: 42, borderRadius: 13, background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Star size={18} color="#f59e0b" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>ביקורות</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{allReviews.length} ביקורות · {avgRating !== '—' ? `${avgRating}★ ממוצע` : ''}</div>
-                </div>
-                <ChevronLeft size={16} color="var(--text-3)" />
-              </button>
-            )}
+            <button onClick={() => setShowUnifiedHistory(true)}
+              style={{ all: 'unset', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', cursor: 'pointer' }}
+              onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
+              onPointerUp={e => { e.currentTarget.style.background = ''; }}
+              onPointerLeave={e => { e.currentTarget.style.background = ''; }}
+            >
+              <div style={{ width: 42, height: 42, borderRadius: 13, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Clock size={18} color="#7c3aed" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>היסטוריה וביקורות</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length} משימות · {allReviews.length} ביקורות · {avgRating !== '—' ? `${avgRating}★ ממוצע` : ''}</div>
+              </div>
+              <ChevronLeft size={16} color="var(--text-3)" />
+            </button>
           </div>
         )}
 
@@ -307,60 +287,18 @@ export default function PublicProfile() {
         <div style={{ height: 16 }} />
       </div>
 
-      {/* ── Task History Sheet ── */}
-      {showTaskHistory && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowTaskHistory(false)}>
+      {/* ── Unified History & Reviews Sheet ── */}
+      {showUnifiedHistory && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
           <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריית משימות ({completedTasks.length})</span>
-              <button onClick={() => setShowTaskHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריה וביקורות</span>
+              <button onClick={() => setShowUnifiedHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={16} color="#64748b" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '16px 20px 32px', display: 'flex', flexDirection: 'column', gap: 0 }} dir="rtl">
-              {completedTasks.map((task, idx, arr) => {
-                const date = new Date(task.completed_at || task.updated_date);
-                const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-                const dateLabel = diffDays === 0 ? 'היום' : diffDays === 1 ? 'אתמול' : diffDays < 7 ? `לפני ${diffDays} ימים` : date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
-                return (
-                  <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, paddingTop: idx > 0 ? 14 : 0, paddingBottom: idx < arr.length - 1 ? 14 : 0, borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#dcfce7', border: '2px solid #16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, color: '#16a34a', fontWeight: 900 }}>✓</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.3 }}>{task.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 3 }}>{dateLabel}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ── All Reviews Sheet ── */}
-      {showAllReviews && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowAllReviews(false)}>
-          <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>ביקורות ({allReviews.length})</span>
-              <button onClick={() => setShowAllReviews(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={16} color="#64748b" />
-              </button>
-            </div>
-            <div style={{ overflowY: 'auto', padding: '12px 20px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {allReviews.map(review => (
-                <div key={review.id} style={{ background: 'var(--surface-3)', borderRadius: 14, padding: '14px', border: '1px solid var(--border-1)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <Star key={s} size={12} className={s <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'} />
-                    ))}
-                    <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 'auto' }}>{review.role === 'worker' ? 'מלקוח' : 'ממבצע'}</span>
-                  </div>
-                  {review.comment && <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{review.comment}</p>}
-                  <ReviewChips review={review} />
-                </div>
-              ))}
+            <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
+              <TaskReviewHistory tasks={completedTasks} reviews={allReviews} />
             </div>
           </div>
         </div>,
