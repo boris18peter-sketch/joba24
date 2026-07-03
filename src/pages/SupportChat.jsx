@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Headphones, Send, Loader2, Camera, Mic, MicOff, X } from 'lucide-react';
+import { Headphones, Send, Loader2, Image as ImageIcon, Mic, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
@@ -15,12 +15,13 @@ export default function SupportChat() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const [vpBottom, setVpBottom] = useState(0);
+  const [recordSeconds, setRecordSeconds] = useState(0);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const recordingStreamRef = useRef(null);
 
   const loadMessages = useCallback(async () => {
     if (!me?.id) return;
@@ -67,36 +68,24 @@ export default function SupportChat() {
     return unsub;
   }, [me?.id]);
 
-  // iOS visualViewport handling — keep input visible above keyboard
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const bottom = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setVpBottom(Math.floor(bottom));
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
-    };
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, []);
-
+  // Auto scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const handleSend = async (mediaUrls = []) => {
+  // Cleanup recording on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      recordingStreamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  const handleSend = async () => {
     const content = input.trim();
-    if (!content && mediaUrls.length === 0) return;
+    if (!content || sending) return;
     if (!me?.id) return;
     setInput('');
     setSending(true);
@@ -105,8 +94,7 @@ export default function SupportChat() {
         user_id: me.id,
         user_name: me.full_name || me.email,
         sender_role: 'user',
-        content: content || '',
-        media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        content,
       });
       setMessages(prev => [...prev, msg]);
     } catch {
@@ -122,7 +110,7 @@ export default function SupportChat() {
     }
   };
 
-  // ── Media upload ──
+  // Media upload
   const handleFileUpload = async (files) => {
     if (!files?.length || !me?.id) return;
     setUploading(true);
@@ -137,92 +125,138 @@ export default function SupportChat() {
     }
     setUploading(false);
     if (urls.length > 0) {
-      const content = input.trim();
-      setInput('');
       setSending(true);
       try {
         const msg = await base44.entities.SupportMessage.create({
           user_id: me.id,
           user_name: me.full_name || me.email,
           sender_role: 'user',
-          content: content || '',
+          content: '',
           media_urls: urls,
         });
         setMessages(prev => [...prev, msg]);
       } catch {
-        setInput(content);
+        toast.error('שגיאה בשליחה');
       }
       setSending(false);
     }
   };
 
-  // ── Voice recording ──
+  // Voice recording — sends audio message (not transcription)
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+      recordingStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+      const mr = new MediaRecorder(stream, { mimeType });
       audioChunksRef.current = [];
       mr.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        setTranscribing(true);
+        if (audioChunksRef.current.length === 0) return;
+        setSending(true);
         try {
-          const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
-          const file = new File([blob], 'recording.webm', { type: mr.mimeType });
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          const ext = mimeType.includes('webm') ? 'webm' : 'm4a';
+          const file = new File([blob], `voice_message.${ext}`, { type: mimeType });
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
-          const text = await base44.integrations.Core.TranscribeAudio({ audio_url: file_url });
-          if (text && typeof text === 'string' && text.trim()) {
-            setInput(prev => (prev ? prev + ' ' : '') + text.trim());
-          }
-        } catch (e) {
-          console.error('Transcription error:', e);
-          toast.error('שגיאה בתמלול ההקלטה');
-        } finally {
-          setTranscribing(false);
+          const msg = await base44.entities.SupportMessage.create({
+            user_id: me.id,
+            user_name: me.full_name || me.email,
+            sender_role: 'user',
+            content: '',
+            media_urls: [file_url],
+          });
+          setMessages(prev => [...prev, msg]);
+        } catch {
+          toast.error('שגיאה בשליחת ההקלטה');
         }
+        setSending(false);
       };
       mr.start();
       mediaRecorderRef.current = mr;
       setRecording(true);
-    } catch (e) {
-      console.error('Recording error:', e);
+      setRecordSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordSeconds(s => s + 1);
+      }, 1000);
+    } catch {
       toast.error('לא ניתן להפעיל את המיקרופון');
     }
   };
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
     setRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+      recordingStreamRef.current?.getTracks().forEach(t => t.stop());
+    }
+    setRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  // Render media (image / video / audio)
+  const renderMedia = (url) => {
+    const isAudio = url.includes('voice_message') || url.match(/\.(webm|mp3|wav|m4a|ogg|oga)$/i);
+    const isVideo = url.match(/\.(mp4|mov|avi|mkv)$/i);
+    if (isAudio) {
+      return <audio src={url} controls style={{ maxWidth: 220, height: 36, outline: 'none' }} />;
+    }
+    if (isVideo) {
+      return <video src={url} controls style={{ maxWidth: 180, borderRadius: 10 }} />;
+    }
+    return <img src={url} alt="" style={{ maxWidth: 180, borderRadius: 10, cursor: 'pointer' }} onClick={() => window.open(url, '_blank')} />;
   };
 
   if (!isAuthenticated) {
-    navigate('/chats');
-    return null;
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', background: 'var(--surface-1)' }}>
+        <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
+      </div>
+    );
   }
 
+  const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
   return (
-    <div dir="rtl" style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'fixed', top: 0, left: 0, right: 0, bottom: vpBottom, overflow: 'hidden' }}>
+    <div dir="rtl" style={{
+      display: 'flex', flexDirection: 'column', height: '100dvh',
+      background: 'var(--surface-1)', zIndex: 9999, position: 'relative',
+    }}>
       {/* Header */}
       <div style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'var(--header-bg)',
-        backdropFilter: 'blur(8px)',
-        padding: '7px 12px 6px',
+        background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
-        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '48px 12px 12px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0,
       }}>
         <BackButton to="/chats" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            width: 38, height: 38, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1a6fd4, #3b82f6)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Headphones size={16} color="white" />
+            <Headphones size={18} color="white" />
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: 'var(--text-1)' }}>תמיכת Joba24</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>תמיכת Joba24</div>
             <div style={{ fontSize: 11, color: 'var(--text-3)' }}>צוות התמיכה</div>
           </div>
         </div>
@@ -230,7 +264,7 @@ export default function SupportChat() {
 
       {/* Messages */}
       <div ref={scrollRef} style={{
-        flex: 1, overflowY: 'auto', padding: '12px 16px',
+        flex: 1, overflowY: 'auto', padding: '16px',
         display: 'flex', flexDirection: 'column', gap: 8,
         WebkitOverflowScrolling: 'touch',
       }}>
@@ -248,31 +282,28 @@ export default function SupportChat() {
           messages.map(msg => (
             <div key={msg.id} style={{
               display: 'flex',
-              justifyContent: msg.sender_role === 'user' ? 'flex-start' : 'flex-end',
+              justifyContent: msg.sender_role === 'user' ? 'flex-end' : 'flex-start',
             }}>
               <div style={{
                 maxWidth: '80%',
                 padding: '8px 12px',
                 borderRadius: msg.sender_role === 'user'
-                  ? '14px 14px 14px 4px'
-                  : '14px 14px 4px 14px',
-                background: msg.sender_role === 'user' ? 'var(--surface-3)' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-                color: msg.sender_role === 'user' ? 'var(--text-1)' : 'white',
+                  ? '18px 18px 18px 4px'
+                  : '18px 18px 4px 18px',
+                background: msg.sender_role === 'user' ? '#1e293b' : 'var(--surface-2)',
+                color: msg.sender_role === 'user' ? 'white' : 'var(--text-1)',
                 fontSize: 14,
                 lineHeight: 1.5,
                 wordBreak: 'break-word',
+                border: msg.sender_role === 'user' ? 'none' : '1px solid var(--border-1)',
+                boxShadow: msg.sender_role === 'user' ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
               }}>
                 {msg.content && <p style={{ margin: 0 }}>{msg.content}</p>}
                 {msg.media_urls?.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: msg.content ? 8 : 0 }}>
-                    {msg.media_urls.map((url, i) => {
-                      const isVideo = url.match(/\.(mp4|webm|mov)/i);
-                      return isVideo ? (
-                        <video key={i} src={url} controls style={{ maxWidth: 180, borderRadius: 10 }} />
-                      ) : (
-                        <img key={i} src={url} alt="" style={{ maxWidth: 180, borderRadius: 10 }} />
-                      );
-                    })}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: msg.content ? 8 : 0 }}>
+                    {msg.media_urls.map((url, i) => (
+                      <div key={i}>{renderMedia(url)}</div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -281,102 +312,111 @@ export default function SupportChat() {
         )}
       </div>
 
-      {/* Input area */}
+      {/* Input bar — matching Chat.jsx */}
       <div style={{
-        padding: '8px 16px max(8px, env(safe-area-inset-bottom))',
-        borderTop: '1px solid var(--border-1)',
-        display: 'flex', gap: 6, alignItems: 'flex-end',
-        flexShrink: 0,
         background: 'var(--surface-2)',
+        borderTop: '1px solid var(--border-1)',
+        padding: '10px 12px',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+        display: 'flex', alignItems: 'flex-end', gap: 8,
+        flexShrink: 0,
       }}>
         <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e.target.files)} />
 
-        {/* Camera / media upload */}
+        {/* File upload — Image icon matching Chat.jsx */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || sending}
-          style={{
-            width: 38, height: 38, borderRadius: 19, flexShrink: 0,
-            background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', minHeight: 'unset', minWidth: 'unset',
-          }}
+          disabled={uploading || sending || recording}
+          style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
-          {uploading ? <Loader2 size={16} className="animate-spin" color="var(--text-3)" /> : <Camera size={16} color="var(--text-2)" />}
+          {uploading ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" /> : <ImageIcon size={16} color="#64748b" />}
         </button>
 
-        {/* Text input */}
-        <textarea
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={transcribing ? 'מתמלל...' : 'כתוב הודעה...'}
-          disabled={transcribing}
-          rows={1}
-          style={{
-            flex: 1, padding: '10px 14px', borderRadius: 20,
-            border: '1.5px solid var(--border-1)',
-            background: 'var(--input-bg)', color: 'var(--text-1)',
-            fontSize: 16, outline: 'none', resize: 'none',
-            fontFamily: 'inherit', minHeight: 40, maxHeight: 120,
-            boxSizing: 'border-box', WebkitOverflowScrolling: 'touch',
-          }}
-        />
+        {/* Text input or recording indicator */}
+        {recording ? (
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', borderRadius: 22,
+            background: '#fef2f2', border: '1.5px solid #fca5a5',
+            minHeight: 42,
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', animation: 'pulse-app 1.5s infinite' }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>
+              {formatTime(recordSeconds)}
+            </span>
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>מקליט...</span>
+            <button onClick={cancelRecording} style={{ marginRight: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <X size={14} /> ביטול
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            flex: 1, background: 'var(--surface-3)', borderRadius: 22,
+            border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center',
+            padding: '2px 6px 2px 12px', gap: 6, minHeight: 42,
+          }}>
+            <textarea
+              value={input}
+              onChange={e => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="הקלד הודעה..."
+              rows={1}
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120,
+                overflowY: 'auto', padding: '6px 0', direction: 'rtl',
+              }}
+            />
+          </div>
+        )}
 
-        {/* Mic / Send */}
-        {input.trim() ? (
+        {/* Mic / Send / Stop & send recording */}
+        {recording ? (
           <button
-            onClick={() => handleSend()}
+            onClick={stopRecording}
+            style={{
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: '#dc2626', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
+            }}
+          >
+            <Send size={16} color="white" />
+          </button>
+        ) : input.trim() ? (
+          <button
+            onClick={handleSend}
             disabled={sending}
             style={{
-              width: 38, height: 38, borderRadius: 19, flexShrink: 0,
-              background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', border: 'none',
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', minHeight: 'unset', minWidth: 'unset',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(26,111,212,0.3)',
             }}
           >
             {sending ? <Loader2 size={16} className="animate-spin" color="white" /> : <Send size={16} color="white" />}
           </button>
         ) : (
           <button
-            onClick={recording ? stopRecording : startRecording}
-            disabled={transcribing || uploading}
+            onClick={startRecording}
+            disabled={sending || uploading}
             style={{
-              width: 38, height: 38, borderRadius: 19, flexShrink: 0,
-              background: recording ? '#fee2e2' : 'var(--surface-3)',
-              border: recording ? '1.5px solid #fca5a5' : '1px solid var(--border-1)',
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: '#f1f5f9', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', minHeight: 'unset', minWidth: 'unset',
+              cursor: 'pointer',
             }}
           >
-            {transcribing ? <Loader2 size={16} className="animate-spin" color="var(--text-3)" />
-              : recording ? <MicOff size={16} color="#dc2626" /> : <Mic size={16} color="var(--text-2)" />}
+            <Mic size={16} color="#64748b" />
           </button>
         )}
       </div>
-
-      {/* Recording / transcribing indicators */}
-      {(recording || transcribing) && (
-        <div style={{
-          padding: '4px 16px max(4px, env(safe-area-inset-bottom))',
-          background: 'var(--surface-2)',
-          flexShrink: 0,
-        }}>
-          {recording && (
-            <div style={{ padding: '6px 10px', background: '#fee2e2', borderRadius: 8,
-              display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#dc2626', fontWeight: 700 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#dc2626', animation: 'pulse-app 1.5s infinite' }} />
-              מקליט... לחץ לעצירה
-            </div>
-          )}
-          {transcribing && (
-            <div style={{ padding: '6px 10px', background: 'var(--surface-3)', borderRadius: 8,
-              display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-2)', fontWeight: 700 }}>
-              <Loader2 size={10} className="animate-spin" /> מתמלל הקלטה...
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
