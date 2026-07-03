@@ -43,6 +43,7 @@ import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import RatingModal from '@/components/RatingModal';
+import TaskCompletedCelebration from '@/components/TaskCompletedCelebration';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 
 import { useAuth } from '@/lib/AuthContext';
@@ -252,6 +253,7 @@ export default function Layout() {
 
   // Rating modal
   const [ratingTask, setRatingTask] = useState(null);
+  const [celebrationTask, setCelebrationTask] = useState(null);
   const shownRatingRef = useRef(new Set());
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
@@ -425,9 +427,17 @@ export default function Layout() {
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
           localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
-          window.dispatchEvent(new CustomEvent('rating_modal_closed', { detail: { taskId: ratingTask.id } }));
+          setCelebrationTask(ratingTask);
           setRatingTask(null);
         }} />,
+        document.body
+      )}
+      {celebrationTask && createPortal(
+        <div style={{ position: 'fixed', top: 'max(56px, env(safe-area-inset-top))', left: 0, right: 0, zIndex: 99999, padding: '0 16px', pointerEvents: 'none' }}>
+          <div style={{ pointerEvents: 'auto' }}>
+            <TaskCompletedCelebration task={celebrationTask} onDismiss={() => setCelebrationTask(null)} />
+          </div>
+        </div>,
         document.body
       )}
 

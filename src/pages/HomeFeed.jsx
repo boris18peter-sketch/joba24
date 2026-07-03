@@ -15,7 +15,6 @@ import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
-import TaskCompletedCelebration from '@/components/TaskCompletedCelebration';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link } from 'react-router-dom';
@@ -105,50 +104,7 @@ export default function HomeFeed() {
   // Active task I published that is currently TAKEN
   const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
 
-  // ── Completion celebration — shows AFTER rating modal closes (not immediately) ──
-  const prevActiveWorkerTaskRef = useRef(null);
-  const pendingCelebrationRef = useRef(null);
-  const [completedCelebration, setCompletedCelebration] = useState(null);
-
-  // Detect task completion — store in pending ref, don't show yet
-  useEffect(() => {
-    const prev = prevActiveWorkerTaskRef.current;
-    if (prev && !activeWorkerTask && me?.id) {
-      const allTasksData = queryClient.getQueryData(['allTasks']) || [];
-      const taskData = allTasksData.find(t => t.id === prev.id);
-      if (taskData?.status === 'COMPLETED' && taskData?.worker_id === me.id) {
-        pendingCelebrationRef.current = prev;
-        // Fallback: if no rating modal shows within 3s (user already rated), show celebration
-        setTimeout(() => {
-          if (pendingCelebrationRef.current) {
-            setCompletedCelebration(pendingCelebrationRef.current);
-            pendingCelebrationRef.current = null;
-          }
-        }, 3000);
-      }
-    }
-    prevActiveWorkerTaskRef.current = activeWorkerTask;
-  }, [activeWorkerTask, me?.id, queryClient]);
-
-  // Show celebration when rating modal closes
-  useEffect(() => {
-    const handler = () => {
-      if (pendingCelebrationRef.current) {
-        setCompletedCelebration(pendingCelebrationRef.current);
-        pendingCelebrationRef.current = null;
-      }
-    };
-    window.addEventListener('rating_modal_closed', handler);
-    return () => window.removeEventListener('rating_modal_closed', handler);
-  }, []);
-
-  useEffect(() => {
-    if (!completedCelebration) return;
-    const timer = setTimeout(() => setCompletedCelebration(null), 5500);
-    return () => clearTimeout(timer);
-  }, [completedCelebration]);
-
-  // Rating popup is handled globally by Layout via WebSocket — no local logic needed here
+  // Completion celebration is handled globally by Layout (after rating modal closes)
 
   // My applications — to show status on feed cards
   const { data: myApplications = [] } = useQuery({
@@ -647,11 +603,7 @@ export default function HomeFeed() {
           <ActiveTaskBanner tasks={[{ ...activeClientTask, _roleHint: 'client' }]} roleHint="client" />
         </div>
       )}
-      {activeTab === 'available' && !activeWorkerTask && completedCelebration && (
-        <div style={{ padding: '10px 16px 0' }}>
-          <TaskCompletedCelebration task={completedCelebration} onDismiss={() => setCompletedCelebration(null)} />
-        </div>
-      )}
+
 
       <div className="px-4" style={{ paddingTop: 12, paddingBottom: 8 }}>
 

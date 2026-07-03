@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save, BarChart3, Pencil } from 'lucide-react';
+import { Star, LogOut, Briefcase, CreditCard, ChevronLeft, User, Camera, Loader2, Shield, X, Trash2, Clock, Save, BarChart3, Pencil, FileText } from 'lucide-react';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 import TaskCard from '@/components/TaskCard';
@@ -270,6 +270,42 @@ export default function Profile() {
 
         {/* ── Trust Bar ── */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
+
+        {/* ── About (bio + intro video) — visible to self ── */}
+        {(me?.bio || me?.intro_video_url) && (
+          <SectionCard style={{ padding: '16px' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>אודות</div>
+            {me?.bio && <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0, marginBottom: me?.intro_video_url ? 12 : 0 }}>{me.bio}</p>}
+            {me?.intro_video_url && (
+              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
+                <video src={me.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
+              </div>
+            )}
+          </SectionCard>
+        )}
+
+        {/* ── Certificates (unified) — visible to self ── */}
+        {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
+          <SectionCard style={{ padding: '16px' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>תעודות מקצוע</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(me?.certificate_files || []).map(doc => (
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  <span style={{ fontSize: 11, color: '#86efac', flexShrink: 0 }}>לצפייה ›</span>
+                </a>
+              ))}
+              {(me?.certificates || []).length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {me.certificates.map(cert => (
+                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>✅ {cert}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        )}
 
         {/* ── Social Links ── */}
         <SocialLinksSection user={me} />

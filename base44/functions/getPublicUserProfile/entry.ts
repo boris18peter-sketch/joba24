@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
         rating_count: targetUser.rating_count,
         tasks_completed: targetUser.tasks_completed,
         bio: targetUser.bio,
+        intro_video_url: targetUser.intro_video_url,
         phone: revealPhone ? targetUser.phone : undefined,
         profession: targetUser.profession,
         preferred_categories: targetUser.preferred_categories,

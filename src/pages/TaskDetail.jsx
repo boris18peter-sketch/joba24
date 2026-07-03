@@ -1016,6 +1016,7 @@ export default function TaskDetail() {
                     setSavingCompletion(true);
                     await base44.entities.Task.update(id, { completion_photos: editPhotos, completion_video_url: editVideo || null });
                     queryClient.setQueryData(['task', id], old => old ? { ...old, completion_photos: editPhotos, completion_video_url: editVideo || null } : old);
+                    queryClient.invalidateQueries({ queryKey: ['task', id] });
                     setSavingCompletion(false);
                     setEditingCompletion(false);
                     toast.success('הוכחת הביצוע עודכנה ✓');

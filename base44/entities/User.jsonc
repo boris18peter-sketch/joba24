@@ -31,7 +31,12 @@
       "type": "string"
     },
     "bio": {
-      "type": "string"
+      "type": "string",
+      "description": "\u05d8\u05e7\u05e1\u05d8 \u05d0\u05d5\u05d3\u05d5\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+    },
+    "intro_video_url": {
+      "type": "string",
+      "description": "\u05e1\u05e8\u05d8\u05d5\u05df \u05d4\u05d9\u05db\u05e8\u05d5\u05ea \u05e2\u05dc \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
     },
     "profession": {
       "type": "string"
@@ -62,6 +67,43 @@
     "score_tasks": {
       "type": "number",
       "default": 0
+    },
+    "tasks_completed": {
+      "type": "number",
+      "default": 0,
+      "description": "\u05de\u05e1\u05e4\u05e8 \u05de\u05e9\u05d9\u05de\u05d5\u05ea \u05e9\u05d4\u05d5\u05e9\u05dc\u05de\u05d5"
+    },
+    "certificates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\u05e9\u05de\u05d5\u05ea \u05ea\u05e2\u05d5\u05d3\u05d5\u05ea \u05de\u05e7\u05e6\u05d5\u05e2 (\u05d8\u05e7\u05e1\u05d8)"
+    },
+    "certificate_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "\u05de\u05e1\u05de\u05db\u05d9 \u05ea\u05e2\u05d5\u05d3\u05d5\u05ea \u05de\u05e7\u05e6\u05d5\u05e2 \u05e2\u05dd \u05e9\u05dd \u05d5\u05e7\u05d9\u05e9\u05d5\u05e8"
+    },
+    "repeat_hires": {
+      "type": "number",
+      "default": 0
+    },
+    "avg_response_minutes": {
+      "type": "number"
+    },
+    "on_time_rate": {
+      "type": "number"
     },
     "agent_code": {
       "type": "string",

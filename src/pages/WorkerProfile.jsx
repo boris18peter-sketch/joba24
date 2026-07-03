@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, User, ChevronLeft, Phone } from 'lucide-react';
+import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
@@ -77,11 +76,12 @@ export default function WorkerProfile() {
   });
 
   const [form, setForm] = useState(null);
-  const [newCert, setNewCert] = useState('');
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const certDocRef = useRef(null);
   const photoInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -93,23 +93,40 @@ export default function WorkerProfile() {
     setUploadingPhoto(false);
   };
 
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('הסרטון גדול מדי (מקסימום 50MB)');
+      return;
+    }
+    setUploadingVideo(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, intro_video_url: file_url }));
+    } catch {
+      toast.error('שגיאה בהעלאת הסרטון');
+    }
+    setUploadingVideo(false);
+  };
+
   const handleCertDocUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingDoc(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, certificate_files: [...(f.certificate_files || []), { name: file.name, url: file_url }] }));
+    setForm(f => ({ ...f, certificate_files: [...(f.certificate_files || []), { name: file.name.replace(/\.[^/.]+$/, ''), url: file_url }] }));
     setUploadingDoc(false);
   };
 
   const removeCertDoc = (url) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).filter(c => c.url !== url) }));
+  const updateCertDocName = (url, name) => setForm(f => ({ ...f, certificate_files: (f.certificate_files || []).map(c => c.url === url ? { ...c, name } : c) }));
 
   if (currentUser && !form) {
     setForm({
       bio: currentUser.bio || '',
       phone: currentUser.phone || '',
-      profession: currentUser.profession || '',
-      certificates: currentUser.certificates || [],
+      intro_video_url: currentUser.intro_video_url || '',
       certificate_files: currentUser.certificate_files || [],
       preferred_categories: currentUser.preferred_categories || [],
       preferred_cities: currentUser.preferred_cities || [],
@@ -143,18 +160,14 @@ export default function WorkerProfile() {
   const toggleCity = (c) => {
     setForm(f => ({ ...f, preferred_cities: f.preferred_cities.includes(c) ? f.preferred_cities.filter(x => x !== c) : [...f.preferred_cities, c] }));
   };
-  const addCert = () => {
-    if (!newCert.trim()) return;
-    setForm(f => ({ ...f, certificates: [...f.certificates, newCert.trim()] }));
-    setNewCert('');
-  };
-  const removeCert = (cert) => setForm(f => ({ ...f, certificates: f.certificates.filter(c => c !== cert) }));
 
   const completedCount = workerTasks.filter(t => t.status === 'COMPLETED').length;
   const avgRating = workerReviews.length > 0
     ? (workerReviews.reduce((sum, r) => sum + r.rating, 0) / workerReviews.length).toFixed(1)
     : null;
   const initials = currentUser?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+
+  const hasCerts = (form.certificate_files || []).length > 0 || (currentUser?.certificates || []).length > 0;
 
   return (
     <div style={{ background: 'var(--surface-1)', minHeight: '100dvh', paddingBottom: 40 }} dir="rtl">
@@ -238,16 +251,10 @@ export default function WorkerProfile() {
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* ── Edit mode: basic info ── */}
+        {/* ── About: bio + intro video + phone (edit mode) ── */}
         {!isViewingOther && (
-          <SectionCard title="פרטים בסיסיים">
+          <SectionCard title="אודות">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Input
-                placeholder="שם המקצוע (לדוגמה: אינסטלטור מוסמך)"
-                value={form.profession}
-                onChange={e => setForm(f => ({ ...f, profession: e.target.value }))}
-                className="bg-secondary border-0 rounded-xl h-12"
-              />
               <Textarea
                 placeholder="ספר קצת על עצמך, הניסיון שלך..."
                 value={form.bio}
@@ -262,14 +269,41 @@ export default function WorkerProfile() {
                 className="bg-secondary border-0 rounded-xl h-12"
                 type="tel"
               />
+              {/* Intro video upload */}
+              <input ref={videoInputRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={handleVideoUpload} />
+              {form.intro_video_url ? (
+                <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
+                  <video src={form.intro_video_url} controls style={{ width: '100%', maxHeight: 240, display: 'block', background: '#000' }} />
+                  <button
+                    onClick={() => setForm(f => ({ ...f, intro_video_url: '' }))}
+                    style={{ position: 'absolute', top: 8, left: 8, width: 32, height: 32, borderRadius: 10, background: 'rgba(0,0,0,0.6)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={15} color="white" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={uploadingVideo}
+                  style={{ width: '100%', height: 52, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}
+                >
+                  {uploadingVideo ? <Loader2 size={16} className="animate-spin" /> : <><Video size={16} /> העלה סרטון היכרות</>}
+                </button>
+              )}
+              <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center' }}>סרטון קצר שמסביר עליך — מגדיל אמון פי 3</div>
             </div>
           </SectionCard>
         )}
 
-        {/* View mode: bio */}
-        {isViewingOther && form.bio && (
+        {/* ── About: view mode (bio + video) ── */}
+        {isViewingOther && (form.bio || currentUser?.intro_video_url) && (
           <SectionCard title="אודות">
-            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{form.bio}</p>
+            {form.bio && <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0, marginBottom: currentUser?.intro_video_url ? 12 : 0 }}>{form.bio}</p>}
+            {currentUser?.intro_video_url && (
+              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
+                <video src={currentUser.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
+              </div>
+            )}
           </SectionCard>
         )}
 
@@ -285,48 +319,28 @@ export default function WorkerProfile() {
           </SectionCard>
         )}
 
-        {/* ── Certificates ── */}
-        <SectionCard title="תעודות מקצוע">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: form.certificates.length > 0 ? 12 : 0 }}>
-            {form.certificates.map(cert => (
-              <span key={cert} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
-                ✅ {cert}
-                {!isViewingOther && (
-                  <button onClick={() => removeCert(cert)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: '#86efac' }}>
-                    <X size={12} />
-                  </button>
-                )}
-              </span>
-            ))}
-          </div>
-          {!isViewingOther && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                placeholder="לדוגמה: מוסמך משרד הפנים"
-                value={newCert}
-                onChange={e => setNewCert(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addCert()}
-                style={{ flex: 1, height: 44, borderRadius: 12, border: '1px solid var(--border-1)', background: 'var(--surface-3)', padding: '0 12px', fontSize: 14, color: 'var(--text-1)', outline: 'none', fontFamily: 'inherit' }}
-              />
-              <button onClick={addCert} style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <Plus size={18} color="#1a6fd4" />
-              </button>
-            </div>
-          )}
-        </SectionCard>
-
-        {/* ── Certificate docs ── */}
-        {(!isViewingOther || (form.certificate_files || []).length > 0) && (
-          <SectionCard title="מסמכי תעודה">
+        {/* ── Unified Certificates section ── */}
+        {(!isViewingOther || hasCerts) && (
+          <SectionCard title="תעודות מקצוע">
             <input ref={certDocRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleCertDocUpload} />
+            {/* Certificate files (unified) */}
             {(form.certificate_files || []).length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: !isViewingOther ? 10 : 0 }}>
                 {form.certificate_files.map(doc => (
-                  <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px' }}>
+                  <div key={doc.url} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '8px 10px' }}>
                     <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                    <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</a>
+                    {!isViewingOther ? (
+                      <input
+                        value={doc.name}
+                        onChange={e => updateCertDocName(doc.url, e.target.value)}
+                        placeholder="שם התעודה"
+                        style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 700, color: '#166534', outline: 'none', fontFamily: 'inherit' }}
+                      />
+                    ) : (
+                      <a href={doc.url} target="_blank" rel="noreferrer" style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</a>
+                    )}
                     {!isViewingOther && (
-                      <button onClick={() => removeCertDoc(doc.url)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                      <button onClick={() => removeCertDoc(doc.url)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}>
                         <Trash2 size={14} color="#dc2626" />
                       </button>
                     )}
@@ -334,10 +348,25 @@ export default function WorkerProfile() {
                 ))}
               </div>
             )}
+            {/* Legacy text certificates (view only) */}
+            {isViewingOther && (currentUser?.certificates || []).length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {currentUser.certificates.map(cert => (
+                  <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 12px', borderRadius: 20, fontWeight: 600 }}>
+                    ✅ {cert}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Empty state hint (edit mode) */}
+            {!isViewingOther && (form.certificate_files || []).length === 0 && (
+              <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', marginBottom: 8 }}>העלה תעודות מקצוע כדי לבנות אמון</div>
+            )}
+            {/* Upload button (edit mode) */}
             {!isViewingOther && (
               <button onClick={() => certDocRef.current?.click()} disabled={uploadingDoc}
                 style={{ width: '100%', height: 46, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}>
-                {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> העלה מסמך תעודה</>}
+                {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> העלה תעודה</>}
               </button>
             )}
           </SectionCard>

@@ -173,10 +173,15 @@ export default function PublicProfile() {
         {/* Trust bar */}
         <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
 
-        {/* Bio */}
-        {user.bio && (
+        {/* Bio + Intro Video */}
+        {(user.bio || user.intro_video_url) && (
           <SectionCard title="אודות">
-            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{user.bio}</p>
+            {user.bio && <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0, marginBottom: user.intro_video_url ? 12 : 0 }}>{user.bio}</p>}
+            {user.intro_video_url && (
+              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)' }}>
+                <video src={user.intro_video_url} controls style={{ width: '100%', maxHeight: 280, display: 'block', background: '#000' }} />
+              </div>
+            )}
           </SectionCard>
         )}
 
@@ -268,24 +273,11 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* Certificates */}
-        {user.certificates?.length > 0 && (
+        {/* Certificates (unified) */}
+        {(user.certificates?.length > 0 || user.certificate_files?.length > 0) && (
           <SectionCard title="תעודות מקצוע">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.certificates.map(cert => (
-                <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
-                  ✅ {cert}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* Certificate files */}
-        {user.certificate_files?.length > 0 && (
-          <SectionCard title="מסמכי תעודה">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {user.certificate_files.map(doc => (
+              {(user.certificate_files || []).map(doc => (
                 <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
                   style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
                   <FileText size={16} color="#16a34a" />
@@ -293,6 +285,15 @@ export default function PublicProfile() {
                   <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
                 </a>
               ))}
+              {user.certificates?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {user.certificates.map(cert => (
+                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
+                      ✅ {cert}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </SectionCard>
         )}
