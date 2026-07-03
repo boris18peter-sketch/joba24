@@ -1,0 +1,34 @@
+{
+  "name": "VerticalConfig",
+  "type": "object",
+  "description": "Vertical Engine \u2014 single source of truth configuration per task category (Vertical). Each record holds the full behavioral config for one category. Screens load behavior from here instead of hardcoded logic.",
+  "properties": {
+    "vertical_id": {
+      "type": "string",
+      "description": "Category identifier (e.g. plumbing, babysitting, moving). Unique."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name (Hebrew label with icon)"
+    },
+    "config": {
+      "type": "object",
+      "description": "Full Vertical configuration object following VERTICAL_SCHEMA. Contains all sections: general, ai, task_form, matching, worker_profile, trust, reviews, worker_card, task_card, task_detail, marketplace_metrics, notifications, premium_features, analytics."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "If false, the vertical is hidden from the marketplace"
+    },
+    "version": {
+      "type": "number",
+      "default": 1,
+      "description": "Schema version \u2014 bump when the config structure changes"
+    }
+  },
+  "required": [
+    "vertical_id",
+    "name",
+    "config"
+  ]
+}
