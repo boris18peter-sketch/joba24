@@ -1,0 +1,100 @@
+{
+  "name": "VerticalResearch",
+  "type": "object",
+  "description": "Vertical Research Center \u2014 internal knowledge base per vertical. Each record is the 'operating manual' for a category, documenting competitors, UX patterns, trust factors, KPIs, fraud risks, and roadmap. Not exposed to end users. Used by the team and AI to make data-driven decisions per vertical.",
+  "properties": {
+    "vertical_id": {
+      "type": "string",
+      "description": "Category identifier (e.g. plumbing). Unique."
+    },
+    "vertical_name": {
+      "type": "string",
+      "description": "Display name (Hebrew)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "in_progress",
+        "published"
+      ],
+      "default": "draft",
+      "description": "Research maturity \u2014 only 'published' configs inform product decisions"
+    },
+    "research": {
+      "type": "object",
+      "description": "Full research document with all sections (see research schema)",
+      "properties": {
+        "best_companies": {
+          "type": "array",
+          "description": "Leading companies/platforms in this vertical globally"
+        },
+        "competitors": {
+          "type": "array",
+          "description": "Direct and indirect competitors"
+        },
+        "ux_patterns": {
+          "type": "array",
+          "description": "Proven UX patterns from best-in-class platforms"
+        },
+        "trust_factors": {
+          "type": "array",
+          "description": "What builds trust in this vertical (ordered by importance)"
+        },
+        "ai_questions": {
+          "type": "array",
+          "description": "Optimal AI intake questions for this vertical"
+        },
+        "matching_logic": {
+          "type": "object",
+          "description": "How workers should be matched/ranked for this vertical"
+        },
+        "kpis": {
+          "type": "array",
+          "description": "Key performance indicators with targets"
+        },
+        "reviews": {
+          "type": "array",
+          "description": "Review structure: questions, tags, what matters most"
+        },
+        "required_verification": {
+          "type": "array",
+          "description": "What verification is mandatory before participating"
+        },
+        "premium_features": {
+          "type": "array",
+          "description": "Monetization features relevant to this vertical"
+        },
+        "common_fraud": {
+          "type": "array",
+          "description": "Known fraud patterns and how to prevent them"
+        },
+        "marketplace_challenges": {
+          "type": "array",
+          "description": "Structural challenges specific to this vertical"
+        },
+        "success_metrics": {
+          "type": "array",
+          "description": "Metrics that define marketplace health for this vertical"
+        },
+        "feature_ideas": {
+          "type": "array",
+          "description": "Product feature ideas specific to this vertical"
+        },
+        "future_roadmap": {
+          "type": "array",
+          "description": "Phased roadmap for evolving this vertical"
+        },
+        "israel_market_notes": {
+          "type": "string",
+          "description": "Israel-specific market dynamics and considerations"
+        }
+      }
+    }
+  },
+  "required": [
+    "vertical_id",
+    "vertical_name",
+    "research"
+  ]
+}

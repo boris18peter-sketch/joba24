@@ -18,6 +18,7 @@
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { buildDefaultVerticalConfig } from './defaults';
+import { getSpecializedVerticalConfig } from './verticals';
 import { VERTICAL_SECTIONS } from './schema';
 
 // ── In-memory cache (survives navigations within a session) ───────────────
@@ -60,8 +61,10 @@ async function loadCache() {
       const map = new Map();
       for (const rec of records) {
         if (!rec.is_active) continue;
+        // 3-layer merge: defaults ← specialized ← entity
         const defaults = buildDefaultVerticalConfig(rec.vertical_id);
-        const merged = deepMerge(defaults, rec.config);
+        const specialized = getSpecializedVerticalConfig(rec.vertical_id);
+        const merged = deepMerge(deepMerge(defaults, specialized), rec.config);
         map.set(rec.vertical_id, merged);
       }
       _cache = map;
@@ -88,7 +91,10 @@ async function loadCache() {
  */
 export function getVerticalConfig(category) {
   if (_cache?.has(category)) return _cache.get(category);
-  return buildDefaultVerticalConfig(category);
+  // 3-layer merge: defaults ← specialized (entity loaded async into cache)
+  const defaults = buildDefaultVerticalConfig(category);
+  const specialized = getSpecializedVerticalConfig(category);
+  return deepMerge(defaults, specialized);
 }
 
 /**
