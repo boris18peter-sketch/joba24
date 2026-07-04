@@ -1025,10 +1025,10 @@ export default function CreateTask() {
         )}
 
         {/* Info banner */}
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          <Info size={16} color="#1a6fd4" style={{ flexShrink: 0, marginTop: 1 }} />
-          <p style={{ fontSize: 13, color: '#1e40af', margin: 0, lineHeight: 1.6 }}>
-            <strong>{t('important_note_title')}</strong> {t('important_note_body')}
+        <div style={{ background: 'linear-gradient(135deg,#eff6ff,#f0f7ff)', border: '1px solid #bfdbfe', borderRadius: 14, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Info size={15} color="#1a6fd4" style={{ flexShrink: 0 }} />
+          <p style={{ fontSize: 12, color: '#1e40af', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
+            {t('important_note_body')}
           </p>
         </div>
 

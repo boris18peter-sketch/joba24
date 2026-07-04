@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { Navigation } from 'lucide-react';
+import { Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
 
 function distKm(a, b) {
@@ -12,41 +12,186 @@ function distKm(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
 }
 
-/**
- * CategoryExtraFields — pure renderer driven by taskFlowConfig.
- *
- * Props:
- *   category: string
- *   originLat, originLng: number (source address coords)
- *   initialValues: object (pre-fill from existing task.category_details — for edit mode)
- *   onChange: (data: object, formattedText: string) => void
- */
+// ── Field type renderers ─────────────────────────────────────────────────────
+
+function SelectField({ field, value, onChange }) {
+  const [showAll, setShowAll] = useState(false);
+  const opts = field.options || [];
+  const visible = showAll ? opts : opts.slice(0, 6);
+  const hasMore = opts.length > 6;
+
+  return (
+    <>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+        {visible.map(opt => {
+          const isActive = value === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(isActive ? '' : opt)}
+              style={{
+                padding: '8px 14px', borderRadius: 99, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', border: 'none', transition: 'all 0.18s ease',
+                background: isActive ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)',
+                color: isActive ? 'white' : 'var(--text-2)',
+                boxShadow: isActive ? '0 3px 12px rgba(26,111,212,0.28)' : 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >{opt}</button>
+          );
+        })}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setShowAll(v => !v)}
+          style={{
+            marginTop: 6, background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700,
+            color: '#1a6fd4', padding: 0,
+          }}
+        >
+          {showAll ? 'הצג פחות' : `עוד ${opts.length - 6} אפשרויות`}
+          <ChevronDown size={13} style={{ transform: showAll ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+      )}
+    </>
+  );
+}
+
+function ToggleField({ field, value, onChange }) {
+  const isActive = !!value;
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!isActive)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px',
+        borderRadius: 12, cursor: 'pointer', width: '100%',
+        background: isActive ? 'rgba(26,111,212,0.06)' : 'var(--surface-3)',
+        border: `1.5px solid ${isActive ? '#93c5fd' : 'var(--border-1)'}`,
+        transition: 'all 0.18s ease',
+      }}
+    >
+      <div style={{
+        width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+        background: isActive ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
+        border: `2px solid ${isActive ? '#1a6fd4' : '#cbd5e1'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: isActive ? '0 2px 8px rgba(26,111,212,0.3)' : 'none',
+        transition: 'all 0.18s ease',
+      }}>
+        {isActive && <span style={{ color: 'white', fontSize: 12, fontWeight: 900 }}>✓</span>}
+      </div>
+      <span style={{ fontSize: 13.5, fontWeight: 600, color: isActive ? '#1e40af' : 'var(--text-2)' }}>{field.label}</span>
+    </button>
+  );
+}
+
+function NumberField({ field, value, onChange }) {
+  return (
+    <div style={{ position: 'relative', maxWidth: 200 }}>
+      <input
+        type="number"
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={field.placeholder || ''}
+        style={{
+          width: '100%', height: 46, borderRadius: 12,
+          border: '1.5px solid var(--border-1)', background: 'var(--surface-3)',
+          padding: '0 14px', fontSize: 16, fontWeight: 700, color: 'var(--text-1)',
+          outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+          transition: 'border-color 0.15s',
+        }}
+        onFocus={e => { e.target.style.borderColor = '#1a6fd4'; }}
+        onBlur={e => { e.target.style.borderColor = 'var(--border-1)'; }}
+      />
+    </div>
+  );
+}
+
+function TextField({ field, value, onChange }) {
+  return (
+    <input
+      value={value || ''}
+      onChange={e => onChange(e.target.value)}
+      placeholder={field.placeholder || ''}
+      style={{
+        width: '100%', height: 46, borderRadius: 12,
+        border: '1.5px solid var(--border-1)', background: 'var(--surface-3)',
+        padding: '0 14px', fontSize: 14, color: 'var(--text-1)',
+        outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+        transition: 'border-color 0.15s',
+      }}
+      onFocus={e => { e.target.style.borderColor = '#1a6fd4'; }}
+      onBlur={e => { e.target.style.borderColor = 'var(--border-1)'; }}
+    />
+  );
+}
+
+function TextareaField({ field, value, onChange }) {
+  return (
+    <textarea
+      value={value || ''}
+      onChange={e => onChange(e.target.value)}
+      placeholder={field.placeholder || ''}
+      rows={3}
+      style={{
+        width: '100%', borderRadius: 12, resize: 'none',
+        border: '1.5px solid var(--border-1)', background: 'var(--surface-3)',
+        padding: '10px 14px', fontSize: 14, color: 'var(--text-1)',
+        outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+        transition: 'border-color 0.15s', lineHeight: 1.5,
+      }}
+      onFocus={e => { e.target.style.borderColor = '#1a6fd4'; }}
+      onBlur={e => { e.target.style.borderColor = 'var(--border-1)'; }}
+    />
+  );
+}
+
+function AddressField({ field, value, onChange, onCoords, originLat, originLng }) {
+  return (
+    <AddressAutocomplete
+      value={value || ''}
+      placeholder={field.placeholder || 'התחל להקליד כתובת...'}
+      onSelect={({ location_name, lat, lng }) => {
+        if (location_name) {
+          onCoords?.({ lat, lng });
+          const next = { [field.key]: location_name, [`${field.key}_lat`]: lat, [`${field.key}_lng`]: lng };
+          onChange(location_name, next);
+        }
+      }}
+    />
+  );
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
+
 export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
   const config = getCategoryConfig(category);
-  // Filter out urgency fields — urgency is already handled in the main form (Expiry + Urgency section)
+  // Filter out urgency fields — urgency is already handled in the main form
   const fields = (config?.extraFields || []).filter(f => f.key !== 'urgency');
   const [values, setValues] = useState(initialValues || {});
   const [destCoords, setDestCoords] = useState(null);
 
-  // Reset when category changes, but preserve initialValues on first mount (edit mode)
   useEffect(() => {
     setValues(initialValues || {});
     setDestCoords(null);
   }, [category]);
 
-  // If initialValues changes (e.g., edit task loaded), update
   useEffect(() => {
     if (initialValues && Object.keys(initialValues).length > 0) {
       setValues(initialValues);
     }
   }, [JSON.stringify(initialValues)]);
 
-  const distance = (category === 'moving' || category === 'delivery') && originLat && destCoords
+  const distance = (category === 'moving' || category === 'delivery' || category === 'transportation') && originLat && destCoords
     ? distKm({ lat: originLat, lng: originLng }, destCoords)
     : null;
 
-  const set = (key, val) => {
-    const next = { ...values, [key]: val };
+  const set = (key, val, extraMerge) => {
+    const next = { ...values, [key]: val, ...extraMerge };
     setValues(next);
     const lines = formatExtra(next, fields, distance);
     onChange?.(next, lines);
@@ -72,123 +217,98 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
 
   if (!config || !fields.length) return null;
 
-  const inputStyle = {
-    width: '100%', background: 'var(--surface-3)', border: '1.5px solid var(--border-1)',
-    borderRadius: 12, padding: '10px 12px', fontSize: 14, outline: 'none',
-    color: 'var(--text-1)', fontFamily: 'inherit', boxSizing: 'border-box',
-  };
+  const emoji = config.label?.split(' ')[0] || '📋';
+  const labelName = config.label?.split(' ').slice(1).join(' ') || config.label;
 
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 20, padding: '18px 16px', border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <span style={{ fontSize: 20 }}>{config.label.split(' ')[0]}</span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{config.label.split(' ').slice(1).join(' ') || config.label}</span>
-        <span style={{ fontSize: 11, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '2px 8px', fontWeight: 600 }}>מומלץ למלא</span>
+    <div style={{
+      background: 'var(--surface-2)', borderRadius: 20, overflow: 'hidden',
+      border: '1px solid var(--border-1)', boxShadow: '0 2px 12px rgba(26,111,212,0.06)',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 16px',
+        background: 'linear-gradient(135deg, rgba(26,111,212,0.04), rgba(26,111,212,0.01))',
+        borderBottom: '1px solid var(--border-1)',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+          background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+          border: '1px solid #bfdbfe',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 18,
+        }}>{emoji}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.2 }}>{labelName}</div>
+          <div style={{ fontSize: 11, color: '#1a6fd4', fontWeight: 600, marginTop: 1 }}>פרטים מקצועיים — יוצגו לעובדים</div>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {fields.map(field => (
-          <div key={field.key}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6, display: 'block' }}>{field.label}</label>
-
-            {field.type === 'address' && (
-              <AddressAutocomplete
-                value={values[field.key] || ''}
-                placeholder={field.placeholder}
-                onSelect={({ location_name, lat, lng }) => {
-                  if (location_name) {
-                    setDestCoords({ lat, lng });
-                    const next = { ...values, [field.key]: location_name, [`${field.key}_lat`]: lat, [`${field.key}_lng`]: lng };
-                    setValues(next);
-                    const d = originLat && lat ? distKm({ lat: originLat, lng: originLng }, { lat, lng }) : null;
-                    const lines = formatExtra(next, fields, d);
-                    onChange?.(next, lines);
-                  }
-                }}
-              />
-            )}
-
-            {field.type === 'text' && (
-              <input
-                value={values[field.key] || ''}
-                onChange={e => set(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                style={inputStyle}
-              />
-            )}
-
-            {field.type === 'number' && (
-              <input
-                type="number"
-                value={values[field.key] || ''}
-                onChange={e => set(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                style={{ ...inputStyle, width: 120 }}
-              />
-            )}
-
-            {field.type === 'textarea' && (
-              <textarea
-                value={values[field.key] || ''}
-                onChange={e => set(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                rows={3}
-                style={{ ...inputStyle, resize: 'none' }}
-              />
-            )}
+      {/* Fields */}
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {fields.map((field, idx) => (
+          <div key={field.key} style={idx > 0 ? { paddingTop: 16, borderTop: '1px solid var(--border-1)' } : {}}>
+            <label style={{
+              fontSize: 13, fontWeight: 700, color: 'var(--text-1)',
+              marginBottom: 8, display: 'block', lineHeight: 1.3,
+            }}>
+              {field.label}
+            </label>
 
             {field.type === 'select' && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {field.options.map(opt => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => set(field.key, values[field.key] === opt ? '' : opt)}
-                    style={{
-                      padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                      cursor: 'pointer', border: 'none',
-                      background: values[field.key] === opt ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)',
-                      color: values[field.key] === opt ? 'white' : 'var(--text-2)',
-                    }}
-                  >{opt}</button>
-                ))}
-              </div>
+              <SelectField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
             )}
 
             {field.type === 'toggle' && (
-              <button
-                type="button"
-                onClick={() => set(field.key, !values[field.key])}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                  borderRadius: 12, cursor: 'pointer', width: '100%',
-                  background: values[field.key] ? '#eff6ff' : 'var(--surface-3)',
-                  border: `1.5px solid ${values[field.key] ? '#93c5fd' : 'var(--border-1)'}`,
-                }}
-              >
-                <div style={{
-                  width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                  background: values[field.key] ? '#1a6fd4' : 'var(--surface-2)',
-                  border: `2px solid ${values[field.key] ? '#1a6fd4' : '#cbd5e1'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {values[field.key] && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: values[field.key] ? '#1e40af' : 'var(--text-2)' }}>{field.label}</span>
-              </button>
+              <ToggleField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
+            )}
+
+            {field.type === 'number' && (
+              <NumberField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
+            )}
+
+            {field.type === 'text' && (
+              <TextField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
+            )}
+
+            {field.type === 'textarea' && (
+              <TextareaField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
+            )}
+
+            {field.type === 'address' && (
+              <AddressField
+                field={field}
+                value={values[field.key]}
+                originLat={originLat}
+                originLng={originLng}
+                onChange={(val, extra) => set(field.key, val, extra)}
+                onCoords={setDestCoords}
+              />
             )}
           </div>
         ))}
 
-        {/* Distance display for moving/delivery */}
+        {/* Distance display for moving/delivery/transportation */}
         {distance != null && (
-          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Navigation size={15} color="#1a6fd4" />
+          <div style={{
+            background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+            border: '1px solid #bfdbfe', borderRadius: 14,
+            padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Navigation size={17} color="#1a6fd4" />
+            </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#1e40af' }}>
-                מרחק ההובלה: {distance < 1 ? `${Math.round(distance * 1000)} מטר` : `${distance.toFixed(1)} ק"מ`}
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#1e40af' }}>
+                {distance < 1 ? `${Math.round(distance * 1000)} מטר` : `${distance.toFixed(1)} ק"מ`}
               </div>
-              <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1 }}>זמן נסיעה משוער: ~{Math.ceil(distance * 3)} דקות</div>
+              <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1, fontWeight: 500 }}>
+                זמן נסיעה משוער: ~{Math.ceil(distance * 3)} דקות
+              </div>
             </div>
           </div>
         )}
