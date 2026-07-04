@@ -20,7 +20,7 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
-import { calculateCurrentPrice } from '@/lib/priceCalculator';
+import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel } from '@/lib/priceCalculator';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
@@ -754,6 +754,7 @@ export default function TaskDetail() {
               {/* Price */}
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
                 <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+                {(() => { const hb = getHourlyBreakdown(task); return hb ? <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, marginTop: 3 }}>₪{hb.hourlyRate}/שעה · {formatHoursLabel(hb.hours)}</div> : null; })()}
                 {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</div>}
               </div>
               <div style={{ flex: 1 }} />

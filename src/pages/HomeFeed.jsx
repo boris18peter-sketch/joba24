@@ -380,7 +380,15 @@ export default function HomeFeed() {
         // Next expected price = current price + one step (simple increment per interval)
         const nextPrice = Math.min(Math.round(task.price + step), task.max_price);
         if (nextPrice > task.price) {
-          base44.entities.Task.update(task.id, { price: nextPrice });
+          const updates = { price: nextPrice };
+          // Keep hourly_rate in sync for hourly-priced tasks
+          if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hours) {
+            updates.category_details = {
+              ...task.category_details,
+              hourly_rate: Math.round(nextPrice / task.category_details.hours),
+            };
+          }
+          base44.entities.Task.update(task.id, updates);
         }
       }
     };

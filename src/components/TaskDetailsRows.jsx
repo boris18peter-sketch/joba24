@@ -42,6 +42,14 @@ export default function TaskDetailsRows({ task, compact = false }) {
     detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: 'קטגוריה', value: getCategoryLabel(task.category) });
   }
 
+  // Hourly pricing breakdown — show rate and hours when task uses hourly pricing
+  if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hourly_rate && task.category_details?.hours) {
+    const hrs = parseFloat(task.category_details.hours);
+    const rate = Number(task.category_details.hourly_rate);
+    const hrsLabel = hrs === 1 ? 'שעה' : hrs === 2 ? 'שעתיים' : `${hrs} שעות`;
+    detailRows.push({ icon: '💰', iconBg: '#f0fdf4', label: 'מחיר לשעה', value: `₪${rate} · ${hrsLabel}`, valueColor: '#059669' });
+  }
+
   if (task.payment_method) {
     detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: 'אמצעי תשלום', value: task.payment_method === 'Cash' ? 'מזומן' : task.payment_method });
   }

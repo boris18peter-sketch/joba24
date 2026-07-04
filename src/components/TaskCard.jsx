@@ -11,7 +11,7 @@ import UserBadge from '@/components/UserBadge';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { calculateCurrentPrice } from '@/lib/priceCalculator';
+import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel } from '@/lib/priceCalculator';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -147,6 +147,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
           <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
+          {(() => { const hb = getHourlyBreakdown(task); return hb ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>₪{hb.hourlyRate}/שעה · {formatHoursLabel(hb.hours)}</div> : null; })()}
         </div>
 
         {/* Credit refund explanation */}
@@ -363,6 +364,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const isApproved  = appStatus === 'approved';
   const isPending   = appStatus === 'pending';
   const currentPrice = calculateCurrentPrice(task);
+  const hourlyBreakdown = getHourlyBreakdown(task);
 
   // Boost availability check for card — show pill for all open owned tasks (pill handles charge state)
   // Sync logic with TaskDetail: card pill counts from createdDate when never boosted (same as detail)
@@ -600,6 +602,9 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
               {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
             </div>
+            {hourlyBreakdown && (
+              <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>₪{hourlyBreakdown.hourlyRate}/שעה · {formatHoursLabel(hourlyBreakdown.hours)}</span>
+            )}
             {dist != null && !isNaN(dist) && (
               <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'inline-flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
                 <Navigation size={9} strokeWidth={2} color="#1a6fd4" />

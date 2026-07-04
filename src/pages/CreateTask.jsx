@@ -1200,8 +1200,8 @@ export default function CreateTask() {
           </button>
           {form.auto_bump_enabled && (
             <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
-              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>מחיר מקסימלי (₪)</Label>
-              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>המחיר יעלה בהדרגה מ-₪{form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.</div>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>{isHourly ? 'מחיר מקסימלי - סה"כ (₪)' : 'מחיר מקסימלי (₪)'}</Label>
+              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{isHourly ? `המחיר הכולל יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה (המחיר לשעה יתעדכן אוטומטית). ברגע שיגיע עובד — המחיר יוקפא.` : `המחיר יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.`}</div>
               <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
                 value={form.max_price}
                 onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
