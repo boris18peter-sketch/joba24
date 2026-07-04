@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert } from 'lucide-react';
+import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert, Mic, X } from 'lucide-react';
+import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { toast } from 'sonner';
 import BackButton from '@/components/BackButton';
@@ -123,6 +124,7 @@ export default function Chat() {
   const typingTimerRef = useRef(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const { recording, recordSeconds, uploading: uploadingVoice, start: startRecording, stop: stopRecording, cancel: cancelRecording, formatTime } = useVoiceRecording();
 
   const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -228,13 +230,21 @@ export default function Chat() {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
-  const handleSend = (content, imageUrl = null) => {
-    gate(() => sendMessage(content, imageUrl));
+  const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
+    gate(() => sendMessage(content, mediaUrl, mediaType));
   };
 
-  const sendMessage = async (content, imageUrl = null) => {
-    if ((!content?.trim() && !imageUrl) || !me) return;
-    const msgContent = imageUrl ? `[img]${imageUrl}` : content.trim();
+  const handleStopRecording = async () => {
+    const audioUrl = await stopRecording();
+    if (audioUrl) {
+      sendMessage('', audioUrl, 'audio');
+    }
+  };
+
+  const sendMessage = async (content, mediaUrl = null, mediaType = 'img') => {
+    if ((!content?.trim() && !mediaUrl) || !me) return;
+    const prefix = mediaType === 'audio' ? '[audio]' : '[img]';
+    const msgContent = mediaUrl ? `${prefix}${mediaUrl}` : content.trim();
 
     // Optimistic: add message to UI immediately
     const optimisticId = `opt-${Date.now()}`;
@@ -253,7 +263,7 @@ export default function Chat() {
     setSending(true);
 
     // Moderation check in parallel — remove optimistic msg if flagged
-    if (!imageUrl && content.trim().length > 1) {
+    if (!mediaUrl && content.trim().length > 1) {
       moderateText(content.trim()).then(modResult => {
         if (modResult.flagged) {
           setMessages(prev => prev.filter(m => m.id !== optimisticId));
@@ -287,7 +297,7 @@ export default function Chat() {
     gate(async () => {
       setUploading(true);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await sendMessage('', file_url);
+      await sendMessage('', file_url, 'img');
       setUploading(false);
       e.target.value = '';
     });
@@ -376,7 +386,9 @@ export default function Chat() {
           const { msg, isContinuation } = item;
           const isMe = msg.sender_id === me?.id;
           const isImage = msg.content?.startsWith('[img]');
+          const isAudio = msg.content?.startsWith('[audio]');
           const imgUrl = isImage ? msg.content.replace('[img]', '') : null;
+          const audioUrl = isAudio ? msg.content.replace('[audio]', '') : null;
 
           return (
             <div
@@ -411,6 +423,8 @@ export default function Chat() {
                     style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, objectFit: 'cover', cursor: 'pointer', border: isMe ? 'none' : '1px solid #e2e8f0' }}
                     onClick={() => window.open(imgUrl, '_blank')}
                   />
+                ) : isAudio ? (
+                  <audio src={audioUrl} controls style={{ maxWidth: 220, height: 36, outline: 'none' }} />
                 ) : (
                   <div className="selectable-text" style={{
                      padding: '9px 13px',
@@ -472,47 +486,96 @@ export default function Chat() {
         {/* File upload */}
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || recording || uploadingVoice}
           style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
           {uploading ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" /> : <Image size={16} color="#64748b" />}
         </button>
         <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
 
-        {/* Text input */}
-         <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 22, border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
-           <textarea
-             ref={inputRef}
-             placeholder="הקלד הודעה..."
-             value={input}
-             rows={1}
-             onChange={e => {
-               setInput(e.target.value);
-               e.target.style.height = 'auto';
-               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-             }}
-             onKeyDown={e => {
-               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); }
-             }}
-             style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
-           />
-         </div>
+        {/* Text input or recording indicator */}
+        {recording ? (
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', borderRadius: 22,
+            background: '#fef2f2', border: '1.5px solid #fca5a5',
+            minHeight: 42,
+          }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', animation: 'pulse-app 1.5s infinite' }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>
+              {formatTime(recordSeconds)}
+            </span>
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>מקליט...</span>
+            <button onClick={cancelRecording} style={{ marginRight: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <X size={14} /> ביטול
+            </button>
+          </div>
+        ) : (
+          <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 22, border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
+            <textarea
+              ref={inputRef}
+              placeholder="הקלד הודעה..."
+              value={input}
+              rows={1}
+              onChange={e => {
+                setInput(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); }
+              }}
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
+            />
+          </div>
+        )}
 
-        {/* Send */}
-        <button
-          onClick={() => handleSend(input)}
-          disabled={sending || (!input.trim())}
-          style={{
-            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-            background: input.trim() ? 'linear-gradient(135deg,#1a6fd4,#3b82f6)' : '#e2e8f0',
-            border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: input.trim() ? 'pointer' : 'not-allowed',
-            boxShadow: input.trim() ? '0 4px 12px rgba(26,111,212,0.3)' : 'none',
-            transition: 'all 0.2s',
-          }}
-        >
-          {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} color={input.trim() ? 'white' : '#94a3b8'} />}
-        </button>
+        {/* Mic / Send / Stop recording */}
+        {uploadingVoice ? (
+          <button disabled style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: '#e2e8f0', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'not-allowed' }}>
+            <Loader2 size={16} color="#1a6fd4" className="animate-spin" />
+          </button>
+        ) : recording ? (
+          <button
+            onClick={handleStopRecording}
+            style={{
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: '#dc2626', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
+            }}
+          >
+            <Send size={16} color="white" />
+          </button>
+        ) : input.trim() ? (
+          <button
+            onClick={() => handleSend(input)}
+            disabled={sending}
+            style={{
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(26,111,212,0.3)',
+            }}
+          >
+            {sending ? <Loader2 size={16} className="animate-spin" color="white" /> : <Send size={16} color="white" />}
+          </button>
+        ) : (
+          <button
+            onClick={startRecording}
+            disabled={sending || uploading}
+            style={{
+              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+              background: '#f1f5f9', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Mic size={16} color="#64748b" />
+          </button>
+        )}
       </div>
 
       <style>{`

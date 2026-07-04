@@ -19,7 +19,7 @@ import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 
-import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
 import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras } from '@/lib/taskFlowConfig';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -168,6 +168,8 @@ const DEFAULT_FORM = {
   urgency_tag: '',
   custom_expiry_hours: '',
   category_details: {},
+  hourly_rate: '',
+  hours: '',
 };
 
 const PAYMENT_METHODS = [
@@ -329,6 +331,8 @@ export default function CreateTask() {
       requires_invoice: editTask.requires_invoice || false,
       custom_expiry_hours: '',
       category_details: editTask.category_details || {},
+      hourly_rate: editTask.category_details?.hourly_rate ? String(editTask.category_details.hourly_rate) : '',
+      hours: editTask.category_details?.hours ? String(editTask.category_details.hours) : '',
     });
     setCategoryDetails(editTask.category_details || {});
     setAddressConfirmed(!!(editTask.lat && editTask.lng));
@@ -336,6 +340,25 @@ export default function CreateTask() {
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
+  const isHourly = isHourlyCategory(form.category);
+  const updateHourly = (field, val) => {
+    setForm(p => {
+      const next = { ...p, [field]: val };
+      const rate = parseFloat(field === 'hourly_rate' ? val : next.hourly_rate) || 0;
+      const hours = parseFloat(field === 'hours' ? val : next.hours) || 0;
+      next.price = String(Math.round(rate * hours));
+      return next;
+    });
+  };
+  const getFinalCategoryDetails = () => {
+    const cd = { ...(Object.keys(categoryDetails).length > 0 ? categoryDetails : {}) };
+    if (isHourly && form.hourly_rate && form.hours) {
+      cd.hourly_rate = Number(form.hourly_rate);
+      cd.hours = parseFloat(form.hours);
+      cd.pricing_type = 'hourly';
+    }
+    return Object.keys(cd).length > 0 ? cd : undefined;
+  };
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [moderationErrors, setModerationErrors] = useState({});
@@ -560,7 +583,7 @@ export default function CreateTask() {
         address_notes: form.address_notes || undefined,
         estimated_time: estimatedTime,
         category: form.category,
-        category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : undefined,
+        category_details: getFinalCategoryDetails(),
         expiry_duration_hours: expiryHoursEdit,
         expires_at: expires,
         images: form.images,
@@ -678,7 +701,7 @@ export default function CreateTask() {
       address_notes: form.address_notes || undefined,
       estimated_time: estimatedTime,
       category: finalCategory,
-      category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : undefined,
+      category_details: getFinalCategoryDetails(),
       approval_mode: form.approval_mode,
       expiry_duration_hours: expiryHours || null,
       expires_at: expires,
@@ -1111,19 +1134,57 @@ export default function CreateTask() {
         {/* Price */}
         <div ref={fieldRefs.price}>
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
-          <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
-            value={form.price}
-            onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
-            disabled={hasActiveApplications}
-            style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
-          />
+          {isHourly ? (
+            <>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מחיר לשעה (₪) *</Label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                <div>
+                  <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="50"
+                    value={form.hourly_rate}
+                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); updateHourly('hourly_rate', v); setErrors(p => ({...p, price: false})); }}
+                    disabled={hasActiveApplications}
+                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                  />
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>₪ לשעה</p>
+                </div>
+                <div>
+                  <Input type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="3"
+                    value={form.hours}
+                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
+                    disabled={hasActiveApplications}
+                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                  />
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>מספר שעות</p>
+                </div>
+              </div>
+              {form.hourly_rate && form.hours ? (
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
+                </div>
+              ) : (
+                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600 }}>
+                  הזן מחיר לשעה ומספר שעות כדי לחשב את המחיר הסופי
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
+              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
+                value={form.price}
+                onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
+                disabled={hasActiveApplications}
+                style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
+              />
+            </>
+          )}
           {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
           </div>
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} onAccept={p => set('price', String(p))} />
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
@@ -1311,24 +1372,6 @@ export default function CreateTask() {
         </SectionCard>
 
         {/* Worker Pool Scanner banners removed */}
-
-        {/* Time */}
-        <SectionCard>
-          <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
-            <Clock size={14} /> זמן ביצוע משוער
-          </Label>
-          <SelectionSheet
-            value={form.estimated_time}
-            options={TIME_OPTIONS}
-            onChange={val => set('estimated_time', val)}
-          />
-          {form.estimated_time === 'custom' && (
-            <input type="text" placeholder="לדוגמא: 3 שעות, יום שלם, שבוע..."
-              value={form.custom_time} onChange={e => set('custom_time', e.target.value)}
-              style={{ marginTop: 8, width: '100%', padding: '12px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }}
-            />
-          )}
-        </SectionCard>
 
         {/* Requirements */}
         <SectionCard>
