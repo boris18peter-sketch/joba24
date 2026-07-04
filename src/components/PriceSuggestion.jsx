@@ -1,6 +1,28 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { getCategoryPriceRange } from '@/lib/taskFlowConfig';
+
+// Realistic per-hour rate ranges for hourly categories in the Israeli market (2025)
+// Used to constrain LLM suggestions and as a fallback when the LLM is unavailable
+const HOURLY_RATE_RANGES = {
+  babysitting:  { min: 35,  max: 70  },
+  pets:         { min: 30,  max: 60  },
+  elderly_care: { min: 45,  max: 100 },
+  tutoring:     { min: 80,  max: 180 },
+  fitness:      { min: 100, max: 250 },
+};
+
+function getRateRange(category, isHourly) {
+  if (isHourly && HOURLY_RATE_RANGES[category]) {
+    return HOURLY_RATE_RANGES[category];
+  }
+  return getCategoryPriceRange(category);
+}
+
+function clampToRange(value, range) {
+  return Math.max(range.min, Math.min(value, range.max));
+}
 
 export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, onAccept }) {
   const [range, setRange] = useState(null);
@@ -11,20 +33,8 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     let cancelled = false;
     const timer = setTimeout(async () => {
       setLoading(true);
+      const configRange = getRateRange(category, isHourly);
       try {
-        // Fetch recent completed tasks in this category for market data
-        const historicalTasks = await base44.entities.Task.filter(
-          { category, status: 'COMPLETED' },
-          '-created_date',
-          20
-        );
-        const prices = historicalTasks.map(t => t.price).filter(Boolean);
-        const avgHistorical = prices.length > 0
-          ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length)
-          : null;
-        const minHistorical = prices.length > 0 ? Math.min(...prices) : null;
-        const maxHistorical = prices.length > 0 ? Math.max(...prices) : null;
-
         const unit = isHourly ? 'לשעה אחת' : 'לכל המשימה המלאה';
         const prompt = `
 אתה מומחה תמחור לפלטפורמת עבודות קטנות בישראל (דומה ל-TaskRabbit / Fixlers).
@@ -35,7 +45,8 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
 ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: לא צוין'}
 תיאור: ${description || 'לא צוין'}
 מיקום: ${location || 'לא צוין'}
-${avgHistorical ? `נתוני שוק מהפלטפורמה: ממוצע ₪${avgHistorical}, טווח ₪${minHistorical}–₪${maxHistorical} (מתוך ${prices.length} משימות שהושלמו)` : 'אין עדיין נתונים היסטוריים בפלטפורמה'}
+
+טווח מחירים ריאלי לפי מחירי שוק בישראל 2025: ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''}
 
 השב בלבד עם JSON תקין בפורמט:
 {"min": <מספר>, "max": <מספר>, "reason": "<משפט קצר בעברית עד 8 מילים מדוע>"}
@@ -43,10 +54,10 @@ ${avgHistorical ? `נתוני שוק מהפלטפורמה: ממוצע ₪${avgHi
 הכללים:
 - min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות
 - min תמיד קטן מ-max
-- הטווח לא יעלה על ${isHourly ? '30' : '100'} ₪ הפרש
+- הטווח לא יעלה על ${isHourly ? '20' : '80'} ₪ הפרש
+- המחירים חייבים להיות בתוך הטווח ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''} — אל תחרוג ממנו
 - ${isHourly ? 'המחיר הוא לשעה אחת בלבד, לא לכל המשימה' : 'המחיר הוא לכל המשימה'}
 - בסס את ההמלצה על מחירי שוק ריאליים בישראל לשנת 2025 לתחום ${category}
-- אם יש נתונים היסטוריים, השתמש בהם כבסיס והתאם לפי התיאור והמיקום
 `;
         const result = await base44.integrations.Core.InvokeLLM({
           prompt,
@@ -60,10 +71,18 @@ ${avgHistorical ? `נתוני שוק מהפלטפורמה: ממוצע ₪${avgHi
           },
         });
         if (!cancelled && result?.min && result?.max) {
-          setRange(result);
+          // Clamp LLM response to the realistic market range
+          const clampedMin = clampToRange(Math.round(result.min / 10) * 10, configRange);
+          const clampedMax = clampToRange(Math.round(result.max / 10) * 10, configRange);
+          const finalMin = Math.min(clampedMin, clampedMax);
+          const finalMax = Math.max(clampedMin, clampedMax);
+          setRange({ min: finalMin, max: finalMax, reason: result.reason });
         }
       } catch (e) {
-        // fallback silently
+        // Fallback to config range if LLM fails
+        if (!cancelled) {
+          setRange({ min: configRange.min, max: configRange.max, reason: 'מבוסס על מחירי שוק' });
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

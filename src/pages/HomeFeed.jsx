@@ -388,13 +388,19 @@ export default function HomeFeed() {
               hourly_rate: Math.round(nextPrice / task.category_details.hours),
             };
           }
-          base44.entities.Task.update(task.id, updates);
+          try {
+            await base44.entities.Task.update(task.id, updates);
+          } catch (err) {
+            // Swallow per-task errors so one failure doesn't block other bumps
+          }
         }
       }
     };
 
-    const interval = setInterval(runBump, 5 * 60 * 1000); // every 5 minutes, no immediate call
-    return () => clearInterval(interval);
+    // Immediate check 30s after mount (lets myTasks load), then every 5 minutes
+    const initialTimer = setTimeout(runBump, 30 * 1000);
+    const interval = setInterval(runBump, 5 * 60 * 1000);
+    return () => { clearTimeout(initialTimer); clearInterval(interval); };
   }, [me?.id]);
 
   // ── Smart Ranking Engine ──────────────────────────────────────────────────
