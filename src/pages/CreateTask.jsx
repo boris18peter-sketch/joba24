@@ -18,7 +18,6 @@ import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
-import DateTimeScheduler from '@/components/DateTimeScheduler';
 
 import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
 import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras } from '@/lib/taskFlowConfig';
@@ -171,7 +170,6 @@ const DEFAULT_FORM = {
   category_details: {},
   hourly_rate: '',
   hours: '',
-  scheduled_at: null,
 };
 
 const PAYMENT_METHODS = [
@@ -335,7 +333,6 @@ export default function CreateTask() {
       category_details: editTask.category_details || {},
       hourly_rate: editTask.category_details?.hourly_rate ? String(editTask.category_details.hourly_rate) : '',
       hours: editTask.category_details?.hours ? String(editTask.category_details.hours) : '',
-      scheduled_at: editTask.scheduled_at || null,
     });
     setCategoryDetails(editTask.category_details || {});
     setAddressConfirmed(!!(editTask.lat && editTask.lng));
@@ -595,7 +592,6 @@ export default function CreateTask() {
         payment_method: form.payment_method || undefined,
         urgency_tag: form.urgency_tag || undefined,
         requires_invoice: form.requires_invoice || false,
-        scheduled_at: form.scheduled_at || undefined,
         ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
       });
       setLoading(false);
@@ -717,7 +713,6 @@ export default function CreateTask() {
       status: 'OPEN',
       requires_invoice: form.requires_invoice || false,
       urgency_tag: form.urgency_tag || undefined,
-      scheduled_at: form.scheduled_at || undefined,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
@@ -797,7 +792,6 @@ export default function CreateTask() {
           payment_method: chatFormData.payment_method || undefined,
           urgency_tag: chatFormData.urgency_tag || undefined,
           requires_invoice: chatFormData.requires_invoice || false,
-          scheduled_at: form.scheduled_at || undefined,
           ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
         });
         setLoading(false);
@@ -864,7 +858,6 @@ export default function CreateTask() {
         status: 'OPEN',
         requires_invoice: chatFormData.requires_invoice || false,
         urgency_tag: chatFormData.urgency_tag || undefined,
-        scheduled_at: form.scheduled_at || undefined,
         client_id: me?.id,
         client_name: me?.full_name,
         client_rating: me?.rating || 0,
@@ -1269,12 +1262,6 @@ export default function CreateTask() {
             </div>
           </div>
         </SectionCard>
-
-        {/* ── Scheduled Date & Time ── */}
-        <DateTimeScheduler
-          value={form.scheduled_at}
-          onChange={(val) => set('scheduled_at', val)}
-        />
 
         {/* Story — only when creating new task */}
         {!isEditMode && <div
