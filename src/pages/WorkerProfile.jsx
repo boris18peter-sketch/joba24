@@ -7,6 +7,8 @@ import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, Chevron
 import VerifiedBadge from '@/components/VerifiedBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
+import WorkerSkillsHero from '@/components/WorkerSkillsHero';
+import WorkerRatingCard from '@/components/WorkerRatingCard';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { toast } from 'sonner';
@@ -245,6 +247,21 @@ export default function WorkerProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* ── Skills Hero + Rating Card (view mode — prominent trust builders) ── */}
+        {isViewingOther && (form.preferred_categories || []).length > 0 && (
+          <WorkerSkillsHero categories={form.preferred_categories} />
+        )}
+        {isViewingOther && (
+          <WorkerRatingCard
+            avgRating={avgRating}
+            reviewCount={workerReviews.length}
+            reviews={workerReviews}
+            completedCount={completedCount}
+            isVerified={currentUser?.is_verified}
+            on_time_rate={currentUser?.on_time_rate}
+          />
+        )}
 
         {/* ── About: bio + intro video + phone (edit mode) ── */}
         {!isViewingOther && (

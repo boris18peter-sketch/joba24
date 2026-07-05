@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -1094,8 +1094,52 @@ export default function TaskDetail() {
 
 
 
+        {/* ── Scheduled Date & Time Banner ───────────────────────────────────── */}
+        {task.scheduled_at && task.status === 'OPEN' && (() => {
+          const scheduled = new Date(task.scheduled_at);
+          const now = new Date();
+          const isToday = scheduled.toDateString() === now.toDateString();
+          const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+          const isTomorrow = scheduled.toDateString() === tomorrow.toDateString();
+          const daysOfWeek = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+          const months = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+          const dayLabel = isToday ? 'היום' : isTomorrow ? 'מחר' : daysOfWeek[scheduled.getDay()];
+          const dateStr = `${dayLabel}, ${scheduled.getDate()} ${months[scheduled.getMonth()]}`;
+          const timeStr = `${String(scheduled.getHours()).padStart(2, '0')}:${String(scheduled.getMinutes()).padStart(2, '0')}`;
+          const isPast = scheduled < now;
+          return (
+            <div style={{
+              background: isPast ? '#fff7ed' : 'linear-gradient(135deg, #eff6ff, #f0f7ff)',
+              border: `2px solid ${isPast ? '#fed7aa' : '#bfdbfe'}`,
+              borderRadius: 20, padding: '14px 16px',
+              display: 'flex', alignItems: 'center', gap: 14,
+              boxShadow: isPast ? 'none' : '0 4px 18px rgba(26,111,212,0.12)',
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 15,
+                background: isPast ? 'linear-gradient(135deg,#f97316,#ea580c)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, boxShadow: isPast ? '0 3px 10px rgba(249,115,22,0.3)' : '0 3px 10px rgba(26,111,212,0.3)',
+              }}>
+                <Calendar size={24} color="white" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: isPast ? '#c2410c' : '#1a6fd4', letterSpacing: 0.3, textTransform: 'uppercase' }}>
+                  {isPast ? 'מועד שעבר' : 'מועד המשימה'}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: isPast ? '#9a3412' : '#0f2b6b', marginTop: 2 }}>
+                  {dateStr} · {timeStr}
+                </div>
+                <div style={{ fontSize: 11, color: isPast ? '#ea580c' : '#3b82f6', marginTop: 1, fontWeight: 600 }}>
+                  {isPast ? 'המועד עבר — ניתן עדיין להגיש בקשה' : 'משימה עם תזמון ספציפי'}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── Task Details Card ───────────────────────────────────────── */}
-        {(task.estimated_time || task.category ||
+        {(task.scheduled_at || task.estimated_time || task.category ||
           task.address_building || task.address_floor || task.address_apartment || task.address_notes ||
           task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience ||
           extraLines.length > 0 ||
@@ -1141,6 +1185,31 @@ export default function TaskDetail() {
                 </div>
               </div>
             )}
+
+            {/* Scheduled date & time */}
+            {task.scheduled_at && (() => {
+              const sd = new Date(task.scheduled_at);
+              const now = new Date();
+              const isToday = sd.toDateString() === now.toDateString();
+              const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+              const isTomorrow = sd.toDateString() === tomorrow.toDateString();
+              const daysOfWeek = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+              const months = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+              const dayLabel = isToday ? 'היום' : isTomorrow ? 'מחר' : daysOfWeek[sd.getDay()];
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Calendar size={13} color="#1a6fd4" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מועד מתוכנן</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
+                      {dayLabel}, {sd.getDate()} {months[sd.getMonth()]} · {String(sd.getHours()).padStart(2, '0')}:00
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Estimated time */}
             {task.estimated_time && (
