@@ -11,7 +11,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import FilterSheet from '@/components/FilterSheet';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
-const MAP_STYLE = 'mapbox://styles/mapbox/standard';
+const MAP_STYLE = 'mapbox://styles/mapbox/standard?language=he';
 
 function formatDist(meters) {
   if (meters < 1000) return `${Math.round(meters)} מ'`;

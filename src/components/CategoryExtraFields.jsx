@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
+import SchedulePicker from '@/components/SchedulePicker';
 
 function distKm(a, b) {
   if (!a || !b) return null;
@@ -218,7 +219,13 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
   // Also filter by showWhen conditions (conditional fields based on other values)
   const fields = (config?.extraFields || []).filter(f => {
     if (f.key === 'urgency') return false;
-    if (f.showWhen && values[f.showWhen.field] !== f.showWhen.equals) return false;
+    if (f.showWhen) {
+      const curVal = values[f.showWhen.field];
+      if (f.showWhen.equals !== undefined && curVal !== f.showWhen.equals) return false;
+      if (f.showWhen.notEquals !== undefined && curVal === f.showWhen.notEquals) return false;
+      if (f.showWhen.in && !f.showWhen.in.includes(curVal)) return false;
+      if (f.showWhen.notIn && f.showWhen.notIn.includes(curVal)) return false;
+    }
     return true;
   });
   const [destCoords, setDestCoords] = useState(null);
@@ -256,6 +263,11 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
         if (v) lines.push(`✓ ${f.label}`);
       } else if (f.type === 'address') {
         if (v) lines.push(`${f.label}: ${v}`);
+      } else if (f.type === 'schedule') {
+        if (Array.isArray(v) && v.length > 0) {
+          const slotsText = v.map(s => `${s.date} ${s.start}–${s.end}`).join('; ');
+          lines.push(`${f.label}: ${slotsText}`);
+        }
       } else if (Array.isArray(v)) {
         if (v.length > 0) lines.push(`${f.label}: ${v.join(', ')}`);
       } else {
@@ -339,6 +351,10 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
                 onChange={(val, extra) => set(field.key, val, extra)}
                 onCoords={setDestCoords}
               />
+            )}
+
+            {field.type === 'schedule' && (
+              <SchedulePicker value={values[field.key]} onChange={v => set(field.key, v)} />
             )}
           </div>
         ))}
