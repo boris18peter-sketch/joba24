@@ -184,9 +184,6 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 16 }}>
                 {t('boost_desc_long')}
               </div>
-              <div style={{ background: '#faf5ff', border: '1.5px solid #d8b4fe', borderRadius: 14, padding: '12px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>{t('boost_cost_label').replace('{n}', BOOST_COST)}</span>
-              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
               <button

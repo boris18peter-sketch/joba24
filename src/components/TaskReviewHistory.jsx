@@ -98,9 +98,6 @@ export default function TaskReviewHistory({ tasks = [], reviews = [] }) {
                         </span>
                       )}
                       <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{formatDate(item.task.completed_at || item.task.updated_date)}</span>
-                      {item.task.price > 0 && (
-                        <span style={{ fontSize: 11, color: '#059669', fontWeight: 700 }}>₪{item.task.price}</span>
-                      )}
                     </div>
                   </div>
                 </div>

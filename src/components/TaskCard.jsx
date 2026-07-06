@@ -484,6 +484,25 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 </span>
               );
             })()}
+            {task.scheduled_time && (() => {
+              const raw = String(task.scheduled_time);
+              const sDate = new Date(raw.includes('T') && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw);
+              if (isNaN(sDate.getTime())) return null;
+              const now = new Date();
+              const isToday = sDate.toDateString() === now.toDateString();
+              const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+              const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
+              const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+              let label;
+              if (isToday) label = `היום ${timeStr}`;
+              else if (isTomorrow) label = `מחר ${timeStr}`;
+              else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }) + ' ' + timeStr;
+              return (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', whiteSpace: 'nowrap' }}>
+                  📅 {label}
+                </span>
+              );
+            })()}
             {badgeLabels.slice(0, 1).map((label, i) => (
               <span key={i} style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                 {label}

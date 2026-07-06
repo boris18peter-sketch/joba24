@@ -54,6 +54,24 @@ export default function TaskDetailsRows({ task, compact = false }) {
     detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: 'אמצעי תשלום', value: task.payment_method === 'Cash' ? 'מזומן' : task.payment_method });
   }
 
+  if (task.scheduled_time) {
+    const sDate = new Date(task.scheduled_time.includes('T') && !task.scheduled_time.endsWith('Z') && !task.scheduled_time.includes('+') ? task.scheduled_time + 'Z' : task.scheduled_time);
+    if (!isNaN(sDate.getTime())) {
+      const now = new Date();
+      const isToday = sDate.toDateString() === now.toDateString();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
+      const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      let dateLabel;
+      if (isToday) dateLabel = `היום, ${timeStr}`;
+      else if (isTomorrow) dateLabel = `מחר, ${timeStr}`;
+      else dateLabel = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const isPast = sDate < now;
+      detailRows.push({ icon: '📅', iconBg: isPast ? '#f1f5f9' : '#eff6ff', label: 'מועד קבוע', value: dateLabel, valueColor: isPast ? '#94a3b8' : '#1a6fd4' });
+    }
+  }
+
   if (task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag]) {
     const t = URGENCY_TAG_CONFIG[task.urgency_tag];
     detailRows.push({ icon: t.emoji, iconBg: t.bg, label: 'דחיפות', value: t.label, valueColor: t.color });

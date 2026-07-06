@@ -17,8 +17,8 @@ export const TASK_FLOW_CONFIG = {
     extraFields: [
       {
         key: 'issue_type',
-        type: 'select',
-        label: 'מה הבעיה? 🔧',
+        type: 'multi',
+        label: 'מה הבעיה? 🔧 (ניתן לבחור יותר מאחת)',
         options: [
           'נזילה ממקום מסוים',
           'סתימה בכיור / אמבטיה / שירותים',
@@ -60,8 +60,8 @@ export const TASK_FLOW_CONFIG = {
     extraFields: [
       {
         key: 'issue_type',
-        type: 'select',
-        label: 'מה צריך? ⚡',
+        type: 'multi',
+        label: 'מה צריך? ⚡ (ניתן לבחור יותר מאחת)',
         options: [
           'שקע / מפסק לא עובד',
           'נפח חשמל (מפסק קפץ)',
@@ -141,8 +141,8 @@ export const TASK_FLOW_CONFIG = {
     extraFields: [
       {
         key: 'cleaning_type',
-        type: 'select',
-        label: 'איזה סוג ניקיון? 🧹',
+        type: 'multi',
+        label: 'איזה סוג ניקיון? 🧹 (ניתן לבחור יותר מאחת)',
         options: [
           'ניקיון שוטף (שבועי / דו-שבועי)',
           'ניקיון עומק (אחת לחודש)',
@@ -519,8 +519,8 @@ export const TASK_FLOW_CONFIG = {
     extraFields: [
       {
         key: 'work_type',
-        type: 'select',
-        label: 'מה צריך לעשות? 🔨',
+        type: 'multi',
+        label: 'מה צריך לעשות? 🔨 (ניתן לבחור יותר מאחת)',
         options: [
           'תליית טלוויזיה על קיר',
           'תליית מדף / תמונה',
@@ -646,12 +646,6 @@ export const TASK_FLOW_CONFIG = {
         label: 'כמה נוסעים?',
         options: ['1', '2', '3', '4', '5+'],
       },
-      {
-        key: 'pickup_time',
-        type: 'text',
-        label: 'מתי? (שעה / תאריך)',
-        placeholder: 'למשל: היום ב-18:00, מחר בבוקר...',
-      },
       { key: 'luggage', type: 'toggle', label: 'יש כבודה גדולה / מזוודות' },
       { key: 'child_seat', type: 'toggle', label: 'צריך כיסא בטיחות לילד' },
     ],
@@ -690,7 +684,20 @@ export const TASK_FLOW_CONFIG = {
         type: 'select',
         label: 'גודל החיה (אם כלב)',
         options: ['קטן — עד 10 ק"ג', 'בינוני — 10–25 ק"ג', 'גדול — מעל 25 ק"ג', 'לא רלוונטי'],
+        showWhen: { field: 'animal_type', equals: 'כלב' },
       },
+      {
+        key: 'dog_temperament',
+        type: 'multi',
+        label: 'אופי הכלב — ניתן לבחור כמה',
+        options: ['ידידותי', 'רגוע', 'אנרגטי', 'חרדתי', 'תקיף / תוקפני', 'מושך ברצועה'],
+        showWhen: { field: 'animal_type', equals: 'כלב' },
+      },
+      { key: 'dog_vaccinated', type: 'toggle', label: 'מחוסן', showWhen: { field: 'animal_type', equals: 'כלב' } },
+      { key: 'dog_neutered', type: 'toggle', label: 'מסורס / מעוקר', showWhen: { field: 'animal_type', equals: 'כלב' } },
+      { key: 'dog_good_with_kids', type: 'toggle', label: 'בית עם ילדים', showWhen: { field: 'animal_type', equals: 'כלב' } },
+      { key: 'dog_good_with_cats', type: 'toggle', label: 'בית עם חתולים', showWhen: { field: 'animal_type', equals: 'כלב' } },
+      { key: 'cat_indoor', type: 'toggle', label: 'חתול ביתי (לא יוצא החוצה)', showWhen: { field: 'animal_type', equals: 'חתול' } },
       {
         key: 'duration',
         type: 'select',
@@ -849,12 +856,6 @@ export const TASK_FLOW_CONFIG = {
         options: ['עד 20', '20–50', '50–100', '100–200', 'מעל 200'],
       },
       {
-        key: 'event_date',
-        type: 'text',
-        label: 'תאריך האירוע',
-        placeholder: 'למשל: 15/08/2024, שישי הקרוב...',
-      },
-      {
         key: 'hours',
         type: 'select',
         label: 'כמה שעות?',
@@ -966,6 +967,8 @@ export const formatCategoryDetails = (details, category) => {
     if (v === undefined || v === '' || v === null) return;
     if (f.type === 'toggle') {
       if (v) lines.push(`✓ ${f.label}`);
+    } else if (Array.isArray(v)) {
+      if (v.length > 0) lines.push(`${f.label}: ${v.join(', ')}`);
     } else {
       lines.push(`${f.label}: ${v}`);
     }

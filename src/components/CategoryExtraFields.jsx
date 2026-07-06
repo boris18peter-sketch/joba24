@@ -60,6 +60,49 @@ function SelectField({ field, value, onChange }) {
   );
 }
 
+function MultiSelectField({ field, value, onChange }) {
+  const selected = Array.isArray(value) ? value : [];
+  const opts = field.options || [];
+  const toggle = (opt) => {
+    if (selected.includes(opt)) {
+      onChange(selected.filter(v => v !== opt));
+    } else {
+      onChange([...selected, opt]);
+    }
+  };
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+      {opts.map(opt => {
+        const isActive = selected.includes(opt);
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => toggle(opt)}
+            style={{
+              padding: '8px 14px', borderRadius: 99, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', border: isActive ? 'none' : '1px solid var(--border-1)', transition: 'all 0.18s ease',
+              background: isActive ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-3)',
+              color: isActive ? 'white' : 'var(--text-2)',
+              boxShadow: isActive ? '0 3px 12px rgba(26,111,212,0.28)' : 'none',
+              WebkitTapHighlightColor: 'transparent',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            {isActive && <span style={{ fontSize: 10 }}>✓</span>}
+            {opt}
+          </button>
+        );
+      })}
+      {selected.length > 0 && (
+        <button type="button" onClick={() => onChange([])} style={{ padding: '8px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-1)', background: 'transparent', color: '#94a3b8' }}>
+          נקה ({selected.length})
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ToggleField({ field, value, onChange }) {
   const isActive = !!value;
   return (
@@ -170,9 +213,14 @@ function AddressField({ field, value, onChange, onCoords, originLat, originLng }
 
 export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
   const config = getCategoryConfig(category);
-  // Filter out urgency fields — urgency is already handled in the main form
-  const fields = (config?.extraFields || []).filter(f => f.key !== 'urgency');
   const [values, setValues] = useState(initialValues || {});
+  // Filter out urgency fields — urgency is already handled in the main form
+  // Also filter by showWhen conditions (conditional fields based on other values)
+  const fields = (config?.extraFields || []).filter(f => {
+    if (f.key === 'urgency') return false;
+    if (f.showWhen && values[f.showWhen.field] !== f.showWhen.equals) return false;
+    return true;
+  });
   const [destCoords, setDestCoords] = useState(null);
 
   useEffect(() => {
@@ -208,6 +256,8 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
         if (v) lines.push(`✓ ${f.label}`);
       } else if (f.type === 'address') {
         if (v) lines.push(`${f.label}: ${v}`);
+      } else if (Array.isArray(v)) {
+        if (v.length > 0) lines.push(`${f.label}: ${v.join(', ')}`);
       } else {
         lines.push(`${f.label}: ${v}`);
       }
@@ -258,6 +308,10 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
 
             {field.type === 'select' && (
               <SelectField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
+            )}
+
+            {field.type === 'multi' && (
+              <MultiSelectField field={field} value={values[field.key]} onChange={v => set(field.key, v)} />
             )}
 
             {field.type === 'toggle' && (

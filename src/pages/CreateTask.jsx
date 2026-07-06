@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getRequirementCategories } from '@/lib/requirements';
@@ -51,6 +51,14 @@ const URGENCY_TAGS = [
   { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
   { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
 ];
+
+function toLocalDatetimeInput(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function SocialProofBar() {
   const { data: tasks = [] } = useQuery({
@@ -166,6 +174,7 @@ const DEFAULT_FORM = {
   requirements: { vehicle: false, two_people: false, experience: false },
   payment_method: '',
   urgency_tag: '',
+  scheduled_time: '',
   custom_expiry_hours: '',
   category_details: {},
   hourly_rate: '',
@@ -328,6 +337,7 @@ export default function CreateTask() {
       requirements: editTask.requirements || { vehicle: false, two_people: false, experience: false },
       payment_method: editTask.payment_method || '',
       urgency_tag: editTask.urgency_tag || '',
+      scheduled_time: editTask.scheduled_time || '',
       requires_invoice: editTask.requires_invoice || false,
       custom_expiry_hours: '',
       category_details: editTask.category_details || {},
@@ -379,7 +389,7 @@ export default function CreateTask() {
     if (isRepost || isEditMode) return;
     clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode };
+      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, scheduled_time: form.scheduled_time };
       // Never persist price/bump settings — these must always be entered fresh
       // Only save if user has typed something meaningful
       if (form.title || form.description) {
@@ -389,7 +399,7 @@ export default function CreateTask() {
       }
     }, 1000);
     return () => clearTimeout(draftTimerRef.current);
-  }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, isRepost]);
+  }, [form.title, form.description, form.price, form.location_name, form.city, form.category, form.estimated_time, form.approval_mode, form.scheduled_time, isRepost]);
 
   // Category keywords now live in taskFlowConfig.js — single source of truth
   const CATEGORY_KEYWORDS = Object.fromEntries(
@@ -519,7 +529,7 @@ export default function CreateTask() {
   const handleSubmit = () => {
     if (!isAuthenticated) {
       // Save current form to draft before showing login
-      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, is_story: form.is_story };
+      const draftFields = { title: form.title, description: form.description, location_name: form.location_name, city: form.city, category: form.category, estimated_time: form.estimated_time, approval_mode: form.approval_mode, requirements: form.requirements, images: form.images, expiry_hours: form.expiry_hours, is_story: form.is_story, scheduled_time: form.scheduled_time };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftFields));
       setShowLoginPrompt(true);
       return;
@@ -591,6 +601,7 @@ export default function CreateTask() {
         requirements: form.requirements,
         payment_method: form.payment_method || undefined,
         urgency_tag: form.urgency_tag || undefined,
+        scheduled_time: form.scheduled_time || undefined,
         requires_invoice: form.requires_invoice || false,
         ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
       });
@@ -713,6 +724,7 @@ export default function CreateTask() {
       status: 'OPEN',
       requires_invoice: form.requires_invoice || false,
       urgency_tag: form.urgency_tag || undefined,
+      scheduled_time: form.scheduled_time || undefined,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
@@ -791,6 +803,7 @@ export default function CreateTask() {
           requirements: chatFormData.requirements || {},
           payment_method: chatFormData.payment_method || undefined,
           urgency_tag: chatFormData.urgency_tag || undefined,
+          scheduled_time: chatFormData.scheduled_time || undefined,
           requires_invoice: chatFormData.requires_invoice || false,
           ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
         });
@@ -858,6 +871,7 @@ export default function CreateTask() {
         status: 'OPEN',
         requires_invoice: chatFormData.requires_invoice || false,
         urgency_tag: chatFormData.urgency_tag || undefined,
+        scheduled_time: chatFormData.scheduled_time || undefined,
         client_id: me?.id,
         client_name: me?.full_name,
         client_rating: me?.rating || 0,
@@ -1259,6 +1273,28 @@ export default function CreateTask() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Specific date/time picker */}
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                <Calendar size={14} color="#94a3b8" strokeWidth={1.8} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>תאריך ושעה מדויקים (לא חובה)</span>
+              </div>
+              <input
+                type="datetime-local"
+                value={form.scheduled_time ? toLocalDatetimeInput(form.scheduled_time) : ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val) {
+                    set('scheduled_time', new Date(val).toISOString());
+                  } else {
+                    set('scheduled_time', '');
+                  }
+                }}
+                style={{ width: '100%', height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--input-bg)', padding: '0 14px', fontSize: 16, color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              />
+              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>הגדר מועד מדויק שבו העובד צריך להגיע — יוצג בצורה ברורה על כרטיס המשימה ובפרטי המשימה</p>
             </div>
           </div>
         </SectionCard>
