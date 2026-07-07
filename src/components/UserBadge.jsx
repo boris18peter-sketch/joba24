@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import { getVerificationLevel } from '@/lib/verificationLevel';
 
 /**
  * Unified user badge — consistent RTL order across the whole app.
@@ -8,13 +9,15 @@ import VerifiedBadge from '@/components/VerifiedBadge';
  * Props:
  *   name       — user's display name
  *   userId     — used for navigation to public profile
- *   verified   — boolean, show green verified badge
+ *   verified   — boolean (legacy: shows green badge). Prefer `user` prop.
+ *   user       — full user object; if provided, computes gold/green level automatically
  *   rating     — number, show star badge if > 0
  *   dark       — boolean, white text mode (for blue banners)
  *   size       — 'sm' | 'md' (default 'sm')
  *   onClick    — optional click override
+ *   photo      — avatar image URL
  */
-export default function UserBadge({ name, userId, verified, rating, dark = false, size = 'sm', onClick, photo }) {
+export default function UserBadge({ name, userId, verified, level, user, rating, dark = false, size = 'sm', onClick, photo }) {
   const navigate = useNavigate();
   if (!name) return null;
 
@@ -22,6 +25,9 @@ export default function UserBadge({ name, userId, verified, rating, dark = false
   const avatarSize = isMd ? 30 : 24;
   const fontSize = isMd ? 13 : 11;
   const fontSizeRating = isMd ? 12 : 10;
+
+  // Determine badge level: explicit level > user object (computes gold/green) > verified boolean (green) > null
+  const badgeLevel = level || (user ? getVerificationLevel(user) : (verified ? 'green' : null));
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -58,7 +64,7 @@ export default function UserBadge({ name, userId, verified, rating, dark = false
       </span>
 
       {/* Verified badge */}
-      {verified && <VerifiedBadge size="sm" />}
+      {badgeLevel && <VerifiedBadge level={badgeLevel} size="sm" />}
 
       {/* Rating */}
       {rating > 0 && (

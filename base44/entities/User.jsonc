@@ -24,6 +24,20 @@
       "type": "boolean",
       "default": false
     },
+    "is_phone_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d4\u05d0\u05dd \u05de\u05e1\u05e4\u05e8 \u05d4\u05d8\u05dc\u05e4\u05d5\u05df \u05d0\u05d5\u05de\u05ea \u05d1\u05d0\u05de\u05e6\u05e2\u05d5\u05ea OTP"
+    },
+    "phone_verification_code": {
+      "type": "string",
+      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05de\u05e1\u05e4\u05e8 \u05d8\u05dc\u05e4\u05d5\u05df"
+    },
+    "phone_verification_expires": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u05ea\u05d5\u05e7\u05e3 \u05e7\u05d5\u05d3 \u05d0\u05d9\u05de\u05d5\u05ea \u05d4\u05d8\u05dc\u05e4\u05d5\u05df"
+    },
     "phone": {
       "type": "string"
     },
@@ -126,7 +140,7 @@
     },
     "agent_code": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e4\u05e0\u05d9\u05d4 \u05d0\u05d9\u05e9\u05d9 \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df"
+      "description": "\u05e7\u05d5\u05d3 \u05d4\u05d4\u05e4\u05e0\u05d9\u05d4 \u05d0\u05d9\u05e9\u05d9 \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df"
     },
     "referred_by_agent_code": {
       "type": "string",
