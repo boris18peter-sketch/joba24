@@ -17,13 +17,9 @@ import { useLanguage } from '@/lib/LanguageContext';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
-import SmartScheduler from '@/components/SmartScheduler';
-import SmartPricing from '@/components/SmartPricing';
-import LiveSummary from '@/components/LiveSummary';
-import DynamicSuggestions from '@/components/DynamicSuggestions';
-import { DEFAULT_SCHEDULE, scheduleToLegacy, legacyToSchedule, derivePriceMode } from '@/lib/taskFormLogic';
+import PriceSuggestion from '@/components/PriceSuggestion';
 
-import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
 import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras } from '@/lib/taskFlowConfig';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -183,7 +179,6 @@ const DEFAULT_FORM = {
   category_details: {},
   hourly_rate: '',
   hours: '',
-  schedule: { ...DEFAULT_SCHEDULE },
 };
 
 const PAYMENT_METHODS = [
@@ -343,7 +338,6 @@ export default function CreateTask() {
       payment_method: editTask.payment_method || '',
       urgency_tag: editTask.urgency_tag || '',
       scheduled_time: editTask.scheduled_time || '',
-      schedule: legacyToSchedule(editTask),
       requires_invoice: editTask.requires_invoice || false,
       custom_expiry_hours: '',
       category_details: editTask.category_details || {},
@@ -356,20 +350,23 @@ export default function CreateTask() {
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
-  // Category details now derive from the single synchronized schedule object
+  const isHourly = isHourlyCategory(form.category);
+  const updateHourly = (field, val) => {
+    setForm(p => {
+      const next = { ...p, [field]: val };
+      const rate = parseFloat(field === 'hourly_rate' ? val : next.hourly_rate) || 0;
+      const hours = parseFloat(field === 'hours' ? val : next.hours) || 0;
+      next.price = String(Math.round(rate * hours));
+      return next;
+    });
+  };
   const getFinalCategoryDetails = () => {
     const cd = { ...(Object.keys(categoryDetails).length > 0 ? categoryDetails : {}) };
-    const dur = form.schedule?.duration_minutes;
-    if (dur) cd.duration_minutes = dur;
-    if (form.hourly_rate) {
+    if (isHourly && form.hourly_rate && form.hours) {
       cd.hourly_rate = Number(form.hourly_rate);
-      cd.pricing_type = derivePriceMode(dur);
+      cd.hours = parseFloat(form.hours);
+      cd.pricing_type = 'hourly';
     }
-    if (form.schedule?.recurring) {
-      cd.recurring = true;
-      cd.recurring_days = form.schedule.recurring_days;
-    }
-    if (form.schedule?.overnight) cd.overnight = true;
     return Object.keys(cd).length > 0 ? cd : undefined;
   };
   const [errors, setErrors] = useState({});
@@ -574,8 +571,7 @@ export default function CreateTask() {
         return;
       }
       setLoading(true);
-      const schedLegacyEdit = scheduleToLegacy(form.schedule);
-      const estimatedTime = schedLegacyEdit.estimated_time || (form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time);
+      const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
       const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
       const expires = expiryHoursEdit ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() : null;
       submittingRef.current = false;
@@ -604,8 +600,8 @@ export default function CreateTask() {
         video_url: form.video_url || undefined,
         requirements: form.requirements,
         payment_method: form.payment_method || undefined,
-        urgency_tag: schedLegacyEdit.urgency_tag || form.urgency_tag || undefined,
-        scheduled_time: schedLegacyEdit.scheduled_time || form.scheduled_time || undefined,
+        urgency_tag: form.urgency_tag || undefined,
+        scheduled_time: form.scheduled_time || undefined,
         requires_invoice: form.requires_invoice || false,
         ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
       });
@@ -693,8 +689,7 @@ export default function CreateTask() {
     const expiryHours = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
     const expires = expiryHours ? new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
-    const schedLegacy = scheduleToLegacy(form.schedule);
-    const estimatedTime = schedLegacy.estimated_time || (form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time);
+    const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
 
     const created = await base44.entities.Task.create({
       payment_method: form.payment_method,
@@ -728,8 +723,8 @@ export default function CreateTask() {
       requirements: form.requirements,
       status: 'OPEN',
       requires_invoice: form.requires_invoice || false,
-      urgency_tag: schedLegacy.urgency_tag || form.urgency_tag || undefined,
-      scheduled_time: schedLegacy.scheduled_time || form.scheduled_time || undefined,
+      urgency_tag: form.urgency_tag || undefined,
+      scheduled_time: form.scheduled_time || undefined,
       client_id: me?.id,
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
@@ -839,11 +834,9 @@ export default function CreateTask() {
       const storyExpires = chatFormData.is_story 
         ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() 
         : undefined;
-      const chatSchedLegacy = scheduleToLegacy(chatFormData.schedule || form.schedule);
-      const estimatedTime = chatSchedLegacy.estimated_time
-        || (chatFormData.estimated_time === 'custom' 
-          ? (chatFormData.custom_time || 'custom') 
-          : (chatFormData.estimated_time || '1h'));
+      const estimatedTime = chatFormData.estimated_time === 'custom' 
+        ? (chatFormData.custom_time || 'custom') 
+        : (chatFormData.estimated_time || '1h');
 
       const created = await base44.entities.Task.create({
         payment_method: chatFormData.payment_method || 'Cash',
@@ -877,8 +870,8 @@ export default function CreateTask() {
         requirements: chatFormData.requirements || {},
         status: 'OPEN',
         requires_invoice: chatFormData.requires_invoice || false,
-        urgency_tag: chatSchedLegacy.urgency_tag || chatFormData.urgency_tag || undefined,
-        scheduled_time: chatSchedLegacy.scheduled_time || chatFormData.scheduled_time || undefined,
+        urgency_tag: chatFormData.urgency_tag || undefined,
+        scheduled_time: chatFormData.scheduled_time || undefined,
         client_id: me?.id,
         client_name: me?.full_name,
         client_rating: me?.rating || 0,
@@ -1155,15 +1148,57 @@ export default function CreateTask() {
         {/* Price */}
         <div ref={fieldRefs.price}>
         <SectionCard>
-          <SmartPricing
-            schedule={form.schedule}
-            price={form.price}
-            hourlyRate={form.hourly_rate}
-            onChange={(k, v) => { if (hasActiveApplications) return; set(k, v); setErrors(p => ({...p, price: false})); }}
-            category={form.category}
-          />
+          {isHourly ? (
+            <>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מחיר לשעה (₪) *</Label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                <div>
+                  <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="50"
+                    value={form.hourly_rate}
+                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); updateHourly('hourly_rate', v); setErrors(p => ({...p, price: false})); }}
+                    disabled={hasActiveApplications}
+                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                  />
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>₪ לשעה</p>
+                </div>
+                <div>
+                  <Input type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="3"
+                    value={form.hours}
+                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
+                    disabled={hasActiveApplications}
+                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                  />
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>מספר שעות</p>
+                </div>
+              </div>
+              {form.hourly_rate && form.hours ? (
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
+                </div>
+              ) : (
+                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600 }}>
+                  הזן מחיר לשעה ומספר שעות כדי לחשב את המחיר הסופי
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
+              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
+                value={form.price}
+                onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
+                disabled={hasActiveApplications}
+                style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
+              />
+            </>
+          )}
           {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
           {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
+          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
+            <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
+          </div>
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
@@ -1179,8 +1214,8 @@ export default function CreateTask() {
           </button>
           {form.auto_bump_enabled && (
             <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
-              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>מחיר מקסימלי (₪)</Label>
-              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{`המחיר יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.`}</div>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>{isHourly ? 'מחיר מקסימלי - סה"כ (₪)' : 'מחיר מקסימלי (₪)'}</Label>
+              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{isHourly ? `המחיר הכולל יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה (המחיר לשעה יתעדכן אוטומטית). ברגע שיגיע עובד — המחיר יוקפא.` : `המחיר יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.`}</div>
               <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
                 value={form.max_price}
                 onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
@@ -1194,29 +1229,74 @@ export default function CreateTask() {
         </SectionCard>
 
         </div>
-        {/* Smart Scheduling — single source for date/time/duration/recurring/overnight.
-            Replaces the old urgency-tag + datetime-local + estimated-time duplicates. */}
-        <SectionCard>
-          <SmartScheduler value={form.schedule} onChange={v => set('schedule', v)} category={form.category} />
-        </SectionCard>
-        <DynamicSuggestions schedule={form.schedule} price={form.price} category={form.category} />
-
-        {/* Posting expiry — how long the ad stays live (separate from when the worker comes) */}
+        {/* Expiry + Urgency */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
-            <Clock size={14} /> תוקף פרסום המשימה
+            <Clock size={14} /> תוקף המשימה
           </Label>
-          <SelectionSheet
-            value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
-            options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: opt.label }))}
-            onChange={v => set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v))}
-          />
+          <div style={{ marginBottom: 4 }}>
+            <SelectionSheet
+              value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
+              options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: opt.label }))}
+              onChange={v => set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v))}
+            />
+          </div>
           {form.expiry_hours === 'custom' && (
             <input type="number" min="0.5" step="0.5" placeholder="מספר שעות (לדוגמא: 3)"
               value={form.custom_expiry_hours} onChange={e => set('custom_expiry_hours', e.target.value)}
               style={{ width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
             />
           )}
+
+          {/* Urgency tag */}
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+            <Zap size={14} color="#94a3b8" strokeWidth={1.8} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>מתי דרוש עובד?</span>
+          </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {URGENCY_TAGS.map(tag => {
+                const isActive = form.urgency_tag === tag.value;
+                return (
+                  <button key={tag.value}
+                    onClick={() => set('urgency_tag', isActive ? '' : tag.value)}
+                    style={{
+                      padding: '10px 14px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer', textAlign: 'center',
+                      background: isActive ? tag.bg : 'var(--surface-3)',
+                      color: isActive ? tag.color : 'var(--text-2)',
+                      border: isActive ? `1.5px solid ${tag.border}` : '1px solid var(--border-1)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {tag.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Specific date/time picker */}
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                <Calendar size={14} color="#94a3b8" strokeWidth={1.8} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>תאריך ושעה מדויקים (לא חובה)</span>
+              </div>
+              <input
+                type="datetime-local"
+                value={form.scheduled_time ? toLocalDatetimeInput(form.scheduled_time) : ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val) {
+                    set('scheduled_time', new Date(val).toISOString());
+                  } else {
+                    set('scheduled_time', '');
+                  }
+                }}
+                style={{ width: '100%', height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--input-bg)', padding: '0 14px', fontSize: 16, color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              />
+              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>הגדר מועד מדויק שבו העובד צריך להגיע — יוצג בצורה ברורה על כרטיס המשימה ובפרטי המשימה</p>
+            </div>
+          </div>
         </SectionCard>
 
         {/* Story — only when creating new task */}
@@ -1444,9 +1524,6 @@ export default function CreateTask() {
             style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 48, fontSize: 16 }}
           />
         </SectionCard>
-
-        {/* Live Summary — sticky preview that stays synced with every field */}
-        <LiveSummary schedule={form.schedule} price={form.price} category={form.category} />
 
         {/* Submit */}
         {(() => {
