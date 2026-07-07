@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
-import SchedulePicker from '@/components/SchedulePicker';
+// Scheduling (date/time/duration/recurring/overnight) is owned globally by SmartScheduler
+// in the main form, so we skip those fields here to avoid duplicate questions.
 
 function distKm(a, b) {
   if (!a || !b) return null;
@@ -218,7 +219,8 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
   // Filter out urgency fields — urgency is already handled in the main form
   // Also filter by showWhen conditions (conditional fields based on other values)
   const fields = (config?.extraFields || []).filter(f => {
-    if (f.key === 'urgency') return false;
+    // Scheduling & recurrence are owned by SmartScheduler (single source of truth)
+    if (f.key === 'urgency' || f.key === 'schedule' || f.key === 'recurring') return false;
     if (f.showWhen) {
       const curVal = values[f.showWhen.field];
       if (f.showWhen.equals !== undefined && curVal !== f.showWhen.equals) return false;
@@ -353,9 +355,6 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
               />
             )}
 
-            {field.type === 'schedule' && (
-              <SchedulePicker value={values[field.key]} onChange={v => set(field.key, v)} />
-            )}
           </div>
         ))}
 
