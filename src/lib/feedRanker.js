@@ -2,12 +2,15 @@
  * feedRanker.js — Joba24 Personalized Feed Ranking Engine
  *
  * feed_score =
- *   (distance        * 0.30)
- * + (recent_activity * 0.20)
- * + (task_relevance  * 0.20)
- * + (personal_fit    * 0.20)  ← NEW: learned behavior score
+ *   (distance        * 0.25)
+ * + (recent_activity * 0.15)
+ * + (task_relevance  * 0.35)
+ * + (personal_fit    * 0.15)
  * + (urgency         * 0.05)
  * + (reliability_fit * 0.05)
+ *
+ * Duration is derived from category_details (hours or schedule slots),
+ * NOT from the deprecated estimated_time field.
  */
 
 const WEIGHTS = {
@@ -37,11 +40,88 @@ const URGENCY_KEYWORDS = [
   'דחוף!', 'עכשיו!', 'תיקון דחוף', 'חייב היום', 'בהקדם',
 ];
 
+/**
+ * Computes task duration in minutes from category_details.
+ * Uses schedule slots if available, otherwise hours field.
+ * Falls back to null when no duration data exists.
+ */
+export function getTaskDurationMinutes(task) {
+  const cd = task?.category_details;
+  if (!cd) return null;
+
+  // Schedule-based: sum all slot durations
+  if (Array.isArray(cd.schedule) && cd.schedule.length > 0) {
+    let total = 0;
+    for (const slot of cd.schedule) {
+      const [sh, sm] = (slot.start || '').split(':').map(Number);
+      const [eh, em] = (slot.end || '').split(':').map(Number);
+      if (isNaN(sh) || isNaN(eh)) continue;
+      total += (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+    }
+    return total > 0 ? total : null;
+  }
+
+  // Hours-based
+  if (cd.hours != null) {
+    const hours = parseFloat(cd.hours);
+    if (!isNaN(hours) && hours > 0) return Math.round(hours * 60);
+  }
+
+  return null;
+}
+
+// ── City coordinates fallback (major Israeli cities) ───────────────────────
+// Used when GPS is unavailable but user has preferred_cities set.
+const CITY_COORDS = {
+  'תל אביב': { lat: 32.0853, lng: 34.7818 },
+  'הרצליה': { lat: 32.1665, lng: 34.8403 },
+  'רמת גן': { lat: 32.0809, lng: 34.8100 },
+  'גבעתיים': { lat: 32.0717, lng: 34.8108 },
+  'רמת השרון': { lat: 32.1456, lng: 34.8364 },
+  'חולון': { lat: 32.0158, lng: 34.7746 },
+  'ראשון לציון': { lat: 31.9730, lng: 34.7925 },
+  'בת ים': { lat: 32.0209, lng: 34.7555 },
+  'בני ברק': { lat: 32.0844, lng: 34.8334 },
+  'פתח תקווה': { lat: 32.0840, lng: 34.8878 },
+  'רעננה': { lat: 32.1854, lng: 34.8714 },
+  'נתניה': { lat: 32.3215, lng: 34.8532 },
+  'כפר סבא': { lat: 32.1750, lng: 34.9050 },
+  'הוד השרון': { lat: 32.1525, lng: 34.8844 },
+  'ירושלים': { lat: 31.7683, lng: 35.2137 },
+  'בית שמש': { lat: 31.7479, lng: 34.9886 },
+  'מודיעין': { lat: 31.9012, lng: 35.0086 },
+  'חיפה': { lat: 32.7940, lng: 34.9896 },
+  'באר שבע': { lat: 31.2518, lng: 34.7913 },
+  'אשדוד': { lat: 31.8040, lng: 34.6553 },
+  'אשקלון': { lat: 31.6688, lng: 34.5716 },
+  'רחובות': { lat: 31.8928, lng: 34.8110 },
+  'נס ציונה': { lat: 31.9320, lng: 34.8000 },
+  'אור יהודה': { lat: 32.0308, lng: 34.8520 },
+  'קרית אונו': { lat: 32.0626, lng: 34.8570 },
+};
+
+/**
+ * Resolves user location: GPS first, then preferred city coordinates.
+ * Returns { lat, lng, source: 'gps' | 'city' | null }.
+ */
+export function resolveUserLocation(gpsLocation, preferredCities = []) {
+  if (gpsLocation?.lat && gpsLocation?.lng) {
+    return { ...gpsLocation, source: 'gps' };
+  }
+  if (preferredCities?.length > 0) {
+    for (const city of preferredCities) {
+      const coords = CITY_COORDS[city];
+      if (coords) return { ...coords, source: 'city' };
+    }
+  }
+  return null;
+}
+
 // ── Behavioral Profile Builder ─────────────────────────────────────────────
 
 /**
  * Builds a rich behavioral profile from the user's applications + completed tasks.
- * Returns a profile with learned patterns (category, price range, location, time).
+ * Returns a profile with learned patterns (category, price range, location, duration).
  * Also returns `hasStrongPattern` = true only when there's a clear, repeated signal.
  */
 export function buildBehavioralProfile(applications = [], completedTasks = []) {
@@ -53,12 +133,17 @@ export function buildBehavioralProfile(applications = [], completedTasks = []) {
   history.forEach(t => { if (t.category) catCount[t.category] = (catCount[t.category] || 0) + 1; });
 
   // Price range (average ± 40% tolerance)
-  const prices = history.map(t => t.price).filter(Boolean);
+  const prices = history.map(t => t.price).filter(p => p != null && p > 0);
   const avgPrice = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
 
-  // Estimated time frequency
-  const timeCount = {};
-  history.forEach(t => { if (t.estimated_time) timeCount[t.estimated_time] = (timeCount[t.estimated_time] || 0) + 1; });
+  // Duration frequency (buckets: short <30m, medium 30m-2h, long >2h)
+  const durationCount = {};
+  history.forEach(t => {
+    const mins = getTaskDurationMinutes(t);
+    if (mins == null) return;
+    const bucket = mins < 30 ? 'short' : mins < 120 ? 'medium' : 'long';
+    durationCount[bucket] = (durationCount[bucket] || 0) + 1;
+  });
 
   // Location (city) frequency
   const cityCount = {};
@@ -79,10 +164,10 @@ export function buildBehavioralProfile(applications = [], completedTasks = []) {
     .sort((a, b) => b[1] - a[1])
     .map(([city]) => city);
 
-  // Preferred time
-  const preferredTime = Object.entries(timeCount)
+  // Preferred duration bucket
+  const preferredDuration = Object.entries(durationCount)
     .sort((a, b) => b[1] - a[1])
-    .map(([t]) => t)[0] || null;
+    .map(([d]) => d)[0] || null;
 
   // Price range (learned)
   const priceMin = avgPrice ? avgPrice * 0.5 : null;
@@ -101,11 +186,11 @@ export function buildBehavioralProfile(applications = [], completedTasks = []) {
     catCount,
     preferredCategories,
     preferredCities,
-    preferredTime,
+    preferredDuration,
     avgPrice,
     priceMin,
     priceMax,
-    timeCount,
+    durationCount,
   };
 }
 
@@ -152,10 +237,14 @@ function scorePersonalFit(task, profile) {
     signals++;
   }
 
-  // Time match
-  if (profile.preferredTime && task.estimated_time) {
-    score += task.estimated_time === profile.preferredTime ? 1.0 : 0.3;
-    signals++;
+  // Duration match (using category_details, not estimated_time)
+  if (profile.preferredDuration && task) {
+    const mins = getTaskDurationMinutes(task);
+    if (mins != null) {
+      const bucket = mins < 30 ? 'short' : mins < 120 ? 'medium' : 'long';
+      score += bucket === profile.preferredDuration ? 1.0 : 0.3;
+      signals++;
+    }
   }
 
   return signals > 0 ? Math.min(score / signals, 1.0) : 0.3;
@@ -171,17 +260,19 @@ export function isForYouTask(task, profile) {
   return fit >= 0.65;
 }
 
-// ── The 5 scoring dimensions (each returns 0–1) ────────────────────────────
+// ── The 6 scoring dimensions (each returns 0–1) ────────────────────────────
 
-function scoreDistance(task, userLocation) {
-  if (!userLocation || !task.lat || !task.lng) return 0.5;
-  const km = haversineKm(userLocation.lat, userLocation.lng, task.lat, task.lng);
+function scoreDistance(task, resolvedLocation) {
+  if (!resolvedLocation || !task.lat || !task.lng) return 0.5;
+  const km = haversineKm(resolvedLocation.lat, resolvedLocation.lng, task.lat, task.lng);
   if (km === null) return 0.5;
-  if (km < 1)   return 1.0;
-  if (km < 2)   return 0.92;
-  if (km < 5)   return 0.78;
-  if (km < 10)  return 0.58;
-  if (km < 20)  return 0.35;
+  // City-based location is less precise — apply a small penalty so GPS always wins
+  const sourcePenalty = resolvedLocation.source === 'city' ? 0.04 : 0;
+  if (km < 1)   return 1.0 - sourcePenalty;
+  if (km < 2)   return 0.92 - sourcePenalty;
+  if (km < 5)   return 0.78 - sourcePenalty;
+  if (km < 10)  return 0.58 - sourcePenalty;
+  if (km < 20)  return 0.35 - sourcePenalty;
   if (km < 50)  return 0.14;
   return 0.04;
 }
@@ -219,9 +310,10 @@ function scoreTaskRelevance(task, workerProfile) {
     const affinity = (categoryHistory[cat] || 0) / maxCount;
     catScore = affinity > 0 ? 0.4 + affinity * 0.5 : 0.25;
   }
+
+  // Budget score based on effective hourly rate (using category_details duration)
   const price = task.price || 0;
-  const timeToMins = { '15m': 15, '30m': 30, '1h': 60, '2h': 120 };
-  const mins = timeToMins[task.estimated_time] || 60;
+  const mins = getTaskDurationMinutes(task) || 60;
   const hourlyRate = (price / mins) * 60;
   let budgetScore;
   if (hourlyRate >= 150)     budgetScore = 1.0;
@@ -233,11 +325,41 @@ function scoreTaskRelevance(task, workerProfile) {
 }
 
 function scoreUrgency(task) {
+  // Urgency tag takes priority
   if (task.urgency_tag === 'immediate') return 1.0;
   if (task.urgency_tag === 'few_hours') return 0.7;
   if (task.urgency_tag === 'evening')   return 0.4;
+
+  // Scheduled time — tasks happening soon get a boost
+  if (task.scheduled_time) {
+    const raw = String(task.scheduled_time);
+    const sDate = new Date(raw.includes('T') && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw);
+    if (!isNaN(sDate.getTime())) {
+      const hoursUntil = (sDate.getTime() - Date.now()) / 3600000;
+      if (hoursUntil >= 0 && hoursUntil < 6)  return 0.92;
+      if (hoursUntil >= 6 && hoursUntil < 24) return 0.65;
+      if (hoursUntil >= 24 && hoursUntil < 48) return 0.40;
+    }
+  }
+
+  // Schedule slots — earliest slot determines urgency
+  const slots = task.category_details?.schedule;
+  if (Array.isArray(slots) && slots.length > 0) {
+    const first = [...slots].sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))[0];
+    const dt = new Date(`${first.date}T${first.start}:00`);
+    if (!isNaN(dt.getTime())) {
+      const hoursUntil = (dt.getTime() - Date.now()) / 3600000;
+      if (hoursUntil >= 0 && hoursUntil < 6)  return 0.92;
+      if (hoursUntil >= 6 && hoursUntil < 24) return 0.65;
+      if (hoursUntil >= 24 && hoursUntil < 48) return 0.40;
+    }
+  }
+
+  // Keyword-based urgency
   const text = `${task.title || ''} ${task.description || ''}`.toLowerCase();
   if (URGENCY_KEYWORDS.some(kw => text.includes(kw))) return 1.0;
+
+  // Expiry-based urgency
   if (task.expires_at) {
     const minsLeft = (new Date(task.expires_at) - Date.now()) / 60000;
     if (minsLeft < 60)  return 0.85;
@@ -279,20 +401,26 @@ function buildBadges(task, distKm, profile) {
 
 /**
  * @param {Array}  tasks            — raw OPEN tasks
- * @param {Object} userLocation     — { lat, lng } or null
- * @param {Object} workerProfile    — { preferredCategories, categoryHistory }
- * @param {Object} opts             — { isLoggedIn, behavioralProfile }
+ * @param {Object} userLocation     — { lat, lng } from GPS, or null
+ * @param {Object} workerProfile    — { preferredCategories, categoryHistory, preferredCities }
+ * @param {Object} opts             — { isLoggedIn, behavioralProfile, userPreferredCities }
  * @returns {Array} sorted by feed_score, each enriched with _feedScore + _badges + _scores
  */
 export function rankFeedTasks(tasks, userLocation, workerProfile = {}, opts = {}) {
-  const { isLoggedIn = true, behavioralProfile = null } = opts;
+  const { isLoggedIn = true, behavioralProfile = null, userPreferredCities = [] } = opts;
+
+  // Resolve location: GPS first, then user's preferred cities → city coordinates
+  const resolvedLocation = resolveUserLocation(userLocation, [
+    ...(userPreferredCities || []),
+    ...(workerProfile?.preferredCities || []),
+  ]);
 
   // ─ FALLBACK A: not logged in → nearest tasks first
   if (!isLoggedIn) {
     return tasks
       .map(task => {
-        const distKm = userLocation
-          ? haversineKm(userLocation.lat, userLocation.lng, task.lat, task.lng)
+        const distKm = resolvedLocation
+          ? haversineKm(resolvedLocation.lat, resolvedLocation.lng, task.lat, task.lng)
           : null;
         const feedScore = distKm !== null ? Math.max(0, 100 - distKm * 5) : 50;
         return { ...task, _distKm: distKm, _feedScore: feedScore, _badges: buildBadges(task, distKm, null), _scores: {} };
@@ -304,36 +432,16 @@ export function rankFeedTasks(tasks, userLocation, workerProfile = {}, opts = {}
       );
   }
 
-  // ─ FALLBACK B: logged in but no location
-  if (!userLocation) {
-    return tasks
-      .map(task => {
-        const price = task.price || 0;
-        const timeToMins = { '15m': 15, '30m': 30, '1h': 60, '2h': 120 };
-        const mins = timeToMins[task.estimated_time] || 60;
-        const hourlyRate = (price / mins) * 60;
-        const rewardScore = Math.min(hourlyRate / 200, 1.0);
-        const s_relevance   = scoreTaskRelevance(task, workerProfile);
-        const s_activity    = scoreRecentActivity(task);
-        const s_personalFit = scorePersonalFit(task, behavioralProfile);
-        const feedScore = (rewardScore * 0.4 + s_relevance * 0.3 + s_activity * 0.15 + s_personalFit * 0.15) * 100;
-        return {
-          ...task,
-          _distKm: null,
-          _feedScore: feedScore,
-          _badges: buildBadges(task, null, behavioralProfile),
-          _scores: { taskRelevance: s_relevance, recentActivity: s_activity, personalFit: s_personalFit },
-        };
-      })
-      .sort((a, b) => b._feedScore - a._feedScore);
-  }
-
-  // ─ MAIN: logged in + location → full personalized feed_score
+  // ─ MAIN: logged in (with or without location) → full personalized feed_score
+  // When no location at all, distance dimension is neutral (0.5) but other
+  // dimensions still rank meaningfully.
   return tasks
     .map(task => {
-      const distKm = haversineKm(userLocation.lat, userLocation.lng, task.lat, task.lng);
+      const distKm = resolvedLocation
+        ? haversineKm(resolvedLocation.lat, resolvedLocation.lng, task.lat, task.lng)
+        : null;
 
-      const s_distance        = scoreDistance(task, userLocation);
+      const s_distance        = scoreDistance(task, resolvedLocation);
       const s_recent_activity = scoreRecentActivity(task);
       const s_task_relevance  = scoreTaskRelevance(task, workerProfile);
       const s_personal_fit    = scorePersonalFit(task, behavioralProfile);

@@ -115,6 +115,20 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
+  // Fetch actual task data for applications (feed cache only has OPEN tasks,
+  // so we need this to build an accurate behavioral profile from ALL history)
+  const appliedTaskIds = useMemo(
+    () => myApplications.map(a => a.task_id).filter(Boolean),
+    [myApplications]
+  );
+  const { data: appliedTasksData = [] } = useQuery({
+    queryKey: ['appliedTasksData', me?.id],
+    queryFn: () => base44.entities.Task.filter({ id: { $in: appliedTaskIds } }),
+    enabled: !!me?.id && appliedTaskIds.length > 0,
+    staleTime: 300000,
+    refetchOnWindowFocus: false,
+  });
+
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['allTasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 200),
@@ -362,10 +376,12 @@ export default function HomeFeed() {
   }, [myTasks, me?.preferred_categories, me?.preferred_cities]);
 
   // Build behavioral profile from applications + completed tasks
+  // Uses fetched task data (appliedTasksData) instead of feed cache,
+  // so completed/taken tasks still contribute to the learned profile.
   const behavioralProfile = useMemo(() => {
     const completedTasks = (myTasks || []).filter(t => t.status === 'COMPLETED' && t.worker_id === me?.id);
     const appliedTaskDetails = myApplications.map(a => {
-      const task = tasks.find(t => t.id === a.task_id);
+      const task = appliedTasksData.find(t => t.id === a.task_id);
       return task || { category: null, price: null };
     });
     const profile = buildBehavioralProfile(appliedTaskDetails, completedTasks);
@@ -379,7 +395,7 @@ export default function HomeFeed() {
       profile.hasStrongPattern = true;
     }
     return profile;
-  }, [myApplications, myTasks, tasks, me?.id, me?.preferred_categories]);
+  }, [myApplications, myTasks, appliedTasksData, me?.id, me?.preferred_categories]);
 
   // Categorize my applications — memoized to avoid recomputing every render
   const { approvedTaskIds, pendingTaskIds } = useMemo(() => {
@@ -419,11 +435,16 @@ export default function HomeFeed() {
     });
   }, [tasks, search, filters, dismissedTasks]);
 
-  // Run smart ranking — pass isLoggedIn + behavioralProfile
+  // Run smart ranking — pass isLoggedIn + behavioralProfile + userPreferredCities
+  // userPreferredCities enables location fallback when GPS is unavailable
   const rankedTasks = useMemo(() =>
-    rankFeedTasks(candidateTasks, userLocation, workerProfile, { isLoggedIn: !!isAuthenticated, behavioralProfile }),
+    rankFeedTasks(candidateTasks, userLocation, workerProfile, {
+      isLoggedIn: !!isAuthenticated,
+      behavioralProfile,
+      userPreferredCities: me?.preferred_cities || [],
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [candidateTasks, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated, behavioralProfile]
+    [candidateTasks, userLocation?.lat, userLocation?.lng, workerProfile, isAuthenticated, behavioralProfile, me?.preferred_cities]
   );
 
   // Override sort if user manually picks one
@@ -455,7 +476,7 @@ export default function HomeFeed() {
   const displayedTasks = useMemo(() => {
     let base;
     // When any filter/search is active, always use sortedTasks (already filtered)
-    const hasActiveFilter = search || (filters.categories?.length > 0) || filters.sortBy || filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.urgency_tag || filters.payment_method || filters.forYou;
+    const hasActiveFilter = search || (filters.categories?.length > 0) || filters.sortBy || filters.city || filters.minPrice || filters.maxPrice || filters.approvalMode || filters.urgency_tag || filters.payment_method || filters.forYou;
     if (!smartSections || activeSection === 'all' || hasActiveFilter) base = sortedTasks;
     else if (activeSection === 'nearby')  base = smartSections.nearby.length  ? smartSections.nearby  : sortedTasks;
     else if (activeSection === 'highpay') base = smartSections.highPaying.length ? smartSections.highPaying : sortedTasks;
@@ -480,8 +501,8 @@ export default function HomeFeed() {
     }
   });
 
-  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.categories?.length > 0 || filters.payment_method || filters.forYou || filters.requires_invoice;
-  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.time || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou || filters.requires_invoice);
+  const hasFilters = filters.city || filters.minPrice || filters.maxPrice || filters.approvalMode || filters.sortBy || filters.categories?.length > 0 || filters.payment_method || filters.forYou || filters.requires_invoice;
+  const hasSheetFilters = !!(filters.city || filters.minPrice || filters.maxPrice || filters.approvalMode || filters.sortBy || filters.urgency_tag || filters.payment_method || filters.forYou || filters.requires_invoice);
 
   // Red dot: any OPEN published task has pending applicants
   const hasNewApplicants = useMemo(() =>
