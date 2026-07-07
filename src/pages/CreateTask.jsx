@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
 
 import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
-import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras } from '@/lib/taskFlowConfig';
+import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras, getCategoryExtraFields } from '@/lib/taskFlowConfig';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
@@ -369,6 +369,49 @@ export default function CreateTask() {
     }
     return Object.keys(cd).length > 0 ? cd : undefined;
   };
+
+  // ── Schedule ↔ price synchronization ──
+  const hasScheduleField = getCategoryExtraFields(form.category).some(f => f.type === 'schedule');
+  const scheduleSlots = categoryDetails?.schedule;
+  const scheduleMinutes = (() => {
+    if (!Array.isArray(scheduleSlots) || scheduleSlots.length === 0) return null;
+    let total = 0;
+    for (const slot of scheduleSlots) {
+      const [sh, sm] = (slot.start || '').split(':').map(Number);
+      const [eh, em] = (slot.end || '').split(':').map(Number);
+      if (isNaN(sh) || isNaN(eh)) continue;
+      total += (eh * 60 + em) - (sh * 60 + sm);
+    }
+    return total > 0 ? total : null;
+  })();
+  const scheduleHours = scheduleMinutes != null ? scheduleMinutes / 60 : null;
+  const scheduleDriven = isHourly && hasScheduleField && scheduleHours != null;
+  const formatDuration = (minutes) => {
+    if (minutes == null) return '';
+    if (minutes < 60) return `${minutes} דקות`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (m === 0) return h === 1 ? 'שעה' : `${h} שעות`;
+    if (h === 1) return `שעה ו-${m} דקות`;
+    return `${h} שעות ו-${m} דקות`;
+  };
+  // Auto-sync: schedule → hours → price (hourly categories only)
+  useEffect(() => {
+    if (!scheduleDriven) return;
+    const rounded = Math.round(scheduleHours * 100) / 100;
+    if (parseFloat(form.hours) !== rounded) {
+      updateHourly('hours', String(rounded));
+    }
+  }, [scheduleHours, scheduleDriven]);
+  // Auto-derive scheduled_time from the earliest schedule slot
+  useEffect(() => {
+    if (!hasScheduleField || !Array.isArray(scheduleSlots) || scheduleSlots.length === 0) return;
+    const first = [...scheduleSlots].sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))[0];
+    const dt = new Date(`${first.date}T${first.start}:00`);
+    if (!isNaN(dt.getTime())) {
+      set('scheduled_time', dt.toISOString());
+    }
+  }, [hasScheduleField, scheduleSlots]);
   const [errors, setErrors] = useState({});
   const [showErrorBanner, setShowErrorBanner] = useState(false);
   const [moderationErrors, setModerationErrors] = useState({});
@@ -1162,23 +1205,42 @@ export default function CreateTask() {
                   <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>₪ לשעה</p>
                 </div>
                 <div>
-                  <Input type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="3"
-                    value={form.hours}
-                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
-                    disabled={hasActiveApplications}
-                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
-                  />
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>מספר שעות</p>
+                  {scheduleDriven ? (
+                    <div style={{ height: 48, borderRadius: 12, border: '1.5px solid #bbf7d0', background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#166534' }}>
+                      {formatDuration(scheduleMinutes)}
+                    </div>
+                  ) : (
+                    <Input type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="3"
+                      value={form.hours}
+                      onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
+                      disabled={hasActiveApplications}
+                      style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                    />
+                  )}
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{scheduleDriven ? 'מחושב מהמועדים שנבחרו ✓' : 'מספר שעות'}</p>
                 </div>
               </div>
               {form.hourly_rate && form.hours ? (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
-                  <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
-                </div>
+                scheduleDriven ? (
+                  <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>⚡ חישוב אוטומטי</span>
+                      <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>₪{form.hourly_rate} לשעה · {formatDuration(scheduleMinutes)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #bbf7d0' }}>
+                      <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
+                      <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
+                  </div>
+                )
               ) : (
                 <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600 }}>
-                  הזן מחיר לשעה ומספר שעות כדי לחשב את המחיר הסופי
+                  {scheduleDriven ? 'הזן מחיר לשעה כדי לחשב את המחיר הסופי' : 'הזן מחיר לשעה ומספר שעות כדי לחשב את המחיר הסופי'}
                 </div>
               )}
             </>
@@ -1275,7 +1337,8 @@ export default function CreateTask() {
               })}
             </div>
 
-            {/* Specific date/time picker */}
+            {/* Specific date/time picker — hidden when category has a schedule table (avoids duplication) */}
+            {!hasScheduleField && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <Calendar size={14} color="#94a3b8" strokeWidth={1.8} />
@@ -1296,6 +1359,19 @@ export default function CreateTask() {
               />
               <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>הגדר מועד מדויק שבו העובד צריך להגיע — יוצג בצורה ברורה על כרטיס המשימה ובפרטי המשימה</p>
             </div>
+            )}
+            {hasScheduleField && scheduleMinutes != null && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                <Calendar size={14} color="#16a34a" strokeWidth={1.8} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>המועדים נבחרו בטבלה למעלה ✓</span>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={13} color="#16a34a" />
+                סך הזמן: {formatDuration(scheduleMinutes)}{scheduleSlots.length > 1 ? ` · ${scheduleSlots.length} מועדים` : ''}
+              </div>
+            </div>
+            )}
           </div>
         </SectionCard>
 
