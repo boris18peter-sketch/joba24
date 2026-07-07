@@ -1225,7 +1225,7 @@ export default function CreateTask() {
                   <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>⚡ חישוב אוטומטי</span>
-                      <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>₪{form.hourly_rate} לשעה · {formatDuration(scheduleMinutes)}</span>
+                      <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>{scheduleMinutes < 60 ? formatDuration(scheduleMinutes) : `₪${form.hourly_rate} לשעה · ${formatDuration(scheduleMinutes)}`}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #bbf7d0' }}>
                       <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>

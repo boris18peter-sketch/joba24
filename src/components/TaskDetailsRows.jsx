@@ -8,6 +8,7 @@
  */
 import { getCategoryLabel } from '@/lib/categories';
 import { parseDescription } from '@/lib/descriptionParser';
+import { formatHoursLabel, formatScheduleSlots } from '@/lib/priceCalculator';
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔴', label: 'דחוף עכשיו', color: '#dc2626', bg: '#fff1f2', border: '#fca5a5' },
@@ -33,25 +34,29 @@ export default function TaskDetailsRows({ task, compact = false }) {
     });
   }
 
-  if (task.estimated_time) {
-    const etMap = { '15m': 'רבע שעה', '30m': 'חצי שעה', '1h': 'שעה', '2h': 'שעתיים' };
-    detailRows.push({ icon: '🕒', iconBg: '#eff6ff', label: 'זמן משוער', value: etMap[task.estimated_time] || task.estimated_time });
-  }
-
   if (task.category) {
     detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: 'קטגוריה', value: getCategoryLabel(task.category) });
   }
 
-  // Hourly pricing breakdown — show rate and hours when task uses hourly pricing
+  // Hourly pricing breakdown — show rate and duration when task uses hourly pricing
   if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hourly_rate && task.category_details?.hours) {
     const hrs = parseFloat(task.category_details.hours);
     const rate = Number(task.category_details.hourly_rate);
-    const hrsLabel = hrs === 1 ? 'שעה' : hrs === 2 ? 'שעתיים' : `${hrs} שעות`;
-    detailRows.push({ icon: '💰', iconBg: '#f0fdf4', label: 'מחיר לשעה', value: `₪${rate} · ${hrsLabel}`, valueColor: '#059669' });
+    const hrsLabel = formatHoursLabel(hrs);
+    const isSubHour = hrs > 0 && hrs < 1;
+    detailRows.push({ icon: '💰', iconBg: '#f0fdf4', label: isSubHour ? 'משך השירות' : 'מחיר לשעה', value: isSubHour ? hrsLabel : `₪${rate} · ${hrsLabel}`, valueColor: '#059669' });
   }
 
   if (task.payment_method) {
     detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: 'אמצעי תשלום', value: task.payment_method === 'Cash' ? 'מזומן' : task.payment_method });
+  }
+
+  // Schedule slots — prominent display of selected service times
+  const scheduleSlots = formatScheduleSlots(task.category_details?.schedule);
+  if (scheduleSlots.length > 0) {
+    scheduleSlots.forEach((slot, i) => {
+      detailRows.push({ icon: '📅', iconBg: '#eff6ff', label: i === 0 ? 'מועדי השירות' : '', value: `${slot.dayLabel} · ${slot.time}`, valueColor: '#1a6fd4' });
+    });
   }
 
   if (task.scheduled_time) {

@@ -20,7 +20,7 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
-import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel } from '@/lib/priceCalculator';
+import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
@@ -754,7 +754,7 @@ export default function TaskDetail() {
               {/* Price */}
               <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 14, padding: '8px 14px', textAlign: 'center', display: 'inline-block' }}>
                 <div style={{ color: 'white', fontWeight: 900, fontSize: 28, lineHeight: 1 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-                {(() => { const hb = getHourlyBreakdown(task); return hb ? <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, marginTop: 3 }}>₪{hb.hourlyRate}/שעה · {formatHoursLabel(hb.hours)}</div> : null; })()}
+                {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, marginTop: 3 }}>{sub}</div> : null; })()}
                 {task.payment_method && <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</div>}
               </div>
               <div style={{ flex: 1 }} />
@@ -1095,7 +1095,7 @@ export default function TaskDetail() {
 
 
         {/* ── Task Details Card ───────────────────────────────────────── */}
-        {(task.estimated_time || task.category ||
+        {(task.category ||
           task.address_building || task.address_floor || task.address_apartment || task.address_notes ||
           task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience ||
           extraLines.length > 0 ||
@@ -1142,20 +1142,49 @@ export default function TaskDetail() {
               </div>
             )}
 
-            {/* Estimated time */}
-            {task.estimated_time && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Schedule slots — prominent service times */}
+            {formatScheduleSlots(task.category_details?.schedule).length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Clock size={13} color="#1a6fd4" />
                 </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('estimated_time_label')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
-                    {task.estimated_time === '15m' ? t('quarter_hour') : task.estimated_time === '30m' ? t('half_hour') : task.estimated_time === '1h' ? t('one_hour_label') : task.estimated_time === '2h' ? t('two_hours_label') : task.estimated_time}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 3 }}>מועדי השירות</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {formatScheduleSlots(task.category_details.schedule).map((slot, i) => (
+                      <div key={i} style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{slot.dayLabel} · {slot.time}</div>
+                    ))}
                   </div>
                 </div>
               </div>
             )}
+
+            {/* Scheduled time — single datetime (when no schedule slots) */}
+            {task.scheduled_time && !Array.isArray(task.category_details?.schedule) && (() => {
+              const raw = String(task.scheduled_time);
+              const sDate = new Date(raw.includes('T') && !raw.endsWith('Z') && !raw.includes('+') ? raw + 'Z' : raw);
+              if (isNaN(sDate.getTime())) return null;
+              const now = new Date();
+              const isToday = sDate.toDateString() === now.toDateString();
+              const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+              const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
+              const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+              let label;
+              if (isToday) label = `היום, ${timeStr}`;
+              else if (isTomorrow) label = `מחר, ${timeStr}`;
+              else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Clock size={13} color="#1a6fd4" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מועד מדויק</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{label}</div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Category */}
             {task.category && (

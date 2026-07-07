@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Sparkles, Clock, DollarSign, Zap, ArrowUpDown, CreditCard, FileText } from 'lucide-react';
+import { X, MapPin, Sparkles, DollarSign, Zap, ArrowUpDown, CreditCard, FileText } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const cities = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'חולון', 'בת ים'];
@@ -52,13 +52,6 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
     { value: 'flexible',  label: t('urgency_flexible') },
   ];
 
-  const timeOptions = [
-    { value: '15m', label: t('time_15m') },
-    { value: '30m', label: t('time_30m') },
-    { value: '1h',  label: t('time_1h') },
-    { value: '2h',  label: t('time_2h') },
-  ];
-
   const PRICE_OPTIONS = [
     { label: t('price_all'),     min: '', max: '' },
     { label: t('price_upto_100'), min: '', max: '100' },
@@ -81,7 +74,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
   ];
 
   const [local, setLocal] = useState({
-    minPrice: '', maxPrice: '', time: '', city: '',
+    minPrice: '', maxPrice: '', city: '',
     approvalMode: '', sortBy: '', urgency_tag: '',
     payment_method: '', forYou: false, requires_invoice: false,
     ...filters,
@@ -91,7 +84,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
   const handleApply = () => { onApply(local); onClose(); };
   const handleReset = () => {
-    const reset = { minPrice: '', maxPrice: '', time: '', city: '', approvalMode: '', sortBy: '', category: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false };
+    const reset = { minPrice: '', maxPrice: '', city: '', approvalMode: '', sortBy: '', category: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false };
     setLocal(reset); onApply(reset); onClose();
   };
 
@@ -180,19 +173,6 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
                     ? { ...p, minPrice: '', maxPrice: '' }
                     : { ...p, minPrice: opt.min, maxPrice: opt.max }
                   )}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Time — 4-col grid */}
-          <div>
-            <SectionLabel icon={Clock}>{t('filter_estimated_time')}</SectionLabel>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
-              {timeOptions.map(t => (
-                <Chip key={t.value} label={t.label}
-                  active={local.time === t.value}
-                  onClick={() => setLocal(p => ({ ...p, time: p.time === t.value ? '' : t.value }))}
                 />
               ))}
             </div>

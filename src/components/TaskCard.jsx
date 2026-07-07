@@ -11,7 +11,7 @@ import UserBadge from '@/components/UserBadge';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel } from '@/lib/priceCalculator';
+import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel } from '@/lib/priceCalculator';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -147,7 +147,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
           <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-          {(() => { const hb = getHourlyBreakdown(task); return hb ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>₪{hb.hourlyRate}/שעה · {formatHoursLabel(hb.hours)}</div> : null; })()}
+          {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{sub}</div> : null; })()}
         </div>
 
         {/* Credit refund explanation */}
@@ -497,9 +497,10 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               if (isToday) label = `היום ${timeStr}`;
               else if (isTomorrow) label = `מחר ${timeStr}`;
               else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }) + ' ' + timeStr;
+              const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
               return (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', whiteSpace: 'nowrap' }}>
-                  📅 {label}
+                <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', color: '#1a6fd4', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  📅 {label}{slotCount > 1 ? ` · ${slotCount} מועדים` : ''}
                 </span>
               );
             })()}
@@ -622,7 +623,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
             </div>
             {hourlyBreakdown && (
-              <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>₪{hourlyBreakdown.hourlyRate}/שעה · {formatHoursLabel(hourlyBreakdown.hours)}</span>
+              <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatHourlySublabel(task)}</span>
             )}
             {dist != null && !isNaN(dist) && (
               <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'inline-flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
@@ -668,7 +669,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     </span>
                   </div>
               ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&estimated_time=${task.estimated_time||''}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
                    <RefreshCw size={11} /> {t('repost')}
                  </button>
               )

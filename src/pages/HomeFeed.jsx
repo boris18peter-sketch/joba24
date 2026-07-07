@@ -343,65 +343,9 @@ export default function HomeFeed() {
     }
   }, []);
 
-  // Auto price bump — only run on MY tasks, only every 5 minutes via interval
-  // Use a ref so myTasks changes don't restart the interval and trigger extra API calls
-  const myTasksRef = useRef(myTasks);
-  useEffect(() => { myTasksRef.current = myTasks; }, [myTasks]);
-
-  useEffect(() => {
-    if (!me?.id) return;
-
-    const runBump = async () => {
-      const bumpableTasks = myTasksRef.current.filter(t =>
-        t.status === 'OPEN' && t.auto_bump_enabled && t.max_price && t.price < t.max_price
-      );
-      if (!bumpableTasks.length) return;
-
-      // Single query for all bumpable tasks' applications (avoids N+1)
-      const allApps = await base44.entities.TaskApplication.filter({
-        task_id: { $in: bumpableTasks.map(t => t.id) },
-        status: { $in: ['pending', 'approved'] }
-      });
-      const tasksWithActiveApps = new Set(allApps.map(a => a.task_id));
-
-      for (const task of bumpableTasks) {
-        if (tasksWithActiveApps.has(task.id)) continue;
-
-        // Calculate how many 5-min intervals since task was created
-        const ageMinutes = (Date.now() - new Date(task.created_date).getTime()) / 1000 / 60;
-        if (ageMinutes < 10) continue;
-
-        const base = task.base_price || task.price;
-        if (base >= task.max_price) continue; // already at max, nothing to do
-
-        const totalSteps = 12; // spread price increase over 12 intervals (1 hour)
-        const step = (task.max_price - base) / totalSteps;
-
-        // Next expected price = current price + one step (simple increment per interval)
-        const nextPrice = Math.min(Math.round(task.price + step), task.max_price);
-        if (nextPrice > task.price) {
-          const updates = { price: nextPrice };
-          // Keep hourly_rate in sync for hourly-priced tasks
-          if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hours) {
-            updates.category_details = {
-              ...task.category_details,
-              hourly_rate: Math.round(nextPrice / task.category_details.hours),
-            };
-          }
-          try {
-            await base44.entities.Task.update(task.id, updates);
-          } catch (err) {
-            // Swallow per-task errors so one failure doesn't block other bumps
-          }
-        }
-      }
-    };
-
-    // Immediate check 30s after mount (lets myTasks load), then every 5 minutes
-    const initialTimer = setTimeout(runBump, 30 * 1000);
-    const interval = setInterval(runBump, 5 * 60 * 1000);
-    return () => { clearTimeout(initialTimer); clearInterval(interval); };
-  }, [me?.id]);
+  // Auto price bump is handled server-side by the "Auto Bump Task Prices" scheduled
+  // automation (every 5 minutes) — see base44/functions/autoBumpTaskPrices. WebSocket
+  // events propagate the updated price to all clients and caches in real time.
 
   // ── Smart Ranking Engine ──────────────────────────────────────────────────
   // Build worker profile for category matching
@@ -465,7 +409,6 @@ export default function HomeFeed() {
       )) return false;
       if (filters.minPrice && t.price < Number(filters.minPrice)) return false;
       if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
-      if (filters.time && t.estimated_time !== filters.time) return false;
       if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
       if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
       if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
