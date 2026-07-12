@@ -191,13 +191,7 @@
     },
     "client_verified": {
       "type": "boolean",
-      "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d4\u05de\u05e4\u05e8\u05e1\u05dd \u05e2\u05d1\u05e8 \u05d0\u05d9\u05de\u05d5\u05ea KYC (\u05d5\u05d9 \u05d6\u05d4\u05d1)"
-    },
-    "client_profile_complete": {
-      "type": "boolean",
-      "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d4\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc \u05e9\u05dc \u05d4\u05de\u05e4\u05e8\u05e1\u05dd \u05de\u05dc\u05d0 (\u05d5\u05d9 \u05d9\u05e8\u05d5\u05e7)"
+      "default": false
     },
     "worker_id": {
       "type": "string"
@@ -210,13 +204,7 @@
     },
     "worker_verified": {
       "type": "boolean",
-      "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d4\u05e2\u05d5\u05d1\u05d3 \u05e2\u05d1\u05e8 \u05d0\u05d9\u05de\u05d5\u05ea KYC (\u05d5\u05d9 \u05d6\u05d4\u05d1)"
-    },
-    "worker_profile_complete": {
-      "type": "boolean",
-      "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d4\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc \u05e9\u05dc \u05d4\u05e2\u05d5\u05d1\u05d3 \u05de\u05dc\u05d0 (\u05d5\u05d9 \u05d9\u05e8\u05d5\u05e7)"
+      "default": false
     },
     "signal_worker_id": {
       "type": "string"

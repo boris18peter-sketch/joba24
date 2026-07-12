@@ -21,7 +21,6 @@ import PriceSuggestion from '@/components/PriceSuggestion';
 
 import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
 import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras, getCategoryExtraFields } from '@/lib/taskFlowConfig';
-import { getVerificationLevel } from '@/lib/verificationLevel';
 import VerifyModal from '@/components/VerifyModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
@@ -279,8 +278,6 @@ export default function CreateTask() {
         urgency_tag: searchParams.get('urgency_tag') || '',
       };
     }
-    // Edit mode: start fresh — data will be populated by useEffect when editTask loads
-    if (isEditMode) return DEFAULT_FORM;
     // Try to load saved draft
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
@@ -775,7 +772,6 @@ export default function CreateTask() {
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
       client_verified: me?.is_verified || false,
-      client_profile_complete: getVerificationLevel(me) !== null,
     });
 
     // Deduct story credits via backend (idempotent — safe to fire-and-forget)
@@ -923,7 +919,6 @@ export default function CreateTask() {
         client_name: me?.full_name,
         client_rating: me?.rating || 0,
         client_verified: me?.is_verified || false,
-        client_profile_complete: getVerificationLevel(me) !== null,
       });
 
       // Deduct story credits via backend

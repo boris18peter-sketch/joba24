@@ -8,8 +8,6 @@ const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
-import { getVerificationLevel } from '@/lib/verificationLevel';
 import TrustCard from '@/components/TrustCard';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
@@ -220,7 +218,7 @@ export default function Profile() {
         {/* Name + verified */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{me?.full_name || 'User'}</span>
-          {getVerificationLevel(me) && <VerifiedBadge level={getVerificationLevel(me)} size="md" />}
+          {(me?.is_verified && me?.id_number) && <VerifiedBadge size="md" />}
         </div>
 
         {/* Stats row */}
@@ -241,8 +239,23 @@ export default function Profile() {
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* ── Profile Completion & Verification Banner ── */}
-        <ProfileCompletionBanner user={me} onVerifyClick={() => setShowVerifyModal(true)} />
+        {/* ── Verify CTA ── */}
+        {!(me?.is_verified && me?.id_number) && (
+          <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
+            <SectionCard>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px' }}>
+                <div style={{ width: 42, height: 42, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Shield size={20} color="#1a6fd4" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', marginBottom: 2 }}>{t('verify_title')}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{t('verify_sub')}</div>
+                </div>
+                <ChevronLeft size={16} color="var(--text-3)" />
+              </div>
+            </SectionCard>
+          </button>
+        )}
 
         {/* ── Trust Bar ── */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />

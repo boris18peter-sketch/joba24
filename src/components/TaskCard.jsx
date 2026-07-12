@@ -568,7 +568,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     <UserBadge
                       name={task.client_name}
                       userId={task.client_id}
-                      level={task.client_verified ? 'gold' : task.client_profile_complete ? 'green' : null}
+                      verified={task.client_verified}
                       rating={task.client_rating}
                     />
                   )
