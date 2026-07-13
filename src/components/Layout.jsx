@@ -51,6 +51,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
+import TaskDetailSheet from '@/components/TaskDetailSheet';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -574,6 +575,7 @@ export default function Layout() {
         </div>,
         document.body
       )}
+      <TaskDetailSheet />
     </div>
   );
 }

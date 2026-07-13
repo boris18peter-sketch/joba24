@@ -296,8 +296,8 @@ export default function CreateTask() {
 
   // Edit mode: load existing task
   const { data: editTask } = useQuery({
-    queryKey: ['task', editId],
-    queryFn: () => base44.entities.Task.filter({ id: editId }).then(d => d[0]),
+    queryKey: ['task-edit', editId],
+    queryFn: () => base44.entities.Task.get(editId),
     enabled: isEditMode,
   });
   const { data: editApplications = [] } = useQuery({

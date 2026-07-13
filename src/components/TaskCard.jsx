@@ -20,6 +20,7 @@ import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 
 function normalizeDate(d) {
@@ -260,6 +261,7 @@ function ScanningLabel({ taskId }) {
 function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
   const cancellingRef = useRef(false); // hard guard — survives re-renders
@@ -386,7 +388,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     <>
       <div
         ref={cardRef}
-        onClick={() => { if (showMenu) { setShowMenu(false); return; } navigate(`/task/${task.id}`); }}
+        onClick={() => { if (showMenu) { setShowMenu(false); return; } openTaskSheet(task.id); }}
         className="j-task-card"
         style={{
           background: 'var(--surface-2)',
@@ -452,7 +454,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{t('approved')} ✅</div>
                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 1 }}>{t('approved_sub')}</div>
              </div>
-             <button onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+             <button onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
                className="btn-tap"
                style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent' }}>
                {t('go_now')}
@@ -648,7 +650,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {boostAvailableCard && <BoostPill task={task} size="sm" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }} />}
                   <button
-                   onClick={e => { e.stopPropagation(); navigate(`/task/${task.id}`); }}
+                   onClick={e => { e.stopPropagation(); openTaskSheet(task.id); }}
                    style={{ minWidth: 110, height: 42, padding: '0 14px', borderRadius: 'var(--r-sm)', background: liveApplicantCount > 0 ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, boxShadow: 'var(--shadow-sm)', WebkitTapHighlightColor: 'transparent', whiteSpace: 'nowrap' }}
                   >
                     {liveApplicantCount > 0 ? (

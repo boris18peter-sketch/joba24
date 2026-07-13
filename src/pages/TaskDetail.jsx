@@ -115,8 +115,9 @@ function getRelativeTime(date, t) {
   return null;
 }
 
-export default function TaskDetail() {
-  const { id } = useParams();
+export default function TaskDetail({ taskId: propTaskId, sheetMode, onSheetClose }) {
+  const { id: paramId } = useParams();
+  const id = propTaskId || paramId;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, login } = useAuth();
@@ -514,6 +515,13 @@ export default function TaskDetail() {
   };
 
   if (isLoading) {
+    if (sheetMode) {
+      return (
+        <div dir="rtl" style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+          <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
+        </div>
+      );
+    }
     return (
       <div dir="rtl" style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
         <PageHeader title="" right={<div style={{ width: 60, height: 26, borderRadius: 20, background: '#e8edf5' }} className="animate-pulse" />} />
@@ -588,7 +596,7 @@ export default function TaskDetail() {
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
-    <div className="min-h-screen" dir="rtl" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div dir="rtl" style={{ background: 'var(--surface-1)', paddingBottom: sheetMode ? 'max(24px, env(safe-area-inset-bottom))' : 'calc(80px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(
@@ -647,7 +655,7 @@ export default function TaskDetail() {
         document.body
       )}
 
-      <PageHeader title={task.title} right={null} />
+      {!sheetMode && <PageHeader title={task.title} right={null} />}
       
 
       {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache

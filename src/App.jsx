@@ -12,6 +12,7 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
 import ResetPassword from '@/pages/ResetPassword';
@@ -204,9 +205,11 @@ function App() {
         <LanguageProvider>
           <QueryClientProvider client={queryClientInstance}>
             <Router>
-              <CaptureRefCode />
-              <ScrollToTop />
-              <AuthenticatedApp />
+              <TaskSheetProvider>
+                <CaptureRefCode />
+                <ScrollToTop />
+                <AuthenticatedApp />
+              </TaskSheetProvider>
             </Router>
             <Toaster />
           </QueryClientProvider>
