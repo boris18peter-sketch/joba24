@@ -389,6 +389,8 @@ export default function TaskDetail(props) {
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       toast.success(t('task_cancelled_toast'));
+      onSheetClose?.();
+      window.dispatchEvent(new CustomEvent('close_task_sheet'));
       navigate('/');
     }
   });
@@ -417,6 +419,8 @@ export default function TaskDetail(props) {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['creditTxns', me?.id] });
       toast.success(t('left_task_credits_back'));
+      onSheetClose?.();
+      window.dispatchEvent(new CustomEvent('close_task_sheet'));
       navigate('/');
     }
   });
@@ -700,6 +704,8 @@ export default function TaskDetail(props) {
           <Button
             onClick={() => {
               if (task.payment_status === 'funded') {
+                onSheetClose?.();
+                window.dispatchEvent(new CustomEvent('close_task_sheet'));
                 navigate(`/create-task?editId=${id}&repost=1`);
               } else {
                 reopenMutation.mutate();
@@ -1349,7 +1355,7 @@ export default function TaskDetail(props) {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
             {task.status === 'OPEN' &&
-            <div onClick={() => { setShowOwnerMenu(false); navigate(`/create-task?editId=${id}`); }}>
+            <div onClick={() => { setShowOwnerMenu(false); onSheetClose?.(); window.dispatchEvent(new CustomEvent('close_task_sheet')); navigate(`/create-task?editId=${id}`); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Pencil size={17} color="#1a6fd4" />

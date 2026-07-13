@@ -132,6 +132,7 @@ export default function Wallet() {
                   Refund_Expiration: t('tx_refund_expiration') || 'Refund — Expired',
                   Loyalty_Reward: t('tx_loyalty_reward') || 'Loyalty Reward',
                   Purchase: t('tx_purchase') || 'Credit Purchase',
+                  Story_Publication: 'פרסום סטורי',
                 };
                 const isPositive = txn.amount > 0;
                 return (

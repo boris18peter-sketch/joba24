@@ -24,6 +24,8 @@ IMPORTANT:
 - Hebrew job descriptions and normal conversation are NOT flagged
 - Factual/neutral descriptions are NOT flagged
 - Mild frustration without personal attack is NOT flagged
+- The word "כלב" (dog) is a common Hebrew word for a pet animal and is NOT an insult — do NOT flag it
+- Only flag "כלבה" or "בן כלבה" when used as a direct insult toward a person
 - When in doubt about personal insults or harassment - flag it
 
 Text:

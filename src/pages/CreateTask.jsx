@@ -596,8 +596,8 @@ export default function CreateTask() {
       return;
     }
 
-    // Edit mode: save & navigate
-    if (isEditMode) {
+    // Edit mode: save & navigate (but NOT repost mode — repost creates a new task)
+    if (isEditMode && !isRepostMode) {
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
         setShowErrorBanner(true);
@@ -1344,19 +1344,31 @@ export default function CreateTask() {
                 <Calendar size={14} color="#94a3b8" strokeWidth={1.8} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>תאריך ושעה מדויקים (לא חובה)</span>
               </div>
-              <input
-                type="datetime-local"
-                value={form.scheduled_time ? toLocalDatetimeInput(form.scheduled_time) : ''}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (val) {
-                    set('scheduled_time', new Date(val).toISOString());
-                  } else {
-                    set('scheduled_time', '');
-                  }
-                }}
-                style={{ width: '100%', height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--input-bg)', padding: '0 14px', fontSize: 16, color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="datetime-local"
+                  value={form.scheduled_time ? toLocalDatetimeInput(form.scheduled_time) : ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val) {
+                      set('scheduled_time', new Date(val).toISOString());
+                    } else {
+                      set('scheduled_time', '');
+                    }
+                  }}
+                  style={{ flex: 1, height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--input-bg)', padding: '0 14px', fontSize: 16, color: 'var(--text-1)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                />
+                {form.scheduled_time && (
+                  <button
+                    type="button"
+                    onClick={() => set('scheduled_time', '')}
+                    style={{ width: 48, height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--surface-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--text-2)' }}
+                    title="אפס תאריך ושעה"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
               <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>הגדר מועד מדויק שבו העובד צריך להגיע — יוצג בצורה ברורה על כרטיס המשימה ובפרטי המשימה</p>
             </div>
             )}

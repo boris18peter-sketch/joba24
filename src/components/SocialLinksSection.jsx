@@ -46,8 +46,7 @@ export default function SocialLinksSection({ user }) {
       const res = await base44.functions.invoke('phylloGetAccounts', {});
       return res.data;
     },
-    enabled: !!user?.phyllo_user_id,
-    staleTime: 30000,
+    staleTime: 10000,
   });
 
   const connectedAccounts = phylloData?.accounts || [];
@@ -108,12 +107,8 @@ export default function SocialLinksSection({ user }) {
           <div style={{ padding: '0 16px 10px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {connectedAccounts.map((acc, i) => {
               const Icon = getPlatformIcon(acc.platform_name);
-              return (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: 'var(--surface-3)', borderRadius: 12,
-                  padding: '6px 10px', border: '1px solid var(--border-1)',
-                }}>
+              const inner = (
+                <>
                   <Icon size={16} color="var(--text-2)" />
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
                     {acc.platform_name}
@@ -122,7 +117,25 @@ export default function SocialLinksSection({ user }) {
                     <span style={{ fontSize: 10, color: 'var(--text-3)' }}>@{acc.account_name}</span>
                   )}
                   <ShieldCheck size={11} color="#059669" />
-                </div>
+                </>
+              );
+              const chipStyle = {
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'var(--surface-3)', borderRadius: 12,
+                padding: '6px 10px', border: '1px solid var(--border-1)',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              };
+              return acc.profile_url ? (
+                <a key={i} href={acc.profile_url} target="_blank" rel="noreferrer" style={chipStyle}
+                   onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-4)'; }}
+                   onPointerUp={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
+                   onPointerLeave={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <div key={i} style={chipStyle}>{inner}</div>
               );
             })}
           </div>
@@ -250,19 +263,25 @@ export default function SocialLinksSection({ user }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                       {connectedAccounts.map((acc, i) => {
                         const Icon = getPlatformIcon(acc.platform_name);
-                        return (
-                          <div key={i} style={{
-                            display: 'flex', alignItems: 'center', gap: 10,
-                            background: '#f0fdf4', borderRadius: 12, border: '1px solid #bbf7d0',
-                            padding: '10px 12px',
-                          }}>
+                        const rowStyle = {
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          background: '#f0fdf4', borderRadius: 12, border: '1px solid #bbf7d0',
+                          padding: '10px 12px', textDecoration: 'none',
+                        };
+                        const inner = (
+                          <>
                             <Icon size={18} color="#059669" />
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 13, fontWeight: 700, color: '#065f46' }}>{acc.platform_name}</div>
                               {acc.account_name && <div style={{ fontSize: 11, color: '#059669' }}>@{acc.account_name}</div>}
                             </div>
                             <ShieldCheck size={16} color="#059669" />
-                          </div>
+                          </>
+                        );
+                        return acc.profile_url ? (
+                          <a key={i} href={acc.profile_url} target="_blank" rel="noreferrer" style={rowStyle}>{inner}</a>
+                        ) : (
+                          <div key={i} style={rowStyle}>{inner}</div>
                         );
                       })}
                     </div>

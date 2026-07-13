@@ -273,25 +273,7 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Media Gallery */}
-        {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
-          <div style={{
-            background: 'var(--surface-2)', borderRadius: 14,
-            border: '1px solid var(--border-1)', padding: 14,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 4 }}>גלריית מדיה</div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.4 }}>סרטונים ומדיה שמסבירים עלייך</div>
-            <ProfileMediaGallery
-              media={[
-                ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
-                ...(me?.profile_media || []),
-              ]}
-              isEditing={false}
-            />
-          </div>
-        )}
-
-        {/* Certificates */}
+        {/* Certificates — directly below categories */}
         {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
           <div style={{
             background: 'var(--surface-2)', borderRadius: 14,
@@ -315,6 +297,24 @@ export default function Profile() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Media Gallery */}
+        {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
+         <div style={{
+           background: 'var(--surface-2)', borderRadius: 14,
+           border: '1px solid var(--border-1)', padding: 14,
+         }}>
+           <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 4 }}>גלריית מדיה</div>
+           <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.4 }}>סרטונים ומדיה שמסבירים עלייך</div>
+           <ProfileMediaGallery
+             media={[
+               ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
+               ...(me?.profile_media || []),
+             ]}
+             isEditing={false}
+           />
+         </div>
         )}
 
         {/* Social Links */}

@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const existing = await base44.asServiceRole.entities.CreditTransaction.filter({
       user_id: user.id,
       task_id: taskId,
-      type: 'Application_Fee',
+      type: 'Story_Publication',
     });
     if (existing.some(tx => tx.note?.includes('סטורי'))) {
       return Response.json({ success: true, note: 'Already charged' });
@@ -39,11 +39,11 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: user.id,
       amount: -STORY_COST,
-      type: 'Application_Fee',
+      type: 'Story_Publication',
       task_id: taskId,
       task_title: taskTitle || '',
       balance_after: newBalance,
-      note: `עלות סטורי פרסום: ${taskTitle || 'משימה'}`,
+      note: `עלות פרסום סטורי: ${taskTitle || 'משימה'}`,
     });
 
     console.log(`✅ Story credits deducted for user ${user.id}, task ${taskId}`);

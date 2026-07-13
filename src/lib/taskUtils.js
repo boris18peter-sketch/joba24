@@ -19,22 +19,6 @@ export const STATUS_LABEL = {
  * Returns the full path string.
  */
 export function buildRepostUrl(task) {
-  if (task.status === 'EXPIRED' && task.payment_status === 'funded') {
-    return `/create-task?editId=${task.id}&repost=1`;
-  }
-  const params = new URLSearchParams({
-    repost: '1',
-    title: task.title || '',
-    description: task.description || '',
-    price: String(task.base_price || task.price || ''),
-    city: task.city || '',
-    location_name: task.location_name || '',
-    category: task.category || '',
-    estimated_time: task.estimated_time || '',
-    approval_mode: task.approval_mode || 'manual',
-    payment_method: task.payment_method || '',
-  });
-  if (task.lat) params.set('lat', String(task.lat));
-  if (task.lng) params.set('lng', String(task.lng));
-  return `/create-task?${params.toString()}`;
+  // Always use editId so ALL fields (images, scheduled_time, requirements, etc.) are loaded from the task
+  return `/create-task?editId=${task.id}&repost=1`;
 }

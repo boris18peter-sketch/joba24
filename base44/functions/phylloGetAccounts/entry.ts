@@ -2,6 +2,29 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 const PHYLLO_BASE_URL = 'https://api.staging.getphyllo.com/v1';
 
+const PLATFORM_URL_MAP = {
+  instagram: (u) => `https://instagram.com/${u}`,
+  tiktok: (u) => `https://tiktok.com/@${u}`,
+  youtube: (u) => `https://youtube.com/@${u}`,
+  facebook: (u) => `https://facebook.com/${u}`,
+  twitter: (u) => `https://twitter.com/${u}`,
+  x: (u) => `https://x.com/${u}`,
+  twitch: (u) => `https://twitch.tv/${u}`,
+  linkedin: (u) => `https://linkedin.com/in/${u}`,
+  snapchat: (u) => `https://snapchat.com/add/${u}`,
+  reddit: (u) => `https://reddit.com/user/${u}`,
+  substack: (u) => `https://${u}.substack.com`,
+};
+
+function getProfileUrl(platformName, username) {
+  if (!username) return null;
+  const lower = (platformName || '').toLowerCase();
+  for (const key of Object.keys(PLATFORM_URL_MAP)) {
+    if (lower.includes(key)) return PLATFORM_URL_MAP[key](username);
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -49,16 +72,21 @@ Deno.serve(async (req) => {
       wpMap[wp.id] = { name: wp.name, icon: wp.icon || null };
     }
 
-    // Build result: only connected accounts with platform info
+    // Build result: only connected accounts with platform info + profile URL
     const connectedAccounts = accounts
       .filter(a => a.status === 'connected')
-      .map(a => ({
-        account_id: a.id,
-        workplatform_id: a.workplatform_id,
-        account_name: a.account_name || a.handle || '',
-        platform_name: wpMap[a.workplatform_id]?.name || 'רשת חברתית',
-        platform_icon: wpMap[a.workplatform_id]?.icon || null,
-      }));
+      .map(a => {
+        const platformName = wpMap[a.workplatform_id]?.name || 'רשת חברתית';
+        const accountName = a.account_name || a.handle || '';
+        return {
+          account_id: a.id,
+          workplatform_id: a.workplatform_id,
+          account_name: accountName,
+          platform_name: platformName,
+          platform_icon: wpMap[a.workplatform_id]?.icon || null,
+          profile_url: getProfileUrl(platformName, accountName),
+        };
+      });
 
     return Response.json({
       accounts: connectedAccounts,
