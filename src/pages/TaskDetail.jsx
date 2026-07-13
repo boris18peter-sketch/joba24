@@ -115,9 +115,11 @@ function getRelativeTime(date, t) {
   return null;
 }
 
-export default function TaskDetail({ taskId: propTaskId, sheetMode, onSheetClose }) {
-  const { id: paramId } = useParams();
-  const id = propTaskId || paramId;
+export default function TaskDetail(props) {
+  const params = useParams();
+  const id = props?.taskId || params?.id;
+  const sheetMode = props?.sheetMode;
+  const onSheetClose = props?.onSheetClose;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, login } = useAuth();
