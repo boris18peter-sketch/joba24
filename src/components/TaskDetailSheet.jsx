@@ -9,83 +9,57 @@ import { lazy, Suspense } from 'react';
 const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 
 const ENTER_SPRING = { type: 'spring', damping: 36, stiffness: 420, mass: 0.65 };
-const EXIT_TWEEN = { type: 'tween', duration: 0.2, ease: [0.32, 0.72, 0, 1] };
 
 export default function TaskDetailSheet() {
   const { sheetTaskId, closeTaskSheet } = useTaskSheet();
   const [expanded, setExpanded] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
   const scrollRef = useRef(null);
 
-  // Open: render then animate in
+  // Route change: close sheet immediately
   useEffect(() => {
-    if (sheetTaskId) {
-      setExpanded(false);
-      setShouldRender(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setIsVisible(true));
-      });
-    }
-  }, [sheetTaskId]);
-
-  // Normal close: animate out then unmount
-  useEffect(() => {
-    if (!sheetTaskId && shouldRender) {
-      setIsVisible(false);
-      const timer = setTimeout(() => setShouldRender(false), 250);
-      return () => clearTimeout(timer);
-    }
-  }, [sheetTaskId, shouldRender]);
-
-  // Route change: close sheet
-  useEffect(() => {
-    if (shouldRender && location.pathname !== prevPathRef.current) {
+    if (sheetTaskId && location.pathname !== prevPathRef.current) {
       closeTaskSheet();
     }
     prevPathRef.current = location.pathname;
-  }, [location.pathname, shouldRender, closeTaskSheet]);
+  }, [location.pathname, sheetTaskId, closeTaskSheet]);
 
   // Instant close event (from boost, repost, edit, etc.)
   useEffect(() => {
-    const handler = () => {
-      setIsVisible(false);
-      setShouldRender(false);
-      closeTaskSheet();
-    };
+    const handler = () => closeTaskSheet();
     window.addEventListener('close_task_sheet', handler);
     return () => window.removeEventListener('close_task_sheet', handler);
   }, [closeTaskSheet]);
 
   // Escape key
   useEffect(() => {
-    if (!shouldRender) return;
+    if (!sheetTaskId) return;
     const handler = (e) => { if (e.key === 'Escape') closeTaskSheet(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [shouldRender, closeTaskSheet]);
+  }, [sheetTaskId, closeTaskSheet]);
 
   // Lock body scroll
   useEffect(() => {
-    if (shouldRender) {
+    if (sheetTaskId) {
       const prev = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = prev; };
     }
-  }, [shouldRender]);
+  }, [sheetTaskId]);
 
-  // Reset scroll on open
+  // Reset scroll and expanded on open
   useEffect(() => {
     if (sheetTaskId) {
+      setExpanded(false);
       requestAnimationFrame(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       });
     }
   }, [sheetTaskId]);
 
-  if (!shouldRender) return null;
+  if (!sheetTaskId) return null;
 
   return createPortal(
     <div
@@ -96,15 +70,12 @@ export default function TaskDetailSheet() {
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        opacity: isVisible ? 1 : 0,
-        transition: 'opacity 0.2s ease',
-        pointerEvents: isVisible ? 'auto' : 'none',
       }}
     >
       <motion.div
         initial={{ y: '100%' }}
-        animate={{ y: isVisible ? 0 : '100%' }}
-        transition={isVisible ? ENTER_SPRING : EXIT_TWEEN}
+        animate={{ y: 0 }}
+        transition={ENTER_SPRING}
         drag="y"
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0, bottom: 0.6 }}

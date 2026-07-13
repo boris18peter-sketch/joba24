@@ -258,7 +258,7 @@ export default function Profile() {
 
           {/* Cities */}
           {cities.length > 0 && (
-            <div style={{ padding: '12px 14px' }}>
+            <div style={{ padding: '12px 14px', borderBottom: (me?.certificate_files?.length > 0 || me?.certificates?.length > 0) ? '1px solid var(--border-1)' : 'none' }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <MapPin size={12} /> ערים לביצוע משימות
               </div>
@@ -271,33 +271,32 @@ export default function Profile() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* Certificates — directly below categories */}
-        {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
-          <div style={{
-            background: 'var(--surface-2)', borderRadius: 14,
-            border: '1px solid var(--border-1)', padding: 14,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 10 }}>תעודות מקצוע</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {(me?.certificate_files || []).map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', textDecoration: 'none' }}>
-                  <FileText size={15} color="#16a34a" style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 10, color: '#86efac' }}>›</span>
-                </a>
-              ))}
-              {(me?.certificates || []).length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {me.certificates.map(cert => (
-                    <span key={cert} style={{ fontSize: 12, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '4px 10px', borderRadius: 20, fontWeight: 600 }}>✅ {cert}</span>
-                  ))}
-                </div>
-              )}
+          {/* Certificates — inside the same card, below cities */}
+          {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
+            <div style={{ padding: '12px 14px' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <FileText size={12} /> תעודות מקצוע
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(me?.certificate_files || []).map(doc => (
+                  <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', textDecoration: 'none' }}>
+                    <FileText size={15} color="#16a34a" style={{ flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                    <span style={{ fontSize: 10, color: '#86efac' }}>›</span>
+                  </a>
+                ))}
+                {(me?.certificates || []).length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {me.certificates.map(cert => (
+                      <span key={cert} style={{ fontSize: 12, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '4px 10px', borderRadius: 20, fontWeight: 600 }}>✅ {cert}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Media Gallery */}
         {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
