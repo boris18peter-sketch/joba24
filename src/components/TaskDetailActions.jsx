@@ -13,7 +13,7 @@ import ApplySheet from '@/components/ApplySheet';
 export default function TaskDetailActions({
   task, me, id, isOwner, isWorker,
   canApplyManual, myApp, myReview, applyLoading,
-  onApply, onSetShowApplyForm, showApplyForm,
+  onApply, onSetShowApplyForm, showApplyForm, onSheetClose,
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -95,7 +95,7 @@ export default function TaskDetailActions({
         {/* Repost */}
         {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task?.status) && (
           <button
-            onClick={() => { window.dispatchEvent(new CustomEvent('close_task_sheet')); navigate(buildRepostUrl(task)); }}
+            onClick={() => { onSheetClose?.(); window.dispatchEvent(new CustomEvent('close_task_sheet')); navigate(buildRepostUrl(task)); }}
             style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', color: 'var(--brand-primary)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
             <RotateCcw size={16} /> פרסם שוב
           </button>

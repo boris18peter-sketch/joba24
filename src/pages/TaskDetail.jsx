@@ -904,7 +904,7 @@ export default function TaskDetail(props) {
                 {/* Boost button — symmetric fixed width */}
                 {boostAvailable && (
                   <div style={{ width: 54, flexShrink: 0 }}>
-                    <BoostPill task={task} size="md" onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['task', id] }); }} />
+                    <BoostPill task={task} size="md" onSheetClose={onSheetClose} onBoostDone={() => { queryClient.invalidateQueries({ queryKey: ['me'] }); queryClient.invalidateQueries({ queryKey: ['task', id] }); }} />
                   </div>
                 )}
               </div>
@@ -1325,6 +1325,7 @@ export default function TaskDetail(props) {
             canApplyManual={canApplyManual}
             myApp={myApp} myReview={myReview}
             applyLoading={applyLoading}
+            onSheetClose={onSheetClose}
             onApply={(msg, imgs) => { setApplyMessage(msg); handleApply(msg, imgs); }}
             onSetShowApplyForm={setShowApplyForm}
             showApplyForm={showApplyForm}

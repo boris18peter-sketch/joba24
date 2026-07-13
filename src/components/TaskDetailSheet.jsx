@@ -8,8 +8,9 @@ import { lazy, Suspense } from 'react';
 
 const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 
-const SPRING_CONFIG = { type: 'spring', damping: 38, stiffness: 400, mass: 0.7 };
-const HEIGHT_TRANSITION = 'height 0.42s cubic-bezier(0.32, 0.72, 0, 1)';
+const ENTER_SPRING = { type: 'spring', damping: 36, stiffness: 420, mass: 0.65 };
+const EXIT_TWEEN = { type: 'tween', duration: 0.18, ease: [0.32, 0.72, 0, 1] };
+const HEIGHT_TRANSITION = 'height 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
 
 export default function TaskDetailSheet() {
   const { sheetTaskId, closeTaskSheet } = useTaskSheet();
@@ -28,7 +29,7 @@ export default function TaskDetailSheet() {
     prevPathRef.current = location.pathname;
   }, [location.pathname, sheetTaskId, closeTaskSheet]);
 
-  // Listen for custom close event (dispatched by boost, repost, etc.)
+  // Listen for custom close event (from boost, repost, etc.)
   useEffect(() => {
     const handler = () => closeTaskSheet();
     window.addEventListener('close_task_sheet', handler);
@@ -67,7 +68,7 @@ export default function TaskDetailSheet() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+          transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
           onClick={closeTaskSheet}
           style={{
             position: 'fixed', inset: 0, zIndex: 99999,
@@ -80,9 +81,8 @@ export default function TaskDetailSheet() {
           <motion.div
             key={`task-sheet-${sheetTaskId}`}
             initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={SPRING_CONFIG}
+            animate={{ y: 0, transition: ENTER_SPRING }}
+            exit={{ y: '100%', transition: EXIT_TWEEN }}
             drag="y"
             dragControls={dragControls}
             dragListener={false}
@@ -114,14 +114,14 @@ export default function TaskDetailSheet() {
             }}
             dir="rtl"
           >
-            {/* Drag handle — only area that starts a drag */}
+            {/* Drag handle — only area that initiates drag */}
             <div
               onPointerDown={(e) => { if (!isDragging) dragControls.start(e); }}
               onClick={() => { if (!isDragging) setExpanded(v => !v); }}
               style={{
                 padding: '10px 0 6px',
                 cursor: 'grab',
-                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 4,
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 3,
                 flexShrink: 0,
                 background: 'var(--surface-2)',
                 borderRadius: '28px 28px 0 0',
@@ -130,13 +130,13 @@ export default function TaskDetailSheet() {
               }}
             >
               <div style={{
-                width: 44, height: 5, borderRadius: 99,
+                width: 42, height: 5, borderRadius: 99,
                 background: 'var(--border-2)',
-                transition: 'background 0.15s, width 0.15s',
+                transition: 'background 0.2s, width 0.2s',
               }} />
               <div style={{
                 fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
-                letterSpacing: 0.3,
+                letterSpacing: 0.3, userSelect: 'none',
               }}>
                 {expanded ? 'גרור למטה לסגירה' : 'גרור למעלה להרחבה'}
               </div>
@@ -153,6 +153,7 @@ export default function TaskDetailSheet() {
                 overscrollBehavior: 'contain',
                 position: 'relative',
                 touchAction: 'pan-y',
+                scrollBehavior: 'smooth',
               }}
             >
               <Suspense fallback={

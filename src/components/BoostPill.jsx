@@ -32,7 +32,7 @@ function toUTCMs(str) {
  *   size        — 'sm' (42×42, for card) | 'md' (54×54, for detail banner)
  *   onBoostDone — optional callback after successful boost
  */
-export default function BoostPill({ task, size = 'sm', onBoostDone }) {
+export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose }) {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   const [pct, setPct] = useState(0);
@@ -100,6 +100,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      onSheetClose?.();
       window.dispatchEvent(new CustomEvent('close_task_sheet'));
       setShowOverlay(true);
       onBoostDone?.();
