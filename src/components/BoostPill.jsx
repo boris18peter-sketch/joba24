@@ -100,6 +100,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone }) {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      window.dispatchEvent(new CustomEvent('close_task_sheet'));
       setShowOverlay(true);
       onBoostDone?.();
     } finally {

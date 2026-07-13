@@ -62,11 +62,11 @@ export function usePhylloConnect() {
         onExit?.(reason, userId);
       });
 
-      phylloConnect.on('tokenExpired', () => {
+      phylloConnect.on('tokenExpired', (userId) => {
         setError('פג תוקף הטוקן, נסה שוב');
       });
 
-      phylloConnect.on('connectionFailure', (reason) => {
+      phylloConnect.on('connectionFailure', (reason, workplatformId, userId) => {
         setError('החיבור נכשל: ' + reason);
       });
 

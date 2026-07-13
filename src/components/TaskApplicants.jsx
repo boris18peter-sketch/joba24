@@ -189,7 +189,7 @@ export default function TaskApplicants({ task, onApprove }) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
         <div className="text-2xl mb-2">✋</div>
-        <p className="text-sm font-semibold text-blue-800">ממתין לאישור</p>
+        <p className="text-sm font-semibold text-blue-800">ממתין לבקשות</p>
         <p className="text-xs text-blue-600 mt-1">עדיין לא הגיעו בקשות מעובדים</p>
       </div>
     );

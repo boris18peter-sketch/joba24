@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
@@ -18,13 +18,22 @@ export default function TaskDetailSheet() {
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
   const scrollRef = useRef(null);
+  const dragControls = useDragControls();
 
+  // Close on route change
   useEffect(() => {
     if (sheetTaskId && location.pathname !== prevPathRef.current) {
       closeTaskSheet();
     }
     prevPathRef.current = location.pathname;
   }, [location.pathname, sheetTaskId, closeTaskSheet]);
+
+  // Listen for custom close event (dispatched by boost, repost, etc.)
+  useEffect(() => {
+    const handler = () => closeTaskSheet();
+    window.addEventListener('close_task_sheet', handler);
+    return () => window.removeEventListener('close_task_sheet', handler);
+  }, [closeTaskSheet]);
 
   useEffect(() => {
     if (sheetTaskId) {
@@ -75,6 +84,8 @@ export default function TaskDetailSheet() {
             exit={{ y: '100%' }}
             transition={SPRING_CONFIG}
             drag="y"
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.5 }}
             dragMomentum={false}
@@ -100,30 +111,38 @@ export default function TaskDetailSheet() {
               overflow: 'hidden',
               display: 'flex', flexDirection: 'column',
               transition: isDragging ? 'none' : HEIGHT_TRANSITION,
-              touchAction: 'none',
             }}
             dir="rtl"
           >
-            {/* Drag handle */}
+            {/* Drag handle — only area that starts a drag */}
             <div
+              onPointerDown={(e) => { if (!isDragging) dragControls.start(e); }}
               onClick={() => { if (!isDragging) setExpanded(v => !v); }}
               style={{
-                padding: '8px 0 4px',
+                padding: '10px 0 6px',
                 cursor: 'grab',
-                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 4,
                 flexShrink: 0,
                 background: 'var(--surface-2)',
                 borderRadius: '28px 28px 0 0',
                 position: 'relative',
+                touchAction: 'none',
               }}
             >
               <div style={{
-                width: 36, height: 4, borderRadius: 99,
+                width: 44, height: 5, borderRadius: 99,
                 background: 'var(--border-2)',
+                transition: 'background 0.15s, width 0.15s',
               }} />
+              <div style={{
+                fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
+                letterSpacing: 0.3,
+              }}>
+                {expanded ? 'גרור למטה לסגירה' : 'גרור למעלה להרחבה'}
+              </div>
             </div>
 
-            {/* Scrollable content */}
+            {/* Scrollable content — native momentum scrolling */}
             <div
               ref={scrollRef}
               style={{
@@ -133,6 +152,7 @@ export default function TaskDetailSheet() {
                 WebkitOverflowScrolling: 'touch',
                 overscrollBehavior: 'contain',
                 position: 'relative',
+                touchAction: 'pan-y',
               }}
             >
               <Suspense fallback={
