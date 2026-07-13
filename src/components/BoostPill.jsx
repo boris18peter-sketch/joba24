@@ -4,7 +4,6 @@ import { Zap, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import BoostOverlay from '@/components/BoostOverlay';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const BOOST_COST = 5;
@@ -39,8 +38,6 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
   const [charged, setCharged] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(false);
-
   const calcState = () => {
     // Reference: last boost if exists, else task creation date
     const refMs = task.last_boost_at
@@ -102,7 +99,9 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       onSheetClose?.();
       window.dispatchEvent(new CustomEvent('close_task_sheet'));
-      setShowOverlay(true);
+      window.dispatchEvent(new CustomEvent('show_boost_overlay', {
+        detail: { taskId: task.id, taskTitle: task.title, taskPrice: task.price, taskCategory: task.category }
+      }));
       onBoostDone?.();
     } finally {
       setLoading(false);
@@ -202,17 +201,6 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
           </div>
         </div>,
         document.body
-      )}
-
-      {/* Boost overlay animation */}
-      {showOverlay && (
-        <BoostOverlay
-          taskId={task.id}
-          taskTitle={task.title}
-          taskPrice={task.price}
-          taskCategory={task.category}
-          onDismiss={() => setShowOverlay(false)}
-        />
       )}
 
       <style>{`

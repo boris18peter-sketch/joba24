@@ -157,6 +157,7 @@ export default function TaskDetail(props) {
   const [savingCompletion, setSavingCompletion] = useState(false);
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [mediaIdx, setMediaIdx] = useState(0);
+  const [idCopied, setIdCopied] = useState(false);
   const prevWorkerIdRef = useRef(null);
 
   useEffect(() => {
@@ -399,7 +400,13 @@ export default function TaskDetail(props) {
     mutationFn: () => base44.entities.Task.update(id, { status: 'OPEN', expires_at: null, worker_id: null, worker_name: null, worker_status: null, last_boost_at: null, boost_count: 0 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       toast.success(t('task_reopened_toast'));
+      onSheetClose?.();
+      window.dispatchEvent(new CustomEvent('close_task_sheet'));
+      navigate(`/?newTaskId=${id}`);
     }
   });
 
@@ -1134,12 +1141,20 @@ export default function TaskDetail(props) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('task_details_title')}</div>
               <button
-                onClick={() => { navigator.clipboard.writeText(task.id); toast(t('id_copied')); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: '#94a3b8', fontFamily: 'monospace', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: 'none', cursor: 'pointer' }}
+                onClick={() => {
+                  navigator.clipboard.writeText(task.id);
+                  setIdCopied(true);
+                  setTimeout(() => setIdCopied(false), 2000);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: idCopied ? '#059669' : '#94a3b8', fontFamily: 'monospace', background: idCopied ? '#f0fdf4' : 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: idCopied ? '1px solid #bbf7d0' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
                 title="העתק ID"
               >
-                #{task.id?.slice(-8)}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                {idCopied ? (
+                  <>{t('id_copied') || 'הועתק'} <CheckCircle2 size={11} color="#059669" /></>
+                ) : (
+                  <>#{task.id?.slice(-8)}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></>
+                )}
               </button>
             </div>
 

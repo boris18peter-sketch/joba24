@@ -52,6 +52,7 @@ import usePushNotifications from '@/hooks/usePushNotifications';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
+import BoostOverlay from '@/components/BoostOverlay';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -90,6 +91,7 @@ export default function Layout() {
   const notifActiveRef = useRef(false);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [navHiddenByModal, setNavHiddenByModal] = useState(false);
+  const [boostOverlayData, setBoostOverlayData] = useState(null);
 
   // Lazy-mount tabs
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter((p) => ROOT_TAB_PATHS.includes(p))));
@@ -331,6 +333,13 @@ export default function Layout() {
   useEffect(() => {
     if (location.pathname === '/chats') setUnreadMessages(0);
   }, [location.pathname]);
+
+  // Boost overlay — rendered at Layout level so it survives TaskDetailSheet unmount
+  useEffect(() => {
+    const handler = (e) => setBoostOverlayData(e.detail);
+    window.addEventListener('show_boost_overlay', handler);
+    return () => window.removeEventListener('show_boost_overlay', handler);
+  }, []);
 
   // ── All WebSocket subscriptions via hook ─────────────────────────────────
   useRealtimeSync({
@@ -576,6 +585,16 @@ export default function Layout() {
         document.body
       )}
       <TaskDetailSheet />
+      {boostOverlayData && createPortal(
+        <BoostOverlay
+          taskId={boostOverlayData.taskId}
+          taskTitle={boostOverlayData.taskTitle}
+          taskPrice={boostOverlayData.taskPrice}
+          taskCategory={boostOverlayData.taskCategory}
+          onDismiss={() => setBoostOverlayData(null)}
+        />,
+        document.body
+      )}
     </div>
   );
 }

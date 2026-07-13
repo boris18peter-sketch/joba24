@@ -65,7 +65,7 @@ export default function TaskDetailSheet() {
     <div
       onClick={closeTaskSheet}
       style={{
-        position: 'fixed', inset: 0, zIndex: 99999,
+        position: 'fixed', inset: 0, zIndex: 9000,
         background: 'rgba(5,15,40,0.5)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',

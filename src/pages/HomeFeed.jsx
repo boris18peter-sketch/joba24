@@ -17,7 +17,7 @@ import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 
@@ -511,13 +511,17 @@ export default function HomeFeed() {
   );
 
   // ── New task highlight: auto-tab + scroll + glow ──────────────────────────
+  const location = useLocation();
   useEffect(() => {
-    if (!highlightTaskId) return;
-    setActiveTab('my_published');
-    setMyPubTab('active');
-    // Clean URL without reload
-    window.history.replaceState({}, '', '/');
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const params = new URLSearchParams(window.location.search);
+    const newId = params.get('newTaskId');
+    if (newId) {
+      setHighlightTaskId(newId);
+      setActiveTab('my_published');
+      setMyPubTab('active');
+      window.history.replaceState({}, '', '/');
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (!highlightTaskId) return;
