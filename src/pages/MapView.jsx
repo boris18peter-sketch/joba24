@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/AuthContext';
@@ -89,6 +90,7 @@ export default function MapView() {
   const mapRef = useRef(null);
   const seedRef = useRef({});
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
 
@@ -672,7 +674,7 @@ export default function MapView() {
                 <Navigation size={16} />
                 {navLoading ? (t('computing_route')?.replace('...','') || 'Computing') : !route ? (t('no_location_short') || 'No location') : (t('start_nav') || 'Start navigation')}
               </button>
-              <button onClick={() => window.location.href = `/task/${selectedTask.id}`} style={{
+              <button onClick={() => openTaskSheet(selectedTask.id)} style={{
                 flex: 1, height: 46, borderRadius: 14, background: 'var(--surface-3)',
                 border: '1.5px solid var(--border-1)', color: '#1a6fd4', fontWeight: 800, fontSize: 13, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,

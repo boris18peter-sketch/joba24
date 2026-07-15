@@ -20,10 +20,11 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
+import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
 
 const CATEGORY_EMOJI = {
-  plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹',
+  plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
   moving: '📦', painting: '🎨', carpentry: '🪚', ac: '❄️',
   locksmith: '🔐', shopping: '🛍️', delivery: '🚚', babysitting: '👶',
   tutoring: '📚', it_support: '💻', other: '🔨'

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { getCategoryConfig } from '@/lib/categoryConfig';
@@ -90,6 +91,7 @@ function ConfirmSheet({ action, onConfirm, onCancel, loading }) {
 
 export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const { t, isRTL } = useLanguage();
   const [activeIdx, setActiveIdx] = useState(0);
@@ -221,7 +223,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
             <div
               key={task.id}
               style={{ flex: '0 0 100%', background: gradient, borderRadius: 20, padding: '14px 16px 16px', boxShadow: '0 6px 24px rgba(26,111,212,0.28)', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-              onClick={() => navigate(`/task/${task.id}`)}
+              onClick={() => openTaskSheet(task.id)}
             >
               {/* Decorative blobs */}
               <div style={{ position: 'absolute', bottom: -30, left: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
@@ -369,7 +371,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 {/* Details (HomeFeed only) */}
                 {!extraInfo && (
                   <button
-                    onClick={() => navigate(`/task/${task.id}`)}
+                    onClick={() => openTaskSheet(task.id)}
                     style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     {t('details') || 'פרטים'}

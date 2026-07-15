@@ -2,12 +2,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 export default function LiveNotificationPopup({ notification, onClose }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(100);
   const [swipeY, setSwipeY] = useState(0);
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const { t } = useLanguage();
   const DURATION = 7500;
   const touchStartY = useRef(null);
@@ -45,7 +47,15 @@ export default function LiveNotificationPopup({ notification, onClose }) {
   const link = cfg.link?.(notification);
 
   const dismiss = () => { setVisible(false); onClose?.(); };
-  const handleClick = () => { if (link) { dismiss(); navigate(link); } };
+  const handleClick = () => {
+    if (!link) return;
+    dismiss();
+    if (link.startsWith('/task/')) {
+      openTaskSheet(link.replace('/task/', ''));
+    } else {
+      navigate(link);
+    }
+  };
 
   const handleTouchStart = (e) => { touchStartY.current = e.touches[0].clientY; };
   const handleTouchMove = (e) => {

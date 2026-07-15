@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { getCategoryLabel } from '@/lib/categories';
 import { X, MapPin, Navigation, Eye, MousePointerClick } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { calculateCurrentPrice } from '@/lib/priceCalculator';
 import { parseDescription } from '@/lib/descriptionParser';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -88,6 +89,7 @@ function StoryCard({ task, isViewed, isOwn, onClick, t }) {
 }
 
 function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUserId, t }) {
+  const { openTaskSheet } = useTaskSheet();
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -342,12 +344,11 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
               </div>
             </div>
           )}
-          <Link
-            to={`/task/${task.id}`}
-            onClick={handleTaskClick}
+          <div
+            onClick={(e) => { handleTaskClick(e); openTaskSheet(task.id); }}
             onMouseDown={e => e.stopPropagation()}
             onTouchStart={e => e.stopPropagation()}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none', cursor: 'pointer' }}
           >
             {t('story_check_task')}
             {!isOwnerStory && (
@@ -356,7 +357,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
                 <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
               </span>
             )}
-          </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -365,6 +366,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 
 export default function StoriesBar({ filterCategory = null, currentUserId = null }) {
   const { t } = useLanguage();
+  const { openTaskSheet } = useTaskSheet();
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [viewedIds, setViewedIds] = useState(() => getViewedIds());

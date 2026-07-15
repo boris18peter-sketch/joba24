@@ -329,6 +329,7 @@ export const CATEGORY_WORKFLOW = {
   home_maintenance: 'onsite_service',
   it_support: 'onsite_service',
   personal_help: 'onsite_service',
+  car: 'onsite_service',
   other: 'onsite_service',
   delivery: 'delivery',
   transportation: 'delivery',

@@ -3,11 +3,13 @@ import { Navigation } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import BottomSheet from '@/components/BottomSheet';
 
 export default function ApprovedPopup({ task, onClose }) {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function ApprovedPopup({ task, onClose }) {
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
     setLoading(false);
     onClose();
-    navigate(`/task/${task.id}`);
+    openTaskSheet(task.id);
   };
 
   const progress = (timeLeft / 20) * 100;

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -127,6 +128,7 @@ const STATUS_COLORS = {
 /* ─── Main ─────────────────────────── */
 export default function SimulatorPanel() {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
 
   const { data: me, refetch: refetchMe } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), staleTime: 30000, refetchOnWindowFocus: false });
@@ -810,7 +812,7 @@ export default function SimulatorPanel() {
           <div style={{ textAlign: 'center', padding: '6px', background: '#fff7ed', borderRadius: 9, fontSize: 12, fontWeight: 800, color: '#b45309' }}>{myTasks.length} פרסמת</div>
         </div>
         {allTasks.slice(0, 8).map(t => (
-          <TaskPill key={t.id} task={t} onClick={() => navigate(`/task/${t.id}`)} />
+          <TaskPill key={t.id} task={t} onClick={() => openTaskSheet(t.id)} />
         ))}
       </Section>
 

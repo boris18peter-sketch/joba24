@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
@@ -18,6 +19,7 @@ function getDistance(lat1, lng1, lat2, lng2) {
 }
 
 export default function DailyGoal() {
+  const { openTaskSheet } = useTaskSheet();
   const { t, isRTL } = useLanguage();
   const [goal, setGoal] = useState('');
   const [radius, setRadius] = useState(10);
@@ -303,7 +305,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                 const dist = userLocation ? getDistance(userLocation.lat, userLocation.lng, task.lat, task.lng) : null;
                 const aiRec = aiPlan?.recommended_tasks?.find(r => r.title === task.title);
                 return (
-                  <Link key={task.id} to={`/task/${task.id}`} style={{ textDecoration: 'none' }}>
+                  <div key={task.id} onClick={() => openTaskSheet(task.id)} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div style={{ background: 'white', borderRadius: 18, padding: '14px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 8px rgba(26,111,212,0.05)', position: 'relative', overflow: 'hidden' }}>
                       {i === 0 && aiPlan && (
                         <div style={{ position: 'absolute', top: 0, right: 0, background: '#fbbf24', fontSize: 10, fontWeight: 800, color: '#78350f', padding: '3px 10px', borderBottomLeftRadius: 12 }}>
@@ -339,7 +341,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

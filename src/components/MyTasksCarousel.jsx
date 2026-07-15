@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { createPortal } from 'react-dom';
 import { MessageCircle, ChevronLeft, Plus, RefreshCw, Users, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -92,6 +93,7 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
 
 export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -176,7 +178,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
           return (
             <div key={task.id} style={{ flexShrink: 0, position: 'relative' }}>
               <div
-                onClick={() => { if (openMenuId !== task.id) navigate(`/task/${task.id}`); }}
+                onClick={() => { if (openMenuId !== task.id) openTaskSheet(task.id); }}
                 style={{
                   width: 168,
                   minHeight: hasPending ? 126 : 108,

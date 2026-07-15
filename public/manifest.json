@@ -1,13 +1,12 @@
 {
-  "name": "Joba24",
+  "name": "Joba24 — משימות מהירות",
   "short_name": "Joba24",
-  "description": "משימות מהירות בקרבתך",
+  "description": "פלטפורמה לפרסום וביצוע משימות מהירות",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "theme_color": "#0f2b6b",
+  "orientation": "portrait",
   "background_color": "#f4f7fb",
+  "theme_color": "#0f2b6b",
   "dir": "rtl",
   "lang": "he",
   "icons": [
@@ -15,31 +14,14 @@
       "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
       "sizes": "192x192",
       "type": "image/jpeg",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
-      "sizes": "540x720",
-      "type": "image/jpeg",
-      "form_factor": "narrow",
-      "purpose": "any"
-    },
-    {
-      "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
-      "sizes": "1080x1440",
-      "type": "image/jpeg",
-      "form_factor": "wide",
-      "purpose": "any"
-    }
-  ],
-  "categories": ["productivity", "lifestyle"],
-  "prefer_related_applications": false
+  "gcm_sender_id": "79738163466"
 }

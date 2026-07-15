@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -203,6 +204,7 @@ const TIME_OPTIONS = [
 
 export default function CreateTask() {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
   const { isAuthenticated, login } = useAuth();
@@ -651,7 +653,7 @@ export default function CreateTask() {
       setLoading(false);
       submittingRef.current = false;
       toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
-      navigate(`/task/${editId}`);
+      openTaskSheet(editId);
       } catch (err) {
         setLoading(false);
         submittingRef.current = false;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MessageCircle, X, RefreshCw, Loader2 } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
@@ -22,6 +23,7 @@ const TABS = [
 export default function MyTasks() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const [activeTab, setActiveTab] = useState('active');
   const [cancelTask, setCancelTask] = useState(null);
 
@@ -168,7 +170,7 @@ export default function MyTasks() {
             const statusLabel = STATUS_LABEL[task.status] || task.status;
             const pendingApps = pendingCountForTask(task.id);
             return (
-              <div key={task.id} onClick={() => navigate(`/task/${task.id}`)} style={{ borderRadius: 22, overflow: 'hidden', boxShadow: '0 6px 24px rgba(0,0,0,0.13)', cursor: 'pointer' }}>
+              <div key={task.id} onClick={() => openTaskSheet(task.id)} style={{ borderRadius: 22, overflow: 'hidden', boxShadow: '0 6px 24px rgba(0,0,0,0.13)', cursor: 'pointer' }}>
                 <div style={{ background: gradient, padding: '16px 16px 14px', position: 'relative' }}>
                   <div style={{ position: 'absolute', top: 12, left: 14, display: 'flex', alignItems: 'center', gap: 5 }}>
                     {task.status === 'TAKEN' && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'inline-block', boxShadow: '0 0 0 3px rgba(255,255,255,0.3)' }} />}

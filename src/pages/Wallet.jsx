@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import BackButton from '@/components/BackButton';
@@ -14,11 +15,12 @@ import { useLanguage } from '@/lib/LanguageContext';
 
 function TaskRow({ task, badge, onRepost, badgeMap, repostLabel }) {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const b = badgeMap[badge] || badgeMap.inprogress;
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '13px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-        <div onClick={() => navigate(`/task/${task.id}`)} style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+        <div onClick={() => openTaskSheet(task.id)} style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', flex: 1, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
         <div style={{ fontSize: 15, fontWeight: 900, color: '#111', flexShrink: 0 }}>₪{task.price}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -36,6 +38,7 @@ function TaskRow({ task, badge, onRepost, badgeMap, repostLabel }) {
 
 export default function Wallet() {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('inprogress');
 
@@ -185,7 +188,7 @@ export default function Wallet() {
                   const cfg = appStatusConfig[app.status] || appStatusConfig.pending;
                   const StatusIcon = cfg.icon;
                   return (
-                    <div key={app.id} onClick={() => navigate(`/task/${app.task_id}`)}
+                    <div key={app.id} onClick={() => openTaskSheet(app.task_id)}
                       style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 14px', cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

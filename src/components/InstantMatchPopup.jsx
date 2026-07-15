@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { MapPin, Zap, X } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import { useQuery } from '@tanstack/react-query';
@@ -56,6 +57,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   const [countdown, setCountdown] = useState(DURATION);
   const timerRef = useRef(null);
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
 
   // Fetch current user profile + past activity for smart matching
   const { data: currentUser } = useQuery({
@@ -234,7 +236,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
         {/* CTA */}
         <div style={{ padding: '0 16px 14px' }}>
           <button
-            onClick={() => { navigate(`/task/${task.id}`); setPopup(null); }}
+            onClick={() => { openTaskSheet(task.id); setPopup(null); }}
             style={{
               width: '100%',
               height: 48,

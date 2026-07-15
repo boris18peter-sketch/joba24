@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert, Mic, X } from 'lucide-react';
@@ -91,6 +92,7 @@ function TypingIndicator() {
 }
 
 function TaskInfoPopup({ task, onClose }) {
+  const { openTaskSheet } = useTaskSheet();
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
       <div dir="rtl" style={{ background: 'var(--surface-1)', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '85dvh', overflowY: 'auto', padding: '20px 16px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
@@ -100,7 +102,7 @@ function TaskInfoPopup({ task, onClose }) {
         <div style={{ fontSize: 26, fontWeight: 900, color: '#1a6fd4', marginBottom: 16 }}>₪{task.price}</div>
         {/* Shared structured rows */}
         <TaskDetailsRows task={task} compact={false} />
-        <button onClick={() => { onClose(); window.location.href = `/task/${task.id}`; }}
+        <button onClick={() => { onClose(); openTaskSheet(task.id); }}
           style={{ marginTop: 16, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
           פתח דף המשימה המלא
         </button>
@@ -112,6 +114,7 @@ function TaskInfoPopup({ task, onClose }) {
 export default function Chat() {
   const { taskId } = useParams();
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);

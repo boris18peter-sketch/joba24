@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
+import { motion, useDragControls } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
@@ -16,6 +16,7 @@ export default function TaskDetailSheet() {
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
   const scrollRef = useRef(null);
+  const dragControls = useDragControls();
 
   // Route change: close sheet immediately
   useEffect(() => {
@@ -77,6 +78,8 @@ export default function TaskDetailSheet() {
         animate={{ y: 0 }}
         transition={ENTER_SPRING}
         drag="y"
+        dragListener={false}
+        dragControls={dragControls}
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0, bottom: 0.6 }}
         dragMomentum={false}
@@ -103,8 +106,9 @@ export default function TaskDetailSheet() {
         }}
         dir="rtl"
       >
-        {/* Drag handle */}
+        {/* Drag handle — only area that starts drag */}
         <div
+          onPointerDown={(e) => dragControls.start(e)}
           onClick={() => setExpanded(v => !v)}
           style={{
             padding: '10px 0 6px',
@@ -120,12 +124,6 @@ export default function TaskDetailSheet() {
             width: 42, height: 5, borderRadius: 99,
             background: 'var(--border-2)',
           }} />
-          <div style={{
-            fontSize: 10, fontWeight: 700, color: 'var(--text-3)',
-            letterSpacing: 0.3, userSelect: 'none',
-          }}>
-            {expanded ? 'גרור למטה לסגירה' : 'גרור למעלה להרחבה'}
-          </div>
         </div>
 
         {/* Scrollable content */}

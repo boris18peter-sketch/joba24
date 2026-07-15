@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Loader2, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import PageHeader from '@/components/PageHeader';
@@ -35,6 +36,7 @@ function timeAgo(ts) {
 
 export default function Notifications() {
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
 
@@ -91,7 +93,7 @@ export default function Notifications() {
             return (
               <div
                 key={i}
-                onClick={() => notif.taskId && navigate(`/task/${notif.taskId}`)}
+                onClick={() => notif.taskId && openTaskSheet(notif.taskId)}
                 style={{
                   background: 'var(--surface-2)',
                   borderBottom: isLast ? 'none' : '1px solid var(--border-1)',
