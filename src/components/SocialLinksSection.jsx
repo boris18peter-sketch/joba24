@@ -1,81 +1,97 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Loader2, Check, X, ShieldCheck, Link2, Unlink, Sparkles,
-  Instagram, Facebook, Youtube, Twitter, Linkedin, Twitch, Share2, Music2,
+  Instagram, Facebook, Music2, Copy, AlertCircle,
 } from 'lucide-react';
-import { usePhylloConnect } from '@/hooks/usePhylloConnect';
+import { toast } from 'sonner';
+import GoldBadge from '@/components/GoldBadge';
 
-const PLATFORM_ICON_MAP = {
-  instagram: Instagram,
-  tiktok: Music2,
-  youtube: Youtube,
-  facebook: Facebook,
-  twitter: Twitter,
-  x: Twitter,
-  twitch: Twitch,
-  linkedin: Linkedin,
-};
+const PLATFORMS = [
+  { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', url: (u) => `https://instagram.com/${u}` },
+  { key: 'facebook', label: 'Facebook', icon: Facebook, color: '#1877F2', url: (u) => `https://facebook.com/${u}` },
+  { key: 'tiktok', label: 'TikTok', icon: Music2, color: '#000', url: (u) => `https://tiktok.com/@${u}` },
+];
 
-function getPlatformIcon(name) {
-  if (!name) return Share2;
-  const lower = name.toLowerCase();
-  for (const key of Object.keys(PLATFORM_ICON_MAP)) {
-    if (lower.includes(key)) return PLATFORM_ICON_MAP[key];
-  }
-  return Share2;
+function hasSocialVerified(user) {
+  return user?.instagram_verified || user?.facebook_verified || user?.tiktok_verified;
 }
 
 export default function SocialLinksSection({ user }) {
   const queryClient = useQueryClient();
-  const { connect, loading, error: phylloError, setError: setPhylloError } = usePhylloConnect();
+  const [showConnect, setShowConnect] = useState(false);
   const [showManage, setShowManage] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['me'] });
-    queryClient.invalidateQueries({ queryKey: ['phylloAccounts'] });
   };
 
-  // Fetch connected accounts from Phyllo API
-  const { data: phylloData } = useQuery({
-    queryKey: ['phylloAccounts'],
-    queryFn: async () => {
-      const res = await base44.functions.invoke('phylloGetAccounts', {});
-      return res.data;
-    },
-    staleTime: 10000,
-  });
+  const connectedPlatforms = PLATFORMS.filter(p => user?.[`${p.key}_username`]);
+  const isConnected = connectedPlatforms.length > 0;
+  const isKycVerified = user?.is_verified;
 
-  const connectedAccounts = phylloData?.accounts || [];
-  const isConnected = connectedAccounts.length > 0;
-
-  const handleConnect = async () => {
-    setPhylloError('');
-    await connect({
-      onAccountConnected: async (accountId, workplatformId) => {
-        await base44.auth.updateMe({ phyllo_connected: true });
-        await refresh();
-        setSuccess('החשבון חובר בהצלחה! 🎉');
-        setTimeout(() => setSuccess(''), 2000);
-      },
-      onAccountDisconnected: async () => {
-        await base44.auth.updateMe({ phyllo_connected: false });
-        await refresh();
-      },
-      onExit: () => {
-        // Refresh accounts when SDK closes (user may have connected/disconnected)
-        refresh();
-      },
-    });
+  const handleConnect = async (platform, username) => {
+    setLoading(true);
+    try {
+      const res = await base44.functions.invoke('verifyInstagram', {
+        action: 'connect_code',
+        platform,
+        username,
+      });
+      if (res.data?.error) {
+        toast.error(res.data.error);
+        return;
+      }
+      await refresh();
+      toast.success(`קוד אימור נוצר עבור ${platform}`);
+    } catch (e) {
+      toast.error('שגיאה בחיבור הרשת');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDisconnectAll = async () => {
-    await base44.auth.updateMe({ phyllo_connected: false });
-    await refresh();
-    setShowManage(false);
+  const handleVerify = async (platform) => {
+    setLoading(true);
+    try {
+      const res = await base44.functions.invoke('verifyInstagram', {
+        action: 'verify_code',
+        platform,
+      });
+      if (res.data?.error) {
+        toast.error(res.data.error);
+        return;
+      }
+      if (res.data?.verified) {
+        toast.success(`${platform} אומת בהצלחה! 🎉`);
+        await refresh();
+      } else {
+        toast.error(res.data?.note || 'הקוד לא נמצא בפרופיל. ודא שהוספת את הקוד לביו ונסה שוב.');
+      }
+    } catch (e) {
+      toast.error('שגיאה באימות');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnect = async (platform) => {
+    setLoading(true);
+    try {
+      await base44.functions.invoke('verifyInstagram', {
+        action: 'disconnect',
+        platform,
+      });
+      await refresh();
+      toast.success(`${platform} הוסר`);
+    } catch (e) {
+      toast.error('שגיאה בניתוק');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,54 +106,47 @@ export default function SocialLinksSection({ user }) {
           <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4, textTransform: 'uppercase' }}>
             רשתות חברתיות
           </div>
-          {isConnected && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: '#059669',
-              background: '#f0fdf4', border: '1px solid #bbf7d0',
-              borderRadius: 99, padding: '2px 8px',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              <ShieldCheck size={10} /> {connectedAccounts.length} מחוברות
+          {isConnected && isKycVerified && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <GoldBadge size="sm" />
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>מאומת זהב</span>
             </span>
+          )}
+          {isConnected && !isKycVerified && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>מחובר (ללא ווי זהב)</span>
           )}
         </div>
 
         {/* Connected platform icons */}
         {isConnected && (
           <div style={{ padding: '0 16px 10px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {connectedAccounts.map((acc, i) => {
-              const Icon = getPlatformIcon(acc.platform_name);
-              const inner = (
-                <>
-                  <Icon size={16} color="var(--text-2)" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
-                    {acc.platform_name}
-                  </span>
-                  {acc.account_name && (
-                    <span style={{ fontSize: 10, color: 'var(--text-3)' }}>@{acc.account_name}</span>
-                  )}
-                  <ShieldCheck size={11} color="#059669" />
-                </>
-              );
-              const chipStyle = {
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: 'var(--surface-3)', borderRadius: 12,
-                padding: '6px 10px', border: '1px solid var(--border-1)',
-                textDecoration: 'none',
-                transition: 'background 0.15s',
-              };
-              return acc.profile_url ? (
-                <a key={i} href={acc.profile_url} target="_blank" rel="noreferrer" style={chipStyle}
-                   onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-4)'; }}
-                   onPointerUp={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
-                   onPointerLeave={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
-                >
-                  {inner}
+            {connectedPlatforms.map(p => {
+              const username = user[`${p.key}_username`];
+              const verified = user[`${p.key}_verified`];
+              return (
+                <a key={p.key} href={p.url(username)} target="_blank" rel="noreferrer"
+                   style={{
+                     display: 'flex', alignItems: 'center', gap: 6,
+                     background: verified && isKycVerified ? '#fffbeb' : 'var(--surface-3)',
+                     borderRadius: 12, padding: '6px 10px',
+                     border: `1px solid ${verified && isKycVerified ? '#fde68a' : 'var(--border-1)'}`,
+                     textDecoration: 'none', transition: 'background 0.15s',
+                   }}>
+                  <p.icon size={16} color="var(--text-2)" />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>{username}</span>
+                  {verified && isKycVerified && <ShieldCheck size={11} color="#d97706" />}
                 </a>
-              ) : (
-                <div key={i} style={chipStyle}>{inner}</div>
               );
             })}
+          </div>
+        )}
+
+        {!isKycVerified && (
+          <div style={{ margin: '0 16px 10px', padding: '8px 12px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertCircle size={14} color="#d97706" flexShrink={0} />
+            <span style={{ fontSize: 11, color: '#92400e', lineHeight: 1.4 }}>
+              חיבור רשתות חברתיות זמין רק לאחר אימות זהות (KYC)
+            </span>
           </div>
         )}
 
@@ -145,19 +154,18 @@ export default function SocialLinksSection({ user }) {
           {isConnected ? (
             <div style={{ display: 'flex', gap: 8 }}>
               <button
-                onClick={handleConnect}
-                disabled={loading}
+                onClick={() => setShowConnect(true)}
+                disabled={!isKycVerified || loading}
                 style={{
                   flex: 1, height: 46, borderRadius: 12, cursor: loading ? 'wait' : 'pointer',
-                  background: loading ? 'var(--surface-3)' : 'var(--surface-3)',
-                  color: loading ? 'var(--text-3)' : 'var(--text-1)',
+                  background: 'var(--surface-3)', color: 'var(--text-1)',
                   border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  transition: 'opacity 0.15s',
+                  opacity: !isKycVerified ? 0.5 : 1,
                 }}
               >
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
-                {loading ? 'מחכה...' : 'חבר עוד רשתות'}
+                {loading ? 'מחכה...' : 'חבר עוד רשת'}
               </button>
               <button
                 onClick={() => setShowManage(true)}
@@ -173,139 +181,219 @@ export default function SocialLinksSection({ user }) {
             </div>
           ) : (
             <button
-              onClick={handleConnect}
-              disabled={loading}
+              onClick={() => setShowConnect(true)}
+              disabled={!isKycVerified || loading}
               style={{
                 width: '100%', height: 48, borderRadius: 12, cursor: loading ? 'wait' : 'pointer',
-                background: loading ? 'var(--surface-3)' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-                color: loading ? 'var(--text-3)' : 'white',
+                background: !isKycVerified ? 'var(--surface-3)' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                color: !isKycVerified ? 'var(--text-3)' : 'white',
                 border: 'none', fontWeight: 700, fontSize: 14,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: loading ? 'none' : '0 3px 12px rgba(26,111,212,0.2)',
+                opacity: !isKycVerified ? 0.6 : 1,
+                boxShadow: !isKycVerified ? 'none' : '0 3px 12px rgba(26,111,212,0.2)',
               }}
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
               {loading ? 'פותח...' : 'חבר רשתות חברתיות'}
             </button>
           )}
+        </div>
+      </div>
 
-          {phylloError && (
-            <div style={{
-              marginTop: 8, fontSize: 12, color: '#dc2626', fontWeight: 600,
-              background: '#fff1f2', border: '1px solid #fecaca',
-              borderRadius: 10, padding: '8px 12px',
-            }}>
-              {phylloError}
+      {/* Connect sheet */}
+      {showConnect && createPortal(
+        <ConnectSheet
+          user={user}
+          platforms={PLATFORMS}
+          onClose={() => setShowConnect(false)}
+          onConnect={handleConnect}
+          onVerify={handleVerify}
+          loading={loading}
+        />,
+        document.body
+      )}
+
+      {/* Manage / Disconnect sheet */}
+      {showManage && createPortal(
+        <ManageSheet
+          user={user}
+          platforms={PLATFORMS}
+          onClose={() => setShowManage(false)}
+          onDisconnect={handleDisconnect}
+          loading={loading}
+          isKycVerified={isKycVerified}
+        />,
+        document.body
+      )}
+    </>
+  );
+}
+
+function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }) {
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [username, setUsername] = useState('');
+
+  const connectedPlatforms = platforms.filter(p => user?.[`${p.key}_username`]);
+  const availablePlatforms = platforms.filter(p => !user?.[`${p.key}_username`]);
+
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.72)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+      <div dir="rtl" style={{
+        background: 'var(--sheet-bg)', borderRadius: '24px 24px 0 0',
+        width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+        maxHeight: '90dvh', overflowY: 'auto',
+      }}>
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <X size={16} color="var(--text-3)" />
+          </button>
+        </div>
+        <div style={{ padding: '8px 20px 20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+              <ShieldCheck size={26} color="white" />
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>חיבור רשתות חברתיות</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
+              חבר את הרשתות שלך וקבל ווי זהב בפרופיל
+            </p>
+          </div>
+
+          {/* Already connected */}
+          {connectedPlatforms.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8 }}>מחוברות</div>
+              {connectedPlatforms.map(p => {
+                const u = user[`${p.key}_username`];
+                const v = user[`${p.key}_verified`];
+                const code = user[`${p.key}_verify_code`];
+                return (
+                  <div key={p.key} style={{ background: v ? '#fffbeb' : 'var(--surface-3)', borderRadius: 12, border: `1px solid ${v ? '#fde68a' : 'var(--border-1)'}`, padding: '10px 12px', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <p.icon size={18} color={v ? '#d97706' : 'var(--text-2)'} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
+                        <div style={{ fontSize: 11, color: v ? '#d97706' : 'var(--text-3)' }}>{v ? '✓ מאומת' : 'ממתין לאימות'}</div>
+                      </div>
+                      {!v && code && (
+                        <button onClick={() => onVerify(p.key)} disabled={loading}
+                          style={{ padding: '6px 12px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                          {loading ? <Loader2 size={12} className="animate-spin" /> : 'בדוק אימות'}
+                        </button>
+                      )}
+                    </div>
+                    {!v && code && (
+                      <div style={{ marginTop: 8, padding: '8px 10px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                        <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 600, marginBottom: 4 }}>הוסף את הקוד הזה לביו שלך:</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <code style={{ fontSize: 16, fontWeight: 900, color: '#1a6fd4', letterSpacing: 2 }}>{code}</code>
+                          <button onClick={() => { navigator.clipboard.writeText(code); toast.success('הקוד הועתק'); }}
+                            style={{ width: 28, height: 28, borderRadius: 8, background: 'white', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <Copy size={12} color="#1a6fd4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Available platforms */}
+          {availablePlatforms.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8 }}>זמינות לחיבור</div>
+              {availablePlatforms.map(p => (
+                <div key={p.key} style={{ marginBottom: 8 }}>
+                  {selectedPlatform === p.key ? (
+                    <div style={{ background: 'var(--surface-3)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <p.icon size={18} color={p.color.includes('gradient') ? '#dc2743' : p.color} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{p.label}</span>
+                        <button onClick={() => { setSelectedPlatform(null); setUsername(''); }}
+                          style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={e => setUsername(e.target.value)}
+                        placeholder={`שם משתמש ב${p.label} (ללא @)`}
+                        dir="ltr"
+                        style={{ width: '100%', height: 40, borderRadius: 10, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', color: 'var(--text-1)', padding: '0 12px', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 8 }}
+                      />
+                      <button onClick={() => { onConnect(p.key, username); setSelectedPlatform(null); setUsername(''); }}
+                        disabled={!username.trim() || loading}
+                        style={{ width: '100%', height: 40, borderRadius: 10, background: username.trim() ? '#1a6fd4' : 'var(--surface-3)', color: username.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 700, fontSize: 13, cursor: username.trim() ? 'pointer' : 'not-allowed' }}>
+                        {loading ? <Loader2 size={14} className="animate-spin" /> : `חבר ${p.label}`}
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setSelectedPlatform(p.key)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--surface-3)', borderRadius: 12, border: '1px solid var(--border-1)', cursor: 'pointer' }}>
+                      <p.icon size={18} color={p.color.includes('gradient') ? '#dc2743' : p.color} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>חבר {p.label}</span>
+                      <Link2 size={14} color="var(--text-3)" style={{ marginLeft: 'auto' }} />
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Manage / Disconnect sheet */}
-      {showManage && createPortal(
-        <div
-          onClick={(e) => { if (e.target === e.currentTarget) setShowManage(false); }}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 999999,
-            background: 'rgba(5,15,40,0.72)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <div dir="rtl" style={{
-            background: 'var(--sheet-bg)', borderRadius: '24px 24px 0 0',
-            width: '100%', maxWidth: 480,
-            boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
-            paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-            maxHeight: '90dvh', overflowY: 'auto',
-          }}>
-            <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
-              <button onClick={() => setShowManage(false)} style={{
-                width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)',
-                border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              }}>
-                <X size={16} color="var(--text-3)" />
-              </button>
-            </div>
-            <div style={{ padding: '8px 20px 8px' }}>
-              {success && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '24px 0' }}>
-                  <div style={{
-                    width: 60, height: 60, borderRadius: '50%', background: '#f0fdf4',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '3px solid #bbf7d0',
-                  }}>
-                    <Check size={30} color="#059669" strokeWidth={3} />
-                  </div>
-                  <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>{success}</div>
-                </div>
-              )}
-              {!success && (
-                <>
-                  <div style={{ textAlign: 'center', marginBottom: 14 }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: 14,
-                      background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      margin: '0 auto 10px',
-                    }}>
-                      <ShieldCheck size={26} color="white" />
-                    </div>
-                    <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>ניהול רשתות חברתיות</h3>
-                    <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
-                      {connectedAccounts.length} רשתות מחוברות דרך Phyllo
-                    </p>
-                  </div>
+function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVerified }) {
+  const connectedPlatforms = platforms.filter(p => user?.[`${p.key}_username`]);
 
-                  {/* Connected platforms list */}
-                  {connectedAccounts.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
-                      {connectedAccounts.map((acc, i) => {
-                        const Icon = getPlatformIcon(acc.platform_name);
-                        const rowStyle = {
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          background: '#f0fdf4', borderRadius: 12, border: '1px solid #bbf7d0',
-                          padding: '10px 12px', textDecoration: 'none',
-                        };
-                        const inner = (
-                          <>
-                            <Icon size={18} color="#059669" />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: '#065f46' }}>{acc.platform_name}</div>
-                              {acc.account_name && <div style={{ fontSize: 11, color: '#059669' }}>@{acc.account_name}</div>}
-                            </div>
-                            <ShieldCheck size={16} color="#059669" />
-                          </>
-                        );
-                        return acc.profile_url ? (
-                          <a key={i} href={acc.profile_url} target="_blank" rel="noreferrer" style={rowStyle}>{inner}</a>
-                        ) : (
-                          <div key={i} style={rowStyle}>{inner}</div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleDisconnectAll}
-                    style={{
-                      width: '100%', height: 46, borderRadius: 12,
-                      background: '#fff1f2', border: '1px solid #fecaca',
-                      color: '#dc2626', fontWeight: 700, fontSize: 14,
-                      cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    }}
-                  >
-                    <Unlink size={16} /> נתק את כל הרשתות
-                  </button>
-                </>
-              )}
-            </div>
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.72)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+      <div dir="rtl" style={{
+        background: 'var(--sheet-bg)', borderRadius: '24px 24px 0 0',
+        width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+        maxHeight: '90dvh', overflowY: 'auto',
+      }}>
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <X size={16} color="var(--text-3)" />
+          </button>
+        </div>
+        <div style={{ padding: '8px 20px 20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>ניהול רשתות חברתיות</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>{connectedPlatforms.length} רשתות מחוברות</p>
           </div>
-        </div>,
-        document.body
-      )}
-    </>
+
+          {connectedPlatforms.map(p => {
+            const u = user[`${p.key}_username`];
+            const v = user[`${p.key}_verified`];
+            return (
+              <div key={p.key} style={{ background: v && isKycVerified ? '#fffbeb' : 'var(--surface-3)', borderRadius: 12, border: `1px solid ${v && isKycVerified ? '#fde68a' : 'var(--border-1)'}`, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <p.icon size={18} color={v && isKycVerified ? '#d97706' : 'var(--text-2)'} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
+                  <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? '✓ מאומת' : ''}</div>
+                </div>
+                <button onClick={() => onDisconnect(p.key)} disabled={loading}
+                  style={{ width: 32, height: 32, borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  {loading ? <Loader2 size={14} className="animate-spin" color="#dc2626" /> : <Unlink size={14} color="#dc2626" />}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }

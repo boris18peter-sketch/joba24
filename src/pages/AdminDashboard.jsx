@@ -355,7 +355,8 @@ export default function AdminDashboard() {
   const [supportReply, setSupportReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
-  const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url);
+  const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url || u.kyc_status);
+  const pendingKyc = allUsers.filter(u => u.kyc_status === 'pending');
   const fakeVerified = allUsers.filter(u => u.is_verified && !u.id_number);
 
   // Group support messages by user_id
@@ -598,24 +599,16 @@ export default function AdminDashboard() {
         {/* KYC TAB */}
         {tab === 'kyc' && (
           <>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{kycUsers.length} משתמשים עם נתוני KYC</div>
-            {fakeVerified.length > 0 && (
-              <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>
+              {kycUsers.length} משתמשים ב-KYC · {pendingKyc.length} ממתינים לאישור
+            </div>
+            {pendingKyc.length > 0 && (
+              <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Shield size={20} color="#d97706" />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#dc2626' }}>⚠️ {fakeVerified.length} משתמשים מאומתים ללא KYC</div>
-                  <div style={{ fontSize: 11, color: '#991b1b', marginTop: 2 }}>סימון אימות ללא תעודת זהות או צילום</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>{pendingKyc.length} משתמשים ממתינים לאישור KYC</div>
+                  <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>בדוק את הפרטים ואשר או דחה</div>
                 </div>
-                <button
-                  onClick={async () => {
-                    for (const u of fakeVerified) {
-                      await base44.entities.User.update(u.id, { is_verified: false });
-                    }
-                    queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-                  }}
-                  style={{ padding: '8px 14px', borderRadius: 10, background: '#dc2626', color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
-                >
-                  אפס אימות
-                </button>
               </div>
             )}
             {kycUsers.length === 0 ? (
@@ -623,43 +616,111 @@ export default function AdminDashboard() {
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f2b6b' }}>אין נתוני KYC עדיין</div>
               </div>
-            ) : kycUsers.map(user => (
-              <div key={user.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_verified ? '#bbf7d0' : '#fde68a'}`, marginBottom: 10, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 15, flexShrink: 0, overflow: 'hidden' }}>
-                    {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
+            ) : kycUsers.map(user => {
+              const kycStatus = user.is_verified ? 'approved' : user.kyc_status || 'pending';
+              const statusConfig = {
+                approved: { label: '✓ מאומת', color: '#166534', bg: '#dcfce7', border: '#bbf7d0' },
+                pending: { label: '⏳ ממתין לאישור', color: '#854d0e', bg: '#fef9c3', border: '#fde68a' },
+                rejected: { label: '✗ נדחה', color: '#991b1b', bg: '#fee2e2', border: '#fecaca' },
+              };
+              const sc = statusConfig[kycStatus] || statusConfig.pending;
+              return (
+                <div key={user.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: `1px solid ${sc.border}`, marginBottom: 10, overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 15, flexShrink: 0, overflow: 'hidden' }}>
+                      {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14 }}>{user.full_name}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: sc.bg, color: sc.color, flexShrink: 0 }}>
+                      {sc.label}
+                    </span>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14 }}>{user.full_name}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>
+                  <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+                    {user.phone && (
+                      <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>📱 טלפון</div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{user.phone}</div>
+                      </div>
+                    )}
+                    {user.id_number && (
+                      <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>🪪 ת.ז.</div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-1)', letterSpacing: 1 }}>{user.id_number}</div>
+                      </div>
+                    )}
+                    {user.id_photo_url && (
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>📷 צילום תעודת זהות</div>
+                        <img src={user.id_photo_url} alt="ת.ז." style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff' }} />
+                      </div>
+                    )}
+                    <div style={{ gridColumn: '1 / -1', fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
+                    {/* Approve / Reject buttons */}
+                    <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, marginTop: 4 }}>
+                      {kycStatus !== 'approved' && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await base44.entities.User.update(user.id, { is_verified: true, kyc_status: 'approved' });
+                            queryClient.setQueryData(['adminUsers'], (old = []) =>
+                              old.map(u => u.id === user.id ? { ...u, is_verified: true, kyc_status: 'approved' } : u)
+                            );
+                          }}
+                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#16a34a', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          <CheckCircle2 size={14} /> אשר אימות
+                        </button>
+                      )}
+                      {kycStatus === 'approved' && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await base44.entities.User.update(user.id, { is_verified: false, kyc_status: 'rejected' });
+                            queryClient.setQueryData(['adminUsers'], (old = []) =>
+                              old.map(u => u.id === user.id ? { ...u, is_verified: false, kyc_status: 'rejected' } : u)
+                            );
+                          }}
+                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          <Ban size={14} /> בטל אימות
+                        </button>
+                      )}
+                      {kycStatus === 'pending' && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await base44.entities.User.update(user.id, { is_verified: false, kyc_status: 'rejected' });
+                            queryClient.setQueryData(['adminUsers'], (old = []) =>
+                              old.map(u => u.id === user.id ? { ...u, is_verified: false, kyc_status: 'rejected' } : u)
+                            );
+                          }}
+                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          <Ban size={14} /> דחה אימות
+                        </button>
+                      )}
+                      {kycStatus === 'rejected' && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await base44.entities.User.update(user.id, { is_verified: false, kyc_status: 'pending' });
+                            queryClient.setQueryData(['adminUsers'], (old = []) =>
+                              old.map(u => u.id === user.id ? { ...u, is_verified: false, kyc_status: 'pending' } : u)
+                            );
+                          }}
+                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          סמן כממתין
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: user.is_verified ? '#dcfce7' : '#fef9c3', color: user.is_verified ? '#166534' : '#854d0e', flexShrink: 0 }}>
-                    {user.is_verified ? '✓ מאומת' : '⏳ ממתין'}
-                  </span>
                 </div>
-                <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
-                  {user.phone && (
-                    <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>📱 טלפון</div>
-                      <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{user.phone}</div>
-                    </div>
-                  )}
-                  {user.id_number && (
-                    <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px' }}>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>🪪 ת.ז.</div>
-                      <div style={{ fontWeight: 700, color: 'var(--text-1)', letterSpacing: 1 }}>{user.id_number}</div>
-                    </div>
-                  )}
-                  {user.id_photo_url && (
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>📷 צילום תעודת זהות</div>
-                      <img src={user.id_photo_url} alt="ת.ז." style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff' }} />
-                    </div>
-                  )}
-                  <div style={{ gridColumn: '1 / -1', fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
 

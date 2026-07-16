@@ -96,7 +96,8 @@ export default function VerifyModal({ onClose, onSuccess }) {
       phone: form.phone,
       id_number: form.id_number,
       id_photo_url: idPhotoUrl,
-      is_verified: true,
+      is_verified: false,
+      kyc_status: 'pending',
     });
     queryClient.invalidateQueries({ queryKey: ['me'] });
     setLoading(false);
@@ -358,10 +359,10 @@ export default function VerifyModal({ onClose, onSuccess }) {
             </div>
 
             <div style={{ fontSize: 22, fontWeight: 800, color: '#0f1e40', marginBottom: 8, letterSpacing: -0.3 }}>
-              החשבון שלך אומת בהצלחה
+              הפרטים נשלחו לאימות
             </div>
             <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
-              הפרופיל שלך מאומת ומהימן.<br />הסמל יופיע ליד שמך בכל מקום.
+              הגשת את פרטי האימות בהצלחה.<br />הווי הירוק יופיע ליד שמך לאחר אישור המנהל.
             </div>
 
             {/* Capabilities */}

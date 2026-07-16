@@ -9,6 +9,7 @@ import {
 import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
@@ -180,7 +181,8 @@ export default function Profile() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
-            {(me?.is_verified && me?.id_number) && <VerifiedBadge size="md" />}
+            {me?.is_verified && <VerifiedBadge size="md" />}
+            {me?.is_verified && (me?.instagram_verified || me?.facebook_verified || me?.tiktok_verified) && <GoldBadge size="md" />}
           </div>
         </div>
 
@@ -206,19 +208,32 @@ export default function Profile() {
       {/* ── Content: connected sections with minimal spacing ── */}
       <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* Verify CTA */}
-        {!(me?.is_verified && me?.id_number) && (
+        {/* Verify CTA — shows whenever not verified, with status */}
+        {!me?.is_verified && (
           <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
             <div style={{
-              background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)',
+              background: 'var(--surface-2)', borderRadius: 14,
+              border: `1px solid ${me?.kyc_status === 'pending' ? '#fde68a' : me?.kyc_status === 'rejected' ? '#fecaca' : 'var(--border-1)'}`,
               display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
             }}>
-              <div style={{ width: 38, height: 38, borderRadius: 11, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Shield size={18} color="#1a6fd4" />
+              <div style={{
+                width: 38, height: 38, borderRadius: 11,
+                background: me?.kyc_status === 'pending' ? '#fffbeb' : me?.kyc_status === 'rejected' ? '#fef2f2' : '#eff6ff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Shield size={18} color={me?.kyc_status === 'pending' ? '#d97706' : me?.kyc_status === 'rejected' ? '#dc2626' : '#1a6fd4'} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>{t('verify_title')}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{t('verify_sub')}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
+                  {me?.kyc_status === 'pending' ? 'אימות בבדיקה' : me?.kyc_status === 'rejected' ? 'אימות נדחה' : t('verify_title')}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                  {me?.kyc_status === 'pending'
+                    ? 'הפרטים שלך נשלחו, ממתין לאישור מנהל'
+                    : me?.kyc_status === 'rejected'
+                    ? 'האימות נדחה. ניתן לעדכן את הפרטים ולשלוח שוב'
+                    : t('verify_sub')}
+                </div>
               </div>
               <ChevronLeft size={15} color="var(--text-3)" />
             </div>
