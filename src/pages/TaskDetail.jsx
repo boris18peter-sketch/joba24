@@ -176,7 +176,7 @@ export default function TaskDetail(props) {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
   // Use the real-time auth user for verification gating (instantly synced via WebSocket + polling)
   const verifyUser = authUser || me;
-  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(verifyUser);
+  const { gate, showVerify, setShowVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(verifyUser);
 
   // Check if current user already reviewed this task
   const { data: myReview } = useQuery({
@@ -1359,6 +1359,14 @@ export default function TaskDetail(props) {
           />
         )}
       </div>
+
+      {showVerificationRequired && createPortal(
+        <VerificationRequiredModal
+          onClose={() => setShowVerificationRequired(false)}
+          onVerify={() => { setShowVerificationRequired(false); setShowVerify(true); }}
+        />,
+        document.body
+      )}
 
       {showReport && task && createPortal(
         <ReportModal task={task} me={me} onClose={() => setShowReport(false)} />,

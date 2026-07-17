@@ -421,7 +421,7 @@ export default function AdminDashboard() {
   const [supportReply, setSupportReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
-  const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url || u.kyc_status);
+  const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url || u.kyc_status || u.is_verified);
   const pendingKyc = allUsers.filter(u => u.kyc_status === 'pending' || (!u.kyc_status && (u.id_number || u.id_photo_url) && !u.is_verified));
   const fakeVerified = allUsers.filter(u => u.is_verified && !u.id_number);
 

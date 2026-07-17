@@ -429,6 +429,7 @@ export default function CreateTask() {
     price: useRef(null),
     location_name: useRef(null),
     payment_method: useRef(null),
+    contactPhone: useRef(null),
   };
 
   // Auto-save draft on form change (debounced 1s)
@@ -593,6 +594,7 @@ export default function CreateTask() {
     if (!form.price) newErrors.price = true;
     if (!form.location_name || !addressConfirmed) newErrors.location_name = true;
     if (!form.payment_method) newErrors.payment_method = true;
+    if (!form.contactPhone || form.contactPhone.replace(/\D/g, '').length < 9) newErrors.contactPhone = true;
     if (form.auto_bump_enabled && form.max_price && Number(form.max_price) <= Number(form.price)) {
       newErrors.max_price = true;
       toast.error('מחיר היעד חייב להיות גבוה ממחיר המשימה');
@@ -668,7 +670,7 @@ export default function CreateTask() {
       setErrors(newErrors);
       setShowErrorBanner(true);
       submittingRef.current = false;
-      const order = ['description', 'price', 'location_name', 'payment_method'];
+      const order = ['description', 'price', 'location_name', 'payment_method', 'contactPhone'];
       const firstError = order.find(k => newErrors[k]);
       if (firstError && fieldRefs[firstError]?.current) {
         fieldRefs[firstError].current.scrollIntoView({ behavior: 'smooth', block: 'center' });

@@ -39,5 +39,5 @@ export function useVerifyGuard(me) {
     setPendingAction(null);
   };
 
-  return { gate, showVerify, onSuccess, onClose };
+  return { gate, showVerify, setShowVerify, onSuccess, onClose };
 }

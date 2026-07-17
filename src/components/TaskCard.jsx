@@ -421,23 +421,25 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           overflow: 'hidden',
         }}
       >
-        {/* Verification required — left-side green cover strip */}
+        {/* Verification required — subtle diagonal ribbon + thin accent strip */}
         {task.verification_required && (
           <>
             <div style={{
-              position: 'absolute', top: 0, bottom: 0, left: 0, width: 5,
-              background: 'linear-gradient(180deg, #16a34a, #059669)',
+              position: 'absolute', top: 0, bottom: 0, left: 0, width: 3,
+              background: 'linear-gradient(180deg, rgba(22,163,74,0.5), rgba(5,150,105,0.35))',
               zIndex: 5, flexShrink: 0,
             }} />
             <div style={{
-              position: 'absolute', top: 8, left: 8, zIndex: 6,
-              background: 'linear-gradient(135deg, #16a34a, #059669)',
-              borderRadius: 7, padding: '3px 7px',
-              display: 'flex', alignItems: 'center', gap: 3,
-              fontSize: 9, fontWeight: 800, color: 'white', whiteSpace: 'nowrap',
-              boxShadow: '0 2px 6px rgba(22,163,74,0.3)',
+              position: 'absolute', top: 7, left: -24, zIndex: 6,
+              transform: 'rotate(-45deg)',
+              background: 'linear-gradient(135deg, rgba(22,163,74,0.9), rgba(5,150,105,0.9))',
+              padding: '2px 26px',
+              fontSize: 8, fontWeight: 800, color: 'white', whiteSpace: 'nowrap',
+              boxShadow: '0 1px 5px rgba(22,163,74,0.25)',
+              letterSpacing: 0.3,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
             }}>
-              <ShieldCheck size={9} /> ווי ירוק+
+              ווי ירוק+
             </div>
           </>
         )}
