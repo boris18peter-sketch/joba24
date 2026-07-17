@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
+import { toast } from 'sonner';
 
 const STATUS_COLORS = {
   OPEN: { bg: '#dbeafe', text: '#1d4ed8', label: 'פתוח' },
@@ -303,6 +304,71 @@ function ReportRow({ report, onDismiss, onReview }) {
   );
 }
 
+function KycButtons({ user, kycStatus }) {
+  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleAction = async (updates, successMsg) => {
+    setLoading(true);
+    try {
+      await base44.entities.User.update(user.id, updates);
+      queryClient.setQueryData(['adminUsers'], (old = []) =>
+        old.map(u => u.id === user.id ? { ...u, ...updates } : u)
+      );
+      toast.success(successMsg);
+    } catch (e) {
+      toast.error('שגיאה: ' + (e.message || 'לא ניתן לעדכן'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, marginTop: 4 }}>
+      {loading ? (
+        <div style={{ flex: 1, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Loader2 size={18} className="animate-spin" color="#1a6fd4" />
+        </div>
+      ) : (
+        <>
+          {kycStatus !== 'approved' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: true, kyc_status: 'approved' }, 'אימות אושר'); }}
+              style={{ flex: 1, height: 40, borderRadius: 10, background: '#16a34a', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <CheckCircle2 size={14} /> אשר אימות
+            </button>
+          )}
+          {kycStatus === 'approved' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: false, kyc_status: 'rejected' }, 'אימות בוטל'); }}
+              style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <Ban size={14} /> בטל אימות
+            </button>
+          )}
+          {kycStatus === 'pending' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: false, kyc_status: 'rejected' }, 'אימות נדחה'); }}
+              style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <Ban size={14} /> דחה אימות
+            </button>
+          )}
+          {kycStatus === 'rejected' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleAction({ is_verified: false, kyc_status: 'pending' }, 'סומן כממתין'); }}
+              style={{ flex: 1, height: 40, borderRadius: 10, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              סמן כממתין
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
@@ -356,7 +422,7 @@ export default function AdminDashboard() {
   const [sendingReply, setSendingReply] = useState(false);
 
   const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url || u.kyc_status);
-  const pendingKyc = allUsers.filter(u => u.kyc_status === 'pending');
+  const pendingKyc = allUsers.filter(u => u.kyc_status === 'pending' || (!u.kyc_status && (u.id_number || u.id_photo_url) && !u.is_verified));
   const fakeVerified = allUsers.filter(u => u.is_verified && !u.id_number);
 
   // Group support messages by user_id
@@ -605,19 +671,38 @@ export default function AdminDashboard() {
             {pendingKyc.length > 0 && (
               <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Shield size={20} color="#d97706" />
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e' }}>{pendingKyc.length} משתמשים ממתינים לאישור KYC</div>
                   <div style={{ fontSize: 11, color: '#b45309', marginTop: 2 }}>בדוק את הפרטים ואשר או דחה</div>
                 </div>
               </div>
             )}
+            <button
+              onClick={async () => {
+                if (!confirm('האם לאפס את כל האימותים? פעולה זו תוריד את הווי הירוק מכל המשתמשים.')) return;
+                try {
+                  const res = await base44.functions.invoke('resetAllVerifications', {});
+                  if (res.data?.success) {
+                    toast.success(`${res.data.resetCount} משתמשים אופסו`);
+                    refetchUsers();
+                  } else {
+                    toast.error('שגיאה באיפוס');
+                  }
+                } catch (e) {
+                  toast.error('שגיאה: ' + (e.message || ''));
+                }
+              }}
+              style={{ marginBottom: 12, height: 38, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' }}
+            >
+              <RefreshCw size={13} /> אפס את כל האימותים (ווי ירוק)
+            </button>
             {kycUsers.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🛡️</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f2b6b' }}>אין נתוני KYC עדיין</div>
               </div>
             ) : kycUsers.map(user => {
-              const kycStatus = user.is_verified ? 'approved' : user.kyc_status || 'pending';
+              const kycStatus = user.kyc_status || (user.is_verified ? 'approved' : (user.id_number || user.id_photo_url ? 'pending' : 'none'));
               const statusConfig = {
                 approved: { label: '✓ מאומת', color: '#166534', bg: '#dcfce7', border: '#bbf7d0' },
                 pending: { label: '⏳ ממתין לאישור', color: '#854d0e', bg: '#fef9c3', border: '#fde68a' },
@@ -658,65 +743,7 @@ export default function AdminDashboard() {
                       </div>
                     )}
                     <div style={{ gridColumn: '1 / -1', fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
-                    {/* Approve / Reject buttons */}
-                    <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, marginTop: 4 }}>
-                      {kycStatus !== 'approved' && (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await base44.entities.User.update(user.id, { is_verified: true, kyc_status: 'approved' });
-                            queryClient.setQueryData(['adminUsers'], (old = []) =>
-                              old.map(u => u.id === user.id ? { ...u, is_verified: true, kyc_status: 'approved' } : u)
-                            );
-                          }}
-                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#16a34a', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                        >
-                          <CheckCircle2 size={14} /> אשר אימות
-                        </button>
-                      )}
-                      {kycStatus === 'approved' && (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await base44.entities.User.update(user.id, { is_verified: false, kyc_status: 'rejected' });
-                            queryClient.setQueryData(['adminUsers'], (old = []) =>
-                              old.map(u => u.id === user.id ? { ...u, is_verified: false, kyc_status: 'rejected' } : u)
-                            );
-                          }}
-                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                        >
-                          <Ban size={14} /> בטל אימות
-                        </button>
-                      )}
-                      {kycStatus === 'pending' && (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await base44.entities.User.update(user.id, { is_verified: false, kyc_status: 'rejected' });
-                            queryClient.setQueryData(['adminUsers'], (old = []) =>
-                              old.map(u => u.id === user.id ? { ...u, is_verified: false, kyc_status: 'rejected' } : u)
-                            );
-                          }}
-                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                        >
-                          <Ban size={14} /> דחה אימות
-                        </button>
-                      )}
-                      {kycStatus === 'rejected' && (
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await base44.entities.User.update(user.id, { is_verified: false, kyc_status: 'pending' });
-                            queryClient.setQueryData(['adminUsers'], (old = []) =>
-                              old.map(u => u.id === user.id ? { ...u, is_verified: false, kyc_status: 'pending' } : u)
-                            );
-                          }}
-                          style={{ flex: 1, height: 40, borderRadius: 10, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                        >
-                          סמן כממתין
-                        </button>
-                      )}
-                    </div>
+                    <KycButtons user={user} kycStatus={kycStatus} />
                   </div>
                 </div>
               );

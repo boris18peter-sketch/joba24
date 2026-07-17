@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -49,6 +49,21 @@ export default function VerifyModal({ onClose, onSuccess }) {
 
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', id_number: '' });
   const [errors, setErrors] = useState({});
+
+  // Pre-fill form with existing user data (for re-submission after rejection)
+  useEffect(() => {
+    base44.auth.me().then(u => {
+      if (u) {
+        setForm(prev => ({
+          full_name: u.full_name || prev.full_name,
+          email: u.email || prev.email,
+          phone: u.phone || prev.phone,
+          id_number: u.id_number || prev.id_number,
+        }));
+        if (u.id_photo_url) setIdPhotoUrl(u.id_photo_url);
+      }
+    }).catch(() => {});
+  }, []);
 
   const validate = () => {
     const e = {};
