@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Loader2, X, ShieldCheck, Link2, Unlink, Sparkles,
-  Instagram, Facebook, Music2, Copy, AlertCircle, ExternalLink,
+  Instagram, Facebook, Music2, Copy, AlertCircle, ExternalLink, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import GoldBadge from '@/components/GoldBadge';
@@ -12,8 +12,8 @@ import { isUserVerified } from '@/lib/utils';
 
 const INSTAGRAM_CONNECTOR_ID = '6a461cba44174744ca6f4c1c';
 const TIKTOK_CONNECTOR_ID = '6a461cbcb8f2b9b391f70d9e';
+const PENDING_KEY = 'joba24_pending_social';
 
-// Platforms that use OAuth (automatic, no bio code needed)
 const OAUTH_PLATFORMS = new Set(['instagram', 'tiktok']);
 
 const PLATFORMS = [
@@ -43,12 +43,18 @@ function getConnectorId(platform) {
   return null;
 }
 
+function platformLabel(key) {
+  const p = PLATFORMS.find(p => p.key === key);
+  return p ? p.label : key;
+}
+
 export default function SocialLinksSection({ user }) {
   const queryClient = useQueryClient();
   const [showConnect, setShowConnect] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(null); // platform key being loaded
+  const [oauthLoading, setOauthLoading] = useState(null);
+  const [returning, setReturning] = useState(false);
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -58,49 +64,75 @@ export default function SocialLinksSection({ user }) {
   const isConnected = verifiedPlatforms.length > 0;
   const isKycVerified = isUserVerified(user);
 
-  // OAuth connect handler — opens popup, polls for close, then fetches profile
+  // ── Handle OAuth return (redirect-based, not popup) ──
+  useEffect(() => {
+    const pending = sessionStorage.getItem(PENDING_KEY);
+    if (!pending) return;
+    sessionStorage.removeItem(PENDING_KEY);
+    setReturning(true);
+    setLoading(true);
+    base44.functions.invoke('verifyInstagram', { action: 'fetch_profile', platform: pending })
+      .then(res => {
+        if (res.data?.error) {
+          toast.error(res.data.error);
+        } else if (res.data?.verified) {
+          toast.success(`${platformLabel(pending)} אומת בהצלחה! 🎉`);
+          refresh();
+        } else {
+          toast.error('לא הצלחנו לאמת את החשבון. נסה שוב.');
+        }
+      })
+      .catch(() => toast.error('החיבור נכשל. ודא שאישרת את ההרשאות.'))
+      .finally(() => { setLoading(false); setReturning(false); });
+  }, []);
+
+  // ── OAuth connect — redirect based (more reliable than popup) ──
   const handleOAuthConnect = async (platform) => {
     const connectorId = getConnectorId(platform);
     if (!connectorId) return;
     setOauthLoading(platform);
     try {
       const url = await base44.connectors.connectAppUser(connectorId);
-      const popup = window.open(url, '_blank');
-      if (!popup) {
-        toast.error('אנא אפשר חלונות קופצים כדי לחבר את הרשת');
-        setOauthLoading(null);
-        return;
-      }
-      // Poll for popup close
-      const timer = setInterval(async () => {
-        if (!popup || popup.closed) {
-          clearInterval(timer);
-          // Popup closed — fetch profile
-          try {
-            setLoading(true);
-            const res = await base44.functions.invoke('verifyInstagram', {
-              action: 'fetch_profile',
-              platform,
-            });
-            if (res.data?.error) {
-              toast.error(res.data.error);
-            } else if (res.data?.verified) {
-              toast.success(`${platform === 'instagram' ? 'Instagram' : 'TikTok'} אומת בהצלחה! 🎉`);
-              await refresh();
-            } else {
-              toast.error('לא הצלחנו לאמת את החשבון. נסה שוב.');
-            }
-          } catch (e) {
-            toast.error('החיבור נכשל. ודא שאישרת את ההרשאות בחלון שנפתח.');
-          } finally {
-            setLoading(false);
-            setOauthLoading(null);
-          }
-        }
-      }, 500);
+      sessionStorage.setItem(PENDING_KEY, platform);
+      window.location.href = url;
     } catch (e) {
       toast.error('שגיאה בפתיחת חלון ההתחברות');
       setOauthLoading(null);
+    }
+  };
+
+  // ── Disconnect OAuth + clear user fields ──
+  const handleDisconnect = async (platform) => {
+    setLoading(true);
+    try {
+      const connectorId = getConnectorId(platform);
+      if (connectorId) {
+        try { await base44.connectors.disconnectAppUser(connectorId); } catch {}
+      }
+      await base44.functions.invoke('verifyInstagram', { action: 'disconnect', platform });
+      await refresh();
+      toast.success(`${platformLabel(platform)} הוסר בהצלחה`);
+    } catch (e) {
+      toast.error('שגיאה בניתוק');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Reconnect: disconnect first, then connect ──
+  const handleReconnect = async (platform) => {
+    setLoading(true);
+    try {
+      const connectorId = getConnectorId(platform);
+      if (connectorId) {
+        try { await base44.connectors.disconnectAppUser(connectorId); } catch {}
+      }
+      await base44.functions.invoke('verifyInstagram', { action: 'disconnect', platform });
+      setLoading(false);
+      await handleOAuthConnect(platform);
+    } catch (e) {
+      toast.error('שגיאה בחיבור מחדש');
+      setLoading(false);
     }
   };
 
@@ -117,7 +149,7 @@ export default function SocialLinksSection({ user }) {
         return;
       }
       await refresh();
-      toast.success(`קוד אימות נוצר עבור ${platform}`);
+      toast.success(`קוד אימות נוצר עבור ${platformLabel(platform)}`);
     } catch (e) {
       toast.error('שגיאה בחיבור הרשת');
     } finally {
@@ -137,7 +169,7 @@ export default function SocialLinksSection({ user }) {
         return;
       }
       if (res.data?.verified) {
-        toast.success(`${platform} אומת בהצלחה! 🎉`);
+        toast.success(`${platformLabel(platform)} אומת בהצלחה! 🎉`);
         await refresh();
       } else {
         toast.error(res.data?.note || 'הקוד לא נמצא בפרופיל. ודא שהוספת את הקוד לביו ונסה שוב.');
@@ -149,21 +181,17 @@ export default function SocialLinksSection({ user }) {
     }
   };
 
-  const handleDisconnect = async (platform) => {
-    setLoading(true);
-    try {
-      await base44.functions.invoke('verifyInstagram', {
-        action: 'disconnect',
-        platform,
-      });
-      await refresh();
-      toast.success(`${platform} הוסר`);
-    } catch (e) {
-      toast.error('שגיאה בניתוק');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (returning) {
+    return (
+      <div style={{
+        background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)',
+        padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+      }}>
+        <Loader2 size={20} className="animate-spin" color="#1a6fd4" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>מאמת את החשבון שלך...</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -312,6 +340,7 @@ export default function SocialLinksSection({ user }) {
           platforms={PLATFORMS}
           onClose={() => setShowManage(false)}
           onDisconnect={handleDisconnect}
+          onReconnect={handleReconnect}
           loading={loading}
           isKycVerified={isKycVerified}
         />,
@@ -399,7 +428,7 @@ function ConnectSheet({ user, platforms, onClose, onOAuthConnect, onConnectCode,
                       <button onClick={() => onOAuthConnect(p.key)} disabled={loading || oauthLoading === p.key}
                         style={{ marginTop: 8, width: '100%', padding: '8px', borderRadius: 10, background: p.brandSolid, color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                         {oauthLoading === p.key ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
-                        {oauthLoading === p.key ? 'מחכה לאישור...' : `חבר מחדש עם ${p.label}`}
+                        {oauthLoading === p.key ? 'פותח...' : `חבר מחדש עם ${p.label}`}
                       </button>
                     )}
                   </div>
@@ -417,7 +446,6 @@ function ConnectSheet({ user, platforms, onClose, onOAuthConnect, onConnectCode,
                 return (
                   <div key={p.key} style={{ marginBottom: 8 }}>
                     {isOAuth ? (
-                      // OAuth platform — single button, no username input
                       <button
                         onClick={() => onOAuthConnect(p.key)}
                         disabled={loading || oauthLoading === p.key}
@@ -432,12 +460,11 @@ function ConnectSheet({ user, platforms, onClose, onOAuthConnect, onConnectCode,
                           {oauthLoading === p.key ? <Loader2 size={16} className="animate-spin" color="white" /> : <p.icon size={16} color="white" />}
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>
-                          {oauthLoading === p.key ? 'פותח חלון התחברות...' : `חבר ${p.label}`}
+                          {oauthLoading === p.key ? 'פותח...' : `חבר ${p.label}`}
                         </span>
                         <ExternalLink size={14} color="var(--text-3)" style={{ marginLeft: 'auto' }} />
                       </button>
                     ) : selectedPlatform === p.key ? (
-                      // Facebook — username input form (bio code method)
                       <div style={{ background: 'var(--surface-3)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                           <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -484,8 +511,9 @@ function ConnectSheet({ user, platforms, onClose, onOAuthConnect, onConnectCode,
   );
 }
 
-function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVerified }) {
+function ManageSheet({ user, platforms, onClose, onDisconnect, onReconnect, loading, isKycVerified }) {
   const connectedPlatforms = platforms.filter(p => user?.[`${p.key}_username`]);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(null);
 
   return (
     <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -511,22 +539,86 @@ function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVer
           {connectedPlatforms.map(p => {
             const u = user[`${p.key}_username`];
             const v = user[`${p.key}_verified`];
+            const isOAuth = OAUTH_PLATFORMS.has(p.key);
             return (
-              <div key={p.key} style={{ background: v && isKycVerified ? '#fffbeb' : 'var(--surface-3)', borderRadius: 12, border: `1px solid ${v && isKycVerified ? '#fde68a' : 'var(--border-1)'}`, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <p.icon size={16} color="white" />
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
-                  <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? '✓ מאומת' : ''}</div>
+              <div key={p.key} style={{ background: v && isKycVerified ? '#fffbeb' : 'var(--surface-3)', borderRadius: 12, border: `1px solid ${v && isKycVerified ? '#fde68a' : 'var(--border-1)'}`, padding: '10px 12px', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <p.icon size={16} color="white" />
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
+                    <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? '✓ מאומת' : ''}</div>
+                  </div>
                 </div>
-                <button onClick={() => onDisconnect(p.key)} disabled={loading}
-                  style={{ width: 32, height: 32, borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  {loading ? <Loader2 size={14} className="animate-spin" color="#dc2626" /> : <Unlink size={14} color="#dc2626" />}
-                </button>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  {isOAuth && (
+                    <button
+                      onClick={() => onReconnect(p.key)}
+                      disabled={loading}
+                      style={{
+                        flex: 1, height: 34, borderRadius: 9, cursor: loading ? 'wait' : 'pointer',
+                        background: 'var(--surface-2)', border: '1px solid var(--border-1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                        fontSize: 11, fontWeight: 700, color: 'var(--text-1)',
+                      }}
+                    >
+                      {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      התחבר עם חשבון אחר
+                    </button>
+                  )}
+                  {confirmDisconnect === p.key ? (
+                    <>
+                      <button
+                        onClick={() => { onDisconnect(p.key); setConfirmDisconnect(null); }}
+                        disabled={loading}
+                        style={{
+                          flex: 1, height: 34, borderRadius: 9, cursor: loading ? 'wait' : 'pointer',
+                          background: '#dc2626', border: 'none',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                          fontSize: 11, fontWeight: 700, color: 'white',
+                        }}
+                      >
+                        {loading ? <Loader2 size={12} className="animate-spin" /> : 'אישור ניתוק'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDisconnect(null)}
+                        style={{
+                          height: 34, width: 60, borderRadius: 9, cursor: 'pointer',
+                          background: 'var(--surface-2)', border: '1px solid var(--border-1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
+                        }}
+                      >
+                        ביטול
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDisconnect(p.key)}
+                      disabled={loading}
+                      style={{
+                        flex: 1, height: 34, borderRadius: 9, cursor: loading ? 'wait' : 'pointer',
+                        background: '#fef2f2', border: '1px solid #fecaca',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                        fontSize: 11, fontWeight: 700, color: '#dc2626',
+                      }}
+                    >
+                      <Unlink size={12} />
+                      נתק
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
+
+          {connectedPlatforms.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-3)', fontSize: 13 }}>
+              אין רשתות מחוברות
+            </div>
+          )}
         </div>
       </div>
     </div>
