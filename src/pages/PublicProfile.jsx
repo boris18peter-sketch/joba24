@@ -184,22 +184,22 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* Social Links — compact horizontal row */}
-        {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
+        {/* Social Links — only VERIFIED platforms are shown as links */}
+        {(user.instagram_verified || user.facebook_verified || user.tiktok_verified) && (
           <SectionCard title="רשתות חברתיות">
             <div style={{ display: 'flex', gap: 8 }}>
               {[
                 { key: 'instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
                 { key: 'facebook', username: user.facebook_username, verified: user.facebook_verified, url: `https://facebook.com/${user.facebook_username}`, icon: Facebook, color: '#1877F2' },
-                { key: 'tiktok', username: user.tiktok_username, verified: user.tiktok_verified, url: `https://tiktok.com/@${user.tiktok_username}`, icon: Music2, color: '#000' },
-              ].filter(p => p.username).map(p => (
+                { key: 'tiktok', username: user.tiktok_username, verified: user.tiktok_verified, url: `https://tiktok.com/@${user.tiktok_username}`, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
+              ].filter(p => p.username && p.verified).map(p => (
                 <a key={p.key} href={p.url} target="_blank" rel="noopener noreferrer"
-                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 4px', borderRadius: 14, textDecoration: 'none', border: `1px solid ${p.verified ? '#bbf7d0' : 'var(--border-1)'}`, background: p.verified ? '#f0fdf4' : 'var(--surface-3)' }}>
-                  <div style={{ position: 'relative', width: 34, height: 34, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <p.icon size={17} color="white" />
-                    {p.verified && <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#059669', border: '2px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={9} color="white" /></span>}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 4px', borderRadius: 14, textDecoration: 'none', border: '1px solid #fde68a', background: '#fffbeb' }}>
+                  <div style={{ position: 'relative', width: 36, height: 36, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p.icon size={18} color="white" />
+                    <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#d97706', border: '2px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={9} color="white" /></span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: p.verified ? '#059669' : 'var(--text-3)' }}>{p.verified ? 'מאומת' : 'מחובר'}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>מאומת</span>
                 </a>
               ))}
             </div>

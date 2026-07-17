@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap } from 'lucide-react';
+import { MapPin, Navigation, Star, Send, Loader2, MoreVertical, Trash2, CheckCircle2, ChevronDown, ChevronUp, Play, Clock, Calendar, Banknote, Wrench, RefreshCw, Zap, ShieldCheck, X } from 'lucide-react';
 import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
@@ -279,6 +279,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const cardRef = useRef(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
+  const [showVerificationRequired, setShowVerificationRequired] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -407,6 +408,19 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           overflow: 'hidden',
         }}
       >
+        {/* Verification required ribbon — green strip on top of card */}
+        {task.verification_required && (
+          <div style={{
+            position: 'absolute', top: 0, right: 0, left: 0,
+            background: 'linear-gradient(135deg, #16a34a, #059669)',
+            color: 'white', fontSize: 10, fontWeight: 800,
+            padding: '4px 14px', display: 'flex', alignItems: 'center', gap: 5,
+            zIndex: 5, letterSpacing: 0.3,
+          }}>
+            <ShieldCheck size={11} /> דרוש ווי ירוק · רק משתמשים מאומתים
+          </div>
+        )}
+
         {/* In-card success overlay */}
         {showCardSuccess && (
           <div style={{

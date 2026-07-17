@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar } from 'lucide-react';
+import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getRequirementCategories } from '@/lib/requirements';
@@ -173,6 +173,7 @@ const DEFAULT_FORM = {
   images: [],
   video_url: '',
   requirements: { vehicle: false, two_people: false, experience: false },
+  verification_required: false,
   payment_method: '',
   urgency_tag: '',
   scheduled_time: '',
@@ -341,6 +342,7 @@ export default function CreateTask() {
       urgency_tag: editTask.urgency_tag || '',
       scheduled_time: editTask.scheduled_time || '',
       requires_invoice: editTask.requires_invoice || false,
+      verification_required: editTask.verification_required || false,
       custom_expiry_hours: '',
       category_details: editTask.category_details || {},
       hourly_rate: editTask.category_details?.hourly_rate ? String(editTask.category_details.hourly_rate) : '',
@@ -648,8 +650,9 @@ export default function CreateTask() {
         urgency_tag: form.urgency_tag || undefined,
         scheduled_time: form.scheduled_time || undefined,
         requires_invoice: form.requires_invoice || false,
+        verification_required: form.verification_required || false,
         ...(isRepostMode ? { status: 'OPEN', worker_id: null, worker_name: null, worker_status: null, expires_at: expires } : {}),
-      });
+        });
       setLoading(false);
       submittingRef.current = false;
       toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
@@ -768,6 +771,7 @@ export default function CreateTask() {
       requirements: form.requirements,
       status: 'OPEN',
       requires_invoice: form.requires_invoice || false,
+      verification_required: form.verification_required || false,
       urgency_tag: form.urgency_tag || undefined,
       scheduled_time: form.scheduled_time || undefined,
       client_id: me?.id,
@@ -915,6 +919,7 @@ export default function CreateTask() {
         requirements: chatFormData.requirements || {},
         status: 'OPEN',
         requires_invoice: chatFormData.requires_invoice || false,
+        verification_required: chatFormData.verification_required || false,
         urgency_tag: chatFormData.urgency_tag || undefined,
         scheduled_time: chatFormData.scheduled_time || undefined,
         client_id: me?.id,
@@ -1567,6 +1572,51 @@ export default function CreateTask() {
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
               </div>
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Verification Requirement */}
+        <SectionCard>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+            <ShieldCheck size={14} color="#16a34a" strokeWidth={1.8} />
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>אימות עובד</Label>
+          </div>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 10, lineHeight: 1.5 }}>
+            בחר אם לדרוש מהעובדים אימות ווי ירוק כדי להגיש בקשה למשימה זו
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => set('verification_required', false)}
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
+                background: !form.verification_required ? '#f0fdf4' : 'var(--surface-3)',
+                color: !form.verification_required ? '#16a34a' : 'var(--text-2)',
+                border: `1.5px solid ${!form.verification_required ? '#bbf7d0' : 'var(--border-1)'}`,
+              }}
+            >
+              לא חשוב אימות
+            </button>
+            <button
+              type="button"
+              onClick={() => set('verification_required', true)}
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
+                background: form.verification_required ? '#f0fdf4' : 'var(--surface-3)',
+                color: form.verification_required ? '#16a34a' : 'var(--text-2)',
+                border: `1.5px solid ${form.verification_required ? '#bbf7d0' : 'var(--border-1)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              }}
+            >
+              <ShieldCheck size={14} /> דרוש ווי ירוק
+            </button>
+          </div>
+          {form.verification_required && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', fontSize: 11, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
+              ✓ רק משתמשים מאומתים (ווי ירוק) יוכלו להגיש בקשה למשימה זו
             </div>
           )}
         </SectionCard>

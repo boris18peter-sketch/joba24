@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
 const AuthContext = createContext();
@@ -112,10 +113,12 @@ export const AuthProvider = ({ children }) => {
       if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
       if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
 
-      // Subscribe to User entity changes to keep credits up to date in real-time
+      // Subscribe to User entity changes to keep user data (credits, KYC status, verification) up to date in real-time
       unsubUserRef.current = base44.entities.User.subscribe((event) => {
         if (event.data?.id === currentUser?.id || event.id === currentUser?.id) {
           setUser(prev => prev ? { ...prev, ...event.data } : event.data);
+          // Invalidate the ['me'] React Query cache so all pages using useQuery(['me']) get fresh data
+          queryClientInstance.invalidateQueries({ queryKey: ['me'] });
         }
       });
 

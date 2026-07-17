@@ -36,6 +36,14 @@ Deno.serve(async (req) => {
     // Fetch fresh worker data for credits check
     const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
     const userData = workerUsers[0];
+
+    // Verification gate: if task requires verified workers, block unverified users
+    if (task.verification_required) {
+      if (!userData?.is_verified || userData?.kyc_status !== 'approved') {
+        return Response.json({ error: 'verification_required', message: 'המשימה דורשת אימות' }, { status: 403 });
+      }
+    }
+
     const currentCredits = userData?.worker_credits ?? 100;
 
     if (currentCredits < creditsRequired) {

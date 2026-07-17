@@ -9,10 +9,26 @@ import {
 import { toast } from 'sonner';
 import GoldBadge from '@/components/GoldBadge';
 
+// Brand colors for each platform — vibrant and recognizable
 const PLATFORMS = [
-  { key: 'instagram', label: 'Instagram', icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', url: (u) => `https://instagram.com/${u}` },
-  { key: 'facebook', label: 'Facebook', icon: Facebook, color: '#1877F2', url: (u) => `https://facebook.com/${u}` },
-  { key: 'tiktok', label: 'TikTok', icon: Music2, color: '#000', url: (u) => `https://tiktok.com/@${u}` },
+  {
+    key: 'instagram', label: 'Instagram', icon: Instagram,
+    brandColor: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)',
+    brandSolid: '#dc2743',
+    url: (u) => `https://instagram.com/${u}`,
+  },
+  {
+    key: 'facebook', label: 'Facebook', icon: Facebook,
+    brandColor: '#1877F2',
+    brandSolid: '#1877F2',
+    url: (u) => `https://facebook.com/${u}`,
+  },
+  {
+    key: 'tiktok', label: 'TikTok', icon: Music2,
+    brandColor: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)',
+    brandSolid: '#000000',
+    url: (u) => `https://tiktok.com/@${u}`,
+  },
 ];
 
 function hasSocialVerified(user) {
@@ -29,8 +45,9 @@ export default function SocialLinksSection({ user }) {
     queryClient.invalidateQueries({ queryKey: ['me'] });
   };
 
-  const connectedPlatforms = PLATFORMS.filter(p => user?.[`${p.key}_username`]);
-  const isConnected = connectedPlatforms.length > 0;
+  // Only show VERIFIED platforms as links — unverified ones are hidden
+  const verifiedPlatforms = PLATFORMS.filter(p => user?.[`${p.key}_username`] && user?.[`${p.key}_verified`]);
+  const isConnected = verifiedPlatforms.length > 0;
   const isKycVerified = user?.is_verified;
 
   const handleConnect = async (platform, username) => {
@@ -46,7 +63,7 @@ export default function SocialLinksSection({ user }) {
         return;
       }
       await refresh();
-      toast.success(`קוד אימור נוצר עבור ${platform}`);
+      toast.success(`קוד אימות נוצר עבור ${platform}`);
     } catch (e) {
       toast.error('שגיאה בחיבור הרשת');
     } finally {
@@ -117,24 +134,30 @@ export default function SocialLinksSection({ user }) {
           )}
         </div>
 
-        {/* Connected platform icons */}
+        {/* Verified platform icons — colorful brand-colored buttons */}
         {isConnected && (
           <div style={{ padding: '0 16px 10px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {connectedPlatforms.map(p => {
+            {verifiedPlatforms.map(p => {
               const username = user[`${p.key}_username`];
-              const verified = user[`${p.key}_verified`];
               return (
                 <a key={p.key} href={p.url(username)} target="_blank" rel="noreferrer"
                    style={{
                      display: 'flex', alignItems: 'center', gap: 6,
-                     background: verified && isKycVerified ? '#fffbeb' : 'var(--surface-3)',
-                     borderRadius: 12, padding: '6px 10px',
-                     border: `1px solid ${verified && isKycVerified ? '#fde68a' : 'var(--border-1)'}`,
+                     background: '#fffbeb',
+                     borderRadius: 12, padding: '6px 12px',
+                     border: '1px solid #fde68a',
                      textDecoration: 'none', transition: 'background 0.15s',
                    }}>
-                  <p.icon size={16} color="var(--text-2)" />
+                  <span style={{
+                    width: 22, height: 22, borderRadius: 6,
+                    background: p.brandColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <p.icon size={13} color="white" />
+                  </span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>{username}</span>
-                  {verified && isKycVerified && <ShieldCheck size={11} color="#d97706" />}
+                  <ShieldCheck size={12} color="#d97706" />
                 </a>
               );
             })}
@@ -273,7 +296,9 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                 return (
                   <div key={p.key} style={{ background: v ? '#fffbeb' : 'var(--surface-3)', borderRadius: 12, border: `1px solid ${v ? '#fde68a' : 'var(--border-1)'}`, padding: '10px 12px', marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <p.icon size={18} color={v ? '#d97706' : 'var(--text-2)'} />
+                      <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <p.icon size={16} color="white" />
+                      </span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
                         <div style={{ fontSize: 11, color: v ? '#d97706' : 'var(--text-3)' }}>{v ? '✓ מאומת' : 'ממתין לאימות'}</div>
@@ -312,7 +337,9 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                   {selectedPlatform === p.key ? (
                     <div style={{ background: 'var(--surface-3)', borderRadius: 12, border: '1px solid var(--border-1)', padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                        <p.icon size={18} color={p.color.includes('gradient') ? '#dc2743' : p.color} />
+                        <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <p.icon size={16} color="white" />
+                        </span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{p.label}</span>
                         <button onClick={() => { setSelectedPlatform(null); setUsername(''); }}
                           style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}>
@@ -329,14 +356,16 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                       />
                       <button onClick={() => { onConnect(p.key, username); setSelectedPlatform(null); setUsername(''); }}
                         disabled={!username.trim() || loading}
-                        style={{ width: '100%', height: 40, borderRadius: 10, background: username.trim() ? '#1a6fd4' : 'var(--surface-3)', color: username.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 700, fontSize: 13, cursor: username.trim() ? 'pointer' : 'not-allowed' }}>
+                        style={{ width: '100%', height: 40, borderRadius: 10, background: username.trim() ? p.brandSolid : 'var(--surface-3)', color: 'white', border: 'none', fontWeight: 700, fontSize: 13, cursor: username.trim() ? 'pointer' : 'not-allowed' }}>
                         {loading ? <Loader2 size={14} className="animate-spin" /> : `חבר ${p.label}`}
                       </button>
                     </div>
                   ) : (
                     <button onClick={() => setSelectedPlatform(p.key)}
                       style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--surface-3)', borderRadius: 12, border: '1px solid var(--border-1)', cursor: 'pointer' }}>
-                      <p.icon size={18} color={p.color.includes('gradient') ? '#dc2743' : p.color} />
+                      <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <p.icon size={16} color="white" />
+                      </span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>חבר {p.label}</span>
                       <Link2 size={14} color="var(--text-3)" style={{ marginLeft: 'auto' }} />
                     </button>
@@ -380,7 +409,9 @@ function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVer
             const v = user[`${p.key}_verified`];
             return (
               <div key={p.key} style={{ background: v && isKycVerified ? '#fffbeb' : 'var(--surface-3)', borderRadius: 12, border: `1px solid ${v && isKycVerified ? '#fde68a' : 'var(--border-1)'}`, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <p.icon size={18} color={v && isKycVerified ? '#d97706' : 'var(--text-2)'} />
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <p.icon size={16} color="white" />
+                </span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
                   <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? '✓ מאומת' : ''}</div>
