@@ -77,7 +77,12 @@ export default function Profile() {
     setUploadingPhoto(false);
   };
 
-  const { data: me, isLoading } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: me, isLoading } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => base44.auth.me(),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  });
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['myReviews', me?.id],

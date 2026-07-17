@@ -123,11 +123,36 @@ export const AuthProvider = ({ children }) => {
       });
 
       // Also subscribe to CreditTransaction — update credits from the transaction's balance_after
-      unsubCreditRef.current = base44.entities.CreditTransaction.subscribe((event) => {
+      const unsubCredit = base44.entities.CreditTransaction.subscribe((event) => {
         if (event.data?.user_id === currentUser?.id && event.data.balance_after != null) {
           setUser(prev => prev ? { ...prev, worker_credits: event.data.balance_after } : prev);
         }
       });
+
+      // Fallback polling: refresh user data every 45 seconds to catch changes
+      // (e.g. admin KYC approval/rejection) that realtime might miss for cross-user updates
+      const pollInterval = setInterval(async () => {
+        try {
+          const freshUser = await base44.auth.me();
+          setUser(prev => {
+            if (!prev) return freshUser;
+            if (prev.is_verified !== freshUser.is_verified ||
+                prev.kyc_status !== freshUser.kyc_status ||
+                prev.worker_credits !== freshUser.worker_credits ||
+                prev.is_blocked !== freshUser.is_blocked) {
+              queryClientInstance.invalidateQueries({ queryKey: ['me'] });
+              return freshUser;
+            }
+            return prev;
+          });
+        } catch {}
+      }, 45000);
+
+      // Compose cleanup for both the CreditTransaction subscription and the poll interval
+      unsubCreditRef.current = () => {
+        unsubCredit();
+        clearInterval(pollInterval);
+      };
     } catch (error) {
       console.error('[Joba24] Auth: checkUserAuth failed:', error.message, error.status);
       setIsLoadingAuth(false);

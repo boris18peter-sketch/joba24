@@ -173,6 +173,19 @@ export default function SocialLinksSection({ user }) {
           </div>
         )}
 
+        {/* Gold badge benefit banner */}
+        {isKycVerified && !isConnected && (
+          <div style={{ margin: '0 16px 10px', padding: '12px 14px', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 12, border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(217,119,6,0.3)' }}>
+              <ShieldCheck size={18} color="white" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', lineHeight: 1.3 }}>קבל ווי זהב 🥇 ובלוט מעל כולם</div>
+              <div style={{ fontSize: 11, color: '#b45309', marginTop: 2, lineHeight: 1.4 }}>חבר רשת חברתית → קבל ווי זהב, הגדל אמון, חשיפה וקבל יותר משימות</div>
+            </div>
+          </div>
+        )}
+
         <div style={{ padding: '0 16px 14px' }}>
           {isConnected ? (
             <div style={{ display: 'flex', gap: 8 }}>

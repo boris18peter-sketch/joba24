@@ -16,11 +16,13 @@ import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
+import VerifyModal from '@/components/VerifyModal';
 import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
+import { useAuth } from '@/lib/AuthContext';
 
 
 function normalizeDate(d) {
@@ -52,7 +54,7 @@ const URGENCY_TAG_CONFIG = {
 };
 
 // ── Apply Modal ──────────────────────────────────────────────────────────────
-function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits }) {
+function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits, onVerificationRequired }) {
   const { t, isRTL } = useLanguage();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -89,6 +91,13 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
         setLoading(false);
         onClose();
         onInsufficientCredits?.(res.data.credits_required);
+        return;
+      }
+      if (res.data?.error === 'verification_required') {
+        submittedRef.current = false;
+        setLoading(false);
+        onClose();
+        onVerificationRequired?.();
         return;
       }
       const charged = res.data?.credits_charged || 0;
@@ -262,6 +271,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
+  const { user: me } = useAuth();
   const queryClient = useQueryClient();
   const [cancelling, setCancelling] = useState(false);
   const cancellingRef = useRef(false); // hard guard — survives re-renders
@@ -279,7 +289,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const cardRef = useRef(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
-  const [showVerificationRequired, setShowVerificationRequired] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -408,17 +418,25 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           overflow: 'hidden',
         }}
       >
-        {/* Verification required ribbon — green strip on top of card */}
+        {/* Verification required — left-side green cover strip */}
         {task.verification_required && (
-          <div style={{
-            position: 'absolute', top: 0, right: 0, left: 0,
-            background: 'linear-gradient(135deg, #16a34a, #059669)',
-            color: 'white', fontSize: 10, fontWeight: 800,
-            padding: '4px 14px', display: 'flex', alignItems: 'center', gap: 5,
-            zIndex: 5, letterSpacing: 0.3,
-          }}>
-            <ShieldCheck size={11} /> דרוש ווי ירוק · רק משתמשים מאומתים
-          </div>
+          <>
+            <div style={{
+              position: 'absolute', top: 0, bottom: 0, left: 0, width: 5,
+              background: 'linear-gradient(180deg, #16a34a, #059669)',
+              zIndex: 5, flexShrink: 0,
+            }} />
+            <div style={{
+              position: 'absolute', top: 8, left: 8, zIndex: 6,
+              background: 'linear-gradient(135deg, #16a34a, #059669)',
+              borderRadius: 7, padding: '3px 7px',
+              display: 'flex', alignItems: 'center', gap: 3,
+              fontSize: 9, fontWeight: 800, color: 'white', whiteSpace: 'nowrap',
+              boxShadow: '0 2px 6px rgba(22,163,74,0.3)',
+            }}>
+              <ShieldCheck size={9} /> ווי ירוק+
+            </div>
+          </>
         )}
 
         {/* In-card success overlay */}
@@ -728,6 +746,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                       setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
                       if (!currentUserId) { setShowLoginPrompt(true); return; }
                       if (applyLocked) return;
+                      // Verification gate: if task requires verified workers and user isn't verified, show VerifyModal
+                      if (task.verification_required && !me?.is_verified) {
+                        setShowVerifyModal(true);
+                        return;
+                      }
                       setApplyLocked(true);
                       setShowApplyModal(true);
                       setTimeout(() => setApplyLocked(false), 600);
@@ -780,6 +803,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           onClose={() => setShowApplyModal(false)}
           onApplied={handleApplied}
           onInsufficientCredits={(req) => { setNeededCredits(req); setShowBuyCredits(true); }}
+          onVerificationRequired={() => setShowVerifyModal(true)}
         />,
         document.body
       )}
@@ -807,6 +831,16 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         <BuyCreditsModal
           creditsNeeded={neededCredits}
           onClose={() => setShowBuyCredits(false)}
+        />
+      )}
+
+      {showVerifyModal && (
+        <VerifyModal
+          onClose={() => setShowVerifyModal(false)}
+          onSuccess={() => {
+            setShowVerifyModal(false);
+            queryClient.invalidateQueries({ queryKey: ['me'] });
+          }}
         />
       )}
 

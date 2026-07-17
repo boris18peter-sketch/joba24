@@ -1611,12 +1611,12 @@ export default function CreateTask() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               }}
             >
-              <ShieldCheck size={14} /> דרוש ווי ירוק
+              <ShieldCheck size={14} /> דרוש ווי ירוק ומעלה
             </button>
           </div>
           {form.verification_required && (
             <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', fontSize: 11, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
-              ✓ רק משתמשים מאומתים (ווי ירוק) יוכלו להגיש בקשה למשימה זו
+              ✓ רק משתמשים עם ווי ירוק ומעלה (כולל ווי זהב) יוכלו להגיש בקשה למשימה זו
             </div>
           )}
         </SectionCard>

@@ -126,7 +126,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           color: selected ? 'white' : 'var(--brand-primary-dark)',
           letterSpacing: -0.3,
         }}>
-          ₪{pkg.price.toFixed(0)}
+          ₪{pkg.price.toFixed(2)}
         </div>
         {isSubscription && (
           <div style={{

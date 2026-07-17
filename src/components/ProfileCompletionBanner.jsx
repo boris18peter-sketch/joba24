@@ -25,6 +25,7 @@ export default function ProfileCompletionBanner({ me }) {
         cursor: 'pointer',
         overflow: 'hidden',
         position: 'relative',
+        zIndex: 10,
         boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
       }}
     >
