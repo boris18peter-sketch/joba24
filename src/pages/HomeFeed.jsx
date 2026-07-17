@@ -23,6 +23,7 @@ import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
+import VerificationStatusBanner from '@/components/VerificationStatusBanner';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function HomeFeed() {
@@ -698,6 +699,7 @@ export default function HomeFeed() {
             </div>{/* end sticky search wrapper */}
 
             {/* Profile completion banner — only for new logged-in users */}
+            {isAuthenticated && me && <VerificationStatusBanner me={me} />}
             {isAuthenticated && me && <ProfileCompletionBanner me={me} />}
 
             {/* Stories Bar — filtered by active category; 'all' shows all stories */}
