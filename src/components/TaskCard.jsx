@@ -17,6 +17,7 @@ import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import VerifyModal from '@/components/VerifyModal';
+import VerificationRequiredModal from '@/components/VerificationRequiredModal';
 import { parseDescription } from '@/lib/descriptionParser';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
@@ -290,6 +291,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [neededCredits, setNeededCredits] = useState(0);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showVerificationRequired, setShowVerificationRequired] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showBoostOverlay, setShowBoostOverlay] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -746,9 +748,10 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                       setApplyBtnPos({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
                       if (!currentUserId) { setShowLoginPrompt(true); return; }
                       if (applyLocked) return;
-                      // Verification gate: if task requires verified workers and user isn't verified, show VerifyModal
+                      // Verification gate: if task requires verified workers and user isn't verified,
+                      // show the VerificationRequiredModal first (with a button to open the full KYC flow)
                       if (task.verification_required && !me?.is_verified) {
-                        setShowVerifyModal(true);
+                        setShowVerificationRequired(true);
                         return;
                       }
                       setApplyLocked(true);
@@ -803,7 +806,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           onClose={() => setShowApplyModal(false)}
           onApplied={handleApplied}
           onInsufficientCredits={(req) => { setNeededCredits(req); setShowBuyCredits(true); }}
-          onVerificationRequired={() => setShowVerifyModal(true)}
+          onVerificationRequired={() => setShowVerificationRequired(true)}
         />,
         document.body
       )}
@@ -842,6 +845,17 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             queryClient.invalidateQueries({ queryKey: ['me'] });
           }}
         />
+      )}
+
+      {showVerificationRequired && createPortal(
+        <VerificationRequiredModal
+          onClose={() => setShowVerificationRequired(false)}
+          onVerify={() => {
+            setShowVerificationRequired(false);
+            setShowVerifyModal(true);
+          }}
+        />,
+        document.body
       )}
 
 

@@ -18,6 +18,7 @@ import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, danger, last }) {
   const inner = (
@@ -54,6 +55,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { user: authUser, refreshUser } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -73,16 +75,15 @@ export default function Profile() {
     setUploadingPhoto(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     await base44.auth.updateMe({ profile_photo: file_url });
-    queryClient.invalidateQueries({ queryKey: ['me'] });
+    await refreshUser();
     setUploadingPhoto(false);
   };
 
-  const { data: me, isLoading } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => base44.auth.me(),
-    refetchOnWindowFocus: true,
-    staleTime: 0,
-  });
+  // Use the real-time synced user from AuthContext — this ensures is_verified,
+  // kyc_status, worker_credits etc. update immediately when the admin changes them
+  // (via WebSocket subscription + 45s polling fallback in AuthContext).
+  const me = authUser;
+  const isLoading = !me;
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['myReviews', me?.id],
@@ -96,7 +97,6 @@ export default function Profile() {
     const unsub = base44.entities.Review.subscribe((event) => {
       if (event.data?.reviewee_id === me.id) {
         queryClient.invalidateQueries({ queryKey: ['myReviews', me.id] });
-        queryClient.invalidateQueries({ queryKey: ['me'] });
       }
     });
     return unsub;
@@ -129,7 +129,7 @@ export default function Profile() {
       {showVerifyModal && (
         <VerifyModal
           onClose={() => setShowVerifyModal(false)}
-          onSuccess={() => { setShowVerifyModal(false); queryClient.invalidateQueries({ queryKey: ['me'] }); }}
+          onSuccess={() => { setShowVerifyModal(false); refreshUser(); }}
         />
       )}
 

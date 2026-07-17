@@ -1,11 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 
-const JOIN_COMPLETED_KEY = 'joba24_join_completed';
-
 export default function ProfileCompletionBanner({ me }) {
-  const navigate = useNavigate();
-
   if (!me) return null;
 
   // Single source of truth: user entity. If the user already has categories AND cities,
@@ -13,31 +9,24 @@ export default function ProfileCompletionBanner({ me }) {
   const isComplete = me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0;
   if (isComplete) return null;
 
-  const handleClick = (e) => {
-    e.preventDefault();
-    navigate('/join');
-  };
-
   return (
-    // Outer div — role="button" + touch-action ensures mobile tap works reliably
-    <div
+    <Link
+      to="/join"
       dir="rtl"
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(e); }}
       style={{
+        display: 'block',
+        textDecoration: 'none',
         background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
         borderRadius: 16,
         padding: '16px',
         marginBottom: 12,
-        cursor: 'pointer',
         overflow: 'hidden',
         position: 'relative',
         zIndex: 10,
         boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent',
+        cursor: 'pointer',
       }}
     >
       {/* Decorative circles */}
@@ -59,10 +48,8 @@ export default function ProfileCompletionBanner({ me }) {
         </div>
       </div>
 
-      {/* CTA button — actual <button> for reliable mobile tap */}
-      <button
-        type="button"
-        onClick={handleClick}
+      {/* CTA button */}
+      <div
         style={{
           width: '100%',
           height: 44,
@@ -71,21 +58,15 @@ export default function ProfileCompletionBanner({ me }) {
           color: '#1a3a6b',
           fontWeight: 900,
           fontSize: 14,
-          border: 'none',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
           boxShadow: '0 3px 12px rgba(251,191,36,0.45)',
-          cursor: 'pointer',
-          touchAction: 'manipulation',
-          WebkitTapHighlightColor: 'transparent',
-          position: 'relative',
-          zIndex: 11,
         }}
       >
         🎁 השלם פרופיל עובד וקבל בונוס 25 ג'ובות
-      </button>
-    </div>
+      </div>
+    </Link>
   );
 }
