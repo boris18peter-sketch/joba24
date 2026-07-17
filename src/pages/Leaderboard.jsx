@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Trophy, Star } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
@@ -41,6 +42,7 @@ export default function Leaderboard() {
         avatar: userRecord?.full_name?.[0]?.toUpperCase() || '?',
         profile_photo: userRecord?.profile_photo || null,
         is_verified: userRecord?.is_verified || false,
+        social_verified: !!(userRecord?.instagram_verified || userRecord?.facebook_verified || userRecord?.tiktok_verified),
         profession: userRecord?.profession || '',
         count: 0,
         ratings: [],
@@ -94,7 +96,7 @@ export default function Leaderboard() {
                     </div>
                     <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'center', color: 'white', display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 80, lineHeight: 1.3 }}>
                       <span style={{ wordBreak: 'break-word', textAlign: 'center' }}>{user.name}</span>
-                      {user.is_verified && <VerifiedBadge size="sm" />}
+                      {user.is_verified && (user.social_verified ? <GoldBadge size="sm" /> : <VerifiedBadge size="sm" />)}
                     </div>
                     {user.avg > 0 && (
                       <div style={{ fontSize: 10, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 2, marginTop: 2 }}>
@@ -146,7 +148,7 @@ export default function Leaderboard() {
               </div>
               <div className="flex-1 min-w-0">
               <div className="font-bold text-sm truncate flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
-                  {user.name}{user.is_verified && <VerifiedBadge size="sm" />}
+                  {user.name}{user.is_verified && (user.social_verified ? <GoldBadge size="sm" /> : <VerifiedBadge size="sm" />)}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{user.profession}</span>}

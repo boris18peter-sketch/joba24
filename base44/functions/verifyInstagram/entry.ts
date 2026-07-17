@@ -1,15 +1,15 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 /**
  * verifyInstagram — Social media account verification.
  *
- * TikTok: OAuth (user logs in, we fetch username automatically)
- * Instagram + Facebook: Bio code (user adds 6-digit code to bio, we verify)
+ * Instagram + TikTok: OAuth (user logs in, we fetch username automatically)
+ * Facebook: Bio code (user adds 6-digit code to bio, we verify)
  *
  * Actions:
- *   "connect_code"   — Save username + generate 6-digit code (Instagram, Facebook)
- *   "verify_code"    — Check if code is in the bio (Instagram, Facebook)
- *   "fetch_profile"  — OAuth profile fetch (TikTok)
+ *   "connect_code"   — Save username + generate 6-digit code (Facebook only)
+ *   "verify_code"    — Check if code is in the bio (Facebook only)
+ *   "fetch_profile"  — OAuth profile fetch (Instagram, TikTok)
  *   "disconnect"     — Clear social media data
  */
 
@@ -34,7 +34,6 @@ function decodeEntities(str) {
     .replace(/&nbsp;/g, ' ');
 }
 
-// ── Fetch with timeout ──
 async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -44,64 +43,6 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   } finally {
     clearTimeout(timeoutId);
   }
-}
-
-// ── Instagram bio fetch: multiple methods ──
-async function getInstagramContent(username) {
-  // Method 1: Instagram internal API (most reliable)
-  try {
-    const res = await fetchWithTimeout(
-      `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
-      {
-        headers: {
-          'x-ig-app-id': '936619743392459',
-          'User-Agent':
-            'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-          'Accept': 'application/json',
-        },
-        redirect: 'follow',
-      }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      const bio = data?.data?.user?.biography || '';
-      if (bio) return { bio, source: 'api', fullHtml: '' };
-    }
-  } catch {}
-
-  // Method 2: Page fetch + parse meta tags
-  try {
-    const res = await fetchWithTimeout(`https://www.instagram.com/${username}/`, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-      },
-      redirect: 'follow',
-    });
-    if (res.ok) {
-      const html = await res.text();
-      // Try og:description meta tag (contains bio)
-      const ogMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]*)"/i);
-      if (ogMatch) {
-        const bio = decodeEntities(ogMatch[1]);
-        if (bio) return { bio, source: 'meta', fullHtml: html };
-      }
-      // Try description meta tag
-      const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i);
-      if (descMatch) {
-        const bio = decodeEntities(descMatch[1]);
-        if (bio) return { bio, source: 'meta', fullHtml: html };
-      }
-      // Return full HTML so caller can search for code directly
-      return { bio: '', source: 'html', fullHtml: html };
-    }
-  } catch {}
-
-  return null;
 }
 
 // ── Facebook bio fetch ──
@@ -118,7 +59,6 @@ async function getFacebookContent(username) {
     });
     if (res.ok) {
       const html = await res.text();
-      // Try og:description
       const ogMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]*)"/i);
       if (ogMatch) {
         const bio = decodeEntities(ogMatch[1]);
@@ -127,11 +67,10 @@ async function getFacebookContent(username) {
       return { bio: '', source: 'html', fullHtml: html };
     }
   } catch {}
-
   return null;
 }
 
-// ── LLM verification with web search (backup, with 30s timeout) ──
+// ── LLM verification with web search (backup for Facebook, 55s timeout) ──
 async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) {
   try {
     const llmPromise = base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -147,7 +86,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
       },
     });
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout')), 30000)
+      setTimeout(() => reject(new Error('LLM timeout')), 55000)
     );
     const result = await Promise.race([llmPromise, timeoutPromise]);
     return result?.found === true;
@@ -173,7 +112,7 @@ Deno.serve(async (req) => {
     const verifiedField = `${platform}_verified`;
     const codeField = `${platform}_verify_code`;
 
-    // ── Connect with code (Instagram, Facebook) ──
+    // ── Connect with code (Facebook only — Instagram/TikTok use OAuth) ──
     if (action === 'connect_code') {
       let clean = (username || '').replace(/^@/, '').trim().toLowerCase();
       if (!clean || clean.length < 2 || clean.length > 50) {
@@ -188,7 +127,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, code, username: clean, platform });
     }
 
-    // ── Verify code in bio (Instagram, Facebook) ──
+    // ── Verify code in bio (Facebook only) ──
     if (action === 'verify_code') {
       const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
       const currentUser = users[0];
@@ -204,20 +143,9 @@ Deno.serve(async (req) => {
       let method = '';
 
       // Method 1: Direct fetch
-      if (platform === 'instagram') {
-        const content = await getInstagramContent(socialUsername);
-        console.log(`verifyInstagram: instagram content for ${socialUsername}:`, content ? `${content.source} bio=${content.bio?.length || 0}chars` : 'null');
-        if (content) {
-          if (content.bio && content.bio.includes(code)) {
-            isVerified = true;
-            method = `instagram-${content.source}`;
-          } else if (content.fullHtml && content.fullHtml.includes(code)) {
-            isVerified = true;
-            method = 'instagram-html';
-          }
-        }
-      } else if (platform === 'facebook') {
+      if (platform === 'facebook') {
         const content = await getFacebookContent(socialUsername);
+        console.log(`verifyInstagram: facebook content for ${socialUsername}:`, content ? `${content.source} bio=${content.bio?.length || 0}chars` : 'null');
         if (content) {
           if (content.bio && content.bio.includes(code)) {
             isVerified = true;
@@ -250,7 +178,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── OAuth profile fetch (TikTok) ──
+    // ── OAuth profile fetch (Instagram, TikTok) ──
     if (action === 'fetch_profile') {
       let socialUsername = '';
 
@@ -262,6 +190,15 @@ Deno.serve(async (req) => {
         );
         const data = await res.json();
         if (data?.data?.user?.username) socialUsername = data.data.user.username;
+      } else if (platform === 'instagram') {
+        // Instagram Graph API — access_token as query param (per usage guide)
+        const { accessToken } = await base44.asServiceRole.connectors.getCurrentAppUserConnection(INSTAGRAM_CONNECTOR_ID);
+        const res = await fetch(
+          `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`
+        );
+        const data = await res.json();
+        console.log(`verifyInstagram: instagram OAuth response:`, JSON.stringify(data));
+        if (data?.username) socialUsername = data.username;
       } else {
         return Response.json({ error: 'OAuth not available for this platform' }, { status: 400 });
       }
@@ -270,7 +207,9 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.User.update(user.id, {
           [usernameField]: socialUsername,
           [verifiedField]: true,
+          [codeField]: '',
         });
+        console.log(`✅ ${p.label} OAuth verified for ${user.id}: @${socialUsername}`);
         return Response.json({ success: true, username: socialUsername, verified: true });
       }
       return Response.json({ error: 'Could not fetch profile' }, { status: 400 });

@@ -187,8 +187,9 @@ export default function Profile() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
-            {isUserVerified(me) && <VerifiedBadge size="md" />}
-            {isUserVerified(me) && (me?.instagram_verified || me?.facebook_verified || me?.tiktok_verified) && <GoldBadge size="md" />}
+            {isUserVerified(me) && (me?.instagram_verified || me?.facebook_verified || me?.tiktok_verified)
+              ? <GoldBadge size="md" />
+              : isUserVerified(me) && <VerifiedBadge size="md" />}
           </div>
         </div>
 

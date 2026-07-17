@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -225,7 +226,9 @@ export default function WorkerProfile() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{currentUser?.full_name}</span>
-          {currentUser?.is_verified && <VerifiedBadge size="md" />}
+          {currentUser?.is_verified && (currentUser?.instagram_verified || currentUser?.facebook_verified || currentUser?.tiktok_verified)
+            ? <GoldBadge size="md" />
+            : currentUser?.is_verified && <VerifiedBadge size="md" />}
         </div>
         {/* Mini stats */}
         {isViewingOther && (

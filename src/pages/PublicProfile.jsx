@@ -132,8 +132,9 @@ export default function PublicProfile() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{user.full_name}</span>
-          {isUserVerified(user) && <VerifiedBadge size="md" />}
-          {isUserVerified(user) && (user.instagram_verified || user.facebook_verified || user.tiktok_verified) && <GoldBadge size="md" />}
+          {isUserVerified(user) && (user.instagram_verified || user.facebook_verified || user.tiktok_verified)
+            ? <GoldBadge size="md" />
+            : isUserVerified(user) && <VerifiedBadge size="md" />}
         </div>
         {/* Stats */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>

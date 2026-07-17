@@ -22,3 +22,12 @@ export function isUserVerified(user) {
   if (user.kyc_status === 'rejected' || user.kyc_status === 'pending') return false;
   return !!user.is_verified;
 }
+
+/**
+ * hasSocialVerified — true when the user has at least one verified social network.
+ * Used to decide whether to show the GoldBadge instead of the green VerifiedBadge.
+ */
+export function hasSocialVerified(user) {
+  if (!user) return false;
+  return !!(user.instagram_verified || user.facebook_verified || user.tiktok_verified);
+}

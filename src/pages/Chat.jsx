@@ -13,6 +13,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -356,7 +357,9 @@ export default function Chat() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</span>
-            {otherUserData?.is_verified && <VerifiedBadge size="sm" />}
+            {otherUserData?.is_verified && (otherUserData?.instagram_verified || otherUserData?.facebook_verified || otherUserData?.tiktok_verified)
+              ? <GoldBadge size="sm" />
+              : otherUserData?.is_verified && <VerifiedBadge size="sm" />}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 2 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: otherIsOnline ? '#22c55e' : '#d1d5db', display: 'inline-block', flexShrink: 0 }} />
