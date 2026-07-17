@@ -32,6 +32,7 @@ const CATEGORY_EMOJI = {
 };
 import VerifyModal from '@/components/VerifyModal';
 import VerificationRequiredModal from '@/components/VerificationRequiredModal';
+import VerificationPendingModal from '@/components/VerificationPendingModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
@@ -130,6 +131,7 @@ export default function TaskDetail(props) {
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [showVerificationRequired, setShowVerificationRequired] = useState(false);
+  const [showVerificationPending, setShowVerificationPending] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [taskTaken, setTaskTaken] = useState(false);
@@ -971,7 +973,7 @@ export default function TaskDetail(props) {
             {/* Apply button */}
             {canApplyManual && !showApplyForm &&
             <button
-              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { setShowVerificationRequired(true); return; } gate(() => setShowApplyForm(true));}}
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } gate(() => setShowApplyForm(true));}}
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />
@@ -1365,6 +1367,11 @@ export default function TaskDetail(props) {
           onClose={() => setShowVerificationRequired(false)}
           onVerify={() => { setShowVerificationRequired(false); setShowVerify(true); }}
         />,
+        document.body
+      )}
+
+      {showVerificationPending && createPortal(
+        <VerificationPendingModal onClose={() => setShowVerificationPending(false)} />,
         document.body
       )}
 

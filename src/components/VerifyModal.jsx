@@ -162,7 +162,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   <div>
                     <div style={{ fontSize: 19, fontWeight: 800, color: '#0f1e40', letterSpacing: -0.3 }}>אימות זהות</div>
                     <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 400, marginTop: 1 }}>
-                      אימות חד־פעמי לפתיחת ג'ובות ולקיחת משימות
+                      אימות חד־פעמי להגשת בקשות וקיחת משימות
                     </div>
                   </div>
                 </div>
@@ -377,18 +377,18 @@ export default function VerifyModal({ onClose, onSuccess }) {
               הפרטים נשלחו לאימות
             </div>
             <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
-              הגשת את פרטי האימות בהצלחה.<br />הווי הירוק יופיע ליד שמך לאחר אישור המנהל.
+              הגשת את פרטי האימות בהצלחה.<br />הווי הירוק יופיע ליד שמך לאחר אישור צוות הבקרה.
             </div>
 
             {/* Capabilities */}
             <div style={{ width: '100%', background: '#f8faff', border: '1px solid #e5e9f5', borderRadius: 16, padding: '16px', marginBottom: 24 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>עכשיו אפשר</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>לאחר אישור צוות הבקרה, תוכל</div>
               {[
-                { icon: <Shield size={15} strokeWidth={1.8} />, text: 'לפרסם ג\'ובות' },
-                { icon: <UserCheck size={15} strokeWidth={1.8} />, text: 'לקחת ולבצע משימות' },
-                { icon: <CheckCircle size={15} strokeWidth={1.8} />, text: 'להגיש בקשות לג\'ובות' },
+                { icon: <Shield size={15} strokeWidth={1.8} />, text: 'לקבל ווי ירוק בפרופיל שלך' },
+                { icon: <UserCheck size={15} strokeWidth={1.8} />, text: 'להגיש בקשות למשימות עם ווי ירוק' },
+                { icon: <CheckCircle size={15} strokeWidth={1.8} />, text: 'לבנות אמון עם מפרסמים ועובדים' },
               ].map(({ icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'להגיש בקשות לג\'ובות' ? '1px solid #edf0f7' : 'none' }}>
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'לבנות אמון עם מפרסמים ועובדים' ? '1px solid #edf0f7' : 'none' }}>
                   <div style={{ color: '#10b981' }}>{icon}</div>
                   <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{text}</span>
                 </div>

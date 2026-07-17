@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import GoldBadge from '@/components/GoldBadge';
+import { isUserVerified } from '@/lib/utils';
 
 // Brand colors for each platform — vibrant and recognizable
 const PLATFORMS = [
@@ -48,7 +49,7 @@ export default function SocialLinksSection({ user }) {
   // Only show VERIFIED platforms as links — unverified ones are hidden
   const verifiedPlatforms = PLATFORMS.filter(p => user?.[`${p.key}_username`] && user?.[`${p.key}_verified`]);
   const isConnected = verifiedPlatforms.length > 0;
-  const isKycVerified = user?.is_verified;
+  const isKycVerified = isUserVerified(user);
 
   const handleConnect = async (platform, username) => {
     setLoading(true);
@@ -181,7 +182,7 @@ export default function SocialLinksSection({ user }) {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', lineHeight: 1.3 }}>קבל ווי זהב 🥇 ובלוט מעל כולם</div>
-              <div style={{ fontSize: 11, color: '#b45309', marginTop: 2, lineHeight: 1.4 }}>חבר רשת חברתית → קבל ווי זהב, הגדל אמון, חשיפה וקבל יותר משימות</div>
+              <div style={{ fontSize: 11, color: '#b45309', marginTop: 2, lineHeight: 1.4 }}>חבר רשת חברתית ← קבל ווי זהב, הגדל אמון, חשיפה וקבל יותר משימות</div>
             </div>
           </div>
         )}
