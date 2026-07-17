@@ -124,7 +124,7 @@ export default function TaskDetail(props) {
   const onSheetClose = props?.onSheetClose;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, user: authUser } = useAuth();
   const { t } = useLanguage();
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
@@ -173,7 +173,9 @@ export default function TaskDetail(props) {
   const prevTaskStatusRef = useRef(null);
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), enabled: isAuthenticated });
-  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
+  // Use the real-time auth user for verification gating (instantly synced via WebSocket + polling)
+  const verifyUser = authUser || me;
+  const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(verifyUser);
 
   // Check if current user already reviewed this task
   const { data: myReview } = useQuery({
@@ -968,7 +970,7 @@ export default function TaskDetail(props) {
             {/* Apply button */}
             {canApplyManual && !showApplyForm &&
             <button
-              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !me?.is_verified) { setShowVerificationRequired(true); return; } gate(() => setShowApplyForm(true));}}
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !verifyUser?.is_verified) { setShowVerificationRequired(true); return; } gate(() => setShowApplyForm(true));}}
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />

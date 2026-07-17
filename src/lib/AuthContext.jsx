@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      // Fallback polling: refresh user data every 45 seconds to catch changes
+      // Fallback polling: refresh user data every 15 seconds to catch changes
       // (e.g. admin KYC approval/rejection) that realtime might miss for cross-user updates
       const pollInterval = setInterval(async () => {
         try {
@@ -146,12 +146,33 @@ export const AuthProvider = ({ children }) => {
             return prev;
           });
         } catch {}
-      }, 45000);
+      }, 15000);
+
+      // Also refresh immediately when the tab becomes visible again (user returns to app)
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          base44.auth.me().then(freshUser => {
+            setUser(prev => {
+              if (!prev) return freshUser;
+              if (prev.is_verified !== freshUser.is_verified ||
+                  prev.kyc_status !== freshUser.kyc_status ||
+                  prev.worker_credits !== freshUser.worker_credits ||
+                  prev.is_blocked !== freshUser.is_blocked) {
+                queryClientInstance.invalidateQueries({ queryKey: ['me'] });
+                return freshUser;
+              }
+              return prev;
+            });
+          }).catch(() => {});
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
 
       // Compose cleanup for both the CreditTransaction subscription and the poll interval
       unsubCreditRef.current = () => {
         unsubCredit();
         clearInterval(pollInterval);
+        document.removeEventListener('visibilitychange', handleVisibility);
       };
     } catch (error) {
       console.error('[Joba24] Auth: checkUserAuth failed:', error.message, error.status);
