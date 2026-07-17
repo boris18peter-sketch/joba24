@@ -13,10 +13,19 @@ export default function ProfileCompletionBanner({ me }) {
   const isComplete = me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0;
   if (isComplete) return null;
 
+  const handleClick = (e) => {
+    e.preventDefault();
+    navigate('/join');
+  };
+
   return (
+    // Outer div — role="button" + touch-action ensures mobile tap works reliably
     <div
       dir="rtl"
-      onClick={() => navigate('/join')}
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleClick(e); }}
       style={{
         background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
         borderRadius: 16,
@@ -27,6 +36,8 @@ export default function ProfileCompletionBanner({ me }) {
         position: 'relative',
         zIndex: 10,
         boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       {/* Decorative circles */}
@@ -48,8 +59,10 @@ export default function ProfileCompletionBanner({ me }) {
         </div>
       </div>
 
-      {/* CTA button */}
-      <div
+      {/* CTA button — actual <button> for reliable mobile tap */}
+      <button
+        type="button"
+        onClick={handleClick}
         style={{
           width: '100%',
           height: 44,
@@ -64,10 +77,15 @@ export default function ProfileCompletionBanner({ me }) {
           justifyContent: 'center',
           gap: 6,
           boxShadow: '0 3px 12px rgba(251,191,36,0.45)',
+          cursor: 'pointer',
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
+          position: 'relative',
+          zIndex: 11,
         }}
       >
         🎁 השלם פרופיל עובד וקבל בונוס 25 ג'ובות
-      </div>
+      </button>
     </div>
   );
 }
