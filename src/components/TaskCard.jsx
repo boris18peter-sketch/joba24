@@ -23,6 +23,7 @@ import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import BoostPill from '@/components/BoostPill';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
+import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 
 
@@ -750,7 +751,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                       if (applyLocked) return;
                       // Verification gate: if task requires verified workers and user isn't verified,
                       // show the VerificationRequiredModal first (with a button to open the full KYC flow)
-                      if (task.verification_required && !me?.is_verified) {
+                      if (task.verification_required && !isUserVerified(me)) {
                         setShowVerificationRequired(true);
                         return;
                       }

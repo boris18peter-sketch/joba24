@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Shield, ChevronLeft, Clock, XCircle } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
+import { isUserVerified } from '@/lib/utils';
 
 /**
  * VerificationStatusBanner — shows KYC status for unverified users.
@@ -16,7 +17,7 @@ import VerifyModal from '@/components/VerifyModal';
 export default function VerificationStatusBanner({ me }) {
   const [showVerify, setShowVerify] = useState(false);
 
-  if (!me || me.is_verified) return null;
+  if (!me || isUserVerified(me)) return null;
 
   const status = me.kyc_status; // 'pending' | 'rejected' | null/undefined
 

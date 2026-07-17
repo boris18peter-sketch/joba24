@@ -22,6 +22,7 @@ import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
+import { isUserVerified } from '@/lib/utils';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
@@ -970,7 +971,7 @@ export default function TaskDetail(props) {
             {/* Apply button */}
             {canApplyManual && !showApplyForm &&
             <button
-              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !verifyUser?.is_verified) { setShowVerificationRequired(true); return; } gate(() => setShowApplyForm(true));}}
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { setShowVerificationRequired(true); return; } gate(() => setShowApplyForm(true));}}
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />

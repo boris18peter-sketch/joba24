@@ -19,6 +19,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { isUserVerified } from '@/lib/utils';
 
 function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, danger, last }) {
   const inner = (
@@ -186,8 +187,8 @@ export default function Profile() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
-            {me?.is_verified && <VerifiedBadge size="md" />}
-            {me?.is_verified && (me?.instagram_verified || me?.facebook_verified || me?.tiktok_verified) && <GoldBadge size="md" />}
+            {isUserVerified(me) && <VerifiedBadge size="md" />}
+            {isUserVerified(me) && (me?.instagram_verified || me?.facebook_verified || me?.tiktok_verified) && <GoldBadge size="md" />}
           </div>
         </div>
 
@@ -214,7 +215,7 @@ export default function Profile() {
       <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
         {/* Verify CTA — shows whenever not verified, with status */}
-        {!me?.is_verified && (
+        {!isUserVerified(me) && (
           <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
             <div style={{
               background: 'var(--surface-2)', borderRadius: 14,

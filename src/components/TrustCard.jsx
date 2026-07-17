@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
+import { isUserVerified } from '@/lib/utils';
 import { CheckCircle, Star, X } from 'lucide-react';
 
 function SignalRow({ icon, label, value, sub, score, color }) {
@@ -30,9 +31,10 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
   const taskValue = `${completedCount}`;
   const taskSub = completedCount >= 5 ? 'ניסיון מוכח בשטח' : completedCount > 0 ? 'מתחיל לצבור ניסיון' : 'אין משימות עדיין';
 
-  const idScore = user.is_verified ? 100 : user.is_phone_verified ? 50 : 0;
-  const idValue = user.is_verified ? '✓ אומת' : user.is_phone_verified ? 'טלפון' : 'לא';
-  const idSub = user.is_verified ? 'מסמכי זהות אומתו' : null;
+  const _verified = isUserVerified(user);
+  const idScore = _verified ? 100 : user.is_phone_verified ? 50 : 0;
+  const idValue = _verified ? '✓ אומת' : user.is_phone_verified ? 'טלפון' : 'לא';
+  const idSub = _verified ? 'מסמכי זהות אומתו' : null;
 
   const rating = user.rating || 0;
   const ratingCount = user.rating_count || reviews.length;

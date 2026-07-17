@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { isUserVerified } from '@/lib/utils';
 
 /**
  * useVerifyGuard — centralized KYC gate hook.
@@ -19,7 +20,7 @@ export function useVerifyGuard(me) {
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
-    if (me?.is_verified) {
+    if (isUserVerified(me)) {
       action();
     } else {
       setPendingAction(() => action);
