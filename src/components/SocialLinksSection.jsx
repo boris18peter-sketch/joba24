@@ -452,12 +452,21 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                   <button onClick={handleVerify} disabled={loading}
                     style={{ marginTop: 16, width: '100%', height: 50, borderRadius: 12, background: loading ? '#93c5fd' : 'linear-gradient(135deg, #16a34a, #059669)', color: 'white', border: 'none', fontWeight: 800, fontSize: 15, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(16,185,129,0.3)' }}>
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                    {loading ? 'בודק...' : 'אימתתי — בדוק עכשיו'}
+                    {loading ? 'סורק את הפרופיל...' : 'אימתתי — בדוק עכשיו'}
                   </button>
 
-                  <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
-                    ודא שהפרופיל שלך ציבורי כדי שנוכל לראות את הקוד
-                  </div>
+                  {loading && (
+                    <div style={{ marginTop: 10, padding: '10px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', textAlign: 'center' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>סורקים את הפרופיל שלך ב{p.label}</div>
+                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>הסריקה לוקחת כדקה — אנא המתן. אל תסגור את החלון.</div>
+                    </div>
+                  )}
+
+                  {!loading && (
+                    <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
+                      ודא שהפרופיל שלך ציבורי כדי שנוכל לראות את הקוד
+                    </div>
+                  )}
                 </>
               )}
             </div>
