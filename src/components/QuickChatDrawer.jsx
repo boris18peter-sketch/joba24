@@ -72,8 +72,8 @@ export default function QuickChatDrawer({ task, me, onClose }) {
          {/* Drag handle */}
          <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, margin: '8px auto 0' }} />
 
-         {/* Header with back button */}
-         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+         {/* Header with back button — sticky at top */}
+         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #f0f4fb', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10, background: 'white' }}>
            <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 11, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}>
              <ArrowRight size={18} color="#1a6fd4" />
            </button>

@@ -12,8 +12,8 @@ import { moderateText } from '@/hooks/useModeration';
 import { format, isToday, isYesterday } from 'date-fns';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
-import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
+import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -224,9 +224,11 @@ export default function Chat() {
     return unsub;
   }, [taskId, me?.id]);
 
-  // Auto scroll
+  // Auto scroll — scroll the container directly (avoids scrollIntoView scrolling parent containers)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages, otherTyping]);
 
   // Auto-focus input on mount
@@ -329,16 +331,16 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
-      {/* Header */}
+      {/* Header — fixed flex item, doesn't scroll */}
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
         padding: '48px 12px 12px',
         display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
-        position: 'sticky', top: 0, zIndex: 40,
+        flexShrink: 0, zIndex: 40,
       }}>
         {/* Right: Avatar + back button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -357,9 +359,7 @@ export default function Chat() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
             <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{otherPersonName}</span>
-            {otherUserData?.is_verified && (otherUserData?.instagram_verified || otherUserData?.facebook_verified || otherUserData?.tiktok_verified)
-              ? <GoldBadge size="sm" />
-              : otherUserData?.is_verified && <VerifiedBadge size="sm" />}
+            {isUserVerified(otherUserData) && hasSocialVerified(otherUserData) && <GoldBadge size="sm" />}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 2 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: otherIsOnline ? '#22c55e' : '#d1d5db', display: 'inline-block', flexShrink: 0 }} />
@@ -378,7 +378,7 @@ export default function Chat() {
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
       {/* Messages */}
-      <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: 60 }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
@@ -478,7 +478,6 @@ export default function Chat() {
             </div>
           </div>
         )}
-        <div ref={bottomRef} style={{ height: 1 }} />
       </div>
 
       {/* Input bar */}
@@ -488,6 +487,7 @@ export default function Chat() {
         padding: '10px 12px',
         paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
         display: 'flex', alignItems: 'flex-end', gap: 8,
+        flexShrink: 0,
       }}>
         {/* File upload */}
         <button

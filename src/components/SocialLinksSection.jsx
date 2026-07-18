@@ -382,7 +382,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
               {/* Verified state */}
               {verified ? (
                 <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-                  <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(16,185,129,0.3)' }}>
+                  <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(217,119,6,0.35)' }}>
                     <CheckCircle size={36} color="white" />
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>הרשת אומתה! 🎉</div>
@@ -390,7 +390,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                     החשבון שלך ב{p.label} אומת בהצלחה.<br />
                     ווי הזהב יופיע ליד שמך בכל המקומות.
                   </div>
-                  <button onClick={handleClose} style={{ marginTop: 20, width: '100%', height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                  <button onClick={handleClose} style={{ marginTop: 20, width: '100%', height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #fbbf24, #d97706)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
                     סיים
                   </button>
                 </div>
