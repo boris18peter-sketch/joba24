@@ -2,7 +2,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
 import { lazy, Suspense } from 'react';
-import { motion } from 'framer-motion';
 
 const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
 const MapView = lazy(() => import('@/pages/MapView'));
@@ -585,7 +584,7 @@ export default function Layout() {
         );
       })()}
 
-      {/* Bottom Nav — WhatsApp-style with sliding pill indicator */}
+      {/* Bottom Nav */}
       {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(window.location.pathname) && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
         <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr', alignItems: 'center', padding: '4px 4px 2px', position: 'relative' }}>
@@ -604,11 +603,7 @@ export default function Layout() {
               }
               return (
                 <Link key={to} to={to} onClick={(e) => { if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
-                  {/* Sliding pill indicator — WhatsApp style */}
-                  {active && (
-                    <motion.div layoutId="navPill" style={{ position: 'absolute', top: 4, left: '50%', x: '-50%', width: 48, height: 30, borderRadius: 16, background: 'rgba(26,111,212,0.12)' }} transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }} />
-                  )}
-                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Icon size={21} color={active ? '#1a6fd4' : '#9bb3d4'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
                     {badge > 0 && (
                       <div style={{ position: 'absolute', top: -5, right: -10, background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 900, minWidth: 17, height: 17, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white', padding: '0 4px' }}>{badge}</div>

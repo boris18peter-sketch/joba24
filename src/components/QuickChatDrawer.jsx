@@ -12,9 +12,8 @@ export default function QuickChatDrawer({ task, me, onClose }) {
    const [msg, setMsg] = useState('');
    const [sending, setSending] = useState(false);
    const [blocked, setBlocked] = useState(false);
-   const [keyboardHeight, setKeyboardHeight] = useState(0);
-   const bottomRef = useRef(null);
-   const inputRef = useRef(null);
+  const scrollRef = useRef(null);
+  const inputRef = useRef(null);
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['quickChat', task.id],
@@ -32,21 +31,12 @@ export default function QuickChatDrawer({ task, me, onClose }) {
     return unsub;
   }, [task.id, queryClient]);
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom — scroll the container directly (avoids scrollIntoView side effects)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
-
-  // Keyboard avoid logic for mobile
-  useEffect(() => {
-    const handleResize = () => {
-      if (inputRef.current) {
-        inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const send = async () => {
     if (!msg.trim() || sending) return;
@@ -75,7 +65,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
        onClick={e => e.target === e.currentTarget && onClose()}
      >
        <div
-          style={{ width: '100%', height: '78dvh', maxHeight: '92dvh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -12px 48px rgba(0,0,0,0.25)', borderRadius: '24px 24px 0 0', position: 'relative', maxWidth: 480, overflow: 'hidden', paddingTop: 'max(0px, env(safe-area-inset-top))' }}
+         style={{ width: '100%', height: '78dvh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -12px 48px rgba(0,0,0,0.25)', borderRadius: '24px 24px 0 0', position: 'relative', maxWidth: 480, overflow: 'hidden' }}
          dir="rtl"
          onClick={e => e.stopPropagation()}
        >
@@ -101,7 +91,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
          </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
           {isLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 80 }}>
               <Loader2 size={20} color="#1a6fd4" className="animate-spin" />
@@ -137,8 +127,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
               );
             })
           )}
-          <div ref={bottomRef} />
-        </div>
+          </div>
 
         {/* Input */}
          <div style={{ padding: '10px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0, background: 'white', zIndex: 10 }} ref={inputRef}>
@@ -154,7 +143,9 @@ export default function QuickChatDrawer({ task, me, onClose }) {
            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
             onFocus={() => {
               setTimeout(() => {
-                inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (scrollRef.current) {
+                  scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                }
               }, 300);
             }}
             placeholder="כתוב הודעה..."
