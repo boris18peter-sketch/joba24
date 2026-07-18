@@ -75,10 +75,10 @@ export default function QuickChatDrawer({ task, me, onClose }) {
        onClick={e => e.target === e.currentTarget && onClose()}
      >
        <div
-          style={{ width: '100%', height: '75vh', maxHeight: '90vh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -12px 48px rgba(0,0,0,0.25)', borderRadius: '24px 24px 0 0', position: 'relative', maxWidth: 480 }}
-          dir="rtl"
-          onClick={e => e.stopPropagation()}
-        >
+          style={{ width: '100%', height: '78dvh', maxHeight: '92dvh', background: 'white', display: 'flex', flexDirection: 'column', boxShadow: '0 -12px 48px rgba(0,0,0,0.25)', borderRadius: '24px 24px 0 0', position: 'relative', maxWidth: 480, overflow: 'hidden', paddingTop: 'max(0px, env(safe-area-inset-top))' }}
+         dir="rtl"
+         onClick={e => e.stopPropagation()}
+       >
          {/* Drag handle */}
          <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, margin: '8px auto 0' }} />
 
@@ -101,7 +101,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
          </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0 }}>
           {isLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 80 }}>
               <Loader2 size={20} color="#1a6fd4" className="animate-spin" />
@@ -141,7 +141,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
         </div>
 
         {/* Input */}
-         <div style={{ padding: '10px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0, position: 'sticky', bottom: 0, background: 'white', zIndex: 10 }} ref={inputRef}>
+         <div style={{ padding: '10px 16px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', borderTop: '1px solid #f0f4fb', display: 'flex', gap: 8, flexShrink: 0, background: 'white', zIndex: 10 }} ref={inputRef}>
           {blocked && (
             <div style={{ width: '100%', marginBottom: 6, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 10px', fontSize: 12, color: '#dc2626', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
               🛡️ הודעה נחסמה — שמור על שיח מכבד

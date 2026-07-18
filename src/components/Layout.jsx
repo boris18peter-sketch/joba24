@@ -94,6 +94,33 @@ export default function Layout() {
   const [navHiddenByModal, setNavHiddenByModal] = useState(false);
   const [boostOverlayData, setBoostOverlayData] = useState(null);
 
+  // Swipe between tabs — WhatsApp style horizontal swipe
+  const SWIPE_TABS = ['/', '/map', '/chats', '/profile'];
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
+
+  const onTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+  }, []);
+
+  const onTouchEnd = useCallback((e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    const dt = Date.now() - touchStartTime.current;
+    // Only horizontal swipes, >60px, <500ms, and more horizontal than vertical
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) || dt > 500) return;
+    const currentIdx = SWIPE_TABS.indexOf(location.pathname);
+    if (currentIdx === -1) return;
+    // RTL: swipe right (dx>0) = go to previous tab, swipe left (dx<0) = go to next tab
+    const nextIdx = dx > 0 ? currentIdx - 1 : currentIdx + 1;
+    if (nextIdx >= 0 && nextIdx < SWIPE_TABS.length) {
+      navigate(SWIPE_TABS[nextIdx]);
+    }
+  }, [location.pathname, navigate]);
+
   // Lazy-mount tabs
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter((p) => ROOT_TAB_PATHS.includes(p))));
   useEffect(() => {
@@ -505,46 +532,52 @@ export default function Layout() {
         document.body
       )}
 
-      {/* Tab content — lazy-mount, keep-alive */}
+      {/* Tab content — lazy-mount, keep-alive, swipeable */}
       {(() => {
         const isNonRootTab = !ROOT_TAB_PATHS.includes(location.pathname);
         return (
           <>
-            {ROOT_TAB_PATHS.map((tabPath) => {
-              if (!visitedTabs.has(tabPath)) return null;
-              const isActive = location.pathname === tabPath;
-              const needsAuth = !isAuthenticated && (tabPath === '/chats' || tabPath === '/profile');
-              const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
-              return (
-                <div key={tabPath} id={tabPath === '/' ? 'main-scroll' : undefined}
-                  style={{
-                    flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
-                    overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',
-                    paddingBottom: tabPath === '/map' ? 0 : 'calc(80px + max(16px, env(safe-area-inset-bottom)))',
-                    WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
-                    height: isActive ? '100%' : 0,
-                  }}>
-                  {needsAuth ? (
-                    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', gap: 16, textAlign: 'center' }}>
-                      <div style={{ fontSize: 48, marginBottom: 4 }}>{tabPath === '/chats' ? '💬' : '👤'}</div>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{t('login_required')}</div>
-                      <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                        {tabPath === '/chats' ? t('login_required_chats') : t('login_required_profile')}
+            <div
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+              style={{ flex: isNonRootTab ? 0 : 1, display: isNonRootTab ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
+            >
+              {ROOT_TAB_PATHS.map((tabPath) => {
+                if (!visitedTabs.has(tabPath)) return null;
+                const isActive = location.pathname === tabPath;
+                const needsAuth = !isAuthenticated && (tabPath === '/chats' || tabPath === '/profile');
+                const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
+                return (
+                  <div key={tabPath} id={tabPath === '/' ? 'main-scroll' : undefined}
+                    style={{
+                      flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
+                      overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',
+                      paddingBottom: tabPath === '/map' ? 0 : 'calc(72px + max(16px, env(safe-area-inset-bottom)))',
+                      WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
+                      height: isActive ? '100%' : 0,
+                      }}>
+                      {needsAuth ? (
+                      <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px 24px', gap: 16, textAlign: 'center' }}>
+                        <div style={{ fontSize: 48, marginBottom: 4 }}>{tabPath === '/chats' ? '💬' : '👤'}</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{t('login_required')}</div>
+                        <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                          {tabPath === '/chats' ? t('login_required_chats') : t('login_required_profile')}
+                        </div>
+                        <button onClick={login} style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
+                          {t('login_now')}
+                        </button>
                       </div>
-                      <button onClick={login} style={{ height: 50, paddingInline: 32, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 15, border: 'none', cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)' }}>
-                        {t('login_now')}
-                      </button>
-                    </div>
-                  ) : (
-                    <Suspense fallback={<TabSkeleton />}>
-                      {tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
-                    </Suspense>
-                  )}
-                </div>
-              );
-            })}
+                    ) : (
+                      <Suspense fallback={<TabSkeleton />}>
+                        {tabPath === '/' ? <TabComponent key="home" /> : <TabComponent />}
+                      </Suspense>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             {isNonRootTab && (
-              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(80px + max(16px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(72px + max(16px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
                 <Outlet />
               </div>
             )}
@@ -552,36 +585,36 @@ export default function Layout() {
         );
       })()}
 
-      {/* Bottom Nav — WhatsApp-style with sliding indicator */}
+      {/* Bottom Nav — WhatsApp-style with sliding pill indicator */}
       {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(window.location.pathname) && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
-        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '6px 8px 4px', position: 'relative' }}>
+        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr', alignItems: 'center', padding: '4px 4px 2px', position: 'relative' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
               const active = location.pathname === to;
               if (primary) {
                 return (
                   <button id="onboarding-create-btn" key={to} onClick={() => { if (!isAuthenticated) { navigate(to); return; } gate(() => navigate(to)); }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -26, background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', minWidth: 64, WebkitTapHighlightColor: 'transparent' }}>
-                    <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(26,111,212,0.45)' }}>
-                      <Icon size={26} color="white" />
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
+                      <Icon size={24} color="white" />
                     </div>
-                    <span style={{ fontSize: 10, color: '#1a6fd4', marginTop: 4, fontWeight: 700 }}>{label}</span>
+                    <span style={{ fontSize: 9.5, color: '#1a6fd4', marginTop: 3, fontWeight: 700 }}>{label}</span>
                   </button>
                 );
               }
               return (
-                <Link key={to} to={to} onClick={(e) => { if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 12px 4px', textDecoration: 'none', position: 'relative', minWidth: 52, minHeight: 56, justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
-                  {/* Sliding active indicator — WhatsApp style */}
+                <Link key={to} to={to} onClick={(e) => { if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
+                  {/* Sliding pill indicator — WhatsApp style */}
                   {active && (
-                    <motion.div layoutId="navActiveIndicator" style={{ position: 'absolute', top: 2, left: '50%', transform: 'translateX(-50%)', width: 32, height: 32, borderRadius: 10, background: 'rgba(26,111,212,0.1)' }} transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+                    <motion.div layoutId="navPill" style={{ position: 'absolute', top: 4, left: '50%', x: '-50%', width: 48, height: 30, borderRadius: 16, background: 'rgba(26,111,212,0.12)' }} transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }} />
                   )}
-                  <div style={{ position: 'relative', zIndex: 1 }}>
-                    <Icon size={22} color={active ? '#1a6fd4' : '#a0b8d8'} style={{ transition: 'color 0.15s' }} />
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={21} color={active ? '#1a6fd4' : '#9bb3d4'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
                     {badge > 0 && (
-                      <div style={{ position: 'absolute', top: -6, right: -8, background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 900, width: 17, height: 17, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{badge}</div>
+                      <div style={{ position: 'absolute', top: -5, right: -10, background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 900, minWidth: 17, height: 17, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white', padding: '0 4px' }}>{badge}</div>
                     )}
                   </div>
-                  <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500, transition: 'color 0.15s' }}>{label}</span>
+                  <span style={{ fontSize: 9.5, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500, transition: 'color 0.2s' }}>{label}</span>
                 </Link>
               );
             })}

@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import {
   Loader2, X, ShieldCheck, Link2, Unlink, Sparkles,
   Instagram, Facebook, Music2, Copy, AlertCircle, ExternalLink,
-  CheckCircle, ArrowRight,
+  CheckCircle, ArrowRight, Edit3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import GoldBadge from '@/components/GoldBadge';
@@ -368,10 +368,15 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                 <span style={{ width: 40, height: 40, borderRadius: 10, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <p.icon size={20} color="white" />
                 </span>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{p.label}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-3)' }}>@{existingUsername || usernameInput}</div>
                 </div>
+                {/* Edit username button */}
+                <button onClick={() => { setStep('username'); setVerified(false); }}
+                  style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 10, padding: '7px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', cursor: 'pointer' }}>
+                  <Edit3 size={13} /> ערוך
+                </button>
               </div>
 
               {/* Verified state */}
