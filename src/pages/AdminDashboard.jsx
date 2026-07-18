@@ -3,9 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
+import GoldBadge from '@/components/GoldBadge';
+import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const STATUS_COLORS = {
@@ -181,11 +183,13 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
             {user.full_name}
+            {isUserVerified(user) && hasSocialVerified(user) && <GoldBadge size="sm" />}
+            {isUserVerified(user) && !hasSocialVerified(user) && <span title="מאומת" style={{ display: 'inline-flex', width: 14, height: 14, borderRadius: '50%', background: 'linear-gradient(135deg,#16a34a,#059669)', flexShrink: 0 }}><svg width="8" height="8" viewBox="0 0 10 10" fill="none" style={{ margin: 'auto' }}><path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></span>}
             {isAgent && <span style={{ fontSize: 9, fontWeight: 800, background: '#7c3aed', color: 'white', padding: '1px 6px', borderRadius: 10 }}>סוכן</span>}
+            {user.is_blocked && <span style={{ fontSize: 9, fontWeight: 800, background: '#dc2626', color: 'white', padding: '1px 6px', borderRadius: 10 }}>חסום</span>}
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy') : ''}</div>
         </div>
-        {user.is_blocked && <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>חסום</span>}
         {user.rating > 0 && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#d97706', fontWeight: 700, flexShrink: 0 }}>
             <Star size={11} style={{ fill: '#fbbf24' }} /> {user.rating?.toFixed(1)}
@@ -211,16 +215,95 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
         {open ? <ChevronUp size={14} color="#94a3b8" /> : <ChevronDown size={14} color="#94a3b8" />}
       </div>
       {open && (
-        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {/* Full profile fields from /join */}
-          {user.phone && <div><strong>טלפון:</strong> <a href={`tel:${user.phone}`} style={{ color: '#1a6fd4', textDecoration: 'none' }}>{user.phone}</a></div>}
-          {user.profession && <div><strong>מקצוע:</strong> {user.profession}</div>}
-          {user.bio && <div><strong>אודות:</strong> {user.bio}</div>}
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Verification status */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            {isUserVerified(user) ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: hasSocialVerified(user) ? '#fffbeb' : '#dcfce7', color: hasSocialVerified(user) ? '#92400e' : '#166534', border: `1px solid ${hasSocialVerified(user) ? '#fde68a' : '#bbf7d0'}` }}>
+                {hasSocialVerified(user) ? <><Award size={12} /> מאומת זהב</> : <><ShieldCheck size={12} /> מאומת</>}
+              </span>
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#f1f5f9', color: '#64748b' }}>
+                לא מאומת
+              </span>
+            )}
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: user.is_approved ? '#dcfce7' : '#fef9c3', color: user.is_approved ? '#166534' : '#854d0e' }}>
+              {user.is_approved ? '✓ מאושר' : '⏳ ממתין'}
+            </span>
+            {user.kyc_status && (
+              <span style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8' }}>KYC: {user.kyc_status}</span>
+            )}
+          </div>
+
+          {/* Contact info */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
+            {user.phone && (
+              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
+                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>טלפון</div>
+                <a href={`tel:${user.phone}`} style={{ color: '#1a6fd4', textDecoration: 'none', fontWeight: 700 }}>{user.phone}</a>
+              </div>
+            )}
+            {user.email && (
+              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
+                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>אימייל</div>
+                <div style={{ fontWeight: 700, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+              </div>
+            )}
+            {user.id_number && (
+              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
+                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>ת.ז.</div>
+                <div style={{ fontWeight: 700, letterSpacing: 1 }}>{user.id_number}</div>
+              </div>
+            )}
+            {user.profession && (
+              <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
+                <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>מקצוע</div>
+                <div style={{ fontWeight: 700 }}>{user.profession}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Social links */}
+          {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
+            <div style={{ background: 'var(--surface-3)', borderRadius: 10, padding: '8px 10px', marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <ExternalLink size={11} /> רשתות חברתיות
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {user.instagram_username && (
+                  <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.instagram_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
+                    <Instagram size={12} color="#dc2743" />
+                    @{user.instagram_username}
+                    {user.instagram_verified && <Award size={10} color="#d97706" />}
+                  </a>
+                )}
+                {user.facebook_username && (
+                  <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.facebook_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
+                    <Facebook size={12} color="#1877F2" />
+                    @{user.facebook_username}
+                    {user.facebook_verified && <Award size={10} color="#d97706" />}
+                  </a>
+                )}
+                {user.tiktok_username && (
+                  <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 8, background: 'white', border: `1px solid ${user.tiktok_verified ? '#fde68a' : 'var(--border-1)'}`, textDecoration: 'none', fontSize: 11, fontWeight: 700, color: 'var(--text-1)' }}>
+                    <Music2 size={12} color="#000" />
+                    @{user.tiktok_username}
+                    {user.tiktok_verified && <Award size={10} color="#d97706" />}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {user.bio && <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}><strong>אודות:</strong> {user.bio}</div>}
           {user.preferred_cities?.length > 0 && <div><strong>ערים:</strong> {user.preferred_cities.join(', ')}</div>}
           {user.preferred_categories?.length > 0 && <div><strong>קטגוריות:</strong> {user.preferred_categories.join(', ')}</div>}
-          {user.role && <div><strong>תפקיד:</strong> {user.role}</div>}
-          {/* Approval status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+
+          {/* Credits + actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>ג'ובות: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong></span>
             <button
               onClick={(e) => { e.stopPropagation(); setShowCreditsModal(true); }}
@@ -229,11 +312,7 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
               <Coins size={11} /> שלח קרדיטים
             </button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-            <span style={{ fontWeight: 700 }}>סטטוס:</span>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: user.is_approved ? '#dcfce7' : '#fef9c3', color: user.is_approved ? '#166534' : '#854d0e' }}>
-              {user.is_approved ? '✓ מאושר' : '⏳ ממתין לאישור'}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
             {!user.is_approved && (
               <button
                 onClick={async (e) => { e.stopPropagation(); await onSetAgent(user, { is_approved: true }); }}
@@ -252,19 +331,18 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
             )}
           </div>
           {isAgent && user.agent_code && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f3ff', borderRadius: 8, padding: '6px 10px', marginTop: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f3ff', borderRadius: 8, padding: '6px 10px', marginTop: 2 }}>
               <div style={{ flex: 1, fontSize: 11, color: '#7c3aed', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {window.location.origin}/?ref={user.agent_code}
               </div>
-              <button onClick={handleCopyLink} style={{ background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#16a34a' : '#7c3aed', display: 'flex', padding: 2 }}>
+              <button onClick={handleCopyLink} style={{ background:!copied ? '#7c3aed' : '#16a34a', border: 'none', cursor: 'pointer', color: copied ? '#16a34a' : '#7c3aed', display: 'flex', padding: 2 }}>
                 {copied ? <Check size={13} /> : <Copy size={13} />}
               </button>
             </div>
           )}
-          {user.is_verified && <div style={{ color: '#16a34a', fontWeight: 700 }}>✓ משתמש מאומת</div>}
           {user.score_tasks > 0 && <div><strong>משימות הושלמו:</strong> {user.score_tasks}</div>}
           {user.rating_count > 0 && <div><strong>דירוגים שניתנו:</strong> {user.rating_count}</div>}
-          <div style={{ fontSize: 10, color: '#cbd5e1' }}>ID: {user.id}</div>
+          <div style={{ fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
         </div>
       )}
     </div>
@@ -534,11 +612,14 @@ export default function AdminDashboard() {
 
   const pendingApproval = allUsers.filter(u => !u.is_approved && u.role !== 'admin').length;
 
+  const verifiedCount = allUsers.filter(u => isUserVerified(u)).length;
+  const goldCount = allUsers.filter(u => isUserVerified(u) && hasSocialVerified(u)).length;
+
   const stats = [
     { label: 'משימות', value: allTasks.length, color: '#1a6fd4', bg: '#eff6ff' },
     { label: 'משתמשים', value: allUsers.length, color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'ממתינים לאישור', value: pendingApproval, color: '#d97706', bg: '#fffbeb' },
-    { label: 'דיווחים', value: pendingReports, color: '#dc2626', bg: '#fef2f2' },
+    { label: 'מאומתים', value: verifiedCount, color: '#16a34a', bg: '#f0fdf4' },
+    { label: 'ווי זהב', value: goldCount, color: '#d97706', bg: '#fffbeb' },
   ];
 
   return (
@@ -716,8 +797,34 @@ export default function AdminDashboard() {
                       {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14 }}>{user.full_name}</div>
+                      <div style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {user.full_name}
+                        {hasSocialVerified(user) && <GoldBadge size="sm" />}
+                      </div>
                       <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>
+                      {/* Social links quick view */}
+                      {(user.instagram_username || user.facebook_username || user.tiktok_username) && (
+                        <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                          {user.instagram_username && (
+                            <a href={`https://instagram.com/${user.instagram_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                              style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
+                              <Instagram size={10} color="#dc2743" /> @{user.instagram_username}
+                            </a>
+                          )}
+                          {user.facebook_username && (
+                            <a href={`https://facebook.com/${user.facebook_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                              style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
+                              <Facebook size={10} color="#1877F2" /> @{user.facebook_username}
+                            </a>
+                          )}
+                          {user.tiktok_username && (
+                            <a href={`https://tiktok.com/@${user.tiktok_username}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                              style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 6, padding: '2px 6px', textDecoration: 'none' }}>
+                              <Music2 size={10} color="#000" /> @{user.tiktok_username}
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: sc.bg, color: sc.color, flexShrink: 0 }}>
                       {sc.label}
