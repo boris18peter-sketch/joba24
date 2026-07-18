@@ -182,7 +182,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   <div>
                     <div style={{ fontSize: 19, fontWeight: 800, color: '#0f1e40', letterSpacing: -0.3 }}>אימות זהות</div>
                     <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 400, marginTop: 1 }}>
-                      אימות חד־פעמי להגשת בקשות וקיחת משימות
+                      אימות חד־פעמי לכל משתמשי Joba24
                     </div>
                   </div>
                 </div>
@@ -220,9 +220,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 {whyOpen && (
                   <div style={{ background: '#f8faff', padding: '10px 14px 14px', borderTop: '1px solid #f0f2f7' }}>
                     {[
-                      'מונע חשבונות פיקטיביים ושמירה על אמינות',
-                      'מגדיל את הביטחון בין לקוחות לעובדים',
-                      'כל המשתמשים ב־Joba24 עוברים אימות זהה',
+                      'מונע חשבונות פיקטיביים',
+                      'מגדיל ביטחון בין משתמשים',
+                      'כולם עוברים אימות זהה',
                     ].map((item, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
                         <CheckCircle size={14} color="#1a6fd4" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -353,7 +353,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', background: '#f8faff', borderRadius: 12 }}>
                 <Lock size={13} color="#9ca3af" strokeWidth={1.8} />
                 <span style={{ fontSize: 11, color: '#9ca3af', lineHeight: 1.5 }}>
-                  הפרטים מוצפנים ולא יוצגו לגורמים אחרים. תעודת הזהות משמשת לאימות בלבד.
+                  מוצפן ולא משותף עם אף אחד.
                 </span>
               </div>
 
@@ -376,7 +376,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 {loading ? (
                   <Loader2 size={20} className="animate-spin" />
                 ) : (
-                  <><CheckCircle size={18} strokeWidth={2} /> השלם אימות והמשך</>
+                  <><CheckCircle size={18} strokeWidth={2} /> השלם אימות</>
                 )}
               </button>
             </div>
@@ -399,18 +399,18 @@ export default function VerifyModal({ onClose, onSuccess }) {
               הפרטים נשלחו לאימות
             </div>
             <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
-              הגשת את פרטי האימות בהצלחה.<br />הווי הירוק יופיע ליד שמך לאחר אישור צוות הבקרה.
+              הווי הירוק יופיע לאחר אישור הצוות.
             </div>
 
             {/* Capabilities */}
             <div style={{ width: '100%', background: '#f8faff', border: '1px solid #e5e9f5', borderRadius: 16, padding: '16px', marginBottom: 24 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>לאחר אישור צוות הבקרה, תוכל</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>לאחר אישור תוכל</div>
               {[
-                { icon: <Shield size={15} strokeWidth={1.8} />, text: 'לקבל ווי ירוק בפרופיל שלך' },
-                { icon: <UserCheck size={15} strokeWidth={1.8} />, text: 'להגיש בקשות למשימות עם ווי ירוק' },
-                { icon: <CheckCircle size={15} strokeWidth={1.8} />, text: 'לבנות אמון עם מפרסמים ועובדים' },
+                { icon: <Shield size={15} strokeWidth={1.8} />, text: 'ווי ירוק בפרופיל' },
+                { icon: <UserCheck size={15} strokeWidth={1.8} />, text: 'להגיש בקשות עם ווי ירוק' },
+                { icon: <CheckCircle size={15} strokeWidth={1.8} />, text: 'לבנות אמון עם משתמשים' },
               ].map(({ icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'לבנות אמון עם מפרסמים ועובדים' ? '1px solid #edf0f7' : 'none' }}>
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: text !== 'לבנות אמון עם משתמשים' ? '1px solid #edf0f7' : 'none' }}>
                   <div style={{ color: '#10b981' }}>{icon}</div>
                   <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{text}</span>
                 </div>

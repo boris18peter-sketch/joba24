@@ -98,13 +98,10 @@ export default function PreLaunchWaitingPage({ me }) {
             Joba24
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.3 }}>
-            {me?.full_name ? `${me.full_name.split(' ')[0]}, אתה ברשימת ההשקה!` : 'אתה ברשימת ההשקה!'}
+            {me?.full_name ? `${me.full_name.split(' ')[0]}, אתה בפנים!` : 'אתה בפנים!'}
           </h1>
-          <p style={{ fontSize: 15, fontWeight: 700, color: '#fbbf24', margin: '10px auto 0', lineHeight: 1.5, maxWidth: 320 }}>
-            הפרופיל שלך נשמר בהצלחה.
-          </p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', margin: '8px auto 0', lineHeight: 1.7, maxWidth: 320 }}>
-            ברגע ש-Joba24 תיפתח באזור שלך תקבל התראה מיידית ותוכל להתחיל לקבל עבודות.
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', margin: '10px auto 0', lineHeight: 1.6, maxWidth: 300 }}>
+            נשלח לך התראה ברגע ש-Joba24 תיפתח באזורך.
           </p>
         </div>
 
@@ -141,7 +138,7 @@ export default function PreLaunchWaitingPage({ me }) {
                   ? 'מעולה! תקבל עדכון על כל עבודה חדשה.'
                   : notifPerm === 'denied'
                     ? 'הפעל התראות מהגדרות הטלפון → Joba24'
-                    : 'קבל עדכון מיידי על כל עבודה חדשה באזורך.'}
+                    : 'עדכון מיידי על כל עבודה חדשה.'}
               </div>
             </div>
             {notifPerm === 'granted' ? (
@@ -190,7 +187,7 @@ export default function PreLaunchWaitingPage({ me }) {
                   ? 'מעולה! נציג לך עבודות רלוונטיות באזורך.'
                   : locPerm === 'denied'
                     ? 'הפעל מיקום מהגדרות הטלפון → Joba24'
-                    : 'אפשר גישה למיקום כדי לקבל עבודות רלוונטיות באזורך.'}
+                    : 'עבודות רלוונטיות באזורך.'}
               </div>
             </div>
             {locPerm === 'granted' ? (
@@ -216,7 +213,7 @@ export default function PreLaunchWaitingPage({ me }) {
         <div style={{ marginTop: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
             <ShieldCheck size={15} color="#fbbf24" />
-            <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>בנה אמון ובלוט מעל השאר</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>בנה אמון ובלוט</span>
           </div>
 
           {/* Step 3: KYC Verification */}
@@ -248,10 +245,10 @@ export default function PreLaunchWaitingPage({ me }) {
                 </div>
                 <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
                   {isKycVerified
-                    ? 'מעולה! החשבון שלך מאומת עם ווי ירוק.'
+                    ? 'מאומת עם ווי ירוק.'
                     : kycStatus === 'pending'
-                      ? 'הפרטים נשלחו, ממתין לאישור צוות הבקרה.'
-                      : 'אמת את הזהות שלך וקבל ווי ירוק — בונה אמון ומגדיל קבלת משימות.'}
+                      ? 'נשלח, ממתין לאישור.'
+                      : 'קבל ווי ירוק ובנה אמון.'}
                 </div>
               </div>
               {!isKycVerified && kycStatus !== 'pending' ? (
@@ -271,52 +268,52 @@ export default function PreLaunchWaitingPage({ me }) {
             </div>
           </div>
 
-          {/* Step 4: Social Links — only shown if KYC verified */}
-          {isKycVerified && (
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>
-                צעד 4 — ווי זהב {hasSocial && <span style={{ color: '#fbbf24' }}>✓</span>}
-              </div>
-              <div style={{
-                background: hasSocial ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.07)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                border: `1.5px solid ${hasSocial ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.12)'}`,
-                borderRadius: 14, padding: '14px 16px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: hasSocial ? 0 : 10 }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-                    background: hasSocial ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `1px solid ${hasSocial ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.15)'}`,
-                  }}>
-                    {hasSocial
-                      ? <Award size={20} color="#fbbf24" />
-                      : <Sparkles size={20} color="rgba(255,255,255,0.8)" />}
+          {/* Step 4: Social Links — always available */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>
+              צעד 4 — ווי זהב {hasSocial && isKycVerified && <span style={{ color: '#fbbf24' }}>✓</span>}
+            </div>
+            <div style={{
+              background: (hasSocial && isKycVerified) ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.07)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              border: `1.5px solid ${(hasSocial && isKycVerified) ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 14, padding: '14px 16px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: (hasSocial && isKycVerified) ? 0 : 10 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                  background: (hasSocial && isKycVerified) ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: `1px solid ${(hasSocial && isKycVerified) ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.15)'}`,
+                }}>
+                  {(hasSocial && isKycVerified)
+                    ? <Award size={20} color="#fbbf24" />
+                    : <Sparkles size={20} color="rgba(255,255,255,0.8)" />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    רשתות חברתיות
+                    {hasSocial && isKycVerified && <GoldBadge size="sm" />}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
-                      רשתות חברתיות
-                      {hasSocial && <GoldBadge size="sm" />}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
-                      {hasSocial
-                        ? 'מצוין! יש לך ווי זהב — החשבון שלך אמין ומוכר.'
-                        : 'חבר רשת חברתית וקבל ווי זהב — בלוט מעל כולם.'}
-                    </div>
+                  <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                    {hasSocial && isKycVerified
+                      ? 'ווי זהב פעיל!'
+                      : hasSocial
+                        ? 'רשת מחוברת. ווי זהב יופיע לאחר אימות זהות.'
+                        : 'חבר רשת. ווי זהב יופיע לאחר אימות זהות.'}
                   </div>
                 </div>
-                {!hasSocial && (
-                  <div style={{
-                    background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 2,
-                    marginTop: 4,
-                  }}>
-                    <SocialLinksSection user={me} />
-                  </div>
-                )}
               </div>
+              {!(hasSocial && isKycVerified) && (
+                <div style={{
+                  background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 2,
+                  marginTop: 4,
+                }}>
+                  <SocialLinksSection user={me} />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Waiting status badge */}

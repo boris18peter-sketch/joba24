@@ -174,23 +174,14 @@ export default function SocialLinksSection({ user }) {
           </div>
         )}
 
-        {!isKycVerified && (
-          <div style={{ margin: '0 16px 10px', padding: '8px 12px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={14} color="#d97706" flexShrink={0} />
-            <span style={{ fontSize: 11, color: '#92400e', lineHeight: 1.4 }}>
-              חיבור רשתות חברתיות זמין רק לאחר אימות זהות (KYC)
-            </span>
-          </div>
-        )}
-
-        {isKycVerified && !isConnected && (
-          <div style={{ margin: '0 16px 10px', padding: '12px 14px', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 12, border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(217,119,6,0.3)' }}>
-              <ShieldCheck size={18} color="white" />
+        {!isConnected && (
+          <div style={{ margin: '0 16px 10px', padding: '10px 14px', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 12, border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShieldCheck size={16} color="white" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#92400e', lineHeight: 1.3 }}>קבל ווי זהב 🥇 ובלוט מעל כולם</div>
-              <div style={{ fontSize: 11, color: '#b45309', marginTop: 2, lineHeight: 1.4 }}>חבר רשת חברתית ← קבל ווי זהב, הגדל אמון, חשיפה וקבל יותר משימות</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', lineHeight: 1.3 }}>חבר רשת וקבל ווי זהב 🥇</div>
+              {!isKycVerified && <div style={{ fontSize: 10, color: '#b45309', marginTop: 2 }}>ווי זהב יופיע לאחר אימות זהות</div>}
             </div>
           </div>
         )}
@@ -198,8 +189,8 @@ export default function SocialLinksSection({ user }) {
         <div style={{ padding: '0 16px 14px' }}>
           {isConnected ? (
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowConnect(true)} disabled={!isKycVerified || loading}
-                style={{ flex: 1, height: 46, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: !isKycVerified ? 0.5 : 1 }}>
+              <button onClick={() => setShowConnect(true)} disabled={loading}
+                style={{ flex: 1, height: 46, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
                 {loading ? 'מחכה...' : 'חבר עוד רשת'}
               </button>
@@ -208,10 +199,10 @@ export default function SocialLinksSection({ user }) {
               </button>
             </div>
           ) : (
-            <button onClick={() => setShowConnect(true)} disabled={!isKycVerified || loading}
-              style={{ width: '100%', height: 48, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: !isKycVerified ? 'var(--surface-3)' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: !isKycVerified ? 'var(--text-3)' : 'white', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: !isKycVerified ? 0.6 : 1, boxShadow: !isKycVerified ? 'none' : '0 3px 12px rgba(26,111,212,0.2)' }}>
+            <button onClick={() => setShowConnect(true)} disabled={loading}
+              style={{ width: '100%', height: 48, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(26,111,212,0.2)' }}>
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-              {loading ? 'פותח...' : 'חבר רשתות חברתיות'}
+              {loading ? 'פותח...' : 'חבר רשת חברתית'}
             </button>
           )}
         </div>
@@ -313,7 +304,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
             </div>
             <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>חיבור רשת חברתית</h3>
             <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
-              חבר את הרשת שלך וקבל ווי זהב בפרופיל
+              חבר רשת וקבל ווי זהב
             </p>
           </div>
 
@@ -412,10 +403,9 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                   <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(217,119,6,0.35)' }}>
                     <CheckCircle size={36} color="white" />
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>הרשת אומתה! 🎉</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>אומתה! 🎉</div>
                   <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                    החשבון שלך ב{p.label} אומת בהצלחה.<br />
-                    ווי הזהב יופיע ליד שמך בכל המקומות.
+                    ווי הזהב יופיע בפרופיל שלך{!isUserVerified(user) ? ' לאחר אימות זהות' : ''}.
                   </div>
                   <button onClick={handleClose} style={{ marginTop: 20, width: '100%', height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #fbbf24, #d97706)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
                     סיים
@@ -444,7 +434,6 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>העתק את הקוד</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>לחץ על כפתור ההעתקה ליד הקוד</div>
                       </div>
                     </div>
 
@@ -452,7 +441,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>פתח את {p.label} שלך</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>פתח את {p.label}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{p.bioHint}</div>
                       </div>
                     </div>
@@ -461,11 +450,10 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>הדבק את הקוד בביו</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>ערוך את הביו (הטקסט מתחת לשם שלך) והדבק את הקוד</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>הדבק בביו ושמור</div>
                         <a href={p.editBioUrl} target="_blank" rel="noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: '#1a6fd4', textDecoration: 'none' }}>
-                          פתח את עריכת הפרופיל <ExternalLink size={12} />
+                          עריכת פרופיל <ExternalLink size={12} />
                         </a>
                       </div>
                     </div>
@@ -474,8 +462,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>4</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>חזור לכאן ולחץ "אימתתי"</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>אחרי ששמרת את הביו, חזור ולחץ על הכפתור</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>חזור ולחץ "אימתתי"</div>
                       </div>
                     </div>
                   </div>
@@ -484,19 +471,19 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                   <button onClick={handleVerify} disabled={loading}
                     style={{ marginTop: 16, width: '100%', height: 50, borderRadius: 12, background: loading ? '#93c5fd' : 'linear-gradient(135deg, #16a34a, #059669)', color: 'white', border: 'none', fontWeight: 800, fontSize: 15, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(16,185,129,0.3)' }}>
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                    {loading ? 'סורק את הפרופיל...' : 'אימתתי — בדוק עכשיו'}
+                    {loading ? 'סורק...' : 'אימתתי'}
                   </button>
 
                   {loading && (
                     <div style={{ marginTop: 10, padding: '10px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', textAlign: 'center' }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>סורקים את הפרופיל שלך ב{p.label}</div>
-                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>הסריקה לוקחת כדקה — אנא המתן. אל תסגור את החלון.</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>סורקים את הפרופיל...</div>
+                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>לוקח כדקה. אל תסגור.</div>
                     </div>
                   )}
 
                   {!loading && (
                     <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
-                      ודא שהפרופיל שלך ציבורי כדי שנוכל לראות את הקוד
+                      ודא שהפרופיל ציבורי
                     </div>
                   )}
                 </>
