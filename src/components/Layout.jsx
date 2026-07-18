@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
 import { Home, Map, Plus, User, MessageCircle, Loader2 } from 'lucide-react';
 import { lazy, Suspense } from 'react';
+import { motion } from 'framer-motion';
 
 const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
 const MapView = lazy(() => import('@/pages/MapView'));
@@ -551,10 +552,10 @@ export default function Layout() {
         );
       })()}
 
-      {/* Bottom Nav */}
+      {/* Bottom Nav — WhatsApp-style with sliding indicator */}
       {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(window.location.pathname) && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
         <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '6px 8px 4px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '6px 8px 4px', position: 'relative' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
               const active = location.pathname === to;
               if (primary) {
@@ -570,13 +571,17 @@ export default function Layout() {
               }
               return (
                 <Link key={to} to={to} onClick={(e) => { if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 12px 4px', textDecoration: 'none', position: 'relative', minWidth: 52, minHeight: 56, justifyContent: 'center', WebkitTapHighlightColor: 'transparent' }}>
-                  <div style={{ position: 'relative' }}>
-                    <Icon size={22} color={active ? '#1a6fd4' : '#a0b8d8'} />
+                  {/* Sliding active indicator — WhatsApp style */}
+                  {active && (
+                    <motion.div layoutId="navActiveIndicator" style={{ position: 'absolute', top: 2, left: '50%', transform: 'translateX(-50%)', width: 32, height: 32, borderRadius: 10, background: 'rgba(26,111,212,0.1)' }} transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
+                  )}
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    <Icon size={22} color={active ? '#1a6fd4' : '#a0b8d8'} style={{ transition: 'color 0.15s' }} />
                     {badge > 0 && (
                       <div style={{ position: 'absolute', top: -6, right: -8, background: '#dc2626', color: 'white', fontSize: 9, fontWeight: 900, width: 17, height: 17, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{badge}</div>
                     )}
                   </div>
-                  <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500 }}>{label}</span>
+                  <span style={{ fontSize: 10, color: active ? '#1a6fd4' : 'var(--text-3)', fontWeight: active ? 700 : 500, transition: 'color 0.15s' }}>{label}</span>
                 </Link>
               );
             })}

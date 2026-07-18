@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, X, ExternalLink, Loader2 } from 'lucide-react';
+import { Send, X, ArrowRight, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -79,16 +79,14 @@ export default function QuickChatDrawer({ task, me, onClose }) {
           dir="rtl"
           onClick={e => e.stopPropagation()}
         >
-         {/* Drag handle + Close button */}
-         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
-           <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, marginBottom: 12, marginTop: 6 }} />
-           <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', paddingRight: 8 }}>
-             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 20, padding: 0, width: 28, height: 28 }}>✕</button>
-           </div>
-         </div>
+         {/* Drag handle */}
+         <div style={{ width: 48, height: 4, background: '#d1d5db', borderRadius: 2, margin: '8px auto 0' }} />
 
-         {/* Header */}
-         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+         {/* Header with back button */}
+         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid #f0f4fb', flexShrink: 0 }}>
+           <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 11, background: '#eff6ff', border: '1px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}>
+             <ArrowRight size={18} color="#1a6fd4" />
+           </button>
            <div style={{ flex: 1, minWidth: 0 }}>
              <div style={{ fontWeight: 700, fontSize: 15, color: '#1a2540', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                צ'אט · {task.title}
@@ -97,12 +95,8 @@ export default function QuickChatDrawer({ task, me, onClose }) {
                {task.worker_name || task.client_name || ''}
              </div>
            </div>
-           <button
-             onClick={() => { onClose(); navigate(`/chat/${task.id}`); }}
-             style={{ width: 40, height: 40, borderRadius: 12, background: '#eff6ff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-             title="פתח צ'אט מלא"
-           >
-             <ExternalLink size={16} color="#1a6fd4" />
+           <button onClick={onClose} style={{ width: 34, height: 34, borderRadius: 11, background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 18, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+             <X size={18} />
            </button>
          </div>
 

@@ -19,11 +19,14 @@ import ResetPassword from '@/pages/ResetPassword';
 
 // Add page imports here
 // App entry — force reload to clear stale dynamic import cache
-// Tab pages — lazy loaded (mounted via Layout.jsx)
+// Tab pages — preloaded for instant tab switching
 const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
 const MapView = lazy(() => import('@/pages/MapView'));
 const ChatInbox = lazy(() => import('@/pages/ChatInbox'));
 const Profile = lazy(() => import('@/pages/Profile'));
+
+// Preload all tab pages immediately after initial render
+import('@/pages/HomeFeed'); import('@/pages/MapView'); import('@/pages/ChatInbox'); import('@/pages/Profile');
 
 // All other pages — lazy loaded, fetched only when user navigates there
 const Landing = lazy(() => import('@/pages/Landing'));
@@ -89,13 +92,13 @@ function getDepth(pathname) {
 // Tab switch: no slide — just instant swap (handled by key='root')
 const PUSH_VARIANTS = {
   enter: (dir) => ({
-    x: dir > 0 ? '100%' : '-30%',
-    opacity: dir > 0 ? 1 : 0.6,
+    x: dir > 0 ? '100%' : '-20%',
+    opacity: 1,
   }),
   center: { x: 0, opacity: 1 },
   exit: (dir) => ({
-    x: dir > 0 ? '-30%' : '100%',
-    opacity: dir > 0 ? 0.6 : 1,
+    x: dir > 0 ? '-20%' : '100%',
+    opacity: 1,
     pointerEvents: 'none',
   }),
 };
@@ -138,8 +141,8 @@ const AuthenticatedApp = () => {
           exit={isRootTab ? { opacity: 0 } : 'exit'}
           transition={
             isRootTab
-              ? { duration: 0.15, ease: 'easeOut' }
-              : { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.32 }
+              ? { duration: 0.12, ease: 'easeOut' }
+              : { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.22 }
           }
           style={{ position: 'absolute', inset: 0, willChange: 'transform' }}
         >

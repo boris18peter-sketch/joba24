@@ -1,13 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 /**
- * verifyInstagram — Social media account verification via bio code.
+ * verifyInstagram — Social media bio-code verification.
  *
- * Flow for ALL platforms (Instagram, TikTok, Facebook):
- * 1. User enters their username → we generate a 6-digit code
- * 2. User adds the code to their profile bio
- * 3. We fetch the profile page HTML directly and search for the code (fast)
- * 4. If not found, use LLM with web search (slower, ~60-70s, but thorough)
+ * Strategy:
+ * 1. Direct HTML fetch with meta tag parsing — fast (~5s), works for some platforms
+ * 2. LLM with web search — thorough (~60-70s), works for all platforms
  *
  * Actions:
  *   "connect_code" — Save username + generate 6-digit code
@@ -46,87 +44,53 @@ function decodeEntities(str) {
     .replace(/\\u0022/g, '"').replace(/\\u0027/g, "'").replace(/\\n/g, ' ');
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    return res;
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-// ── Search HTML for the code ──
-function searchHtmlForCode(html, code) {
-  if (!html) return false;
-  const decoded = decodeEntities(html);
-
-  if (decoded.includes(code)) return true;
-
-  const metaMatches = decoded.match(/<meta\s+(?:property|name)=["'](?:og:description|description|twitter:description)["']\s+content=["']([^"']*)["']/gi);
-  if (metaMatches) {
-    for (const m of metaMatches) {
-      if (m.includes(code)) return true;
-    }
-  }
-
-  const jsonLdMatches = decoded.match(/<script\s+type=["']application\/ld\+json["'][^>]*>([^<]+)<\/script>/gi);
-  if (jsonLdMatches) {
-    for (const m of jsonLdMatches) {
-      if (m.includes(code)) return true;
-    }
-  }
-
-  return false;
-}
-
-// ── Direct HTML fetch (fast, ~5s) ──
+// ── Direct HTML fetch — search for code in page HTML/meta tags ──
 async function checkBioDirect(platform, username, code) {
   const profileUrl = PLATFORM_CONFIG[platform].profileUrl(username);
-
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'sec-fetch-dest': 'document',
-    'sec-fetch-mode': 'navigate',
-    'sec-fetch-site': 'none',
-    'sec-fetch-user': '?1',
-    'upgrade-insecure-requests': '1',
-  };
-
   try {
-    const res = await fetchWithTimeout(profileUrl, { headers, redirect: 'follow' }, 8000);
+    const res = await fetchWithTimeout(profileUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'follow',
+    }, 8000);
     const html = await res.text().catch(() => '');
     if (html && html.length > 200) {
-      console.log(`verifyInstagram: direct fetch status=${res.status} len=${html.length}`);
-      if (searchHtmlForCode(html, code)) {
-        console.log(`✅ Code found via direct fetch`);
+      const decoded = decodeEntities(html);
+      if (decoded.includes(code)) {
+        console.log('✅ Code found via direct HTML');
         return { found: true, method: 'direct' };
       }
     }
   } catch (e) {
     console.log(`verifyInstagram: direct fetch failed: ${e?.message || e}`);
   }
-
   return { found: false, method: 'not-found' };
 }
 
-// ── LLM verification with web search (thorough, ~60-70s, 90s timeout) ──
+// ── LLM with web search — reads the bio from the profile page ──
 async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) {
   try {
-    console.log(`verifyInstagram: starting LLM web search for ${platformLabel} / @${username} / code=${code}`);
+    console.log(`verifyInstagram: LLM scan for ${platformLabel} / @${username} / code=${code}`);
     const llmPromise = base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: `Go to this ${platformLabel} profile page: ${profileUrl}. Read the bio/description text in the profile. Does the 6-digit number "${code}" appear anywhere in the bio or profile text? Answer with a JSON object: {"found": true/false, "bio": "the bio text you found"}.`,
       add_context_from_internet: true,
       model: 'gemini_3_flash',
       response_json_schema: {
         type: 'object',
-        properties: {
-          found: { type: 'boolean' },
-          bio: { type: 'string' },
-        },
+        properties: { found: { type: 'boolean' }, bio: { type: 'string' } },
       },
     });
     const timeoutPromise = new Promise((_, reject) =>
@@ -136,7 +100,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
     console.log(`verifyInstagram: LLM result: found=${result?.found}, bio="${(result?.bio || '').substring(0, 100)}"`);
     return result?.found === true;
   } catch (e) {
-    console.log(`verifyInstagram: LLM verification failed: ${e?.message || e}`);
+    console.log(`verifyInstagram: LLM failed: ${e?.message || e}`);
     return false;
   }
 }
@@ -169,7 +133,6 @@ Deno.serve(async (req) => {
         [verifiedField]: false,
         [codeField]: code,
       });
-      console.log(`verifyInstagram: code generated for ${user.id} / ${platform} / @${clean}`);
       return Response.json({ success: true, code, username: clean, platform });
     }
 
@@ -193,7 +156,7 @@ Deno.serve(async (req) => {
 
       // Method 2: LLM with web search (thorough, ~60-70s)
       if (!isVerified) {
-        console.log(`verifyInstagram: direct fetch did not find code, using LLM web search (may take ~60s)...`);
+        console.log('verifyInstagram: direct fetch did not find code, starting LLM scan...');
         isVerified = await verifyWithLlm(p.label, socialUsername, code, p.profileUrl(socialUsername), base44);
         if (isVerified) method = 'llm';
       }
@@ -209,7 +172,7 @@ Deno.serve(async (req) => {
       return Response.json({
         success: true,
         verified: false,
-        method: directResult.method,
+        method,
         note: `הקוד ${code} לא נמצא בפרופיל ה${p.label}. ודא ש: (1) העתקת את הקוד לביו, (2) הפרופיל ציבורי, (3) שמרת את השינויים. נסה שוב.`,
       });
     }
