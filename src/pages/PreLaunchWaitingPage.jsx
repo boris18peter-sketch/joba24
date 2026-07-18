@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft, ShieldCheck, Award, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
+import { useAuth } from '@/lib/AuthContext';
+import VerifyModal from '@/components/VerifyModal';
+import SocialLinksSection from '@/components/SocialLinksSection';
+import GoldBadge from '@/components/GoldBadge';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
 export default function PreLaunchWaitingPage({ me }) {
+  const { refreshUser } = useAuth();
   const [notifPerm, setNotifPerm] = useState('default');
   const [locPerm, setLocPerm] = useState('default');
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   useEffect(() => {
     if (typeof Notification !== 'undefined') {
@@ -47,6 +56,15 @@ export default function PreLaunchWaitingPage({ me }) {
   };
 
   const notifSupported = typeof Notification !== 'undefined';
+
+  const isKycVerified = isUserVerified(me);
+  const hasSocial = hasSocialVerified(me);
+  const kycStatus = me?.kyc_status;
+
+  const handleVerifySuccess = async () => {
+    setShowVerifyModal(false);
+    await refreshUser();
+  };
 
   return (
     <div dir="rtl" style={{
@@ -194,14 +212,129 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         </div>
 
+        {/* ── Verification Section: KYC + Social ── */}
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <ShieldCheck size={15} color="#fbbf24" />
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'white' }}>בנה אמון ובלוט מעל השאר</span>
+          </div>
+
+          {/* Step 3: KYC Verification */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>צעד 3 — ווי ירוק</div>
+            <div style={{
+              background: isKycVerified ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.07)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              border: `1.5px solid ${isKycVerified ? 'rgba(52,211,153,0.4)' : kycStatus === 'pending' ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.12)'}`,
+              borderRadius: 14, padding: '14px 16px',
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                background: isKycVerified ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${isKycVerified ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.15)'}`,
+              }}>
+                {isKycVerified
+                  ? <CheckCircle2 size={20} color="#34d399" />
+                  : kycStatus === 'pending'
+                    ? <Clock size={20} color="#fbbf24" />
+                    : <ShieldCheck size={20} color="rgba(255,255,255,0.8)" />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  אימות זהות (KYC)
+                  {isKycVerified && <VerifiedBadge size="sm" />}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                  {isKycVerified
+                    ? 'מעולה! החשבון שלך מאומת עם ווי ירוק.'
+                    : kycStatus === 'pending'
+                      ? 'הפרטים נשלחו, ממתין לאישור צוות הבקרה.'
+                      : 'אמת את הזהות שלך וקבל ווי ירוק — בונה אמון ומגדיל קבלת משימות.'}
+                </div>
+              </div>
+              {!isKycVerified && kycStatus !== 'pending' ? (
+                <button
+                  onClick={() => setShowVerifyModal(true)}
+                  style={{
+                    padding: '8px 14px', borderRadius: 10, flexShrink: 0,
+                    background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)',
+                    color: '#34d399', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                  }}
+                >
+                  אימות
+                  <ChevronLeft size={12} />
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Step 4: Social Links — only shown if KYC verified */}
+          {isKycVerified && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>
+                צעד 4 — ווי זהב {hasSocial && <span style={{ color: '#fbbf24' }}>✓</span>}
+              </div>
+              <div style={{
+                background: hasSocial ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.07)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                border: `1.5px solid ${hasSocial ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.12)'}`,
+                borderRadius: 14, padding: '14px 16px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: hasSocial ? 0 : 10 }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+                    background: hasSocial ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: `1px solid ${hasSocial ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.15)'}`,
+                  }}>
+                    {hasSocial
+                      ? <Award size={20} color="#fbbf24" />
+                      : <Sparkles size={20} color="rgba(255,255,255,0.8)" />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: 'white', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      רשתות חברתיות
+                      {hasSocial && <GoldBadge size="sm" />}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                      {hasSocial
+                        ? 'מצוין! יש לך ווי זהב — החשבון שלך אמין ומוכר.'
+                        : 'חבר רשת חברתית וקבל ווי זהב — בלוט מעל כולם.'}
+                    </div>
+                  </div>
+                </div>
+                {!hasSocial && (
+                  <div style={{
+                    background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 2,
+                    marginTop: 4,
+                  }}>
+                    <SocialLinksSection user={me} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Waiting status badge */}
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 99, padding: '6px 14px' }}>
             <Clock size={12} color="#fbbf24" />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24' }}>ממתין לאישור · השקה בקרוב</span>
           </div>
         </div>
       </div>
+
+      {showVerifyModal && createPortal(
+        <VerifyModal
+          onClose={() => setShowVerifyModal(false)}
+          onSuccess={handleVerifySuccess}
+        />,
+        document.body
+      )}
     </div>
   );
 }

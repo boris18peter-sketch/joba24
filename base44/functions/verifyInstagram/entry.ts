@@ -80,7 +80,46 @@ async function checkBioDirect(platform, username, code) {
   return { found: false, method: 'not-found' };
 }
 
-// ── LLM with web search — reads the bio from the profile page ──
+// ── Fast embed/oEmbed fetch — tries platform embed endpoints (faster than full page) ──
+async function checkBioFast(platform, username, code) {
+  const endpoints = [];
+  if (platform === 'instagram') {
+    endpoints.push(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`);
+    endpoints.push(`https://www.instagram.com/${username}/embed/`);
+    endpoints.push(`https://www.instagram.com/${username}/?__a=1&__d=dis`);
+  } else if (platform === 'tiktok') {
+    endpoints.push(`https://www.tiktok.com/@${username}?lang=en`);
+  } else if (platform === 'facebook') {
+    endpoints.push(`https://www.facebook.com/${username}/`);
+  }
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetchWithTimeout(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/json,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'x-ig-app-id': '936619743392459',
+        },
+        redirect: 'follow',
+      }, 5000);
+      const text = await res.text().catch(() => '');
+      if (text && text.length > 100) {
+        const decoded = decodeEntities(text);
+        if (decoded.includes(code)) {
+          console.log(`✅ Code found via fast endpoint: ${url}`);
+          return { found: true, method: 'fast-embed' };
+        }
+      }
+    } catch (e) {
+      console.log(`verifyInstagram: fast endpoint failed (${url}): ${e?.message || e}`);
+    }
+  }
+  return { found: false, method: 'not-found' };
+}
+
+// ── LLM with web search — reads the bio from the profile page (reduced timeout for speed) ──
 async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) {
   try {
     console.log(`verifyInstagram: LLM scan for ${platformLabel} / @${username} / code=${code}`);
@@ -94,7 +133,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
       },
     });
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout (90s)')), 90000)
+      setTimeout(() => reject(new Error('LLM timeout (40s)')), 40000)
     );
     const result = await Promise.race([llmPromise, timeoutPromise]);
     console.log(`verifyInstagram: LLM result: found=${result?.found}, bio="${(result?.bio || '').substring(0, 100)}"`);
@@ -149,14 +188,21 @@ Deno.serve(async (req) => {
 
       console.log(`verifyInstagram: verifying ${platform} / @${socialUsername} / code=${code}`);
 
-      // Method 1: Direct HTML fetch (fast, ~5s)
-      const directResult = await checkBioDirect(platform, socialUsername, code);
-      let isVerified = directResult.found;
-      let method = directResult.method;
+      // Method 1: Fast embed endpoints (fastest, ~3-5s)
+      const fastResult = await checkBioFast(platform, socialUsername, code);
+      let isVerified = fastResult.found;
+      let method = fastResult.method;
 
-      // Method 2: LLM with web search (thorough, ~60-70s)
+      // Method 2: Direct HTML fetch (fast, ~5s)
       if (!isVerified) {
-        console.log('verifyInstagram: direct fetch did not find code, starting LLM scan...');
+        const directResult = await checkBioDirect(platform, socialUsername, code);
+        isVerified = directResult.found;
+        if (isVerified) method = directResult.method;
+      }
+
+      // Method 3: LLM with web search (thorough, ~20-40s, reduced timeout)
+      if (!isVerified) {
+        console.log('verifyInstagram: fast + direct fetch did not find code, starting LLM scan...');
         isVerified = await verifyWithLlm(p.label, socialUsername, code, p.profileUrl(socialUsername), base44);
         if (isVerified) method = 'llm';
       }

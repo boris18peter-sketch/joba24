@@ -49,6 +49,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
 
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', id_number: '' });
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   // Pre-fill form with existing user data (for re-submission after rejection)
   useEffect(() => {
@@ -65,6 +66,12 @@ export default function VerifyModal({ onClose, onSuccess }) {
     }).catch(() => {});
   }, []);
 
+  // Real-time error display — show errors for touched fields immediately
+  const fieldError = (key) => {
+    if (!touched[key]) return null;
+    return errors[key] || null;
+  };
+
   const validate = () => {
     const e = {};
     if (!form.full_name.trim()) e.full_name = 'שם מלא נדרש';
@@ -75,6 +82,18 @@ export default function VerifyModal({ onClose, onSuccess }) {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
+
+  // Real-time validation check — re-evaluated on every render
+  const isFormValid = () => {
+    if (!form.full_name.trim()) return false;
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return false;
+    if (!form.phone.trim() || form.phone.replace(/\D/g, '').length < 9) return false;
+    if (!form.id_number.trim() || form.id_number.replace(/\D/g, '').length < 8) return false;
+    if (!idPhotoUrl) return false;
+    return true;
+  };
+
+  const formValid = isFormValid();
 
   const uploadFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -105,6 +124,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
       toast.error('יש למלא את כל השדות הנדרשים');
       return;
     }
+    if (!formValid) return;
     setLoading(true);
     await base44.auth.updateMe({
       full_name: form.full_name,
@@ -220,11 +240,11 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   placeholder="ישראל ישראלי"
                   value={form.full_name}
                   onFocus={() => setFocused('full_name')}
-                  onBlur={() => setFocused('')}
+                  onBlur={() => { setFocused(''); setTouched(t => ({ ...t, full_name: true })); validate(); }}
                   onChange={e => { setForm(f => ({ ...f, full_name: e.target.value })); setErrors(p => ({ ...p, full_name: null })); }}
-                  style={FIELD_STYLE(errors.full_name, focused === 'full_name')}
+                  style={FIELD_STYLE(fieldError('full_name'), focused === 'full_name')}
                 />
-                {errors.full_name && <ErrorMsg msg={errors.full_name} />}
+                {fieldError('full_name') && <ErrorMsg msg={fieldError('full_name')} />}
               </div>
 
               {/* Email */}
@@ -235,11 +255,11 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   type="email"
                   value={form.email}
                   onFocus={() => setFocused('email')}
-                  onBlur={() => setFocused('')}
+                  onBlur={() => { setFocused(''); setTouched(t => ({ ...t, email: true })); validate(); }}
                   onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setErrors(p => ({ ...p, email: null })); }}
-                  style={FIELD_STYLE(errors.email, focused === 'email')}
+                  style={FIELD_STYLE(fieldError('email'), focused === 'email')}
                 />
-                {errors.email && <ErrorMsg msg={errors.email} />}
+                {fieldError('email') && <ErrorMsg msg={fieldError('email')} />}
               </div>
 
               {/* Phone */}
@@ -250,11 +270,11 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   type="tel"
                   value={form.phone}
                   onFocus={() => setFocused('phone')}
-                  onBlur={() => setFocused('')}
+                  onBlur={() => { setFocused(''); setTouched(t => ({ ...t, phone: true })); validate(); }}
                   onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setErrors(p => ({ ...p, phone: null })); }}
-                  style={FIELD_STYLE(errors.phone, focused === 'phone')}
+                  style={FIELD_STYLE(fieldError('phone'), focused === 'phone')}
                 />
-                {errors.phone && <ErrorMsg msg={errors.phone} />}
+                {fieldError('phone') && <ErrorMsg msg={fieldError('phone')} />}
               </div>
 
               {/* ID number */}
@@ -266,16 +286,16 @@ export default function VerifyModal({ onClose, onSuccess }) {
                     type={showId ? 'text' : 'password'}
                     value={form.id_number}
                     onFocus={() => setFocused('id_number')}
-                    onBlur={() => setFocused('')}
+                    onBlur={() => { setFocused(''); setTouched(t => ({ ...t, id_number: true })); validate(); }}
                     onChange={e => { setForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '') })); setErrors(p => ({ ...p, id_number: null })); }}
                     maxLength={9}
-                    style={{ ...FIELD_STYLE(errors.id_number, focused === 'id_number'), paddingLeft: 42 }}
+                    style={{ ...FIELD_STYLE(fieldError('id_number'), focused === 'id_number'), paddingLeft: 42 }}
                   />
                   <button onClick={() => setShowId(v => !v)} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex' }}>
                     {showId ? <EyeOff size={16} color="#9ca3af" /> : <Eye size={16} color="#9ca3af" />}
                   </button>
                 </div>
-                {errors.id_number && <ErrorMsg msg={errors.id_number} />}
+                {fieldError('id_number') && <ErrorMsg msg={fieldError('id_number')} />}
               </div>
 
               {/* ID photo upload */}
@@ -326,6 +346,7 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   </div>
                 )}
                 {errors.id_photo && <ErrorMsg msg={errors.id_photo} />}
+                {!idPhotoUrl && touched.id_photo && <ErrorMsg msg="יש להעלות צילום תעודת זהות" />}
               </div>
 
               {/* Privacy */}
@@ -339,16 +360,17 @@ export default function VerifyModal({ onClose, onSuccess }) {
               {/* Submit */}
               <button
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !formValid}
                 style={{
                   width: '100%', height: 52, borderRadius: 14,
-                  background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  background: (loading || !formValid) ? '#c9d6e8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
                   color: 'white', fontWeight: 700, fontSize: 15,
-                  border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                  border: 'none', cursor: (loading || !formValid) ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   letterSpacing: 0.2,
-                  boxShadow: loading ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
+                  boxShadow: (loading || !formValid) ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
                   marginBottom: 8,
+                  opacity: formValid ? 1 : 0.7,
                 }}
               >
                 {loading ? (
