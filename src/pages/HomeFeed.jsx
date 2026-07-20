@@ -67,23 +67,37 @@ export default function HomeFeed() {
   const { user: me, isAuthenticated } = useAuth();
 
 
-  // My published tasks
+  // My published tasks — polled every 20s as safety net for WS misses
   const { data: myTasks = [] } = useQuery({
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 60000,
+    staleTime: 20000,
+    refetchInterval: 20000,
     refetchOnWindowFocus: false,
   });
 
-  // Active task I'm working on as a worker — seeded by Layout, kept live via WebSocket
+  // Active task I'm working on as a worker — refetchInterval: safety-net polling (15s)
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id,
-    staleTime: 120000,
+    staleTime: 10000,
     gcTime: 300000,
     placeholderData: (prev) => prev,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Active task I published that is currently TAKEN — independent query for instant live updates
+  const { data: activeClientTask } = useQuery({
+    queryKey: ['activeClientTask', me?.id],
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
+    enabled: !!me?.id,
+    staleTime: 10000,
+    gcTime: 300000,
+    placeholderData: (prev) => prev,
+    refetchInterval: 15000,
     refetchOnWindowFocus: false,
   });
 
@@ -102,8 +116,7 @@ export default function HomeFeed() {
     }
   }, [myTasks.length, activeWorkerTask]);
 
-  // Active task I published that is currently TAKEN
-  const activeClientTask = myTasks.find((t) => t.status === 'TAKEN') || null;
+  // activeClientTask is now a dedicated useQuery above (with polling for instant updates)
 
   // Completion celebration is handled globally by Layout (after rating modal closes)
 
@@ -147,6 +160,19 @@ export default function HomeFeed() {
     }
     if (isAuthenticated !== null) prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated]);
+
+  // Re-establish WebSocket subscriptions when app returns to foreground
+  // (iOS/Android aggressively kill WS connections when backgrounded)
+  const [wsTick, setWsTick] = useState(0);
+  useEffect(() => {
+    const handler = () => { if (document.visibilityState === 'visible') setWsTick(t => t + 1); };
+    document.addEventListener('visibilitychange', handler);
+    window.addEventListener('focus', handler);
+    return () => {
+      document.removeEventListener('visibilitychange', handler);
+      window.removeEventListener('focus', handler);
+    };
+  }, []);
 
   // ── Real-time subscriptions ──────────────────────────────────────────────
   useEffect(() => {
@@ -348,7 +374,7 @@ export default function HomeFeed() {
     });
 
     return () => {unsubTask();unsubApp();};
-  }, [me?.id, queryClient]);
+  }, [me?.id, queryClient, wsTick]);
 
   useEffect(() => {
     if (navigator.geolocation) {

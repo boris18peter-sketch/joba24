@@ -5,7 +5,7 @@
  *  2. Credits invalidated on any CreditTransaction create
  *  3. All subscriptions have guaranteed cleanup via returned unsubscribe
  */
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
@@ -30,6 +30,19 @@ export default function useRealtimeSync({
 }) {
   const queryClient = useQueryClient();
   const recentNotifKeysRef = useRef(new Set());
+
+  // Re-establish WebSocket subscriptions when app returns to foreground
+  // (iOS/Android kill WS connections when backgrounded — must re-subscribe on resume)
+  const [wsTick, setWsTick] = useState(0);
+  useEffect(() => {
+    const handler = () => { if (document.visibilityState === 'visible') setWsTick(t => t + 1); };
+    document.addEventListener('visibilitychange', handler);
+    window.addEventListener('focus', handler);
+    return () => {
+      document.removeEventListener('visibilitychange', handler);
+      window.removeEventListener('focus', handler);
+    };
+  }, []);
 
   // Improved dedup: type + taskId + actor + 10-second bucket
   const isDuplicateNotif = useCallback((notification) => {
@@ -174,7 +187,7 @@ export default function useRealtimeSync({
     });
 
     return unsub;
-  }, [me?.id, isAuthenticated, queryClient, maybeShowRating]);
+  }, [me?.id, isAuthenticated, queryClient, maybeShowRating, wsTick]);
 
   // ── ChatMessage subscription ─────────────────────────────────────────────
   useEffect(() => {
@@ -192,7 +205,7 @@ export default function useRealtimeSync({
     });
 
     return unsub;
-  }, [me?.id, isAuthenticated]);
+  }, [me?.id, isAuthenticated, wsTick]);
 
   // ── CreditTransaction subscription ──────────────────────────────────────
   useEffect(() => {
@@ -212,7 +225,7 @@ export default function useRealtimeSync({
     });
 
     return unsub;
-  }, [me?.id, isAuthenticated, queryClient]);
+  }, [me?.id, isAuthenticated, queryClient, wsTick]);
 
   // ── Review subscription ──────────────────────────────────────────────────
   useEffect(() => {
@@ -225,7 +238,7 @@ export default function useRealtimeSync({
     });
 
     return unsub;
-  }, [me?.id, isAuthenticated]);
+  }, [me?.id, isAuthenticated, wsTick]);
 
   // ── TaskApplication subscription ────────────────────────────────────────
   useEffect(() => {
@@ -283,5 +296,5 @@ export default function useRealtimeSync({
     });
 
     return unsub;
-  }, [me?.id, isAuthenticated, queryClient]);
+  }, [me?.id, isAuthenticated, queryClient, wsTick]);
 }

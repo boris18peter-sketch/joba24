@@ -200,6 +200,12 @@ export default function Layout() {
       queryClient.invalidateQueries({ queryKey: ['myApplicationsLayout', me.id] });
       queryClient.invalidateQueries({ queryKey: ['approvalStatus', me.id] });
       queryClient.invalidateQueries({ queryKey: ['notifUnread'] });
+      // Critical: invalidate active task caches so banner updates instantly on resume
+      queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['activeClientTask', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['myTasks', me.id] });
+      queryClient.invalidateQueries({ queryKey: ['allTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', me.id] });
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
