@@ -87,8 +87,7 @@ Deno.serve(async (req) => {
 
     const eligibleWorkers = allUsers.filter(u =>
       u.fcm_tokens?.length > 0 &&
-      u.id !== data.client_id &&
-      u.role !== 'admin'
+      u.id !== data.client_id
     );
 
     if (!eligibleWorkers.length) {
