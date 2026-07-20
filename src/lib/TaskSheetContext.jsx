@@ -1,36 +1,44 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const TaskSheetContext = createContext(null);
 
 export function TaskSheetProvider({ children }) {
   const [sheetTaskId, setSheetTaskId] = useState(null);
-  const navigate = useNavigate();
 
-  // Opens the sheet AND navigates to /task/:id so hardware back / swipe-back closes it
+  // Opens the sheet and pushes a history entry (without URL change) so the
+  // hardware back button / swipe-back closes the sheet.
+  // Uses pushState (not navigate) to avoid React Router page transition animations.
   const openTaskSheet = useCallback((taskId) => {
     if (!taskId) return;
     setSheetTaskId(taskId);
-    navigate(`/task/${taskId}`);
-  }, [navigate]);
+    if (!window.history.state?.taskSheet) {
+      window.history.pushState({ taskSheet: taskId }, '');
+    }
+  }, []);
 
-  // Closes the sheet. If we're on /task/:id, navigate back so the URL stays in sync.
-  // The Layout useEffect will clear sheetTaskId when the URL changes away.
+  // Closes the sheet. If we pushed a history entry, go back to pop it
+  // (the popstate listener will clear sheetTaskId).
   const closeTaskSheet = useCallback(() => {
-    if (window.location.pathname.startsWith('/task/')) {
-      navigate(-1);
+    if (window.history.state?.taskSheet) {
+      window.history.back();
     } else {
       setSheetTaskId(null);
     }
-  }, [navigate]);
+  }, []);
 
-  // Sync sheet state without navigating — used by Layout's URL watcher
-  const syncSheetTaskId = useCallback((taskId) => {
-    setSheetTaskId(taskId);
+  // Listen for popstate (hardware back button, swipe-back) to close the sheet
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!window.history.state?.taskSheet) {
+        setSheetTaskId(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   return (
-    <TaskSheetContext.Provider value={{ sheetTaskId, openTaskSheet, closeTaskSheet, syncSheetTaskId }}>
+    <TaskSheetContext.Provider value={{ sheetTaskId, openTaskSheet, closeTaskSheet }}>
       {children}
     </TaskSheetContext.Provider>
   );
@@ -38,6 +46,6 @@ export function TaskSheetProvider({ children }) {
 
 export function useTaskSheet() {
   const ctx = useContext(TaskSheetContext);
-  if (!ctx) return { sheetTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {}, syncSheetTaskId: () => {} };
+  if (!ctx) return { sheetTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {} };
   return ctx;
 }

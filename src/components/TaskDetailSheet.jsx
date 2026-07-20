@@ -18,13 +18,10 @@ export default function TaskDetailSheet() {
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
 
-  // Route change: close sheet when navigating AWAY from /task/:id
-  // (navigating TO /task/:id is handled by Layout's URL sync)
+  // Route change: close sheet immediately when user navigates to a different page
   useEffect(() => {
     if (sheetTaskId && location.pathname !== prevPathRef.current) {
-      if (!location.pathname.startsWith('/task/')) {
-        closeTaskSheet();
-      }
+      closeTaskSheet();
     }
     prevPathRef.current = location.pathname;
   }, [location.pathname, sheetTaskId, closeTaskSheet]);

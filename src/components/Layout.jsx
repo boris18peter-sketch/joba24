@@ -53,7 +53,6 @@ import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import BoostOverlay from '@/components/BoostOverlay';
-import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -371,19 +370,6 @@ export default function Layout() {
     return () => window.removeEventListener('show_boost_overlay', handler);
   }, []);
 
-  // ── Task sheet ↔ URL sync ──
-  // When the URL is /task/:id, open the sheet with that ID.
-  // When the URL changes away, close the sheet.
-  const { sheetTaskId, syncSheetTaskId } = useTaskSheet();
-  useEffect(() => {
-    const match = location.pathname.match(/^\/task\/(.+)$/);
-    if (match && sheetTaskId !== match[1]) {
-      syncSheetTaskId(match[1]);
-    } else if (!match && sheetTaskId) {
-      syncSheetTaskId(null);
-    }
-  }, [location.pathname, sheetTaskId, syncSheetTaskId]);
-
   // ── All WebSocket subscriptions via hook ─────────────────────────────────
   useRealtimeSync({
     me, isAuthenticated,
@@ -394,21 +380,35 @@ export default function Layout() {
     maybeShowRating, t,
   });
 
-  // Boost alert — once per session per open task older than 1 hour
+  // Boost alert — once per session, consolidated into a single notification
+  // when multiple tasks are eligible (avoids notification spam for power users)
   useEffect(() => {
     if (!me?.id || !isAuthenticated) return;
     const HOUR_MS = 60 * 60 * 1000;
-    myPublishedTasks.filter((t) => t.status === 'OPEN' && !t.worker_id).forEach((task) => {
-      const sessionKey = `boost_notif_${task.id}`;
-      if (localStorage.getItem(sessionKey)) return;
-      const refMs = task.last_boost_at
-        ? new Date(task.last_boost_at + (task.last_boost_at.endsWith('Z') || task.last_boost_at.includes('+') ? '' : 'Z')).getTime()
-        : new Date(task.created_date + (task.created_date?.endsWith('Z') || task.created_date?.includes('+') ? '' : 'Z')).getTime();
-      if (Date.now() - refMs >= HOUR_MS) {
-        localStorage.setItem(sessionKey, '1');
-        addNotification({ type: 'boost_available', taskTitle: task.title, taskId: task.id });
-      }
+    const newEligible = myPublishedTasks
+      .filter((t) => t.status === 'OPEN' && !t.worker_id)
+      .filter((task) => {
+        const sessionKey = `boost_notif_${task.id}`;
+        if (localStorage.getItem(sessionKey)) return false;
+        const refMs = task.last_boost_at
+          ? new Date(task.last_boost_at + (task.last_boost_at.endsWith('Z') || task.last_boost_at.includes('+') ? '' : 'Z')).getTime()
+          : new Date(task.created_date + (task.created_date?.endsWith('Z') || task.created_date?.includes('+') ? '' : 'Z')).getTime();
+        return Date.now() - refMs >= HOUR_MS;
+      });
+
+    if (newEligible.length === 0) return;
+
+    // Mark all as notified so they don't trigger again
+    newEligible.forEach((task) => {
+      localStorage.setItem(`boost_notif_${task.id}`, '1');
     });
+
+    // Single consolidated notification instead of one-per-task
+    if (newEligible.length === 1) {
+      addNotification({ type: 'boost_available', taskTitle: newEligible[0].title, taskId: newEligible[0].id });
+    } else {
+      addNotification({ type: 'boost_available', taskTitle: `${newEligible.length} משימות ממתינות לבוסט`, taskId: newEligible[0].id, boostCount: newEligible.length });
+    }
   }, [myPublishedTasks, me?.id]);
 
   const activeClientTask = useMemo(() => myPublishedTasks.find((t) => t.status === 'TAKEN') || null, [myPublishedTasks]);
