@@ -106,6 +106,8 @@ export default function Layout() {
   }, []);
 
   const onTouchEnd = useCallback((e) => {
+    // Don't swipe-navigate on map page — map panning conflicts with swipe gesture
+    if (location.pathname === '/map') return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
     const dt = Date.now() - touchStartTime.current;
@@ -384,12 +386,12 @@ export default function Layout() {
     const HOUR_MS = 60 * 60 * 1000;
     myPublishedTasks.filter((t) => t.status === 'OPEN' && !t.worker_id).forEach((task) => {
       const sessionKey = `boost_notif_${task.id}`;
-      if (sessionStorage.getItem(sessionKey)) return;
+      if (localStorage.getItem(sessionKey)) return;
       const refMs = task.last_boost_at
         ? new Date(task.last_boost_at + (task.last_boost_at.endsWith('Z') || task.last_boost_at.includes('+') ? '' : 'Z')).getTime()
         : new Date(task.created_date + (task.created_date?.endsWith('Z') || task.created_date?.includes('+') ? '' : 'Z')).getTime();
       if (Date.now() - refMs >= HOUR_MS) {
-        sessionStorage.setItem(sessionKey, '1');
+        localStorage.setItem(sessionKey, '1');
         addNotification({ type: 'boost_available', taskTitle: task.title, taskId: task.id });
       }
     });

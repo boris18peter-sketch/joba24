@@ -1054,11 +1054,21 @@ export default function TaskDetail(props) {
                     await base44.entities.Task.update(id, { completion_photos: editPhotos, completion_video_url: editVideo || null });
                     queryClient.setQueryData(['task', id], old => old ? { ...old, completion_photos: editPhotos, completion_video_url: editVideo || null } : old);
                     queryClient.invalidateQueries({ queryKey: ['task', id] });
+                    // Notify task owner in real-time that proof was submitted
+                    if (task.client_id && task.client_id !== me?.id) {
+                      base44.functions.invoke('sendPushNotification', {
+                        user_ids: [task.client_id],
+                        title: 'הוכחת ביצוע הועלתה 📸',
+                        body: `העובד העלה הוכחת ביצוע למשימה "${task.title}"`,
+                        url: `/task/${id}`,
+                        tag: `completion_${id}`,
+                      }).catch(() => {});
+                    }
                     setSavingCompletion(false);
                     setEditingCompletion(false);
-                    toast.success('הוכחת הביצוע עודכנה ✓');
+                    toast.success('הוכחת הביצוע נשלחה ✓');
                   }} disabled={savingCompletion} style={{ flex: 1, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {savingCompletion ? <Loader2 size={16} className="animate-spin" /> : '💾 שמור'}
+                    {savingCompletion ? <Loader2 size={16} className="animate-spin" /> : '📤 שליחה'}
                   </button>
                   <button onClick={() => setEditingCompletion(false)} style={{ height: 44, padding: '0 16px', borderRadius: 12, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>ביטול</button>
                 </div>

@@ -57,7 +57,7 @@ export default function PreLaunchWaitingPage({ me }) {
 
   const notifSupported = typeof Notification !== 'undefined';
 
-  const isKycVerified = isUserVerified(me);
+  const isKycVerified = kycStatus === 'approved';
   const hasSocial = hasSocialVerified(me);
   const kycStatus = me?.kyc_status;
 

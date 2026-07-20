@@ -130,7 +130,7 @@ export default function MyTasks() {
     <div className="min-h-screen" style={{ background: 'var(--surface-1)', paddingBottom: 'calc(400px + env(safe-area-inset-bottom))' }} dir="rtl">
       <PageHeader title="My Tasks" right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{tasks.length} tasks</span>} />
       {/* Tabs bar */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '12px 16px 14px', position: 'sticky', top: 47, zIndex: 49 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           {TABS.map(t => {
             const count = tasks.filter(x => t.statuses.includes(x.status)).length;

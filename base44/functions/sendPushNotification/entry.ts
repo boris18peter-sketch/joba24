@@ -5,9 +5,7 @@ import { getMessaging } from 'npm:firebase-admin@11.11.1/messaging';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
+    // Auth not required — this function is called both directly by users and from other backend functions
     const { user_ids, title, body, url, tag } = await req.json();
 
     if (!user_ids || !user_ids.length || !title) {

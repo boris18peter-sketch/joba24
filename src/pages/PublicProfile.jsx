@@ -175,7 +175,6 @@ export default function PublicProfile() {
         {/* Media Gallery (unified with intro video) */}
         {(user.profile_media?.length > 0 || user.intro_video_url) && (
           <SectionCard title="גלריית מדיה">
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.5 }}>סרטונים ומדיה שמסבירים עלייך - מגדילים אמון פי 3</div>
             <ProfileMediaGallery
               media={[
                 ...(user.intro_video_url ? [{ type: 'video', url: user.intro_video_url }] : []),
