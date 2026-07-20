@@ -6,10 +6,10 @@ import { useQueryClient } from '@tanstack/react-query';
  * Silent location permission requester — directly triggers the native OS dialog
  * (the same dialog other apps show: "Allow Joba24 to use your location?").
  *
- * Mirrors NotificationsPermissionPrompt exactly:
+ * Mirrors NotificationsPermissionPrompt:
  *  - No custom popup — fires the native OS dialog directly
- *  - On iOS PWA, geolocation.getCurrentPosition() must be from a user gesture,
- *    so we listen for the first click/touch and then request
+ *  - On iOS PWA, geolocation.getCurrentPosition() MUST be called synchronously
+ *    from within the user gesture handler (not from an async wrapper)
  *  - If permission already granted → silently saves coordinates (and refreshes if stale)
  *  - If already denied → does nothing (user must re-enable via browser/OS settings)
  */
@@ -19,38 +19,22 @@ const PROMPT_KEY = 'joba24_loc_prompt_shown';
 export default function LocationPermissionPrompt() {
   const queryClient = useQueryClient();
   const savingRef = useRef(false);
-  const gestureHandlerRef = useRef(null);
 
-  const saveCoords = async (lat, lng) => {
+  const saveCoords = (lat, lng) => {
     if (savingRef.current) return;
     savingRef.current = true;
-    try {
-      await base44.auth.updateMe({
-        last_lat: lat,
-        last_lng: lng,
-        last_location_update: new Date().toISOString(),
-        location_sharing_enabled: true,
-      });
+    base44.auth.updateMe({
+      last_lat: lat,
+      last_lng: lng,
+      last_location_update: new Date().toISOString(),
+      location_sharing_enabled: true,
+    }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       window.dispatchEvent(new Event('location_permission_changed'));
-    } catch (err) {
+    }).catch(err => {
       console.error('[Location] Failed to save coordinates:', err?.message);
-    } finally {
+    }).finally(() => {
       savingRef.current = false;
-    }
-  };
-
-  const fetchPosition = () => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) { resolve(null); return; }
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        (err) => {
-          console.warn('[Location] Error:', err.message);
-          resolve(null);
-        },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-      );
     });
   };
 
@@ -70,6 +54,7 @@ export default function LocationPermissionPrompt() {
     if (!navigator.geolocation) return;
 
     let cancelled = false;
+    const handlerRef = { current: null };
 
     (async () => {
       const me = await base44.auth.me().catch(() => null);
@@ -81,17 +66,22 @@ export default function LocationPermissionPrompt() {
       const permState = await getPermissionState();
 
       // ── Already granted: save/refresh coordinates silently ──
-      if (permState === 'granted') {
-        if (!locationEnabled || isStale) {
-          const pos = await fetchPosition();
-          if (!cancelled && pos) await saveCoords(pos.lat, pos.lng);
-        }
+      if (permState === 'granted' && (!locationEnabled || isStale)) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => { if (!cancelled) saveCoords(pos.coords.latitude, pos.coords.longitude); },
+          (err) => console.warn('[Location] Error:', err.message),
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+        );
         return;
       }
 
-      // ── Undetermined ('prompt'): wait for first user gesture (iOS PWA requirement) ──
+      // ── Undetermined ('prompt'): wait for first user gesture ──
       if (permState !== 'prompt') return; // 'denied' → skip
-      if (localStorage.getItem(PROMPT_KEY)) return;
+
+      // If permission is still undetermined, clear any stale flag so we can prompt
+      if (localStorage.getItem(PROMPT_KEY)) {
+        localStorage.removeItem(PROMPT_KEY);
+      }
 
       let triggered = false;
       const requestOnGesture = () => {
@@ -101,20 +91,24 @@ export default function LocationPermissionPrompt() {
         document.removeEventListener('click', requestOnGesture);
         document.removeEventListener('touchend', requestOnGesture);
 
-        (async () => {
-          const pos = await fetchPosition();
-          if (pos) await saveCoords(pos.lat, pos.lng);
-        })();
+        // CRITICAL: Call getCurrentPosition SYNCHRONOUSLY in the gesture handler.
+        // Do NOT wrap in async — iOS PWA requires the call to be in the direct
+        // user-activation context, otherwise it silently fails.
+        navigator.geolocation.getCurrentPosition(
+          (pos) => saveCoords(pos.coords.latitude, pos.coords.longitude),
+          (err) => console.warn('[Location] Error:', err.message),
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+        );
       };
 
-      gestureHandlerRef.current = requestOnGesture;
+      handlerRef.current = requestOnGesture;
       document.addEventListener('click', requestOnGesture, { once: false });
       document.addEventListener('touchend', requestOnGesture, { once: false });
     })();
 
     return () => {
       cancelled = true;
-      const handler = gestureHandlerRef.current;
+      const handler = handlerRef.current;
       if (handler) {
         document.removeEventListener('click', handler);
         document.removeEventListener('touchend', handler);
