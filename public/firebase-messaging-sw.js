@@ -59,17 +59,38 @@ messaging.onBackgroundMessage((payload) => {
   });
 });
 
-// Handle notification click — open/focus the app
+// Extract task ID from a URL like "/task/abc123" or "/?open_task=abc123"
+function extractTaskId(url) {
+  if (!url) return null;
+  // Match /task/:id pattern
+  const taskMatch = url.match(/\/task\/([a-f0-9]+)/i);
+  if (taskMatch) return taskMatch[1];
+  // Match ?open_task= pattern
+  const params = new URLSearchParams(url.split('?')[1]);
+  return params.get('open_task');
+}
+
+// Handle notification click — open/focus the app and navigate to task popup
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';
+  const taskId = extractTaskId(targetUrl);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If app is already open, focus it and send a message to open the task sheet
       for (const client of clientList) {
-        if ('focus' in client) return client.focus();
+        if ('focus' in client) {
+          client.focus();
+          if (taskId) {
+            client.postMessage({ type: 'OPEN_TASK_SHEET', taskId });
+          }
+          return;
+        }
       }
-      if (clients.openWindow) return clients.openWindow(targetUrl);
+      // No open client — open new window. Use ?open_task= so the app opens the popup
+      const openUrl = taskId ? `/?open_task=${taskId}` : targetUrl;
+      if (clients.openWindow) return clients.openWindow(openUrl);
     })
   );
 });
