@@ -38,7 +38,6 @@ import { createPortal } from 'react-dom';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import VerifyModal from '@/components/VerifyModal';
 import NotificationsPermissionPrompt from '@/components/NotificationsPermissionPrompt';
-import LocationPermissionPrompt from '@/components/LocationPermissionPrompt';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
@@ -502,7 +501,6 @@ export default function Layout() {
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <NotificationsPermissionPrompt />
-      <LocationPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 

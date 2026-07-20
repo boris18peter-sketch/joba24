@@ -42,24 +42,14 @@ export default function PreLaunchWaitingPage({ me }) {
     }
   };
 
-  // ── Location permission — triggers native OS dialog, saves coordinates ──
+  // ── Location permission — triggers native OS dialog ──
   const handleEnableLocation = () => {
     if (!navigator.geolocation) {
       setLocPerm('denied');
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        setLocPerm('granted');
-        try {
-          await base44.auth.updateMe({
-            last_lat: pos.coords.latitude,
-            last_lng: pos.coords.longitude,
-            last_location_update: new Date().toISOString(),
-            location_sharing_enabled: true,
-          });
-        } catch {}
-      },
+      () => setLocPerm('granted'),
       (err) => setLocPerm(err.code === err.PERMISSION_DENIED ? 'denied' : 'default'),
       { enableHighAccuracy: false, timeout: 10000 }
     );
