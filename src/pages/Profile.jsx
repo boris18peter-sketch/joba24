@@ -66,7 +66,14 @@ export default function Profile() {
 
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
-    await base44.auth.deleteAccount();
+    try {
+      await base44.auth.deleteAccount();
+    } catch (e) {
+      // Fallback: mark account as deleted via updateMe
+      try { await base44.auth.updateMe({ account_deleted: true }); } catch {}
+    }
+    // Log out and redirect to welcome page
+    await base44.auth.logout('/');
     setDeleteLoading(false);
   };
 
@@ -354,7 +361,7 @@ export default function Profile() {
           <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
           <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label="היסטוריה וביקורות" sub={`${completedCount} משימות · ${reviews.length} ביקורות`} onClick={() => setShowUnifiedHistory(true)} />
           <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => base44.auth.logout()} chevronColor="#fca5a5" />
-          <MenuRow icon={Trash2} iconBg="#f8fafc" iconColor="#94a3b8" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#e2e8f0" last />
+          <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
         </div>
 
         <div style={{ height: 20 }} />

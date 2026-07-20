@@ -53,6 +53,7 @@ import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import BoostOverlay from '@/components/BoostOverlay';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
@@ -369,6 +370,19 @@ export default function Layout() {
     window.addEventListener('show_boost_overlay', handler);
     return () => window.removeEventListener('show_boost_overlay', handler);
   }, []);
+
+  // ── Task sheet ↔ URL sync ──
+  // When the URL is /task/:id, open the sheet with that ID.
+  // When the URL changes away, close the sheet.
+  const { sheetTaskId, syncSheetTaskId } = useTaskSheet();
+  useEffect(() => {
+    const match = location.pathname.match(/^\/task\/(.+)$/);
+    if (match && sheetTaskId !== match[1]) {
+      syncSheetTaskId(match[1]);
+    } else if (!match && sheetTaskId) {
+      syncSheetTaskId(null);
+    }
+  }, [location.pathname, sheetTaskId, syncSheetTaskId]);
 
   // ── All WebSocket subscriptions via hook ─────────────────────────────────
   useRealtimeSync({

@@ -120,6 +120,74 @@
     --sidebar-border:      213 30% 20%;
     --sidebar-ring:        213 60% 50%;
   }
+
+  /* ════════════════════════════════════════════════════════════════════
+     DARK MODE — system preference (prefers-color-scheme: dark)
+     Overrides all theme tokens with high-contrast dark palette.
+     ════════════════════════════════════════════════════════════════════ */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* ── Surfaces ── */
+      --surface-1:    #0f172a;
+      --surface-2:    #1e293b;
+      --surface-3:    #334155;
+      --surface-4:   #1e293b;
+
+      /* ── Text ── */
+      --text-1:       #f8fafc;
+      --text-2:       #94a3b8;
+      --text-3:       #64748b;
+
+      /* ── Borders ── */
+      --border-1:     #334155;
+      --border-2:     #475569;
+
+      /* ── Semantic aliases (HSL) ── */
+      --background:          222 47% 11%;
+      --foreground:          210 40% 98%;
+      --card:                217 33% 17%;
+      --card-foreground:     210 40% 98%;
+      --popover:             217 33% 17%;
+      --popover-foreground:  210 40% 98%;
+      --secondary:           217 33% 17%;
+      --secondary-foreground:210 40% 98%;
+      --muted:               215 25% 27%;
+      --muted-foreground:    215 20% 65%;
+      --border:              215 25% 27%;
+      --input:               215 25% 27%;
+
+      /* ── Layout ── */
+      --header-bg:   rgba(15,23,42,0.96);
+      --nav-bg:      #1e293b;
+      --modal-bg:    #0f172a;
+      --sheet-bg:    #1e293b;
+      --card-bg:     #1e293b;
+      --input-bg:    #0f172a;
+      --overlay-bg:  rgba(0,0,0,0.7);
+      --tag-bg:      #334155;
+      --tag-muted:   #475569;
+      --white-text:  #f8fafc;
+
+      /* ── Semantic backgrounds ── */
+      --color-success-bg:    rgba(5,150,105,0.1);
+      --color-success-border:rgba(5,150,105,0.3);
+      --color-warning-bg:    rgba(217,119,6,0.1);
+      --color-warning-border:rgba(217,119,6,0.3);
+      --color-danger-bg:     rgba(220,38,38,0.1);
+      --color-danger-border: rgba(220,38,38,0.3);
+      --danger-bg:   rgba(220,38,38,0.1);
+      --danger-border:rgba(220,38,38,0.3);
+      --success-bg:  rgba(5,150,105,0.1);
+      --warning-bg:  rgba(217,119,6,0.1);
+
+      /* ── Shadows — darker for depth ── */
+      --shadow-xs:   0 1px 3px rgba(0,0,0,0.3);
+      --shadow-sm:   0 2px 8px rgba(0,0,0,0.35);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.4);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,0.45);
+      --shadow-xl:   0 16px 56px rgba(0,0,0,0.5);
+    }
+  }
 }
 
 @layer base {
