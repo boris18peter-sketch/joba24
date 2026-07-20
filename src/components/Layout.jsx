@@ -502,7 +502,7 @@ export default function Layout() {
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <NotificationsPermissionPrompt />
-      <LocationPermissionPrompt me={me} />
+      <LocationPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 

@@ -6,25 +6,22 @@ import { useQueryClient } from '@tanstack/react-query';
  * Silent location permission requester — directly triggers the native OS dialog
  * (the same dialog other apps show: "Allow Joba24 to use your location?").
  *
- * No custom popup is shown. Only fires when:
- *  - geolocation API is available
- *  - the user hasn't already enabled location sharing (location_sharing_enabled !== true)
- *  - we haven't already asked on this device (localStorage flag)
- *
- * On iOS PWA, geolocation.getCurrentPosition() must be triggered from a user gesture.
- * We listen for the first user interaction (click/touch) and then request permission.
- *
- * If location_sharing_enabled is already true but coordinates are stale (> 30 min),
- * we silently refresh them in the background (no dialog).
+ * Mirrors NotificationsPermissionPrompt exactly:
+ *  - No custom popup — fires the native OS dialog directly
+ *  - On iOS PWA, geolocation.getCurrentPosition() must be from a user gesture,
+ *    so we listen for the first click/touch and then request
+ *  - If permission already granted → silently saves coordinates (and refreshes if stale)
+ *  - If already denied → does nothing (user must re-enable via browser/OS settings)
  */
 const STALE_MS = 30 * 60 * 1000; // 30 minutes
+const PROMPT_KEY = 'joba24_loc_prompt_shown';
 
-export default function LocationPermissionPrompt({ me }) {
+export default function LocationPermissionPrompt() {
   const queryClient = useQueryClient();
   const savingRef = useRef(false);
+  const gestureHandlerRef = useRef(null);
 
-  // Save coordinates to user record
-  const saveCoords = async (lat, lng, enabled = true) => {
+  const saveCoords = async (lat, lng) => {
     if (savingRef.current) return;
     savingRef.current = true;
     try {
@@ -32,9 +29,10 @@ export default function LocationPermissionPrompt({ me }) {
         last_lat: lat,
         last_lng: lng,
         last_location_update: new Date().toISOString(),
-        location_sharing_enabled: enabled,
+        location_sharing_enabled: true,
       });
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      window.dispatchEvent(new Event('location_permission_changed'));
     } catch (err) {
       console.error('[Location] Failed to save coordinates:', err?.message);
     } finally {
@@ -42,7 +40,6 @@ export default function LocationPermissionPrompt({ me }) {
     }
   };
 
-  // Fetch position — triggers native OS dialog on first call
   const fetchPosition = () => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) { resolve(null); return; }
@@ -50,10 +47,6 @@ export default function LocationPermissionPrompt({ me }) {
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         (err) => {
           console.warn('[Location] Error:', err.message);
-          // If permission denied, mark as asked so we don't keep trying
-          if (err.code === err.PERMISSION_DENIED) {
-            localStorage.setItem('joba24_loc_prompt_shown', '1');
-          }
           resolve(null);
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
@@ -61,50 +54,73 @@ export default function LocationPermissionPrompt({ me }) {
     });
   };
 
+  const getPermissionState = () => {
+    return new Promise((resolve) => {
+      if (!navigator.permissions || !navigator.permissions.query) {
+        resolve('prompt');
+        return;
+      }
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        resolve(result.state);
+      }).catch(() => resolve('prompt'));
+    });
+  };
+
   useEffect(() => {
-    if (!me?.id) return;
     if (!navigator.geolocation) return;
 
-    const locationEnabled = me.location_sharing_enabled === true;
-    const lastUpdate = me.last_location_update;
-    const isStale = !lastUpdate || (Date.now() - new Date(lastUpdate).getTime() > STALE_MS);
+    let cancelled = false;
 
-    // ── Case A: Already enabled — silently refresh coordinates if stale ──
-    if (locationEnabled && isStale) {
-      (async () => {
-        const pos = await fetchPosition();
-        if (pos) await saveCoords(pos.lat, pos.lng);
-      })();
-      return;
-    }
+    (async () => {
+      const me = await base44.auth.me().catch(() => null);
+      if (cancelled || !me) return;
 
-    // ── Case B: Not enabled yet — wait for first user gesture (iOS PWA requirement) ──
-    if (locationEnabled) return; // already enabled and fresh, nothing to do
-    if (localStorage.getItem('joba24_loc_prompt_shown')) return;
+      const locationEnabled = me.location_sharing_enabled === true;
+      const lastUpdate = me.last_location_update;
+      const isStale = !lastUpdate || (Date.now() - new Date(lastUpdate).getTime() > STALE_MS);
+      const permState = await getPermissionState();
 
-    let triggered = false;
-    const requestOnGesture = () => {
-      if (triggered) return;
-      triggered = true;
-      localStorage.setItem('joba24_loc_prompt_shown', '1');
-      document.removeEventListener('click', requestOnGesture);
-      document.removeEventListener('touchend', requestOnGesture);
+      // ── Already granted: save/refresh coordinates silently ──
+      if (permState === 'granted') {
+        if (!locationEnabled || isStale) {
+          const pos = await fetchPosition();
+          if (!cancelled && pos) await saveCoords(pos.lat, pos.lng);
+        }
+        return;
+      }
 
-      (async () => {
-        const pos = await fetchPosition();
-        if (pos) await saveCoords(pos.lat, pos.lng, true);
-      })();
-    };
+      // ── Undetermined ('prompt'): wait for first user gesture (iOS PWA requirement) ──
+      if (permState !== 'prompt') return; // 'denied' → skip
+      if (localStorage.getItem(PROMPT_KEY)) return;
 
-    // Listen for first user gesture
-    document.addEventListener('click', requestOnGesture, { once: false });
-    document.addEventListener('touchend', requestOnGesture, { once: false });
+      let triggered = false;
+      const requestOnGesture = () => {
+        if (triggered) return;
+        triggered = true;
+        localStorage.setItem(PROMPT_KEY, '1');
+        document.removeEventListener('click', requestOnGesture);
+        document.removeEventListener('touchend', requestOnGesture);
+
+        (async () => {
+          const pos = await fetchPosition();
+          if (pos) await saveCoords(pos.lat, pos.lng);
+        })();
+      };
+
+      gestureHandlerRef.current = requestOnGesture;
+      document.addEventListener('click', requestOnGesture, { once: false });
+      document.addEventListener('touchend', requestOnGesture, { once: false });
+    })();
 
     return () => {
-      document.removeEventListener('click', requestOnGesture);
-      document.removeEventListener('touchend', requestOnGesture);
+      cancelled = true;
+      const handler = gestureHandlerRef.current;
+      if (handler) {
+        document.removeEventListener('click', handler);
+        document.removeEventListener('touchend', handler);
+      }
     };
-  }, [me?.id, me?.location_sharing_enabled, me?.last_location_update]);
+  }, []);
 
   return null;
 }
