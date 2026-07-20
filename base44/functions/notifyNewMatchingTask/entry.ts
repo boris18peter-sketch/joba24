@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
         tag: `new_match_${taskId}`,
         click_action: `/task/${taskId}`,
       });
-      sent += result?.sent || 0;
+      sent += result?.data?.sent ?? result?.sent ?? 0;
     }
 
     return Response.json({ sent, total: matchedUserIds.length });
