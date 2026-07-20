@@ -38,20 +38,26 @@ export default function NotificationsPermissionPrompt() {
     }
 
     // Permission is 'default' — wait for first user gesture (required for iOS PWA)
-    if (localStorage.getItem('joba24_notif_prompt_shown')) return;
+    // Clear stale flag: if permission is still 'default', a previous attempt failed
+    // (e.g., missing manifest, SW error, user dismissed). Allow retry.
+    localStorage.removeItem('joba24_notif_prompt_shown');
 
     let triggered = false;
     const requestOnGesture = () => {
       if (triggered) return;
       triggered = true;
-      localStorage.setItem('joba24_notif_prompt_shown', '1');
-      // Remove listeners immediately
+      // Don't set flag yet — only set after we get a definitive answer (granted/denied)
       document.removeEventListener('click', requestOnGesture);
       document.removeEventListener('touchend', requestOnGesture);
 
       (async () => {
         try {
           const perm = await requestNotificationPermission();
+          // Only mark as shown if we got a definitive answer
+          // If still 'default' (user dismissed or error), allow retry next session
+          if (perm === 'granted' || perm === 'denied') {
+            localStorage.setItem('joba24_notif_prompt_shown', '1');
+          }
           if (perm !== 'granted') return;
 
           const token = await getFCMToken();
