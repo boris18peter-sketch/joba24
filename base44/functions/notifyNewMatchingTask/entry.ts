@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { data, event } = await req.json();
 
-    if (!data || !data.id || !data.category || data.status !== 'OPEN') {
+    if (!data || !data.id || data.status !== 'OPEN') {
       return Response.json({ sent: 0, reason: 'Not a new open task' });
     }
 
@@ -36,11 +36,19 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No eligible workers' });
     }
 
-    // For each worker, check relevance: category match AND/OR proximity
+    // For each worker, check relevance: category match OR city match OR "other" OR proximity
+    const taskCity = data.city;
     const matchedUserIds = [];
     for (const worker of eligibleWorkers) {
-      const categoryMatch = Array.isArray(worker.preferred_categories) &&
-        worker.preferred_categories.includes(taskCategory);
+      const prefs = Array.isArray(worker.preferred_categories) ? worker.preferred_categories : [];
+
+      // Users with "other" or empty preferences are generalists — match all tasks
+      const isGeneralist = prefs.length === 0 || prefs.includes('other');
+      const categoryMatch = taskCategory && prefs.includes(taskCategory);
+
+      const cityMatch = taskCity &&
+        Array.isArray(worker.preferred_cities) &&
+        worker.preferred_cities.some(c => c === taskCity || taskCity.includes(c) || c.includes(taskCity));
 
       let nearby = false;
       if (taskLat && taskLng && worker.last_lat && worker.last_lng) {
@@ -48,7 +56,7 @@ Deno.serve(async (req) => {
         nearby = dist < 0.18; // ~20km
       }
 
-      if (categoryMatch || nearby) {
+      if (isGeneralist || categoryMatch || cityMatch || nearby) {
         matchedUserIds.push(worker.id);
       }
     }
