@@ -22,6 +22,13 @@ export default function PreLaunchWaitingPage({ me }) {
     if (typeof Notification !== 'undefined') {
       setNotifPerm(Notification.permission);
     }
+    // Check existing geolocation permission on mount
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        if (result.state === 'granted') setLocPerm('granted');
+        else if (result.state === 'denied') setLocPerm('denied');
+      }).catch(() => {});
+    }
   }, []);
 
   // ── Notification permission — triggers native OS dialog ──
@@ -58,6 +65,7 @@ export default function PreLaunchWaitingPage({ me }) {
             last_location_update: new Date().toISOString(),
             location_sharing_enabled: true,
           });
+          await refreshUser();
         } catch {}
       },
       (err) => setLocPerm(err.code === err.PERMISSION_DENIED ? 'denied' : 'default'),
