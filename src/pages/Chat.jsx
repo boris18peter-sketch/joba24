@@ -331,7 +331,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header — fixed flex item, doesn't scroll */}
       <div style={{

@@ -445,7 +445,7 @@ export default function Layout() {
         </div>
       );
     }
-    return <div style={{ display: 'flex', height: '100dvh', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+    return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
   }
 
   const isBlocked = approvalStatus?.data?.is_blocked;
@@ -467,7 +467,7 @@ export default function Layout() {
   ];
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
       <NotificationsPermissionPrompt />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
@@ -537,7 +537,7 @@ export default function Layout() {
       )}
 
       {createPortal(
-        <div style={{ position: 'fixed', top: 12, left: 0, right: 0, zIndex: 9999999, pointerEvents: 'none' }}>
+        <div style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top) + 12px)', left: 0, right: 0, zIndex: 9999999, pointerEvents: 'none' }}>
           {notifications.map((notif) => (
             <div key={notif.id} style={{ pointerEvents: 'auto' }}>
               <LiveNotificationPopup notification={notif} onClose={() => removeNotification(notif.id)} />

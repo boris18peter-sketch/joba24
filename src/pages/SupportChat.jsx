@@ -224,7 +224,7 @@ export default function SupportChat() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', background: 'var(--surface-1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'var(--surface-1)' }}>
         <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
       </div>
     );
@@ -234,7 +234,7 @@ export default function SupportChat() {
 
   return (
     <div dir="rtl" style={{
-      display: 'flex', flexDirection: 'column', height: '100dvh',
+      display: 'flex', flexDirection: 'column', height: '100%',
       background: 'var(--surface-1)', zIndex: 9999, position: 'relative',
     }}>
       {/* Header */}
