@@ -10,9 +10,10 @@ import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
+import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { toast } from 'sonner';
 
-const CITIES = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'רמת גן', 'אשדוד'];
+const INITIAL_CITIES_COUNT = 12;
 
 function SectionCard({ title, children, style }) {
   return (
@@ -82,6 +83,7 @@ export default function WorkerProfile() {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [showAllCities, setShowAllCities] = useState(false);
   const certDocRef = useRef(null);
   const photoInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -378,23 +380,52 @@ export default function WorkerProfile() {
 
         {/* ── Cities ── */}
         <SectionCard title="ערים לביצוע משימות">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {CITIES.map(c => {
-              const sel = form.preferred_cities.includes(c);
-              return (
-                <button key={c}
-                  onClick={() => !isViewingOther && toggleCity(c)}
-                  disabled={isViewingOther}
-                  style={{
-                    padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
-                    background: sel ? '#1a6fd4' : 'var(--surface-3)',
-                    color: sel ? 'white' : 'var(--text-2)',
-                    borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
-                  }}
-                >{c}</button>
-              );
-            })}
-          </div>
+          {(() => {
+            const priorityCities = ISRAELI_CITIES.slice(0, INITIAL_CITIES_COUNT);
+            const restCities = ISRAELI_CITIES.slice(INITIAL_CITIES_COUNT);
+            const customCities = (form.preferred_cities || []).filter(c => !ISRAELI_CITIES.includes(c));
+            const visibleCities = showAllCities
+              ? [...ISRAELI_CITIES, ...customCities]
+              : [...priorityCities, ...customCities.filter(c => !priorityCities.includes(c))];
+            const hasMore = !showAllCities && (restCities.length > 0 || customCities.length > 0);
+            return (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {visibleCities.map(c => {
+                  const sel = form.preferred_cities.includes(c);
+                  return (
+                    <button key={c}
+                      onClick={() => !isViewingOther && toggleCity(c)}
+                      disabled={isViewingOther}
+                      style={{
+                        padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: '1px solid', cursor: isViewingOther ? 'default' : 'pointer', transition: 'all 0.15s',
+                        background: sel ? '#1a6fd4' : 'var(--surface-3)',
+                        color: sel ? 'white' : 'var(--text-2)',
+                        borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
+                      }}
+                    >{c}</button>
+                  );
+                })}
+                {hasMore && !isViewingOther && (
+                  <button
+                    onClick={() => setShowAllCities(true)}
+                    style={{
+                      padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px dashed var(--border-2)', cursor: 'pointer', transition: 'all 0.15s',
+                      background: 'var(--surface-2)', color: '#1a6fd4',
+                    }}
+                  >עוד ערים +</button>
+                )}
+                {showAllCities && !isViewingOther && (
+                  <button
+                    onClick={() => setShowAllCities(false)}
+                    style={{
+                      padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px dashed var(--border-2)', cursor: 'pointer', transition: 'all 0.15s',
+                      background: 'var(--surface-2)', color: 'var(--text-3)',
+                    }}
+                  >הצג פחות</button>
+                )}
+              </div>
+            );
+          })()}
         </SectionCard>
 
         {/* ── Unified History & Reviews (viewing other) ── */}

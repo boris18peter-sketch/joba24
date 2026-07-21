@@ -98,7 +98,7 @@ const PUSH_VARIANTS = {
   center: { x: 0, opacity: 1 },
   exit: (dir) => ({
     x: dir > 0 ? '-20%' : '100%',
-    opacity: 1,
+    opacity: 0,
     pointerEvents: 'none',
   }),
 };

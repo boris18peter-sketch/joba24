@@ -350,7 +350,11 @@ export default function WorkerOnboarding() {
                 <Icon size={26} color="#1a6fd4" />
               </div>
               <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 4, lineHeight: 1.3 }}>{currentStep.title}</h2>
-              <p style={{ fontSize: 14, color: 'var(--text-3)', margin: 0, marginBottom: 16, lineHeight: 1.5 }}>{currentStep.subtitle}</p>
+              <p style={{ fontSize: 14, color: 'var(--text-3)', margin: 0, marginBottom: 6, lineHeight: 1.5 }}>{currentStep.subtitle}</p>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 5, opacity: 0.85, background: 'var(--surface-3)', padding: '6px 10px', borderRadius: 10, border: '1px solid var(--border-1)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                ניתן לערוך את הפרטים בהמשך בעמוד הפרופיל
+              </div>
 
               {/* Selected count badge for chips */}
               {currentStep.type === 'chips' && (data.preferred_categories || []).length > 0 && (

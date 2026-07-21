@@ -26,10 +26,20 @@ export function TaskSheetProvider({ children }) {
     }
   }, []);
 
-  // Listen for popstate (hardware back button, swipe-back) to close the sheet
+  // Hides the sheet WITHOUT touching history — used when the user navigates
+  // away (e.g., clicks a profile link inside the sheet). The {taskSheet}
+  // history entry stays in the stack so pressing Back restores the sheet.
+  const hideTaskSheet = useCallback(() => {
+    setSheetTaskId(null);
+  }, []);
+
+  // Listen for popstate (hardware back button, swipe-back) to close or restore the sheet
   useEffect(() => {
     const handlePopState = () => {
-      if (!window.history.state?.taskSheet) {
+      if (window.history.state?.taskSheet) {
+        // We're back at the task sheet entry — restore it
+        setSheetTaskId(window.history.state.taskSheet);
+      } else {
         setSheetTaskId(null);
       }
     };
@@ -38,7 +48,7 @@ export function TaskSheetProvider({ children }) {
   }, []);
 
   return (
-    <TaskSheetContext.Provider value={{ sheetTaskId, openTaskSheet, closeTaskSheet }}>
+    <TaskSheetContext.Provider value={{ sheetTaskId, openTaskSheet, closeTaskSheet, hideTaskSheet }}>
       {children}
     </TaskSheetContext.Provider>
   );
@@ -46,6 +56,6 @@ export function TaskSheetProvider({ children }) {
 
 export function useTaskSheet() {
   const ctx = useContext(TaskSheetContext);
-  if (!ctx) return { sheetTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {} };
+  if (!ctx) return { sheetTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {}, hideTaskSheet: () => {} };
   return ctx;
 }

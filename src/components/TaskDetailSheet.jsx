@@ -11,20 +11,25 @@ const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 const ENTER_SPRING = { type: 'spring', damping: 36, stiffness: 420, mass: 0.65 };
 
 export default function TaskDetailSheet() {
-  const { sheetTaskId, closeTaskSheet } = useTaskSheet();
+  const { sheetTaskId, closeTaskSheet, hideTaskSheet } = useTaskSheet();
   const [expanded, setExpanded] = useState(false);
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
   const scrollRef = useRef(null);
   const dragControls = useDragControls();
 
-  // Route change: close sheet immediately when user navigates to a different page
+  // Route change: hide the sheet when user navigates away (e.g., clicks a profile link).
+  // Uses hideTaskSheet (not closeTaskSheet) so the {taskSheet} history entry stays —
+  // pressing Back will restore the sheet via the popstate handler in TaskSheetContext.
+  // When navigating BACK to the sheet's history entry (restored by popstate), don't hide.
   useEffect(() => {
     if (sheetTaskId && location.pathname !== prevPathRef.current) {
-      closeTaskSheet();
+      if (!window.history.state?.taskSheet) {
+        hideTaskSheet();
+      }
     }
     prevPathRef.current = location.pathname;
-  }, [location.pathname, sheetTaskId, closeTaskSheet]);
+  }, [location.pathname, sheetTaskId, hideTaskSheet]);
 
   // Instant close event (from boost, repost, edit, etc.)
   useEffect(() => {

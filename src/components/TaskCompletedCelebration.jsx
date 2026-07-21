@@ -1,21 +1,45 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { X } from 'lucide-react';
 
 /**
  * TaskCompletedCelebration — shows a success animation banner
  * when a worker's active task transitions to COMPLETED.
- * Appears underneath the rating popup; visible after it closes.
+ * Supports swipe-up-to-dismiss and X close button (like LiveNotificationPopup).
  */
 export default function TaskCompletedCelebration({ task, onDismiss }) {
   const [phase, setPhase] = useState('enter');
+  const [swipeY, setSwipeY] = useState(0);
+  const touchStartY = useRef(null);
+  const timerRef = useRef(null);
+
+  const dismiss = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPhase('exit');
+    setSwipeY(0);
+    setTimeout(onDismiss, 400);
+  };
 
   useEffect(() => {
     setPhase('show');
-    const timer = setTimeout(() => {
-      setPhase('exit');
-      setTimeout(onDismiss, 400);
+    timerRef.current = setTimeout(() => {
+      dismiss();
     }, 5500);
-    return () => clearTimeout(timer);
-  }, [onDismiss]);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  const handleTouchStart = (e) => { touchStartY.current = e.touches[0].clientY; };
+  const handleTouchMove = (e) => {
+    if (touchStartY.current === null) return;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (dy < 0) setSwipeY(dy);
+  };
+  const handleTouchEnd = (e) => {
+    if (touchStartY.current === null) return;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    if (dy < -40) { dismiss(); }
+    else setSwipeY(0);
+    touchStartY.current = null;
+  };
 
   if (!task) return null;
 
@@ -23,9 +47,12 @@ export default function TaskCompletedCelebration({ task, onDismiss }) {
     <div
       style={{
         opacity: phase === 'exit' ? 0 : 1,
-        transform: phase === 'exit' ? 'scale(0.96)' : 'scale(1)',
-        transition: 'opacity 0.4s ease, transform 0.4s ease',
+        transform: phase === 'exit' ? 'scale(0.96)' : `translateY(${swipeY}px)`,
+        transition: swipeY === 0 ? 'opacity 0.4s ease, transform 0.4s ease' : 'none',
       }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div
         style={{
@@ -41,6 +68,20 @@ export default function TaskCompletedCelebration({ task, onDismiss }) {
         {/* Decorative blobs */}
         <div style={{ position: 'absolute', bottom: -30, left: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+
+        {/* Close button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); dismiss(); }}
+          style={{
+            position: 'absolute', top: 10, left: 10,
+            width: 28, height: 28, borderRadius: 9,
+            background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 10, flexShrink: 0,
+          }}
+        >
+          <X size={14} color="white" />
+        </button>
 
         {/* Confetti particles */}
         {phase === 'show' && (
