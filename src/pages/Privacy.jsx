@@ -231,18 +231,15 @@ export default function Privacy() {
         ))}
       </div>
 
-      {/* Account Deletion Request — Google Play requirement */}
+      {/* Account Deletion — Google Play requirement */}
       <div style={{ padding: '0 16px 24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#dc2626', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>בקשת מחיקת חשבון</div>
-          <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
-            מחיקת החשבון והנתונים שלך ב-Joba24
-          </h2>
-          <p style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>
-            בהתאם לדרישות חוק הגנת הפרטיות ומדיניות Google Play
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', padding: 20, textAlign: 'center' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 900, color: '#0f2b6b', margin: '0 0 6px' }}>מחיקת חשבון</h2>
+          <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, margin: '0 0 16px' }}>
+            ניתן למחוק את חשבון ה-Joba24 שלך ואת כל הנתונים המשויכים אליו בכל עת.
           </p>
+          <AccountDeletionRequest />
         </div>
-        <AccountDeletionRequest />
       </div>
 
       {/* Footer */}
