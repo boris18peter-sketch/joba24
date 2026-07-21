@@ -55,8 +55,18 @@ function EmailForm({ onBack, onSuccess }) {
     return 'Jb24_' + Math.abs(h1).toString(36) + '_' + Math.abs(h2).toString(36) + '_x9';
   };
 
+  // Google Play reviewer bypass — skip real OTP, use fixed code
+  const isReviewerEmail = () => email.trim().toLowerCase() === 'hello@joba24.com';
+
   const handleEmailSubmit = async () => {
     if (!validateEmail(email)) return;
+
+    // Reviewer account: go straight to OTP screen (fixed code 2424)
+    if (isReviewerEmail()) {
+      setMode('otp');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setInfo('');
@@ -104,6 +114,27 @@ function EmailForm({ onBack, onSuccess }) {
     setError('');
     try {
       const password = derivePassword(email);
+
+      // Google Play reviewer bypass — fixed code 2424, skip real OTP verification
+      if (isReviewerEmail() && otp.trim() === '2424') {
+        try {
+          await base44.auth.loginViaEmailPassword(email.trim(), password);
+          onSuccess();
+          return;
+        } catch {
+          // Account not yet created/verified — try register first, then login
+          try {
+            await base44.auth.register({ email: email.trim(), password });
+            // Account created but unverified — can't login without real OTP.
+            // Admin must pre-verify this account once.
+            setError('חשבון הבדיקה אינו מאומת. יש לאמת אותו פעם אחת מראש.');
+          } catch {
+            setError('חשבון הבדיקה אינו מוגדר. יש ליצור ולאמת אותו פעם אחת מראש.');
+          }
+          return;
+        }
+      }
+
       await base44.auth.verifyOtp({ email: email.trim(), otpCode: otp.trim() });
       await base44.auth.loginViaEmailPassword(email.trim(), password);
       onSuccess();
@@ -137,7 +168,9 @@ function EmailForm({ onBack, onSuccess }) {
         </button>
         <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>אימות באימייל</div>
         <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
-          שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.
+          {isReviewerEmail()
+            ? <>הזן את קוד הגישה עבור <strong style={{ color: 'var(--text-1)' }}>{email}</strong>.</>
+            : <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.</>}
         </div>
         <input
           type="text"
