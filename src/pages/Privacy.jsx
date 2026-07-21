@@ -1,5 +1,6 @@
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/lib/AuthContext';
+import AccountDeletionRequest from '@/components/AccountDeletionRequest';
 
 export default function Privacy() {
   const { isAuthenticated } = useAuth();
@@ -150,13 +151,13 @@ export default function Privacy() {
 ניתן לבטל עוגיות בהגדרות הדפדפן, אך ייתכן שחלק מהשירותים לא יפעלו כראוי.`
     },
     {
-      title: 'פרטיות ילדים',
+      title: 'פרטיות קטינים',
       number: '10',
-      content: `הפלטפורמה מיועדת למשתמשים בני 18 ומעלה בלבד.
+      content: `הפלטפורמה מיועדת למשתמשים בני 16 ומעלה בלבד.
 
-איננו אוספים ביודעין מידע אישי מקטינים.
+איננו אוספים ביודעין מידע אישי מקטינים מתחת לגיל 16.
 
-אם נודע לנו שנאסף מידע מקטין, נמחק אותו מיד.`
+אם נודע לנו שנאסף מידע מקטין מתחת לגיל 16, נמחק אותו מיד.`
     },
     {
       title: 'שינויים במדיניות הפרטיות',
@@ -228,6 +229,20 @@ export default function Privacy() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Account Deletion Request — Google Play requirement */}
+      <div style={{ padding: '0 16px 24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#dc2626', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>בקשת מחיקת חשבון</div>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
+            מחיקת החשבון והנתונים שלך ב-Joba24
+          </h2>
+          <p style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>
+            בהתאם לדרישות חוק הגנת הפרטיות ומדיניות Google Play
+          </p>
+        </div>
+        <AccountDeletionRequest />
       </div>
 
       {/* Footer */}
