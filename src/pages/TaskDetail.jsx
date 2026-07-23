@@ -166,7 +166,6 @@ export default function TaskDetail(props) {
   const [labelRotIdx, setLabelRotIdx] = useState(0);
   const [mediaIdx, setMediaIdx] = useState(0);
   const [idCopied, setIdCopied] = useState(false);
-  const [descExpanded, setDescExpanded] = useState(false);
   const prevWorkerIdRef = useRef(null);
 
   useEffect(() => {
@@ -772,34 +771,13 @@ export default function TaskDetail(props) {
               </div>
             )}
 
-            {/* Title row — description as main heading + category badge, with 3-dot on left for owner */}
+            {/* Title row — with 3-dot on left for owner */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {/* Main heading = description (or title fallback) */}
-                {mainDescription ? (
-                  <div className="selectable-text" style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.3, marginBottom: 6 }}>
-                    {descExpanded || mainDescription.length <= 180
-                      ? mainDescription
-                      : <>
-                          {mainDescription.slice(0, 180)}
-                          <button onClick={(e) => { e.stopPropagation(); setDescExpanded(true); }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontWeight: 700, cursor: 'pointer', fontSize: 14, padding: 0, marginRight: 4 }}>עוד...</button>
-                          <span style={{ opacity: 0.7 }}>…</span>
-                        </>
-                    }
-                    {descExpanded && mainDescription.length > 180 && (
-                      <button onClick={(e) => { e.stopPropagation(); setDescExpanded(false); }} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 12, padding: '3px 12px', borderRadius: 8, marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 4 }}>פחות ▲</button>
-                    )}
-                  </div>
-                ) : task.title ? (
-                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25, marginBottom: 6 }}>{task.title}</div>
-                ) : null}
-                {/* Secondary title = category */}
-                {task.category && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.18)', borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: 'white', border: '1px solid rgba(255,255,255,0.25)', marginBottom: 4 }}>
-                    {CATEGORY_EMOJI[task.category] || '🔨'} {getCategoryLabel(task.category)}
-                  </div>
-                )}
-              </div>
+              {task.title && (
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25, flex: 1, minWidth: 0 }}>
+                  {task.title}
+                </div>
+              )}
               {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
@@ -871,7 +849,12 @@ export default function TaskDetail(props) {
               })()}
             </div>
 
-            {/* Description is now shown as the main heading above — no duplicate here */}
+            {/* Description */}
+            {mainDescription &&
+            <div className="selectable-text" style={{ fontSize: 13, color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, marginBottom: 10 }}>
+                {mainDescription.length > 180 ? mainDescription.slice(0, 180) + '…' : mainDescription}
+              </div>
+            }
 
             {/* Publisher + location + published time */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
@@ -1259,7 +1242,18 @@ export default function TaskDetail(props) {
               );
             })()}
 
-            {/* Category is now shown as secondary title in banner — not duplicated here */}
+            {/* Category */}
+            {task.category && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>
+                  {CATEGORY_EMOJI[task.category] || '🔨'}
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('category_label')}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
+                </div>
+              </div>
+            )}
 
             {/* Full address */}
             {(task.address_building || task.address_floor || task.address_apartment || task.address_notes) && (

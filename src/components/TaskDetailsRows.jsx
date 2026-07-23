@@ -36,7 +36,9 @@ export default function TaskDetailsRows({ task, compact = false }) {
     });
   }
 
-  // Category is now shown as secondary title — not duplicated in details
+  if (task.category) {
+    detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: 'קטגוריה', value: getCategoryLabel(task.category) });
+  }
 
   // Hourly pricing breakdown — show rate and duration when task uses hourly pricing
   if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hourly_rate && task.category_details?.hours) {
@@ -89,7 +91,10 @@ export default function TaskDetailsRows({ task, compact = false }) {
   if (task.address_building) extraRows.push({ label: 'בניין', value: task.address_building });
   if (task.address_apartment) extraRows.push({ label: 'דירה', value: task.address_apartment });
   if (task.address_notes) extraRows.push({ label: 'הערות כתובת', value: task.address_notes });
-  // Description is now shown as the main title — not duplicated here
+  if (task.description) {
+    const desc = parseDescription(task.description).mainDescription;
+    if (desc) extraRows.push({ label: 'תיאור', value: desc });
+  }
 
   // Requirements — dynamically extracted from all possible requirement keys
   const reqChecks = getActiveRequirements(task.requirements, task.category).map(r =>
@@ -101,6 +106,13 @@ export default function TaskDetailsRows({ task, compact = false }) {
 
   // Verification requirement — top-level flag
   if (task.verification_required) reqChecks.push('דרוש ווי ירוק');
+
+  // Estimated time
+  if (task.estimated_time) {
+    const timeLabels = { '15m': "15 דק'", '30m': "30 דק'", '1h': 'שעה', '2h': 'שעתיים', '3h': '3 שעות', '4h': '4 שעות', '6h': '6 שעות', day: 'יום', week: 'שבוע' };
+    const tl = timeLabels[task.estimated_time] || task.estimated_time;
+    detailRows.push({ icon: '⏱️', iconBg: '#f8f9fb', label: 'משך משוער', value: tl });
+  }
 
   const hasDetails = detailRows.length > 0;
   const hasExtras = extraRows.length > 0 || reqChecks.length > 0;

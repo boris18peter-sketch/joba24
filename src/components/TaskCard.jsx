@@ -587,13 +587,13 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 className="selectable-text" style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                {parseDescription(task.description).mainDescription || task.title}
+              <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {task.title}
               </h3>
-              {catLabel && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 8, padding: '2px 8px', border: '1px solid #bfdbfe', marginBottom: 4 }}>
-                  {catLabel}
-                </div>
+              {task.description && (
+                <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
+                  {parseDescription(task.description).mainDescription}
+                </p>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
                 {task.location_name && (
@@ -708,7 +708,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     </span>
                   </div>
               ) : (
-                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?editId=${task.id}&repost=1`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
+                <button onClick={e => { e.stopPropagation(); navigate(`/create-task?repost=1&title=${encodeURIComponent(task.title||'')}&price=${task.base_price||task.price||''}&category=${task.category||''}&city=${encodeURIComponent(task.city||'')}&location_name=${encodeURIComponent(task.location_name||'')}&approval_mode=${task.approval_mode||'manual'}`); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: 'var(--brand-primary-light)', border: '1.5px solid #bfdbfe', color: 'var(--brand-primary)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, WebkitTapHighlightColor: 'transparent' }}>
                    <RefreshCw size={11} /> {t('repost')}
                  </button>
               )
