@@ -274,7 +274,6 @@ export default function CreateTask() {
         address_floor: searchParams.get('address_floor') || '',
         address_apartment: searchParams.get('address_apartment') || '',
         address_notes: searchParams.get('address_notes') || '',
-        estimated_time: searchParams.get('estimated_time') || '1h',
         category: searchParams.get('category') || 'other',
         approval_mode: searchParams.get('approval_mode') || 'manual',
         payment_method: searchParams.get('payment_method') || '',
@@ -291,11 +290,11 @@ export default function CreateTask() {
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
-  // Pre-fill contactPhone from user profile when not edit mode
+  // Pre-fill contactPhone from user profile (also in edit mode if task doesn't have one)
   useEffect(() => {
-    if (!me?.phone || isEditMode) return;
+    if (!me?.phone) return;
     setForm(p => ({ ...p, contactPhone: p.contactPhone || me.phone }));
-  }, [me?.phone, isEditMode]);
+  }, [me?.phone, editTask?.id]);
 
   // Edit mode: load existing task
   const { data: editTask } = useQuery({
@@ -349,7 +348,7 @@ export default function CreateTask() {
       hours: editTask.category_details?.hours ? String(editTask.category_details.hours) : '',
     });
     setCategoryDetails(editTask.category_details || {});
-    setAddressConfirmed(!!(editTask.lat && editTask.lng));
+    setAddressConfirmed(!!(editTask.location_name || (editTask.lat && editTask.lng)));
   }, [editTask?.id]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
