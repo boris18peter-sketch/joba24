@@ -9,6 +9,7 @@
 import { getCategoryLabel } from '@/lib/categories';
 import { parseDescription } from '@/lib/descriptionParser';
 import { formatHoursLabel, formatScheduleSlots } from '@/lib/priceCalculator';
+import CategoryDetailsView from '@/components/CategoryDetailsView';
 
 const URGENCY_TAG_CONFIG = {
   immediate: { emoji: '🔴', label: 'דחוף עכשיו', color: '#dc2626', bg: '#fff1f2', border: '#fca5a5' },
@@ -90,7 +91,8 @@ export default function TaskDetailsRows({ task, compact = false }) {
   if (task.address_apartment) extraRows.push({ label: 'דירה', value: task.address_apartment });
   if (task.address_notes) extraRows.push({ label: 'הערות כתובת', value: task.address_notes });
   if (task.description) {
-    extraRows.push({ label: 'תיאור', value: parseDescription(task.description).mainDescription });
+    const desc = parseDescription(task.description).mainDescription;
+    if (desc) extraRows.push({ label: 'תיאור', value: desc });
   }
 
   // Requirements
@@ -156,6 +158,9 @@ export default function TaskDetailsRows({ task, compact = false }) {
           </div>
         </>
       )}
+
+      {/* Category-specific details from structured data */}
+      <CategoryDetailsView task={task} compact={compact} />
     </div>
   );
 }

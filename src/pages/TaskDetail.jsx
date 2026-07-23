@@ -21,6 +21,7 @@ import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
+import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
 import { isUserVerified } from '@/lib/utils';
 
@@ -1143,8 +1144,8 @@ export default function TaskDetail(props) {
         {/* ── Task Details Card ───────────────────────────────────────── */}
         {(task.category ||
           task.address_building || task.address_floor || task.address_apartment || task.address_notes ||
-          task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience ||
-          extraLines.length > 0 ||
+          task.requirements ||
+          task.category_details ||
           (isOwner && task.auto_bump_enabled && task.base_price && task.max_price)) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 11 }}>
 
@@ -1273,49 +1274,47 @@ export default function TaskDetail(props) {
               </div>
             )}
 
-            {/* Requirements — text only, no tags */}
-            {(task.requirements?.vehicle || task.requirements?.two_people || task.requirements?.experience) && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <CheckCircle2 size={13} color="#059669" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
-                    {[
-                      task.requirements.vehicle && t('vehicle_label'),
-                      task.requirements.two_people && t('two_people_label'),
-                      task.requirements.experience && t('experience_label'),
-                    ].filter(Boolean).join(' · ')}
+            {/* Requirements — all requirement types */}
+            {(() => {
+              const reqs = [];
+              const r = task.requirements || {};
+              if (r.vehicle) reqs.push('נדרש רכב');
+              if (r.vehicle_commercial) reqs.push('רכב מסחרי');
+              if (r.truck) reqs.push('טנדר / משאית');
+              if (r.motorcycle) reqs.push('קטנוע');
+              if (r.two_people) reqs.push(t('two_people_label'));
+              if (r.three_people) reqs.push('3 אנשים');
+              if (r.four_plus_people) reqs.push('4+ אנשים');
+              if (r.experience) reqs.push(t('experience_label'));
+              if (r.certified) reqs.push('הסמכה / רישיון');
+              if (r.heavy_lifting) reqs.push('נשיאת משאות כבדים');
+              if (r.driver) reqs.push('נדרש נהג');
+              if (r.drill) reqs.push('נדרש מקדחה');
+              if (r.ladder) reqs.push('נדרש סולם');
+              if (r.cleaner_pro) reqs.push('ניסיון בניקיון');
+              if (r.painter_pro) reqs.push('ניסיון בצביעה');
+              if (r.carpenter) reqs.push('נגר מקצועי');
+              if (r.plumber) reqs.push('אינסטלטור מוסמך');
+              if (r.electrician) reqs.push('חשמלאי מוסמך');
+              if (typeof r.custom === 'string' && r.custom) reqs.push(r.custom);
+              if (reqs.length === 0) return null;
+              return (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CheckCircle2 size={13} color="#059669" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 2 }}>{t('requirements_label')}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.6 }}>
+                      {reqs.join(' · ')}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
-            {/* Category-specific extra fields (from description parser) */}
-            {extraLines.length > 0 && (
-              <>
-                <div style={{ height: 1, background: 'var(--border-1)', margin: '2px 0' }} />
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('extra_details_label')}</div>
-                {extraLines.map((line, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 10, background: '#f8f9fb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 13 }}>
-                      {line.isToggle ? '✓' : '•'}
-                    </div>
-                    <div>
-                      {line.isToggle ? (
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{line.label}</div>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{line.label}</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{line.value}</div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
+            {/* Category-specific extra fields (from structured category_details) */}
+            <CategoryDetailsView task={task} />
           </div>
         )}
 
