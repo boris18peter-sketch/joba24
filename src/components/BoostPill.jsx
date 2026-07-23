@@ -97,8 +97,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      onSheetClose?.();
-      window.dispatchEvent(new CustomEvent('close_task_sheet'));
+      window.dispatchEvent(new CustomEvent('hide_task_sheet'));
       window.dispatchEvent(new CustomEvent('show_boost_overlay', {
         detail: { taskId: task.id, taskTitle: task.title, taskPrice: task.price, taskCategory: task.category }
       }));
