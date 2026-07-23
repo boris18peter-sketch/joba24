@@ -1280,6 +1280,8 @@ export default function TaskDetail(props) {
               const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
                 r.value ? `${r.label}: ${r.value}` : r.label
               );
+              if (task.requires_invoice) reqs.push('דרושה חשבונית מס');
+              if (task.verification_required) reqs.push('דרוש ווי ירוק');
               if (reqs.length === 0) return null;
               return (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>

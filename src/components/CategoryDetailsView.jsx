@@ -24,6 +24,7 @@ export default function CategoryDetailsView({ task, compact = false }) {
 
   // Build display rows from structured data
   const rows = [];
+  const knownKeys = new Set(fields.map(f => f.key));
 
   fields.forEach(f => {
     const v = details[f.key];
@@ -42,10 +43,29 @@ export default function CategoryDetailsView({ task, compact = false }) {
       if (v.length > 0) {
         rows.push({ label: f.label, value: v.join(', '), isToggle: false });
       }
+    } else if (typeof v === 'object') {
+      rows.push({ label: f.label, value: JSON.stringify(v), isToggle: false });
     } else {
       rows.push({ label: f.label, value: String(v), isToggle: false });
     }
   });
+
+  // Also render any unknown keys in category_details that aren't in the config
+  // (ensures no data entered by the publisher is lost)
+  const skipKeys = new Set(['hourly_rate', 'hours', 'pricing_type', 'schedule']);
+  for (const [key, v] of Object.entries(details)) {
+    if (knownKeys.has(key) || skipKeys.has(key)) continue;
+    if (v === undefined || v === '' || v === null) continue;
+    if (typeof v === 'boolean') {
+      if (v) rows.push({ label: key, value: null, isToggle: true });
+    } else if (Array.isArray(v)) {
+      if (v.length > 0) rows.push({ label: key, value: v.join(', '), isToggle: false });
+    } else if (typeof v === 'object') {
+      rows.push({ label: key, value: JSON.stringify(v), isToggle: false });
+    } else {
+      rows.push({ label: key, value: String(v), isToggle: false });
+    }
+  }
 
   if (rows.length === 0) return null;
 

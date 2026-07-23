@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, Send, X } from 'lucide-react';
+import { Loader2, Send, X, CheckCircle2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import ImageUploader from '@/components/ImageUploader';
+import { getActiveRequirements } from '@/lib/requirements';
+import { getCategoryLabel } from '@/lib/categories';
 
 export default function ApplySheet({ task, onClose, onApply, loading, showImages = true }) {
   const [message, setMessage] = useState('');
   const [images, setImages] = useState([]);
   const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
+
+  // Build requirements list for display
+  const reqs = getActiveRequirements(task?.requirements, task?.category).map(r =>
+    r.value ? `${r.label}: ${r.value}` : r.label
+  );
+  if (task?.requires_invoice) reqs.push('דרושה חשבונית מס');
+  if (task?.verification_required) reqs.push('דרוש ווי ירוק');
 
   return createPortal(
     <div
@@ -51,6 +60,40 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
           <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{task?.title}</div>
         </div>
+
+        {/* Task details & requirements summary */}
+        {(task?.category || reqs.length > 0 || task?.location_name || task?.payment_method) && (
+          <div style={{ background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '12px 14px', marginBottom: 16 }}>
+            {task?.category && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: reqs.length > 0 ? 8 : 0 }}>
+                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>קטגוריה:</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>{getCategoryLabel(task.category)}</span>
+              </div>
+            )}
+            {task?.location_name && (
+              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: reqs.length > 0 ? 8 : 0 }}>
+                📍 {task.location_name.split(',')[0]}
+              </div>
+            )}
+            {task?.payment_method && (
+              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: reqs.length > 0 ? 8 : 0 }}>
+                💳 {task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}
+              </div>
+            )}
+            {reqs.length > 0 && (
+              <div style={{ borderTop: task?.category || task?.location_name || task?.payment_method ? '1px solid #e2e8f0' : 'none', paddingTop: 8 }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 6 }}>דרישות המשימה:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {reqs.map((req, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '4px 8px', fontSize: 11, fontWeight: 600, color: '#166534' }}>
+                      <CheckCircle2 size={11} color="#059669" /> {req}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Credit refund explanation */}
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>

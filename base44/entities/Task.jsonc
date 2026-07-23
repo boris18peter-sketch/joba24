@@ -49,14 +49,7 @@
       "type": "number"
     },
     "estimated_time": {
-      "type": "string",
-      "enum": [
-        "15m",
-        "30m",
-        "1h",
-        "2h",
-        "custom"
-      ]
+      "type": "string"
     },
     "expires_at": {
       "type": "string",
@@ -256,20 +249,83 @@
     },
     "requirements": {
       "type": "object",
+      "additionalProperties": true,
       "properties": {
         "vehicle": {
+          "type": "boolean"
+        },
+        "vehicle_commercial": {
+          "type": "boolean"
+        },
+        "truck": {
+          "type": "boolean"
+        },
+        "motorcycle": {
           "type": "boolean"
         },
         "two_people": {
           "type": "boolean"
         },
+        "three_people": {
+          "type": "boolean"
+        },
+        "four_plus_people": {
+          "type": "boolean"
+        },
+        "heavy_lifting": {
+          "type": "boolean"
+        },
+        "driver": {
+          "type": "boolean"
+        },
         "experience": {
           "type": "boolean"
+        },
+        "experience_animals": {
+          "type": "boolean"
+        },
+        "certified": {
+          "type": "boolean"
+        },
+        "cleaner_pro": {
+          "type": "boolean"
+        },
+        "painter_pro": {
+          "type": "boolean"
+        },
+        "carpenter": {
+          "type": "boolean"
+        },
+        "plumber": {
+          "type": "boolean"
+        },
+        "electrician": {
+          "type": "boolean"
+        },
+        "tools_basic": {
+          "type": "boolean"
+        },
+        "drill": {
+          "type": "boolean"
+        },
+        "grinder": {
+          "type": "boolean"
+        },
+        "ladder": {
+          "type": "boolean"
+        },
+        "english": {
+          "type": "boolean"
+        },
+        "custom": {
+          "type": "string",
+          "description": "\u05d3\u05e8\u05d9\u05e9\u05d4 \u05d7\u05d5\u05e4\u05e9\u05d9\u05ea \u2014 \u05d8\u05e7\u05e1\u05d8 \u05d7\u05d5\u05e4\u05e9\u05d9 \u05de\u05d4\u05de\u05e4\u05e8\u05e1\u05dd"
         }
       }
     },
     "category_details": {
       "type": "object",
+      "additionalProperties": true,
       "description": "\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05de\u05d5\u05d1\u05e0\u05d9\u05dd \u05de\u05d5\u05ea\u05d0\u05de\u05d9 \u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4"
     },
     "category": {
