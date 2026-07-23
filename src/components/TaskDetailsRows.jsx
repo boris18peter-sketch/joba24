@@ -107,12 +107,7 @@ export default function TaskDetailsRows({ task, compact = false }) {
   // Verification requirement — top-level flag
   if (task.verification_required) reqChecks.push('דרוש ווי ירוק');
 
-  // Estimated time
-  if (task.estimated_time) {
-    const timeLabels = { '15m': "15 דק'", '30m': "30 דק'", '1h': 'שעה', '2h': 'שעתיים', '3h': '3 שעות', '4h': '4 שעות', '6h': '6 שעות', day: 'יום', week: 'שבוע' };
-    const tl = timeLabels[task.estimated_time] || task.estimated_time;
-    detailRows.push({ icon: '⏱️', iconBg: '#f8f9fb', label: 'משך משוער', value: tl });
-  }
+
 
   const hasDetails = detailRows.length > 0;
   const hasExtras = extraRows.length > 0 || reqChecks.length > 0;

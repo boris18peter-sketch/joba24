@@ -620,7 +620,6 @@ export default function CreateTask() {
         return;
       }
       setLoading(true);
-      const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
       const expiryHoursEdit = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
       const expires = expiryHoursEdit ? new Date(Date.now() + expiryHoursEdit * 60 * 60 * 1000).toISOString() : null;
       submittingRef.current = false;
@@ -640,7 +639,6 @@ export default function CreateTask() {
         address_floor: form.address_floor || undefined,
         address_apartment: form.address_apartment || undefined,
         address_notes: form.address_notes || undefined,
-        estimated_time: estimatedTime,
         category: form.category,
         category_details: getFinalCategoryDetails(),
         expiry_duration_hours: expiryHoursEdit,
@@ -739,8 +737,6 @@ export default function CreateTask() {
     const expiryHours = form.expiry_hours === 'custom' ? (parseFloat(form.custom_expiry_hours) || null) : form.expiry_hours;
     const expires = expiryHours ? new Date(Date.now() + expiryHours * 60 * 60 * 1000).toISOString() : null;
     const storyExpires = form.is_story ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : undefined;
-    const estimatedTime = form.estimated_time === 'custom' ? (form.custom_time || 'custom') : form.estimated_time;
-
     const created = await base44.entities.Task.create({
       payment_method: form.payment_method,
       contactPhone: form.contactPhone || undefined,
@@ -760,7 +756,6 @@ export default function CreateTask() {
       address_floor: form.address_floor || undefined,
       address_apartment: form.address_apartment || undefined,
       address_notes: form.address_notes || undefined,
-      estimated_time: estimatedTime,
       category: finalCategory,
       category_details: getFinalCategoryDetails(),
       approval_mode: form.approval_mode,
@@ -817,9 +812,6 @@ export default function CreateTask() {
 
     try {
       if (isEditMode) {
-        const estimatedTime = chatFormData.estimated_time === 'custom' 
-          ? (chatFormData.custom_time || 'custom') 
-          : (chatFormData.estimated_time || '1h');
         const expiryHoursEdit = chatFormData.expiry_hours === 'custom' 
           ? (parseFloat(chatFormData.custom_expiry_hours) || null) 
           : chatFormData.expiry_hours;
@@ -844,7 +836,6 @@ export default function CreateTask() {
           address_floor: chatFormData.address_floor || undefined,
           address_apartment: chatFormData.address_apartment || undefined,
           address_notes: chatFormData.address_notes || undefined,
-          estimated_time: estimatedTime,
           category: chatFormData.category || 'other',
           category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : (chatFormData.category_details || undefined),
           expiry_duration_hours: expiryHoursEdit,
@@ -885,10 +876,6 @@ export default function CreateTask() {
       const storyExpires = chatFormData.is_story 
         ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() 
         : undefined;
-      const estimatedTime = chatFormData.estimated_time === 'custom' 
-        ? (chatFormData.custom_time || 'custom') 
-        : (chatFormData.estimated_time || '1h');
-
       const created = await base44.entities.Task.create({
         payment_method: chatFormData.payment_method || 'Cash',
         contactPhone: chatFormData.contactPhone || form.contactPhone || undefined,
@@ -908,7 +895,6 @@ export default function CreateTask() {
         address_floor: chatFormData.address_floor || undefined,
         address_apartment: chatFormData.address_apartment || undefined,
         address_notes: chatFormData.address_notes || undefined,
-        estimated_time: estimatedTime,
         category: chatFormData.category || 'other',
         category_details: Object.keys(categoryDetails).length > 0 ? categoryDetails : (chatFormData.category_details || undefined),
         approval_mode: 'manual',
