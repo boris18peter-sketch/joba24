@@ -9,6 +9,7 @@
 import { getCategoryLabel } from '@/lib/categories';
 import { parseDescription } from '@/lib/descriptionParser';
 import { formatHoursLabel, formatScheduleSlots } from '@/lib/priceCalculator';
+import { getActiveRequirements } from '@/lib/requirements';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 
 const URGENCY_TAG_CONFIG = {
@@ -95,21 +96,10 @@ export default function TaskDetailsRows({ task, compact = false }) {
     if (desc) extraRows.push({ label: 'תיאור', value: desc });
   }
 
-  // Requirements
-  const reqChecks = [];
-  if (task.requirements) {
-    if (task.requirements.vehicle) reqChecks.push('נדרש רכב');
-    if (task.requirements.vehicle_commercial) reqChecks.push('רכב מסחרי');
-    if (task.requirements.truck) reqChecks.push('טנדר / משאית');
-    if (task.requirements.motorcycle) reqChecks.push('קטנוע');
-    if (task.requirements.two_people) reqChecks.push('יש מעלית במוצא');
-    if (task.requirements.three_people) reqChecks.push('יש מעלית ביעד');
-    if (task.requirements.four_plus_people) reqChecks.push('4+ אנשים');
-    if (task.requirements.experience) reqChecks.push('דרושה משאית');
-    if (task.requirements.certified) reqChecks.push('הסמכה / רישיון');
-    if (task.requirements.heavy_lifting) reqChecks.push('נשיאת משאות כבדים');
-    if (typeof task.requirements.custom === 'string' && task.requirements.custom) reqChecks.push(task.requirements.custom);
-  }
+  // Requirements — dynamically extracted from all possible requirement keys
+  const reqChecks = getActiveRequirements(task.requirements, task.category).map(r =>
+    r.value ? `${r.label}: ${r.value}` : r.label
+  );
 
   const hasDetails = detailRows.length > 0;
   const hasExtras = extraRows.length > 0 || reqChecks.length > 0;

@@ -20,6 +20,7 @@ import BackButton from '@/components/BackButton';
 import NavButtons from '@/components/NavButtons';
 import CreditIcon from '@/components/CreditIcon';
 import { getCategoryLabel } from '@/lib/categories';
+import { getActiveRequirements } from '@/lib/requirements';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
@@ -1274,29 +1275,11 @@ export default function TaskDetail(props) {
               </div>
             )}
 
-            {/* Requirements — all requirement types */}
+            {/* Requirements — dynamically extracted from all possible requirement keys */}
             {(() => {
-              const reqs = [];
-              const r = task.requirements || {};
-              if (r.vehicle) reqs.push('נדרש רכב');
-              if (r.vehicle_commercial) reqs.push('רכב מסחרי');
-              if (r.truck) reqs.push('טנדר / משאית');
-              if (r.motorcycle) reqs.push('קטנוע');
-              if (r.two_people) reqs.push(t('two_people_label'));
-              if (r.three_people) reqs.push('3 אנשים');
-              if (r.four_plus_people) reqs.push('4+ אנשים');
-              if (r.experience) reqs.push(t('experience_label'));
-              if (r.certified) reqs.push('הסמכה / רישיון');
-              if (r.heavy_lifting) reqs.push('נשיאת משאות כבדים');
-              if (r.driver) reqs.push('נדרש נהג');
-              if (r.drill) reqs.push('נדרש מקדחה');
-              if (r.ladder) reqs.push('נדרש סולם');
-              if (r.cleaner_pro) reqs.push('ניסיון בניקיון');
-              if (r.painter_pro) reqs.push('ניסיון בצביעה');
-              if (r.carpenter) reqs.push('נגר מקצועי');
-              if (r.plumber) reqs.push('אינסטלטור מוסמך');
-              if (r.electrician) reqs.push('חשמלאי מוסמך');
-              if (typeof r.custom === 'string' && r.custom) reqs.push(r.custom);
+              const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
+                r.value ? `${r.label}: ${r.value}` : r.label
+              );
               if (reqs.length === 0) return null;
               return (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>

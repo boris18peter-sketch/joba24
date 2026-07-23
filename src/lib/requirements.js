@@ -265,3 +265,38 @@ export const DEFAULT_REQUIREMENT_CATEGORIES = [
 
 export const getRequirementCategories = (category) =>
   CATEGORY_REQUIREMENTS[category] || DEFAULT_REQUIREMENT_CATEGORIES;
+
+/**
+ * Extract all active requirements from a task.requirements object.
+ * Returns an array of { label, value } for display.
+ * Uses the category's requirement config for labels, falling back to default config.
+ * Includes custom text requirements.
+ */
+export const getActiveRequirements = (requirements, category) => {
+  if (!requirements || typeof requirements !== 'object') return [];
+  const cats = getRequirementCategories(category);
+  // Build a lookup map: key → label, from category config + defaults
+  const labelMap = {};
+  const allCats = [...cats, ...DEFAULT_REQUIREMENT_CATEGORIES];
+  for (const cat of allCats) {
+    for (const item of cat.items || []) {
+      if (!labelMap[item.key]) labelMap[item.key] = item.label;
+    }
+  }
+  const result = [];
+  for (const [key, val] of Object.entries(requirements)) {
+    if (key === 'custom') {
+      // Custom / open requirement — free text
+      if (typeof val === 'string' && val.trim()) result.push({ label: val.trim(), value: null });
+      continue;
+    }
+    if (val === true || val === 1) {
+      const label = labelMap[key] || key;
+      result.push({ label, value: null });
+    } else if (typeof val === 'string' && val.trim() && val !== 'false') {
+      // String requirement (rare, but handle it)
+      result.push({ label: labelMap[key] || key, value: val.trim() });
+    }
+  }
+  return result;
+};
