@@ -230,7 +230,11 @@ export default function TaskDetail(props) {
   const { data: myApp } = useQuery({
     queryKey: ['myApp', id, me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ task_id: id, worker_id: me.id }),
-    select: (data) => data.find((a) => a.status === 'pending' || a.status === 'approved') || null,
+    select: (data) => {
+      if (!data) return null;
+      const arr = Array.isArray(data) ? data : [data];
+      return arr.find((a) => a.status === 'pending' || a.status === 'approved') || null;
+    },
     enabled: !!me?.id,
     staleTime: 60000,
   });
@@ -320,6 +324,7 @@ export default function TaskDetail(props) {
       if (currentMeId && app.worker_id === currentMeId) {
         queryClient.setQueryData(['myApp', id, currentMeId], (old) => {
           if (event.type === 'delete') return null;
+          if (event.type === 'create') return app;
           if (event.type === 'update') {
             if (app.status === 'cancelled' || app.status === 'rejected') return null;
             return old ? { ...old, ...app } : app;
