@@ -11,7 +11,11 @@ export function TaskSheetProvider({ children }) {
   const openTaskSheet = useCallback((taskId) => {
     if (!taskId) return;
     setSheetTaskId(taskId);
-    if (!window.history.state?.taskSheet) {
+    if (window.history.state?.taskSheet) {
+      // Sheet already has a history entry — replace it with the new taskId
+      // so Back restores the correct task, not a stale one
+      window.history.replaceState({ taskSheet: taskId }, '');
+    } else {
       window.history.pushState({ taskSheet: taskId }, '');
     }
   }, []);

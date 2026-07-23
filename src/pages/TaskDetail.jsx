@@ -720,6 +720,7 @@ export default function TaskDetail(props) {
           <Button
             onClick={() => {
               if (task.payment_status === 'funded') {
+                window.dispatchEvent(new CustomEvent('hide_task_sheet'));
                 navigate(`/create-task?editId=${id}&repost=1`);
               } else {
                 reopenMutation.mutate();
@@ -1382,7 +1383,7 @@ export default function TaskDetail(props) {
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
             {(task.status === 'OPEN' || task.status === 'EXPIRED') &&
-            <div onClick={() => { setShowOwnerMenu(false); navigate(`/create-task?editId=${id}`); }}>
+            <div onClick={() => { setShowOwnerMenu(false); window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/create-task?editId=${id}`); }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 6px', borderBottom: '1px solid #f0f4fa', cursor: 'pointer' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 13, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Pencil size={17} color="#1a6fd4" />

@@ -38,6 +38,14 @@ export default function TaskDetailSheet() {
     return () => window.removeEventListener('close_task_sheet', handler);
   }, [closeTaskSheet]);
 
+  // Hide event — hides the sheet WITHOUT history manipulation (used before navigate,
+  // so the {taskSheet} entry stays and pressing Back restores the sheet, just like profile links)
+  useEffect(() => {
+    const handler = () => hideTaskSheet();
+    window.addEventListener('hide_task_sheet', handler);
+    return () => window.removeEventListener('hide_task_sheet', handler);
+  }, [hideTaskSheet]);
+
   // Escape key
   useEffect(() => {
     if (!sheetTaskId) return;

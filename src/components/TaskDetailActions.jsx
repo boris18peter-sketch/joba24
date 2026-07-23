@@ -95,7 +95,7 @@ export default function TaskDetailActions({
         {/* Repost */}
         {isOwner && ['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(task?.status) && (
           <button
-            onClick={() => { navigate(buildRepostUrl(task)); }}
+            onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(buildRepostUrl(task)); }}
             style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', color: 'var(--brand-primary)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
             <RotateCcw size={16} /> פרסם שוב
           </button>
