@@ -246,7 +246,7 @@ export default function SupportChat() {
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0,
       }}>
-        <BackButton to="/chats" />
+        <BackButton />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 38, height: 38, borderRadius: '50%',

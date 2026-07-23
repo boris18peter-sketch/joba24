@@ -298,6 +298,28 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 })}
               </div>
 
+              {/* ── Completion proof preview — shown to owner when worker marked done ── */}
+              {tIsOwner && task.worker_status === 'done' && (task.completion_photos?.length > 0 || task.completion_video_url) && (
+                <div style={{ marginTop: 6, marginBottom: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.18)' }} onClick={e => e.stopPropagation()}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>📸 הוכחת ביצוע מהעובד</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {(task.completion_photos || []).map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block' }}>
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      </a>
+                    ))}
+                    {task.completion_video_url && (
+                      <a href={task.completion_video_url} target="_blank" rel="noopener noreferrer" style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block', position: 'relative', background: '#000' }}>
+                        <video src={task.completion_video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.7 }} />
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Camera size={18} color="white" />
+                        </div>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* ── Row 6: Primary action buttons ── */}
               <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
 
@@ -454,6 +476,18 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 setSavingMedia(true);
                 await base44.entities.Task.update(mediaTask.id, { completion_photos: mediaPhotos, completion_video_url: mediaVideo || null });
                 queryClient.setQueryData(['activeWorkerTask', me?.id], old => old?.id === mediaTask.id ? { ...old, completion_photos: mediaPhotos, completion_video_url: mediaVideo || null } : old);
+                queryClient.setQueryData(['task', mediaTask.id], old => old ? { ...old, completion_photos: mediaPhotos, completion_video_url: mediaVideo || null } : old);
+                queryClient.invalidateQueries({ queryKey: ['task', mediaTask.id] });
+                // Notify task owner that proof was submitted
+                if (mediaTask.client_id && mediaTask.client_id !== me?.id) {
+                  base44.functions.invoke('sendPushNotification', {
+                    user_ids: [mediaTask.client_id],
+                    title: 'הוכחת ביצוע הועלתה 📸',
+                    body: `העובד העלה הוכחת ביצוע למשימה "${mediaTask.title}"`,
+                    url: `/task/${mediaTask.id}`,
+                    tag: `completion_${mediaTask.id}`,
+                  }).catch(() => {});
+                }
                 setSavingMedia(false);
                 toast.success('הוכחת הביצוע נשמרה ✓');
                 setMediaTask(null);
