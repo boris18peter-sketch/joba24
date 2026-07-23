@@ -22,6 +22,10 @@ export const AuthProvider = ({ children }) => {
   const unsubCreditRef = useRef(null);
 
   useEffect(() => {
+    // Request persistent storage so localStorage (auth token) survives app kills on Android
+    if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+      navigator.storage.persist().catch(() => {});
+    }
     checkAppState();
   }, []);
 
@@ -34,12 +38,12 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
       
-      // Safety timeout — if auth hangs for 8s, force-unlock the UI
+      // Safety timeout — if auth hangs for 5s, force-unlock the UI
       const safetyTimeout = setTimeout(() => {
         console.warn('[Joba24] Auth: safety timeout — forcing isLoading=false');
         setIsLoadingPublicSettings(false);
         setIsLoadingAuth(false);
-      }, 8000);
+      }, 5000);
       
       // Check if user is authenticated
       if (appParams.token) {
@@ -82,6 +86,8 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
       console.log('[Joba24] Auth: auth.me() returned', currentUser ? `user=${currentUser.id}` : 'null');
+      // Cache in React Query so Layout's useQuery(['me']) doesn't make a duplicate API call
+      queryClientInstance.setQueryData(['me'], currentUser);
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -129,7 +135,7 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      // Fallback polling: refresh user data every 15 seconds to catch changes
+      // Fallback polling: refresh user data every 60 seconds to catch changes
       // (e.g. admin KYC approval/rejection) that realtime might miss for cross-user updates
       const pollInterval = setInterval(async () => {
         try {
@@ -146,7 +152,7 @@ export const AuthProvider = ({ children }) => {
             return prev;
           });
         } catch {}
-      }, 15000);
+      }, 60000);
 
       // Also refresh immediately when the tab becomes visible again (user returns to app)
       const handleVisibility = () => {
