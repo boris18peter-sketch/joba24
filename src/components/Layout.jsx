@@ -598,7 +598,7 @@ export default function Layout() {
                     style={{
                       flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
                       overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',
-                      paddingBottom: tabPath === '/map' ? 0 : 'calc(72px + max(16px, env(safe-area-inset-bottom)))',
+                      paddingBottom: tabPath === '/map' ? 0 : 'calc(60px + max(6px, env(safe-area-inset-bottom)))',
                       WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
                       height: isActive ? '100%' : 0,
                       }}>
@@ -623,7 +623,7 @@ export default function Layout() {
               })}
             </div>
             {isNonRootTab && (
-              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(72px + max(16px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(60px + max(6px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
                 <Outlet />
               </div>
             )}
@@ -639,7 +639,7 @@ export default function Layout() {
               const active = location.pathname === to;
               if (primary) {
                 return (
-                  <button id="onboarding-create-btn" key={to} onClick={() => { if (!isAuthenticated) { navigate(to); return; } gate(() => navigate(to)); }}
+                  <button id="onboarding-create-btn" key={to} onClick={() => { if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                       <Icon size={24} color="white" />

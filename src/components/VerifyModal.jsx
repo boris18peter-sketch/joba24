@@ -50,6 +50,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({ full_name: '', email: '', phone: '', id_number: '' });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [kycStatus, setKycStatus] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const initialSnapshot = useRef(null);
 
   // Pre-fill form with existing user data (for re-submission after rejection)
   useEffect(() => {
@@ -62,9 +65,30 @@ export default function VerifyModal({ onClose, onSuccess }) {
           id_number: u.id_number || prev.id_number,
         }));
         if (u.id_photo_url) setIdPhotoUrl(u.id_photo_url);
+        setKycStatus(u.kyc_status);
+        initialSnapshot.current = {
+          full_name: u.full_name || '',
+          email: u.email || '',
+          phone: u.phone || '',
+          id_number: u.id_number || '',
+          id_photo_url: u.id_photo_url || '',
+        };
       }
     }).catch(() => {});
   }, []);
+
+  // Track form changes — enables "שלח שינויים" when user edits a pending submission
+  useEffect(() => {
+    if (!initialSnapshot.current) return;
+    const init = initialSnapshot.current;
+    const changed =
+      form.full_name !== init.full_name ||
+      form.email !== init.email ||
+      form.phone !== init.phone ||
+      form.id_number !== init.id_number ||
+      idPhotoUrl !== init.id_photo_url;
+    setHasChanges(changed);
+  }, [form, idPhotoUrl]);
 
   // Real-time error display — show errors for touched fields immediately
   const fieldError = (key) => {
@@ -94,6 +118,9 @@ export default function VerifyModal({ onClose, onSuccess }) {
   };
 
   const formValid = isFormValid();
+  const isPending = kycStatus === 'pending';
+  const submitDisabled = loading || !formValid || (isPending && !hasChanges);
+  const submitLabel = isPending && !hasChanges ? 'אימות בבדיקה' : isPending && hasChanges ? 'שלח שינויים' : 'השלם אימות';
 
   const uploadFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -136,6 +163,13 @@ export default function VerifyModal({ onClose, onSuccess }) {
     });
     queryClient.invalidateQueries({ queryKey: ['me'] });
     setLoading(false);
+    setKycStatus('pending');
+    setHasChanges(false);
+    initialSnapshot.current = {
+      full_name: form.full_name, email: form.email,
+      phone: form.phone, id_number: form.id_number,
+      id_photo_url: idPhotoUrl,
+    };
     setStep(2);
   };
 
@@ -163,15 +197,13 @@ export default function VerifyModal({ onClose, onSuccess }) {
                 {/* Progress */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                   <div style={{ display: 'flex', gap: 4 }}>
-                    {[1, 2].map(s => (
-                      <div key={s} style={{
-                        height: 4, width: s === 1 ? 28 : 18, borderRadius: 99,
-                        background: s === 1 ? '#1a6fd4' : '#dde3ee',
-                        transition: 'all 0.3s',
-                      }} />
-                    ))}
+                    <div style={{
+                      height: 4, width: 28, borderRadius: 99,
+                      background: '#1a6fd4',
+                      transition: 'all 0.3s',
+                    }} />
                   </div>
-                  <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>שלב 1 מתוך 2 · פחות מדקה</span>
+                  <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>שלב אחד · פחות מדקה</span>
                 </div>
 
                 {/* Icon + Title */}
@@ -207,6 +239,17 @@ export default function VerifyModal({ onClose, onSuccess }) {
             </div>
 
             <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Pending status banner */}
+              {isPending && !hasChanges && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 14px' }}>
+                  <Clock size={16} color="#d97706" strokeWidth={2} style={{ flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>האימות שלך בבדיקה</div>
+                    <div style={{ fontSize: 11, color: '#b45309', marginTop: 1 }}>הפרטים נשלחו וממתינים לאישור הצוות. ניתן לערוך ולשלוח שינויים.</div>
+                  </div>
+                </div>
+              )}
 
               {/* Why verify — collapsible */}
               <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
@@ -360,23 +403,25 @@ export default function VerifyModal({ onClose, onSuccess }) {
               {/* Submit */}
               <button
                 onClick={handleSubmit}
-                disabled={loading || !formValid}
+                disabled={submitDisabled}
                 style={{
                   width: '100%', height: 52, borderRadius: 14,
-                  background: (loading || !formValid) ? '#c9d6e8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                  background: submitDisabled ? '#c9d6e8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
                   color: 'white', fontWeight: 700, fontSize: 15,
-                  border: 'none', cursor: (loading || !formValid) ? 'not-allowed' : 'pointer',
+                  border: 'none', cursor: submitDisabled ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   letterSpacing: 0.2,
-                  boxShadow: (loading || !formValid) ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
+                  boxShadow: submitDisabled ? 'none' : '0 4px 20px rgba(26,111,212,0.3)',
                   marginBottom: 8,
-                  opacity: formValid ? 1 : 0.7,
+                  opacity: submitDisabled ? 0.7 : 1,
                 }}
               >
                 {loading ? (
                   <Loader2 size={20} className="animate-spin" />
+                ) : isPending && !hasChanges ? (
+                  <><Clock size={18} strokeWidth={2} /> {submitLabel}</>
                 ) : (
-                  <><CheckCircle size={18} strokeWidth={2} /> השלם אימות</>
+                  <><CheckCircle size={18} strokeWidth={2} /> {submitLabel}</>
                 )}
               </button>
             </div>
