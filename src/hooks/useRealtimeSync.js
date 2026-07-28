@@ -126,11 +126,15 @@ export default function useRealtimeSync({
         return old;
       });
 
-      // COMPLETED → refresh me + show rating
+      // COMPLETED → refresh me + show rating (only for real-time transitions, NOT historical re-broadcasts)
       if (event.type === 'update' && t_data.status === 'COMPLETED') {
         if (t_data.worker_id === me.id || t_data.client_id === me.id) {
           queryClient.invalidateQueries({ queryKey: ['me'] });
-          maybeShowRating(t_data);
+          // Only show rating modal if this is a genuine status change (not a re-broadcast of an already-COMPLETED task)
+          const prev = prevTasksRef.current[t_data.id];
+          if (!prev || prev.status !== 'COMPLETED') {
+            maybeShowRating(t_data);
+          }
         }
       }
 

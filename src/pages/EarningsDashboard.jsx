@@ -4,12 +4,14 @@ import { base44 } from '@/api/base44Client';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Cell } from 'recharts';
 import { TrendingUp, Wallet, Loader2, Target, Calendar, Coins } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const CHART_COLORS = ['#1a6fd4'];
 
 export default function EarningsDashboard() {
   const { t, isRTL } = useLanguage();
+  const { openTaskSheet } = useTaskSheet();
   const [period, setPeriod] = useState('daily'); // daily | weekly | monthly
 
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -126,7 +128,7 @@ export default function EarningsDashboard() {
   ];
 
   return (
-    <div style={{ background: 'var(--surface-1)', minHeight: '100dvh', paddingBottom: 40 }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader title={t('earnings_dashboard')} />
 
       {/* Hero — total earnings */}
@@ -221,7 +223,40 @@ export default function EarningsDashboard() {
         </div>
       </div>
 
-      {/* Credits used section */}
+      {/* Recent earnings list — now ABOVE credits detail, clickable → opens taskdetail */}
+      <div style={{ padding: '0 16px' }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>{t('recent_earnings')}</div>
+        {earningsData.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>💸</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)' }}>{t('no_earnings_yet')}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{t('earnings_will_appear')}</div>
+          </div>
+        ) : (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 16 }}>
+            {earningsData.slice(0, 15).map((e, idx) => {
+              const diffDays = Math.floor((Date.now() - e.date.getTime()) / 86400000);
+              const dateLabel = diffDays === 0 ? t('today_label') : diffDays === 1 ? t('yesterday') : e.date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+              return (
+                <div key={e.id} onClick={() => openTaskSheet(e.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+                  onMouseEnter={(ev) => { ev.currentTarget.style.background = 'var(--surface-3)'; }}
+                  onMouseLeave={(ev) => { ev.currentTarget.style.background = 'transparent'; }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <TrendingUp size={16} color="#059669" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.title}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{dateLabel}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: '#059669', flexShrink: 0 }}>₪{e.amount.toLocaleString()}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Credits used section — now below recent earnings */}
       <div style={{ padding: '0 16px' }}>
         <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 20, padding: 18, border: '1px solid #fde68a', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
@@ -229,12 +264,12 @@ export default function EarningsDashboard() {
               <Coins size={20} color="white" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#92400e' }}>ג'ובות ששומשו</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#92400e' }}>בקשות ששומשו</div>
               <div style={{ fontSize: 11, color: '#b45309', marginTop: 1 }}>לפי משימות שבוצעו</div>
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 24, fontWeight: 900, color: '#92400e', lineHeight: 1 }}>{creditsData.netUsed}</div>
-              <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>ג'ובות</div>
+              <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>בקשות</div>
             </div>
           </div>
           {creditsData.totalRefunded > 0 && (
@@ -247,7 +282,7 @@ export default function EarningsDashboard() {
 
         {creditsData.fees.length > 0 && (
           <>
-            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>פירוט ג'ובות שהופרדו</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>פירוט בקשות שהופרדו</div>
             <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 16 }}>
               {creditsData.fees.slice(0, 10).map((tx, idx, arr) => {
                 const diffDays = Math.floor((Date.now() - new Date(tx.created_date + (tx.created_date?.endsWith('Z') || tx.created_date?.includes('+') ? '' : 'Z')).getTime()) / 86400000);
@@ -267,37 +302,6 @@ export default function EarningsDashboard() {
               })}
             </div>
           </>
-        )}
-      </div>
-
-      {/* Recent earnings list */}
-      <div style={{ padding: '0 16px' }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>{t('recent_earnings')}</div>
-        {earningsData.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>💸</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)' }}>{t('no_earnings_yet')}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{t('earnings_will_appear')}</div>
-          </div>
-        ) : (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
-            {earningsData.slice(0, 15).map((e, idx, arr) => {
-              const diffDays = Math.floor((Date.now() - e.date.getTime()) / 86400000);
-              const dateLabel = diffDays === 0 ? t('today_label') : diffDays === 1 ? t('yesterday') : e.date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
-              return (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderTop: idx > 0 ? '1px solid var(--border-1)' : 'none' }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <TrendingUp size={16} color="#059669" />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{dateLabel}</div>
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: '#059669', flexShrink: 0 }}>₪{e.amount.toLocaleString()}</div>
-                </div>
-              );
-            })}
-          </div>
         )}
       </div>
     </div>

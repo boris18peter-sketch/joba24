@@ -35,7 +35,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import LiveNotificationPopup from '@/components/LiveNotificationPopup';
+import { notificationStore } from '@/lib/notificationStore';
 import VerifyModal from '@/components/VerifyModal';
 import NotificationsPermissionPrompt from '@/components/NotificationsPermissionPrompt';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
@@ -87,9 +87,7 @@ export default function Layout() {
     return () => observer.disconnect();
   }, []);
 
-  const [notifications, setNotifications] = useState([]);
-  const notifQueueRef = useRef([]);
-  const notifActiveRef = useRef(false);
+  // Notification popups are now managed globally via notificationStore (rendered by GlobalPopups in App.jsx)
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [navHiddenByModal, setNavHiddenByModal] = useState(false);
   const [boostOverlayData, setBoostOverlayData] = useState(null);
@@ -299,10 +297,13 @@ export default function Layout() {
     if (me.id !== task.client_id && me.id !== task.worker_id) return;
     const key = `rated_${task.id}_${me.id}`;
     if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) return;
+    // Check if review already exists — don't show rating modal for already-reviewed tasks
+    const existingReview = queryClient.getQueryData(['myReview', task.id, me.id]);
+    if (existingReview) return;
     shownRatingRef.current.add(task.id);
     localStorage.setItem(key, '1');
     setTimeout(() => setRatingTask(task), 800);
-  }, [me?.id]);
+  }, [me?.id, queryClient]);
 
   useEffect(() => {
     const handler = (e) => maybeShowRating(e.detail?.task);
@@ -310,31 +311,10 @@ export default function Layout() {
     return () => window.removeEventListener('show_rating_modal', handler);
   }, [maybeShowRating]);
 
-  // Notification queue
-  const persistNotification = (notification) => {
-    const stored = JSON.parse(localStorage.getItem('joba24_notifications') || '[]');
-    const updated = [{ ...notification, timestamp: new Date().toISOString(), read: false }, ...stored].slice(0, 50);
-    localStorage.setItem('joba24_notifications', JSON.stringify(updated));
-  };
-
-  const showNextNotif = () => {
-    if (notifQueueRef.current.length === 0) { notifActiveRef.current = false; return; }
-    notifActiveRef.current = true;
-    setNotifications([notifQueueRef.current.shift()]);
-  };
-
+  // Notification popups managed globally via notificationStore — works on ALL pages (not just Layout)
   const addNotification = useCallback((notification) => {
-    const id = Date.now() + Math.random();
-    persistNotification(notification);
-    const notifObj = { ...notification, id };
-    if (!notifActiveRef.current) { notifActiveRef.current = true; setNotifications([notifObj]); }
-    else notifQueueRef.current.push(notifObj);
+    notificationStore.addNotification(notification);
   }, []);
-
-  const removeNotification = () => {
-    setNotifications([]);
-    setTimeout(showNextNotif, 400);
-  };
 
   // Event listeners for window events
   useEffect(() => {
@@ -567,17 +547,6 @@ export default function Layout() {
         document.body
       )}
 
-      {createPortal(
-        <div style={{ position: 'fixed', top: 'calc(env(safe-area-inset-top) + 12px)', left: 0, right: 0, zIndex: 9999999, pointerEvents: 'none' }}>
-          {notifications.map((notif) => (
-            <div key={notif.id} style={{ pointerEvents: 'auto' }}>
-              <LiveNotificationPopup notification={notif} onClose={() => removeNotification(notif.id)} />
-            </div>
-          ))}
-        </div>,
-        document.body
-      )}
-
       {/* Tab content — lazy-mount, keep-alive, swipeable */}
       {(() => {
         const isNonRootTab = !ROOT_TAB_PATHS.includes(location.pathname);
@@ -598,7 +567,7 @@ export default function Layout() {
                     style={{
                       flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
                       overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',
-                      paddingBottom: tabPath === '/map' ? 0 : 'calc(60px + max(6px, env(safe-area-inset-bottom)))',
+                      paddingBottom: tabPath === '/map' ? 0 : 'calc(88px + max(6px, env(safe-area-inset-bottom)))',
                       WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
                       height: isActive ? '100%' : 0,
                       }}>
@@ -623,7 +592,7 @@ export default function Layout() {
               })}
             </div>
             {isNonRootTab && (
-              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(60px + max(6px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(88px + max(6px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
                 <Outlet />
               </div>
             )}

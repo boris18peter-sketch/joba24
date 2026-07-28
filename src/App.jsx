@@ -16,6 +16,7 @@ import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
 import ResetPassword from '@/pages/ResetPassword';
+import GlobalPopups from '@/components/GlobalPopups';
 
 // Add page imports here
 // App entry — force reload to clear stale dynamic import cache
@@ -130,6 +131,7 @@ const AuthenticatedApp = () => {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+      <GlobalPopups />
       <Suspense fallback={<div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>}>
       <AnimatePresence mode="popLayout" custom={slideDir} initial={false}>
         <motion.div

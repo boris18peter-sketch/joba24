@@ -127,6 +127,7 @@ export default function Chat() {
   const fileRef = useRef(null);
   const typingTimerRef = useRef(null);
   const containerRef = useRef(null);
+  const outerRef = useRef(null);
   const inputRef = useRef(null);
   const { recording, recordSeconds, uploading: uploadingVoice, start: startRecording, stop: stopRecording, cancel: cancelRecording, formatTime } = useVoiceRecording();
 
@@ -236,6 +237,19 @@ export default function Chat() {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
+  // Keyboard handling — keep input bar docked directly above keyboard (iOS PWA fix)
+  useEffect(() => {
+    const onResize = () => {
+      if (!outerRef.current) return;
+      const vv = window.visualViewport;
+      const h = vv ? vv.height : window.innerHeight;
+      outerRef.current.style.height = `${h}px`;
+    };
+    window.visualViewport?.addEventListener('resize', onResize);
+    onResize();
+    return () => window.visualViewport?.removeEventListener('resize', onResize);
+  }, []);
+
   const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
     gate(() => sendMessage(content, mediaUrl, mediaType));
   };
@@ -331,13 +345,13 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir="rtl">
+    <div ref={outerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir="rtl">
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header — fixed flex item, doesn't scroll */}
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
-        padding: '48px 12px 12px',
+        padding: '8px 12px 12px',
         display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0, zIndex: 40,

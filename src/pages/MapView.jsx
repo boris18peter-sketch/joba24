@@ -379,7 +379,7 @@ export default function MapView() {
             background: 'var(--header-bg)',
             backdropFilter: 'blur(12px)',
             borderBottom: '1.5px solid var(--border-1)',
-            paddingTop: 'max(8px, env(safe-area-inset-top))',
+            paddingTop: 8,
             paddingBottom: 8,
             paddingLeft: 14,
             paddingRight: 14,
