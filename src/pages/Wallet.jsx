@@ -95,7 +95,7 @@ export default function Wallet() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader title={t('wallet_title')} />
 
       {/* Stats hero */}

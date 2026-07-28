@@ -179,7 +179,7 @@ export default function WorkerProfile() {
   const hasCerts = (form.certificate_files || []).length > 0 || (currentUser?.certificates || []).length > 0;
 
   return (
-    <div style={{ background: 'var(--surface-1)', minHeight: '100dvh', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }} dir="rtl">
+    <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir="rtl">
 
       {/* ── Header ── */}
       <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
