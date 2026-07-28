@@ -1,16 +1,20 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 
 const TaskSheetContext = createContext(null);
 
 export function TaskSheetProvider({ children }) {
   const [sheetTaskId, setSheetTaskId] = useState(null);
   const [hiddenTaskId, setHiddenTaskId] = useState(null);
+  // Ref mirror of sheetTaskId so hideTaskSheet can read it synchronously
+  // without nesting a setter inside another setter's updater.
+  const sheetTaskIdRef = useRef(null);
 
   // Opens the sheet and pushes a history entry (without URL change) so the
   // hardware back button / swipe-back closes the sheet.
   // Uses pushState (not navigate) to avoid React Router page transition animations.
   const openTaskSheet = useCallback((taskId) => {
     if (!taskId) return;
+    sheetTaskIdRef.current = taskId;
     setSheetTaskId(taskId);
     setHiddenTaskId(null);
     if (window.history.state?.taskSheet) {
@@ -26,6 +30,7 @@ export function TaskSheetProvider({ children }) {
   // (the popstate listener will clear sheetTaskId).
   const closeTaskSheet = useCallback(() => {
     setHiddenTaskId(null);
+    sheetTaskIdRef.current = null;
     if (window.history.state?.taskSheet) {
       window.history.back();
     } else {
@@ -38,10 +43,11 @@ export function TaskSheetProvider({ children }) {
   // history entry stays in the stack so pressing Back restores the sheet.
   // Stores the hidden task ID so a popup can offer to return.
   const hideTaskSheet = useCallback(() => {
-    setSheetTaskId(prev => {
-      if (prev) setHiddenTaskId(prev);
-      return null;
-    });
+    if (sheetTaskIdRef.current) {
+      setHiddenTaskId(sheetTaskIdRef.current);
+    }
+    sheetTaskIdRef.current = null;
+    setSheetTaskId(null);
   }, []);
 
   // Clears the hidden task ID (dismisses the return popup)
@@ -54,9 +60,11 @@ export function TaskSheetProvider({ children }) {
     const handlePopState = () => {
       if (window.history.state?.taskSheet) {
         // We're back at the task sheet entry — restore it
+        sheetTaskIdRef.current = window.history.state.taskSheet;
         setSheetTaskId(window.history.state.taskSheet);
         setHiddenTaskId(null);
       } else {
+        sheetTaskIdRef.current = null;
         setSheetTaskId(null);
       }
     };

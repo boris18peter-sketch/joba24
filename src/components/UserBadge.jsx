@@ -28,7 +28,7 @@ export default function UserBadge({ name, userId, verified, gold, rating, dark =
   const handleClick = (e) => {
     e.stopPropagation();
     if (onClick) { onClick(e); return; }
-    if (userId) navigate(`/public-profile?id=${userId}`);
+    if (userId) { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/public-profile?id=${userId}`); }
   };
 
   return (

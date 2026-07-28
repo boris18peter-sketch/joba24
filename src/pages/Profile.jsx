@@ -133,7 +133,7 @@ export default function Profile() {
   const categories = me?.preferred_categories || [];
 
   return (
-    <div style={{ background: 'var(--surface-1)', minHeight: '100dvh', paddingBottom: 32 }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerifyModal && (
         <VerifyModal
           onClose={() => setShowVerifyModal(false)}

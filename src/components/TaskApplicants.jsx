@@ -288,7 +288,7 @@ export default function TaskApplicants({ task, onApprove }) {
             <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               {/* Avatar — circular with photo or gradient fallback */}
               <div
-                onClick={() => navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`)}
+                onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`); }}
                 style={{
                   width: 48, height: 48, borderRadius: '50%',
                   background: photo ? 'var(--surface-3)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
@@ -310,7 +310,7 @@ export default function TaskApplicants({ task, onApprove }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   <span
-                    onClick={() => navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`)}
+                    onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(`/public-profile?id=${app.worker_id}&taskId=${task.id}`); }}
                     style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', cursor: 'pointer' }}
                   >
                     {app.worker_name}
