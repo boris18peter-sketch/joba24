@@ -7,6 +7,8 @@ import { Star, CheckCircle2, Loader2, MessageCircle, UserX, X, ShieldCheck, Phon
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
+import UserVerificationBadge from '@/components/UserVerificationBadge';
+import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
 export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
@@ -262,7 +264,8 @@ export default function TaskApplicants({ task, onApprove }) {
         const profile = applicantProfiles[app.worker_id];
         const photo = profile?.profile_photo;
         const rating = profile?.rating || app.worker_rating || 0;
-        const isVerified = profile?.is_verified || app.worker_verified;
+        const isVerified = isUserVerified(profile) || app.worker_verified;
+        const isGold = hasSocialVerified(profile);
         const tasksCompleted = profile?.tasks_completed ?? app.worker_tasks_count ?? 0;
         const phone = isApproved ? profile?.phone : null;
 
@@ -292,8 +295,8 @@ export default function TaskApplicants({ task, onApprove }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 18, fontWeight: 900, color: 'white', cursor: 'pointer', flexShrink: 0,
                   overflow: 'hidden', position: 'relative',
-                  border: isVerified ? '2px solid #16a34a' : '2px solid transparent',
-                  boxShadow: isVerified ? '0 0 0 2px rgba(22,163,74,0.15)' : 'none',
+                  border: isVerified ? `2px solid ${isGold ? '#fbbf24' : '#16a34a'}` : '2px solid transparent',
+                  boxShadow: isVerified ? `0 0 0 2px ${isGold ? 'rgba(251,191,36,0.15)' : 'rgba(22,163,74,0.15)'}` : 'none',
                 }}
               >
                 {photo ? (
@@ -328,9 +331,7 @@ export default function TaskApplicants({ task, onApprove }) {
                     </span>
                   )}
                   {isVerified && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: '#059669' }}>
-                      <ShieldCheck size={11} /> מאומת
-                    </span>
+                    <UserVerificationBadge user={profile} size="sm" />
                   )}
                   {tasksCompleted > 0 && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>

@@ -24,7 +24,7 @@ import { getActiveRequirements } from '@/lib/requirements';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
-import { isUserVerified } from '@/lib/utils';
+import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
@@ -855,7 +855,8 @@ export default function TaskDetail(props) {
               <UserBadge
                 name={task.client_name}
                 userId={task.client_id}
-                verified={task.client_verified}
+                verified={isUserVerified(clientUser) || task.client_verified}
+                gold={hasSocialVerified(clientUser)}
                 rating={task.client_rating}
                 dark
                 size="md"
@@ -864,7 +865,7 @@ export default function TaskDetail(props) {
               {task.location_name && (
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: 3 }}>
                   <MapPin size={10} strokeWidth={2} />
-                  {task.location_name.split(',')[0]}
+                  {task.location_name}
                   {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}`}
                 </span>
               )}

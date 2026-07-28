@@ -8,6 +8,8 @@ import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
+import { hasSocialVerified } from '@/lib/utils';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 import InvoiceModal from '@/components/InvoiceModal';
 import { toast } from 'sonner';
@@ -260,7 +262,11 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{personLabel}:</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 130 }}>{personName}</span>
                   {personRating > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.85)', flexShrink: 0 }}>⭐ {personRating.toFixed(1)}</span>}
-                  {personVerified && <VerifiedBadge size="sm" />}
+                  {personVerified && (
+                    tIsOwner && extraInfo?.workerUser && hasSocialVerified(extraInfo.workerUser)
+                      ? <GoldBadge size="sm" />
+                      : <VerifiedBadge size="sm" />
+                  )}
                 </div>
               )}
 

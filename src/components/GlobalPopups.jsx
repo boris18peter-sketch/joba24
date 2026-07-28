@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { notificationStore } from '@/lib/notificationStore';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
+import ReturnToTaskPopup from '@/components/ReturnToTaskPopup';
 
 /**
  * GlobalPopups — renders LiveNotificationPopup on ALL authenticated pages.
@@ -15,22 +16,25 @@ export default function GlobalPopups() {
     return notificationStore.subscribe(setNotifications);
   }, []);
 
-  if (notifications.length === 0) return null;
-
-  return createPortal(
-    <div style={{
-      position: 'fixed',
-      top: 'calc(env(safe-area-inset-top) + 12px)',
-      left: 0, right: 0,
-      zIndex: 9999999,
-      pointerEvents: 'none',
-    }}>
-      {notifications.map((notif) => (
-        <div key={notif.id} style={{ pointerEvents: 'auto' }}>
-          <LiveNotificationPopup notification={notif} onClose={() => notificationStore.removeNotification()} />
-        </div>
-      ))}
-    </div>,
-    document.body
+  return (
+    <>
+      {notifications.length > 0 && createPortal(
+        <div style={{
+          position: 'fixed',
+          top: 'calc(env(safe-area-inset-top) + 12px)',
+          left: 0, right: 0,
+          zIndex: 9999999,
+          pointerEvents: 'none',
+        }}>
+          {notifications.map((notif) => (
+            <div key={notif.id} style={{ pointerEvents: 'auto' }}>
+              <LiveNotificationPopup notification={notif} onClose={() => notificationStore.removeNotification()} />
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+      <ReturnToTaskPopup />
+    </>
   );
 }

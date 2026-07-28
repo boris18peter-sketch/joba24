@@ -1020,9 +1020,11 @@ export default function CreateTask() {
               <span style={{ fontWeight: 800, fontSize: 17, color: 'white', flex: 1 }}>
         {isRepostMode ? t('repost') : isEditMode ? t('edit_task_title') : isRepost ? t('repost') : t('publish_task_onboard_title')}
       </span>
+              {/* Chat feature button — temporarily disabled
               <button
                 onClick={() => setChatMode(m => !m)}
                 style={{
+                  display: 'none',
                   fontSize: 11, fontWeight: 700, color: 'white',
                   background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)',
                   borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
@@ -1031,6 +1033,7 @@ export default function CreateTask() {
               >
                 {chatMode ? '📋 טופס' : '💬 צ\'אט'}
               </button>
+              */}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
             {/* Progress bar */}

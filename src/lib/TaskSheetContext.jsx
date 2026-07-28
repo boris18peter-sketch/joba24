@@ -4,6 +4,7 @@ const TaskSheetContext = createContext(null);
 
 export function TaskSheetProvider({ children }) {
   const [sheetTaskId, setSheetTaskId] = useState(null);
+  const [hiddenTaskId, setHiddenTaskId] = useState(null);
 
   // Opens the sheet and pushes a history entry (without URL change) so the
   // hardware back button / swipe-back closes the sheet.
@@ -11,6 +12,7 @@ export function TaskSheetProvider({ children }) {
   const openTaskSheet = useCallback((taskId) => {
     if (!taskId) return;
     setSheetTaskId(taskId);
+    setHiddenTaskId(null);
     if (window.history.state?.taskSheet) {
       // Sheet already has a history entry — replace it with the new taskId
       // so Back restores the correct task, not a stale one
@@ -23,6 +25,7 @@ export function TaskSheetProvider({ children }) {
   // Closes the sheet. If we pushed a history entry, go back to pop it
   // (the popstate listener will clear sheetTaskId).
   const closeTaskSheet = useCallback(() => {
+    setHiddenTaskId(null);
     if (window.history.state?.taskSheet) {
       window.history.back();
     } else {
@@ -33,8 +36,17 @@ export function TaskSheetProvider({ children }) {
   // Hides the sheet WITHOUT touching history — used when the user navigates
   // away (e.g., clicks a profile link inside the sheet). The {taskSheet}
   // history entry stays in the stack so pressing Back restores the sheet.
+  // Stores the hidden task ID so a popup can offer to return.
   const hideTaskSheet = useCallback(() => {
-    setSheetTaskId(null);
+    setSheetTaskId(prev => {
+      if (prev) setHiddenTaskId(prev);
+      return null;
+    });
+  }, []);
+
+  // Clears the hidden task ID (dismisses the return popup)
+  const clearHiddenTask = useCallback(() => {
+    setHiddenTaskId(null);
   }, []);
 
   // Listen for popstate (hardware back button, swipe-back) to close or restore the sheet
@@ -43,6 +55,7 @@ export function TaskSheetProvider({ children }) {
       if (window.history.state?.taskSheet) {
         // We're back at the task sheet entry — restore it
         setSheetTaskId(window.history.state.taskSheet);
+        setHiddenTaskId(null);
       } else {
         setSheetTaskId(null);
       }
@@ -52,7 +65,7 @@ export function TaskSheetProvider({ children }) {
   }, []);
 
   return (
-    <TaskSheetContext.Provider value={{ sheetTaskId, openTaskSheet, closeTaskSheet, hideTaskSheet }}>
+    <TaskSheetContext.Provider value={{ sheetTaskId, hiddenTaskId, openTaskSheet, closeTaskSheet, hideTaskSheet, clearHiddenTask }}>
       {children}
     </TaskSheetContext.Provider>
   );
@@ -60,6 +73,6 @@ export function TaskSheetProvider({ children }) {
 
 export function useTaskSheet() {
   const ctx = useContext(TaskSheetContext);
-  if (!ctx) return { sheetTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {}, hideTaskSheet: () => {} };
+  if (!ctx) return { sheetTaskId: null, hiddenTaskId: null, openTaskSheet: () => {}, closeTaskSheet: () => {}, hideTaskSheet: () => {}, clearHiddenTask: () => {} };
   return ctx;
 }
