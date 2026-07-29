@@ -50,6 +50,7 @@ export default function SocialLinksSection({ user }) {
   const [showConnect, setShowConnect] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verifyAttempt, setVerifyAttempt] = useState(0);
   const [confirmDisconnect, setConfirmDisconnect] = useState(null);
 
   const refresh = async () => {
@@ -80,25 +81,34 @@ export default function SocialLinksSection({ user }) {
 
   const handleVerifyCode = async (platform) => {
     setLoading(true);
-    try {
-      const res = await base44.functions.invoke('verifyInstagram', {
-        action: 'verify_code', platform,
-      });
-      if (res.data?.error) { toast.error(res.data.error); return false; }
-      if (res.data?.verified) {
-        toast.success(`${platformLabel(platform)} אומת בהצלחה! 🎉`);
-        await refresh();
-        return true;
-      } else {
-        toast.error(res.data?.note || 'הקוד לא נמצא בפרופיל. ודא שהוספת אותו לביו ונסה שוב.');
-        return false;
+    const maxAttempts = 3;
+    let success = false;
+    for (let attempt = 1; attempt <= maxAttempts && !success; attempt++) {
+      setVerifyAttempt(attempt);
+      try {
+        const res = await base44.functions.invoke('verifyInstagram', {
+          action: 'verify_code', platform,
+        });
+        if (res.data?.error) { toast.error(res.data.error); break; }
+        if (res.data?.verified) {
+          toast.success(`${platformLabel(platform)} אומת בהצלחה! 🎉`);
+          await refresh();
+          success = true;
+        } else if (attempt < maxAttempts) {
+          toast.message(`הקוד עדיין לא נמצא. מנסה שוב... (ניסיון ${attempt + 1}/${maxAttempts})`, { duration: 4000 });
+          await new Promise(r => setTimeout(r, 5000));
+        }
+      } catch (e) {
+        toast.error('שגיאה באימות');
+        break;
       }
-    } catch (e) {
-      toast.error('שגיאה באימות');
-      return false;
-    } finally {
-      setLoading(false);
     }
+    if (!success) {
+      toast.error('הקוד לא נמצא בפרופיל. ודא שהוספת אותו לביו ונסה שוב.');
+    }
+    setVerifyAttempt(0);
+    setLoading(false);
+    return success;
   };
 
   const handleDisconnect = async (platform) => {
@@ -209,7 +219,7 @@ export default function SocialLinksSection({ user }) {
       </div>
 
       {showConnect && createPortal(
-        <ConnectSheet user={user} platforms={PLATFORMS} onClose={() => setShowConnect(false)} onConnect={handleConnectCode} onVerify={handleVerifyCode} loading={loading} />,
+        <ConnectSheet user={user} platforms={PLATFORMS} onClose={() => setShowConnect(false)} onConnect={handleConnectCode} onVerify={handleVerifyCode} loading={loading} verifyAttempt={verifyAttempt} />,
         document.body
       )}
 
@@ -224,7 +234,7 @@ export default function SocialLinksSection({ user }) {
 // ═══════════════════════════════════════════════════════════════════
 // ConnectSheet — 3 simple steps: choose → enter username → add code → verify
 // ═══════════════════════════════════════════════════════════════════
-function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }) {
+function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, verifyAttempt }) {
   const [step, setStep] = useState('choose'); // 'choose' | 'username' | 'code'
   const [selected, setSelected] = useState(null);
   const [usernameInput, setUsernameInput] = useState('');
@@ -471,13 +481,13 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading }
                   <button onClick={handleVerify} disabled={loading}
                     style={{ marginTop: 16, width: '100%', height: 50, borderRadius: 12, background: loading ? '#93c5fd' : 'linear-gradient(135deg, #16a34a, #059669)', color: 'white', border: 'none', fontWeight: 800, fontSize: 15, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(16,185,129,0.3)' }}>
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                    {loading ? 'סורק...' : 'אימתתי'}
+                    {loading ? (verifyAttempt > 1 ? `מנסה שוב (${verifyAttempt}/3)...` : 'סורק...') : 'אימתתי'}
                   </button>
 
                   {loading && (
                     <div style={{ marginTop: 10, padding: '10px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', textAlign: 'center' }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>סורקים את הפרופיל...</div>
-                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>לוקח כדקה. אל תסגור.</div>
+                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>{verifyAttempt > 1 ? `ניסיון ${verifyAttempt} מ-3 — אל תסגור` : 'לוקח כמה שניות. אל תסגור.'}</div>
                     </div>
                   )}
 

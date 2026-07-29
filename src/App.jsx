@@ -64,17 +64,34 @@ function ScrollToTop() {
 }
 
 // Save referral code from URL to localStorage so AuthContext can apply it after login
+// Also generates a device_id to track app downloads/installs per agent (even before registration)
 function CaptureRefCode() {
   useEffect(() => {
+    // Generate or retrieve anonymous device_id (persists across sessions)
+    let deviceId = localStorage.getItem('joba24_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('joba24_device_id', deviceId);
+    }
+
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     if (ref) {
       localStorage.setItem('joba24_ref_code', ref);
-      // Track the click (once per session per ref code)
+      // Track the click (once per session per ref code) + create ReferralEvent
       const clickKey = `joba24_ref_click_${ref}`;
       if (!sessionStorage.getItem(clickKey)) {
         sessionStorage.setItem(clickKey, '1');
-        base44.functions.invoke('trackReferralClick', { agent_code: ref }).catch(() => {});
+        base44.functions.invoke('trackReferralClick', { agent_code: ref, device_id: deviceId, count_click: true }).catch(() => {});
+      } else {
+        base44.functions.invoke('trackReferralClick', { agent_code: ref, device_id: deviceId, count_click: false }).catch(() => {});
+      }
+    } else {
+      // No ref in URL — check localStorage for stored ref code (user opened app later)
+      const storedRef = localStorage.getItem('joba24_ref_code');
+      if (storedRef) {
+        // Ensure ReferralEvent exists (no click increment — already counted on first visit)
+        base44.functions.invoke('trackReferralClick', { agent_code: storedRef, device_id: deviceId, count_click: false }).catch(() => {});
       }
     }
   }, []);

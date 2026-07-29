@@ -1,6 +1,17 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
-Deno.serve(async (req) => {
+/**
+ * getAgentReferrals — Fetch agent dashboard data including referral events (downloads).
+ *
+ * Returns:
+ *   - users: registered users referred by this agent
+ *   - referralEvents: all ReferralEvent records (downloads + registrations)
+ *   - workerTasks, clientTasks: completed tasks by referred users
+ *   - referral_clicks: total link clicks
+ *   - totalCreditsUsed: credits spent by referred users
+ */
+
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -15,11 +26,15 @@ Deno.serve(async (req) => {
     }, '-created_date', 1);
     const referral_clicks = agentRecords[0]?.referral_clicks || 0;
 
-    // Service-role query: agents can't list other users directly (built-in security),
-    // so we elevate to service role after verifying the caller is a legitimate agent.
+    // Service-role query: agents can't list other users directly (built-in security)
     const referredUsers = await base44.asServiceRole.entities.User.filter({
       referred_by_agent_code: user.agent_code,
     }, '-created_date', 200);
+
+    // Fetch all ReferralEvents for this agent (downloads + registrations)
+    const referralEvents = await base44.asServiceRole.entities.ReferralEvent.filter({
+      agent_code: user.agent_code,
+    }, '-created_date', 500);
 
     const userIds = referredUsers.map((u) => u.id);
     let workerTasks = [];
@@ -27,7 +42,6 @@ Deno.serve(async (req) => {
     let totalCreditsUsed = 0;
 
     if (userIds.length > 0) {
-      // Use $in to fetch all tasks in a single query per role (avoids N+1)
       workerTasks = await base44.asServiceRole.entities.Task.filter({
         worker_id: { $in: userIds },
         status: 'COMPLETED',
@@ -38,7 +52,6 @@ Deno.serve(async (req) => {
         status: 'COMPLETED',
       }, '-completed_at', 200);
 
-      // Fetch credit transactions for referred users (credits used = negative amounts)
       const creditTxs = await base44.asServiceRole.entities.CreditTransaction.filter({
         user_id: { $in: userIds },
       }, '-created_date', 500);
@@ -50,6 +63,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       users: referredUsers,
+      referralEvents,
       workerTasks,
       clientTasks,
       commissionRate: user.commission_rate || 0,
@@ -57,6 +71,7 @@ Deno.serve(async (req) => {
       totalCreditsUsed,
     });
   } catch (error) {
+    console.error('getAgentReferrals error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase } from 'lucide-react';
+import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase, Download } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 
 function WorkerLinkCopy({ link }) {
@@ -41,9 +41,15 @@ export default function AgentDashboard() {
   const allUsers = referralData?.data?.users || [];
   const workerTasks = referralData?.data?.workerTasks || [];
   const clientTasks = referralData?.data?.clientTasks || [];
+  const referralEvents = referralData?.data?.referralEvents || [];
   const workerIds = allUsers.map(u => u.id);
   const referralClicks = referralData?.data?.referral_clicks || 0;
   const totalCreditsUsed = referralData?.data?.totalCreditsUsed || 0;
+
+  // Downloads = all referral events; registered = linked to a user; pending = not yet registered
+  const totalDownloads = referralEvents.length;
+  const registeredDownloads = referralEvents.filter(e => e.registered).length;
+  const pendingDownloads = referralEvents.filter(e => !e.registered);
 
   if (!me?.agent_code) {
     return (
@@ -81,10 +87,10 @@ export default function AgentDashboard() {
   }).length;
 
   const stats = [
-    { label: 'עובדים שגויסו', value: allUsers.length, color: '#7c3aed' },
+    { label: 'הורדות אפליקציה', value: totalDownloads, color: '#7c3aed' },
+    { label: 'נרשמו', value: registeredDownloads, color: '#059669' },
     { label: 'לחיצות על לינק', value: referralClicks, color: '#d97706' },
-    { label: 'סך מחירי משימות', value: `₪${Math.round(totalTurnover).toLocaleString()}`, color: '#059669' },
-    { label: 'קרדיטים שהשתמשו', value: totalCreditsUsed, color: '#1a6fd4' },
+    { label: 'מחיר משימות', value: `₪${Math.round(totalTurnover).toLocaleString()}`, color: '#059669' },
   ];
 
   const formatLastActive = (dateStr) => {
@@ -144,6 +150,34 @@ export default function AgentDashboard() {
           </div>
           <WorkerLinkCopy link={workerOnboardingLink} />
         </div>
+
+        {/* Downloads — users who opened the app via agent link but haven't registered yet */}
+        {pendingDownloads.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <Download size={15} color="#d97706" />
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>הורידו אך לא נרשמו</span>
+              <span style={{ fontSize: 11, color: '#94a3b8', background: 'var(--surface-3)', padding: '1px 8px', borderRadius: 20 }}>{pendingDownloads.length}</span>
+            </div>
+            {pendingDownloads.slice(0, 10).map(evt => {
+              const dateStr = evt.created_date ? formatDistanceToNow(new Date(evt.created_date), { addSuffix: true, locale: he }) : '—';
+              return (
+                <div key={evt.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#fbbf24,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                    <Download size={16} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>מכשיר חדש</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Clock size={9} /> {dateStr}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '2px 8px' }}>ממתין להרשמה</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Workers List */}
         <div style={{ marginBottom: 16 }}>

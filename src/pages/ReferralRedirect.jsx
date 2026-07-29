@@ -15,11 +15,20 @@ export default function ReferralRedirect() {
     // Store the ref code so AuthContext applies it after login
     localStorage.setItem('joba24_ref_code', code);
 
-    // Track the click (once per session per ref code)
+    // Generate or retrieve device_id for download tracking
+    let deviceId = localStorage.getItem('joba24_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('joba24_device_id', deviceId);
+    }
+
+    // Track the click (once per session per ref code) + create ReferralEvent
     const clickKey = `joba24_ref_click_${code}`;
     if (!sessionStorage.getItem(clickKey)) {
       sessionStorage.setItem(clickKey, '1');
-      base44.functions.invoke('trackReferralClick', { agent_code: code }).catch(() => {});
+      base44.functions.invoke('trackReferralClick', { agent_code: code, device_id: deviceId, count_click: true }).catch(() => {});
+    } else {
+      base44.functions.invoke('trackReferralClick', { agent_code: code, device_id: deviceId, count_click: false }).catch(() => {});
     }
 
     // Redirect to home with ref in URL so CaptureRefCode also processes it

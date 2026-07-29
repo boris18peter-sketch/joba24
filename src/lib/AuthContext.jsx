@@ -115,6 +115,16 @@ export const AuthProvider = ({ children }) => {
         console.error('[Joba24] Auth: failed to apply referral code:', refErr?.message);
       }
 
+      // Link this device's ReferralEvents to the authenticated user (pre-registration downloads)
+      try {
+        const deviceId = localStorage.getItem('joba24_device_id');
+        if (deviceId) {
+          base44.functions.invoke('linkReferralDevice', { device_id: deviceId }).catch(() => {});
+        }
+      } catch (linkErr) {
+        console.error('[Joba24] Auth: failed to link referral device:', linkErr?.message);
+      }
+
       // Clean up any previous subscriptions before creating new ones (prevents leaks on re-auth)
       if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
       if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }

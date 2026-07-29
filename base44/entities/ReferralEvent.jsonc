@@ -1,0 +1,44 @@
+{
+  "name": "ReferralEvent",
+  "type": "object",
+  "properties": {
+    "agent_code": {
+      "type": "string",
+      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d4\u05e4\u05e0\u05d4 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+    },
+    "device_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d0\u05e0\u05d5\u05e0\u05d9\u05de\u05d9 \u05e9\u05dc \u05d4\u05de\u05db\u05e9\u05d9\u05e8 (\u05e0\u05d5\u05e6\u05e8 \u05d1-localStorage)"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05e9\u05e0\u05e7\u05e9\u05e8 \u05dc\u05d0\u05d7\u05e8 \u05d4\u05e8\u05e9\u05de\u05d4"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "\u05d0\u05d9\u05de\u05d9\u05d9\u05dc \u05d4\u05de\u05e9\u05ea\u05de\u05e9 (\u05dc\u05ea\u05e6\u05d5\u05d2\u05d4 \u05d1\u05d3\u05e9\u05d1\u05d5\u05e8\u05d3)"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9 (\u05dc\u05ea\u05e6\u05d5\u05d2\u05d4 \u05d1\u05d3\u05e9\u05d1\u05d5\u05e8\u05d3)"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "click",
+        "download",
+        "register"
+      ],
+      "default": "download"
+    },
+    "registered": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d4\u05d0\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05db\u05d1\u05e8 \u05e0\u05e8\u05e9\u05dd \u05d5\u05e0\u05e7\u05e9\u05e8 \u05dc\u05d0\u05d9\u05e8\u05d5\u05e2"
+    }
+  },
+  "required": [
+    "agent_code",
+    "device_id"
+  ]
+}
