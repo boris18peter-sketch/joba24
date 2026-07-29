@@ -31,7 +31,7 @@ export default function TaskDetailActions({
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success('יצאת מהמשימה והקרדיטים הוחזרו 🪙');
+      toast.success('יצאת מהמשימה והג\'ובות חזרו ליתרה 🪙');
       navigate('/');
     },
     onError: () => toast.error('שגיאה ביציאה מהמשימה'),

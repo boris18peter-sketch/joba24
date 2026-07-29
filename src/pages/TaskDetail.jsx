@@ -983,7 +983,7 @@ export default function TaskDetail(props) {
                 }
                 {canApplyManual && !showApplyForm && (
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 4, fontWeight: 600, lineHeight: 1.4 }}>
-                 💡 הקרדיטים מוחזרים אוטומטית אם הבקשה לא תאושר או המשימה תבוטל
+                 💡 הג'ובות חוזרות ליתרה אוטומטית אם הבקשה לא תאושר או המשימה תבוטל
                 </div>
                 )}
 

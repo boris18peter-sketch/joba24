@@ -126,7 +126,7 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
-      toast.success('העובד בוטל והקרדיטים הוחזרו אליו 🪙');
+      toast.success('העובד בוטל והג\'ובות חזרו ליתרה שלו 🪙');
       onApprove?.();
     },
     onError: (err) => {
@@ -164,7 +164,7 @@ export default function TaskApplicants({ task, onApprove }) {
         if (res.data?.auto_bump_resumed) {
           toast.success('הבקשה נדחתה ועליית המחיר האוטומטית ממשיכה 📈');
         } else {
-          toast.success('הבקשה נדחתה והקרדיטים הוחזרו לעובד 🪙');
+          toast.success('הבקשה נדחתה והג\'ובות חזרו ליתרה של העובד 🪙');
         }
         onApprove?.();
       }, 350);
@@ -229,7 +229,7 @@ export default function TaskApplicants({ task, onApprove }) {
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚫</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>לבטל את העובד?</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                העובד <strong style={{ color: '#0f1e40' }}>{approvedApp?.worker_name}</strong> יקבל החזר קרדיטים מלא.<br />
+                העובד <strong style={{ color: '#0f1e40' }}>{approvedApp?.worker_name}</strong> יקבל החזר מלא של הג\'ובות.<br />
                 המשימה תחזור לסטטוס פתוח ותוכל לאשר עובד אחר.
               </div>
             </div>

@@ -125,13 +125,13 @@ function SendCreditsModal({ user, onClose, onSave }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(5,15,40,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface-2)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 }} dir="rtl">
         <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Coins size={18} color="#d97706" /> שליחת קרדיטים
+          <Coins size={18} color="#d97706" /> שליחת ג'ובות
         </div>
         <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>{user.full_name} · {user.email}</div>
         <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 16, padding: '8px 10px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
           יתרה נוכחית: <strong style={{ color: '#d97706' }}>{user.worker_credits ?? 0}</strong> ג'ובות
         </div>
-        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>כמות קרדיטים (חיובי להוספה, שלילי להפחתה)</label>
+        <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>כמות ג'ובות (חיובי להוספה, שלילי להפחתה)</label>
         <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
           style={{ width: '100%', height: 42, borderRadius: 10, border: '1px solid var(--border-1)', paddingRight: 12, paddingLeft: 12, fontSize: 16, outline: 'none', boxSizing: 'border-box', background: 'var(--surface-3)', color: 'var(--text-1)', marginBottom: 12 }} />
         <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', display: 'block', marginBottom: 6 }}>הערה (אופציונלי)</label>
@@ -309,7 +309,7 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
               onClick={(e) => { e.stopPropagation(); setShowCreditsModal(true); }}
               style={{ padding: '3px 10px', borderRadius: 10, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
             >
-              <Coins size={11} /> שלח קרדיטים
+              <Coins size={11} /> שלח ג'ובות
             </button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>

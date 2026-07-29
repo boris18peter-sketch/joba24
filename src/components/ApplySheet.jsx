@@ -53,9 +53,9 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px 20px', marginBottom: 16, color: 'white' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span>עלות הגשה:</span>
+            <span>התחייבות:</span>
             <CreditIcon size={12} />
-            <span style={{ fontWeight: 800 }}>{cost}</span>
+            <span style={{ fontWeight: 800 }}>{cost} ג'ובות</span>
           </div>
           <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{task?.title}</div>
@@ -95,14 +95,14 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
           </div>
         )}
 
-        {/* Credit refund explanation */}
+        {/* Joba commitment explanation */}
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
-          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים הקרדיטים?</div>
-          הקרדיטים מופרדים בעת ההגשה אך <strong>מוחזרים אוטומטית</strong> אם:<br />
-          • הבקשה שלך לא אושרה על ידי המפרסם<br />
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים ג'ובות?</div>
+          הג'ובות עוברות ל<strong>התחייבות</strong> בעת ההגשה וחוזרות ליתרה הזמינה אוטומטית אם:<br />
+          • לא נבחרת למשימה<br />
           • המשימה בוטלה או פג תוקפה<br />
-          • נבחר עובד אחר לביצוע המשימה<br />
-          <strong>התשלום בפועל נספר רק אם תבצע את המשימה והיא תאושר.</strong>
+          • נבחר עובד אחר<br />
+          ניתן לראות את הג'ובות בהתחייבות בכל רגע בסמל היתרה למעלה ולבטל בקשות.
         </div>
 
         {/* Message */}

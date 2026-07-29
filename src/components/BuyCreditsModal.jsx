@@ -5,6 +5,7 @@ import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckC
 import CreditIcon from '@/components/CreditIcon';
 import { useAuth } from '@/lib/AuthContext';
 import useCountUp from '@/hooks/useCountUp';
+import { packageValueLabel } from '@/lib/jobaBalance';
 import CreditPackageCard from '@/components/credits/CreditPackageCard';
 import PaymentConfirm from '@/components/credits/PaymentConfirm';
 import PurchaseSuccess from '@/components/credits/PurchaseSuccess';
@@ -51,7 +52,7 @@ const SUBSCRIPTION_PACKAGES = [
 
 const TRUST_FEATURES = [
   { icon: Shield,     title: 'רכישה מאובטחת',    desc: 'המידע הפיננסי מוצפן ומאובטח בתקנים המחמירים ביותר' },
-  { icon: RotateCcw, title: 'החזר אוטומטי',    desc: 'לא נבחרת למשימה? הקרדיטים חוזרים מיידית לארנק' },
+  { icon: RotateCcw, title: 'החזר אוטומטי',    desc: 'לא נבחרת למשימה? הג\'ובות חוזרות מיידית ליתרה' },
   { icon: CreditCard, title: 'גמישות מלאה',     desc: 'ניתן לבטל מנוי בכל עת ישירות מהגדרות החשבון' },
 ];
 
@@ -188,7 +189,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                       <CreditIcon size={20} />
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3 }}>
-                      חנות הקרדיטים
+                      טעינת יתרת ג'ובות
                     </div>
                   </div>
 
@@ -204,7 +205,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     </span>
                     <CreditIcon size={16} />
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>
-                      קרדיטים בארנק
+                      ג'ובות ביתרה
                     </span>
                   </div>
 
@@ -216,7 +217,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     }}>
                       <Zap size={14} color="#fbbf24" fill="#fbbf24" />
                       <span style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        נדרשים עוד <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={14} /></strong> להגשת מועמדות
+                        נדרשים עוד <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={14} /></strong> ג'ובות כדי להגיש בקשה
                       </span>
                     </div>
                   )}
@@ -324,10 +325,10 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
-                    קרדיטים = עבודות = הכנסה 🚀
+                    ג'ובות = עבודות = הכנסה 🚀
                   </div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 600, marginTop: 2, lineHeight: 1.4 }}>
-                    כל קרדיט מאפשר הגשת מועמדות · פוטנציאל רווח פי 10 מההשקעה
+                    טען יתרה, קבל משימות, והתחל להרוויח · פוטנציאל רווח פי 10 מההשקעה
                   </div>
                 </div>
               </div>

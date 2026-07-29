@@ -5,16 +5,19 @@ import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import CreditBalancePill from '@/components/CreditBalancePill';
+import LockedCreditsPopup from '@/components/LockedCreditsPopup';
 import { useState } from 'react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { useLanguage } from '@/lib/LanguageContext';
+import { computeLockedJobas } from '@/lib/jobaBalance';
 
 export default function AppHeader({ onOpenMenu }) {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
   const { isAuthenticated } = useAuth();
   const [showBuyCredits, setShowBuyCredits] = useState(false);
+  const [showLocked, setShowLocked] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const { t, isRTL } = useLanguage();
 
@@ -23,6 +26,16 @@ export default function AppHeader({ onOpenMenu }) {
     queryFn: () => base44.auth.me(),
     enabled: isAuthenticated,
   });
+
+  // Fetch pending applications to compute locked (committed) jobas
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myLockedJobas', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 15000,
+  });
+
+  const lockedJobas = computeLockedJobas(myApplications);
 
   return (
     <>
@@ -54,11 +67,16 @@ export default function AppHeader({ onOpenMenu }) {
           </span>
         </Link>
 
-        {/* Left: Credits pill + Menu */}
+        {/* Left: Joba balance pill + Menu */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {isAuthenticated && (
             <span id="onboarding-credits-pill">
-              <CreditBalancePill credits={me?.worker_credits ?? 0} onClick={() => setShowBuyCredits(true)} />
+              <CreditBalancePill
+                credits={me?.worker_credits ?? 0}
+                locked={lockedJobas}
+                onClick={() => setShowBuyCredits(true)}
+                onLockedClick={() => setShowLocked(true)}
+              />
             </span>
           )}
           {!isAuthenticated && (
@@ -92,6 +110,13 @@ export default function AppHeader({ onOpenMenu }) {
         <BuyCreditsModal
           onClose={() => setShowBuyCredits(false)}
           onSelect={() => setShowBuyCredits(false)}
+        />
+      )}
+      {showLocked && (
+        <LockedCreditsPopup
+          applications={myApplications}
+          lockedTotal={lockedJobas}
+          onClose={() => setShowLocked(false)}
         />
       )}
       {showLogin && (

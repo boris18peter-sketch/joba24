@@ -178,7 +178,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <input type="hidden" name="cred_type" value="1" />
         <input type="hidden" name="tranmode" value="A" />
         <input type="hidden" name="lang" value="il" />
-        <input type="hidden" name="pdesc" value={`קרדיטים Joba24${pkg ? ` — ${pkg.credits} קרדיטים` : ''}${payMethod ? ` (${payMethod})` : ''}`} />
+        <input type="hidden" name="pdesc" value={`Joba24 ג'ובות${pkg ? ` — ${pkg.credits} ג'ובות` : ''}${payMethod ? ` (${payMethod})` : ''}`} />
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
         {/* Payment method — tells Tranzila which method to pre-select */}

@@ -277,7 +277,7 @@ export default function SignupGiftModal({ onClose }) {
               מתנת הצטרפות
             </div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', lineHeight: 1.65, marginBottom: 18 }}>
-              פינקנו אותך ב-<span style={{ color: '#fbbf24', fontWeight: 800 }}>100 קרדיטים</span> במתנה<br />
+              פינקנו אותך ב-<span style={{ color: '#fbbf24', fontWeight: 800 }}>100 ג'ובות</span> במתנה<br />
               כדי שתוכל לצאת לדרך ולהגיש בקשות
             </div>
 
@@ -297,7 +297,7 @@ export default function SignupGiftModal({ onClose }) {
               <span style={{ fontSize: 48, fontWeight: 900, color: '#fbbf24', letterSpacing: -3, lineHeight: 1 }}>100</span>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
                 <CreditIcon size={30} />
-                <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>קרדיטים</span>
+                <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>ג'ובות</span>
               </div>
             </motion.div>
 
@@ -309,7 +309,7 @@ export default function SignupGiftModal({ onClose }) {
               fontSize: 12, color: 'rgba(255,255,255,.55)', lineHeight: 1.6,
               textAlign: 'right',
             }}>
-              <strong style={{ color: 'rgba(255,255,255,.8)' }}>קרדיטים</strong> — המטבע של המערכת. משמשים להגשת בקשות למשימות. ניתן לרכוש עוד בכל עת.
+              <strong style={{ color: 'rgba(255,255,255,.8)' }}>ג'ובות</strong> — יתרת העבודה שלך ב-Joba24. הן עוברות להתחייבות כשמגישים בקשה וחוזרות אוטומטית אם לא נבחרת. ניתן לטעון עוד בכל עת.
             </div>
           </motion.div>
         )}
@@ -337,7 +337,7 @@ export default function SignupGiftModal({ onClose }) {
               letterSpacing: 0.2,
             }}
           >
-            {claimed ? 'מעביר קרדיטים...' : 'קבל 100 קרדיטים חינם'}
+            {claimed ? 'מעביר ג\'ובות...' : 'קבל 100 ג\'ובות חינם'}
           </motion.button>
         )}
       </AnimatePresence>

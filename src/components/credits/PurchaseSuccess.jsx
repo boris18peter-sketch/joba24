@@ -40,13 +40,17 @@ export default function PurchaseSuccess({ pkg, isSubscription, onDone }) {
       </div>
 
       <div style={{ fontSize: 21, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>
-        הרכישה הושלמה בהצלחה!
+        היתרה נטענה בהצלחה!
       </div>
 
-      <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 24 }}>
+      <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 8 }}>
         נוספו לך <strong style={{ color: 'var(--brand-primary)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
           {pkg.credits} <CreditIcon size={15} />
-        </strong> לארנק{isSubscription ? ' (יתווספו מדי חודש)' : ''}
+        </strong> ג'ובות ליתרה{isSubscription ? ' (יתווספו מדי חודש)' : ''}
+      </div>
+
+      <div style={{ fontSize: 13, color: 'var(--color-success)', fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6 }}>
+        🚀 מוכן להגיש בקשות ולהתחיל להרוויח
       </div>
 
       <button

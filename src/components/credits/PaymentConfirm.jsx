@@ -80,7 +80,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           <CreditIcon size={24} />
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>
-          {isSubscription ? 'קרדיטים שיתווספו מדי חודש' : 'קרדיטים שיתווספו לארנק'}
+          {isSubscription ? 'ג\'ובות שיתווספו מדי חודש' : 'ג\'ובות שיתווספו ליתרה'}
         </div>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -115,11 +115,11 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7 }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
-              <span>עכשיו תחויב <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> עבור החודש הנוכחי והקרדיטים יתווספו מיד</span>
+              <span>עכשיו תחויב <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> עבור החודש הנוכחי והג\'ובות יתווספו מיד</span>
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
-              <span>בכל חודש תחויב אוטומטית <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> והקרדיטים יתווספו לארנק</span>
+              <span>בכל חודש תחויב אוטומטית <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> והג\'ובות יתווספו ליתרה</span>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>

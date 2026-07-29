@@ -85,7 +85,7 @@ export default function SubscriptionManager() {
               <CreditIcon size={22} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
-                  {sub.credits} קרדיטים לחודש
+                  {sub.credits} ג'ובות לחודש
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                   ₪{sub.amount.toFixed(2)} / חודש · חידוש אוטומטי
@@ -153,7 +153,7 @@ export default function SubscriptionManager() {
                   המנוי בוטל
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-                  החיוב האוטומטי הופסק. הקרדיטים שכבר נרכשו נשארים בארנק שלך.
+                  החיוב האוטומטי הופסק. הג'ובות שכבר נרכשו נשארים ביתרה שלך.
                 </div>
               </>
             ) : (
@@ -170,7 +170,7 @@ export default function SubscriptionManager() {
                   ביטול המנוי?
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 24 }}>
-                  החיוב האוטומטי החודשי יופסק. תוכל להמשיך להשתמש בקרדיטים שכבר נרכשו.
+                  החיוב האוטומטי החודשי יופסק. תוכל להמשיך להשתמש בג'ובות שכבר נרכשו.
                   ניתן לרכוש מנוי מחדש בכל עת.
                 </div>
 

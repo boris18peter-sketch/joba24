@@ -70,7 +70,7 @@ export default function AccountDeletionRequest() {
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', textAlign: 'right', marginBottom: 10 }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: '#059669', marginBottom: 6 }}>יימחקו:</div>
                 <div style={{ fontSize: 12, color: '#166534', lineHeight: 1.7 }}>
-                  פרטים אישיים, תמונת פרופיל, משימות, מועמדויות, צ'אטים, ביקורות, קרדיטים, הגדרות ונתוני מיקום.
+                  פרטים אישיים, תמונת פרופיל, משימות, מועמדויות, צ'אטים, ביקורות, ג'ובות, הגדרות ונתוני מיקום.
                 </div>
               </div>
 

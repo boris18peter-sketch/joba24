@@ -3,12 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban } from 'lucide-react';
+import { TrendingUp, Trophy, Briefcase, RotateCcw, Coins, Clock, CheckCircle2, XCircle, Ban, Lock } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import LockedCreditsPopup from '@/components/LockedCreditsPopup';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import { useLanguage } from '@/lib/LanguageContext';
+import { computeLockedJobas, balanceValueCaption } from '@/lib/jobaBalance';
 
 // STATUS_TABS defined inside component to use translations
 
@@ -41,6 +43,7 @@ export default function Wallet() {
   const { openTaskSheet } = useTaskSheet();
   const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('inprogress');
+  const [showLocked, setShowLocked] = useState(false);
 
   const STATUS_TABS = [
     { key: 'inprogress', label: t('active'), icon: '🟣' },
@@ -67,6 +70,9 @@ export default function Wallet() {
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
     enabled: !!me?.id,
   });
+
+  const lockedJobas = computeLockedJobas(myApplications);
+  const availableJobas = me?.worker_credits ?? 0;
 
   const completedCount = workerTasks.filter((t) => t.status === 'COMPLETED').length;
 
@@ -104,7 +110,7 @@ export default function Wallet() {
           {[
             { icon: Trophy, label: t('completed_count'), value: completedCount },
             { icon: TrendingUp, label: t('active_now'), value: inProgressTasks.length },
-            { icon: Coins, label: t('credits'), value: me?.worker_credits ?? 100 },
+            { icon: Coins, label: t('credits'), value: availableJobas },
           ].map(({ icon: Icon, label, value }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, border: '1px solid rgba(255,255,255,0.08)' }}>
               <Icon size={13} color="rgba(255,255,255,0.6)" style={{ marginBottom: 4 }} />
@@ -113,7 +119,53 @@ export default function Wallet() {
             </div>
           ))}
         </div>
+
+        {/* Available + locked balance */}
+        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <CreditIcon size={13} /> יתרה זמינה
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: 'white', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{availableJobas}</span>
+              <CreditIcon size={20} />
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginTop: 4 }}>
+              {balanceValueCaption(availableJobas)}
+            </div>
+          </div>
+
+          {lockedJobas > 0 && (
+            <button
+              onClick={() => setShowLocked(true)}
+              style={{
+                flexShrink: 0, background: 'rgba(217,119,6,0.18)', borderRadius: 14,
+                padding: '14px 16px', border: '1px solid rgba(217,119,6,0.4)',
+                cursor: 'pointer', textAlign: 'right',
+              }}
+            >
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Lock size={12} color="#fbbf24" /> בהתחייבות
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ color: '#fbbf24', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{lockedJobas}</span>
+                <CreditIcon size={20} />
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>
+                לחץ לפרטים
+              </div>
+            </button>
+          )}
+        </div>
       </div>
+
+      {showLocked && (
+        <LockedCreditsPopup
+          applications={myApplications}
+          lockedTotal={lockedJobas}
+          onClose={() => setShowLocked(false)}
+        />
+      )}
 
       <div style={{ padding: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Active subscriptions */}
@@ -200,8 +252,8 @@ export default function Wallet() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#9ca3af' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CreditIcon size={13} /> {app.credits_charged}</span>
-                        {(app.status === 'rejected' || app.status === 'cancelled') && app.credits_charged > 0 && (
-                          <span style={{ color: '#16a34a', fontWeight: 700 }}>← {t('notif_credits_returned')}</span>
+                                        {(app.status === 'rejected' || app.status === 'cancelled') && app.credits_charged > 0 && (
+                          <span style={{ color: '#16a34a', fontWeight: 700 }}>← חזרו ליתרה</span>
                         )}
                       </div>
                     </div>

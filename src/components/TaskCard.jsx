@@ -152,9 +152,9 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
 
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
-            <span>{t('application_cost')}</span>
+            <span>התחייבות:</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} />
+              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} /> ג'ובות
             </span>
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
@@ -162,14 +162,14 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{sub}</div> : null; })()}
         </div>
 
-        {/* Credit refund explanation */}
+        {/* Joba commitment explanation */}
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 14, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
-          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים הקרדיטים?</div>
-          הקרדיטים מופרדים בעת ההגשה אך <strong>מוחזרים אוטומטית</strong> אם:<br />
-          • הבקשה שלך לא אושרה על ידי המפרסם<br />
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים ג'ובות?</div>
+          הג'ובות עוברות ל<strong>התחייבות</strong> בעת ההגשה וחוזרות ליתרה הזמינה אוטומטית אם:<br />
+          • לא נבחרת למשימה<br />
           • המשימה בוטלה או פג תוקפה<br />
-          • נבחר עובד אחר לביצוע המשימה<br />
-          <strong>התשלום בפועל נספר רק אם תבצע את המשימה והיא תאושר.</strong>
+          • נבחר עובד אחר<br />
+          ניתן לראות את הג'ובות בהתחייבות ולבטל בקשות בסמל היתרה למעלה.
         </div>
 
         <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
@@ -329,7 +329,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success(t('cancelled_credits_returned') || 'הבקשה בוטלה והקרדיטים הוחזרו 🪙');
+      toast.success(t('cancelled_credits_returned') || 'הבקשה בוטלה והג\'ובות חזרו ליתרה 🪙');
     } catch {
       // Rollback optimistic update
       queryClient.setQueryData(['myApp', task.id, currentUserId], myApp);
@@ -468,9 +468,9 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             <div style={{ fontSize: 15, fontWeight: 900, color: '#14532d' }}>{t('application_sent')}</div>
              {cardSuccessCredits > 0 && (
                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#b45309', fontWeight: 700, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', animation: 'coinBadgePop 0.35s 0.15s cubic-bezier(0.34,1.6,0.64,1) both' }}>
-                 <span>-{cardSuccessCredits}</span>
+                 <span>בהתחייבות: {cardSuccessCredits}</span>
                  <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
-                 <span>{t('credits')}</span>
+                 <span>ג'ובות</span>
                </div>
              )}
              <div style={{ fontSize: 11, color: '#16a34a' }}>{t('waiting_approval_short')}</div>

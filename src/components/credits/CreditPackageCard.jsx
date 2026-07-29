@@ -1,4 +1,5 @@
 import CreditIcon from '@/components/CreditIcon';
+import { packageValueLabel } from '@/lib/jobaBalance';
 import { Star, Crown, Check, TrendingDown } from 'lucide-react';
 
 /**
@@ -95,7 +96,17 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         fontSize: 9, fontWeight: 700,
         color: selected ? 'rgba(255,255,255,0.7)' : 'var(--text-3)',
       }}>
-        {isSubscription ? 'לחודש' : 'קרדיטים'}
+        {isSubscription ? 'ג\'ובות/חודש' : 'ג\'ובות'}
+      </div>
+
+      {/* Value label — how much work this covers */}
+      <div style={{
+        fontSize: 7.5, fontWeight: 700,
+        color: selected ? 'rgba(255,255,255,0.85)' : 'var(--color-success)',
+        marginTop: 1, lineHeight: 1.2, textAlign: 'center',
+        padding: '0 2px',
+      }}>
+        {packageValueLabel(pkg.credits)}
       </div>
 
       {/* Price-per-credit */}

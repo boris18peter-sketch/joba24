@@ -267,7 +267,7 @@ export default function SimulatorPanel() {
         </div>
         <ChecklistItem label="משתמש מחובר" done={!!me?.id} />
         <ChecklistItem label="זהות מאומתת" done={!!me?.is_verified} warn={!me?.is_verified} />
-        <ChecklistItem label="יש ג'ובות (קרדיטים)" done={(me?.worker_credits ?? 0) >= 10} warn={(me?.worker_credits ?? 0) > 0 && (me?.worker_credits ?? 0) < 10} />
+        <ChecklistItem label="יש ג'ובות" done={(me?.worker_credits ?? 0) >= 10} warn={(me?.worker_credits ?? 0) > 0 && (me?.worker_credits ?? 0) < 10} />
         <ChecklistItem label="יש משימות פתוחות בפיד" done={openTasks.length > 0} />
         <ChecklistItem label="יש משימות OPEN שניתן לקחת" done={openTasks.filter(t => t.client_id !== me?.id).length > 0} />
         <ChecklistItem label="סיימת לפחות משימה אחת" done={allTasks.some(t => t.status === 'COMPLETED')} warn={!allTasks.some(t => t.status === 'COMPLETED')} />
@@ -388,7 +388,7 @@ export default function SimulatorPanel() {
               onClick={wrap(async () => {
                 await base44.functions.invoke('refundApplicationCredits', { applicationId: a.id });
                 await base44.entities.TaskApplication.update(a.id, { status: 'rejected' });
-                toast.success('נדחה + הוחזרו קרדיטים');
+                toast.success('נדחה + הוחזרו ג\'ובות');
               })} />
           </div>
         ))}
@@ -402,7 +402,7 @@ export default function SimulatorPanel() {
       </Section>
 
       {/* ── SCENARIO C: Credits ── */}
-      <Section title="🪙 ניהול ג'ובות (קרדיטים)" icon={<CreditCard size={14} color="#d97706" />}>
+      <Section title="🪙 ניהול ג'ובות" icon={<CreditCard size={14} color="#d97706" />}>
         <div style={{ fontSize: 11, color: '#b45309', padding: '5px 9px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', fontWeight: 700 }}>
           יתרה נוכחית: {me?.worker_credits ?? 0} ג'ובות
         </div>
@@ -653,7 +653,7 @@ export default function SimulatorPanel() {
       </Section>
 
       {/* ── SCENARIO QA: Application Flow (no real task taking) ── */}
-      <Section title="🧪 QA — ביטול בקשות וקרדיטים" icon={<FlaskConical size={14} color="#6366f1" />} defaultOpen badge={myApps.filter(a => a.status === 'pending' || a.status === 'approved').length}>
+      <Section title="🧪 QA — ביטול בקשות וג'ובות" icon={<FlaskConical size={14} color="#6366f1" />} defaultOpen badge={myApps.filter(a => a.status === 'pending' || a.status === 'approved').length}>
         <div style={{ fontSize: 11, color: '#3730a3', padding: '5px 9px', background: '#eef2ff', borderRadius: 8, border: '1px solid #c7d2fe', marginBottom: 2 }}>
           בדיקת cancelMyApplication ו-applyForTask ללא לקיחת משימה בפועל
         </div>
@@ -673,7 +673,7 @@ export default function SimulatorPanel() {
                   onClick={wrap(async () => {
                     const res = await base44.functions.invoke('applyForTask', { taskId: t.id, message: '🧪 בקשת QA' });
                     if (res.data?.error) { toast.error(res.data.error); return; }
-                    toast.success(`הוגשה! ${res.data.credits_charged} קרדיטים נוכו`);
+                    toast.success(`הוגשה! ${res.data.credits_charged} ג'ובות בהתחייבות`);
                   })} />
                 <Btn label="3️⃣ אשר בקשה (approveWorker)" color="#059669" small disabled={!alreadyApplied}
                   onClick={wrap(async () => {
@@ -700,7 +700,7 @@ export default function SimulatorPanel() {
                   onClick={wrap(async () => {
                     const res = await base44.functions.invoke('cancelMyApplication', { applicationId: a.id, taskId: a.task_id });
                     if (!res.data?.success) { toast.error(res.data?.error || 'שגיאה'); return; }
-                    toast.success(`בוטל! ${res.data.credits_refunded ?? 0} קרדיטים הוחזרו`);
+                    toast.success(`בוטל! ${res.data.credits_refunded ?? 0} ג'ובות חזרו ליתרה`);
                   })} />
               </div>
             ))}
@@ -709,7 +709,7 @@ export default function SimulatorPanel() {
 
         {/* Credit balance sanity check */}
         <div style={{ background: '#f0fdf4', borderRadius: 9, padding: '8px 12px', border: '1px solid #bbf7d0' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 4 }}>✅ בדיקת שלמות קרדיטים</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 4 }}>✅ בדיקת שלמות ג'ובות</div>
           {creditTxs.slice(0, 5).map(tx => (
             <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '2px 0' }}>
               <span style={{ color: '#475569', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.note || tx.type}</span>
@@ -784,7 +784,7 @@ export default function SimulatorPanel() {
         </div>
         {([
           { key: 'gift', label: '🎁 מתנת הצטרפות', color: '#d97706', desc: 'כניסה ראשונה' },
-          { key: 'buyCredits', label: '🪙 רכישת קרדיטים', color: '#1a6fd4', desc: 'חסר ג\'ובות' },
+          { key: 'buyCredits', label: '🪙 טעינת יתרה', color: '#1a6fd4', desc: 'חסר ג\'ובות' },
           { key: 'login', label: '🔐 כניסה / הרשמה', color: '#6366f1', desc: 'גולש לא מחובר' },
           { key: 'approved', label: '🎉 עובד אושר', color: '#059669', desc: 'קיבלת אישור' },
           { key: 'workerCancelled', label: '😔 עובד בוטל', color: '#dc2626', desc: 'המשימה בוטלה' },
