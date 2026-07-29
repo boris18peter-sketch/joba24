@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   // Refs to store unsubscribe functions — prevents leaked subscriptions on re-auth
   const unsubUserRef = useRef(null);
   const unsubCreditRef = useRef(null);
+  const unsubAppRef = useRef(null);
 
   useEffect(() => {
     // Request persistent storage so localStorage (auth token) survives app kills on Android
@@ -128,6 +129,7 @@ export const AuthProvider = ({ children }) => {
       // Clean up any previous subscriptions before creating new ones (prevents leaks on re-auth)
       if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
       if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
+      if (unsubAppRef.current) { unsubAppRef.current(); unsubAppRef.current = null; }
 
       // Subscribe to User entity changes to keep user data (credits, KYC status, verification) up to date in real-time
       unsubUserRef.current = base44.entities.User.subscribe((event) => {
@@ -142,6 +144,18 @@ export const AuthProvider = ({ children }) => {
       const unsubCredit = base44.entities.CreditTransaction.subscribe((event) => {
         if (event.data?.user_id === currentUser?.id && event.data.balance_after != null) {
           setUser(prev => prev ? { ...prev, worker_credits: event.data.balance_after } : prev);
+        }
+      });
+
+      // Subscribe to TaskApplication — keep locked (committed) balance fresh in real-time.
+      // When an application is created/approved/rejected/cancelled, invalidate the locked-balance
+      // queries so the header indicator + popups update immediately (no manual refresh needed).
+      unsubAppRef.current = base44.entities.TaskApplication.subscribe((event) => {
+        const app = event.data;
+        if (!app || app.worker_id === currentUser?.id) {
+          queryClientInstance.invalidateQueries({ queryKey: ['myLockedJobas'] });
+          queryClientInstance.invalidateQueries({ queryKey: ['myApplications'] });
+          queryClientInstance.invalidateQueries({ queryKey: ['myApplicationsFeed'] });
         }
       });
 
@@ -217,6 +231,7 @@ export const AuthProvider = ({ children }) => {
     // Clean up real-time subscriptions
     if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
     if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
+    if (unsubAppRef.current) { unsubAppRef.current(); unsubAppRef.current = null; }
 
     // Clear all personal cached data from localStorage
     localStorage.removeItem('joba24_notifications');

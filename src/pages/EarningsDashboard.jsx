@@ -84,11 +84,10 @@ export default function EarningsDashboard() {
         d.setHours(0, 0, 0, 0);
         const next = new Date(d);
         next.setDate(d.getDate() + 1);
-        const sum = earningsData
-          .filter(e => e.date >= d && e.date < next)
-          .reduce((s, e) => s + e.amount, 0);
+        const dayItems = earningsData.filter(e => e.date >= d && e.date < next);
+        const sum = dayItems.reduce((s, e) => s + e.amount, 0);
         const label = d.toLocaleDateString('he-IL', { weekday: 'short' });
-        buckets.push({ label, value: sum, date: d });
+        buckets.push({ label, value: sum, count: dayItems.length, date: d });
       }
     } else if (period === 'weekly') {
       // Last 6 weeks
@@ -99,26 +98,26 @@ export default function EarningsDashboard() {
         start.setHours(0, 0, 0, 0);
         const end = new Date(start);
         end.setDate(start.getDate() + 7);
-        const sum = earningsData
-          .filter(e => e.date >= start && e.date < end)
-          .reduce((s, e) => s + e.amount, 0);
+        const weekItems = earningsData.filter(e => e.date >= start && e.date < end);
+        const sum = weekItems.reduce((s, e) => s + e.amount, 0);
         const weekNum = i === 0 ? t('this_week') : `${t('weekly')} ${6 - i}`;
-        buckets.push({ label: weekNum, value: sum, date: start });
+        buckets.push({ label: weekNum, value: sum, count: weekItems.length, date: start });
       }
     } else {
       // Last 6 months
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const next = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-        const sum = earningsData
-          .filter(e => e.date >= d && e.date < next)
-          .reduce((s, e) => s + e.amount, 0);
+        const monthItems = earningsData.filter(e => e.date >= d && e.date < next);
+        const sum = monthItems.reduce((s, e) => s + e.amount, 0);
         const label = i === 0 ? t('this_month') : d.toLocaleDateString('he-IL', { month: 'short' });
-        buckets.push({ label, value: sum, date: d });
+        buckets.push({ label, value: sum, count: monthItems.length, date: d });
       }
     }
     return buckets;
   }, [earningsData, period, t]);
+
+  const periodTaskCount = chartData.reduce((s, d) => s + (d.count || 0), 0);
 
   const summaryCards = [
     { label: t('today_earnings'), value: stats.today, icon: Calendar, bg: '#eff6ff', color: '#1a6fd4' },
@@ -191,6 +190,16 @@ export default function EarningsDashboard() {
             ))}
           </div>
 
+          {/* Period summary — task count + earnings */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, marginTop: 6 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--brand-primary-light)', color: 'var(--brand-primary)', padding: '4px 11px', borderRadius: 20, fontSize: 11, fontWeight: 800, border: '1px solid #bfdbfe' }}>
+              {periodTaskCount} {t('tasks')}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
+              ₪{Math.round(chartData.reduce((s, d) => s + d.value, 0)).toLocaleString()} {t('earnings')}
+            </span>
+          </div>
+
           {isLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
               <Loader2 size={24} className="animate-spin" color="#1a6fd4" />
@@ -210,7 +219,10 @@ export default function EarningsDashboard() {
                 <Tooltip
                   cursor={{ fill: 'rgba(26,111,212,0.06)' }}
                   contentStyle={{ borderRadius: 12, border: '1px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 13 }}
-                  formatter={v => [`₪${Math.round(v).toLocaleString()}`, t('earnings')]}
+                  formatter={(v, _n, item) => {
+                    const count = item?.payload?.count ?? 0;
+                    return [`${count} ${t('tasks')} · ₪${Math.round(v).toLocaleString()}`, t('earnings')];
+                  }}
                 />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={50}>
                   {chartData.map((entry, idx) => (
@@ -274,7 +286,7 @@ export default function EarningsDashboard() {
           </div>
           {creditsData.totalRefunded > 0 && (
             <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#92400e', fontWeight: 600 }}>
-              <span>הופרדו: <strong>{creditsData.totalUsed}</strong></span>
+              <span>שומשו: <strong>{creditsData.totalUsed}</strong></span>
               <span style={{ color: '#059669' }}>הוחזרו: <strong>{creditsData.totalRefunded}</strong></span>
             </div>
           )}
@@ -282,7 +294,7 @@ export default function EarningsDashboard() {
 
         {creditsData.fees.length > 0 && (
           <>
-            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>פירוט בקשות שהופרדו</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>פירוט בקשות ששומשו</div>
             <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 16 }}>
               {creditsData.fees.slice(0, 10).map((tx, idx, arr) => {
                 const diffDays = Math.floor((Date.now() - new Date(tx.created_date + (tx.created_date?.endsWith('Z') || tx.created_date?.includes('+') ? '' : 'Z')).getTime()) / 86400000);

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Star, LogOut, Briefcase, CreditCard, ChevronLeft, Camera, Loader2,
-  Shield, X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award,
+  Shield, X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award, Lock,
 } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
@@ -17,6 +17,7 @@ import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
+import { computeLockedJobas } from '@/lib/jobaBalance';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { isUserVerified } from '@/lib/utils';
@@ -117,6 +118,15 @@ export default function Profile() {
     staleTime: 30000,
   });
 
+  // Pending applications — for locked (committed) balance display next to credits
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myLockedJobas', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 15000,
+  });
+  const lockedJobas = computeLockedJobas(myApplications);
+
   if (isLoading) {
     return (
       <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -209,10 +219,17 @@ export default function Profile() {
           {[
             { value: completedCount, label: t('tasks_completed') },
             { value: avgRating + (rating > 0 ? '★' : ''), label: t('rating') },
-            { value: me?.worker_credits ?? 100, label: t('credits') },
+            { value: me?.worker_credits ?? 100, label: t('credits'), locked: lockedJobas },
           ].map((s, i, arr) => (
             <div key={i} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
-              <div style={{ fontSize: 17, fontWeight: 900, color: 'white' }}>{s.value}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                {s.value}
+                {s.locked > 0 && (
+                  <span style={{ fontSize: 9, fontWeight: 800, color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(217,119,6,0.28)', padding: '1px 6px', borderRadius: 8, border: '1px solid rgba(217,119,6,0.4)' }}>
+                    <Lock size={9} /> {s.locked}
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>{s.label}</div>
             </div>
           ))}

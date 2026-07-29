@@ -83,7 +83,7 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
             <div>
               <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>ג'ובות בהתחייבות</div>
               <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 1 }}>
-                ג'ובות שמוקפאו עבור בקשות שממתינות לאישור
+                ג'ובות שהוקפאו עבור בקשות שממתינות לאישור
               </div>
             </div>
           </div>

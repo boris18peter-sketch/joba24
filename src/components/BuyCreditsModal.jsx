@@ -1,11 +1,11 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react';
+import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2, TrendingUp, Lock } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useAuth } from '@/lib/AuthContext';
 import useCountUp from '@/hooks/useCountUp';
-import { packageValueLabel } from '@/lib/jobaBalance';
+import { packageValueLabel, computeLockedJobas } from '@/lib/jobaBalance';
 import CreditPackageCard from '@/components/credits/CreditPackageCard';
 import PaymentConfirm from '@/components/credits/PaymentConfirm';
 import PurchaseSuccess from '@/components/credits/PurchaseSuccess';
@@ -60,6 +60,15 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
+
+  // Pending applications — for locked (committed) balance display next to available
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myLockedJobas', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 15000,
+  });
+  const lockedJobas = computeLockedJobas(myApplications);
 
   const [tab, setTab] = useState('oneTime');
   const [selectedPkg, setSelectedPkg] = useState(null);
@@ -193,20 +202,33 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     </div>
                   </div>
 
-                  <div style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    borderRadius: 12, padding: '8px 14px',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    backdropFilter: 'blur(8px)',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}>
-                    <span style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -0.5 }}>
-                      {animatedCredits}
-                    </span>
-                    <CreditIcon size={16} />
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>
-                      ג'ובות ביתרה
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+                    <div style={{
+                      flex: 1,
+                      background: 'rgba(255,255,255,0.1)',
+                      borderRadius: 12, padding: '8px 14px',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      backdropFilter: 'blur(8px)',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}>
+                      <span style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -0.5 }}>
+                        {animatedCredits}
+                      </span>
+                      <CreditIcon size={16} />
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>
+                        ג'ובות ביתרה
+                      </span>
+                    </div>
+                    {lockedJobas > 0 && (
+                      <div style={{
+                        background: 'rgba(217,119,6,0.22)', borderRadius: 12, padding: '8px 12px',
+                        border: '1px solid rgba(217,119,6,0.45)',
+                        display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                      }}>
+                        <Lock size={13} color="#fbbf24" strokeWidth={2.5} />
+                        <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24' }}>{lockedJobas}</span>
+                      </div>
+                    )}
                   </div>
 
                   {creditsNeeded && (

@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Trophy, Star } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -11,6 +12,18 @@ import { useLanguage } from '@/lib/LanguageContext';
 export default function Leaderboard() {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const queryClient = useQueryClient();
+
+  // Real-time sync — refresh leaderboard immediately when tasks complete or reviews are added
+  useEffect(() => {
+    const unsubTask = base44.entities.Task.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['all-tasks-lb'] });
+    });
+    const unsubReview = base44.entities.Review.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['all-reviews'] });
+    });
+    return () => { unsubTask(); unsubReview(); };
+  }, [queryClient]);
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['all-tasks-lb'],
