@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
         task_id: taskId,
         task_title: task.title,
         balance_after: newBalance,
-        note: 'החזר קרדיטים - בעל המשימה ביטל את בחירתך',
+        note: 'החזר ג\'ובות - בעל המשימה ביטל את בחירתך',
       });
       console.log(`✅ Refunded ${creditsToRefund} credits to approved worker ${worker.id}`);
     }));

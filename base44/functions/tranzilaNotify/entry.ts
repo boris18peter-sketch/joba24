@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
           amount: payment.credits,
           type: 'Purchase',
           balance_after: newBalance,
-          note: `חידוש מנוי חודשי — ${payment.credits} קרדיטים (Tranzila)`,
+          note: `חידוש מנוי חודשי — ${payment.credits} ג'ובות (Tranzila)`,
         });
 
         console.log(`✅ Recurring charge: ${payment.credits} credits granted to ${payment.user_id}, balance: ${newBalance}`);
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
           amount: payment.credits,
           type: 'Purchase',
           balance_after: newBalance,
-          note: `רכישת ${payment.credits} קרדיטים — Tranzila (${payment.type === 'subscription' ? 'מנוי חודשי' : 'חד-פעמי'})`,
+          note: `טעינת ${payment.credits} ג'ובות — Tranzila (${payment.type === 'subscription' ? 'מנוי חודשי' : 'חד-פעמי'})`,
         });
 
         console.log(`✅ Payment ${payment.id} completed — ${payment.credits} credits granted, balance: ${newBalance}`);

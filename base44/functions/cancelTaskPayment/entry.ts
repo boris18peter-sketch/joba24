@@ -57,8 +57,8 @@ Deno.serve(async (req) => {
         task_title: task.title,
         balance_after: newBalance,
         note: isClient
-          ? `החזר קרדיטים - המשימה "${task.title}" בוטלה על ידי המפרסם`
-          : `החזר קרדיטים - המשימה "${task.title}" בוטלה על ידי העובד`,
+          ? `החזר ג'ובות - המשימה "${task.title}" בוטלה על ידי המפרסם`
+                : `החזר ג'ובות - המשימה "${task.title}" בוטלה על ידי העובד`,
       });
       console.log(`✅ Refunded ${creditsToRefund} credits to worker ${worker.id}`);
     }));

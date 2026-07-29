@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
         task_id: taskId,
         task_title: task.title,
         balance_after: newBalance,
-        note: `החזר קרדיטים - יציאה מרצון מהמשימה "${task.title}"`,
+        note: `החזר ג'ובות - יציאה מרצון מהמשימה "${task.title}"`,
       });
       console.log(`✅ Refunded ${creditsToRefund} credits to worker ${user.id}`);
     }));

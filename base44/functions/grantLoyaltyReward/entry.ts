@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       type: 'Loyalty_Reward',
       task_id: taskId,
       task_title: taskTitle || '',
-      note: `בונוס מקצועיות - דירוג 5 כוכבים (10% מ-${creditsCharged} קרדיטים)`,
+      note: `בונוס מקצועיות - דירוג 5 כוכבים (10% מ-${creditsCharged} ג'ובות)`,
       balance_after: newBalance,
     });
 

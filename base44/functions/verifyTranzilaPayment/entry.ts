@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       amount: payment.credits,
       type: 'Purchase',
       balance_after: newBalance,
-      note: `רכישת ${payment.credits} קרדיטים — Tranzila (${payment.type === 'subscription' ? 'מנוי חודשי' : 'חד-פעמי'})`,
+      note: `טעינת ${payment.credits} ג'ובות — Tranzila (${payment.type === 'subscription' ? 'מנוי חודשי' : 'חד-פעמי'})`,
     });
 
     // Mark payment as completed

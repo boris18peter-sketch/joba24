@@ -44,8 +44,8 @@ Deno.serve(async (req) => {
       task_title: app.task_title || '',
       balance_after: newBalance,
       note: reason === 'Refund_Rejection'
-        ? `החזר קרדיטים - בקשה לא נבחרה`
-        : `החזר קרדיטים - משימה בוטלה אוטומטית`,
+        ? `החזר ג'ובות - בקשה לא נבחרה`
+              : `החזר ג'ובות - משימה בוטלה אוטומטית`,
     });
 
     console.log(`✅ Refunded ${creditsToRefund} credits to worker ${app.worker_id} (${reason})`);

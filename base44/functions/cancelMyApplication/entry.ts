@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
           task_id: taskId,
           task_title: app.task_title || '',
           balance_after: newBalance,
-          note: `החזר קרדיטים - ביטול בקשה`,
+          note: `החזר ג'ובות - ביטול בקשה`,
         });
         console.log(`✅ Refunded ${creditsToRefund} credits to worker ${user.id}`);
       }

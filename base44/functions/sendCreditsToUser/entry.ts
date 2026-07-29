@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       user_id: targetUserId,
       amount: numericAmount,
       type: numericAmount > 0 ? 'Loyalty_Reward' : 'Application_Fee',
-      note: note || `קרדיטים ממנהל (${user.full_name || 'admin'}): ${numericAmount > 0 ? '+' : ''}${numericAmount}`,
+      note: note || `ג'ובות ממנהל (${user.full_name || 'admin'}): ${numericAmount > 0 ? '+' : ''}${numericAmount}`,
       balance_after: newBalance,
     });
 
