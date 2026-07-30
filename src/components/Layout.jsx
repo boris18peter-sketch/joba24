@@ -613,7 +613,7 @@ export default function Layout() {
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                       <Icon size={24} color="white" />
                     </div>
-                    <span style={{ fontSize: 9.5, color: '#1a6fd4', marginTop: 3, fontWeight: 700 }}>{label}</span>
+                    <span style={{ fontSize: 9.5, color: '#1a6fd4', marginTop: 3, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
                   </button>
                 );
               }

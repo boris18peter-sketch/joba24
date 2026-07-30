@@ -43,7 +43,7 @@ export default function HomeFeed() {
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
-  const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'my_published');
+  const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'available');
   const setActiveTab = (tab) => { sessionStorage.setItem('homeTab', tab); sessionStorage.setItem('homeTabChosen', '1'); setActiveTabRaw(tab); };
 
 
@@ -68,7 +68,7 @@ export default function HomeFeed() {
 
 
   // My published tasks — polled every 20s as safety net for WS misses
-  const { data: myTasks = [] } = useQuery({
+  const { data: myTasks = [], isLoading: myTasksLoading } = useQuery({
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
@@ -101,20 +101,22 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
-  // Auto-switch to the tab with an active task if user hasn't manually chosen a tab
+  // Auto-switch default tab — runs once, before the user manually picks a tab.
+  // Has open/in-progress published tasks → "משימות שפרסמתי".
+  // Otherwise → "כל המשימות" (so users with nothing active land on the feed).
   const didAutoSwitch = useRef(false);
   useEffect(() => {
     if (didAutoSwitch.current || sessionStorage.getItem('homeTabChosen')) return;
-    const hasActiveWorkerTask = !!activeWorkerTask;
+    if (myTasksLoading) return; // wait until published tasks are loaded before deciding
+    didAutoSwitch.current = true;
     const hasActiveClientTask = myTasks.some(t => t.status === 'OPEN' || t.status === 'TAKEN');
-    if (hasActiveWorkerTask && !hasActiveClientTask) {
-      didAutoSwitch.current = true;
-      setActiveTabRaw('available');
-    } else if (hasActiveClientTask) {
-      didAutoSwitch.current = true;
-      setActiveTabRaw('my_published');
-    }
-  }, [myTasks.length, activeWorkerTask]);
+    setActiveTabRaw(hasActiveClientTask ? 'my_published' : 'available');
+  }, [myTasks.length, myTasksLoading]);
+
+  // Entering "משימות שפרסמתי" always resets the sub-tab to "פעילות"
+  useEffect(() => {
+    if (activeTab === 'my_published') setMyPubTab('active');
+  }, [activeTab]);
 
   // activeClientTask is now a dedicated useQuery above (with polling for instant updates)
 
