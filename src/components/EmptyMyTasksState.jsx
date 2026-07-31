@@ -30,28 +30,19 @@ const EXAMPLES = [
   { emoji: '🚗', text: 'שטיפת רכב' },
   { emoji: '💡', text: 'להחליף נברשת בתקרה' },
   { emoji: '🚪', text: 'לתקן ציר של דלת' },
-  { emoji: '📺', text: 'לתלות טלוויזיה 65"' },
   { emoji: '📦', text: 'עזרה בפריקת ארגזים' },
-  { emoji: '🧺', text: 'לעזור לקפל סל כביסה' },
   { emoji: '💧', text: 'לנקות חצר בלחץ מים' },
   { emoji: '🍕', text: 'איסוף פיצה דחוף' },
   { emoji: '🎸', text: 'להעביר שיעור גיטרה' },
-  { emoji: '🧸', text: 'לתפור תיקון לצעצוע' },
-  { emoji: '🎂', text: 'לאפות עוגה ליומהולדת' },
   { emoji: '🚲', text: 'תיקון אופניים' },
   { emoji: '🪟', text: 'ניקוי חלונות גבוהים' },
-  { emoji: '🐈', text: 'להאכיל את החתול סופ״ש' },
   { emoji: '🧊', text: 'הובלת מקרר' },
   { emoji: '📚', text: 'עזרה בעבודת סמינר' },
   { emoji: '💄', text: 'איפור לאירוע' },
   { emoji: '🎹', text: 'להעביר שיעור פסנתר' },
-  { emoji: '🧶', text: 'סריגה לתינוק' },
-  { emoji: '🧴', text: 'מלאי מדיח כלים' },
-  { emoji: '🔩', text: 'הרכבת מתלה לטלוויזיה' },
   { emoji: '🛁', text: 'פתיחת סתימה בכיור' },
   { emoji: '🪞', text: 'תליית מראה כבדה' },
   { emoji: '🍓', text: 'איסוף מגש פירות' },
-  { emoji: '🧷', text: 'תפירת כפתור' },
   { emoji: '🛏️', text: 'הובלת מיטה זוגית' },
   { emoji: '📦', text: 'אריזת דירה למעבר' },
 ];
@@ -60,19 +51,18 @@ const EXAMPLES = [
 const SPECIALS = [
   { emoji: '👥', text: '+5000 אנשים מוכנים לביצוע משימות' },
   { emoji: '💰', text: 'כאן אתה בוחר כמה לשלם' },
-  { emoji: '✅', text: 'אלפי אנשים ובעלי מקצוע מאומתים במקום 1 בטוח' },
+  { emoji: '✅', text: 'אלפי אנשים מאומתים במקום 1 בטוח' },
   { emoji: '⚡', text: 'הכי מהיר ומשתלם' },
   { emoji: '😎', text: 'בלי השוואות מחירים וכאבי ראש' },
-  { emoji: '🔥', text: 'יש אנשים זמינים למשימות באזור שלך' },
-  { emoji: '🚀', text: 'בממוצע תוך 10 דקות מקבלים 5 בקשות' },
+  { emoji: '🔥', text: 'יש אנשים זמינים באזור שלך' },
+  { emoji: '🚀', text: 'תוך 10 דקות מקבלים 5 בקשות' },
 ];
 
-const HIDE_SCROLL_CSS = `
-  .j-empty-scroll::-webkit-scrollbar { display: none; }
-  .j-empty-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes jEmptyFadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes jEmptyCtaIn { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes jEmptyBubbleUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes jEmptyPulse {
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
@@ -84,13 +74,12 @@ const HIDE_SCROLL_CSS = `
   .j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
   .j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
   .j-empty-chip {
-    flexShrink: 0;
     display: inline-flex; align-items: center; gap: 6px;
     background: rgba(255,255,255,0.72);
     border: 1px solid rgba(226,234,245,0.6);
     border-radius: 999px;
     padding: 7px 13px;
-    font-size: 12px; font-weight: 600; color: #64748b;
+    font-size: 12.5px; font-weight: 600; color: #64748b;
     white-space: nowrap;
     box-shadow: 0 1px 4px rgba(15,40,107,0.04);
   }
@@ -106,30 +95,22 @@ const HIDE_SCROLL_CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Split examples into 3 rows and insert a special social-proof bubble into each row
-  const rows = useMemo(() => {
-    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
-    const perRow = Math.ceil(shuffled.length / 3);
-    const baseRows = [
-      shuffled.slice(0, perRow),
-      shuffled.slice(perRow, perRow * 2),
-      shuffled.slice(perRow * 2),
-    ];
-    // Row 0 ALWAYS starts with the +5000 blue bubble; each row gets extra specials interspersed
-    return baseRows.map((row, i) => {
-      const copy = [...row];
-      if (i === 0) copy.unshift({ ...SPECIALS[0], special: true });
-      const sp = SPECIALS[(i + 1) % SPECIALS.length];
-      copy.splice(Math.floor(copy.length * 0.5), 0, { ...sp, special: true });
-      const sp2 = SPECIALS[(i + 3) % SPECIALS.length];
-      copy.splice(Math.floor(copy.length * 0.8), 0, { ...sp2, special: true });
-      return copy;
+  // Curated flat list — 12 random examples with 3 special blue bubbles interspersed.
+  // Each bubble animates up from the bottom with a staggered delay (no horizontal scroll).
+  const bubbles = useMemo(() => {
+    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5).slice(0, 12);
+    const result = [{ ...SPECIALS[0], special: true }]; // +5000 always first
+    shuffled.forEach((ex, i) => {
+      result.push(ex);
+      if (i === 4) result.push({ ...SPECIALS[3], special: true });
+      if (i === 8) result.push({ ...SPECIALS[5], special: true });
     });
+    return result;
   }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14, paddingBottom: 8 }}>
-      <style>{HIDE_SCROLL_CSS}</style>
+      <style>{CSS}</style>
 
       {/* Headline */}
       <h1 className="j-empty-headline" style={{
@@ -173,59 +154,40 @@ export default function EmptyMyTasksState() {
         </button>
       </Link>
 
-      {/* Spacer */}
-      <div style={{ height: 16 }} />
+      {/* Breathing space between CTA and examples */}
+      <div style={{ height: 30 }} />
 
-      {/* Bubbles section */}
+      {/* Bubbles section — wraps and each bubble slides up with stagger */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <div style={{ textAlign: 'center', marginBottom: 12 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '5px 12px' }}>
             💡 דוגמאות למשימות שאנשים מפרסמים
           </span>
         </div>
 
-        <div
-          dir="rtl"
-          className="j-empty-scroll"
-          style={{
-            width: '100%',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            WebkitOverflowScrolling: 'touch',
-            padding: '2px 0 6px',
-          }}
-        >
-          <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 16, paddingLeft: 16 }}>
-            {rows.map((row, ri) => (
-              <div
-                key={ri}
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  paddingRight: [0, 28, 14][ri],
-                }}
-              >
-                {row.map((ex, i) => (
-                  <span
-                    key={i}
-                    className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
-                  >
-                    <span style={{ fontSize: 14, opacity: 0.85 }}>{ex.emoji}</span>
-                    {ex.text}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
+        <div dir="rtl" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, padding: '0 16px', maxWidth: 400, margin: '0 auto' }}>
+          {bubbles.map((ex, i) => (
+            <span
+              key={i}
+              className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
+              style={{
+                animation: 'jEmptyBubbleUp 0.5s cubic-bezier(0.16,1,0.3,1) both',
+                animationDelay: `${300 + Math.min(i * 45, 900)}ms`,
+              }}
+            >
+              <span style={{ fontSize: 14, opacity: 0.85 }}>{ex.emoji}</span>
+              {ex.text}
+            </span>
+          ))}
         </div>
       </div>
 
       {/* Spacer */}
-      <div style={{ height: 14 }} />
+      <div style={{ height: 18 }} />
 
       {/* Trust message */}
       <p className="j-empty-trust" style={{ fontSize: 13.5, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
-        💪 אנשים מפרסמים כל דבר — ותמיד מגיע מישהו לעזור.
+        💪 אנשים מפרסמים משימות — ותמיד מגיע מישהו לעזור.
       </p>
     </div>
   );

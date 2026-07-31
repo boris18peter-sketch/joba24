@@ -120,23 +120,8 @@ export default function Layout() {
   }, []);
 
   const onTouchEnd = useCallback((e) => {
-    // Don't swipe-navigate on map page — map panning conflicts with swipe gesture
-    if (location.pathname === '/map') return;
-    // Don't swipe-navigate if the touch started inside a horizontal scroll area
-    if (touchInsideHorizontalScroll.current) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    const dt = Date.now() - touchStartTime.current;
-    // Only horizontal swipes, >60px, <500ms, and more horizontal than vertical
-    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) || dt > 500) return;
-    const currentIdx = SWIPE_TABS.indexOf(location.pathname);
-    if (currentIdx === -1) return;
-    // RTL: swipe right (dx>0) = go to previous tab, swipe left (dx<0) = go to next tab
-    const nextIdx = dx > 0 ? currentIdx - 1 : currentIdx + 1;
-    if (nextIdx >= 0 && nextIdx < SWIPE_TABS.length) {
-      navigate(SWIPE_TABS[nextIdx]);
-    }
-  }, [location.pathname, navigate]);
+    // Swipe-to-tab navigation disabled — swiping on the feed no longer changes pages
+  }, []);
 
   // Lazy-mount tabs
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([location.pathname].filter((p) => ROOT_TAB_PATHS.includes(p))));
