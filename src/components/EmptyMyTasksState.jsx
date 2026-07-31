@@ -153,22 +153,7 @@ export default function EmptyMyTasksState() {
         </div>
       </div>
 
-      {/* Calm, modest Post Task button */}
-      <Link to="/create-task" style={{ textDecoration: 'none', marginTop: 18 }}>
-        <button style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          height: 46, paddingInline: 24,
-          borderRadius: 14,
-          background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-          color: 'white', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer',
-          boxShadow: '0 6px 18px rgba(26,111,212,0.28)',
-        }}>
-          <Plus size={18} strokeWidth={2.5} />
-          {t('post_task_btn')}
-        </button>
-      </Link>
-
-      <p style={{ fontSize: 11, color: '#cbd5e1', marginTop: 10, fontWeight: 600, textAlign: 'center', padding: '0 24px' }}>
+      <p style={{ fontSize: 13, color: '#64748b', marginTop: 18, fontWeight: 700, textAlign: 'center', padding: '0 24px' }}>
         {t('people_post_everything')}
       </p>
     </div>
