@@ -98,15 +98,32 @@ export default function Layout() {
   const touchStartY = useRef(0);
   const touchStartTime = useRef(0);
 
+  const touchInsideHorizontalScroll = useRef(false);
+
   const onTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     touchStartTime.current = Date.now();
+    // Detect if the touch started inside a horizontally-scrollable element (e.g. example chips).
+    // If so, don't trigger tab-swipe navigation — let the user scroll the content.
+    touchInsideHorizontalScroll.current = false;
+    let el = e.touches[0].target;
+    while (el && el !== document.body) {
+      const style = window.getComputedStyle(el);
+      const overflowX = style.overflowX;
+      if ((overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth) {
+        touchInsideHorizontalScroll.current = true;
+        break;
+      }
+      el = el.parentElement;
+    }
   }, []);
 
   const onTouchEnd = useCallback((e) => {
     // Don't swipe-navigate on map page — map panning conflicts with swipe gesture
     if (location.pathname === '/map') return;
+    // Don't swipe-navigate if the touch started inside a horizontal scroll area
+    if (touchInsideHorizontalScroll.current) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
     const dt = Date.now() - touchStartTime.current;
