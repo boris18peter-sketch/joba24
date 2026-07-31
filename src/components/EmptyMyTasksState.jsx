@@ -3,7 +3,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
 
-// Short examples — compact chips that fit 3-per-row on mobile
+// Short examples — compact chips
 const EXAMPLES = [
   { emoji: '🎁', text: 'איסוף חבילה' },
   { emoji: '🛠️', text: 'תיקון דלת' },
@@ -19,19 +19,19 @@ const EXAMPLES = [
   { emoji: '🍕', text: 'איסוף פיצה' },
   { emoji: '💧', text: 'פתיחת סתימה' },
   { emoji: '🪞', text: 'תליית מראה' },
-  { emoji: '🍓', text: 'איסוף מגש פירות' },
+  { emoji: '🍓', text: 'מגש פירות' },
   { emoji: '🛏️', text: 'הובלת מיטה' },
   { emoji: '📦', text: 'פינוי מחסן' },
   { emoji: '🐾', text: 'הורדת כלב' },
   { emoji: '🔋', text: 'התנעת רכב' },
   { emoji: '🔥', text: 'מנגליסט' },
   { emoji: '🎈', text: 'ניפוח בלונים' },
-  { emoji: '🌹', text: 'הבאת זר פרחים' },
+  { emoji: '🌹', text: 'זר פרחים' },
   { emoji: '📚', text: 'עזרה בסמינר' },
   { emoji: '💄', text: 'איפור לאירוע' },
 ];
 
-// Special social-proof bubbles (blue accent) — short text
+// Special social-proof bubbles (blue accent)
 const SPECIALS = [
   { emoji: '👥', text: '+5000 מוכנים לעזור' },
   { emoji: '💰', text: 'אתה בוחר כמה לשלם' },
@@ -40,17 +40,24 @@ const SPECIALS = [
   { emoji: '🚀', text: '5 בקשות ב-10 דקות' },
 ];
 
+const LANES = 3;
+const PER_LANE = 6;
+const TOTAL = LANES * PER_LANE;
+const RISE_MS = 7200;
+
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes jEmptyFadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes jEmptyCtaIn { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  @keyframes jEmptyMarqueeUp {
-    from { transform: translateY(0); }
-    to { transform: translateY(-50%); }
-  }
   @keyframes jEmptyPulse {
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
+  }
+  @keyframes jEmptyFloat {
+    0%   { transform: translate(-50%, 185px); opacity: 0; }
+    7%   { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { transform: translate(-50%, -28px); opacity: 0; }
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -58,25 +65,21 @@ const CSS = `
   .j-empty-cta { animation: jEmptyPulse 7s ease-in-out 1.2s infinite; }
   .j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
   .j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
-  .j-empty-marquee {
+  .j-empty-float {
     position: relative;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
-  }
-  .j-empty-marquee-track {
-    animation: jEmptyMarqueeUp 26s linear infinite;
-    will-change: transform;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
   }
   .j-empty-chip {
     display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(255,255,255,0.72);
+    background: rgba(255,255,255,0.78);
     border: 1px solid rgba(226,234,245,0.6);
     border-radius: 999px;
-    padding: 6px 11px;
-    font-size: 11.5px; font-weight: 600; color: #64748b;
+    padding: 5px 10px;
+    font-size: 11px; font-weight: 600; color: #64748b;
     white-space: nowrap;
-    box-shadow: 0 1px 4px rgba(15,40,107,0.04);
+    box-shadow: 0 1px 4px rgba(15,40,107,0.05);
   }
   .j-empty-chip-special {
     background: linear-gradient(135deg, rgba(26,111,212,0.12), rgba(10,82,176,0.16));
@@ -90,25 +93,22 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Build a flat list of examples + interspersed special blue bubbles,
-  // then chunk into rows of 3. The list is duplicated for a seamless loop.
-  const rows = useMemo(() => {
+  // Build a flat list with interspersed specials, then distribute round-robin into lanes.
+  // Each bubble floats up individually, one after another, like rising balloons.
+  const lanes = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
     shuffled.forEach((ex, i) => {
       items.push(ex);
-      // Insert a special every 4 examples
-      if (i > 0 && i % 4 === 0) {
-        items.push({ ...SPECIALS[Math.floor(i / 4) % SPECIALS.length], special: true });
+      if (i > 0 && i % 5 === 0) {
+        items.push({ ...SPECIALS[Math.floor(i / 5) % SPECIALS.length], special: true });
       }
     });
-    // Ensure +5000 special is first
     items.unshift({ ...SPECIALS[0], special: true });
-    const chunked = [];
-    for (let i = 0; i < items.length; i += 3) {
-      chunked.push(items.slice(i, i + 3));
-    }
-    return chunked;
+    const picked = items.slice(0, TOTAL);
+    const l = Array.from({ length: LANES }, () => []);
+    picked.forEach((b, i) => l[i % LANES].push(b));
+    return l;
   }, []);
 
   return (
@@ -157,10 +157,10 @@ export default function EmptyMyTasksState() {
         </button>
       </Link>
 
-      {/* Breathing space between CTA and examples */}
-      <div style={{ height: 22 }} />
+      {/* Fill the empty space — push examples down and use a taller float area */}
+      <div style={{ height: 34 }} />
 
-      {/* Continuous vertical marquee — bubbles rise from bottom to top without stopping */}
+      {/* Floating balloons — each bubble rises individually, one after another */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 8 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
@@ -168,27 +168,32 @@ export default function EmptyMyTasksState() {
           </span>
         </div>
 
-        <div className="j-empty-marquee" style={{ height: 108 }}>
-          <div className="j-empty-marquee-track" style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {[...rows, ...rows].map((row, ri) => (
-              <div key={ri} style={{ display: 'flex', gap: 7, justifyContent: 'center', flexShrink: 0 }}>
-                {row.map((ex, i) => (
-                  <span
-                    key={i}
-                    className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
-                  >
-                    <span style={{ fontSize: 13, opacity: 0.85 }}>{ex.emoji}</span>
-                    {ex.text}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
+        <div className="j-empty-float" style={{ height: 180 }}>
+          {lanes.map((lane, li) => (
+            <div key={li} style={{ position: 'absolute', top: 0, left: `${(li / LANES) * 100}%`, width: `${100 / LANES}%`, height: '100%' }}>
+              {lane.map((ex, i) => (
+                <span
+                  key={i}
+                  className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    animation: `jEmptyFloat ${RISE_MS}ms linear infinite`,
+                    animationDelay: `${(i * RISE_MS) / PER_LANE}ms`,
+                  }}
+                >
+                  <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
+                  {ex.text}
+                </span>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Spacer */}
-      <div style={{ height: 10 }} />
+      <div style={{ height: 14 }} />
 
       {/* Trust message */}
       <p className="j-empty-trust" style={{ fontSize: 13, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
