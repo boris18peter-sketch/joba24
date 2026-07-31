@@ -137,9 +137,13 @@ export default function NotificationManagerTab() {
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={handleSeed} disabled={seeding}
+        <button onClick={() => setShowCreateModal(true)}
           style={{ flex: 1, height: 38, borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          {seeding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} טען הגדרות ברירת מחדל
+          <Plus size={14} /> התראה חדשה
+        </button>
+        <button onClick={handleSeed} disabled={seeding}
+          style={{ height: 38, padding: '0 12px', borderRadius: 10, background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+          {seeding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} ברירת מחדל
         </button>
         <button onClick={() => refetch()}
           style={{ height: 38, padding: '0 12px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border-1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -366,10 +370,25 @@ function ConfigEditModal({ config, onClose, onSave }) {
             {config ? (
               <div style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--text-3)', padding: '8px 10px', background: 'var(--surface-3)', borderRadius: 8 }}>{form.event_key}</div>
             ) : (
-              <select value={form.event_key} onChange={e => setForm(f => ({ ...f, event_key: e.target.value }))} style={inputStyle}>
-                <option value="">בחר אירוע...</option>
-                {EVENT_KEY_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
+              <>
+                <select value={form.event_key === '__custom__' || (form.event_key && !EVENT_KEY_OPTIONS.includes(form.event_key)) ? '__custom__' : form.event_key} onChange={e => {
+                  const v = e.target.value;
+                  if (v === '__custom__') setForm(f => ({ ...f, event_key: '' }));
+                  else setForm(f => ({ ...f, event_key: v }));
+                }} style={inputStyle}>
+                  <option value="">בחר מהרשימה או הזן מפתח חופשי...</option>
+                  {EVENT_KEY_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
+                  <option value="__custom__">+ מפתח אירוע מותאם אישית</option>
+                </select>
+                {(form.event_key === '' || (form.event_key && !EVENT_KEY_OPTIONS.includes(form.event_key) && form.event_key !== '__custom__')) && (
+                  <input
+                    value={EVENT_KEY_OPTIONS.includes(form.event_key) ? '' : (form.event_key === '__custom__' ? '' : form.event_key)}
+                    onChange={e => setForm(f => ({ ...f, event_key: e.target.value.replace(/[^a-z0-9_]/g, '_') }))}
+                    style={{ ...inputStyle, marginTop: 6 }}
+                    placeholder="לדוגמה: weekly_summary, birthday_promo..."
+                  />
+                )}
+              </>
             )}
           </div>
 

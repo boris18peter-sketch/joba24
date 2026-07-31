@@ -55,12 +55,13 @@ const EXAMPLES = [
   { emoji: '📦', text: 'אריזת דירה למעבר' },
 ];
 
-// Split 50 examples into 3 rows
-const ROW_COUNT = 3;
-const perRow = Math.ceil(EXAMPLES.length / ROW_COUNT);
-const ROWS = Array.from({ length: ROW_COUNT }, (_, i) =>
-  EXAMPLES.slice(i * perRow, (i + 1) * perRow)
-);
+// Split into 3 rows; all rows live inside ONE scroll container so they move together
+const perRow = Math.ceil(EXAMPLES.length / 3);
+const ROWS = [
+  EXAMPLES.slice(0, perRow),
+  EXAMPLES.slice(perRow, perRow * 2),
+  EXAMPLES.slice(perRow * 2),
+];
 
 const HIDE_SCROLL_CSS = `
   .j-empty-scroll::-webkit-scrollbar { display: none; }
@@ -71,84 +72,86 @@ export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 32 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
       <style>{HIDE_SCROLL_CSS}</style>
 
-      {/* Hero — promoted subheadline as the large primary heading */}
-      <div style={{ textAlign: 'center', padding: '0 20px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-        <p style={{
-          fontWeight: 900, color: '#0f1e40', margin: 0,
-          fontSize: 24, lineHeight: 1.3, letterSpacing: -0.3,
-          maxWidth: 320,
+      {/* Calm heading — promoted subheadline, smaller & softer */}
+      <p style={{
+        fontWeight: 800, color: '#475569', margin: 0,
+        fontSize: 17, lineHeight: 1.45, letterSpacing: -0.1,
+        maxWidth: 300, textAlign: 'center',
+        padding: '0 24px 18px',
+      }}>
+        {t('no_active_tasks_sub')}
+      </p>
+
+      {/* 3 rows in ONE scroll container — they move together as a block */}
+      <div
+        dir="rtl"
+        className="j-empty-scroll"
+        style={{
+          width: '100%',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          padding: '2px 0 6px',
+        }}
+      >
+        <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 16, paddingLeft: 16 }}>
+          {ROWS.map((row, ri) => (
+            <div
+              key={ri}
+              style={{
+                display: 'flex',
+                gap: 8,
+                // gentle stagger so rows aren't perfectly aligned
+                paddingRight: ri === 1 ? 28 : 0,
+              }}
+            >
+              {row.map((ex, i) => (
+                <span
+                  key={i}
+                  style={{
+                    flexShrink: 0,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: 'rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(226,234,245,0.6)',
+                    borderRadius: 999,
+                    padding: '7px 13px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#64748b',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 1px 4px rgba(15,40,107,0.04)',
+                  }}
+                >
+                  <span style={{ fontSize: 14, opacity: 0.85 }}>{ex.emoji}</span>
+                  {ex.text}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Calm, modest Post Task button */}
+      <Link to="/create-task" style={{ textDecoration: 'none', marginTop: 18 }}>
+        <button style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          height: 46, paddingInline: 24,
+          borderRadius: 14,
+          background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+          color: 'white', fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer',
+          boxShadow: '0 6px 18px rgba(26,111,212,0.28)',
         }}>
-          {t('no_active_tasks_sub')}
-        </p>
+          <Plus size={18} strokeWidth={2.5} />
+          {t('post_task_btn')}
+        </button>
+      </Link>
 
-        {/* Large, attractive Post Task button */}
-        <Link to="/create-task" style={{ textDecoration: 'none', width: '100%', maxWidth: 340 }}>
-          <button style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            width: '100%', height: 58, paddingInline: 28,
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-            color: 'white', fontWeight: 800, fontSize: 17, border: 'none', cursor: 'pointer',
-            boxShadow: '0 10px 28px rgba(26,111,212,0.4)',
-            letterSpacing: 0.2,
-          }}>
-            <Plus size={22} strokeWidth={2.5} />
-            {t('post_task_btn')}
-          </button>
-        </Link>
-      </div>
-
-      {/* 3 manually-scrollable rows of example chips */}
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 0 8px' }}>
-        {ROWS.map((row, ri) => (
-          <div
-            key={ri}
-            dir="rtl"
-            className="j-empty-scroll"
-            style={{
-              width: '100%',
-              display: 'flex',
-              gap: 10,
-              overflowX: 'auto',
-              scrollSnapType: 'x mandatory',
-              padding: '2px 16px',
-              WebkitOverflowScrolling: 'touch',
-              // Offset alternate rows for a staggered feel
-              paddingLeft: ri === 1 ? '40px' : '16px',
-            }}
-          >
-            {row.map((ex, i) => (
-              <span
-                key={i}
-                style={{
-                  flexShrink: 0,
-                  scrollSnapAlign: 'start',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  background: '#ffffff',
-                  border: '1.5px solid #e2eaf5',
-                  borderRadius: 999,
-                  padding: '10px 16px',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#1e3a5f',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 10px rgba(26,111,212,0.08)',
-                }}
-              >
-                <span style={{ fontSize: 16 }}>{ex.emoji}</span>
-                {ex.text}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <p style={{ fontSize: 12, color: '#b0b8c8', marginTop: 6, fontWeight: 600, textAlign: 'center', padding: '0 24px' }}>
+      <p style={{ fontSize: 11, color: '#cbd5e1', marginTop: 10, fontWeight: 600, textAlign: 'center', padding: '0 24px' }}>
         {t('people_post_everything')}
       </p>
     </div>
