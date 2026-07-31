@@ -1,29 +1,59 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
-import { useRef, useEffect, useMemo, useLayoutEffect } from 'react';
+import { useMemo } from 'react';
 
 const EXAMPLES = [
+  { emoji: '🎈', text: 'לנפח בלונים למסיבה' },
+  { emoji: '🌹', text: 'להביא זר פרחים' },
   { emoji: '🚗', text: 'צריך טרמפ לאילת' },
   { emoji: '🔧', text: 'עזרה בהחלפת גלגל' },
+  { emoji: '🔥', text: 'מנגליסט לשעתיים' },
+  { emoji: '📦', text: 'עזרה בפינוי מחסן' },
+  { emoji: '👶', text: 'בייביסיטר להערב' },
+  { emoji: '🔋', text: 'הרכב לא מניע' },
+  { emoji: '🐕', text: 'מישהו יוריד את הכלב' },
+  { emoji: '🪑', text: 'הרכבת שידה מאיקאה' },
   { emoji: '🛒', text: 'קניות מהסופר' },
-  { emoji: '🐶', text: 'להוציא את הכלב' },
-  { emoji: '🧹', text: 'ניקיון הבית' },
-  { emoji: '📦', text: 'הובלה קטנה' },
-  { emoji: '📸', text: 'צלם לאירוע' },
-  { emoji: '👶', text: 'בייביסיטר' },
-  { emoji: '💻', text: 'תיקון מחשב' },
-  { emoji: '🎨', text: 'עיצוב לוגו' },
-  { emoji: '📱', text: 'עזרה בטלפון' },
-  { emoji: '🍔', text: 'משלוח אוכל' },
-  { emoji: '🏋️', text: 'מאמן אישי' },
-  { emoji: '📚', text: 'שיעור פרטי' },
-  { emoji: '🚿', text: 'אינסטלטור' },
-  { emoji: '⚡', text: 'חשמלאי' },
-  { emoji: '🪴', text: 'גנן' },
-  { emoji: '🪟', text: 'ניקוי חלונות' },
-  { emoji: '🎂', text: 'אפיית עוגה' },
-  { emoji: '🎸', text: 'שיעור גיטרה' },
+  { emoji: '🧹', text: 'ניקיון דירה 3 חדרים' },
+  { emoji: '📺', text: 'תליית טלוויזיה' },
+  { emoji: '🚚', text: 'הובלת ספה קטנה' },
+  { emoji: '💻', text: 'עזרה בהתקנת מחשב' },
+  { emoji: '📱', text: 'העברת מידע לטלפון' },
+  { emoji: '🎂', text: 'איסוף עוגה דחוף' },
+  { emoji: '🛠️', text: 'תיקון דלת' },
+  { emoji: '🌿', text: 'גיזום גינה' },
+  { emoji: '🎁', text: 'איסוף חבילה' },
+  { emoji: '🏋️', text: 'מדריך כושר לבית' },
+  { emoji: '📸', text: 'לצלם הצעת נישואין' },
+  { emoji: '🚗', text: 'לקחת רכב לטסט' },
+  { emoji: '🚗', text: 'שטיפת רכב' },
+  { emoji: '💡', text: 'להחליף נברשת בתקרה' },
+  { emoji: '🚪', text: 'לתקן ציר של דלת' },
+  { emoji: '📺', text: 'לתלות טלוויזיה 65"' },
+  { emoji: '📦', text: 'עזרה בפריקת ארגזים' },
+  { emoji: '🧺', text: 'לעזור לקפל סל כביסה' },
+  { emoji: '💧', text: 'לנקות חצר בלחץ מים' },
+  { emoji: '🍕', text: 'איסוף פיצה דחוף' },
+  { emoji: '🎸', text: 'להעביר שיעור גיטרה' },
+  { emoji: '🧸', text: 'לתפור תיקון לצעצוע' },
+  { emoji: '🎂', text: 'לאפות עוגה ליומהולדת' },
+  { emoji: '🚲', text: 'תיקון אופניים' },
+  { emoji: '🪟', text: 'ניקוי חלונות גבוהים' },
+  { emoji: '🐈', text: 'להאכיל את החתול סופ״ש' },
+  { emoji: '🧊', text: 'הובלת מקרר' },
+  { emoji: '📚', text: 'עזרה בעבודת סמינר' },
+  { emoji: '💄', text: 'איפור לאירוע' },
+  { emoji: '🎹', text: 'להעביר שיעור פסנתר' },
+  { emoji: '🧶', text: 'סריגה לתינוק' },
+  { emoji: '🧴', text: 'מלאי מדיח כלים' },
+  { emoji: '🔩', text: 'הרכבת מתלה לטלוויזיה' },
+  { emoji: '🛁', text: 'פתיחת סתימה בכיור' },
+  { emoji: '🪞', text: 'תליית מראה כבדה' },
+  { emoji: '🍓', text: 'איסוף מגש פירות' },
+  { emoji: '🧷', text: 'תפירת כפתור' },
+  { emoji: '🛏️', text: 'הובלת מיטה זוגית' },
+  { emoji: '📦', text: 'אריזת דירה למעבר' },
 ];
 
 // Special social-proof bubbles (blue accent)
@@ -33,141 +63,67 @@ const SPECIALS = [
   { emoji: '🚀', text: 'בממוצע תוך 10 דקות מקבלים 5 בקשות' },
 ];
 
-// Row 1 →, Row 2 ←, Row 3 →, different speeds (px per ms)
-const ROW_CONFIGS = [
-  { direction: 1, speed: 0.045, specialIdx: 7 },
-  { direction: -1, speed: 0.065, specialIdx: 13 },
-  { direction: 1, speed: 0.055, specialIdx: 4 },
-];
-
-const ANIM_CSS = `
-@keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes jEmptyFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes jEmptyCtaIn { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes jEmptyPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
-  50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
-}
-.j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
-.j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
-.j-empty-cta-wrap { animation: jEmptyCtaIn 0.4s cubic-bezier(0.34,1.3,0.64,1) 0.2s both; }
-.j-empty-cta { animation: jEmptyPulse 7s ease-in-out 1.2s infinite; }
-.j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
-.j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
-.j-empty-chip {
-  flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,0.72);
-  border: 1px solid rgba(226,234,245,0.7);
-  border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px; font-weight: 600; color: #64748b;
-  white-space: nowrap;
-  box-shadow: 0 1px 5px rgba(15,40,107,0.05);
-  backdrop-filter: blur(2px);
-}
-.j-empty-chip-special {
-  background: linear-gradient(135deg, rgba(26,111,212,0.12), rgba(10,82,176,0.16));
-  border: 1px solid rgba(26,111,212,0.35);
-  color: #0a52b0;
-  font-weight: 800;
-  box-shadow: 0 2px 10px rgba(26,111,212,0.18);
-}
-.j-empty-marquee { overflow: hidden; width: 100%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
-.j-empty-track { display: flex; gap: 10px; width: max-content; will-change: transform; }
-`;
-
-function MarqueeRow({ items, direction, speed }) {
-  const trackRef = useRef(null);
-  const offsetRef = useRef(0);
-  const halfRef = useRef(0);
-  const rafRef = useRef(0);
-  const initedRef = useRef(false);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      if (trackRef.current) halfRef.current = trackRef.current.scrollWidth / 2;
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (trackRef.current) ro.observe(trackRef.current);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    let last = performance.now();
-    let paused = document.hidden;
-
-    const step = (now) => {
-      const dt = Math.min(now - last, 32);
-      last = now;
-      if (!paused && trackRef.current && halfRef.current > 0) {
-        const half = halfRef.current;
-        if (!initedRef.current) {
-          offsetRef.current = direction > 0 ? -half : 0;
-          initedRef.current = true;
-        }
-        offsetRef.current += direction * speed * dt;
-        if (offsetRef.current > 0) offsetRef.current -= half;
-        if (offsetRef.current < -half) offsetRef.current += half;
-        trackRef.current.style.transform = `translate3d(${offsetRef.current}px,0,0)`;
-      }
-      rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-
-    const onVis = () => {
-      paused = document.hidden;
-      if (!paused) last = performance.now();
-    };
-    document.addEventListener('visibilitychange', onVis);
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  }, [direction, speed]);
-
-  const doubled = useMemo(() => [...items, ...items], [items]);
-
-  return (
-    <div className="j-empty-marquee">
-      <div ref={trackRef} className="j-empty-track" dir="ltr">
-        {doubled.map((it, i) => (
-          <span key={i} className={`j-empty-chip${it.special ? ' j-empty-chip-special' : ''}`}>
-            <span style={{ fontSize: 15, opacity: 0.9 }}>{it.emoji}</span>
-            <span dir="rtl">{it.text}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Build a row of exactly 20 items: examples + one special bubble interspersed
-function buildRow(pool, special, specialIdx) {
-  const row = [];
-  for (let i = 0; i < 20; i++) {
-    if (i === specialIdx) {
-      row.push({ ...special, special: true });
-    } else {
-      row.push({ ...pool[(i * 3) % pool.length] });
-    }
+const HIDE_SCROLL_CSS = `
+  .j-empty-scroll::-webkit-scrollbar { display: none; }
+  .j-empty-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+  @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes jEmptyFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes jEmptyCtaIn { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes jEmptyPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
+    50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
-  return row;
-}
+  .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+  .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
+  .j-empty-cta-wrap { animation: jEmptyCtaIn 0.4s cubic-bezier(0.34,1.3,0.64,1) 0.2s both; }
+  .j-empty-cta { animation: jEmptyPulse 7s ease-in-out 1.2s infinite; }
+  .j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
+  .j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
+  .j-empty-chip {
+    flexShrink: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(226,234,245,0.6);
+    border-radius: 999px;
+    padding: 7px 13px;
+    font-size: 12px; font-weight: 600; color: #64748b;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(15,40,107,0.04);
+  }
+  .j-empty-chip-special {
+    background: linear-gradient(135deg, rgba(26,111,212,0.12), rgba(10,82,176,0.16));
+    border: 1px solid rgba(26,111,212,0.35);
+    color: #0a52b0;
+    font-weight: 800;
+    box-shadow: 0 2px 10px rgba(26,111,212,0.18);
+  }
+`;
 
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
+  // Split examples into 3 rows and insert a special social-proof bubble into each row
   const rows = useMemo(() => {
-    const pool = [...EXAMPLES].sort(() => Math.random() - 0.5);
-    return ROW_CONFIGS.map((cfg, i) => buildRow(pool, SPECIALS[i % SPECIALS.length], cfg.specialIdx));
+    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
+    const perRow = Math.ceil(shuffled.length / 3);
+    const baseRows = [
+      shuffled.slice(0, perRow),
+      shuffled.slice(perRow, perRow * 2),
+      shuffled.slice(perRow * 2),
+    ];
+    // Insert a different special bubble into each row at a random-ish position
+    return baseRows.map((row, i) => {
+      const special = SPECIALS[i % SPECIALS.length];
+      const insertAt = Math.floor(row.length * (0.25 + i * 0.2));
+      const copy = [...row];
+      copy.splice(insertAt, 0, { ...special, special: true });
+      return copy;
+    });
   }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 28, paddingBottom: 12 }}>
-      <style>{ANIM_CSS}</style>
+      <style>{HIDE_SCROLL_CSS}</style>
 
       {/* Headline */}
       <h1 className="j-empty-headline" style={{
@@ -215,15 +171,47 @@ export default function EmptyMyTasksState() {
       <div style={{ height: 24 }} />
 
       {/* Bubbles section */}
-      <div className="j-empty-bubbles" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ textAlign: 'center', marginBottom: 2 }}>
+      <div className="j-empty-bubbles" style={{ width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: 10 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '5px 12px' }}>
             💡 דוגמאות למשימות שאנשים מפרסמים
           </span>
         </div>
-        {rows.map((row, i) => (
-          <MarqueeRow key={i} items={row} direction={ROW_CONFIGS[i].direction} speed={ROW_CONFIGS[i].speed} />
-        ))}
+
+        <div
+          dir="rtl"
+          className="j-empty-scroll"
+          style={{
+            width: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            padding: '2px 0 6px',
+          }}
+        >
+          <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 16, paddingLeft: 16 }}>
+            {rows.map((row, ri) => (
+              <div
+                key={ri}
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  paddingRight: [0, 28, 14][ri],
+                }}
+              >
+                {row.map((ex, i) => (
+                  <span
+                    key={i}
+                    className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
+                  >
+                    <span style={{ fontSize: 14, opacity: 0.85 }}>{ex.emoji}</span>
+                    {ex.text}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Spacer */}
