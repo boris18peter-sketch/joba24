@@ -108,22 +108,21 @@ export default function EmptyMyTasksState() {
         className="j-empty-scroll"
         style={{
           width: '100%',
-          maxWidth: 340,
-          margin: '0 auto',
           overflowX: 'auto',
           overflowY: 'hidden',
           WebkitOverflowScrolling: 'touch',
           padding: '2px 0 6px',
         }}
       >
-        <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 20, paddingLeft: 20, minWidth: '100%' }}>
+        <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 16, paddingLeft: 16 }}>
           {ROWS.map((row, ri) => (
             <div
               key={ri}
               style={{
                 display: 'flex',
                 gap: 8,
-                justifyContent: 'flex-end',
+                // stagger each row so they start at different indents
+                paddingRight: [0, 28, 14][ri],
               }}
             >
               {row.map((ex, i) => (
