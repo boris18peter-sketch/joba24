@@ -9,18 +9,17 @@ export function cn(...inputs) {
 export const isIframe = window.self !== window.top;
 
 /**
- * isUserVerified — Single source of truth for whether a user is verified.
+ * isUserVerified — Single source of truth for whether a user is verified (KYC).
  *
- * The platform does not allow `is_verified` to be set back to `false` once it
- * is `true` (it silently ignores the update). Therefore `kyc_status` is the
- * authoritative field: only 'approved' means verified. `is_verified` is used
- * only as a legacy fallback for users who were verified before kyc_status existed.
+ * IMPORTANT: `is_verified` is a PLATFORM-LEVEL field (email verification), NOT
+ * app-level KYC verification. Base44 automatically sets `is_verified = true`
+ * when a user verifies their email (via OTP or OAuth provider like Google/Apple).
+ * It must NOT be used to determine KYC verification — only `kyc_status === 'approved'`
+ * means the user passed identity verification.
  */
 export function isUserVerified(user) {
   if (!user) return false;
-  if (user.kyc_status === 'approved') return true;
-  if (user.kyc_status === 'rejected' || user.kyc_status === 'pending') return false;
-  return !!user.is_verified;
+  return user.kyc_status === 'approved';
 }
 
 /**
