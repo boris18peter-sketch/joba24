@@ -108,21 +108,22 @@ export default function EmptyMyTasksState() {
         className="j-empty-scroll"
         style={{
           width: '100%',
+          maxWidth: 340,
+          margin: '0 auto',
           overflowX: 'auto',
           overflowY: 'hidden',
           WebkitOverflowScrolling: 'touch',
           padding: '2px 0 6px',
         }}
       >
-        <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 16, paddingLeft: 16 }}>
+        <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 20, paddingLeft: 20, minWidth: '100%' }}>
           {ROWS.map((row, ri) => (
             <div
               key={ri}
               style={{
                 display: 'flex',
                 gap: 8,
-                // gentle stagger so rows aren't perfectly aligned
-                paddingRight: ri === 1 ? 28 : 0,
+                justifyContent: 'flex-end',
               }}
             >
               {row.map((ex, i) => (
@@ -153,7 +154,7 @@ export default function EmptyMyTasksState() {
         </div>
       </div>
 
-      <p style={{ fontSize: 13, color: '#64748b', marginTop: 18, fontWeight: 700, textAlign: 'center', padding: '0 24px' }}>
+      <p style={{ fontSize: 13, color: '#0f1e40', marginTop: 18, fontWeight: 700, textAlign: 'center', padding: '0 24px' }}>
         {t('people_post_everything')}
       </p>
     </div>
