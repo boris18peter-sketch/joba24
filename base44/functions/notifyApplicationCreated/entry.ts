@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
       tag: `application_${data.task_id}_${data.worker_id}`,
     });
 
-    return Response.json({ sent: true, result });
+    // Return only the parsed data — the raw result is an axios response with
+    // circular refs (ClientRequest) that crashes Response.json serialization.
+    return Response.json({ sent: true, result: result?.data ?? null });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

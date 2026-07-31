@@ -162,14 +162,12 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
           {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{sub}</div> : null; })()}
         </div>
 
-        {/* Joba commitment explanation */}
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 14, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
-          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים ג'ובות?</div>
-          הג'ובות עוברות ל<strong>התחייבות</strong> בעת ההגשה וחוזרות ליתרה הזמינה אוטומטית אם:<br />
-          • לא נבחרת למשימה<br />
-          • המשימה בוטלה או פג תוקפה<br />
-          • נבחר עובד אחר<br />
-          ניתן לראות את הג'ובות בהתחייבות ולבטל בקשות בסמל היתרה למעלה.
+        {/* Joba commitment reassurance — one clean, encouraging line */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', marginBottom: 14 }}>
+          <ShieldCheck size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.4 }}>
+            הג'ובות חוזרות אליך אוטומטית אם לא נבחרת או שהמשימה בוטלה
+          </span>
         </div>
 
         <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>

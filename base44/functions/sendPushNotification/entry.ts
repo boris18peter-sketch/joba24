@@ -114,21 +114,17 @@ Deno.serve(async (req) => {
     }
     cleanKey = cleanKey.replace(/\\n/g, '\n').replace(/\r\n/g, '\n');
 
-    // Get tokens for target users — ONLY approved users (or admins/agents) receive push
+    // Get tokens for target users — every non-blocked user with a registered
+    // device receives push, so notifications reach all active users accurately.
     const users = await base44.asServiceRole.entities.User.filter({
       id: { $in: user_ids },
       is_blocked: { $ne: true },
-      $or: [
-        { is_approved: true },
-        { role: 'admin' },
-        { role: 'agent' }
-      ]
     });
 
     const requestedCount = user_ids.length;
-    const approvedCount = users.length;
-    if (approvedCount < requestedCount) {
-      console.log(`[Push] Filtered out ${requestedCount - approvedCount} unapproved/blocked users (pre-launch gate)`);
+    const foundCount = users.length;
+    if (foundCount < requestedCount) {
+      console.log(`[Push] ${requestedCount - foundCount} target user(s) not found or blocked`);
     }
 
     const allTokens = [];
@@ -139,7 +135,7 @@ Deno.serve(async (req) => {
     }
 
     if (!allTokens.length) {
-      return Response.json({ sent: 0, reason: 'No device tokens found (or all target users are unapproved)' });
+      return Response.json({ sent: 0, reason: 'No device tokens found' });
     }
 
     const uniqueTokens = [...new Set(allTokens)];

@@ -109,9 +109,10 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
           </div>
         </div>
 
-        {/* Compact explanation */}
-        <div style={{ padding: '14px 20px 6px', fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>
-          הג'ובות חוזרות אוטומטית ליתרה אם הבקשה נדחית, פגה או נבחר עובד אחר. ניתן לבטל בקשה בכל רגע מהכרטיסייה.
+        {/* Compact explanation — one clean line */}
+        <div style={{ padding: '12px 20px 4px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
+          <Lock size={12} color="#d97706" style={{ flexShrink: 0 }} />
+          <span>חוזרות אוטומטית ליתרה אם הבקשה נדחית, פגה או נבחר עובד אחר.</span>
         </div>
 
         {/* Applications list — real TaskCards for full visual consistency with the feed */}
@@ -130,15 +131,11 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
               const task = tasks.find(t => t.id === app.task_id);
               return (
                 <div key={app.id}>
-                  {/* Per-card locked amount + status chip */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px 6px' }}>
+                  {/* Per-card locked amount — the card itself shows the pending status */}
+                  <div style={{ padding: '0 4px 6px' }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <Lock size={11} strokeWidth={2.5} /> {app.credits_charged || 0}
                       <CreditIcon size={12} /> בהתחייבות
-                    </span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#d97706', display: 'inline-block', animation: 'pulse-app 1.5s infinite' }} />
-                      ממתינה לאישור
                     </span>
                   </div>
                   {task ? (
