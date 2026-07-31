@@ -25,6 +25,10 @@ const EXAMPLES = [
   { emoji: '🐾', text: 'הורדת כלב' },
   { emoji: '🔋', text: 'התנעת רכב' },
   { emoji: '🔥', text: 'מנגליסט' },
+  { emoji: '🎈', text: 'ניפוח בלונים' },
+  { emoji: '🌹', text: 'הבאת זר פרחים' },
+  { emoji: '📚', text: 'עזרה בסמינר' },
+  { emoji: '💄', text: 'איפור לאירוע' },
 ];
 
 // Special social-proof bubbles (blue accent) — short text
@@ -40,7 +44,10 @@ const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes jEmptyFadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes jEmptyCtaIn { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-  @keyframes jEmptyRowUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes jEmptyMarqueeUp {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
   @keyframes jEmptyPulse {
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
@@ -51,6 +58,16 @@ const CSS = `
   .j-empty-cta { animation: jEmptyPulse 7s ease-in-out 1.2s infinite; }
   .j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
   .j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
+  .j-empty-marquee {
+    position: relative;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  }
+  .j-empty-marquee-track {
+    animation: jEmptyMarqueeUp 26s linear infinite;
+    will-change: transform;
+  }
   .j-empty-chip {
     display: inline-flex; align-items: center; gap: 5px;
     background: rgba(255,255,255,0.72);
@@ -73,14 +90,25 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // 3 rows × 3 chips = 9 bubbles. Each row rises from the bottom with a stagger.
+  // Build a flat list of examples + interspersed special blue bubbles,
+  // then chunk into rows of 3. The list is duplicated for a seamless loop.
   const rows = useMemo(() => {
-    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5).slice(0, 6);
-    return [
-      [{ ...SPECIALS[0], special: true }, shuffled[0], shuffled[1]],
-      [shuffled[2], { ...SPECIALS[2], special: true }, shuffled[3]],
-      [shuffled[4], shuffled[5], { ...SPECIALS[3], special: true }],
-    ];
+    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
+    const items = [];
+    shuffled.forEach((ex, i) => {
+      items.push(ex);
+      // Insert a special every 4 examples
+      if (i > 0 && i % 4 === 0) {
+        items.push({ ...SPECIALS[Math.floor(i / 4) % SPECIALS.length], special: true });
+      }
+    });
+    // Ensure +5000 special is first
+    items.unshift({ ...SPECIALS[0], special: true });
+    const chunked = [];
+    for (let i = 0; i < items.length; i += 3) {
+      chunked.push(items.slice(i, i + 3));
+    }
+    return chunked;
   }, []);
 
   return (
@@ -130,44 +158,37 @@ export default function EmptyMyTasksState() {
       </Link>
 
       {/* Breathing space between CTA and examples */}
-      <div style={{ height: 24 }} />
+      <div style={{ height: 22 }} />
 
-      {/* Bubbles — 3 rows, each row rises from the bottom with a stagger */}
+      {/* Continuous vertical marquee — bubbles rise from bottom to top without stopping */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
             💡 דוגמאות למשימות
           </span>
         </div>
 
-        <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
-          {rows.map((row, ri) => (
-            <div
-              key={ri}
-              style={{
-                display: 'flex',
-                gap: 7,
-                justifyContent: 'center',
-                animation: 'jEmptyRowUp 0.55s cubic-bezier(0.16,1,0.3,1) both',
-                animationDelay: `${300 + ri * 160}ms`,
-              }}
-            >
-              {row.map((ex, i) => (
-                <span
-                  key={i}
-                  className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
-                >
-                  <span style={{ fontSize: 13, opacity: 0.85 }}>{ex.emoji}</span>
-                  {ex.text}
-                </span>
-              ))}
-            </div>
-          ))}
+        <div className="j-empty-marquee" style={{ height: 108 }}>
+          <div className="j-empty-marquee-track" style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            {[...rows, ...rows].map((row, ri) => (
+              <div key={ri} style={{ display: 'flex', gap: 7, justifyContent: 'center', flexShrink: 0 }}>
+                {row.map((ex, i) => (
+                  <span
+                    key={i}
+                    className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
+                  >
+                    <span style={{ fontSize: 13, opacity: 0.85 }}>{ex.emoji}</span>
+                    {ex.text}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Spacer */}
-      <div style={{ height: 14 }} />
+      <div style={{ height: 10 }} />
 
       {/* Trust message */}
       <p className="j-empty-trust" style={{ fontSize: 13, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
