@@ -20,17 +20,33 @@ Deno.serve(async (req) => {
       kyc_status: kycStatus,
     });
 
-    // Send push notification via the existing sendPushNotification function
+    // ── Send notification via NotificationManager ──
+    // Determines green vs gold based on social verification status
     try {
-      await base44.functions.invoke('sendPushNotification', {
-        user_ids: [userId],
-        title: isVerified ? '✅ האימות אושר' : '❌ האימות נדחה',
-        body: isVerified
-          ? 'האימות שלך אושר! עכשיו יש לך ווי ירוק 🔥'
-          : 'האימות שלך נדחה. ניתן לעדכן את הפרטים ולשלוח שוב.',
-        url: '/profile',
-        tag: 'verification_update',
-      });
+      // Re-fetch user to check if they also have social verification (gold badge)
+      const updatedUsers = await base44.asServiceRole.entities.User.filter({ id: userId });
+      const updatedUser = updatedUsers[0];
+      const hasSocial = !!(updatedUser?.instagram_verified || updatedUser?.facebook_verified || updatedUser?.tiktok_verified);
+
+      if (isVerified) {
+        // Gold badge takes priority — send gold notification
+        const eventKey = hasSocial ? 'verification_approved_gold' : 'verification_approved_green';
+        await base44.asServiceRole.functions.invoke('notificationManager', {
+          event_key: eventKey,
+          user_ids: [userId],
+          force: true, // Verification events should always send
+          variables: {},
+        });
+      } else {
+        // Rejection — use a simple inline push (not a managed event)
+        await base44.functions.invoke('sendPushNotification', {
+          user_ids: [userId],
+          title: '❌ האימות נדחה',
+          body: 'האימות שלך נדחה. ניתן לעדכן את הפרטים ולשלוח שוב.',
+          url: '/profile',
+          tag: 'verification_update',
+        });
+      }
     } catch (pushErr) {
       console.log('[adminUpdateVerification] Push notification failed:', pushErr.message);
     }

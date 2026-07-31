@@ -151,24 +151,21 @@ Deno.serve(async (req) => {
     }
 
     const matchType = taskCategory ? getCategoryLabel(taskCategory) : 'משימה חדשה';
-    let sent = 0;
 
-    // Send in batches of 100 to avoid payload limits
-    const BATCH = 100;
-    for (let i = 0; i < matchedUserIds.length; i += BATCH) {
-      const batch = matchedUserIds.slice(i, i + BATCH);
-      const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
-        user_ids: batch,
-        title: `משימה חדשה מתאימה לך 🎯`,
-        body: `${taskTitle} — ${matchType}`,
-        url: `/task/${taskId}`,
-        tag: `new_match_${taskId}`,
-        click_action: `/task/${taskId}`,
-      });
-      sent += result?.data?.sent ?? result?.sent ?? 0;
-    }
+    // ── Route through NotificationManager (handles segmentation, cooldown, batching) ──
+    const result = await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'new_matching_task',
+      user_ids: matchedUserIds,
+      task_id: taskId,
+      variables: {
+        task_title: taskTitle,
+        task_id: taskId,
+        category_label: matchType,
+      },
+    });
 
-    return Response.json({ sent, total: matchedUserIds.length });
+    const sent = result?.data?.sent ?? result?.sent ?? 0;
+    return Response.json({ sent, total: matchedUserIds.length, managerResult: result?.data ?? result });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

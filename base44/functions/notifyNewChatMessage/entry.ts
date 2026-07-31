@@ -38,15 +38,19 @@ Deno.serve(async (req) => {
 
     const preview = data.content.length > 80 ? data.content.substring(0, 80) + '...' : data.content;
 
-    const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    const result = await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'new_chat_message',
       user_ids: [targetUserId],
-      title: `הודעה חדשה 💬`,
-      body: `${data.sender_name || 'מישהו'}: ${preview}`,
-      url: `/chat/${data.task_id}`,
-      tag: `chat_${data.task_id}`,
+      task_id: data.task_id,
+      variables: {
+        sender_name: data.sender_name || 'מישהו',
+        message_preview: preview,
+        task_id: data.task_id,
+      },
     });
 
-    return Response.json({ sent: true, result });
+    return Response.json({ sent: true, result: result?.data ?? result });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

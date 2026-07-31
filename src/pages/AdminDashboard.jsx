@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import GoldBadge from '@/components/GoldBadge';
+import NotificationManagerTab from '@/components/NotificationManagerTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -664,6 +665,9 @@ export default function AdminDashboard() {
           <Headphones size={13} style={{ display: 'inline', marginLeft: 4 }} /> תמיכה
           {unreadSupportCount > 0 && <span style={{ marginRight: 4, background: '#dc2626', color: 'white', fontSize: 10, padding: '1px 5px', borderRadius: 10, fontWeight: 800 }}>{unreadSupportCount}</span>}
         </TabButton>
+        <TabButton active={tab === 'notifications'} onClick={() => setTab('notifications')}>
+          <Bell size={13} style={{ display: 'inline', marginLeft: 4 }} /> התראות
+        </TabButton>
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
@@ -948,6 +952,11 @@ export default function AdminDashboard() {
               </div>
             )}
           </>
+        )}
+
+        {/* NOTIFICATIONS MANAGER TAB */}
+        {tab === 'notifications' && (
+          <NotificationManagerTab />
         )}
       </div>
     </div>

@@ -28,18 +28,20 @@ Deno.serve(async (req) => {
       client = clientUsers[0];
     }
 
-    // ── Push notification to worker ──
+    // ── Push notification to worker via NotificationManager ──
     if (worker?.fcm_tokens?.length) {
-      await base44.asServiceRole.functions.invoke('sendPushNotification', {
+      await base44.asServiceRole.functions.invoke('notificationManager', {
+        event_key: 'task_completed',
         user_ids: [data.worker_id],
-        title: `המפרסם אישר את סיום המשימה ✅`,
-        body: `המפרסם אישר שהשלמת את "${taskTitle}" — בדוק את הדירוג שקיבלת`,
-        url: `/task/${taskId}`,
-        tag: `task_completed_${data.id}`,
+        task_id: taskId,
+        variables: {
+          task_title: taskTitle,
+          task_id: taskId,
+        },
       });
     }
 
-    // ── Email to worker ──
+    // ── Email to worker (retained — only NotificationConfig.send_email controls email via manager) ──
     if (worker?.email) {
       const workerName = worker.full_name || 'עובד';
       const workerHtml = `<!DOCTYPE html>

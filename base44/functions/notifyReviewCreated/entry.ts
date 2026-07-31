@@ -23,15 +23,22 @@ Deno.serve(async (req) => {
     const stars = '⭐'.repeat(data.rating || 0);
     const roleLabel = data.role === 'worker' ? 'עובד' : 'מפרסם';
     const whoLabel = data.role === 'worker' ? 'המפרסם' : 'העובד';
+    const reviewBody = data.comment
+      ? `"${data.comment.substring(0, 100)}"`
+      : `${whoLabel} השאיר דירוג של ${data.rating} כוכבים — כ${roleLabel}`;
 
-    await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'review_created',
       user_ids: [data.reviewee_id],
-      title: `${whoLabel} דירג אותך ${stars}`,
-      body: data.comment
-        ? `"${data.comment.substring(0, 100)}"`
-        : `${whoLabel} השאיר דירוג של ${data.rating} כוכבים — כ${roleLabel}`,
-      url: '/profile',
-      tag: `review_${data.task_id}_${data.reviewee_id}`,
+      task_id: data.task_id,
+      variables: {
+        who_label: whoLabel,
+        stars: stars,
+        review_body: reviewBody,
+        task_id: data.task_id || '',
+        reviewee_id: data.reviewee_id,
+      },
     });
 
     return Response.json({ sent: true });

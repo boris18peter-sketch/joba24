@@ -22,12 +22,16 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No device tokens' });
     }
 
-    await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'application_revoked',
       user_ids: [data.worker_id],
-      title: `הקבלה בוטלה 😔`,
-      body: `המפרסם ביטל את הקבלתך למשימה "${data.task_title || ''}"`,
-      url: '/',
-      tag: `app_revoked_${data.task_id}_${data.worker_id}`,
+      task_id: data.task_id,
+      variables: {
+        task_title: data.task_title || '',
+        task_id: data.task_id,
+        worker_id: data.worker_id,
+      },
     });
 
     return Response.json({ sent: true });

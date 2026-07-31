@@ -25,12 +25,16 @@ Deno.serve(async (req) => {
     // Determine who left: usually old_data.worker_id or data.worker_id (should be null now)
     const workerName = old_data?.worker_name || data?.worker_name || 'העובד';
 
-    await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'worker_left_task',
       user_ids: [data.client_id],
-      title: `${workerName} עזב את המשימה 😕`,
-      body: `${workerName} ביטל את הקבלת המשימה "${data.title || ''}" — אתה יכול לבחור עובד חדש`,
-      url: `/task/${data.id || event?.entity_id}`,
-      tag: `worker_left_${data.id}`,
+      task_id: data.id || event?.entity_id,
+      variables: {
+        worker_name: workerName,
+        task_title: data.title || '',
+        task_id: data.id || event?.entity_id || '',
+      },
     });
 
     return Response.json({ sent: true });

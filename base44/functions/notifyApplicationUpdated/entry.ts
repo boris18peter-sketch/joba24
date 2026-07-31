@@ -22,18 +22,16 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No device tokens' });
     }
 
-    const isApproved = data.status === 'approved';
-    const title = isApproved ? 'התקבלת למשימה! 🎉' : 'הבקשה לא אושרה 😔';
-    const body = isApproved
-      ? `הבקשה שלך למשימה "${data.task_title || ''}" אושרה!`
-      : `הבקשה שלך למשימה "${data.task_title || ''}" לא אושרה`;
-
-    const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    const result = await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'application_approved',
       user_ids: [data.worker_id],
-      title,
-      body,
-      url: isApproved ? `/task/${data.task_id}` : '/',
-      tag: `app_status_${data.task_id}_${data.worker_id}`,
+      task_id: data.task_id,
+      variables: {
+        task_title: data.task_title || '',
+        task_id: data.task_id,
+        worker_id: data.worker_id,
+      },
     });
 
     return Response.json({ sent: true, result: result?.data ?? null });

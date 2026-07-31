@@ -28,17 +28,19 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No device tokens' });
     }
 
-    // Call sendPushNotification
-    const result = await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager (segmentation, cooldown, logging) ──
+    const result = await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'application_created',
       user_ids: [task.client_id],
-      title: 'בקשה חדשה! 🔔',
-      body: `${data.worker_name || 'עובד'} הגיש בקשה למשימה "${task.title}"`,
-      url: `/task/${task.id}`,
-      tag: `application_${data.task_id}_${data.worker_id}`,
+      task_id: task.id,
+      variables: {
+        worker_name: data.worker_name || 'עובד',
+        task_title: task.title || '',
+        task_id: task.id,
+        worker_id: data.worker_id,
+      },
     });
 
-    // Return only the parsed data — the raw result is an axios response with
-    // circular refs (ClientRequest) that crashes Response.json serialization.
     return Response.json({ sent: true, result: result?.data ?? null });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

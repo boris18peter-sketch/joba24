@@ -28,12 +28,16 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No device tokens' });
     }
 
-    await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: 'no_show_report',
       user_ids: [task.worker_id],
-      title: `דווחו עליך כ-no-show ⚠️`,
-      body: `דווחו שלא הופעת למשימה "${task.title || ''}" — זה עלול להשפיע על הדירוג שלך`,
-      url: `/task/${task.id}`,
-      tag: `no_show_${task.id}_${task.worker_id}`,
+      task_id: task.id,
+      variables: {
+        task_title: task.title || '',
+        task_id: task.id,
+        worker_id: task.worker_id,
+      },
     });
 
     return Response.json({ sent: true });

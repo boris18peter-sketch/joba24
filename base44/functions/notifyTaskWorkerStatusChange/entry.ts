@@ -33,13 +33,17 @@ Deno.serve(async (req) => {
     }
 
     const msg = STATUS_MESSAGES[newStatus];
+    const eventKey = `worker_status_${newStatus}`; // on_the_way | arrived | done
 
-    await base44.asServiceRole.functions.invoke('sendPushNotification', {
+    // ── Route through NotificationManager ──
+    await base44.asServiceRole.functions.invoke('notificationManager', {
+      event_key: eventKey,
       user_ids: [data.client_id],
-      title: msg.title,
-      body: msg.body(data.title),
-      url: `/task/${data.id || event?.entity_id}`,
-      tag: `worker_status_${data.id}_${newStatus}`,
+      task_id: data.id || event?.entity_id,
+      variables: {
+        task_title: data.title || '',
+        task_id: data.id || event?.entity_id || '',
+      },
     });
 
     return Response.json({ sent: true });
