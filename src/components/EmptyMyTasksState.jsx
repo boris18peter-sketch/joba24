@@ -75,15 +75,32 @@ export default function EmptyMyTasksState() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 40 }}>
       <style>{HIDE_SCROLL_CSS}</style>
 
-      {/* Calm heading — promoted subheadline, smaller & softer */}
-      <p style={{
-        fontWeight: 800, color: '#475569', margin: 0,
-        fontSize: 17, lineHeight: 1.45, letterSpacing: -0.1,
-        maxWidth: 300, textAlign: 'center',
-        padding: '0 24px 18px',
-      }}>
-        {t('no_active_tasks_sub')}
-      </p>
+      {/* Hero — strong heading + big Post Task button */}
+      <div style={{ textAlign: 'center', padding: '0 20px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
+        <p style={{
+          fontWeight: 900, color: '#0f1e40', margin: 0,
+          fontSize: 24, lineHeight: 1.3, letterSpacing: -0.3,
+          maxWidth: 320,
+        }}>
+          {t('no_active_tasks_sub')}
+        </p>
+
+        {/* Large, attractive Post Task button */}
+        <Link to="/create-task" style={{ textDecoration: 'none', width: '100%', maxWidth: 340 }}>
+          <button style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            width: '100%', height: 58, paddingInline: 28,
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            color: 'white', fontWeight: 800, fontSize: 17, border: 'none', cursor: 'pointer',
+            boxShadow: '0 10px 28px rgba(26,111,212,0.4)',
+            letterSpacing: 0.2,
+          }}>
+            <Plus size={22} strokeWidth={2.5} />
+            {t('post_task_btn')}
+          </button>
+        </Link>
+      </div>
 
       {/* 3 rows in ONE scroll container — they move together as a block */}
       <div
