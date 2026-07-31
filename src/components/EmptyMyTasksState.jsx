@@ -58,7 +58,11 @@ const EXAMPLES = [
 
 // Special social-proof bubbles (blue accent)
 const SPECIALS = [
-  { emoji: '👥', text: '+1000 אנשים מחפשים משימות עכשיו' },
+  { emoji: '👥', text: '+5000 אנשים מוכנים לביצוע משימות' },
+  { emoji: '💰', text: 'כאן אתה בוחר כמה לשלם' },
+  { emoji: '✅', text: 'אלפי אנשים ובעלי מקצוע מאומתים במקום 1 בטוח' },
+  { emoji: '⚡', text: 'הכי מהיר ומשתלם' },
+  { emoji: '😎', text: 'בלי השוואות מחירים וכאבי ראש' },
   { emoji: '🔥', text: 'יש אנשים זמינים למשימות באזור שלך' },
   { emoji: '🚀', text: 'בממוצע תוך 10 דקות מקבלים 5 בקשות' },
 ];
@@ -111,39 +115,41 @@ export default function EmptyMyTasksState() {
       shuffled.slice(perRow, perRow * 2),
       shuffled.slice(perRow * 2),
     ];
-    // Insert a different special bubble into each row at a random-ish position
+    // Row 0 ALWAYS starts with the +5000 blue bubble; each row gets extra specials interspersed
     return baseRows.map((row, i) => {
-      const special = SPECIALS[i % SPECIALS.length];
-      const insertAt = Math.floor(row.length * (0.25 + i * 0.2));
       const copy = [...row];
-      copy.splice(insertAt, 0, { ...special, special: true });
+      if (i === 0) copy.unshift({ ...SPECIALS[0], special: true });
+      const sp = SPECIALS[(i + 1) % SPECIALS.length];
+      copy.splice(Math.floor(copy.length * 0.5), 0, { ...sp, special: true });
+      const sp2 = SPECIALS[(i + 3) % SPECIALS.length];
+      copy.splice(Math.floor(copy.length * 0.8), 0, { ...sp2, special: true });
       return copy;
     });
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 28, paddingBottom: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 14, paddingBottom: 8 }}>
       <style>{HIDE_SCROLL_CSS}</style>
 
       {/* Headline */}
       <h1 className="j-empty-headline" style={{
         fontWeight: 900, color: '#0f1e40', margin: 0,
-        fontSize: 'clamp(25px, 6vw, 31px)', lineHeight: 1.3, letterSpacing: -0.4,
-        textAlign: 'center', maxWidth: 340, padding: '0 16px',
+        fontSize: 'clamp(27px, 7vw, 34px)', lineHeight: 1.2, letterSpacing: -0.5,
+        textAlign: 'center', padding: '0 16px',
       }}>
-        צריך עזרה? פרסם משימה ותוך דקות תקבל בקשות מאנשים שרוצים לבצע אותה.
+        צריך עזרה? פרסם משימה
       </h1>
 
       {/* Description */}
       <p className="j-empty-desc" style={{
-        fontSize: 15, color: '#64748b', lineHeight: 1.5, fontWeight: 500,
-        textAlign: 'center', maxWidth: 320, margin: '12px 0 0', padding: '0 18px',
+        fontSize: 14.5, color: '#64748b', lineHeight: 1.5, fontWeight: 500,
+        textAlign: 'center', maxWidth: 330, margin: '8px 0 0', padding: '0 18px',
       }}>
-        פרסום משימה לוקח פחות מדקה. אנשים יגישו בקשות ואתה בוחר את מי שמתאים לך.
+        פרסום משימה לוקח פחות מדקה. תוך דקות אנשים יגישו בקשות לביצוע המשימה ואתה בוחר את מי שמתאים לך.
       </p>
 
       {/* Primary CTA */}
-      <Link to="/create-task" className="j-empty-cta-wrap" style={{ textDecoration: 'none', width: '90%', maxWidth: 360, marginTop: 18, display: 'block' }}>
+      <Link to="/create-task" className="j-empty-cta-wrap" style={{ textDecoration: 'none', width: '90%', maxWidth: 360, marginTop: 14, display: 'block' }}>
         <button
           onClick={() => { try { navigator.vibrate?.(15); } catch {} }}
           className="j-empty-cta"
@@ -168,11 +174,11 @@ export default function EmptyMyTasksState() {
       </Link>
 
       {/* Spacer */}
-      <div style={{ height: 24 }} />
+      <div style={{ height: 16 }} />
 
       {/* Bubbles section */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '5px 12px' }}>
             💡 דוגמאות למשימות שאנשים מפרסמים
           </span>
@@ -189,7 +195,7 @@ export default function EmptyMyTasksState() {
             padding: '2px 0 6px',
           }}
         >
-          <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 8, paddingRight: 16, paddingLeft: 16 }}>
+          <div style={{ width: 'max-content', display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 16, paddingLeft: 16 }}>
             {rows.map((row, ri) => (
               <div
                 key={ri}
@@ -215,10 +221,10 @@ export default function EmptyMyTasksState() {
       </div>
 
       {/* Spacer */}
-      <div style={{ height: 24 }} />
+      <div style={{ height: 14 }} />
 
       {/* Trust message */}
-      <p className="j-empty-trust" style={{ fontSize: 14, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
+      <p className="j-empty-trust" style={{ fontSize: 13.5, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
         💪 אנשים מפרסמים כל דבר — ותמיד מגיע מישהו לעזור.
       </p>
     </div>
