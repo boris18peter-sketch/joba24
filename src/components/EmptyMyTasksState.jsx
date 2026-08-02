@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
-// Realistic, common task examples — things people actually post
+// Realistic, short task examples (kept short so bubbles never collide on narrow screens)
 const EXAMPLES = [
-  '🚰 תיקון ברז דולף',
+  '🚰 תיקון ברז',
   '🧹 ניקיון דירה',
   '🚚 הובלת מקרר',
   '🎨 צביעת חדר',
@@ -15,14 +15,21 @@ const EXAMPLES = [
   '🚪 תיקון דלת',
   '🌿 גיזום עץ',
   '🔧 פתיחת סתימה',
-  '🪟 ניקיון חלונות',
-  '🧺 הובלת מכבסה',
   '🪑 פירוק ארון',
   '🔐 החלפת מנעול',
-  '❄️ מילוי גז מזגן',
+  '❄️ מילוי גז',
+  '🪟 ניקיון חלון',
+  '🚙 הסעת ילד',
 ];
 
-const CYCLE_MS = 3000; // one bubble rises & fades per cycle — only ONE on screen at any time
+// 3 fixed lanes, evenly spread. One bubble per lane at a time, plus a 4th
+// that shares a lane but sits at a very different height → max 4 visible,
+// never colliding horizontally (lanes far apart) or vertically (same-lane
+// bubbles are ~75% of the travel apart).
+const LANES = [18, 50, 82];
+const DURATION = 8;   // seconds per bubble rise (uniform speed)
+const STEP = 2;       // launch a new bubble every 2s → 8/2 = 4 alive max
+const COUNT = 12;    // total bubbles rendered (enough variety, loops via infinite)
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -33,10 +40,10 @@ const CSS = `
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
   @keyframes jEmptyRise {
-    0%   { transform: translate(-50%, 60px);  opacity: 0; }
-    18%  { opacity: 1; }
+    0%   { transform: translate(-50%, 50px);  opacity: 0; }
+    12%  { opacity: 1; }
     82%  { opacity: 1; }
-    100% { transform: translate(-50%, -150px); opacity: 0; }
+    100% { transform: translate(-50%, -190px); opacity: 0; }
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -47,44 +54,35 @@ const CSS = `
   .j-empty-stage {
     position: relative;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
   }
   .j-empty-chip {
     display: inline-flex; align-items: center;
-    background: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.88);
     border: 1px solid rgba(226,234,245,0.8);
     border-radius: 999px;
-    padding: 7px 14px;
-    font-size: 13px; font-weight: 700; color: #334155;
+    padding: 5px 11px;
+    font-size: 11px; font-weight: 700; color: #334155;
     white-space: nowrap;
-    box-shadow: 0 2px 10px rgba(15,40,107,0.08);
+    box-shadow: 0 2px 8px rgba(15,40,107,0.08);
     position: absolute;
     bottom: 0;
     left: 50%;
-    animation: jEmptyRise ${CYCLE_MS}ms linear both;
   }
 `;
 
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Shuffle once, then cycle through — only ONE bubble is rendered at a time,
-  // so overlap between bubbles is structurally impossible.
-  const order = useMemo(() => {
-    const a = [...EXAMPLES];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+  const bubbles = useMemo(() => {
+    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
+    return Array.from({ length: COUNT }, (_, i) => ({
+      text: shuffled[i % shuffled.length],
+      left: LANES[i % LANES.length],
+      delay: i * STEP,
+    }));
   }, []);
-
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % order.length), CYCLE_MS);
-    return () => clearInterval(id);
-  }, [order.length]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, paddingBottom: 6 }}>
@@ -135,7 +133,7 @@ export default function EmptyMyTasksState() {
       {/* Spacer — pushes the examples section down, away from the button */}
       <div style={{ height: 30 }} />
 
-      {/* Single rising bubble — only one exists at a time, so no overlap is possible */}
+      {/* Floating examples — 3 lanes, max 4 on screen, never overlapping */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 14 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
@@ -143,8 +141,21 @@ export default function EmptyMyTasksState() {
           </span>
         </div>
 
-        <div className="j-empty-stage" style={{ height: 170 }}>
-          <span key={idx} className="j-empty-chip">{order[idx]}</span>
+        <div className="j-empty-stage" style={{ height: 190 }}>
+          {bubbles.map((b, i) => (
+            <span
+              key={i}
+              className="j-empty-chip"
+              style={{
+                left: `${b.left}%`,
+                animation: `jEmptyRise ${DURATION}s linear infinite`,
+                animationDelay: `${b.delay}s`,
+                animationFillMode: 'both',
+              }}
+            >
+              {b.text}
+            </span>
+          ))}
         </div>
       </div>
 

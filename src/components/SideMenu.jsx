@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import { useState } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import { useLanguage } from '@/lib/LanguageContext';
 
 
@@ -186,8 +187,11 @@ export default function SideMenu({ open, onClose }) {
             
             {t('nav_create_task')}
           </Link>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 14 }}>
             <LanguageSwitcher onClose={onClose} />
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <StoreDownloadButtons size="sm" />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, paddingTop: 2, flexWrap: 'nowrap' }}>
             <Link to="/faq" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('nav_faq')}</Link>
