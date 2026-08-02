@@ -3,32 +3,24 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
 
-// Short examples — compact chips
+// Realistic, common task examples — things people actually post
 const EXAMPLES = [
-  { emoji: '🎁', text: 'איסוף חבילה' },
-  { emoji: '🛠️', text: 'תיקון דלת' },
-  { emoji: '🌿', text: 'גיזום גינה' },
-  { emoji: '🚗', text: 'שטיפת רכב' },
-  { emoji: '🎂', text: 'איסוף עוגה' },
+  { emoji: '🚰', text: 'תיקון ברז דולף' },
   { emoji: '🧹', text: 'ניקיון דירה' },
-  { emoji: '📺', text: 'תליית טלוויזיה' },
-  { emoji: '🚚', text: 'הובלת ספה' },
-  { emoji: '👶', text: 'בייביסיטר' },
-  { emoji: '🛒', text: 'קניות מהסופר' },
-  { emoji: '🚲', text: 'תיקון אופניים' },
-  { emoji: '🍕', text: 'איסוף פיצה' },
-  { emoji: '💧', text: 'פתיחת סתימה' },
-  { emoji: '🪞', text: 'תליית מראה' },
-  { emoji: '🍓', text: 'מגש פירות' },
-  { emoji: '🛏️', text: 'הובלת מיטה' },
-  { emoji: '📦', text: 'פינוי מחסן' },
-  { emoji: '🐾', text: 'הורדת כלב' },
-  { emoji: '🔋', text: 'התנעת רכב' },
-  { emoji: '🔥', text: 'מנגליסט' },
-  { emoji: '🎈', text: 'ניפוח בלונים' },
-  { emoji: '🌹', text: 'זר פרחים' },
-  { emoji: '📚', text: 'עזרה בסמינר' },
-  { emoji: '💄', text: 'איפור לאירוע' },
+  { emoji: '🚚', text: 'הובלת מקרר' },
+  { emoji: '🎨', text: 'צביעת חדר' },
+  { emoji: '🪛', text: 'הרכבת מדף' },
+  { emoji: '🚗', text: 'הסעה לשדה' },
+  { emoji: '📦', text: 'איסוף חבילה' },
+  { emoji: '🚪', text: 'תיקון דלת' },
+  { emoji: '🌿', text: 'גיזום עץ' },
+  { emoji: '🔧', text: 'פתיחת סתימה' },
+  { emoji: '🪟', text: 'ניקיון חלונות' },
+  { emoji: '🧺', text: 'הובלת מכבסה' },
+  { emoji: '🪑', text: 'פירוק ארון' },
+  { emoji: '🔐', text: 'החלפת מנעול' },
+  { emoji: '❄️', text: 'מילוי גז מזגן' },
+  { emoji: '🚙', text: 'הסעת ילד מביה"ס' },
 ];
 
 // Special social-proof bubbles (blue accent)
@@ -36,11 +28,11 @@ const SPECIALS = [
   { emoji: '👥', text: '+5000 מוכנים לעזור' },
   { emoji: '💰', text: 'אתה בוחר כמה לשלם' },
   { emoji: '⚡', text: 'הכי מהיר ומשתלם' },
-  { emoji: '😎', text: 'בלי השוואות מחירים' },
-  { emoji: '🚀', text: '5 בקשות ב-10 דקות' },
 ];
 
-const TOTAL_BUBBLES = 10;
+const LANES = [14, 38, 62, 86];   // 4 fixed horizontal lanes → max 4 bubbles, one per lane
+const DURATION = 10;              // seconds per bubble rise (uniform speed)
+const STEP = DURATION / LANES.length; // 2.5s between launches → 4 evenly spread
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -51,10 +43,10 @@ const CSS = `
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
   @keyframes jEmptyFloat {
-    0%   { transform: translateY(60px);  opacity: 0; }
-    8%   { opacity: 1; }
-    88%  { opacity: 1; }
-    100% { transform: translateY(-280px); opacity: 0; }
+    0%   { transform: translate(-50%, 45px);  opacity: 0; }
+    10%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: translate(-50%, -205px); opacity: 0; }
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -90,27 +82,26 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Each bubble is an independent element. All share the SAME duration (uniform speed),
-  // but delays are evenly staggered (~4.5s apart) so only ~2 are on screen at once,
-  // and X positions alternate sides so consecutive bubbles never overlap horizontally.
+  // 4 fixed lanes (one bubble per lane at any time) + uniform duration + evenly
+  // staggered delays → exactly 4 bubbles max on screen, never overlapping.
   const bubbles = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
-    shuffled.forEach((ex, i) => {
-      items.push(ex);
-      if (i > 0 && i % 4 === 0) {
-        items.push({ ...SPECIALS[Math.floor(i / 4) % SPECIALS.length], special: true });
+    let sIdx = 0;
+    for (let i = 0; i < 12; i++) {
+      if (i > 0 && i % 5 === 0) {
+        items.push({ ...SPECIALS[sIdx % SPECIALS.length], special: true });
+        sIdx++;
+      } else {
+        items.push(shuffled[i % shuffled.length]);
       }
-    });
-    items.unshift({ ...SPECIALS[0], special: true });
-    const picked = items.slice(0, TOTAL_BUBBLES);
-    const DURATION = 9;
-    const STEP = DURATION / 2; // 4.5s between launches → ~2 bubbles on screen at once
-    return picked.map((b, i) => {
-      const side = i % 2; // alternate left/right clusters so consecutive bubbles don't touch
-      const left = side === 0 ? 8 + Math.random() * 24 : 58 + Math.random() * 30;
-      return { ...b, left, delay: i * STEP, duration: DURATION };
-    });
+    }
+    return items.map((b, i) => ({
+      ...b,
+      left: LANES[i % LANES.length],
+      delay: i * STEP,
+      duration: DURATION,
+    }));
   }, []);
 
   return (
@@ -164,13 +155,13 @@ export default function EmptyMyTasksState() {
 
       {/* Floating balloons — each bubble rises individually, one after another */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <div style={{ textAlign: 'center', marginBottom: 14 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
             💡 דוגמאות למשימות
           </span>
         </div>
 
-        <div className="j-empty-float" style={{ height: 240 }}>
+        <div className="j-empty-float" style={{ height: 200 }}>
           {bubbles.map((ex, i) => (
             <span
               key={i}
