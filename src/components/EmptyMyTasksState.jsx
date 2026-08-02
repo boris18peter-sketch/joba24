@@ -82,8 +82,9 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // 3 wide-spaced lanes (one bubble per lane at any time) + uniform duration +
-  // staggered delays → max 3 bubbles on screen, never overlapping horizontally.
+  // 2 fixed lanes (24% / 76%) — one bubble per lane at any time. Consecutive
+  // bubbles in the SAME lane are spaced by exactly DURATION (8s), so a lane
+  // never holds two bubbles at once → zero overlap on any screen width.
   const bubbles = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
@@ -157,7 +158,7 @@ export default function EmptyMyTasksState() {
           {bubbles.map((ex, i) => (
             <span
               key={i}
-              className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
+              className="j-empty-chip"
               style={{
                 position: 'absolute',
                 bottom: 0,
@@ -167,8 +168,7 @@ export default function EmptyMyTasksState() {
                 animationFillMode: 'both',
               }}
             >
-              <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
-              {ex.text}
+              {ex.emoji} {ex.text}
             </span>
           ))}
         </div>
