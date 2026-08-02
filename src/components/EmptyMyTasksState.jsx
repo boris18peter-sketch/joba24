@@ -40,9 +40,7 @@ const SPECIALS = [
   { emoji: '🚀', text: '5 בקשות ב-10 דקות' },
 ];
 
-const LANES = 3;
-const PER_LANE = 6;
-const TOTAL = LANES * PER_LANE;
+const TOTAL_BUBBLES = 10;
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -53,10 +51,10 @@ const CSS = `
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
   @keyframes jEmptyFloat {
-    0%   { transform: translateY(185px); opacity: 0; }
-    6%   { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { transform: translateY(-32px); opacity: 0; }
+    0%   { transform: translateY(60px);  opacity: 0; }
+    8%   { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { transform: translateY(-280px); opacity: 0; }
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -92,8 +90,9 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Each bubble is an independent element: random X position + random delay,
-  // but ALL share the exact same duration so they rise at a uniform, constant speed.
+  // Each bubble is an independent element. All share the SAME duration (uniform speed),
+  // but delays are evenly staggered (~4.5s apart) so only ~2 are on screen at once,
+  // and X positions alternate sides so consecutive bubbles never overlap horizontally.
   const bubbles = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
@@ -104,14 +103,14 @@ export default function EmptyMyTasksState() {
       }
     });
     items.unshift({ ...SPECIALS[0], special: true });
-    const picked = items.slice(0, TOTAL);
+    const picked = items.slice(0, TOTAL_BUBBLES);
     const DURATION = 9;
-    return picked.map((b) => ({
-      ...b,
-      left: 8 + Math.random() * 80,       // random X position (8%–88%)
-      delay: Math.random() * DURATION,    // random stagger so they don't rise together
-      duration: DURATION,                 // identical for all → uniform speed
-    }));
+    const STEP = DURATION / 2; // 4.5s between launches → ~2 bubbles on screen at once
+    return picked.map((b, i) => {
+      const side = i % 2; // alternate left/right clusters so consecutive bubbles don't touch
+      const left = side === 0 ? 8 + Math.random() * 24 : 58 + Math.random() * 30;
+      return { ...b, left, delay: i * STEP, duration: DURATION };
+    });
   }, []);
 
   return (
@@ -161,7 +160,7 @@ export default function EmptyMyTasksState() {
       </Link>
 
       {/* Fill the empty space — push examples down and use a taller float area */}
-      <div style={{ height: 34 }} />
+      <div style={{ height: 16 }} />
 
       {/* Floating balloons — each bubble rises individually, one after another */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
@@ -171,7 +170,7 @@ export default function EmptyMyTasksState() {
           </span>
         </div>
 
-        <div className="j-empty-float" style={{ height: 180 }}>
+        <div className="j-empty-float" style={{ height: 240 }}>
           {bubbles.map((ex, i) => (
             <span
               key={i}
