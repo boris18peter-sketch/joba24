@@ -59,12 +59,14 @@ const CSS = `
   .j-wheel {
     position: relative;
     height: ${ITEM_H * VISIBLE}px;
-    overflow-y: scroll;
+    overflow-y: auto;
+    overflow-x: hidden;
     scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+    touch-action: pan-y;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 34%, black 66%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 34%, black 66%, transparent 100%);
   }
   .j-wheel::-webkit-scrollbar { display: none; }
   .j-wheel-item {
@@ -73,34 +75,22 @@ const CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
-    font-weight: 600;
-    color: #94a3b8;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #b8c3d4;
     text-align: center;
-    padding: 0 24px;
-    transition: color 0.2s ease, transform 0.2s ease, font-weight 0.2s ease;
+    padding: 0 20px;
+    transition: color 0.25s ease;
     box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
   }
   .j-wheel-item.is-active {
-    color: #0f1e40;
-    font-weight: 800;
-    transform: scale(1.04);
+    color: #3b5577;
+    font-weight: 600;
   }
-  .j-wheel-band {
-    position: absolute;
-    left: 50%;
-    top: ${ITEM_H}px;
-    height: ${ITEM_H}px;
-    width: 92%;
-    transform: translateX(-50%);
-    border-radius: 999px;
-    background: rgba(255,255,255,0.96);
-    border: 1px solid rgba(226,234,245,0.9);
-    box-shadow: 0 6px 18px rgba(15,40,107,0.10);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .j-wheel-track { position: relative; z-index: 1; }
 `;
 
 export default function EmptyMyTasksState() {
@@ -201,9 +191,9 @@ export default function EmptyMyTasksState() {
 
       {/* Rotating examples wheel — auto-runs, user can swipe up/down */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 14 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
-            💡 דוגמאות למשימות · גלול לראות עוד
+        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#aab4c6', letterSpacing: 0.2 }}>
+            דוגמאות · גלול לראות עוד
           </span>
         </div>
 
@@ -214,14 +204,11 @@ export default function EmptyMyTasksState() {
           onWheel={pauseAuto}
           className="j-wheel"
         >
-          <div className="j-wheel-band" />
-          <div className="j-wheel-track">
-            {items.map((text, i) => (
-              <div key={i} className={`j-wheel-item${i === active ? ' is-active' : ''}`}>
-                {text}
-              </div>
-            ))}
-          </div>
+          {items.map((text, i) => (
+            <div key={i} className={`j-wheel-item${i === active ? ' is-active' : ''}`}>
+              {text}
+            </div>
+          ))}
         </div>
       </div>
 
