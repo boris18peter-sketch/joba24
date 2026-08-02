@@ -43,7 +43,6 @@ const SPECIALS = [
 const LANES = 3;
 const PER_LANE = 6;
 const TOTAL = LANES * PER_LANE;
-const RISE_MS = 7200;
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -53,11 +52,17 @@ const CSS = `
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
-  @keyframes jEmptyFloat {
-    0%   { transform: translate(-50%, 185px); opacity: 0; }
-    7%   { opacity: 1; }
-    88%  { opacity: 1; }
-    100% { transform: translate(-50%, -28px); opacity: 0; }
+  @keyframes jEmptyMarqueeUp {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-50%); }
+  }
+  .j-empty-marquee-track {
+    animation: jEmptyMarqueeUp 24s linear infinite;
+    will-change: transform;
+  }
+  .j-empty-marquee-track:hover,
+  .j-empty-marquee-track:active {
+    animation-play-state: paused;
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -68,8 +73,8 @@ const CSS = `
   .j-empty-float {
     position: relative;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
   }
   .j-empty-chip {
     display: inline-flex; align-items: center; gap: 5px;
@@ -93,9 +98,9 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Build a flat list with interspersed specials, then distribute round-robin into lanes.
-  // Each bubble floats up individually, one after another, like rising balloons.
-  const lanes = useMemo(() => {
+  // Build a flat list with interspersed specials, then chunk into rows of 3.
+  // The rows are duplicated back-to-back for a seamless infinite vertical marquee.
+  const rows = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
     shuffled.forEach((ex, i) => {
@@ -106,9 +111,11 @@ export default function EmptyMyTasksState() {
     });
     items.unshift({ ...SPECIALS[0], special: true });
     const picked = items.slice(0, TOTAL);
-    const l = Array.from({ length: LANES }, () => []);
-    picked.forEach((b, i) => l[i % LANES].push(b));
-    return l;
+    const chunked = [];
+    for (let i = 0; i < picked.length; i += LANES) {
+      chunked.push(picked.slice(i, i + LANES));
+    }
+    return chunked;
   }, []);
 
   return (
@@ -169,26 +176,18 @@ export default function EmptyMyTasksState() {
         </div>
 
         <div className="j-empty-float" style={{ height: 180 }}>
-          {lanes.map((lane, li) => (
-            <div key={li} style={{ position: 'absolute', top: 0, left: `${(li / LANES) * 100}%`, width: `${100 / LANES}%`, height: '100%' }}>
-              {lane.map((ex, i) => (
-                <span
-                  key={i}
-                  className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: '50%',
-                    animation: `jEmptyFloat ${RISE_MS}ms linear infinite`,
-                    animationDelay: `${(i * RISE_MS) / PER_LANE}ms`,
-                  }}
-                >
-                  <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
-                  {ex.text}
-                </span>
-              ))}
-            </div>
-          ))}
+          <div className="j-empty-marquee-track" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[...rows, ...rows].map((row, ri) => (
+              <div key={ri} style={{ display: 'flex', gap: 7, justifyContent: 'center', flexShrink: 0 }}>
+                {row.map((ex, i) => (
+                  <span key={i} className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}>
+                    <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
+                    {ex.text}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
