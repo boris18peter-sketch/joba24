@@ -52,17 +52,11 @@ const CSS = `
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
-  @keyframes jEmptyMarqueeUp {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-50%); }
-  }
-  .j-empty-marquee-track {
-    animation: jEmptyMarqueeUp 24s linear infinite;
-    will-change: transform;
-  }
-  .j-empty-marquee-track:hover,
-  .j-empty-marquee-track:active {
-    animation-play-state: paused;
+  @keyframes jEmptyFloat {
+    0%   { transform: translateY(185px); opacity: 0; }
+    6%   { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateY(-32px); opacity: 0; }
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -98,24 +92,26 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // Build a flat list with interspersed specials, then chunk into rows of 3.
-  // The rows are duplicated back-to-back for a seamless infinite vertical marquee.
-  const rows = useMemo(() => {
+  // Each bubble is an independent element: random X position + random delay,
+  // but ALL share the exact same duration so they rise at a uniform, constant speed.
+  const bubbles = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
     shuffled.forEach((ex, i) => {
       items.push(ex);
-      if (i > 0 && i % 5 === 0) {
-        items.push({ ...SPECIALS[Math.floor(i / 5) % SPECIALS.length], special: true });
+      if (i > 0 && i % 4 === 0) {
+        items.push({ ...SPECIALS[Math.floor(i / 4) % SPECIALS.length], special: true });
       }
     });
     items.unshift({ ...SPECIALS[0], special: true });
     const picked = items.slice(0, TOTAL);
-    const chunked = [];
-    for (let i = 0; i < picked.length; i += LANES) {
-      chunked.push(picked.slice(i, i + LANES));
-    }
-    return chunked;
+    const DURATION = 9;
+    return picked.map((b) => ({
+      ...b,
+      left: 8 + Math.random() * 80,       // random X position (8%–88%)
+      delay: Math.random() * DURATION,    // random stagger so they don't rise together
+      duration: DURATION,                 // identical for all → uniform speed
+    }));
   }, []);
 
   return (
@@ -176,18 +172,22 @@ export default function EmptyMyTasksState() {
         </div>
 
         <div className="j-empty-float" style={{ height: 180 }}>
-          <div className="j-empty-marquee-track" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[...rows, ...rows].map((row, ri) => (
-              <div key={ri} style={{ display: 'flex', gap: 7, justifyContent: 'center', flexShrink: 0 }}>
-                {row.map((ex, i) => (
-                  <span key={i} className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}>
-                    <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
-                    {ex.text}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
+          {bubbles.map((ex, i) => (
+            <span
+              key={i}
+              className={ex.special ? 'j-empty-chip j-empty-chip-special' : 'j-empty-chip'}
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: `${ex.left}%`,
+                animation: `jEmptyFloat ${ex.duration}s linear infinite`,
+                animationDelay: `${ex.delay}s`,
+              }}
+            >
+              <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
+              {ex.text}
+            </span>
+          ))}
         </div>
       </div>
 
