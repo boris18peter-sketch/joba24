@@ -1,38 +1,28 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 // Realistic, common task examples — things people actually post
 const EXAMPLES = [
-  { emoji: '🚰', text: 'תיקון ברז דולף' },
-  { emoji: '🧹', text: 'ניקיון דירה' },
-  { emoji: '🚚', text: 'הובלת מקרר' },
-  { emoji: '🎨', text: 'צביעת חדר' },
-  { emoji: '🪛', text: 'הרכבת מדף' },
-  { emoji: '🚗', text: 'הסעה לשדה' },
-  { emoji: '📦', text: 'איסוף חבילה' },
-  { emoji: '🚪', text: 'תיקון דלת' },
-  { emoji: '🌿', text: 'גיזום עץ' },
-  { emoji: '🔧', text: 'פתיחת סתימה' },
-  { emoji: '🪟', text: 'ניקיון חלונות' },
-  { emoji: '🧺', text: 'הובלת מכבסה' },
-  { emoji: '🪑', text: 'פירוק ארון' },
-  { emoji: '🔐', text: 'החלפת מנעול' },
-  { emoji: '❄️', text: 'מילוי גז מזגן' },
-  { emoji: '🚙', text: 'הסעת ילד מביה"ס' },
+  '🚰 תיקון ברז דולף',
+  '🧹 ניקיון דירה',
+  '🚚 הובלת מקרר',
+  '🎨 צביעת חדר',
+  '🪛 הרכבת מדף',
+  '🚗 הסעה לשדה',
+  '📦 איסוף חבילה',
+  '🚪 תיקון דלת',
+  '🌿 גיזום עץ',
+  '🔧 פתיחת סתימה',
+  '🪟 ניקיון חלונות',
+  '🧺 הובלת מכבסה',
+  '🪑 פירוק ארון',
+  '🔐 החלפת מנעול',
+  '❄️ מילוי גז מזגן',
 ];
 
-// Special social-proof bubbles (blue accent)
-const SPECIALS = [
-  { emoji: '👥', text: '+5000 מוכנים לעזור' },
-  { emoji: '💰', text: 'אתה בוחר כמה לשלם' },
-  { emoji: '⚡', text: 'הכי מהיר ומשתלם' },
-];
-
-const LANES = [24, 76];          // 2 wide-spaced lanes → one bubble per lane, never overlaps (any screen width)
-const DURATION = 8;               // seconds per bubble rise (uniform speed)
-const STEP = DURATION / LANES.length; // 4s between launches → max 2 on screen (≤4)
+const CYCLE_MS = 3000; // one bubble rises & fades per cycle — only ONE on screen at any time
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -42,11 +32,11 @@ const CSS = `
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
-  @keyframes jEmptyFloat {
-    0%   { transform: translate(-50%, 45px);  opacity: 0; }
-    10%  { opacity: 1; }
-    85%  { opacity: 1; }
-    100% { transform: translate(-50%, -205px); opacity: 0; }
+  @keyframes jEmptyRise {
+    0%   { transform: translate(-50%, 60px);  opacity: 0; }
+    18%  { opacity: 1; }
+    82%  { opacity: 1; }
+    100% { transform: translate(-50%, -150px); opacity: 0; }
   }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
@@ -54,48 +44,47 @@ const CSS = `
   .j-empty-cta { animation: jEmptyPulse 7s ease-in-out 1.2s infinite; }
   .j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
   .j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
-  .j-empty-float {
+  .j-empty-stage {
     position: relative;
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
   }
   .j-empty-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(255,255,255,0.82);
-    border: 1px solid rgba(226,234,245,0.7);
+    display: inline-flex; align-items: center;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(226,234,245,0.8);
     border-radius: 999px;
-    padding: 4px 9px;
-    font-size: 10.5px; font-weight: 600; color: #475569;
+    padding: 7px 14px;
+    font-size: 13px; font-weight: 700; color: #334155;
     white-space: nowrap;
-    box-shadow: 0 1px 4px rgba(15,40,107,0.05);
-  }
-  .j-empty-chip-special {
-    background: linear-gradient(135deg, rgba(26,111,212,0.12), rgba(10,82,176,0.16));
-    border: 1px solid rgba(26,111,212,0.35);
-    color: #0a52b0;
-    font-weight: 800;
-    box-shadow: 0 2px 10px rgba(26,111,212,0.18);
+    box-shadow: 0 2px 10px rgba(15,40,107,0.08);
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    animation: jEmptyRise ${CYCLE_MS}ms linear both;
   }
 `;
 
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // 2 fixed lanes (24% / 76%) — one bubble per lane at any time. Consecutive
-  // bubbles in the SAME lane are spaced by exactly DURATION (8s), so a lane
-  // never holds two bubbles at once → zero overlap on any screen width.
-  const bubbles = useMemo(() => {
-    const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
-    const items = [];
-    for (let i = 0; i < 12; i++) items.push(shuffled[i % shuffled.length]);
-    return items.map((b, i) => ({
-      ...b,
-      left: LANES[i % LANES.length],
-      delay: i * STEP,
-      duration: DURATION,
-    }));
+  // Shuffle once, then cycle through — only ONE bubble is rendered at a time,
+  // so overlap between bubbles is structurally impossible.
+  const order = useMemo(() => {
+    const a = [...EXAMPLES];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }, []);
+
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIdx((i) => (i + 1) % order.length), CYCLE_MS);
+    return () => clearInterval(id);
+  }, [order.length]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, paddingBottom: 6 }}>
@@ -146,7 +135,7 @@ export default function EmptyMyTasksState() {
       {/* Spacer — pushes the examples section down, away from the button */}
       <div style={{ height: 30 }} />
 
-      {/* Floating balloons — each bubble rises individually, one after another */}
+      {/* Single rising bubble — only one exists at a time, so no overlap is possible */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 14 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
@@ -154,23 +143,8 @@ export default function EmptyMyTasksState() {
           </span>
         </div>
 
-        <div className="j-empty-float" style={{ height: 200 }}>
-          {bubbles.map((ex, i) => (
-            <span
-              key={i}
-              className="j-empty-chip"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: `${ex.left}%`,
-                animation: `jEmptyFloat ${ex.duration}s linear infinite`,
-                animationDelay: `${ex.delay}s`,
-                animationFillMode: 'both',
-              }}
-            >
-              {ex.emoji} {ex.text}
-            </span>
-          ))}
+        <div className="j-empty-stage" style={{ height: 170 }}>
+          <span key={idx} className="j-empty-chip">{order[idx]}</span>
         </div>
       </div>
 
