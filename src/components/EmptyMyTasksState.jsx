@@ -30,9 +30,9 @@ const SPECIALS = [
   { emoji: '⚡', text: 'הכי מהיר ומשתלם' },
 ];
 
-const LANES = [14, 38, 62, 86];   // 4 fixed horizontal lanes → max 4 bubbles, one per lane
-const DURATION = 10;              // seconds per bubble rise (uniform speed)
-const STEP = DURATION / LANES.length; // 2.5s between launches → 4 evenly spread
+const LANES = [16, 50, 84];      // 3 wide-spaced lanes → one bubble per lane, no overlap
+const DURATION = 9;               // seconds per bubble rise (uniform speed)
+const STEP = DURATION / LANES.length; // 3s between launches → max 3 on screen (≤4)
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -61,12 +61,12 @@ const CSS = `
     mask-image: linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%);
   }
   .j-empty-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(255,255,255,0.78);
-    border: 1px solid rgba(226,234,245,0.6);
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.82);
+    border: 1px solid rgba(226,234,245,0.7);
     border-radius: 999px;
-    padding: 5px 10px;
-    font-size: 11px; font-weight: 600; color: #64748b;
+    padding: 4px 9px;
+    font-size: 10.5px; font-weight: 600; color: #475569;
     white-space: nowrap;
     box-shadow: 0 1px 4px rgba(15,40,107,0.05);
   }
@@ -82,20 +82,12 @@ const CSS = `
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
 
-  // 4 fixed lanes (one bubble per lane at any time) + uniform duration + evenly
-  // staggered delays → exactly 4 bubbles max on screen, never overlapping.
+  // 3 wide-spaced lanes (one bubble per lane at any time) + uniform duration +
+  // staggered delays → max 3 bubbles on screen, never overlapping horizontally.
   const bubbles = useMemo(() => {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     const items = [];
-    let sIdx = 0;
-    for (let i = 0; i < 12; i++) {
-      if (i > 0 && i % 5 === 0) {
-        items.push({ ...SPECIALS[sIdx % SPECIALS.length], special: true });
-        sIdx++;
-      } else {
-        items.push(shuffled[i % shuffled.length]);
-      }
-    }
+    for (let i = 0; i < 12; i++) items.push(shuffled[i % shuffled.length]);
     return items.map((b, i) => ({
       ...b,
       left: LANES[i % LANES.length],
@@ -150,8 +142,8 @@ export default function EmptyMyTasksState() {
         </button>
       </Link>
 
-      {/* Fill the empty space — push examples down and use a taller float area */}
-      <div style={{ height: 16 }} />
+      {/* Spacer — pushes the examples section down, away from the button */}
+      <div style={{ height: 30 }} />
 
       {/* Floating balloons — each bubble rises individually, one after another */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
