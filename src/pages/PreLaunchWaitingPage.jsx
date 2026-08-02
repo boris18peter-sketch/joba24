@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { useAuth } from '@/lib/AuthContext';
 import VerifyModal from '@/components/VerifyModal';
+import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import GoldBadge from '@/components/GoldBadge';
 import VerifiedBadge from '@/components/VerifiedBadge';
@@ -322,6 +323,14 @@ export default function PreLaunchWaitingPage({ me }) {
             <Clock size={12} color="#fbbf24" />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24' }}>ממתין לאישור · השקה בקרוב</span>
           </div>
+        </div>
+
+        {/* Official store download buttons */}
+        <div style={{ marginTop: 22 }}>
+          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
+            הורד את האפליקציה ותישאר מעודכן
+          </div>
+          <StoreDownloadButtons size="md" />
         </div>
       </div>
 

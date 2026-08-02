@@ -30,9 +30,9 @@ const SPECIALS = [
   { emoji: '⚡', text: 'הכי מהיר ומשתלם' },
 ];
 
-const LANES = [16, 50, 84];      // 3 wide-spaced lanes → one bubble per lane, no overlap
-const DURATION = 9;               // seconds per bubble rise (uniform speed)
-const STEP = DURATION / LANES.length; // 3s between launches → max 3 on screen (≤4)
+const LANES = [24, 76];          // 2 wide-spaced lanes → one bubble per lane, never overlaps (any screen width)
+const DURATION = 8;               // seconds per bubble rise (uniform speed)
+const STEP = DURATION / LANES.length; // 4s between launches → max 2 on screen (≤4)
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
