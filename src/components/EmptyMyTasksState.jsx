@@ -22,11 +22,11 @@ const EXAMPLES = [
   '🚙 הסעת ילד',
 ];
 
-// 3 fixed lanes, evenly spread. One bubble per lane at a time, plus a 4th
-// that shares a lane but sits at a very different height → max 4 visible,
-// never colliding horizontally (lanes far apart) or vertically (same-lane
-// bubbles are ~75% of the travel apart).
-const LANES = [18, 50, 82];
+// Random horizontal position per bubble — organic, never rigid/grid-like.
+// Safety: the 4 alive bubbles are always at distinct heights (25% of travel
+// apart) because all share the same DURATION + STEP. That vertical spacing
+// (~60px) is larger than a bubble's height (~30px), so two bubbles never
+// collide even if they happen to land at the same X.
 const DURATION = 8;   // seconds per bubble rise (uniform speed)
 const STEP = 2;       // launch a new bubble every 2s → 8/2 = 4 alive max
 const COUNT = 12;    // total bubbles rendered (enough variety, loops via infinite)
@@ -79,7 +79,7 @@ export default function EmptyMyTasksState() {
     const shuffled = [...EXAMPLES].sort(() => Math.random() - 0.5);
     return Array.from({ length: COUNT }, (_, i) => ({
       text: shuffled[i % shuffled.length],
-      left: LANES[i % LANES.length],
+      left: 14 + Math.random() * 72, // random 14%–86% — keeps it in view & organic
       delay: i * STEP,
     }));
   }, []);
