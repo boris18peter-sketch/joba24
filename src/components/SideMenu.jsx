@@ -154,20 +154,6 @@ export default function SideMenu({ open, onClose }) {
               {t('nav_admin')}
             </Link>
           }
-          {isAuthenticated && me?.role === 'admin' &&
-          <Link to="/admin/agent-referrals" onClick={onClose}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
-            background: location.pathname === '/admin/agent-referrals' ? 'rgba(251,191,36,0.15)' : 'transparent',
-            color: '#fbbf24',
-            fontWeight: 700, fontSize: 14, textDecoration: 'none',
-            borderLeft: location.pathname === '/admin/agent-referrals' ? '3px solid #fbbf24' : '3px solid transparent',
-            opacity: 0.85
-          }}>
-              <Users size={18} />
-              דוח הפניות סוכנים
-            </Link>
-          }
           {/* Agent link — shown only to agents */}
           {isAuthenticated && me?.role === 'agent' &&
           <Link to="/agent-dashboard" onClick={onClose}

@@ -164,7 +164,7 @@ const AuthenticatedApp = () => {
               ? { duration: 0.12, ease: 'easeOut' }
               : { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.22 }
           }
-          style={{ position: 'absolute', inset: 0, willChange: 'transform' }}
+          style={{ position: 'absolute', inset: 0 }}
         >
           <Routes location={location}>
             <Route path="/r/:code" element={<ReferralRedirect />} />

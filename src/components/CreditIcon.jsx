@@ -1,6 +1,15 @@
+import { useId } from 'react';
+
 // ג'יטון קרדיט צהוב + כחול עם J כחול
+// Gradient IDs are unique per instance (useId) so multiple coins on the same
+// page (header + wallet + packages) never collide and reference the wrong def —
+// this keeps the coin face yellow and the J blue in every context.
 export default function CreditIcon({ size = 36, style = {} }) {
   const s = Math.round(size * 1.3);
+  const raw = useId();
+  const uid = raw.replace(/:/g, '');
+  const coinGrad = `coinGrad_${uid}`;
+  const edgeGrad = `edgeGrad_${uid}`;
   return (
     <span
       style={{
@@ -30,10 +39,10 @@ export default function CreditIcon({ size = 36, style = {} }) {
         <ellipse cx="16" cy="19" rx="13" ry="4" fill="#0a52b0" />
 
         {/* Coin side edge gradient */}
-        <rect x="3" y="15" width="26" height="4" fill="url(#edgeGrad)" />
+        <rect x="3" y="15" width="26" height="4" fill={`url(#${edgeGrad})`} />
 
         {/* Main coin face - צהוב */}
-        <ellipse cx="16" cy="15" rx="13" ry="13" fill="url(#coinGrad)" />
+        <ellipse cx="16" cy="15" rx="13" ry="13" fill={`url(#${coinGrad})`} />
 
         {/* Inner ring highlight */}
         <ellipse cx="16" cy="15" rx="10" ry="10" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" />
@@ -56,12 +65,12 @@ export default function CreditIcon({ size = 36, style = {} }) {
         </text>
 
         <defs>
-          <radialGradient id="coinGrad" cx="35%" cy="35%" r="75%">
+          <radialGradient id={coinGrad} cx="35%" cy="35%" r="75%">
             <stop offset="0%" stopColor="#fef3c7" />
             <stop offset="50%" stopColor="#fbbf24" />
             <stop offset="100%" stopColor="#f59e0b" />
           </radialGradient>
-          <linearGradient id="edgeGrad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={edgeGrad} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#1a6fd4" />
             <stop offset="100%" stopColor="#0a3d82" />
           </linearGradient>

@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import GoldBadge from '@/components/GoldBadge';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
+import AgentReferralsTab from '@/components/AgentReferralsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -33,12 +34,14 @@ function TabButton({ active, onClick, children }) {
   );
 }
 
-function TaskRow({ task }) {
+function TaskRow({ task, onStatusChange, onDelete }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
   const sc = STATUS_COLORS[task.status] || STATUS_COLORS.OPEN;
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', marginBottom: 8, overflow: 'hidden' }}>
-      <div onClick={() => setOpen(v => !v)} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div onClick={() => { setOpen(v => !v); setConfirmDel(false); }} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{task.client_name} · {task.created_date ? format(new Date(task.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
@@ -48,13 +51,41 @@ function TaskRow({ task }) {
         {open ? <ChevronUp size={14} color="#94a3b8" /> : <ChevronDown size={14} color="#94a3b8" />}
       </div>
       {open && (
-        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-2)' }}>
+        <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-2)' }} onClick={e => e.stopPropagation()}>
           {task.description && <div><strong>תיאור:</strong> {task.description}</div>}
           {task.location_name && <div><strong>מיקום:</strong> {task.location_name}</div>}
           {task.category && <div><strong>קטגוריה:</strong> {task.category}</div>}
           {task.worker_name && <div><strong>עובד:</strong> {task.worker_name}</div>}
           {task.expires_at && <div><strong>פג תוקף:</strong> {format(new Date(task.expires_at), 'dd/MM/yyyy HH:mm')}</div>}
           <div style={{ fontSize: 10, color: '#cbd5e1' }}>ID: {task.id}</div>
+
+          {/* Admin controls */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)' }}>שינוי סטטוס:</span>
+            <select
+              value={task.status}
+              disabled={busy}
+              onChange={async (e) => { setBusy(true); await onStatusChange(task, e.target.value); setBusy(false); }}
+              style={{ height: 34, borderRadius: 10, border: '1px solid var(--border-1)', padding: '0 10px', fontSize: 12, color: 'var(--text-1)', outline: 'none', background: 'var(--surface-2)' }}
+            >
+              {Object.entries(STATUS_COLORS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+            {busy && <Loader2 size={14} className="animate-spin" color="#1a6fd4" />}
+          </div>
+
+          {confirmDel ? (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button onClick={async () => { setBusy(true); await onDelete(task); setBusy(false); setConfirmDel(false); }} disabled={busy}
+                style={{ flex: 1, height: 36, borderRadius: 10, background: '#dc2626', color: 'white', border: 'none', fontWeight: 800, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <><Trash2 size={13} /> מחק לצמיתות</>}
+              </button>
+              <button onClick={() => setConfirmDel(false)} style={{ height: 36, padding: '0 14px', borderRadius: 10, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>ביטול</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDel(true)} style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 12px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+              <Trash2 size={13} /> מחיקת משימה
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -591,6 +622,28 @@ export default function AdminDashboard() {
     );
   };
 
+  const handleTaskStatusChange = async (task, newStatus) => {
+    try {
+      await base44.entities.Task.update(task.id, { status: newStatus });
+      queryClient.setQueryData(['adminTasks'], (old = []) =>
+        old.map(t => t.id === task.id ? { ...t, status: newStatus } : t)
+      );
+      toast.success('סטטוס עודכן');
+    } catch (e) {
+      toast.error('שגיאה: ' + (e.message || 'לא ניתן לעדכן'));
+    }
+  };
+
+  const handleTaskDelete = async (task) => {
+    try {
+      await base44.entities.Task.delete(task.id);
+      queryClient.setQueryData(['adminTasks'], (old = []) => old.filter(t => t.id !== task.id));
+      toast.success('המשימה נמחקה');
+    } catch (e) {
+      toast.error('שגיאה: ' + (e.message || 'לא ניתן למחוק'));
+    }
+  };
+
   const filteredTasks = allTasks.filter(t => {
     const q = taskSearch.toLowerCase().replace('#', '');
     const matchQ = !q ||
@@ -668,6 +721,9 @@ export default function AdminDashboard() {
         <TabButton active={tab === 'notifications'} onClick={() => setTab('notifications')}>
           <Bell size={13} style={{ display: 'inline', marginLeft: 4 }} /> התראות
         </TabButton>
+        <TabButton active={tab === 'referrals'} onClick={() => setTab('referrals')}>
+          <TrendingUp size={13} style={{ display: 'inline', marginLeft: 4 }} /> הפניות סוכנים
+        </TabButton>
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
@@ -692,7 +748,7 @@ export default function AdminDashboard() {
             ) : (
               <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{filteredTasks.length} משימות</div>
             )}
-            {filteredTasks.map(task => <TaskRow key={task.id} task={task} />)}
+            {filteredTasks.map(task => <TaskRow key={task.id} task={task} onStatusChange={handleTaskStatusChange} onDelete={handleTaskDelete} />)}
           </>
         )}
 
@@ -957,6 +1013,11 @@ export default function AdminDashboard() {
         {/* NOTIFICATIONS MANAGER TAB */}
         {tab === 'notifications' && (
           <NotificationManagerTab />
+        )}
+
+        {/* REFERRALS TAB */}
+        {tab === 'referrals' && (
+          <AgentReferralsTab />
         )}
       </div>
     </div>
