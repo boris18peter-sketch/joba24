@@ -181,6 +181,7 @@ export default function EmptyMyTasksState() {
                 left: `${ex.left}%`,
                 animation: `jEmptyFloat ${ex.duration}s linear infinite`,
                 animationDelay: `${ex.delay}s`,
+                animationFillMode: 'both',
               }}
             >
               <span style={{ fontSize: 12.5, opacity: 0.85 }}>{ex.emoji}</span>
