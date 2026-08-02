@@ -11,6 +11,7 @@ import VerifyModal from '@/components/VerifyModal';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
+import TrustChecklist from '@/components/TrustChecklist';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
@@ -273,6 +274,9 @@ export default function Profile() {
 
         {/* Trust Bar */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
+
+        {/* Trust improvement checklist — private profile only */}
+        <TrustChecklist user={me} reviews={reviews} tasks={workerTasks} />
 
         {/* About + Skills + Cities — connected in one card */}
         <div style={{

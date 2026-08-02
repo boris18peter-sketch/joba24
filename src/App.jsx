@@ -48,6 +48,7 @@ const PublicProfile = lazy(() => import('@/pages/PublicProfile'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
+const AgentReferralsReport = lazy(() => import('@/pages/AgentReferralsReport'));
 const QADashboard = lazy(() => import('@/pages/QADashboard'));
 const Terms = lazy(() => import('@/pages/Terms'));
 const Privacy = lazy(() => import('@/pages/Privacy'));
@@ -189,6 +190,7 @@ const AuthenticatedApp = () => {
                 <Route path="/chats" element={<ChatInbox />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/agent-referrals" element={<AgentReferralsReport />} />
                 <Route path="/agent-dashboard" element={<AgentDashboard />} />
                 <Route path="/qa" element={<QADashboard />} />
               </Route>

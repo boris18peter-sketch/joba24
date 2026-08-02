@@ -181,8 +181,8 @@ export default function WorkerProfile() {
   return (
     <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir="rtl">
 
-      {/* ── Header ── */}
-      <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* ── Header — sticky along the whole page ── */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate(-1)} style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
         </button>

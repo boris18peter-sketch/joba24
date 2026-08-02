@@ -60,27 +60,23 @@ export default function CreditBalancePill({ credits, locked = 0, onClick, onLock
         data-credit-pill="true"
         onClick={onClick}
         style={{
-          background: glowing
-            ? 'linear-gradient(135deg, #fde68a, #fbbf24)'
-            : '#fbbf24',
-          color: '#1a3a6b',
-          border: 'none',
-          height: 36,
-          padding: '0 12px',
-          borderRadius: 12,
-          fontWeight: 900,
-          fontSize: 14,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          boxShadow: glowing
-            ? '0 2px 16px rgba(251,191,36,0.7), 0 0 0 3px rgba(251,191,36,0.2)'
-            : '0 2px 8px rgba(251,191,36,0.35)',
-          whiteSpace: 'nowrap',
-          transition: 'box-shadow 0.3s ease, background 0.3s ease',
-          WebkitTapHighlightColor: 'transparent',
-          animation: glowing ? 'creditPulse 0.45s cubic-bezier(0.34,1.6,0.64,1)' : undefined,
+        background: '#fbbf24',
+        color: '#1a3a6b',
+        border: 'none',
+        height: 36,
+        padding: '0 12px',
+        borderRadius: 12,
+        fontWeight: 900,
+        fontSize: 14,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 5,
+        boxShadow: '0 2px 8px rgba(251,191,36,0.35)',
+        whiteSpace: 'nowrap',
+        transition: 'box-shadow 0.3s ease',
+        WebkitTapHighlightColor: 'transparent',
+        animation: glowing ? 'creditPulse 0.45s cubic-bezier(0.34,1.6,0.64,1)' : undefined,
         }}
       >
         <CreditIcon size={16} />
