@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 
-// Realistic task examples — each prefixed with "צריך" for natural phrasing
+// Combined task examples — all prefixed with "צריך" for natural phrasing.
+// Includes the long-sentence examples + the short emoji-tagged ones.
 const EXAMPLES = [
   'צריך מנגליסט לשעתיים',
   'צריך מישהו שישמור על הכלב',
@@ -17,13 +18,28 @@ const EXAMPLES = [
   'צריך צלם לקליפ',
   'צריך עזרה בפירוק ארון בגדים',
   'צריך עזרה להתקין מנורה',
+  'צריך תיקון ברז 🚰',
+  'צריך ניקיון דירה 🧹',
+  'צריך הובלת מקרר 🚚',
+  'צריך צביעת חדר 🎨',
+  'צריך הרכבת מדף 🪛',
+  'צריך הסעה לשדה 🚗',
+  'צריך איסוף חבילה 📦',
+  'צריך תיקון דלת 🚪',
+  'צריך גיזום עץ 🌿',
+  'צריך פתירת סתימה 🔧',
+  'צריך פירוק ארון 🪑',
+  'צריך החלפת מנעול 🔐',
+  'צריך מילוי גז ❄️',
+  'צריך ניקיון חלון 🪟',
+  'צריך הסעת ילד 🚙',
 ];
 
-// Timing: each example is on screen for DISPLAY ms, then a GAP ms of empty stage
-// before the next one appears. This guarantees only ONE example is visible at any
-// moment — no overlap is physically possible.
-const DISPLAY = 4200; // ms — bubble rise + hold + fade
-const GAP = 1100;     // ms — empty stage between examples (≥ 1 second)
+// Wheel geometry & timing
+const ITEM_H = 52;       // px per example row
+const VISIBLE = 3;       // rows visible (center highlighted)
+const SPEED = 1600;      // ms between auto-advances (faster rotation)
+const PAUSE = 2800;      // ms to pause auto-play after user interacts
 
 const CSS = `
   @keyframes jEmptySlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -33,65 +49,106 @@ const CSS = `
     0%, 100% { transform: scale(1); box-shadow: 0 14px 34px rgba(26,111,212,0.42); }
     50% { transform: scale(1.025); box-shadow: 0 22px 48px rgba(26,111,212,0.6); }
   }
-  @keyframes jEmptyRise {
-    0%   { opacity: 0; transform: translateY(18px); }
-    14%  { opacity: 1; transform: translateY(0); }
-    78%  { opacity: 1; transform: translateY(-6px); }
-    100% { opacity: 0; transform: translateY(-22px); }
-  }
   .j-empty-headline { animation: jEmptySlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both; }
   .j-empty-desc { animation: jEmptyFadeIn 0.4s ease 0.1s both; }
   .j-empty-cta-wrap { animation: jEmptyCtaIn 0.4s cubic-bezier(0.34,1.3,0.64,1) 0.2s both; }
   .j-empty-cta { animation: jEmptyPulse 7s ease-in-out 1.2s infinite; }
   .j-empty-bubbles { animation: jEmptyFadeIn 0.4s ease 0.3s both; }
   .j-empty-trust { animation: jEmptyFadeIn 0.4s ease 0.4s both; }
-  .j-empty-stage {
+
+  .j-wheel {
     position: relative;
-    height: 64px;
+    height: ${ITEM_H * VISIBLE}px;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+  }
+  .j-wheel::-webkit-scrollbar { display: none; }
+  .j-wheel-item {
+    height: ${ITEM_H}px;
+    scroll-snap-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    font-size: 15px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-align: center;
+    padding: 0 24px;
+    transition: color 0.2s ease, transform 0.2s ease, font-weight 0.2s ease;
+    box-sizing: border-box;
   }
-  .j-empty-chip {
-    display: inline-flex; align-items: center; gap: 8px;
+  .j-wheel-item.is-active {
+    color: #0f1e40;
+    font-weight: 800;
+    transform: scale(1.04);
+  }
+  .j-wheel-band {
+    position: absolute;
+    left: 50%;
+    top: ${ITEM_H}px;
+    height: ${ITEM_H}px;
+    width: 92%;
+    transform: translateX(-50%);
+    border-radius: 999px;
     background: rgba(255,255,255,0.96);
     border: 1px solid rgba(226,234,245,0.9);
-    border-radius: 999px;
-    padding: 9px 18px;
-    font-size: 15px; font-weight: 700; color: #1e3a5f;
-    white-space: nowrap;
     box-shadow: 0 6px 18px rgba(15,40,107,0.10);
-    animation: jEmptyRise ${DISPLAY}ms cubic-bezier(0.16,1,0.3,1) both;
+    pointer-events: none;
+    z-index: 0;
   }
-  .j-empty-chip-dot {
-    width: 7px; height: 7px; border-radius: 999px;
-    background: #1a6fd4; flex-shrink: 0;
-    box-shadow: 0 0 0 3px rgba(26,111,212,0.12);
-  }
+  .j-wheel-track { position: relative; z-index: 1; }
 `;
 
 export default function EmptyMyTasksState() {
   const { t } = useLanguage();
-  const [index, setIndex] = useState(0);
+  const scrollRef = useRef(null);
+  const pausedUntilRef = useRef(0);
+  const [active, setActive] = useState(0);
 
-  // Stable shuffled order per mount — feels organic but deterministic
-  const order = useMemo(() => {
-    const a = [...EXAMPLES];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }, []);
+  // Render the list 3× for a seamless infinite loop (start in the middle copy)
+  const items = useMemo(() => [...EXAMPLES, ...EXAMPLES, ...EXAMPLES], []);
+  const len = EXAMPLES.length;
+  const startOffset = len * ITEM_H; // begin at middle copy
 
-  // Advance to next example only after display + gap → exactly one on screen
+  // Initialize scroll position on mount
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = startOffset;
+    setActive(Math.round(el.scrollTop / ITEM_H) + 1);
+  }, [startOffset]);
+
+  // Auto-play — advances one row per tick, pauses while/after user interacts
   useEffect(() => {
     const id = setInterval(() => {
-      setIndex(i => (i + 1) % order.length);
-    }, DISPLAY + GAP);
+      if (Date.now() < pausedUntilRef.current) return;
+      const el = scrollRef.current;
+      if (!el) return;
+      const curRound = Math.round(el.scrollTop / ITEM_H);
+      const targetIdx = curRound + 1;
+      if (targetIdx >= len * 2) {
+        // Seamless loop: jump back one full copy (identical content, invisible)
+        el.scrollTop = (targetIdx - len) * ITEM_H;
+      } else {
+        el.scrollTo({ top: targetIdx * ITEM_H, behavior: 'smooth' });
+      }
+    }, SPEED);
     return () => clearInterval(id);
-  }, [order.length]);
+  }, [len]);
+
+  // Track active row on scroll for center-highlight styling
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setActive(Math.round(el.scrollTop / ITEM_H) + 1);
+  };
+
+  // Pause auto-play on manual interaction (touch / wheel)
+  const pauseAuto = () => { pausedUntilRef.current = Date.now() + PAUSE; };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, paddingBottom: 6 }}>
@@ -142,20 +199,29 @@ export default function EmptyMyTasksState() {
       {/* Spacer */}
       <div style={{ height: 30 }} />
 
-      {/* Single rotating example — only one on screen at a time */}
+      {/* Rotating examples wheel — auto-runs, user can swipe up/down */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 14 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#94a3b8', background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 999, padding: '4px 11px' }}>
-            💡 דוגמאות למשימות
+            💡 דוגמאות למשימות · גלול לראות עוד
           </span>
         </div>
 
-        <div className="j-empty-stage">
-          {/* key forces the rise animation to restart per example */}
-          <span key={index} className="j-empty-chip">
-            <span className="j-empty-chip-dot" />
-            {order[index]}
-          </span>
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          onTouchStart={pauseAuto}
+          onWheel={pauseAuto}
+          className="j-wheel"
+        >
+          <div className="j-wheel-band" />
+          <div className="j-wheel-track">
+            {items.map((text, i) => (
+              <div key={i} className={`j-wheel-item${i === active ? ' is-active' : ''}`}>
+                {text}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
