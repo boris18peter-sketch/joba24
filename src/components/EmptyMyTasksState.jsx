@@ -6,18 +6,18 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 // Combined task examples — all prefixed with "צריך" for natural phrasing.
 // Includes the long-sentence examples + the short emoji-tagged ones.
 const EXAMPLES = [
-  'צריך מנגליסט לשעתיים',
-  'צריך מישהו שישמור על הכלב',
-  'צריך שטיפה לרכב עד הבית',
-  'צריך להוביל מקרר לתל אביב',
-  'צריך ניקוי לספות בבית',
-  'צריך עזרה בתליית טלוויזיה חדשה',
-  'צריך בייביסיטר להערב',
-  'צריך גנן לגיזום וסידור הגינה',
-  'צריך אינסטלטור דחוף לפתירת סתימה',
-  'צריך צלם לקליפ',
-  'צריך עזרה בפירוק ארון בגדים',
-  'צריך עזרה להתקין מנורה',
+  'צריך מנגליסט לשעתיים 🍢',
+  'צריך מישהו שישמור על הכלב 🐕',
+  'צריך שטיפה לרכב עד הבית 🚿',
+  'צריך להוביל מקרר לתל אביב 🚚',
+  'צריך ניקוי לספות בבית 🛋️',
+  'צריך עזרה בתליית טלוויזיה חדשה 📺',
+  'צריך בייביסיטר להערב 🍼',
+  'צריך גנן לגיזום וסידור הגינה 🌳',
+  'צריך אינסטלטור דחוף לפתירת סתימה 🔧',
+  'צריך צלם לקליפ 📸',
+  'צריך עזרה בפירוק ארון בגדים 🚪',
+  'צריך עזרה להתקין מנורה 💡',
   'צריך תיקון ברז 🚰',
   'צריך ניקיון דירה 🧹',
   'צריך הובלת מקרר 🚚',
@@ -75,21 +75,39 @@ const CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13.5px;
+    gap: 7px;
+    font-size: 13px;
     font-weight: 500;
-    color: #b8c3d4;
+    color: #9aa6ba;
     text-align: center;
-    padding: 0 20px;
-    transition: color 0.25s ease;
+    padding: 0 16px;
+    transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease;
     box-sizing: border-box;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: 100%;
   }
-  .j-wheel-item.is-active {
-    color: #3b5577;
+  .j-wheel-item > span.j-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #ffffff;
+    border: 1px solid #e8eef7;
+    border-radius: 999px;
+    padding: 7px 15px;
+    max-width: 94%;
+    box-shadow: 0 1px 3px rgba(15,40,107,0.05);
+    transition: color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .j-wheel-item.is-active > span.j-bubble {
+    border-color: #c9dcf3;
+    color: #2c4566;
     font-weight: 600;
+    box-shadow: 0 3px 10px rgba(26,111,212,0.10);
   }
 `;
 
@@ -192,8 +210,8 @@ export default function EmptyMyTasksState() {
       {/* Rotating examples wheel — auto-runs, user can swipe up/down */}
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#aab4c6', letterSpacing: 0.2 }}>
-            דוגמאות · גלול לראות עוד
+          <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', letterSpacing: 0.2 }}>
+            דוגמאות למשימות · גלול לראות עוד
           </span>
         </div>
 
@@ -206,7 +224,7 @@ export default function EmptyMyTasksState() {
         >
           {items.map((text, i) => (
             <div key={i} className={`j-wheel-item${i === active ? ' is-active' : ''}`}>
-              {text}
+              <span className="j-bubble">{text}</span>
             </div>
           ))}
         </div>
@@ -217,7 +235,7 @@ export default function EmptyMyTasksState() {
 
       {/* Trust message */}
       <p className="j-empty-trust" style={{ fontSize: 13, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
-        💪 אנשים מפרסמים משימות — ותמיד מגיע מישהו לעזור.
+        אלפי אנשים מפרסמים משימות — ותמיד מגיע מישהו לעזור.
       </p>
     </div>
   );
