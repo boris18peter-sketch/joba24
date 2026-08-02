@@ -9,28 +9,30 @@ export default function StoreDownloadButtons({
   dark = false,
 }) {
   const sizes = {
-    sm: { height: 44, padX: 12, gap: 8, icon: 20, topText: 7, bigText: 12 },
-    md: { height: 52, padX: 15, gap: 10, icon: 24, topText: 8, bigText: 14 },
-    lg: { height: 60, padX: 18, gap: 12, icon: 28, topText: 9, bigText: 16 },
+    sm: { height: 42, padX: 14, gap: 9, icon: 20, text: 13 },
+    md: { height: 50, padX: 18, gap: 10, icon: 24, text: 15 },
+    lg: { height: 58, padX: 22, gap: 12, icon: 28, text: 17 },
   }[size];
 
   const badgeBase = {
     display: 'inline-flex',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: sizes.gap,
     height: sizes.height,
     padding: `0 ${sizes.padX}px`,
-    borderRadius: 12,
+    borderRadius: 13,
     background: '#000',
     color: '#fff',
     textDecoration: 'none',
     flex: '1 1 0',
-    maxWidth: 180,
+    maxWidth: 170,
     minWidth: 0,
     boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
     border: '1px solid rgba(255,255,255,0.12)',
     transition: 'transform 0.12s ease, opacity 0.12s ease',
     WebkitTapHighlightColor: 'transparent',
+    whiteSpace: 'nowrap',
   };
 
   const Apple = (
@@ -50,15 +52,8 @@ export default function StoreDownloadButtons({
     </svg>
   );
 
-  const Text = ({ small, big }) => (
-    <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1, textAlign: 'right', minWidth: 0 }}>
-      <span style={{ fontSize: sizes.topText, opacity: 0.82, fontWeight: 500 }}>{small}</span>
-      <span style={{ fontSize: sizes.bigText, fontWeight: 700, letterSpacing: 0.2 }}>{big}</span>
-    </span>
-  );
-
   return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: align === 'center' ? 'center' : 'flex-start', flexWrap: 'nowrap', width: '100%', maxWidth: 380, margin: align === 'center' ? '0 auto' : undefined }}>
+    <div style={{ display: 'flex', gap: 10, justifyContent: align === 'center' ? 'center' : 'flex-start', flexWrap: 'nowrap', width: '100%', maxWidth: 360, margin: align === 'center' ? '0 auto' : undefined }}>
       <a
         href={appStoreUrl || '#'}
         target="_blank"
@@ -70,7 +65,7 @@ export default function StoreDownloadButtons({
         onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
       >
         {Apple}
-        <Text small="Download on the" big="App Store" />
+        <span style={{ fontSize: sizes.text, fontWeight: 600, letterSpacing: 0.3 }}>App Store</span>
       </a>
       <a
         href={playStoreUrl || '#'}
@@ -83,7 +78,7 @@ export default function StoreDownloadButtons({
         onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
       >
         {GooglePlay}
-        <Text small="GET IT ON" big="Google Play" />
+        <span style={{ fontSize: sizes.text, fontWeight: 600, letterSpacing: 0.3 }}>Google Play</span>
       </a>
     </div>
   );
