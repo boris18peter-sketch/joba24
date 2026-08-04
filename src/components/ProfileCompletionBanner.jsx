@@ -12,6 +12,7 @@ export default function ProfileCompletionBanner({ me }) {
   return (
     <Link
       to="/join"
+      id="onboarding-profile-banner"
       dir="rtl"
       style={{
         display: 'block',
