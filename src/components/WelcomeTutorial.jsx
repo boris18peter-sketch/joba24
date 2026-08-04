@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, X, Briefcase, Zap, Coins, ShieldCheck, Sparkles } from 'lucide-react';
@@ -84,7 +84,6 @@ export default function WelcomeTutorial() {
   const [rect, setRect] = useState(null);
   const [animDir, setAnimDir] = useState(1);
   const [spotReady, setSpotReady] = useState(false);
-  const measuredRef = useRef(false);
 
   const totalSteps = CAROUSEL_STEPS.length + SPOTLIGHT_STEPS.length;
 
@@ -100,30 +99,45 @@ export default function WelcomeTutorial() {
   const spotIdx = step - CAROUSEL_STEPS.length;
   const currentSpot = isSpotlight ? SPOTLIGHT_STEPS[spotIdx] : null;
 
-  // Measure spotlight target
+  // Measure spotlight target. Retries a few times in case the target mounts late
+  // (e.g. task cards still loading). ALWAYS becomes "ready" so the overlay never
+  // stays invisible-and-blocking — if the target isn't found, a centered fallback
+  // tooltip is shown instead, with a visible dim and a finish button.
   const measureTarget = useCallback(() => {
-    if (!isSpotlight || !currentSpot) { setRect(null); return; }
+    if (!isSpotlight || !currentSpot) { setRect(null); setSpotReady(true); return; }
     const r = getRect(currentSpot.targetId);
     setRect(r);
-    setSpotReady(!!r);
+    setSpotReady(true);
   }, [isSpotlight, currentSpot]);
 
   useEffect(() => {
-    if (!visible) return;
-    if (isSpotlight) {
-      measuredRef.current = false;
-      const t = setTimeout(() => measureTarget(), 500);
-      return () => clearTimeout(t);
-    }
-  }, [step, visible, isSpotlight, measureTarget]);
+    if (!visible || !isSpotlight || !currentSpot) return;
+    setSpotReady(false);
+    setRect(null);
+    let attempts = 0;
+    let timer;
+    const tryMeasure = () => {
+      const r = getRect(currentSpot.targetId);
+      if (r || attempts >= 4) {
+        setRect(r);
+        setSpotReady(true);
+        return;
+      }
+      attempts++;
+      timer = setTimeout(tryMeasure, 250);
+    };
+    timer = setTimeout(tryMeasure, 200);
+    return () => clearTimeout(timer);
+  }, [step, visible, isSpotlight, currentSpot]);
 
   useEffect(() => {
     if (!visible || !isSpotlight) return;
-    window.addEventListener('resize', measureTarget);
-    window.addEventListener('scroll', measureTarget, true);
+    const handler = () => measureTarget();
+    window.addEventListener('resize', handler);
+    window.addEventListener('scroll', handler, true);
     return () => {
-      window.removeEventListener('resize', measureTarget);
-      window.removeEventListener('scroll', measureTarget, true);
+      window.removeEventListener('resize', handler);
+      window.removeEventListener('scroll', handler, true);
     };
   }, [visible, isSpotlight, measureTarget]);
 
@@ -177,7 +191,7 @@ export default function WelcomeTutorial() {
     const isBelow = currentSpot.tooltip === 'below';
 
     return createPortal(
-      <div style={{ position: 'fixed', inset: 0, zIndex: 999999, pointerEvents: 'all', opacity: spotReady ? 1 : 0, transition: 'opacity 0.3s ease' }} dir="rtl">
+      <div style={{ position: 'fixed', inset: 0, zIndex: 999999, pointerEvents: spotReady ? 'all' : 'none', opacity: spotReady ? 1 : 0, transition: 'opacity 0.3s ease' }} dir="rtl">
         {hasRect && <>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: spotY, background: 'rgba(4,11,31,0.82)' }} />
           <div style={{ position: 'absolute', top: spotY + spotH, left: 0, right: 0, bottom: 0, background: 'rgba(4,11,31,0.82)' }} />
