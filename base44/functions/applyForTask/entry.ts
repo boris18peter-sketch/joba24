@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 /**
  * applyForTask — Worker applies for an open task.
  * 1. Validates task is OPEN and no duplicate active application
- * 2. Deducts application credits (5% of price, min 1)
+ * 2. Deducts application credits (configurable % of price, configurable min)
  * 3. Freezes price on task if auto_bump enabled and this is the first applicant
  * 4. Creates the TaskApplication record
  */
@@ -30,8 +31,9 @@ Deno.serve(async (req) => {
     const alreadyActive = existing.find(a => a.status === 'pending' || a.status === 'approved');
     if (alreadyActive) return Response.json({ error: 'already_applied' }, { status: 409 });
 
-    // Calculate credits: Round(price * 0.05), minimum 1
-    const creditsRequired = Math.max(1, Math.round(task.price * 0.05));
+    // Calculate credits from configurable settings: Round(price * %), minimum min
+    const settings = await getJobaSettings(base44);
+    const creditsRequired = Math.max(settings.application_fee_min, Math.round(task.price * settings.application_fee_percent / 100));
 
     // Fetch fresh worker data for credits check
     const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });

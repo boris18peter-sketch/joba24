@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 /**
  * Called after a review is submitted.
  * If worker received a 5-star rating from the client → grant loyalty bonus.
- * Bonus = credits_charged * 0.1 (no rounding, raw float).
+ * Bonus = credits_charged * loyalty_reward_percent (configurable), min loyalty_reward_min.
  * 
  * Payload: { taskId, workerId, rating }
  */
@@ -46,7 +47,9 @@ Deno.serve(async (req) => {
     // If no credits were charged, grant a minimum flat bonus of 1 for 5-star work
     const effectiveCharged = creditsCharged > 0 ? creditsCharged : 1;
 
-    const bonus = Math.max(1, Math.round(effectiveCharged * 0.1));
+    // Load configurable loyalty reward settings
+    const settings = await getJobaSettings(base44);
+    const bonus = Math.max(settings.loyalty_reward_min, Math.round(effectiveCharged * settings.loyalty_reward_percent / 100));
 
     // Fetch worker's current balance
     const users = await base44.asServiceRole.entities.User.filter({ id: workerId });
@@ -65,7 +68,7 @@ Deno.serve(async (req) => {
       type: 'Loyalty_Reward',
       task_id: taskId,
       task_title: taskTitle || '',
-      note: `בונוס מקצועיות - דירוג 5 כוכבים (10% מ-${creditsCharged} ג'ובות)`,
+      note: `בונוס מקצועיות - דירוג 5 כוכבים (${settings.loyalty_reward_percent}% מ-${creditsCharged} ג'ובות)`,
       balance_after: newBalance,
     });
 

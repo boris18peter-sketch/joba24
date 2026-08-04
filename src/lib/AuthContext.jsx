@@ -94,14 +94,10 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
 
-      // Grant signup bonus if first time (no credits yet)
-      if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
-        base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
-      }
-
-      // Referral: if user arrived via ?ref=AGENT_CODE, save it to their profile
-      // Read from BOTH URL params and localStorage — CaptureRefCode may not have run yet
-      // (AuthProvider's useEffect runs before CaptureRefCode's, since it's the parent)
+      // Referral: if user arrived via ?ref=AGENT_CODE, save it to their profile BEFORE
+      // granting the signup bonus, so grantSignupBonus can detect the referral and add
+      // the extra referral bonus. Read from BOTH URL params and localStorage —
+      // CaptureRefCode may not have run yet (AuthProvider runs before it).
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const refFromUrl = urlParams.get('ref');
@@ -114,6 +110,12 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (refErr) {
         console.error('[Joba24] Auth: failed to apply referral code:', refErr?.message);
+      }
+
+      // Grant signup bonus if first time (no credits yet) — runs AFTER the referral
+      // code is saved so the configurable referral bonus is applied for referred users.
+      if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
+        base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
       }
 
       // Link this device's ReferralEvents to the authenticated user (pre-registration downloads)

@@ -9,6 +9,7 @@ import PageHeader from '@/components/PageHeader';
 import GoldBadge from '@/components/GoldBadge';
 import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
+import JobaSettingsTab from '@/components/JobaSettingsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -724,6 +725,9 @@ export default function AdminDashboard() {
         <TabButton active={tab === 'referrals'} onClick={() => setTab('referrals')}>
           <TrendingUp size={13} style={{ display: 'inline', marginLeft: 4 }} /> הפניות סוכנים
         </TabButton>
+        <TabButton active={tab === 'joba_settings'} onClick={() => setTab('joba_settings')}>
+          <Coins size={13} style={{ display: 'inline', marginLeft: 4 }} /> הגדרות ג'ובות
+        </TabButton>
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
@@ -1018,6 +1022,11 @@ export default function AdminDashboard() {
         {/* REFERRALS TAB */}
         {tab === 'referrals' && (
           <AgentReferralsTab />
+        )}
+
+        {/* JOBA SETTINGS TAB */}
+        {tab === 'joba_settings' && (
+          <JobaSettingsTab />
         )}
       </div>
     </div>

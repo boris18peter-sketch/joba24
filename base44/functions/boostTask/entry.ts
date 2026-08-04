@@ -1,10 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-
-const BOOST_COST = 5;
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 /**
- * boostTask — Deducts 5 credits from the task owner and updates the task's boost metadata.
- * All credit operations go through service-role for atomicity and security.
+ * boostTask — Deducts credits from the task owner and updates the task's boost metadata.
+ * Cost is configurable via JobaSettings. All credit operations go through service-role.
  */
 Deno.serve(async (req) => {
   try {
@@ -44,6 +43,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Load configurable boost cost
+    const settings = await getJobaSettings(base44);
+    const BOOST_COST = settings.boost_cost;
+
     // Fetch fresh user data for credits check
     const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
     const userData = users[0];
@@ -78,7 +81,7 @@ Deno.serve(async (req) => {
     ]);
 
     console.log(`✅ Boost applied to task ${taskId} by user ${user.id} (${BOOST_COST} credits)`);
-    return Response.json({ success: true, credits_remaining: newBalance });
+    return Response.json({ success: true, credits_remaining: newBalance, cost: BOOST_COST });
 
   } catch (error) {
     console.error('❌ boostTask error:', error);

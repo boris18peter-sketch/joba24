@@ -1,10 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 /**
- * deductStoryCredits — Deducts 10 credits for a Story task publication.
- * Called after task creation succeeds. Idempotent: only charges once per task.
+ * deductStoryCredits — Deducts credits for a Story task publication.
+ * Cost is configurable via JobaSettings. Called after task creation succeeds.
+ * Idempotent: only charges once per task.
  */
-const STORY_COST = 10;
 
 Deno.serve(async (req) => {
   try {
@@ -24,6 +25,10 @@ Deno.serve(async (req) => {
     if (existing.some(tx => tx.note?.includes('סטורי'))) {
       return Response.json({ success: true, note: 'Already charged' });
     }
+
+    // Load configurable story cost
+    const settings = await getJobaSettings(base44);
+    const STORY_COST = settings.story_cost;
 
     // Fetch fresh credits
     const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
@@ -46,7 +51,7 @@ Deno.serve(async (req) => {
       note: `עלות פרסום סטורי: ${taskTitle || 'משימה'}`,
     });
 
-    console.log(`✅ Story credits deducted for user ${user.id}, task ${taskId}`);
+    console.log(`✅ Story credits deducted for user ${user.id}, task ${taskId} (${STORY_COST})`);
     return Response.json({ success: true, credits_remaining: newBalance });
 
   } catch (error) {

@@ -1,6 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-
-const SIGNUP_BONUS = 60;
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -18,20 +17,31 @@ Deno.serve(async (req) => {
       return Response.json({ message: 'Bonus already granted', credits: freshUser.worker_credits });
     }
 
+    // Load configurable bonuses
+    const settings = await getJobaSettings(base44);
+    const isReferred = !!(freshUser.referred_by_agent_code);
+    const baseBonus = settings.signup_bonus;
+    const referralBonus = isReferred ? settings.referral_signup_bonus : 0;
+    const totalBonus = baseBonus + referralBonus;
+
     // Use service role to update credits reliably
-    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: SIGNUP_BONUS });
+    await base44.asServiceRole.entities.User.update(user.id, { worker_credits: totalBonus });
 
     // Log the transaction
+    const noteParts = [`בונוס הצטרפות - ${baseBonus} ג'ובות במתנה`];
+    if (isReferred && referralBonus > 0) {
+      noteParts.push(`+ ${referralBonus} בונוס הפניה דרך סוכן`);
+    }
     await base44.asServiceRole.entities.CreditTransaction.create({
       user_id: user.id,
-      amount: SIGNUP_BONUS,
+      amount: totalBonus,
       type: 'Signup_Bonus',
-      balance_after: SIGNUP_BONUS,
-      note: "בונוס הצטרפות - 60 ג'ובות במתנה",
+      balance_after: totalBonus,
+      note: noteParts.join(' '),
     });
 
-    console.log(`✅ Signup bonus granted to user ${user.id}`);
-    return Response.json({ success: true, credits: SIGNUP_BONUS });
+    console.log(`✅ Signup bonus granted to user ${user.id} (referred=${isReferred}, total=${totalBonus})`);
+    return Response.json({ success: true, credits: totalBonus, base_bonus: baseBonus, referral_bonus: referralBonus, is_referred: isReferred });
   } catch (error) {
     console.error('❌ grantSignupBonus error:', error);
     return Response.json({ error: error.message }, { status: 500 });
