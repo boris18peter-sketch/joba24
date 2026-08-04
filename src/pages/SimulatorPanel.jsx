@@ -759,15 +759,22 @@ export default function SimulatorPanel() {
 
       {/* ── SCENARIO K: Onboarding ── */}
       <Section title="🎓 Onboarding — משתמשים חדשים" icon={<Gift size={14} color="#f59e0b" />}>
+        <div style={{ fontSize: 11, color: '#b45309', padding: '5px 9px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', lineHeight: 1.5 }}>
+          הפעלת הטוטוריאל מנקה את דגל "נצפה" וטוענת את דף הבית — הטוטוריאל יופיע מחדש לבדיקה.
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
-          <Btn label="🎓 הפעל טוטוריאל" color="#f59e0b"
-            onClick={wrap(async () => {
-              await base44.auth.updateMe({ is_first_login: true });
-              toast.success('is_first_login=true');
-              setTimeout(() => navigate('/'), 500);
-            })} />
+          <Btn label="🎓 הפעל טוטוריאל מחדש" color="#f59e0b"
+            onClick={async () => {
+              localStorage.removeItem('joba_welcome_seen');
+              toast.success('הטוטוריאל יופיע בדף הבית');
+              setTimeout(() => navigate('/'), 400);
+            }} />
           <Btn label="✅ דלג טוטוריאל" color="#059669"
-            onClick={wrap(() => base44.auth.updateMe({ is_first_login: false }))} />
+            onClick={async () => {
+              localStorage.setItem('joba_welcome_seen', '1');
+              await base44.auth.updateMe({ is_first_login: false });
+              toast.success('טוטוריאל סומן כנצפה');
+            }} />
         </div>
         <Btn label="🎁 טריגר מתנת הצטרפות" color="#d97706"
           onClick={async () => {

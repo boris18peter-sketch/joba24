@@ -21,7 +21,6 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
-import CommunityTrustStrip from '@/components/CommunityTrustStrip';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
@@ -734,9 +733,6 @@ export default function HomeFeed() {
 
             {/* Stories Bar — filtered by active category; 'all' shows all stories */}
             <StoriesBar filterCategory={filters.categories?.[0] || null} currentUserId={me?.id} />
-
-            {/* Social-proof trust strip — reassures new users the community is large & safe */}
-            <CommunityTrustStrip />
 
             {isLoading ?
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
