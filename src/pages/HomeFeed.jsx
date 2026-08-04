@@ -20,6 +20,7 @@ import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
+import WelcomeTutorial from '@/components/WelcomeTutorial';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
@@ -855,6 +856,10 @@ export default function HomeFeed() {
 
 
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.categories?.[0] || null} />
+
+      {/* First-visit welcome tutorial — self-gated by localStorage, no impact on existing flows */}
+      <WelcomeTutorial />
+
       <style>{`
         @keyframes slideInFresh {
           from { opacity: 0; transform: translateY(-10px); }

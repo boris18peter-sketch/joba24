@@ -1,10 +1,10 @@
 /**
  * TaskDetailsRows — shared task detail rows used in:
- *   - TaskCard dropdown
- *   - TaskDetail info section  
+ *   - TaskCard dropdown (compact)
  *   - Chat TaskInfoPopup
- * 
- * Renders two sections: "פרטי המשימה" (icon rows) + "פרטים נוספים" (text rows + requirements)
+ *
+ * Renders clean, uniform rows matching the TaskDetail "Task Details Card" layout:
+ * each row = [icon box] + [label (small gray) + value (bold)].
  */
 import { getCategoryLabel } from '@/lib/categories';
 import { parseDescription } from '@/lib/descriptionParser';
@@ -13,16 +13,21 @@ import { getActiveRequirements } from '@/lib/requirements';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 
 const URGENCY_TAG_CONFIG = {
-  immediate: { emoji: '🔴', label: 'דחוף עכשיו', color: '#dc2626', bg: '#fff1f2', border: '#fca5a5' },
-  few_hours:  { emoji: '🟠', label: 'בשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  evening:    { emoji: '🌙', label: 'הערב', color: '#7c3aed', bg: '#faf5ff', border: '#ddd6fe' },
-  flexible:   { emoji: '🕐', label: 'גמיש', color: '#059669', bg: '#f0fdf4', border: '#a7f3d0' },
+  immediate: { emoji: '🔴', label: 'דחוף עכשיו', color: '#dc2626', bg: '#fff1f2' },
+  few_hours:  { emoji: '🟠', label: 'בשעות הקרובות', color: '#d97706', bg: '#fffbeb' },
+  evening:    { emoji: '🌙', label: 'הערב', color: '#7c3aed', bg: '#faf5ff' },
+  flexible:   { emoji: '🕐', label: 'גמיש', color: '#059669', bg: '#f0fdf4' },
 };
 
 export default function TaskDetailsRows({ task, compact = false }) {
   if (!task) return null;
 
-  // "פרטי המשימה" rows (icon rows)
+  const iconSize = compact ? 28 : 30;
+  const labelFs = 11;
+  const valueFs = compact ? 12 : 13;
+  const rowGap = compact ? 11 : 13;
+
+  // ── "פרטי המשימה" rows (with icon box) ──
   const detailRows = [];
 
   if (task.expires_at) {
@@ -40,7 +45,6 @@ export default function TaskDetailsRows({ task, compact = false }) {
     detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: 'קטגוריה', value: getCategoryLabel(task.category) });
   }
 
-  // Hourly pricing breakdown — show rate and duration when task uses hourly pricing
   if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hourly_rate && task.category_details?.hours) {
     const hrs = parseFloat(task.category_details.hours);
     const rate = Number(task.category_details.hourly_rate);
@@ -53,11 +57,14 @@ export default function TaskDetailsRows({ task, compact = false }) {
     detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: 'אמצעי תשלום', value: task.payment_method === 'Cash' ? 'מזומן' : task.payment_method });
   }
 
-  // Schedule slots — prominent display of selected service times
   const scheduleSlots = formatScheduleSlots(task.category_details?.schedule);
   if (scheduleSlots.length > 0) {
-    scheduleSlots.forEach((slot, i) => {
-      detailRows.push({ icon: '📅', iconBg: '#eff6ff', label: i === 0 ? 'מועדי השירות' : '', value: `${slot.dayLabel} · ${slot.time}`, valueColor: '#1a6fd4' });
+    detailRows.push({
+      icon: '📅', iconBg: '#eff6ff',
+      label: 'מועדי השירות',
+      value: scheduleSlots.map(s => `${s.dayLabel} · ${s.time}`).join('  ·  '),
+      valueColor: '#1a6fd4',
+      multiline: true,
     });
   }
 
@@ -80,84 +87,88 @@ export default function TaskDetailsRows({ task, compact = false }) {
   }
 
   if (task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag]) {
-    const t = URGENCY_TAG_CONFIG[task.urgency_tag];
-    detailRows.push({ icon: t.emoji, iconBg: t.bg, label: 'דחיפות', value: t.label, valueColor: t.color });
+    const tu = URGENCY_TAG_CONFIG[task.urgency_tag];
+    detailRows.push({ icon: tu.emoji, iconBg: tu.bg, label: 'דחיפות', value: tu.label, valueColor: tu.color });
   }
 
-  // "פרטים נוספים" rows
+  // ── "פרטים נוספים" rows ──
   const extraRows = [];
-  if (task.location_name) extraRows.push({ label: 'כתובת יעד', value: task.location_name });
-  if (task.address_floor) extraRows.push({ label: 'קומה', value: task.address_floor });
-  if (task.address_building) extraRows.push({ label: 'בניין', value: task.address_building });
-  if (task.address_apartment) extraRows.push({ label: 'דירה', value: task.address_apartment });
-  if (task.address_notes) extraRows.push({ label: 'הערות כתובת', value: task.address_notes });
+
+  // Full address details
+  if (task.location_name || task.address_building || task.address_floor || task.address_apartment || task.address_notes) {
+    const parts = [
+      task.location_name,
+      task.address_building && `בניין ${task.address_building}`,
+      task.address_floor && `קומה ${task.address_floor}`,
+      task.address_apartment && `דירה ${task.address_apartment}`,
+      task.address_notes,
+    ].filter(Boolean);
+    extraRows.push({ icon: '📍', iconBg: '#fff7ed', label: 'כתובת', value: parts.join(' · '), multiline: true });
+  }
+
+  // Full description (the card body shows 1-line clamp; here show full)
   if (task.description) {
     const desc = parseDescription(task.description).mainDescription;
-    if (desc) extraRows.push({ label: 'תיאור', value: desc });
+    if (desc) extraRows.push({ icon: '📝', iconBg: '#f8f9fb', label: 'תיאור מלא', value: desc, multiline: true });
   }
 
-  // Requirements — dynamically extracted from all possible requirement keys
-  const reqChecks = getActiveRequirements(task.requirements, task.category).map(r =>
+  // Requirements
+  const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
     r.value ? `${r.label}: ${r.value}` : r.label
   );
-
-  // Invoice requirement — top-level flag
-  if (task.requires_invoice) reqChecks.push('דרושה חשבונית מס');
-
-  // Verification requirement — top-level flag
-  if (task.verification_required) reqChecks.push('דרוש ווי ירוק');
-
-
+  if (task.requires_invoice) reqs.push('דרושה חשבונית מס');
+  if (task.verification_required) reqs.push('דרוש ווי ירוק');
 
   const hasDetails = detailRows.length > 0;
-  const hasExtras = extraRows.length > 0 || reqChecks.length > 0;
+  const hasExtras = extraRows.length > 0 || reqs.length > 0;
 
   if (!hasDetails && !hasExtras) return null;
 
-  const labelStyle = { fontSize: compact ? 9 : 11, color: '#b0bac8', fontWeight: 700, letterSpacing: 0.3, marginBottom: 4, paddingRight: 2 };
-  const rowContainerStyle = { display: 'flex', flexDirection: 'column', gap: 0, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f2f7' };
-  const rowStyle = (last) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: compact ? '6px 10px' : '9px 12px', background: 'var(--surface-2)', borderBottom: last ? 'none' : '1px solid #f4f6f9' });
+  const sectionLabelStyle = { fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5, marginBottom: 9 };
+
+  const Row = ({ icon, iconBg, label, value, valueColor, multiline }) => (
+    <div style={{ display: 'flex', alignItems: multiline ? 'flex-start' : 'center', gap: 9 }}>
+      <div style={{
+        width: iconSize, height: iconSize, borderRadius: 9, background: iconBg,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        fontSize: compact ? 12 : 14,
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: labelFs, color: '#94a3b8', fontWeight: 600, marginBottom: 1 }}>{label}</div>
+        <div
+          className={multiline ? 'selectable-text' : undefined}
+          style={{
+            fontSize: valueFs, fontWeight: 700, color: valueColor || 'var(--text-1)', lineHeight: 1.4,
+            overflow: multiline ? 'visible' : 'hidden',
+            textOverflow: multiline ? 'clip' : 'ellipsis',
+            whiteSpace: multiline ? 'normal' : 'nowrap',
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
       {hasDetails && (
         <>
-          <div style={labelStyle}>פרטי המשימה</div>
-          <div style={rowContainerStyle}>
-            {detailRows.map((row, i) => (
-              <div key={i} style={rowStyle(i === detailRows.length - 1)}>
-                <div style={{ fontSize: compact ? 10 : 12, color: '#94a3b8', fontWeight: 500 }}>{row.label}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ fontWeight: 700, fontSize: compact ? 11 : 13, color: row.valueColor || 'var(--text-1)' }}>{row.value}</div>
-                  <div style={{ width: compact ? 22 : 26, height: compact ? 22 : 26, borderRadius: '50%', background: row.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: compact ? 11 : 13, flexShrink: 0 }}>{row.icon}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div style={sectionLabelStyle}>פרטי המשימה</div>
+          {detailRows.map((row, i) => <Row key={`d_${i}`} {...row} multiline={row.multiline} />)}
         </>
       )}
-
       {hasExtras && (
         <>
-          <div style={{ ...labelStyle, marginTop: hasDetails ? 10 : 0 }}>פרטים נוספים</div>
-          <div style={rowContainerStyle}>
-            {extraRows.map((row, i) => (
-              <div key={i} style={rowStyle(i === extraRows.length - 1 && reqChecks.length === 0)}>
-                <div style={{ fontSize: compact ? 10 : 12, color: '#94a3b8', fontWeight: 500, flexShrink: 0 }}>{row.label}</div>
-                <div style={{ fontWeight: 600, fontSize: compact ? 11 : 13, color: 'var(--text-1)', textAlign: 'left', maxWidth: compact ? 150 : 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</div>
-              </div>
-            ))}
-            {reqChecks.map((req, i) => (
-              <div key={`req_${i}`} style={rowStyle(i === reqChecks.length - 1)}>
-                <div style={{ fontWeight: 600, fontSize: compact ? 11 : 13, color: 'var(--text-1)' }}>{req}</div>
-                <div style={{ fontSize: compact ? 11 : 13, color: '#16a34a', fontWeight: 900 }}>✓</div>
-              </div>
-            ))}
-          </div>
+          <div style={{ ...sectionLabelStyle, marginTop: hasDetails ? 2 : 0 }}>פרטים נוספים</div>
+          {extraRows.map((row, i) => <Row key={`e_${i}`} {...row} multiline />)}
+          {reqs.length > 0 && (
+            <Row icon="✅" iconBg="#f0fdf4" label="דרישות" value={reqs.join(' · ')} valueColor="#059669" multiline />
+          )}
         </>
       )}
-
-      {/* Category-specific details from structured data */}
       <CategoryDetailsView task={task} compact={compact} />
     </div>
   );
