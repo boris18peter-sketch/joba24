@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
+import { calculateTrustScore, getTrustLevel, getCompletedCount } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
-import { CheckCircle, Star, X, Shield, Phone, Briefcase, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Star, X, Shield, Briefcase, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 
 function SignalRow({ icon, label, value, sub, score, color }) {
@@ -30,15 +30,14 @@ function ImprovementGuide({ user, reviews, tasks, trustScore, mainColor, onClose
   const [showVerify, setShowVerify] = useState(false);
 
   const verified = isUserVerified(user);
-  const phoneVerified = !!user?.is_phone_verified;
-  const idPoints = (verified ? 30 : 0) + (phoneVerified ? 10 : 0);
+  const idPoints = verified ? 40 : 0;
 
-  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length || user?.tasks_completed || 0;
+  const completedCount = getCompletedCount(tasks, user);
   const taskPoints = Math.min(Math.round(completedCount * 1.5), 30);
   const tasksToMax = Math.max(0, 20 - completedCount);
 
   const rating = user?.rating || 0;
-  const ratingCount = user?.rating_count || reviews.length;
+  const ratingCount = user?.rating_count || (Array.isArray(reviews) ? reviews.length : 0);
   const ratingPoints = (rating > 0 && ratingCount >= 1) ? Math.round((rating / 5) * 30) : 0;
 
   const target = trustScore >= 95 ? 100 : 95;
@@ -46,12 +45,10 @@ function ImprovementGuide({ user, reviews, tasks, trustScore, mainColor, onClose
   const taskGapPoints = Math.max(0, 30 - taskPoints);
   const ratingGapPoints = Math.max(0, 30 - ratingPoints);
 
-  // The single most impactful next action
+  // The single most impactful next action — only actionable, real improvements
   let headline = null;
   if (!verified) {
-    headline = { icon: <Shield size={14} color="#1a6fd4" />, text: 'אמת את הזהות וצבור 30 נקודות מיד', color: '#1a6fd4', cta: () => setShowVerify(true), ctaLabel: 'אימות עכשיו' };
-  } else if (!phoneVerified) {
-    headline = { icon: <Phone size={14} color="#1a6fd4" />, text: 'אמת את מספר הטלפון (+10 נקודות)', color: '#1a6fd4' };
+    headline = { icon: <Shield size={14} color="#1a6fd4" />, text: 'אמת את הזהות וצבור 40 נקודות מיד', color: '#1a6fd4', cta: () => setShowVerify(true), ctaLabel: 'אימות עכשיו' };
   } else if (gap > 0 && taskGapPoints >= ratingGapPoints && tasksToMax > 0) {
     headline = { icon: <Briefcase size={14} color="#059669" />, text: `בצע עוד ${tasksToMax} משימות ותגיע ל-100% בניסיון`, color: '#059669' };
   } else if (gap > 0 && ratingGapPoints > 0) {
@@ -65,8 +62,8 @@ function ImprovementGuide({ user, reviews, tasks, trustScore, mainColor, onClose
       icon: <Shield size={15} color={verified ? '#059669' : '#1a6fd4'} />,
       label: 'אימות זהות',
       points: idPoints, max: 40,
-      done: verified && phoneVerified,
-      tip: verified ? 'זהותך אומתה בהצלחה ✓' : 'העלה תעודת זהות — מוסיף 30 נקודות מיד',
+      done: verified,
+      tip: verified ? 'זהותך אומתה בהצלחה ✓' : 'העלה תעודת זהות — מוסיף 40 נקודות מיד',
       cta: verified ? null : () => setShowVerify(true),
       ctaLabel: verified ? null : 'אימות',
     },
@@ -140,16 +137,16 @@ function ImprovementGuide({ user, reviews, tasks, trustScore, mainColor, onClose
 
 function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor, onClose }) {
   const [showGuide, setShowGuide] = useState(false);
-  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
+  const completedCount = getCompletedCount(tasks, user);
 
   const taskScore = Math.min(Math.round((completedCount / 20) * 100), 100);
   const taskValue = `${completedCount}`;
   const taskSub = completedCount >= 5 ? 'ניסיון מוכח בשטח' : completedCount > 0 ? 'מתחיל לצבור ניסיון' : 'אין משימות עדיין';
 
   const _verified = isUserVerified(user);
-  const idScore = _verified ? 100 : user.is_phone_verified ? 50 : 0;
-  const idValue = _verified ? '✓ אומת' : user.is_phone_verified ? 'טלפון' : 'לא';
-  const idSub = _verified ? 'מסמכי זהות אומתו' : null;
+  const idScore = _verified ? 100 : 0;
+  const idValue = _verified ? '✓ אומת' : 'לא';
+  const idSub = _verified ? 'מסמכי זהות אומתו' : 'אימות KYC בהמתנה';
 
   const rating = user.rating || 0;
   const ratingCount = user.rating_count || reviews.length;
