@@ -991,7 +991,7 @@ export default function CreateTask() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
+    <div style={{ background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }} dir="rtl">
       {showVerify && (
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
@@ -1013,7 +1013,7 @@ export default function CreateTask() {
         const filled = [form.description, form.price, form.location_name && addressConfirmed, form.payment_method].filter(Boolean).length;
         const pct = Math.round((filled / 4) * 100);
         return (
-          <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)' }}>
+          <div style={{ flexShrink: 0, background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', position: 'relative', zIndex: 5 }}>
             {/* Header row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px 12px' }}>
               <BackButton style={{ background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'none' }} iconColor="white" />
@@ -1050,7 +1050,7 @@ export default function CreateTask() {
         );
       })()}
 
-      <div className="px-4 py-4 space-y-4" style={{ paddingBottom: 'max(48px, env(safe-area-inset-bottom))' }}>
+      <div className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(48px, env(safe-area-inset-bottom))' }}>
         {/* Draft restore indicator */}
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

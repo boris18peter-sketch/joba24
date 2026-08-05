@@ -22,12 +22,17 @@ export default function Leaderboard() {
     const unsubReview = base44.entities.Review.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['all-reviews'] });
     });
-    return () => { unsubTask(); unsubReview(); };
+    const unsubUser = base44.entities.User.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    });
+    return () => { unsubTask(); unsubReview(); unsubUser(); };
   }, [queryClient]);
 
+  // Fetch COMPLETED tasks specifically (more accurate than listing all tasks) with a
+  // higher limit so a user's completed-task count matches what the Profile shows.
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['all-tasks-lb'],
-    queryFn: () => base44.entities.Task.list('-created_date', 300),
+    queryFn: () => base44.entities.Task.filter({ status: 'COMPLETED' }, '-created_date', 500),
   });
 
   const { data: reviews = [] } = useQuery({

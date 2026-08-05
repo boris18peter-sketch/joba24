@@ -48,13 +48,13 @@ function ImprovementGuide({ user, reviews, tasks, trustScore, mainColor, onClose
   // The single most impactful next action — only actionable, real improvements
   let headline = null;
   if (!verified) {
-    headline = { icon: <Shield size={14} color="#1a6fd4" />, text: 'אמת את הזהות וצבור 40 נקודות מיד', color: '#1a6fd4', cta: () => setShowVerify(true), ctaLabel: 'אימות עכשיו' };
+    headline = { icon: <Shield size={14} color="#1a6fd4" />, text: 'אמת את הזהות וצבור 40 נקודות מיד', color: '#1a6fd4', gain: 40, cta: () => setShowVerify(true), ctaLabel: 'אימות עכשיו' };
   } else if (gap > 0 && taskGapPoints >= ratingGapPoints && tasksToMax > 0) {
-    headline = { icon: <Briefcase size={14} color="#059669" />, text: `בצע עוד ${tasksToMax} משימות ותגיע ל-100% בניסיון`, color: '#059669' };
+    headline = { icon: <Briefcase size={14} color="#059669" />, text: `בצע עוד ${tasksToMax} משימות ותגיע ל-100% בניסיון`, color: '#059669', gain: taskGapPoints };
   } else if (gap > 0 && ratingGapPoints > 0) {
-    headline = { icon: <Star size={14} color="#d97706" />, text: 'שמור על דירוג גבוה ובקש ביקורות אחרי כל משימה', color: '#d97706' };
+    headline = { icon: <Star size={14} color="#d97706" />, text: 'שמור על דירוג גבוה ובקש ביקורות אחרי כל משימה', color: '#d97706', gain: ratingGapPoints };
   } else {
-    headline = { icon: <TrendingUp size={14} color="#059669" />, text: 'מצוין! הגעת לציון מקסימלי — המשך כך 🎉', color: '#059669' };
+    headline = { icon: <TrendingUp size={14} color="#059669" />, text: 'מצוין! הגעת לציון מקסימלי — המשך כך 🎉', color: '#059669', gain: 0 };
   }
 
   const steps = [
@@ -96,7 +96,7 @@ function ImprovementGuide({ user, reviews, tasks, trustScore, mainColor, onClose
             {headline.icon}
           </div>
           <span style={{ fontSize: 12.5, fontWeight: 700, color: headline.color, flex: 1 }}>{headline.text}</span>
-          {gap > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: headline.color, whiteSpace: 'nowrap' }}>+{gap}</span>}
+          {headline.gain > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: headline.color, whiteSpace: 'nowrap' }}>+{headline.gain}</span>}
           {headline.ctaLabel && (
             <span style={{ fontSize: 11, fontWeight: 800, color: headline.color, background: 'white', padding: '3px 9px', borderRadius: 8, border: `1px solid ${headline.color}33` }}>{headline.ctaLabel}</span>
           )}

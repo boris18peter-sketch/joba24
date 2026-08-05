@@ -51,24 +51,11 @@ export default function EmptySearchState({ hasFilters, onReset }) {
 
         {/* Subtitle */}
         <p style={{
-          fontSize: 13, color: 'var(--text-3)', margin: '0 0 14px',
+          fontSize: 13, color: 'var(--text-3)', margin: '0 0 24px',
           textAlign: 'center', lineHeight: 1.6, maxWidth: 260,
         }}>
           {t('no_tasks_sub')}
         </p>
-
-        {/* Trust reassurance — feels safe & active even when no results */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          background: 'linear-gradient(135deg,#f8faff,#f0fdf9)',
-          border: '1px solid var(--border-1)', borderRadius: 99,
-          padding: '8px 14px', marginBottom: 24, maxWidth: 320,
-        }}>
-          <span style={{ fontSize: 15 }}>🤝</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>
-            אלפי אנשים בקהילה מפרסמים ומבצעים משימות כל יום — גם אתה יכול!
-          </span>
-        </div>
 
         {/* Reset button — only if filter is active */}
         {hasFilters && (
