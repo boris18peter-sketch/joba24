@@ -23,6 +23,9 @@ const SEGMENT_LABELS = {
   active_poster: 'מפרסם פעיל',
   low_balance: 'יתרה נמוכה',
   no_applications_approved: 'ללא אישורים',
+  agent: 'סוכן (כולם)',
+  agent_active: 'סוכן פעיל',
+  agent_inactive: 'סוכן לא פעיל',
 };
 
 export default function NotificationManagerTab() {
@@ -315,6 +318,8 @@ const EVENT_KEY_OPTIONS = [
   'verification_approved_green', 'verification_approved_gold',
   'daily_earnings_summary', 'applications_rejected_unverified',
   'low_balance', 'retention_3days',
+  'agent_daily_referral_summary', 'agent_encourage_no_referrals',
+  'agent_encourage_active', 'agent_welcome',
 ];
 
 function ConfigEditModal({ config, onClose, onSave }) {

@@ -6,6 +6,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
  * ושולח לסוכנים עם לפחות הרשמה אחת התראת מוטיבציה עם כמות ההרשמות.
  *
  * רץ כ-scheduled automation (service role) — ללא auth משתמש.
+ *
+ * השליחה עוברת דרך notificationManager (event_key: agent_daily_referral_summary)
+ * כדי שההתראה תופיע בדשבורד המנהל (NotificationConfig + NotificationLog).
  */
 Deno.serve(async (_req) => {
   try {
@@ -46,23 +49,26 @@ Deno.serve(async (_req) => {
         const info = byAgent[code];
         const count = info.count;
 
-        let body;
-        if (count === 1) {
-          body = `הבאת הרשמה אחת חדשה היום${info.names[0] ? ` (${info.names[0]})` : ''}! 🎯 המשך לשתף את הקישור ולבנות את הרשת שלך.`;
-        } else if (count <= 3) {
-          body = `הבאת ${count} הרשמות חדשות היום! 🔥 אתה על הדרך הנכון — המשך כך!`;
-        } else {
-          body = `פנטסטי! 🚀 הבאת ${count} הרשמות חדשות היום. אתה סוכן מצטיין — המשך לדחוף!`;
-        }
+        // הכנת משתנים לתבנית ההתראה
+        const countLabel = count === 1 ? 'הרשמה' : 'הרשמות';
+        let encourage;
+        if (count === 1) encourage = '🎯';
+        else if (count <= 3) encourage = '🔥';
+        else encourage = '🚀';
 
-        await base44.asServiceRole.functions.invoke('sendPushNotification', {
+        // שליחה דרך notificationManager — נרשמת ב-NotificationLog ומופיעה בדשבורד
+        const result = await base44.asServiceRole.functions.invoke('notificationManager', {
+          event_key: 'agent_daily_referral_summary',
           user_ids: [agent.id],
-          title: `סיכום יומי: ${count} ${count === 1 ? 'הרשמה' : 'הרשמות'} היום 🌟`,
-          body,
-          url: '/agent-dashboard',
-          tag: 'agent_daily_referral_summary',
+          variables: {
+            count,
+            count_label: countLabel,
+            encourage,
+          },
         });
-        sent += 1;
+
+        // ספירת שליחות מוצלחות בלבד (sent > 0)
+        if (result?.sent > 0 || result?.eligible > 0) sent += 1;
       } catch (e) {
         console.error(`sendAgentDailyReferralSummary: failed for agent ${code}:`, e);
       }

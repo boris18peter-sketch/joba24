@@ -2,6 +2,7 @@ import { useState } from 'react';
 import moment from 'moment';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 import { RefreshCw, X, AlertTriangle, CheckCircle2, Calendar } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
@@ -40,6 +41,7 @@ export default function SubscriptionManager() {
       }, 2000);
     } catch (err) {
       console.error('Cancel failed:', err);
+      toast.error('ביטול המנוי נכשל. נסה שוב או צור קשר עם התמיכה.');
     } finally {
       setCancelling(false);
     }

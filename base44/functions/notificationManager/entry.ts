@@ -194,6 +194,43 @@ const DEFAULT_CONFIGS = {
     cooldown_minutes: 10080,
     priority: 'low',
   },
+  // ── התראות סוכנים (עידוד + דרבון) ──
+  agent_daily_referral_summary: {
+    title_template: 'סיכום יומי: {count} {count_label} היום 🌟',
+    body_template: 'הבאת {count} {count_label} חדשות היום! {encourage} המשך לשתף את הקישור ולבנות את הרשת שלך.',
+    deep_link: '/agent-dashboard',
+    tag_template: 'agent_daily_referral_summary',
+    segments: ['agent'],
+    cooldown_minutes: 0,
+    priority: 'normal',
+  },
+  agent_encourage_no_referrals: {
+    title_template: 'הרשת שלך מחכה לך! 🚀',
+    body_template: 'עדיין לא הבאת הרשמות השבוע. שתף את קישור ההפניה שלך עכשיו — כל הרשמה שווה כסף ובונה את המוניטין שלך כסוכן.',
+    deep_link: '/agent-dashboard',
+    tag_template: 'agent_encourage_no_referrals',
+    segments: ['agent_inactive'],
+    cooldown_minutes: 10080,
+    priority: 'normal',
+  },
+  agent_encourage_active: {
+    title_template: 'אתה על הדרך הנכון! 🔥',
+    body_template: 'הקישורים שלך מייצרים הרשמות. המשך לדחוף — הסוכנים המצטיינים מרוויחים הכי הרבה. בוא נראה את הדשבורד שלך.',
+    deep_link: '/agent-dashboard',
+    tag_template: 'agent_encourage_active',
+    segments: ['agent_active'],
+    cooldown_minutes: 4320,
+    priority: 'normal',
+  },
+  agent_welcome: {
+    title_template: 'ברוך הבא לצוות הסוכנים של Joba24! 🤝',
+    body_template: 'שלך להתחיל להפיץ את הקישור שלך ולבנות רשת. כל הרשמה דרכך מזכה אותך בהטבות. בוא נצפה בדשבורד.',
+    deep_link: '/agent-dashboard',
+    tag_template: 'agent_welcome',
+    segments: ['agent'],
+    cooldown_minutes: 0,
+    priority: 'high',
+  },
 };
 
 // ── זיהוי סגמנט למשתמש ──────────────────────────────────────────────────
@@ -225,6 +262,13 @@ function resolveUserSegment(user) {
 
   // פעיל כמפרסם
   if (user.posted_tasks_count && user.posted_tasks_count >= 2) segments.push('active_poster');
+
+  // סוכנים — סגמנטציה לפי תפקיד ורמת פעילות
+  if (user.role === 'agent') {
+    segments.push('agent');
+    if ((user.referral_clicks || 0) > 0) segments.push('agent_active');
+    else segments.push('agent_inactive');
+  }
 
   segments.push('all');
   return segments;

@@ -314,8 +314,8 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               </span>
             </div>
             <div style={{
-              padding: '10px 12px 0',
-              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8,
+              padding: '12px 16px 0',
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
             }}>
               {packages.map(pkg => (
                 <CreditPackageCard

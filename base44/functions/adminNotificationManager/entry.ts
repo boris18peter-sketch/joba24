@@ -90,6 +90,24 @@ const DEFAULT_SEED_CONFIGS = [
     title_template: 'מתגעגעים אליך! 👋', body_template: 'יש עשרות משימות פתוחות שמחכות לניסיון שלך. בוא לחזור לזירה!',
     deep_link: '/', tag_template: 'retention_3d',
     segments: ['experienced_worker'], is_active: true, cooldown_minutes: 10080, priority: 'low', sort_order: 60 },
+
+  // ── סוכנים — התראות דרבון אוטומטיות ──
+  { event_key: 'agent_daily_referral_summary', event_label: 'סיכום יומי הפניות לסוכן 🌟', category: 'engagement',
+    title_template: 'סיכום יומי: {count} {count_label} היום 🌟', body_template: 'הבאת {count} {count_label} חדשות היום! {encourage} המשך לשתף את הקישור ולבנות את הרשת שלך.',
+    deep_link: '/agent-dashboard', tag_template: 'agent_daily_referral_summary',
+    segments: ['agent'], is_active: true, cooldown_minutes: 0, priority: 'normal', sort_order: 70 },
+  { event_key: 'agent_encourage_no_referrals', event_label: 'עידוד סוכן ללא הפניות 🚀', category: 'engagement',
+    title_template: 'הרשת שלך מחכה לך! 🚀', body_template: 'עדיין לא הבאת הרשמות השבוע. שתף את קישור ההפניה שלך עכשיו — כל הרשמה שווה כסף ובונה את המוניטין שלך כסוכן.',
+    deep_link: '/agent-dashboard', tag_template: 'agent_encourage_no_referrals',
+    segments: ['agent_inactive'], is_active: true, cooldown_minutes: 10080, priority: 'normal', sort_order: 71 },
+  { event_key: 'agent_encourage_active', event_label: 'עידוד סוכן פעיל 🔥', category: 'engagement',
+    title_template: 'אתה על הדרך הנכון! 🔥', body_template: 'הקישורים שלך מייצרים הרשמות. המשך לדחוף — הסוכנים המצטיינים מרוויחים הכי הרבה. בוא נראה את הדשבורד שלך.',
+    deep_link: '/agent-dashboard', tag_template: 'agent_encourage_active',
+    segments: ['agent_active'], is_active: true, cooldown_minutes: 4320, priority: 'normal', sort_order: 72 },
+  { event_key: 'agent_welcome', event_label: 'ברוכים הבאים סוכן חדש 🤝', category: 'engagement',
+    title_template: 'ברוך הבא לצוות הסוכנים של Joba24! 🤝', body_template: 'שלך להתחיל להפיץ את הקישור שלך ולבנות רשת. כל הרשמה דרכך מזכה אותך בהטבות. בוא נצפה בדשבורד.',
+    deep_link: '/agent-dashboard', tag_template: 'agent_welcome',
+    segments: ['agent'], is_active: true, cooldown_minutes: 0, priority: 'high', sort_order: 73 },
 ];
 
 Deno.serve(async (req) => {

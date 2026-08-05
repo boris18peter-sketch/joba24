@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, CreditCard, Shield, Lock, RefreshCw, Smartphone, Check } from 'lucide-react';
+import { ArrowRight, Shield, Lock, RefreshCw, Smartphone, Check } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 
 const PAYMENT_METHODS = [
@@ -14,7 +14,7 @@ const PAYMENT_METHODS = [
 function MethodIcon({ type }) {
   switch (type) {
     case 'card':
-      return <CreditCard size={16} />;
+      return <span style={{ fontSize: 13, fontWeight: 800, color: 'inherit' }}>כרטיס אשראי</span>;
     case 'bit':
       return <span style={{ fontSize: 14, fontWeight: 900, color: '#0055a5', letterSpacing: 0.5 }}>Bit</span>;
     case 'paypal':
