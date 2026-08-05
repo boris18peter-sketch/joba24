@@ -22,14 +22,14 @@ export function jobasToNis(jobas) {
 }
 
 /**
- * Human label for a package — "מספיק לעבודות בשווי ₪X"
+ * Human label for a package — short, sharp value framing.
  */
 export function packageValueLabel(jobas) {
   const nis = jobasToNis(jobas);
   if (nis >= 1000) {
-    return `מספיק לעבודות בשווי ₪${(nis / 1000).toFixed(nis % 1000 === 0 ? 0 : 1)}K`;
+    return `שווה ₪${(nis / 1000).toFixed(nis % 1000 === 0 ? 0 : 1)}K עבודות`;
   }
-  return `מספיק לעבודות בשווי ₪${nis}`;
+  return `שווה ₪${nis} עבודות`;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2, TrendingUp, Lock } from 'lucide-react';
+import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2, Lock } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useAuth } from '@/lib/AuthContext';
 import useCountUp from '@/hooks/useCountUp';
@@ -167,104 +167,76 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
         {/* Header — only on browse step */}
         {step === 'browse' && (
           <>
+            {/* Compact header — title + balance inline, close button */}
             <div style={{
               background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
-              padding: '14px 20px 16px',
-              borderRadius: '0 0 28px 28px',
+              padding: '12px 18px 14px',
+              borderRadius: '0 0 24px 24px',
               position: 'relative',
               overflow: 'hidden',
             }}>
-              <div style={{
-                position: 'absolute', top: -30, left: -20,
-                width: 120, height: 120, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.06)',
-              }} />
-              <div style={{
-                position: 'absolute', bottom: -40, right: -10,
-                width: 80, height: 80, borderRadius: '50%',
-                background: 'rgba(251,191,36,0.12)',
-              }} />
+              <div style={{ position: 'absolute', top: -26, left: -16, width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+              <div style={{ position: 'absolute', bottom: -32, right: -8, width: 70, height: 70, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
 
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 40, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.3)', margin: '0 auto 14px' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <div style={{
-                      width: 34, height: 34, borderRadius: 10,
-                      background: 'rgba(255,255,255,0.15)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      border: '1px solid rgba(255,255,255,0.2)',
-                    }}>
-                      <CreditIcon size={20} />
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3 }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 10,
+                    background: 'rgba(255,255,255,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                  }}>
+                    <CreditIcon size={20} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3, lineHeight: 1.1 }}>
                       טעינת יתרת ג'ובות
                     </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
-                    <div style={{
-                      flex: 1,
-                      background: 'rgba(255,255,255,0.1)',
-                      borderRadius: 12, padding: '8px 14px',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      backdropFilter: 'blur(8px)',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                    }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: 'white', letterSpacing: -0.5 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                      <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', letterSpacing: -0.3, lineHeight: 1 }}>
                         {animatedCredits}
                       </span>
-                      <CreditIcon size={16} />
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>
-                        ג'ובות ביתרה
-                      </span>
+                      <CreditIcon size={13} />
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>ביתרה</span>
+                      {lockedJobas > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginRight: 4, background: 'rgba(217,119,6,0.25)', borderRadius: 99, padding: '1px 7px', border: '1px solid rgba(217,119,6,0.45)' }}>
+                          <Lock size={10} color="#fbbf24" strokeWidth={2.5} />
+                          <span style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24' }}>{lockedJobas}</span>
+                        </span>
+                      )}
                     </div>
-                    {lockedJobas > 0 && (
-                      <div style={{
-                        background: 'rgba(217,119,6,0.22)', borderRadius: 12, padding: '8px 12px',
-                        border: '1px solid rgba(217,119,6,0.45)',
-                        display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
-                      }}>
-                        <Lock size={13} color="#fbbf24" strokeWidth={2.5} />
-                        <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24' }}>{lockedJobas}</span>
-                      </div>
-                    )}
                   </div>
-
-                  {creditsNeeded && (
-                    <div style={{
-                      marginTop: 10, background: 'rgba(251,191,36,0.15)',
-                      border: '1px solid rgba(251,191,36,0.3)', borderRadius: 12,
-                      padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8,
-                    }}>
-                      <Zap size={14} color="#fbbf24" fill="#fbbf24" />
-                      <span style={{ fontSize: 13, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        נדרשים עוד <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={14} /></strong> ג'ובות כדי להגיש בקשה
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <button
                   onClick={handleClose}
                   style={{
-                    width: 34, height: 34, borderRadius: 11,
+                    width: 32, height: 32, borderRadius: 10,
                     background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', flexShrink: 0, marginTop: 24,
+                    cursor: 'pointer', flexShrink: 0,
                   }}
                 >
-                  <X size={16} color="white" />
+                  <X size={15} color="white" />
                 </button>
               </div>
+
+              {creditsNeeded && (
+                <div style={{
+                  marginTop: 10, background: 'rgba(251,191,36,0.15)',
+                  border: '1px solid rgba(251,191,36,0.3)', borderRadius: 10,
+                  padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
+                  position: 'relative',
+                }}>
+                  <Zap size={13} color="#fbbf24" fill="#fbbf24" />
+                  <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    נדרשים עוד <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={12} /></strong> ג'ובות כדי להגיש בקשה
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Active subscriptions — shared component (synced with Profile) */}
-            <div style={{ padding: '16px 20px 0' }}>
-              <SubscriptionManager />
-            </div>
-
-            {/* Tabs */}
-            <div style={{ padding: '16px 20px 0' }}>
+            {/* Tabs — moved up to where balance row was */}
+            <div style={{ padding: '12px 16px 0' }}>
               <div style={{
                 display: 'flex', background: 'var(--surface-3)',
                 borderRadius: 'var(--r-md)', padding: 4, gap: 4,
@@ -272,7 +244,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 <button
                   onClick={() => setTab('oneTime')}
                   style={{
-                    flex: 1, height: 42, borderRadius: 'var(--r-sm)',
+                    flex: 1, height: 40, borderRadius: 'var(--r-sm)',
                     border: 'none', cursor: 'pointer',
                     background: tab === 'oneTime' ? 'var(--surface-2)' : 'transparent',
                     boxShadow: tab === 'oneTime' ? 'var(--shadow-xs)' : 'none',
@@ -286,7 +258,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 <button
                   onClick={() => setTab('subscription')}
                   style={{
-                    flex: 1, height: 42, borderRadius: 'var(--r-sm)',
+                    flex: 1, height: 40, borderRadius: 'var(--r-sm)',
                     border: 'none', cursor: 'pointer',
                     background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
                     boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
@@ -298,6 +270,11 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   מנוי חודשי
                 </button>
               </div>
+            </div>
+
+            {/* Active subscriptions — only renders if user has one */}
+            <div style={{ padding: '10px 16px 0' }}>
+              <SubscriptionManager />
             </div>
           </>
         )}
@@ -326,34 +303,6 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   isSubscription={isSubscription}
                 />
               ))}
-            </div>
-
-            {/* Earning potential banner */}
-            <div style={{ padding: '10px 16px 0' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
-                borderRadius: 'var(--r-md)',
-                padding: '12px 14px',
-                display: 'flex', alignItems: 'center', gap: 10,
-                boxShadow: '0 4px 16px rgba(251,191,36,0.25)',
-              }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <TrendingUp size={20} color="white" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
-                    ג'ובות = עבודות = הכנסה 🚀
-                  </div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 600, marginTop: 2, lineHeight: 1.4 }}>
-                    טען יתרה, קבל משימות, והתחל להרוויח · פוטנציאל רווח פי 10 מההשקעה
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Trust features — compact */}

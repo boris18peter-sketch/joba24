@@ -8,7 +8,6 @@ import { Star, Crown, Check } from 'lucide-react';
 export default function CreditPackageCard({ pkg, selected, onSelect, isSubscription }) {
   const isPopular = pkg.badge === 'popular';
   const isBest = pkg.badge === 'best';
-  const pricePerCredit = (pkg.price / pkg.credits).toFixed(2);
 
   return (
     <button
@@ -101,25 +100,14 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         {isSubscription ? 'ג\'ובות לחודש' : 'ג\'ובות'}
       </div>
 
-      {/* Value label — how much work this covers */}
+      {/* Value label — sharp, single line */}
       <div style={{
-        fontSize: 11, fontWeight: 700,
-        color: selected ? 'rgba(255,255,255,0.9)' : 'var(--color-success)',
-        marginTop: 4, lineHeight: 1.25, textAlign: 'center',
+        fontSize: 12, fontWeight: 800,
+        color: selected ? 'rgba(255,255,255,0.95)' : 'var(--color-success)',
+        marginTop: 5, lineHeight: 1.25, textAlign: 'center',
         padding: '0 2px',
       }}>
         {packageValueLabel(pkg.credits)}
-      </div>
-
-      {/* Price-per-credit */}
-      <div style={{
-        fontSize: 11, fontWeight: 700,
-        color: selected ? 'rgba(255,255,255,0.7)' : 'var(--color-success)',
-        marginTop: 4,
-        background: selected ? 'rgba(255,255,255,0.12)' : 'var(--color-success-bg)',
-        padding: '3px 10px', borderRadius: 99,
-      }}>
-        ₪{pricePerCredit} לג'וב
       </div>
 
       {/* Price */}
