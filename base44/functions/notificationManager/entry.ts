@@ -337,7 +337,10 @@ Deno.serve(async (req) => {
 
     const sentCount = pushResult?.data?.sent ?? pushResult?.sent ?? 0;
 
-    // 5. רישום ללוג
+    // 5. רישום ללוג — reflect actual delivery: if FCM sent 0 (no device tokens),
+    // log as 'failed' so the admin dashboard shows the real status and isn't misled.
+    const deliveryStatus = sentCount > 0 ? 'sent' : 'failed';
+    const deliveryReason = sentCount === 0 ? (pushResult?.data?.reason || 'no_device_token') : null;
     for (const userId of eligibleUserIds) {
       try {
         await base44.asServiceRole.entities.NotificationLog.create({
@@ -346,7 +349,8 @@ Deno.serve(async (req) => {
           title,
           body,
           deep_link: deepLink,
-          status: 'sent',
+          status: deliveryStatus,
+          skip_reason: deliveryReason,
           task_id: task_id || null,
         });
       } catch (logErr) {

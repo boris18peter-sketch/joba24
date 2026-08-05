@@ -7,6 +7,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import SignupGiftModal from '@/components/SignupGiftModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import VerificationApprovedPopup from '@/components/VerificationApprovedPopup';
 import ApprovedPopup from '@/components/ApprovedPopup';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
@@ -530,6 +531,25 @@ export default function SimulatorPanel() {
         </div>
         <Btn label="🔐 פתח מודל אימות" color="#7c3aed" outline
           onClick={async () => navigate('/?open_verify=1')} />
+        <Btn label="🟢 אשר + הצג פופאפ ווי ירוק (זרימה מלאה)" color="#059669"
+          onClick={async () => {
+            if (me?.id) localStorage.removeItem(`joba24_verified_celebration_${me.id}`);
+            await base44.auth.updateMe({ is_verified: true, kyc_status: 'approved' });
+            toast.success('סומן כמאומת — פופאפ אמור להופיע');
+            refetchMe();
+          }} />
+        <Btn label="🏆 אשר + הצג פופאפ ווי זהב (זרימה מלאה)" color="#f59e0b"
+          onClick={async () => {
+            if (me?.id) localStorage.removeItem(`joba24_verified_celebration_${me.id}`);
+            await base44.auth.updateMe({ is_verified: true, kyc_status: 'approved', instagram_verified: true });
+            toast.success('סומן כזהב — פופאפ אמור להופיע');
+            refetchMe();
+          }} />
+        <Btn label="🔄 אפס דגל פופאפ אימות (לבדיקה חוזרת)" color="#94a3b8" small outline
+          onClick={() => {
+            if (me?.id) localStorage.removeItem(`joba24_verified_celebration_${me.id}`);
+            toast.success('דגל אופס — הפופאפ יופיע שוב באימות');
+          }} />
       </Section>
 
       {/* ── SCENARIO H: Reviews & Ratings ── */}
@@ -799,6 +819,8 @@ export default function SimulatorPanel() {
           { key: 'cancelSuccess', label: '✅ ביטול הצליח', color: '#7c3aed', desc: 'הלקוח ביטל' },
           { key: 'instantMatch', label: '⚡ עובד נמצא', color: '#0891b2', desc: 'Instant match' },
           { key: 'rating', label: '⭐ דירוג וביקורת', color: '#d97706', desc: 'לאחר השלמה' },
+          { key: 'verifyGreen', label: '🟢 ווי ירוק אושר', color: '#059669', desc: 'אימות זהות' },
+          { key: 'verifyGold', label: '🏆 ווי זהב אושר', color: '#f59e0b', desc: 'אימות + רשת' },
         ]).map(({ key, label, color, desc }) => (
           <div key={key} style={{ display: 'flex', gap: 8, alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: 6 }}>
             <button
@@ -921,6 +943,8 @@ export default function SimulatorPanel() {
       {popup === 'cancelSuccess' && <CancelSuccessPopup task={mockTask} onClose={closePopup} />}
       {popup === 'instantMatch' && <InstantMatchPopup task={{ ...mockTask, status: 'TAKEN', worker_name: me?.full_name || 'עובד בדיקה' }} onClose={closePopup} />}
       {popup === 'rating' && <RatingModal task={{ ...mockTask, status: 'COMPLETED', worker_id: me?.id, client_id: me?.id }} currentUserId={me?.id} onClose={closePopup} onDone={closePopup} />}
+      {popup === 'verifyGreen' && <VerificationApprovedPopup variant="green" onClose={closePopup} />}
+      {popup === 'verifyGold' && <VerificationApprovedPopup variant="gold" onClose={closePopup} />}
 
       {/* Quick nav */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 7, marginTop: 6 }}>

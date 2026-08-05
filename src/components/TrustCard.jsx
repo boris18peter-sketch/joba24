@@ -85,7 +85,7 @@ function NextStep({ user, completedCount, trustScore, onVerify, color }) {
   );
 }
 
-function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor, onClose }) {
+function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor, onClose, isPublic }) {
   const [showVerify, setShowVerify] = useState(false);
   const completedCount = getCompletedCount(tasks, user);
   const verified = isUserVerified(user);
@@ -170,16 +170,18 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
           />
         </div>
 
-        {/* Single next step */}
-        <NextStep
-          user={user}
-          completedCount={completedCount}
-          trustScore={trustScore}
-          onVerify={() => setShowVerify(true)}
-          color={mainColor}
-        />
+        {/* Single next step — hidden on public profiles (improvement guidance is private) */}
+        {!isPublic && (
+          <NextStep
+            user={user}
+            completedCount={completedCount}
+            trustScore={trustScore}
+            onVerify={() => setShowVerify(true)}
+            color={mainColor}
+          />
+        )}
 
-        {showVerify && (
+        {!isPublic && showVerify && (
           <VerifyModal onClose={() => { setShowVerify(false); onClose(); }} onSuccess={() => setShowVerify(false)} />
         )}
       </div>
@@ -197,7 +199,7 @@ function getBarColor(w) {
   return '#16a34a';
 }
 
-export default function TrustCard({ user, reviews = [], tasks = [] }) {
+export default function TrustCard({ user, reviews = [], tasks = [], isPublic = false }) {
   const [open, setOpen] = useState(false);
   const [displayWidth, setDisplayWidth] = useState(0);
   const animRef = useRef(null);
@@ -244,7 +246,7 @@ export default function TrustCard({ user, reviews = [], tasks = [] }) {
       </div>
 
       {open && (
-        <DetailsPopup user={user} reviews={reviews} tasks={tasks} trustScore={trustScore} trustLevel={trustLevel} mainColor={barColor} onClose={() => setOpen(false)} />
+        <DetailsPopup user={user} reviews={reviews} tasks={tasks} trustScore={trustScore} trustLevel={trustLevel} mainColor={barColor} onClose={() => setOpen(false)} isPublic={isPublic} />
       )}
     </>
   );

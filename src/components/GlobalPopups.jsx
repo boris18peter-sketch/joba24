@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { notificationStore } from '@/lib/notificationStore';
+import { useAuth } from '@/lib/AuthContext';
+import { useVerificationCelebration } from '@/hooks/useVerificationCelebration';
 import LiveNotificationPopup from '@/components/LiveNotificationPopup';
 import ReturnToTaskPopup from '@/components/ReturnToTaskPopup';
+import VerificationApprovedPopup from '@/components/VerificationApprovedPopup';
 
 /**
  * GlobalPopups — renders LiveNotificationPopup on ALL authenticated pages.
@@ -11,6 +14,8 @@ import ReturnToTaskPopup from '@/components/ReturnToTaskPopup';
  */
 export default function GlobalPopups() {
   const [notifications, setNotifications] = useState([]);
+  const { user } = useAuth();
+  const { celebration, clearCelebration } = useVerificationCelebration(user);
 
   useEffect(() => {
     return notificationStore.subscribe(setNotifications);
@@ -18,6 +23,7 @@ export default function GlobalPopups() {
 
   return (
     <>
+      {celebration && <VerificationApprovedPopup variant={celebration} onClose={clearCelebration} />}
       {notifications.length > 0 && createPortal(
         <div style={{
           position: 'fixed',

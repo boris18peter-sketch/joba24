@@ -169,8 +169,8 @@ export default function PublicProfile() {
           </a>
         )}
 
-        {/* Trust bar — computed from live reviews + completed tasks */}
-        <TrustCard user={liveUser} reviews={allReviews} tasks={completedTasks} />
+        {/* Trust bar — computed from live reviews + completed tasks. Public mode hides improvement guidance. */}
+        <TrustCard user={liveUser} reviews={allReviews} tasks={completedTasks} isPublic />
 
         {/* Bio */}
         {user.bio && (
