@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
         profile_photo: targetUser.profile_photo,
         is_verified: targetUser.is_verified,
         is_phone_verified: targetUser.is_phone_verified,
+        kyc_status: targetUser.kyc_status,
         rating: targetUser.rating,
         rating_count: targetUser.rating_count,
         tasks_completed: targetUser.tasks_completed,

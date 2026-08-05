@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Star, LogOut, Briefcase, CreditCard, ChevronLeft, Camera, Loader2,
-  Shield, X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award, Lock,
+  Shield, X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award,
 } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import VerifyModal from '@/components/VerifyModal';
@@ -113,7 +113,15 @@ export default function Profile() {
 
   const { data: workerTasks = [] } = useQuery({
     queryKey: ['workerTasks', me?.id],
-    queryFn: () => base44.entities.Task.filter({ worker_id: me.id }, '-created_date', 50),
+    queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'COMPLETED' }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 30000,
+  });
+
+  // Tasks the user posted as a client (completed) — for the "posted" stat
+  const { data: postedTasks = [] } = useQuery({
+    queryKey: ['postedTasks', me?.id],
+    queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED' }, '-created_date', 50),
     enabled: !!me?.id,
     staleTime: 30000,
   });
@@ -135,7 +143,8 @@ export default function Profile() {
     );
   }
 
-  const completedCount = workerTasks.filter(t => t.status === 'COMPLETED').length;
+  const completedCount = workerTasks.length;
+  const postedCount = postedTasks.length;
   const rating = me?.rating || 0;
   const avgRating = rating > 0 ? rating.toFixed(1) : '—';
   const initials = me?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
@@ -217,20 +226,14 @@ export default function Profile() {
           border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
         }}>
           {[
-            { value: completedCount, label: t('tasks_completed') },
-            { value: avgRating + (rating > 0 ? '★' : ''), label: t('rating') },
-            { value: me?.worker_credits ?? 100, label: t('credits'), locked: lockedJobas },
+            { value: completedCount, label: "ג'ובות בוצעו" },
+            { value: postedCount, label: "ג'ובות פורסמו" },
+            { value: avgRating + (rating > 0 ? '★' : ''), label: 'דירוג', sub: reviews.length > 0 ? `${reviews.length} ביקורות` : null },
           ].map((s, i, arr) => (
             <div key={i} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
-              <div style={{ fontSize: 17, fontWeight: 900, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                {s.value}
-                {s.locked > 0 && (
-                  <span style={{ fontSize: 9, fontWeight: 800, color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(217,119,6,0.28)', padding: '1px 6px', borderRadius: 8, border: '1px solid rgba(217,119,6,0.4)' }}>
-                    <Lock size={9} /> {s.locked}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 1 }}>{s.label}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: 'white' }}>{s.value}</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 1, lineHeight: 1.3 }}>{s.label}</div>
+              {s.sub && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>{s.sub}</div>}
             </div>
           ))}
         </div>
@@ -274,75 +277,70 @@ export default function Profile() {
         {/* Trust Bar — opens a popup with "how to improve" guide */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
 
-        {/* About + Skills + Cities — connected in one card */}
-        <div style={{
-          background: 'var(--surface-2)', borderRadius: 14,
-          border: '1px solid var(--border-1)', overflow: 'hidden',
-        }}>
-          {/* About */}
-          {me?.bio && (
-            <div style={{ padding: '14px 14px 12px', borderBottom: (categories.length > 0 || cities.length > 0) ? '1px solid var(--border-1)' : 'none' }}>
-              <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
-            </div>
-          )}
+        {/* About */}
+        {me?.bio && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>אודות</div>
+            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
+          </div>
+        )}
 
-          {/* Skills */}
-          {categories.length > 0 && (
-            <div style={{ padding: '12px 14px', borderBottom: cities.length > 0 ? '1px solid var(--border-1)' : 'none' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Award size={12} /> {t('categories') || 'תחומים'}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {categories.map(c => (
-                  <span key={c} style={{ fontSize: 12, background: '#eff6ff', color: '#1a6fd4', padding: '4px 12px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
-                    {getCategoryLabel(c)}
-                  </span>
-                ))}
-              </div>
+        {/* Categories — תחומי עיסוק (matches public profile wording) */}
+        {categories.length > 0 && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Award size={12} /> תחומי עיסוק
             </div>
-          )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {categories.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
+                  {getCategoryLabel(c)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {/* Cities */}
-          {cities.length > 0 && (
-            <div style={{ padding: '12px 14px', borderBottom: (me?.certificate_files?.length > 0 || me?.certificates?.length > 0) ? '1px solid var(--border-1)' : 'none' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={12} /> ערים לביצוע משימות
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {cities.map(c => (
-                  <span key={c} style={{ fontSize: 12, background: '#f0fdf4', color: '#059669', padding: '4px 12px', borderRadius: 20, fontWeight: 600, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <MapPin size={10} /> {c}
-                  </span>
-                ))}
-              </div>
+        {/* Cities — אזורי פעילות (matches public profile wording) */}
+        {cities.length > 0 && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MapPin size={12} /> אזורי פעילות
             </div>
-          )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {cities.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={11} /> {c}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-          {/* Certificates — inside the same card, below cities */}
-          {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
-            <div style={{ padding: '12px 14px' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <FileText size={12} /> תעודות מקצוע
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {(me?.certificate_files || []).map(doc => (
-                  <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', textDecoration: 'none' }}>
-                    <FileText size={15} color="#16a34a" style={{ flexShrink: 0 }} />
-                    <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                    <span style={{ fontSize: 10, color: '#86efac' }}>›</span>
-                  </a>
-                ))}
-                {(me?.certificates || []).length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                    {me.certificates.map(cert => (
-                      <span key={cert} style={{ fontSize: 12, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '4px 10px', borderRadius: 20, fontWeight: 600 }}>✅ {cert}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
+        {/* Certificates — תעודות מקצוע */}
+        {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <FileText size={12} /> תעודות מקצוע
             </div>
-          )}
-        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(me?.certificate_files || []).map(doc => (
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
+                </a>
+              ))}
+              {me?.certificates?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {me.certificates.map(cert => (
+                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>✅ {cert}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Media Gallery */}
         {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
@@ -350,8 +348,7 @@ export default function Profile() {
            background: 'var(--surface-2)', borderRadius: 14,
            border: '1px solid var(--border-1)', padding: 14,
          }}>
-           <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 4 }}>גלריית מדיה</div>
-           <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 10, lineHeight: 1.4 }}>סרטונים ומדיה שמסבירים עלייך</div>
+           <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 10 }}>גלריית מדיה</div>
            <ProfileMediaGallery
              media={[
                ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
@@ -376,7 +373,7 @@ export default function Profile() {
           <MenuRow icon={Briefcase} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
           <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
           <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
-          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label="היסטוריה וביקורות" sub={`${completedCount} משימות · ${reviews.length} ביקורות`} onClick={() => setShowUnifiedHistory(true)} />
+          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label="היסטוריה וביקורות" sub={`${completedCount + postedCount} משימות · ${reviews.length} ביקורות`} onClick={() => setShowUnifiedHistory(true)} />
           <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => base44.auth.logout()} chevronColor="#fca5a5" />
           <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
         </div>
@@ -395,7 +392,7 @@ export default function Profile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
-              <TaskReviewHistory tasks={workerTasks.filter(t => t.status === 'COMPLETED')} reviews={reviews} />
+              <TaskReviewHistory tasks={[...workerTasks, ...postedTasks]} reviews={reviews} userId={me.id} />
             </div>
           </div>
         </div>,

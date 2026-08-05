@@ -102,7 +102,14 @@ export default function PublicProfile() {
     ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
     : '—';
   const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
-  const trustScore = calculateTrustScore(user, { tasks: completedTasks, reviews: allReviews });
+  // Compute trust score from LIVE data (reviews + completed tasks) so the meter
+  // always reflects the user's real, current state — never stale User fields.
+  const liveUser = {
+    ...user,
+    rating: allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length) : (user.rating || 0),
+    rating_count: allReviews.length || user.rating_count || 0,
+  };
+  const trustScore = calculateTrustScore(liveUser, { tasks: completedTasks, reviews: allReviews });
   const trustLevel = getTrustLevel(trustScore);
 
   return (
@@ -162,8 +169,8 @@ export default function PublicProfile() {
           </a>
         )}
 
-        {/* Trust bar */}
-        <TrustCard user={user} reviews={allReviews} tasks={completedTasks} />
+        {/* Trust bar — computed from live reviews + completed tasks */}
+        <TrustCard user={liveUser} reviews={allReviews} tasks={completedTasks} />
 
         {/* Bio */}
         {user.bio && (
@@ -172,7 +179,58 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* Media Gallery (unified with intro video) */}
+        {/* Categories — תחומי עיסוק */}
+        {user.preferred_categories?.length > 0 && (
+          <SectionCard title="תחומי עיסוק">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {user.preferred_categories.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
+                  {getCategoryLabel(c)}
+                </span>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Cities — אזורי פעילות */}
+        {user.preferred_cities?.length > 0 && (
+          <SectionCard title="אזורי פעילות">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {user.preferred_cities.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={11} /> {c}
+                </span>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Certificates — תעודות מקצוע */}
+        {(user.certificates?.length > 0 || user.certificate_files?.length > 0) && (
+          <SectionCard title="תעודות מקצוע">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(user.certificate_files || []).map(doc => (
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="#16a34a" />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
+                  <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
+                </a>
+              ))}
+              {user.certificates?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {user.certificates.map(cert => (
+                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
+                      ✅ {cert}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Media Gallery */}
         {(user.profile_media?.length > 0 || user.intro_video_url) && (
           <SectionCard title="גלריית מדיה">
             <ProfileMediaGallery
@@ -207,57 +265,6 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* Cities */}
-        {user.preferred_cities?.length > 0 && (
-          <SectionCard title="אזורי פעילות">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.preferred_cities.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {c}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* Categories */}
-        {user.preferred_categories?.length > 0 && (
-          <SectionCard title="תחומי עיסוק">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
-                  {getCategoryLabel(c)}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* Certificates (unified) */}
-        {(user.certificates?.length > 0 || user.certificate_files?.length > 0) && (
-          <SectionCard title="תעודות מקצוע">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(user.certificate_files || []).map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
-                  <FileText size={16} color="#16a34a" />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
-                </a>
-              ))}
-              {user.certificates?.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {user.certificates.map(cert => (
-                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
-                      ✅ {cert}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </SectionCard>
-        )}
-
         {/* Unified History & Reviews button */}
         {(completedTasks.length > 0 || allReviews.length > 0) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
@@ -272,7 +279,7 @@ export default function PublicProfile() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>היסטוריה וביקורות</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length} משימות · {allReviews.length} ביקורות · {avgRating !== '—' ? `${avgRating}★ ממוצע` : ''}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length + postedTasks.length} משימות · {allReviews.length} ביקורות · {avgRating !== '—' ? `${avgRating}★ ממוצע` : ''}</div>
               </div>
               <ChevronLeft size={16} color="var(--text-3)" />
             </button>
@@ -301,7 +308,7 @@ export default function PublicProfile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
-              <TaskReviewHistory tasks={completedTasks} reviews={allReviews} />
+              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={allReviews} userId={userId} />
             </div>
           </div>
         </div>,
