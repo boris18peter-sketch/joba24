@@ -12,14 +12,16 @@ import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { getCategoryLabel } from '@/lib/categories';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function ReviewChips({ review }) {
+  const { t } = useLanguage();
   const chips = [
-    review.arrived_on_time && { label: '⏱️ הגיע בזמן', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-    review.professional && { label: '💼 מקצועי', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: '💬 תקשורת', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
-    review.fair_pricing && { label: '💰 מחיר הוגן', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-    review.would_hire_again && { label: '🔁 ממליץ', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+    review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+    review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    review.good_communication && { label: t('rc_communication'), color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+    review.would_hire_again && { label: t('recommended'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   ].filter(Boolean);
   if (!chips.length) return null;
   return (
@@ -48,6 +50,7 @@ function SectionCard({ title, children }) {
 
 export default function PublicProfile() {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('id');
   const taskId = searchParams.get('taskId');
@@ -91,10 +94,10 @@ export default function PublicProfile() {
   );
 
   if (!user) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 12 }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: 12 }} dir={isRTL ? 'rtl' : 'ltr'}>
       <div style={{ fontSize: 36 }}>🔍</div>
-      <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-2)' }}>המשתמש לא נמצא</p>
-      <button onClick={() => navigate(-1)} style={{ fontSize: 14, fontWeight: 700, color: '#1a6fd4', background: 'none', border: 'none', cursor: 'pointer' }}>חזרה</button>
+      <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-2)' }}>{t('pp_user_not_found')}</p>
+      <button onClick={() => navigate(-1)} style={{ fontSize: 14, fontWeight: 700, color: '#1a6fd4', background: 'none', border: 'none', cursor: 'pointer' }}>{t('pp_back')}</button>
     </div>
   );
 
@@ -113,13 +116,13 @@ export default function PublicProfile() {
   const trustLevel = getTrustLevel(trustScore);
 
   return (
-    <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir="rtl">
+    <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ── Header ── */}
       <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={() => navigate(-1)} style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
         </button>
-        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>פרופיל משתמש</span>
+        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{t('pp_user_profile')}</span>
       </div>
 
       {/* ── Avatar + Name ── */}
@@ -146,9 +149,9 @@ export default function PublicProfile() {
         {/* Stats */}
         <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>
           {[
-            { value: completedTasks.length, label: "ג'ובות בוצעו" },
-            { value: postedTasks.length, label: "ג'ובות פורסמו" },
-            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: 'דירוג', sub: allReviews.length > 0 ? `${allReviews.length} ביקורות` : null },
+            { value: completedTasks.length, label: t('pr_jobs_done') },
+            { value: postedTasks.length, label: t('pr_jobs_posted') },
+            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: t('pr_rating'), sub: allReviews.length > 0 ? `${allReviews.length} ${t('pp_reviews')}` : null },
           ].map((s, i, arr) => (
             <div key={i} style={{ flex: 1, padding: '12px 6px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
               <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>{s.value}</div>
@@ -174,14 +177,14 @@ export default function PublicProfile() {
 
         {/* Bio */}
         {user.bio && (
-          <SectionCard title="אודות">
+          <SectionCard title={t('pr_about')}>
             <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{user.bio}</p>
           </SectionCard>
         )}
 
         {/* Categories — תחומי עיסוק */}
         {user.preferred_categories?.length > 0 && (
-          <SectionCard title="תחומי עיסוק">
+          <SectionCard title={t('pr_professions')}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_categories.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
@@ -194,7 +197,7 @@ export default function PublicProfile() {
 
         {/* Cities — אזורי פעילות */}
         {user.preferred_cities?.length > 0 && (
-          <SectionCard title="אזורי פעילות">
+          <SectionCard title={t('pr_areas')}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_cities.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -207,14 +210,14 @@ export default function PublicProfile() {
 
         {/* Certificates — תעודות מקצוע */}
         {(user.certificates?.length > 0 || user.certificate_files?.length > 0) && (
-          <SectionCard title="תעודות מקצוע">
+          <SectionCard title={t('pr_certs')}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(user.certificate_files || []).map(doc => (
                 <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
                   style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
                   <FileText size={16} color="#16a34a" />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
+                  <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
                 </a>
               ))}
               {user.certificates?.length > 0 && (
@@ -232,7 +235,7 @@ export default function PublicProfile() {
 
         {/* Media Gallery */}
         {(user.profile_media?.length > 0 || user.intro_video_url) && (
-          <SectionCard title="גלריית מדיה">
+          <SectionCard title={t('pr_media_gallery')}>
             <ProfileMediaGallery
               media={[
                 ...(user.intro_video_url ? [{ type: 'video', url: user.intro_video_url }] : []),
@@ -245,7 +248,7 @@ export default function PublicProfile() {
 
         {/* Social Links — only VERIFIED platforms are shown as links */}
         {(user.instagram_verified || user.facebook_verified || user.tiktok_verified) && (
-          <SectionCard title="רשתות חברתיות">
+          <SectionCard title={t('pp_social_networks')}>
             <div style={{ display: 'flex', gap: 8 }}>
               {[
                 { key: 'instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
@@ -258,7 +261,7 @@ export default function PublicProfile() {
                     <p.icon size={18} color="white" />
                     <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#d97706', border: '2px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={9} color="white" /></span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>מאומת</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>{t('pp_verified')}</span>
                 </a>
               ))}
             </div>
@@ -278,8 +281,8 @@ export default function PublicProfile() {
                 <Clock size={18} color="#7c3aed" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>היסטוריה וביקורות</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length + postedTasks.length} משימות · {allReviews.length} ביקורות · {avgRating !== '—' ? `${avgRating}★ ממוצע` : ''}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length + postedTasks.length} {t('tasks')} · {allReviews.length} {t('pp_reviews')} · {avgRating !== '—' ? `${avgRating}★ ${t('pp_history_avg')}` : ''}</div>
               </div>
               <ChevronLeft size={16} color="var(--text-3)" />
             </button>
@@ -290,7 +293,7 @@ export default function PublicProfile() {
         {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && allReviews.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-3)' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>המשתמש טרם מילא פרטי פרופיל</div>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{t('pp_user_no_profile')}</div>
           </div>
         )}
 
@@ -302,12 +305,12 @@ export default function PublicProfile() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
           <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריה וביקורות</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</span>
               <button onClick={() => setShowUnifiedHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={16} color="#64748b" />
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
+            <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
               <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={allReviews} userId={userId} />
             </div>
           </div>

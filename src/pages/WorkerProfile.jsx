@@ -12,6 +12,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const INITIAL_CITIES_COUNT = 12;
 
@@ -29,12 +30,13 @@ function SectionCard({ title, children, style }) {
 }
 
 function ReviewChips({ review }) {
+  const { t } = useLanguage();
   const chips = [
-    review.arrived_on_time && { label: '⏱️ הגיע בזמן', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-    review.professional && { label: '💼 מקצועי', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: '💬 תקשורת', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
-    review.fair_pricing && { label: '💰 מחיר הוגן', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-    review.would_hire_again && { label: '🔁 ממליץ', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+    review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+    review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    review.good_communication && { label: t('rc_communication'), color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+    review.would_hire_again && { label: t('recommended'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   ].filter(Boolean);
   if (!chips.length) return null;
   return (
@@ -49,6 +51,7 @@ function ReviewChips({ review }) {
 export default function WorkerProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const [searchParams] = useSearchParams();
   const viewUserId = searchParams.get('id');
   const taskId = searchParams.get('taskId');
@@ -102,7 +105,7 @@ export default function WorkerProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) {
-      toast.error('הסרטון גדול מדי (מקסימום 50MB)');
+      toast.error(t('wp_video_too_large'));
       return;
     }
     setUploadingVideo(true);
@@ -110,7 +113,7 @@ export default function WorkerProfile() {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setForm(f => ({ ...f, intro_video_url: file_url }));
     } catch {
-      toast.error('שגיאה בהעלאת הסרטון');
+      toast.error(t('wp_video_upload_error'));
     }
     setUploadingVideo(false);
   };
@@ -146,7 +149,7 @@ export default function WorkerProfile() {
     mutationFn: () => base44.auth.updateMe(form),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success('הפרופיל עודכן!');
+      toast.success(t('wp_profile_updated'));
       navigate('/profile');
     },
   });
@@ -179,7 +182,7 @@ export default function WorkerProfile() {
   const hasCerts = (form.certificate_files || []).length > 0 || (currentUser?.certificates || []).length > 0;
 
   return (
-    <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir="rtl">
+    <div style={{ background: 'var(--surface-1)', paddingBottom: 40 }} dir={isRTL ? 'rtl' : 'ltr'}>
 
       {/* ── Header — sticky along the whole page ── */}
       <div style={{ position: 'sticky', top: 0, zIndex: 50, background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -187,7 +190,7 @@ export default function WorkerProfile() {
           <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
         </button>
         <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)', flex: 1 }}>
-          {isViewingOther ? (currentUser?.full_name || 'פרופיל עובד') : 'עריכת פרופיל'}
+          {isViewingOther ? (currentUser?.full_name || t('wp_worker_profile')) : t('wp_edit_profile')}
         </span>
         {!isViewingOther && (
           <button
@@ -195,7 +198,7 @@ export default function WorkerProfile() {
             disabled={saveMutation.isPending}
             style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> שמור</>}
+            {saveMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> {t('wp_save')}</>}
           </button>
         )}
       </div>
@@ -236,9 +239,9 @@ export default function WorkerProfile() {
         {isViewingOther && (
           <div style={{ display: 'flex', gap: 0, marginTop: 16, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 300 }}>
             {[
-              { value: completedCount, label: 'ג\'ובות' },
-              { value: avgRating ? `${avgRating}★` : '—', label: 'דירוג' },
-              { value: workerReviews.length, label: 'ביקורות' },
+              { value: completedCount, label: t('credits') },
+              { value: avgRating ? `${avgRating}★` : '—', label: t('rating') },
+              { value: workerReviews.length, label: t('pp_reviews') },
             ].map((s, i, arr) => (
               <div key={i} style={{ flex: 1, padding: '10px 6px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
                 <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-1)' }}>{s.value}</div>
@@ -253,17 +256,17 @@ export default function WorkerProfile() {
 
         {/* ── About: bio + intro video + phone (edit mode) ── */}
         {!isViewingOther && (
-          <SectionCard title="אודות">
+          <SectionCard title={t('pr_about')}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Textarea
-                placeholder="ספר קצת על עצמך, הניסיון שלך..."
+                placeholder={t('wp_about_ph')}
                 value={form.bio}
                 onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
                 className="bg-secondary border-0 rounded-xl resize-none"
                 rows={3}
               />
               <Input
-                placeholder="טלפון ליצירת קשר"
+                placeholder={t('wp_phone_ph')}
                 value={form.phone}
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                 className="bg-secondary border-0 rounded-xl h-12"
@@ -275,14 +278,14 @@ export default function WorkerProfile() {
 
         {/* ── About: view mode (bio only) ── */}
         {isViewingOther && form.bio && (
-          <SectionCard title="אודות">
+          <SectionCard title={t('pr_about')}>
             <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{form.bio}</p>
           </SectionCard>
         )}
 
         {/* ── Media Gallery (unified with intro video) ── */}
         {(!isViewingOther || (form.profile_media || []).length > 0) && (
-          <SectionCard title="גלריית מדיה">
+          <SectionCard title={t('pr_media_gallery')}>
             <ProfileMediaGallery
               media={form.profile_media}
               isEditing={!isViewingOther}
@@ -294,7 +297,7 @@ export default function WorkerProfile() {
 
         {/* Phone — revealed only for approved worker on caller's task */}
         {isViewingOther && currentUser?.phone && (
-          <SectionCard title="יצירת קשר">
+          <SectionCard title={t('wp_contact')}>
             <a href={`tel:${currentUser.phone}`} dir="ltr" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
               <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Phone size={18} color="#16a34a" />
@@ -305,7 +308,7 @@ export default function WorkerProfile() {
         )}
 
         {/* ── Categories ── */}
-        <SectionCard title="סוגי משימות">
+        <SectionCard title={t('wp_task_types')}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {CATEGORIES.map(c => {
               const sel = form.preferred_categories.includes(c.value);
@@ -327,7 +330,7 @@ export default function WorkerProfile() {
 
         {/* ── Unified Certificates section ── */}
         {(!isViewingOther || hasCerts) && (
-          <SectionCard title="תעודות מקצוע">
+          <SectionCard title={t('pr_certs')}>
             <input ref={certDocRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleCertDocUpload} />
             {/* Certificate files (unified) */}
             {(form.certificate_files || []).length > 0 && (
@@ -339,7 +342,7 @@ export default function WorkerProfile() {
                       <input
                         value={doc.name}
                         onChange={e => updateCertDocName(doc.url, e.target.value)}
-                        placeholder="שם התעודה"
+                        placeholder={t('wp_cert_name_ph')}
                         style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13, fontWeight: 700, color: '#166534', outline: 'none', fontFamily: 'inherit' }}
                       />
                     ) : (
@@ -366,20 +369,20 @@ export default function WorkerProfile() {
             )}
             {/* Empty state hint (edit mode) */}
             {!isViewingOther && (form.certificate_files || []).length === 0 && (
-              <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', marginBottom: 8 }}>העלה תעודות מקצוע כדי לבנות אמון</div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', marginBottom: 8 }}>{t('wp_upload_certs_hint')}</div>
             )}
             {/* Upload button (edit mode) */}
             {!isViewingOther && (
               <button onClick={() => certDocRef.current?.click()} disabled={uploadingDoc}
                 style={{ width: '100%', height: 46, borderRadius: 12, border: '2px dashed var(--border-2)', background: 'var(--surface-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', color: '#1a6fd4', fontWeight: 700, fontSize: 13 }}>
-                {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> העלה תעודה</>}
+                {uploadingDoc ? <Loader2 size={16} className="animate-spin" /> : <><Upload size={16} /> {t('wp_upload_cert')}</>}
               </button>
             )}
           </SectionCard>
         )}
 
         {/* ── Cities ── */}
-        <SectionCard title="ערים לביצוע משימות">
+        <SectionCard title={t('wp_cities_for_tasks')}>
           {(() => {
             const priorityCities = ISRAELI_CITIES.slice(0, INITIAL_CITIES_COUNT);
             const restCities = ISRAELI_CITIES.slice(INITIAL_CITIES_COUNT);
@@ -412,7 +415,7 @@ export default function WorkerProfile() {
                       padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px dashed var(--border-2)', cursor: 'pointer', transition: 'all 0.15s',
                       background: 'var(--surface-2)', color: '#1a6fd4',
                     }}
-                  >עוד ערים +</button>
+                  >{t('wp_more_cities')}</button>
                 )}
                 {showAllCities && !isViewingOther && (
                   <button
@@ -421,7 +424,7 @@ export default function WorkerProfile() {
                       padding: '7px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700, border: '1px dashed var(--border-2)', cursor: 'pointer', transition: 'all 0.15s',
                       background: 'var(--surface-2)', color: 'var(--text-3)',
                     }}
-                  >הצג פחות</button>
+                  >{t('wp_show_less')}</button>
                 )}
               </div>
             );
@@ -430,7 +433,7 @@ export default function WorkerProfile() {
 
         {/* ── Unified History & Reviews (viewing other) ── */}
         {isViewingOther && (completedCount > 0 || workerReviews.length > 0) && (
-          <SectionCard title={`היסטוריה וביקורות · ${completedCount} משימות · ${workerReviews.length} ביקורות`}>
+          <SectionCard title={t('pr_history_count').replace('{n}', completedCount).replace('{m}', workerReviews.length)}>
             <TaskReviewHistory tasks={workerTasks.filter(t => t.status === 'COMPLETED')} reviews={workerReviews} />
           </SectionCard>
         )}
@@ -442,7 +445,7 @@ export default function WorkerProfile() {
             disabled={saveMutation.isPending}
             style={{ width: '100%', height: 56, borderRadius: 18, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 6px 20px rgba(26,111,212,0.35)', marginTop: 4 }}
           >
-            {saveMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <><Save size={18} /> שמור פרופיל</>}
+            {saveMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <><Save size={18} /> {t('wp_save_profile')}</>}
           </button>
         )}
 

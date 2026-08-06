@@ -590,7 +590,7 @@ export default function HomeFeed() {
       {/* Segmented Control Tabs */}
       {(() => {
         const hasPublished = myTasks.length > 0;
-        const myPubLabel = hasPublished ? 'משימות שפרסמתי' : t('nav_create_task').replace('+ ', '');
+        const myPubLabel = hasPublished ? t('hf_my_published') : t('nav_create_task').replace('+ ', '');
         const hasActiveWorkerTaskForBadge = !!activeWorkerTask;
         const hasActiveClientTaskForBadge = myTasks.some(t => t.status === 'TAKEN' || t.status === 'OPEN');
         // Red dot on "available" tab if worker has an active task there

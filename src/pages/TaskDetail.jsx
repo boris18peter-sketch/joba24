@@ -129,7 +129,7 @@ export default function TaskDetail(props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, login, user: authUser } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [applyMessage, setApplyMessage] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [showVerificationRequired, setShowVerificationRequired] = useState(false);
@@ -539,13 +539,13 @@ export default function TaskDetail(props) {
   if (isLoading) {
     if (sheetMode) {
       return (
-        <div dir="rtl" style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+        <div dir={isRTL ? 'rtl' : 'ltr'} style={{ padding: '40px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
           <Loader2 size={28} className="animate-spin" color="#1a6fd4" />
         </div>
       );
     }
     return (
-      <div dir="rtl" style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', minHeight: '100dvh' }}>
         <PageHeader title="" right={<div style={{ width: 60, height: 26, borderRadius: 20, background: '#e8edf5' }} className="animate-pulse" />} />
         <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Price hero skeleton */}
@@ -618,7 +618,7 @@ export default function TaskDetail(props) {
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
   return (
-    <div dir="rtl" style={{ background: 'var(--surface-1)', paddingBottom: sheetMode ? 'max(24px, env(safe-area-inset-bottom))' : 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', paddingBottom: sheetMode ? 'max(24px, env(safe-area-inset-bottom))' : 'calc(80px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(
@@ -647,7 +647,7 @@ export default function TaskDetail(props) {
       {/* Worker exit confirmation popup */}
       {showExitWarning && createPortal(
         <div className="mobile-sheet-overlay">
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚪</div>
@@ -866,7 +866,7 @@ export default function TaskDetail(props) {
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: 3 }}>
                   <MapPin size={10} strokeWidth={2} />
                   {task.location_name}
-                  {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}`}
+                  {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}`}
                 </span>
               )}
               {task.created_date && getRelativeTime(task.created_date, t) && (
@@ -983,7 +983,7 @@ export default function TaskDetail(props) {
                 }
                 {canApplyManual && !showApplyForm && (
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 4, fontWeight: 600, lineHeight: 1.4 }}>
-                 💡 הג'ובות חוזרות ליתרה אוטומטית אם הבקשה לא תאושר או המשימה תבוטל
+                 {t('td_apply_return_note')}
                 </div>
                 )}
 
@@ -1033,11 +1033,11 @@ export default function TaskDetail(props) {
         {task.status === 'TAKEN' && (isWorker || (isOwner && (task.completion_photos?.length > 0 || task.completion_video_url))) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>📸 הוכחת ביצוע</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('td_proof_title')}</div>
               {isWorker && !editingCompletion && (
                 <button onClick={() => { setEditPhotos([...(task.completion_photos || [])]); setEditVideo(task.completion_video_url || ''); setEditingCompletion(true); }}
                   style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '3px 10px', cursor: 'pointer' }}>
-                  {task.completion_photos?.length > 0 || task.completion_video_url ? 'עריכה' : '+ הוסף'}
+                  {task.completion_photos?.length > 0 || task.completion_video_url ? t('td_edit') : t('td_add')}
                 </button>
               )}
             </div>
@@ -1059,19 +1059,19 @@ export default function TaskDetail(props) {
                     if (task.client_id && task.client_id !== me?.id) {
                       base44.functions.invoke('sendPushNotification', {
                         user_ids: [task.client_id],
-                        title: 'הוכחת ביצוע הועלתה 📸',
-                        body: `העובד העלה הוכחת ביצוע למשימה "${task.title}"`,
+                        title: t('td_proof_uploaded_title'),
+                        body: t('td_proof_uploaded_body').replace('{title}', task.title),
                         url: `/task/${id}`,
                         tag: `completion_${id}`,
                       }).catch(() => {});
                     }
                     setSavingCompletion(false);
                     setEditingCompletion(false);
-                    toast.success('הוכחת הביצוע נשלחה ✓');
+                    toast.success(t('td_proof_sent'));
                   }} disabled={savingCompletion} style={{ flex: 1, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {savingCompletion ? <Loader2 size={16} className="animate-spin" /> : '📤 שליחה'}
+                    {savingCompletion ? <Loader2 size={16} className="animate-spin" /> : t('td_send')}
                   </button>
-                  <button onClick={() => setEditingCompletion(false)} style={{ height: 44, padding: '0 16px', borderRadius: 12, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>ביטול</button>
+                  <button onClick={() => setEditingCompletion(false)} style={{ height: 44, padding: '0 16px', borderRadius: 12, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>{t('cancel_btn')}</button>
                 </div>
               </>
             ) : (
@@ -1110,16 +1110,16 @@ export default function TaskDetail(props) {
               <FileText size={22} color="white" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#6d28d9' }}>חשבונית מס / קבלה זמינה</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#6d28d9' }}>{t('td_invoice_available')}</div>
               <div style={{ fontSize: 12, color: '#7c3aed', marginTop: 2 }}>
-                {isOwner ? 'העובד הפיק חשבונית עבורך · לחץ לצפייה והורדה' : 'החשבונית שהפקת זמינה כאן'}
+                {isOwner ? t('td_invoice_owner') : t('td_invoice_worker')}
               </div>
             </div>
             <button
               onClick={() => setShowInvoiceView(true)}
               style={{ height: 40, padding: '0 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 12px rgba(124,58,237,0.35)' }}
             >
-              <FileText size={15} /> צפה והורד
+              <FileText size={15} /> {t('td_view_download')}
             </button>
           </div>
         )}
@@ -1166,7 +1166,7 @@ export default function TaskDetail(props) {
                   setTimeout(() => setIdCopied(false), 2000);
                 }}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, color: idCopied ? '#059669' : '#94a3b8', fontFamily: 'monospace', background: idCopied ? '#f0fdf4' : 'var(--surface-3)', borderRadius: 6, padding: '2px 7px', letterSpacing: 0.3, border: idCopied ? '1px solid #bbf7d0' : 'none', cursor: 'pointer', transition: 'all 0.2s' }}
-                title="העתק ID"
+                title={t('td_copy_id')}
               >
                 {idCopied ? (
                   <>{t('id_copied') || 'הועתק'} <CheckCircle2 size={11} color="#059669" /></>
@@ -1199,7 +1199,7 @@ export default function TaskDetail(props) {
                   <Clock size={13} color="#1a6fd4" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 3 }}>מועדי השירות</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 3 }}>{t('td_service_slots')}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                     {formatScheduleSlots(task.category_details.schedule).map((slot, i) => (
                       <div key={i} style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{slot.dayLabel} · {slot.time}</div>
@@ -1220,8 +1220,8 @@ export default function TaskDetail(props) {
               const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
               const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
               let label;
-              if (isToday) label = `היום, ${timeStr}`;
-              else if (isTomorrow) label = `מחר, ${timeStr}`;
+              if (isToday) label = `${t('today')}, ${timeStr}`;
+              else if (isTomorrow) label = `${t('tomorrow')}, ${timeStr}`;
               else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1229,7 +1229,7 @@ export default function TaskDetail(props) {
                     <Clock size={13} color="#1a6fd4" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>מועד מדויק</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('td_exact_time')}</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#1a6fd4' }}>{label}</div>
                   </div>
                 </div>
@@ -1274,8 +1274,8 @@ export default function TaskDetail(props) {
               const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
                 r.value ? `${r.label}: ${r.value}` : r.label
               );
-              if (task.requires_invoice) reqs.push('דרושה חשבונית מס');
-              if (task.verification_required) reqs.push('דרוש ווי ירוק');
+              if (task.requires_invoice) reqs.push(t('as_requires_invoice'));
+              if (task.verification_required) reqs.push(t('as_requires_green'));
               if (reqs.length === 0) return null;
               return (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
@@ -1307,7 +1307,7 @@ export default function TaskDetail(props) {
           // Hide the standalone phone card when TAKEN — phone is already in the ActiveTaskBanner above
           if (task.status === 'TAKEN' && (isOwner || isWorker)) return null;
           const phone = workerSeesPhone ? task.contactPhone : workerUser?.phone;
-          const label = workerSeesPhone ? 'טלפון של המפרסם' : 'טלפון של העובד';
+          const label = workerSeesPhone ? t('td_phone_publisher') : t('td_phone_worker');
           return (
             <a
               href={`tel:${phone}`}
@@ -1329,10 +1329,10 @@ export default function TaskDetail(props) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#15803d', marginBottom: 3 }}>{label}</div>
                   <div style={{ fontSize: 20, fontWeight: 900, color: '#15803d', fontFamily: 'monospace', letterSpacing: 0.5, direction: 'ltr', textAlign: 'right' }}>{phone}</div>
-                  <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2, fontWeight: 600 }}>לחץ להתקשרות ישירה 📞</div>
+                  <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2, fontWeight: 600 }}>{t('td_click_to_call')}</div>
                 </div>
                 <div style={{ height: 42, padding: '0 16px', borderRadius: 12, background: '#16a34a', color: 'white', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, boxShadow: '0 3px 10px rgba(22,163,74,0.35)' }}>
-                  <Phone size={14} /> התקשר
+                  <Phone size={14} /> {t('td_call_btn')}
                 </div>
               </div>
             </a>
@@ -1380,7 +1380,7 @@ export default function TaskDetail(props) {
       {/* Owner 3-dot bottom sheet */}
       {showOwnerMenu && createPortal(
         <div className="mobile-sheet-overlay" onClick={() => setShowOwnerMenu(false)}>
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '20px 20px 0' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 13, fontWeight: 800, color: '#94a3b8', marginBottom: 12, paddingRight: 4, letterSpacing: 0.3 }}>{t('task_actions_title')}</div>
             {(task.status === 'OPEN' || task.status === 'EXPIRED') &&
