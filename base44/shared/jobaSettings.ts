@@ -6,6 +6,7 @@
 export const DEFAULT_SETTINGS = {
   signup_bonus: 60,
   referral_signup_bonus: 40,
+  profile_completion_bonus: 0,
   application_fee_percent: 5,
   application_fee_min: 1,
   story_cost: 10,

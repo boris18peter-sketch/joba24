@@ -25,6 +25,15 @@ const FIELDS = [
     border: '#ddd6fe',
   },
   {
+    key: 'profile_completion_bonus',
+    label: 'בונוס מילוי פרופיל',
+    desc: 'ג\'ובות שמקבל משתמש שמשלים את פרופיל העובד בהצטרפות. 0 = מבוטל.',
+    icon: <Hammer size={15} color="#0891b2" />,
+    color: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+  },
+  {
     key: 'application_fee_percent',
     label: 'עלות הגשת בקשה (%)',
     desc: 'אחוז ממחיר המשימה שנגבה מעובד על כל הגשת בקשה',
