@@ -10,8 +10,11 @@
  * textarea fields with newlines, multi-select arrays, toggles, etc.
  */
 import { getCategoryConfig, getCategoryExtraFields } from '@/lib/taskFlowConfig';
+import { useLanguage } from '@/lib/LanguageContext';
+import { tTaskFlow } from '@/lib/taskFlowI18n';
 
 export default function CategoryDetailsView({ task, compact = false }) {
+  const { lang } = useLanguage();
   if (!task?.category) return null;
 
   const config = getCategoryConfig(task.category);
@@ -32,21 +35,21 @@ export default function CategoryDetailsView({ task, compact = false }) {
 
     if (f.type === 'toggle') {
       if (v) {
-        rows.push({ label: f.label, value: null, isToggle: true });
+        rows.push({ label: tTaskFlow(f.label, lang), value: null, isToggle: true });
       }
     } else if (f.type === 'schedule') {
       if (Array.isArray(v) && v.length > 0) {
         const slotsText = v.map(s => `${s.date} ${s.start}–${s.end}`).join('; ');
-        rows.push({ label: f.label, value: slotsText, isToggle: false });
+        rows.push({ label: tTaskFlow(f.label, lang), value: slotsText, isToggle: false });
       }
     } else if (Array.isArray(v)) {
       if (v.length > 0) {
-        rows.push({ label: f.label, value: v.join(', '), isToggle: false });
+        rows.push({ label: tTaskFlow(f.label, lang), value: v.map(opt => tTaskFlow(opt, lang)).join(', '), isToggle: false });
       }
     } else if (typeof v === 'object') {
-      rows.push({ label: f.label, value: JSON.stringify(v), isToggle: false });
+      rows.push({ label: tTaskFlow(f.label, lang), value: JSON.stringify(v), isToggle: false });
     } else {
-      rows.push({ label: f.label, value: String(v), isToggle: false });
+      rows.push({ label: tTaskFlow(f.label, lang), value: tTaskFlow(String(v), lang), isToggle: false });
     }
   });
 
@@ -59,11 +62,11 @@ export default function CategoryDetailsView({ task, compact = false }) {
     if (typeof v === 'boolean') {
       if (v) rows.push({ label: key, value: null, isToggle: true });
     } else if (Array.isArray(v)) {
-      if (v.length > 0) rows.push({ label: key, value: v.join(', '), isToggle: false });
+      if (v.length > 0) rows.push({ label: key, value: v.map(opt => tTaskFlow(opt, lang)).join(', '), isToggle: false });
     } else if (typeof v === 'object') {
       rows.push({ label: key, value: JSON.stringify(v), isToggle: false });
     } else {
-      rows.push({ label: key, value: String(v), isToggle: false });
+      rows.push({ label: key, value: tTaskFlow(String(v), lang), isToggle: false });
     }
   }
 

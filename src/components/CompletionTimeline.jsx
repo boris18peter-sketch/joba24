@@ -7,6 +7,7 @@
 import { CheckCircle, MapPin, Calendar } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getCityLabel } from '@/lib/cityLabels';
 
 const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
 
@@ -81,7 +82,7 @@ export default function CompletionTimeline({ tasks = [], reviews = [] }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: chips.length > 0 ? 7 : 0, flexWrap: 'wrap' }}>
                     {task.city && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#94a3b8' }}>
-                        <MapPin size={9} strokeWidth={1.8} /> {task.city}
+                        <MapPin size={9} strokeWidth={1.8} /> {getCityLabel(task.city, lang)}
                       </span>
                     )}
                     {task.category && (

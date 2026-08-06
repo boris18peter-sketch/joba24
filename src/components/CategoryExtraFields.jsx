@@ -4,6 +4,7 @@ import { Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
 import SchedulePicker from '@/components/SchedulePicker';
 import { useLanguage } from '@/lib/LanguageContext';
+import { tTaskFlow } from '@/lib/taskFlowI18n';
 
 function distKm(a, b) {
   if (!a || !b) return null;
@@ -17,7 +18,7 @@ function distKm(a, b) {
 // ── Field type renderers ─────────────────────────────────────────────────────
 
 function SelectField({ field, value, onChange }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [showAll, setShowAll] = useState(false);
   const opts = field.options || [];
   const visible = showAll ? opts : opts.slice(0, 6);
@@ -41,7 +42,7 @@ function SelectField({ field, value, onChange }) {
                 boxShadow: isActive ? '0 3px 12px rgba(26,111,212,0.28)' : 'none',
                 WebkitTapHighlightColor: 'transparent',
               }}
-            >{opt}</button>
+            >{tTaskFlow(opt, lang)}</button>
           );
         })}
       </div>
@@ -64,7 +65,7 @@ function SelectField({ field, value, onChange }) {
 }
 
 function MultiSelectField({ field, value, onChange }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const selected = Array.isArray(value) ? value : [];
   const opts = field.options || [];
   const toggle = (opt) => {
@@ -94,7 +95,7 @@ function MultiSelectField({ field, value, onChange }) {
             }}
           >
             {isActive && <span style={{ fontSize: 10 }}>✓</span>}
-            {opt}
+            {tTaskFlow(opt, lang)}
           </button>
         );
       })}
@@ -108,6 +109,7 @@ function MultiSelectField({ field, value, onChange }) {
 }
 
 function ToggleField({ field, value, onChange }) {
+  const { lang } = useLanguage();
   const isActive = !!value;
   return (
     <button
@@ -131,19 +133,20 @@ function ToggleField({ field, value, onChange }) {
       }}>
         {isActive && <span style={{ color: 'white', fontSize: 12, fontWeight: 900 }}>✓</span>}
       </div>
-      <span style={{ fontSize: 13.5, fontWeight: 600, color: isActive ? '#1e40af' : 'var(--text-2)' }}>{field.label}</span>
+      <span style={{ fontSize: 13.5, fontWeight: 600, color: isActive ? '#1e40af' : 'var(--text-2)' }}>{tTaskFlow(field.label, lang)}</span>
     </button>
   );
 }
 
 function NumberField({ field, value, onChange }) {
+  const { lang } = useLanguage();
   return (
     <div style={{ position: 'relative', maxWidth: 200 }}>
       <input
         type="number"
         value={value || ''}
         onChange={e => onChange(e.target.value)}
-        placeholder={field.placeholder || ''}
+        placeholder={tTaskFlow(field.placeholder || '', lang)}
         style={{
           width: '100%', height: 46, borderRadius: 12,
           border: '1.5px solid var(--border-1)', background: 'var(--surface-3)',
@@ -159,11 +162,12 @@ function NumberField({ field, value, onChange }) {
 }
 
 function TextField({ field, value, onChange }) {
+  const { lang } = useLanguage();
   return (
     <input
       value={value || ''}
       onChange={e => onChange(e.target.value)}
-      placeholder={field.placeholder || ''}
+      placeholder={tTaskFlow(field.placeholder || '', lang)}
       style={{
         width: '100%', height: 46, borderRadius: 12,
         border: '1.5px solid var(--border-1)', background: 'var(--surface-3)',
@@ -178,11 +182,12 @@ function TextField({ field, value, onChange }) {
 }
 
 function TextareaField({ field, value, onChange }) {
+  const { lang } = useLanguage();
   return (
     <textarea
       value={value || ''}
       onChange={e => onChange(e.target.value)}
-      placeholder={field.placeholder || ''}
+      placeholder={tTaskFlow(field.placeholder || '', lang)}
       rows={3}
       style={{
         width: '100%', borderRadius: 12, resize: 'none',
@@ -198,11 +203,11 @@ function TextareaField({ field, value, onChange }) {
 }
 
 function AddressField({ field, value, onChange, onCoords, originLat, originLng }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   return (
     <AddressAutocomplete
       value={value || ''}
-      placeholder={field.placeholder || t('cef_address_ph')}
+      placeholder={tTaskFlow(field.placeholder || '', lang) || t('cef_address_ph')}
       onSelect={({ location_name, lat, lng }) => {
         if (location_name) {
           onCoords?.({ lat, lng });
@@ -217,7 +222,7 @@ function AddressField({ field, value, onChange, onCoords, originLat, originLng }
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const config = getCategoryConfig(category);
   const [values, setValues] = useState(initialValues || {});
   // Filter out urgency fields — urgency is already handled in the main form
@@ -285,7 +290,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
   if (!config || !fields.length) return null;
 
   const emoji = config.label?.split(' ')[0] || '📋';
-  const labelName = config.label?.split(' ').slice(1).join(' ') || config.label;
+  const labelName = tTaskFlow(config.label, lang).split(' ').slice(1).join(' ') || tTaskFlow(config.label, lang);
 
   return (
     <div style={{
@@ -320,7 +325,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
               fontSize: 13, fontWeight: 700, color: 'var(--text-1)',
               marginBottom: 8, display: 'block', lineHeight: 1.3,
             }}>
-              {field.label}
+              {tTaskFlow(field.label, lang)}
             </label>
 
             {field.type === 'select' && (
