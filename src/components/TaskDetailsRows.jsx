@@ -11,15 +11,20 @@ import { parseDescription } from '@/lib/descriptionParser';
 import { formatHoursLabel, formatScheduleSlots } from '@/lib/priceCalculator';
 import { getActiveRequirements } from '@/lib/requirements';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
+import { useLanguage } from '@/lib/LanguageContext';
 
-const URGENCY_TAG_CONFIG = {
-  immediate: { emoji: '🔴', label: 'דחוף עכשיו', color: '#dc2626', bg: '#fff1f2' },
-  few_hours:  { emoji: '🟠', label: 'בשעות הקרובות', color: '#d97706', bg: '#fffbeb' },
-  evening:    { emoji: '🌙', label: 'הערב', color: '#7c3aed', bg: '#faf5ff' },
-  flexible:   { emoji: '🕐', label: 'גמיש', color: '#059669', bg: '#f0fdf4' },
-};
+function getUrgencyConfig(urgency_tag, t) {
+  const configs = {
+    immediate: { emoji: '🔴', label: t('tdr_urg_immediate'), color: '#dc2626', bg: '#fff1f2' },
+    few_hours:  { emoji: '🟠', label: t('tdr_urg_few_hours'), color: '#d97706', bg: '#fffbeb' },
+    evening:    { emoji: '🌙', label: t('tdr_urg_evening'), color: '#7c3aed', bg: '#faf5ff' },
+    flexible:   { emoji: '🕐', label: t('tdr_urg_flexible'), color: '#059669', bg: '#f0fdf4' },
+  };
+  return configs[urgency_tag];
+}
 
 export default function TaskDetailsRows({ task, compact = false }) {
+  const { t } = useLanguage();
   if (!task) return null;
 
   const iconSize = compact ? 28 : 30;
@@ -35,14 +40,14 @@ export default function TaskDetailsRows({ task, compact = false }) {
     const expired = expDate <= new Date();
     detailRows.push({
       icon: '🕐', iconBg: '#fff7ed',
-      label: 'תוקף המשימה',
-      value: expired ? 'פג תוקף' : expDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      label: t('tdr_validity'),
+      value: expired ? t('tdr_expired') : expDate.toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }),
       valueColor: expired ? '#dc2626' : undefined,
     });
   }
 
   if (task.category) {
-    detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: 'קטגוריה', value: getCategoryLabel(task.category) });
+    detailRows.push({ icon: '📦', iconBg: '#f8f9fb', label: t('tdr_category'), value: getCategoryLabel(task.category, t) });
   }
 
   if (task.category_details?.pricing_type === 'hourly' && task.category_details?.hourly_rate && task.category_details?.hours) {
@@ -50,18 +55,18 @@ export default function TaskDetailsRows({ task, compact = false }) {
     const rate = Number(task.category_details.hourly_rate);
     const hrsLabel = formatHoursLabel(hrs);
     const isSubHour = hrs > 0 && hrs < 1;
-    detailRows.push({ icon: '💰', iconBg: '#f0fdf4', label: isSubHour ? 'משך השירות' : 'מחיר לשעה', value: isSubHour ? hrsLabel : `₪${rate} · ${hrsLabel}`, valueColor: '#059669' });
+    detailRows.push({ icon: '💰', iconBg: '#f0fdf4', label: isSubHour ? t('tdr_service_duration') : t('tdr_hourly_rate'), value: isSubHour ? hrsLabel : `₪${rate} · ${hrsLabel}`, valueColor: '#059669' });
   }
 
   if (task.payment_method) {
-    detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: 'אמצעי תשלום', value: task.payment_method === 'Cash' ? 'מזומן' : task.payment_method });
+    detailRows.push({ icon: '💳', iconBg: '#f0fdf4', label: t('tdr_payment_method'), value: task.payment_method === 'Cash' ? t('tdr_cash') : task.payment_method });
   }
 
   const scheduleSlots = formatScheduleSlots(task.category_details?.schedule);
   if (scheduleSlots.length > 0) {
     detailRows.push({
       icon: '📅', iconBg: '#eff6ff',
-      label: 'מועדי השירות',
+      label: t('tdr_service_slots'),
       value: scheduleSlots.map(s => `${s.dayLabel} · ${s.time}`).join('  ·  '),
       valueColor: '#1a6fd4',
       multiline: true,
@@ -76,19 +81,19 @@ export default function TaskDetailsRows({ task, compact = false }) {
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
       const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
-      const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      const timeStr = sDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
       let dateLabel;
-      if (isToday) dateLabel = `היום, ${timeStr}`;
-      else if (isTomorrow) dateLabel = `מחר, ${timeStr}`;
-      else dateLabel = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      if (isToday) dateLabel = `${t('tdr_today')}, ${timeStr}`;
+      else if (isTomorrow) dateLabel = `${t('tdr_tomorrow')}, ${timeStr}`;
+      else dateLabel = sDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       const isPast = sDate < now;
-      detailRows.push({ icon: '📅', iconBg: isPast ? '#f1f5f9' : '#eff6ff', label: 'מועד קבוע', value: dateLabel, valueColor: isPast ? '#94a3b8' : '#1a6fd4' });
+      detailRows.push({ icon: '📅', iconBg: isPast ? '#f1f5f9' : '#eff6ff', label: t('tdr_fixed_time'), value: dateLabel, valueColor: isPast ? '#94a3b8' : '#1a6fd4' });
     }
   }
 
-  if (task.urgency_tag && URGENCY_TAG_CONFIG[task.urgency_tag]) {
-    const tu = URGENCY_TAG_CONFIG[task.urgency_tag];
-    detailRows.push({ icon: tu.emoji, iconBg: tu.bg, label: 'דחיפות', value: tu.label, valueColor: tu.color });
+  if (task.urgency_tag) {
+    const tu = getUrgencyConfig(task.urgency_tag, t);
+    if (tu) detailRows.push({ icon: tu.emoji, iconBg: tu.bg, label: t('tdr_urgency'), value: tu.label, valueColor: tu.color });
   }
 
   // ── "פרטים נוספים" rows ──
@@ -98,26 +103,26 @@ export default function TaskDetailsRows({ task, compact = false }) {
   if (task.location_name || task.address_building || task.address_floor || task.address_apartment || task.address_notes) {
     const parts = [
       task.location_name,
-      task.address_building && `בניין ${task.address_building}`,
-      task.address_floor && `קומה ${task.address_floor}`,
-      task.address_apartment && `דירה ${task.address_apartment}`,
+      task.address_building && `${t('tdr_building')} ${task.address_building}`,
+      task.address_floor && `${t('tdr_floor')} ${task.address_floor}`,
+      task.address_apartment && `${t('tdr_apartment')} ${task.address_apartment}`,
       task.address_notes,
     ].filter(Boolean);
-    extraRows.push({ icon: '📍', iconBg: '#fff7ed', label: 'כתובת', value: parts.join(' · '), multiline: true });
+    extraRows.push({ icon: '📍', iconBg: '#fff7ed', label: t('tdr_address'), value: parts.join(' · '), multiline: true });
   }
 
   // Full description (the card body shows 1-line clamp; here show full)
   if (task.description) {
     const desc = parseDescription(task.description).mainDescription;
-    if (desc) extraRows.push({ icon: '📝', iconBg: '#f8f9fb', label: 'תיאור מלא', value: desc, multiline: true });
+    if (desc) extraRows.push({ icon: '📝', iconBg: '#f8f9fb', label: t('tdr_full_description'), value: desc, multiline: true });
   }
 
   // Requirements
   const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
     r.value ? `${r.label}: ${r.value}` : r.label
   );
-  if (task.requires_invoice) reqs.push('דרושה חשבונית מס');
-  if (task.verification_required) reqs.push('דרוש ווי ירוק');
+  if (task.requires_invoice) reqs.push(t('tdr_requires_invoice'));
+  if (task.verification_required) reqs.push(t('tdr_requires_green'));
 
   const hasDetails = detailRows.length > 0;
   const hasExtras = extraRows.length > 0 || reqs.length > 0;
@@ -156,16 +161,16 @@ export default function TaskDetailsRows({ task, compact = false }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
       {hasDetails && (
         <>
-          <div style={sectionLabelStyle}>פרטי המשימה</div>
+          <div style={sectionLabelStyle}>{t('tdr_task_details')}</div>
           {detailRows.map((row, i) => <Row key={`d_${i}`} {...row} multiline={row.multiline} />)}
         </>
       )}
       {hasExtras && (
         <>
-          <div style={{ ...sectionLabelStyle, marginTop: hasDetails ? 2 : 0 }}>פרטים נוספים</div>
+          <div style={{ ...sectionLabelStyle, marginTop: hasDetails ? 2 : 0 }}>{t('tdr_extra_details')}</div>
           {extraRows.map((row, i) => <Row key={`e_${i}`} {...row} multiline />)}
           {reqs.length > 0 && (
-            <Row icon="✅" iconBg="#f0fdf4" label="דרישות" value={reqs.join(' · ')} valueColor="#059669" multiline />
+            <Row icon="✅" iconBg="#f0fdf4" label={t('tdr_requirements')} value={reqs.join(' · ')} valueColor="#059669" multiline />
           )}
         </>
       )}

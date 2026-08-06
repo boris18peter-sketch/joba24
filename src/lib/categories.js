@@ -27,8 +27,14 @@ export const CATEGORIES = [
   { value: 'other',         label: '📋 אחר' },
 ];
 
-export const getCategoryLabel = (value) =>
-  CATEGORIES.find(c => c.value === value)?.label || '📋 אחר';
+export const getCategoryLabel = (value, t) => {
+  if (t) {
+    const key = `cat_${value}`;
+    const translated = t(key);
+    if (translated && translated !== key) return translated;
+  }
+  return CATEGORIES.find(c => c.value === value)?.label || '📋 אחר';
+};
 
 // Categories that use hourly pricing (rate × hours = total)
 export const HOURLY_CATEGORIES = ['babysitting', 'elderly_care', 'pets', 'tutoring', 'fitness'];

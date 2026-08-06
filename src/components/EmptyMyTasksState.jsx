@@ -3,37 +3,15 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { Plus } from 'lucide-react';
 import { useMemo, useState, useEffect, useRef } from 'react';
 
-// Combined task examples — all prefixed with "צריך" for natural phrasing.
-// Includes the long-sentence examples + the short emoji-tagged ones.
-const EXAMPLES = [
-  'צריך מנגליסט לשעתיים 🍢',
-  'צריך מישהו שישמור על הכלב 🐕',
-  'צריך שטיפה לרכב עד הבית 🚿',
-  'צריך להוביל מקרר לתל אביב 🚚',
-  'צריך ניקוי לספות בבית 🛋️',
-  'צריך עזרה בתליית טלוויזיה חדשה 📺',
-  'צריך בייביסיטר להערב 🍼',
-  'צריך גנן לגיזום וסידור הגינה 🌳',
-  'צריך אינסטלטור דחוף לפתירת סתימה 🔧',
-  'צריך צלם לקליפ 📸',
-  'צריך עזרה בפירוק ארון בגדים 🚪',
-  'צריך עזרה להתקין מנורה 💡',
-  'צריך תיקון ברז 🚰',
-  'צריך ניקיון דירה 🧹',
-  'צריך הובלת מקרר 🚚',
-  'צריך צביעת חדר 🎨',
-  'צריך הרכבת מדף 🪛',
-  'צריך הסעה לשדה 🚗',
-  'צריך איסוף חבילה 📦',
-  'צריך תיקון דלת 🚪',
-  'צריך גיזום עץ 🌿',
-  'צריך פתירת סתימה 🔧',
-  'צריך פירוק ארון 🪑',
-  'צריך החלפת מנעול 🔐',
-  'צריך מילוי גז ❄️',
-  'צריך ניקיון חלון 🪟',
-  'צריך הסעת ילד 🚙',
-];
+// Combined task examples — fetched from i18n (ex_1 .. ex_27).
+function getExamples(t) {
+  const arr = [];
+  for (let i = 1; i <= 27; i++) {
+    const val = t(`ex_${i}`);
+    if (val) arr.push(val);
+  }
+  return arr.length ? arr : ['צריך מישהו שישמור על הכלב 🐕'];
+}
 
 // Wheel geometry & timing
 const ITEM_H = 52;       // px per example row
@@ -118,7 +96,8 @@ export default function EmptyMyTasksState() {
   const [active, setActive] = useState(0);
 
   // Render the list 3× for a seamless infinite loop (start in the middle copy)
-  const items = useMemo(() => [...EXAMPLES, ...EXAMPLES, ...EXAMPLES], []);
+  const EXAMPLES = useMemo(() => getExamples(t), [t]);
+  const items = useMemo(() => [...EXAMPLES, ...EXAMPLES, ...EXAMPLES], [EXAMPLES]);
   const len = EXAMPLES.length;
   const startOffset = len * ITEM_H; // begin at middle copy
 
