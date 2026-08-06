@@ -179,7 +179,7 @@ export default function Profile() {
             }}
             style={{ height: 34, paddingInline: 16, borderRadius: 20, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)' }}
           >
-            <Pencil size={13} color="white" /> עריכה
+            <Pencil size={13} color="white" /> {t('pr_edit')}
           </button>
         </div>
 
@@ -226,9 +226,9 @@ export default function Profile() {
           border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
         }}>
           {[
-            { value: completedCount, label: "ג'ובות בוצעו" },
-            { value: postedCount, label: "ג'ובות פורסמו" },
-            { value: avgRating + (rating > 0 ? '★' : ''), label: 'דירוג', sub: reviews.length > 0 ? `${reviews.length} ביקורות` : null },
+            { value: completedCount, label: t('pr_jobs_done') },
+            { value: postedCount, label: t('pr_jobs_posted') },
+            { value: avgRating + (rating > 0 ? '★' : ''), label: t('pr_rating'), sub: reviews.length > 0 ? t('pr_reviews_count', { n: reviews.length }) : null },
           ].map((s, i, arr) => (
             <div key={i} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
               <div style={{ fontSize: 17, fontWeight: 900, color: 'white' }}>{s.value}</div>
@@ -259,13 +259,13 @@ export default function Profile() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
-                  {me?.kyc_status === 'pending' ? 'אימות בבדיקה' : me?.kyc_status === 'rejected' ? 'אימות נדחה' : t('verify_title')}
+                  {me?.kyc_status === 'pending' ? t('pr_verify_pending') : me?.kyc_status === 'rejected' ? t('pr_verify_rejected') : t('verify_title')}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
                   {me?.kyc_status === 'pending'
-                    ? 'הפרטים שלך נשלחו, ממתין לאישור מנהל'
+                    ? t('pr_verify_pending_sub')
                     : me?.kyc_status === 'rejected'
-                    ? 'האימות נדחה. ניתן לעדכן את הפרטים ולשלוח שוב'
+                    ? t('pr_verify_rejected_sub')
                     : t('verify_sub')}
                 </div>
               </div>
@@ -280,7 +280,7 @@ export default function Profile() {
         {/* About */}
         {me?.bio && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>אודות</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>{t('pr_about')}</div>
             <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
           </div>
         )}
@@ -289,7 +289,7 @@ export default function Profile() {
         {categories.length > 0 && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Award size={12} /> תחומי עיסוק
+              <Award size={12} /> {t('pr_professions')}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
@@ -305,7 +305,7 @@ export default function Profile() {
         {cities.length > 0 && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <MapPin size={12} /> אזורי פעילות
+              <MapPin size={12} /> {t('pr_areas')}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {cities.map(c => (
@@ -321,14 +321,14 @@ export default function Profile() {
         {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <FileText size={12} /> תעודות מקצוע
+              <FileText size={12} /> {t('pr_certs')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(me?.certificate_files || []).map(doc => (
                 <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
                   <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
-                  <span style={{ fontSize: 11, color: '#86efac' }}>לצפייה ›</span>
+                  <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
                 </a>
               ))}
               {me?.certificates?.length > 0 && (
@@ -348,7 +348,7 @@ export default function Profile() {
            background: 'var(--surface-2)', borderRadius: 14,
            border: '1px solid var(--border-1)', padding: 14,
          }}>
-           <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 10 }}>גלריית מדיה</div>
+           <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 10 }}>{t('pr_media_gallery')}</div>
            <ProfileMediaGallery
              media={[
                ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
@@ -373,7 +373,7 @@ export default function Profile() {
           <MenuRow icon={Briefcase} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('worker_profile')} sub={t('profession_certs_cities') || 'מקצוע, תעודות, ערים'} to="/worker-profile" />
           <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
           <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
-          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label="היסטוריה וביקורות" sub={`${completedCount + postedCount} משימות · ${reviews.length} ביקורות`} onClick={() => setShowUnifiedHistory(true)} />
+          <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('pr_history_reviews')} sub={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })} onClick={() => setShowUnifiedHistory(true)} />
           <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => base44.auth.logout()} chevronColor="#fca5a5" />
           <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
         </div>
@@ -386,7 +386,7 @@ export default function Profile() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
           <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--border-1)' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>היסטוריה וביקורות</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</span>
               <button onClick={() => setShowUnifiedHistory(false)} style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={16} color="#64748b" />
               </button>
