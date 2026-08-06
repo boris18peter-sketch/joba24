@@ -6,9 +6,11 @@ import { Star, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { moderateText } from '@/hooks/useModeration';
 import { getCategoryConfig } from '@/lib/categoryConfig';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function RatingModal({ task, me, onClose }) {
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState('');
@@ -40,7 +42,7 @@ export default function RatingModal({ task, me, onClose }) {
       const modResult = await moderateText(comment);
       if (modResult.flagged) {
         setLoading(false);
-        toast.error('הביקורת מכילה תוכן שאינו עומד בכללי הקהילה.');
+        toast.error(t('rm_mod_blocked'));
         return;
       }
     }
@@ -62,7 +64,7 @@ export default function RatingModal({ task, me, onClose }) {
 
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
 
-      toast.success('הביקורת נשמרה! תודה ⭐');
+      toast.success(t('review_saved'));
       window.dispatchEvent(new CustomEvent('new_review', {
         detail: { reviewerName: me?.full_name, revieweeName, rating, comment, revieweeId }
       }));
@@ -76,7 +78,7 @@ export default function RatingModal({ task, me, onClose }) {
       onClose();
     } catch (e) {
       console.error('Review submit failed:', e);
-      toast.error('שגיאה בשמירת הביקורת, נסה שוב');
+      toast.error(t('review_error'));
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,7 @@ export default function RatingModal({ task, me, onClose }) {
       onTouchStart={e => e.stopPropagation()}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--sheet-bg)', borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
@@ -135,7 +137,7 @@ export default function RatingModal({ task, me, onClose }) {
 
         {rating > 0 && (
           <div style={{ textAlign: 'center', marginBottom: 16, fontSize: 14, fontWeight: 700, color: '#1a6fd4' }}>
-            {['', '😞 לא טוב', '😐 בינוני', '🙂 סבבה', '😊 טוב מאוד', '🤩 מצוין!'][rating]}
+            {['', t('not_good'), t('mediocre'), t('ok'), t('very_good'), t('excellent')][rating]}
           </div>
         )}
 
@@ -173,7 +175,7 @@ export default function RatingModal({ task, me, onClose }) {
         </button>
 
         <textarea
-          placeholder="הוסף ביקורת מילולית (לא חובה)..."
+          placeholder={t('add_verbal_review')}
           value={comment}
           onChange={e => setComment(e.target.value)}
           rows={3}
@@ -182,7 +184,7 @@ export default function RatingModal({ task, me, onClose }) {
 
         <button onClick={handleSubmit} disabled={loading || !canSubmit}
           style={{ marginTop: 14, width: '100%', height: 52, borderRadius: 'var(--r-md)', background: canSubmit ? 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))' : 'var(--surface-3)', color: canSubmit ? 'white' : 'var(--text-3)', fontWeight: 900, fontSize: 15, border: 'none', cursor: canSubmit && !loading ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: canSubmit ? 'var(--shadow-md)' : 'none', pointerEvents: loading ? 'none' : 'auto' }}>
-          {loading ? <Loader2 size={20} className="animate-spin" /> : '⭐ שלח ביקורת'}
+          {loading ? <Loader2 size={20} className="animate-spin" /> : t('submit_review')}
         </button>
       </div>
 

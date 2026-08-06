@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Timer } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // showOnlyWhenUrgent=true → only shows timer when < 6 hours left (for task cards)
 // showOnlyWhenUrgent=false → always shows (for task detail page)
 export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inline = false }) {
+  const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState('');
   const [hoursLeft, setHoursLeft] = useState(null);
 
@@ -14,7 +16,7 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inlin
       const exp = new Date(expiresAt);
       const diff = exp - now;
       if (diff <= 0) {
-        setTimeLeft('פג תוקף');
+        setTimeLeft(t('te_expired'));
         setHoursLeft(0);
         clearInterval(interval);
       } else {
@@ -22,7 +24,7 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inlin
         const mins = Math.floor((diff % 3600000) / 60000);
         setHoursLeft(hours);
         if (hours > 0) {
-          setTimeLeft(`${hours}ש' ${mins}ד'`);
+          setTimeLeft(`${hours}${t('hours_short')} ${mins}${t('minutes_short')}`);
         } else {
           const secs = Math.floor((diff % 60000) / 1000);
           setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
@@ -37,7 +39,7 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inlin
   // In card mode: only show when < 6 hours left
   if (showOnlyWhenUrgent && hoursLeft !== null && hoursLeft >= 6) return null;
 
-  const isExpired = timeLeft === 'פג תוקף';
+  const isExpired = timeLeft === t('te_expired');
   const isUrgent = !isExpired && hoursLeft !== null && hoursLeft < 2;
 
   // inline mode: just returns the text for embedding inside another element
@@ -59,10 +61,10 @@ export default function TaskExpiry({ expiresAt, showOnlyWhenUrgent = true, inlin
         fontWeight: 700,
         color: isUrgent ? '#dc2626' : '#ea580c',
       }}
-      title="הג'ובה תיסגר אוטומטית בסיום הטיימר"
+      title={t('te_title')}
     >
       <Timer size={12} color={isUrgent ? '#dc2626' : '#f97316'} />
-      <span>נסגרת בעוד {timeLeft}</span>
+      <span>{t('te_closing_in', { time: timeLeft })}</span>
     </div>
   );
 }

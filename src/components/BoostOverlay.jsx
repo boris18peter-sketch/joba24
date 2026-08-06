@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
@@ -41,6 +42,7 @@ function injectBoostCSS() {
 
 // ── Launch Scene ──────────────────────────────────────────────────────────────
 function LaunchScene({ taskTitle, taskPrice, onContinue }) {
+  const { t } = useLanguage();
   const [phase, setPhase] = useState('idle');
   const [showParticles, setShowParticles] = useState(false);
 
@@ -111,7 +113,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
         {phase === 'reveal' && (
           <motion.div key="text" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', damping: 14, stiffness: 150 }} style={{ textAlign: 'center', padding: '0 28px', width: '100%', marginBottom: 16 }}>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#ffffff', letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 12, textShadow: '0 0 24px rgba(168,85,247,.7)' }}>
-              האיתות שוגר! ⚡
+              {t('boost_launched')}
             </div>
             {(taskTitle || taskPrice) && (
               <div style={{ background: 'rgba(168,85,247,.12)', border: '1px solid rgba(168,85,247,.3)', borderRadius: 12, padding: '7px 16px', display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'rgba(255,255,255,.88)', fontWeight: 700, marginBottom: 14, maxWidth: 280 }}>
@@ -119,7 +121,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
                 {taskPrice && <span style={{ color: '#c084fc', fontWeight: 900, flexShrink: 0 }}>₪{taskPrice}</span>}
               </div>
             )}
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', fontWeight: 600 }}>פופאפ נשלח לכל העובדים המתאימים</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,.6)', fontWeight: 600 }}>{t('boost_popup_sent')}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -130,7 +132,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
           <motion.button key="cta" initial={{ opacity: 0, y: 18, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.3, type: 'spring', damping: 12, stiffness: 180 }}
             onClick={onContinue}
             style={{ background: 'linear-gradient(135deg,#c084fc,#a855f7)', border: 'none', borderRadius: 14, padding: '15px 0', width: 'calc(100% - 48px)', color: 'white', fontSize: 16, fontWeight: 900, cursor: 'pointer', zIndex: 30, animation: 'boostGlow 2s ease-in-out infinite', WebkitTapHighlightColor: 'transparent' }}>
-            המשך ›
+            {t('boost_continue')}
           </motion.button>
         )}
       </AnimatePresence>
@@ -140,9 +142,10 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
 
 // ── Boost Scanner ──────────────────────────────────────────────────────────────
 function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }) {
+  const { t } = useLanguage();
   const [workerCount, setWorkerCount] = useState(0);
   const [pulseWorkers, setPulseWorkers] = useState([]);
-  const [statusMsg, setStatusMsg] = useState('שולח פופאפ לעובדים מתאימים...');
+  const [statusMsg, setStatusMsg] = useState('');
 
   const goToTask = () => { onNavigate?.(); };
 
@@ -164,8 +167,9 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
   }, [taskId]);
 
   useEffect(() => {
-    const msgs = ['שולח פופאפ לעובדים מתאימים...', 'מחפש עובדים מתאימים לפי קטגוריה', 'מגביר חשיפה בפיד', 'סורק פרופילים מתאימים', 'מרחיב חשיפה לעובדים פעילים'];
-    let i = 0;
+    const msgs = [t('boost_sending'), t('bo_msg2'), t('bo_msg3'), t('bo_msg4'), t('bo_msg5')];
+    setStatusMsg(msgs[0]);
+    let i = 1;
     const iv = setInterval(() => { if (i < msgs.length) { setStatusMsg(msgs[i]); i++; } else clearInterval(iv); }, 2800);
     return () => clearInterval(iv);
   }, []);
@@ -182,7 +186,7 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
     const unsub = base44.entities.TaskApplication.subscribe((event) => {
       if (event.data?.task_id === taskId && event.type === 'create') {
         setWorkerCount(c => c + 1);
-        setStatusMsg('התקבלה מועמדות ראשונה! 🎯');
+        setStatusMsg(t('bo_first_app'));
       }
     });
     return () => unsub();
@@ -198,7 +202,7 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ textAlign: 'center', padding: '12px 24px 0', width: '100%' }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 5, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}>Boost · Joba24</div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', lineHeight: 1.25, marginBottom: 6 }}>מרחיב חשיפה לעובדים מתאימים</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', lineHeight: 1.25, marginBottom: 6 }}>{t('boost_expanding')}</div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           {taskTitle && <span style={{ fontWeight: 700, color: 'rgba(255,255,255,.75)' }}>"{taskTitle}"</span>}
           {taskPrice && <><span style={{ color: 'rgba(255,255,255,.3)' }}>·</span><span style={{ color: '#c084fc', fontWeight: 800 }}>₪{taskPrice}</span></>}
@@ -235,14 +239,14 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(192,132,252,.1)', border: '1px solid rgba(192,132,252,.28)', borderRadius: 99, padding: '7px 16px' }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c084fc', display: 'inline-block', animation: 'dotBlinkB 1.2s .1s infinite' }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#c084fc' }}>{CATEGORY_NAME_PLURAL[taskCategory] || 'עובדים'} מקבלים את האיתות</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#c084fc' }}>{t('bo_workers_receiving', { cat: CATEGORY_NAME_PLURAL[taskCategory] || t('bo_workers') })}</span>
         </div>
       </motion.div>
 
       <motion.button initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
         onClick={goToTask}
         style={{ background: 'rgba(192,132,252,.12)', border: '1px solid rgba(192,132,252,.35)', borderRadius: 14, padding: '14px 0', width: 'calc(100% - 48px)', color: '#ffffff', fontSize: 15, fontWeight: 700, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-        המשך
+        {t('bo_continue')}
       </motion.button>
     </div>
   );
@@ -250,12 +254,13 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
 
 // ── Main Export ───────────────────────────────────────────────────────────────
 export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategory, onDismiss }) {
+  const { t, isRTL } = useLanguage();
   const [step, setStep] = useState('launch'); // 'launch' | 'scanner'
 
   const handleDismiss = () => { onDismiss?.(); };
 
   return createPortal(
-    <div onClick={handleDismiss} dir="rtl" style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <div onClick={handleDismiss} dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <AnimatePresence mode="wait">
           {step === 'launch' ? (
@@ -265,7 +270,7 @@ export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategor
           ) : (
             <motion.div key="scanner" onClick={e => e.stopPropagation()} initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
               <button onClick={handleDismiss} style={{ position: 'absolute', top: 0, left: 16, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '7px 14px', color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, zIndex: 10 }}>
-                <X size={14} /> סגור
+                <X size={14} /> {t('boost_close')}
               </button>
               <BoostScanner taskId={taskId} taskTitle={taskTitle} taskPrice={taskPrice} taskCategory={taskCategory} onNavigate={onDismiss} />
             </motion.div>

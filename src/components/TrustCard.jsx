@@ -4,6 +4,7 @@ import { calculateTrustScore, getTrustLevel, getCompletedCount } from '@/lib/tru
 import { isUserVerified } from '@/lib/utils';
 import { Star, X, Shield, Briefcase, TrendingUp } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // A single clean metric row for the trust breakdown.
 function MetricRow({ icon, label, points, max, color, status, done }) {
@@ -32,6 +33,7 @@ function MetricRow({ icon, label, points, max, color, status, done }) {
 }
 
 function NextStep({ user, completedCount, trustScore, onVerify, color }) {
+  const { t } = useLanguage();
   const verified = isUserVerified(user);
   const tasksToMax = Math.max(0, 20 - completedCount);
 
@@ -39,24 +41,24 @@ function NextStep({ user, completedCount, trustScore, onVerify, color }) {
   if (!verified) {
     step = {
       icon: <Shield size={15} color="#1a6fd4" />,
-      title: 'אמת/י את הזהות',
-      desc: 'העלאת תעודת זהות — מוסיף 40 נקודות לציון האמון',
-      ctaLabel: 'אימות עכשיו',
+      title: t('tc_verify_identity'),
+      desc: t('tc_verify_desc'),
+      ctaLabel: t('tc_verify_now'),
       cta: onVerify,
       color: '#1a6fd4',
     };
   } else if (tasksToMax > 0) {
     step = {
       icon: <Briefcase size={15} color="#059669" />,
-      title: `בצע/י עוד ${tasksToMax} משימות`,
-      desc: 'כל משימה מוסיפה 1.5 נקודות ניסיון עד למקסימום',
+      title: t('tc_do_more_tasks', { n: tasksToMax }),
+      desc: t('tc_task_points'),
       color: '#059669',
     };
   } else {
     step = {
       icon: <TrendingUp size={15} color="#059669" />,
-      title: 'הגעת לציון מקסימלי 🎉',
-      desc: 'המשך/י לבצע משימות ולשמור על דירוג גבוה',
+      title: t('tc_max_score'),
+      desc: t('tc_keep_going'),
       color: '#059669',
     };
   }
@@ -86,6 +88,7 @@ function NextStep({ user, completedCount, trustScore, onVerify, color }) {
 }
 
 function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor, onClose, isPublic }) {
+  const { t, isRTL } = useLanguage();
   const [showVerify, setShowVerify] = useState(false);
   const completedCount = getCompletedCount(tasks, user);
   const verified = isUserVerified(user);
@@ -102,7 +105,7 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
         @keyframes tcFadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--surface-2)', borderRadius: '22px 22px 0 0',
@@ -119,8 +122,8 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>מד אמינות</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>מה בונה את ציון האמון?</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('tc_trust_meter')}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{t('tc_what_builds')}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ fontSize: 24, fontWeight: 900, color: trustLevel.color, lineHeight: 1 }}>{trustScore}%</div>
@@ -136,37 +139,37 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: mainColor }}>✨ {trustLevel.label}</span>
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>מתוך 100</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('tc_out_of_100')}</span>
         </div>
 
         {/* Breakdown */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
           <MetricRow
             icon={<Shield size={16} color={verified ? '#059669' : '#94a3b8'} />}
-            label="אימות זהות"
+            label={t('tc_identity_verify')}
             points={verified ? 40 : 0}
             max={40}
             color="#1a6fd4"
             done={verified}
-            status={verified ? 'זהות אומתה בהצלחה' : 'ממתין לאימות תעודת זהות'}
+            status={verified ? t('tc_identity_verified') : t('tc_identity_pending')}
           />
           <MetricRow
             icon={<Star size={16} color="#d97706" fill="#fbbf24" />}
-            label={`דירוג${rating > 0 ? ` · ${rating.toFixed(1)}★` : ''}`}
+            label={`${t('tc_rating_label')}${rating > 0 ? ` · ${rating.toFixed(1)}★` : ''}`}
             points={ratingPoints}
             max={30}
             color="#d97706"
             done={ratingPoints >= 30}
-            status={ratingCount > 0 ? `${ratingCount} ביקורות — דירוג גבוה מחזק את הציון` : 'תקבל/י ביקורות לאחר סיום משימות'}
+            status={ratingCount > 0 ? t('tc_rating_status', { n: ratingCount }) : t('tc_rating_empty')}
           />
           <MetricRow
             icon={<Briefcase size={16} color="#7c3aed" />}
-            label={`ניסיון · ${completedCount} משימות`}
+            label={t('tc_exp_label', { n: completedCount })}
             points={taskPoints}
             max={30}
             color="#7c3aed"
             done={taskPoints >= 30}
-            status={taskPoints >= 30 ? 'הגעת למקסימום ניסיון' : 'כל משימה מוסיפה ניסיון לציון'}
+            status={taskPoints >= 30 ? t('tc_exp_max') : t('tc_exp_progress')}
           />
         </div>
 
@@ -200,6 +203,7 @@ function getBarColor(w) {
 }
 
 export default function TrustCard({ user, reviews = [], tasks = [], isPublic = false }) {
+  const { t, isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [displayWidth, setDisplayWidth] = useState(0);
   const animRef = useRef(null);
@@ -229,7 +233,7 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
   return (
     <>
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         onClick={() => setOpen(true)}
         style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 14px', cursor: 'pointer', userSelect: 'none' }}
       >
@@ -237,7 +241,7 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 18, fontWeight: 900, color: barColor, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>מד אמינות</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>{t('tc_trust_meter')}</span>
         </div>
         <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
           <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, boxShadow: `0 0 10px ${barColor}80`, transition: 'background-color 0.1s, box-shadow 0.1s' }} />

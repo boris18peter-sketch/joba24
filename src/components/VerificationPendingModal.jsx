@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { Clock, X, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * VerificationPendingModal — shown when a user who already submitted
@@ -7,6 +8,7 @@ import { Clock, X, ShieldCheck } from 'lucide-react';
  * task. Tells them their verification is under review by the control team.
  */
 export default function VerificationPendingModal({ onClose }) {
+  const { t, isRTL } = useLanguage();
   return createPortal(
     <div
       style={{
@@ -19,7 +21,7 @@ export default function VerificationPendingModal({ onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           background: '#fafbff',
           borderRadius: '28px 28px 0 0',
@@ -61,25 +63,22 @@ export default function VerificationPendingModal({ onClose }) {
 
           {/* Title */}
           <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 10, letterSpacing: -0.3 }}>
-            האימות שלך בבדיקה
+            {t('vpm_title')}
           </div>
 
           {/* Description */}
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
-            הגשת את פרטי האימות שלך והם נמצאים כעת בבדיקה אצל צוות הבקרה.<br />
-            לאחר שהאימות יאושר, תוכל להגיש בקשה למשימה זו ולכל המשימות המחייבות ווי ירוק.
-          </div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }} dangerouslySetInnerHTML={{ __html: t('vpm_desc') }} />
 
           {/* Status info */}
           <div style={{ width: '100%', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 16, padding: '14px 16px', marginBottom: 24, textAlign: 'right' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Clock size={16} color="#1d4ed8" strokeWidth={2} style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#1e3a8a' }}>סטטוס: ממתין לאישור</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#1e3a8a' }}>{t('vpm_status')}</span>
             </div>
             {[
-              'צוות הבקרה בודק את הפרטים שהגשת',
-              'התהליך אורך בדרך כלל מספר שעות',
-              'לאחר האישור תקבל ווי ירוק ותוכל להגיש בקשות',
+              t('vpm_step1'),
+              t('vpm_step2'),
+              t('vpm_step3'),
             ].map((text, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0' }}>
                 <ShieldCheck size={14} color="#3b82f6" strokeWidth={2} style={{ flexShrink: 0 }} />
@@ -102,7 +101,7 @@ export default function VerificationPendingModal({ onClose }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            הבנתי
+            {t('popup_got_it')}
           </button>
         </div>
       </div>

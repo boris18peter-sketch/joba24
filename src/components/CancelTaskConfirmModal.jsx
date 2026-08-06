@@ -1,7 +1,9 @@
 import { createPortal } from 'react-dom';
 import { Loader2, X, Trash2 } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoading }) {
+  const { t, isRTL } = useLanguage();
   return createPortal(
     <div
       style={{
@@ -15,7 +17,7 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
       onTouchStart={(e) => e.stopPropagation()}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--sheet-bg)', borderRadius: '28px 28px 0 0',
@@ -40,16 +42,14 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
           <div style={{ width: 68, height: 68, borderRadius: 22, background: 'var(--danger-bg)', border: '2px solid var(--danger-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <Trash2 size={32} color="#dc2626" strokeWidth={1.8} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', marginBottom: 10 }}>בטל משימה?</div>
-          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
-            אתה מבטל את המשימה <strong style={{ color: 'var(--text-1)' }}>"{task.title}"</strong>
-          </div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', marginBottom: 10 }}>{t('ccm_title')}</div>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: t('ccm_body', { title: task.title }) }} />
         </div>
 
         {/* Warning box */}
         <div style={{ background: 'var(--danger-bg)', border: '1.5px solid var(--danger-border)', borderRadius: 14, padding: '12px 16px', marginBottom: 20 }}>
           <div style={{ fontSize: 12, color: '#dc2626', lineHeight: 1.6, fontWeight: 600 }}>
-            ⚠️ לא ניתן לבטל פעולה זו לאחר האישור
+            {t('ccm_warning')}
           </div>
         </div>
 
@@ -60,14 +60,14 @@ export default function CancelTaskConfirmModal({ task, onConfirm, onClose, isLoa
             disabled={isLoading}
             style={{ width: '100%', height: 54, borderRadius: 16, background: isLoading ? '#fca5a5' : 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: isLoading ? 'none' : '0 4px 16px rgba(220,38,38,0.35)', opacity: isLoading ? 0.8 : 1 }}
           >
-            {isLoading ? <><Loader2 size={20} className="animate-spin" /><span>מבטל...</span></> : <><Trash2 size={18} strokeWidth={2} />כן, בטל משימה</>}
+            {isLoading ? <><Loader2 size={20} className="animate-spin" /><span>{t('ccm_canceling')}</span></> : <><Trash2 size={18} strokeWidth={2} />{t('ccm_confirm')}</>}
           </button>
           <button
             onClick={onClose}
             disabled={isLoading}
             style={{ width: '100%', height: 50, borderRadius: 14, background: 'var(--surface-2)', border: '1.5px solid var(--border-1)', color: 'var(--text-1)', fontWeight: 700, fontSize: 15, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.5 : 1 }}
           >
-            חזור
+            {t('ccm_back')}
           </button>
         </div>
       </div>

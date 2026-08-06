@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { ShieldCheck, X, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * VerificationRequiredModal — shown when a user tries to apply to a
@@ -7,6 +8,7 @@ import { ShieldCheck, X, ArrowLeft } from 'lucide-react';
  * Has a button that opens the full VerifyModal (KYC flow).
  */
 export default function VerificationRequiredModal({ onClose, onVerify }) {
+  const { t, isRTL } = useLanguage();
   return createPortal(
     <div
       style={{
@@ -19,7 +21,7 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           background: '#fafbff',
           borderRadius: '28px 28px 0 0',
@@ -61,21 +63,18 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
 
           {/* Title */}
           <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', marginBottom: 10, letterSpacing: -0.3 }}>
-            נדרש אימות ווי ירוק
+            {t('vrm_title')}
           </div>
 
           {/* Description */}
-          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }}>
-            משימה זו מחייבת אימות זהות (ווי ירוק) כדי להגיש בקשה.<br />
-            האימות הוא חד־פעמי ונעשה פעם אחת בלבד — לאחריו תוכל להגיש בקשות לכל המשימות המאומתות.
-          </div>
+          <div style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.7, marginBottom: 24 }} dangerouslySetInnerHTML={{ __html: t('vrm_desc') }} />
 
           {/* Benefits */}
           <div style={{ width: '100%', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: '14px 16px', marginBottom: 24, textAlign: 'right' }}>
             {[
-              'גישה למשימות פרימיום עם ווי ירוק',
-              'בניית אמון עם מפרסמים ועובדים',
-              'אימות חד־פעמי — לא צריך לחזור עליו',
+              t('vrm_benefit1'),
+              t('vrm_benefit2'),
+              t('vrm_benefit3'),
             ].map((text, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0' }}>
                 <ShieldCheck size={14} color="#059669" strokeWidth={2} style={{ flexShrink: 0 }} />
@@ -98,7 +97,7 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <ShieldCheck size={18} strokeWidth={2} /> אמת אותי עכשיו
+            <ShieldCheck size={18} strokeWidth={2} /> {t('vrm_cta')}
           </button>
 
           {/* Dismiss */}
@@ -111,7 +110,7 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
               cursor: 'pointer', marginTop: 8,
             }}
           >
-            לא עכשיו
+            {t('vrm_later')}
           </button>
         </div>
       </div>

@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function TaskApplicants({ task, onApprove }) {
+  const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
@@ -83,11 +85,11 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
       queryClient.invalidateQueries({ queryKey: ['workerTasksLayout', updatedTask?.worker_id] });
-      toast.success(`${updatedTask?.worker_name || 'העובד'} אושר! ✨`);
+      toast.success(t('ta_worker_approved', { name: updatedTask?.worker_name || t('worker') }));
       onApprove?.();
     },
     onError: (error) => {
-      toast.error(`שגיאה: ${error.message}`);
+      toast.error(t('error_colon') + error.message);
     },
   });
 
@@ -109,7 +111,7 @@ export default function TaskApplicants({ task, onApprove }) {
   const cancelWorkerMutation = useMutation({
     mutationFn: async () => {
       const res = await base44.functions.invoke('cancelApprovedWorker', { taskId: task.id });
-      if (!res.data?.success) throw new Error('שגיאה בביטול');
+      if (!res.data?.success) throw new Error(t('ta_cancel_error'));
       return res.data;
     },
     onSuccess: async () => {
@@ -126,11 +128,11 @@ export default function TaskApplicants({ task, onApprove }) {
       queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
       queryClient.invalidateQueries({ queryKey: ['myApp'] });
       window.dispatchEvent(new CustomEvent('approval_revoked_by_client', { detail: { task } }));
-      toast.success('העובד בוטל והג\'ובות חזרו ליתרה שלו 🪙');
+      toast.success(t('ta_worker_cancelled'));
       onApprove?.();
     },
     onError: (err) => {
-      toast.error('שגיאה בביטול: ' + err.message);
+      toast.error(t('ta_cancel_error_colon') + err.message);
     },
   });
 
@@ -146,7 +148,7 @@ export default function TaskApplicants({ task, onApprove }) {
       });
 
       if (res.data?.code === 'already_declined') {
-        toast.info('הבקשה כבר נדחתה');
+        toast.info(t('ta_already_declined'));
         return;
       }
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
@@ -162,18 +164,18 @@ export default function TaskApplicants({ task, onApprove }) {
         queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         if (res.data?.auto_bump_resumed) {
-          toast.success('הבקשה נדחתה ועליית המחיר האוטומטית ממשיכה 📈');
+          toast.success(t('ta_declined_bump'));
         } else {
-          toast.success('הבקשה נדחתה והג\'ובות חזרו ליתרה של העובד 🪙');
+          toast.success(t('ta_declined_credits'));
         }
         onApprove?.();
       }, 350);
 
     } catch (err) {
       if (err?.response?.status === 409) {
-        toast.info('הבקשה כבר נדחתה');
+        toast.info(t('ta_already_declined'));
       } else {
-        toast.error('שגיאה בדחיית הבקשה');
+        toast.error(t('ta_decline_error'));
       }
     } finally {
       decliningRef.current.delete(app.id);
@@ -191,8 +193,8 @@ export default function TaskApplicants({ task, onApprove }) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
         <div className="text-2xl mb-2">✋</div>
-        <p className="text-sm font-semibold text-blue-800">ממתין לבקשות</p>
-        <p className="text-xs text-blue-600 mt-1">עדיין לא הגיעו בקשות מעובדים</p>
+        <p className="text-sm font-semibold text-blue-800">{t('ta_waiting_requests')}</p>
+        <p className="text-xs text-blue-600 mt-1">{t('ta_no_requests_yet')}</p>
       </div>
     );
   }
@@ -220,32 +222,29 @@ export default function TaskApplicants({ task, onApprove }) {
           onClick={() => setShowCancelWorkerConfirm(false)}
         >
           <div
-            dir="rtl"
+            dir={isRTL ? 'rtl' : 'ltr'}
             style={{ background: 'white', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))' }}
             onClick={e => e.stopPropagation()}
           >
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>🚫</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>לבטל את העובד?</div>
-              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-                העובד <strong style={{ color: '#0f1e40' }}>{approvedApp?.worker_name}</strong> יקבל החזר מלא של הג\'ובות.<br />
-                המשימה תחזור לסטטוס פתוח ותוכל לאשר עובד אחר.
-              </div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('ta_cancel_worker_title')}</div>
+              <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: t('ta_cancel_worker_body', { name: approvedApp?.worker_name }) }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button
                 onClick={() => setShowCancelWorkerConfirm(false)}
                 style={{ width: '100%', height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer' }}
               >
-                השאר את העובד
+                {t('ta_keep_worker')}
               </button>
               <button
                 onClick={() => cancelWorkerMutation.mutate()}
                 disabled={cancelWorkerMutation.isPending}
                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'white', border: '1.5px solid #fecaca', color: '#dc2626', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
-                {cancelWorkerMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><UserX size={16} /> כן, בטל עובד</>}
+                {cancelWorkerMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><UserX size={16} /> {t('ta_yes_cancel_worker')}</>}
               </button>
             </div>
           </div>
@@ -254,7 +253,7 @@ export default function TaskApplicants({ task, onApprove }) {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>מועמדים ({visibleApps.length})</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('ta_applicants_count', { n: visibleApps.length })}</span>
       </div>
 
       {visibleApps.map(app => {
@@ -317,7 +316,7 @@ export default function TaskApplicants({ task, onApprove }) {
                   </span>
                   {isApproved && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, color: '#059669', background: '#dcfce7', border: '1px solid #86efac', borderRadius: 20, padding: '2px 8px' }}>
-                      <CheckCircle2 size={11} /> אושר
+                      <CheckCircle2 size={11} /> {t('ta_approved_badge')}
                     </span>
                   )}
                 </div>
@@ -335,7 +334,7 @@ export default function TaskApplicants({ task, onApprove }) {
                   )}
                   {tasksCompleted > 0 && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>
-                      <Briefcase size={10} /> {tasksCompleted} משימות
+                      <Briefcase size={10} /> {tasksCompleted} {t('tasks')}
                     </span>
                   )}
                 </div>
@@ -348,7 +347,7 @@ export default function TaskApplicants({ task, onApprove }) {
                   </a>
                 ) : !isApproved ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 10, fontWeight: 600, color: 'var(--text-3)' }}>
-                    <Lock size={9} color="#d97706" /> המספר יוצג לאחר אישור
+                    <Lock size={9} color="#d97706" /> {t('ta_phone_after_approval')}
                   </div>
                 ) : null}
               </div>
@@ -409,7 +408,7 @@ export default function TaskApplicants({ task, onApprove }) {
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     }}
                   >
-                    <UserX size={15} /> בטל עובד
+                    <UserX size={15} /> {t('ta_cancel_worker_btn')}
                   </button>
                 )
               ) : !approvedApp ? (
@@ -427,7 +426,7 @@ export default function TaskApplicants({ task, onApprove }) {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     }}
                   >
-                    {isBeingDeclined ? <Loader2 size={15} className="animate-spin" /> : <><X size={15} /> דחה</>}
+                    {isBeingDeclined ? <Loader2 size={15} className="animate-spin" /> : <><X size={15} /> {t('ta_decline_btn')}</>}
                   </button>
                   <button
                     onClick={() => approveMutation.mutate(app)}
@@ -441,7 +440,7 @@ export default function TaskApplicants({ task, onApprove }) {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     }}
                   >
-                    {approveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> אשר עובד</>}
+                    {approveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> {t('ta_approve_worker_btn')}</>}
                   </button>
                 </>
               ) : null}

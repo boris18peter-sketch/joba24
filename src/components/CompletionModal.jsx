@@ -5,12 +5,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Star, Loader2, X, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function CompletionModal({ task, me, onClose }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
 
   const isWorker = me?.id === task.worker_id;
   const revieweeId = isWorker ? task.client_id : task.worker_id;
@@ -37,7 +39,7 @@ export default function CompletionModal({ task, me, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success('🎉 המשימה הושלמה בהצלחה!');
+      toast.success(t('task_completed'));
       onClose();
       navigate('/');
     },
@@ -56,7 +58,7 @@ export default function CompletionModal({ task, me, onClose }) {
       onTouchStart={e => e.stopPropagation()}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         onClick={e => e.stopPropagation()}
         style={{
           background: 'white', borderRadius: '28px 28px 0 0',
@@ -79,19 +81,19 @@ export default function CompletionModal({ task, me, onClose }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 900, color: '#0f2b6b', margin: 0 }}>
-            {isWorker ? '💪 סיימת עבודה מעולה!' : '✅ אשר סיום המשימה'}
+            {isWorker ? t('cm_worker_header') : t('cm_client_header')}
           </h2>
         </div>
 
         {/* Task summary */}
         <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 16, padding: 14, marginBottom: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: 12, color: '#15803d', marginBottom: 2, fontWeight: 600 }}>משימה</div>
+          <div style={{ fontSize: 12, color: '#15803d', marginBottom: 2, fontWeight: 600 }}>{t('cm_task_label')}</div>
           <div style={{ fontWeight: 800, color: '#065f46', fontSize: 15 }}>{task.title}</div>
           <div style={{ fontSize: 26, fontWeight: 900, color: '#059669', marginTop: 4 }}>₪{task.price}</div>
         </div>
 
         <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 16, fontWeight: 500 }}>
-          {isWorker ? `איך היה לעבוד עם ${task.client_name || 'הלקוח'}?` : `איך היה לעבוד עם ${task.worker_name || 'הביצועיסט'}?`}
+          {t('cm_how_was', { name: isWorker ? (task.client_name || t('client')) : (task.worker_name || t('worker')) })}
         </p>
 
         {/* Stars */}
@@ -104,7 +106,7 @@ export default function CompletionModal({ task, me, onClose }) {
         </div>
 
         <textarea
-          placeholder="שתף חוויה (אופציונלי)..."
+          placeholder={t('cm_share_placeholder')}
           value={comment}
           onChange={e => setComment(e.target.value)}
           rows={2}
@@ -116,7 +118,7 @@ export default function CompletionModal({ task, me, onClose }) {
           disabled={completeMutation.isPending}
           style={{ width: '100%', height: 52, borderRadius: 16, background: completeMutation.isPending ? '#6ee7b7' : 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: completeMutation.isPending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 16px rgba(5,150,105,0.3)' }}
         >
-          {completeMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <><CheckCircle size={18} />{isWorker ? 'סיימתי את המשימה!' : 'אשר סיום המשימה'}</>}
+          {completeMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <><CheckCircle size={18} />{isWorker ? t('cm_worker_btn') : t('cm_client_btn')}</>}
         </button>
       </div>
 

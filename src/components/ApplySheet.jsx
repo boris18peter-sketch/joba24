@@ -5,8 +5,10 @@ import CreditIcon from '@/components/CreditIcon';
 import ImageUploader from '@/components/ImageUploader';
 import { getActiveRequirements } from '@/lib/requirements';
 import { getCategoryLabel } from '@/lib/categories';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function ApplySheet({ task, onClose, onApply, loading, showImages = true }) {
+  const { t, isRTL } = useLanguage();
   const [message, setMessage] = useState('');
   const [images, setImages] = useState([]);
   const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
@@ -15,8 +17,8 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
   const reqs = getActiveRequirements(task?.requirements, task?.category).map(r =>
     r.value ? `${r.label}: ${r.value}` : r.label
   );
-  if (task?.requires_invoice) reqs.push('דרושה חשבונית מס');
-  if (task?.verification_required) reqs.push('דרוש ווי ירוק');
+  if (task?.requires_invoice) reqs.push(t('as_requires_invoice'));
+  if (task?.verification_required) reqs.push(t('as_requires_green'));
 
   return createPortal(
     <div
@@ -31,7 +33,7 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
       onTouchStart={e => e.stopPropagation()}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           background: 'white', borderRadius: '28px 28px 0 0',
           width: '100%', maxWidth: 480,
@@ -53,9 +55,9 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px 20px', marginBottom: 16, color: 'white' }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span>התחייבות:</span>
+            <span>{t('application_fee')}</span>
             <CreditIcon size={12} />
-            <span style={{ fontWeight: 800 }}>{cost} ג'ובות</span>
+            <span style={{ fontWeight: 800 }}>{cost} {t('credits')}</span>
           </div>
           <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{task?.title}</div>
@@ -66,7 +68,7 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
           <div style={{ background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '12px 14px', marginBottom: 16 }}>
             {task?.category && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: reqs.length > 0 ? 8 : 0 }}>
-                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>קטגוריה:</span>
+                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{t('category')}:</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>{getCategoryLabel(task.category)}</span>
               </div>
             )}
@@ -77,12 +79,12 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
             )}
             {task?.payment_method && (
               <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: reqs.length > 0 ? 8 : 0 }}>
-                💳 {task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}
+                💳 {task.payment_method === 'Cash' ? t('cash') : task.payment_method}
               </div>
             )}
             {reqs.length > 0 && (
               <div style={{ borderTop: task?.category || task?.location_name || task?.payment_method ? '1px solid #e2e8f0' : 'none', paddingTop: 8 }}>
-                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 6 }}>דרישות המשימה:</div>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 6 }}>{t('as_task_reqs')}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {reqs.map((req, i) => (
                     <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '4px 8px', fontSize: 11, fontWeight: 600, color: '#166534' }}>
@@ -97,21 +99,17 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
 
         {/* Joba commitment explanation */}
         <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
-          <div style={{ fontWeight: 800, marginBottom: 4 }}>💡 איך עובדים ג'ובות?</div>
-          הג'ובות עוברות ל<strong>התחייבות</strong> בעת ההגשה וחוזרות ליתרה הזמינה אוטומטית אם:<br />
-          • לא נבחרת למשימה<br />
-          • המשימה בוטלה או פג תוקפה<br />
-          • נבחר עובד אחר<br />
-          ניתן לראות את הג'ובות בהתחייבות בכל רגע בסמל היתרה למעלה ולבטל בקשות.
+          <div style={{ fontWeight: 800, marginBottom: 4 }}>{t('as_how_jobs')}</div>
+          <span dangerouslySetInnerHTML={{ __html: t('as_jobs_explain') }} />
         </div>
 
         {/* Message */}
         <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>
-            הוסף הודעה לבעל המשימה (לא חובה)
+            {t('add_message_to_owner')}
           </p>
           <textarea
-            placeholder="לדוגמא: יש לי ניסיון של 5 שנים בתחום..."
+            placeholder={t('eg_experience')}
             value={message}
             onChange={e => setMessage(e.target.value)}
             rows={3}
@@ -122,7 +120,7 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
         {/* Images */}
         {showImages && (
           <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>תמונות (לא חובה)</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>{t('images_optional')}</p>
             <ImageUploader images={images} onChange={setImages} />
           </div>
         )}
@@ -134,14 +132,14 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
             disabled={loading}
             style={{ flex: 1, height: 52, borderRadius: 16, background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={15} /> שלח בקשה</>}
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={15} /> {t('send_application')}</>}
           </button>
           <button
             onClick={onClose}
             disabled={loading}
             style={{ height: 52, padding: '0 18px', borderRadius: 16, background: 'white', border: '1.5px solid #dce8f5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
           >
-            ביטול
+            {t('cancel')}
           </button>
         </div>
       </div>

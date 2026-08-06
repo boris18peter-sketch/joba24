@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Navigation, CheckCircle2, PartyPopper, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   if (!isWorker || !task.worker_id) return null;
@@ -20,20 +22,20 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
             update.worker_lat = pos.coords.latitude;
             update.worker_lng = pos.coords.longitude;
             onUpdate(update);
-            toast.success('יצאת לדרך! 🚗');
+            toast.success(t('wsu_on_way_toast'));
           },
           () => {
             onUpdate(update);
-            toast.success('יצאת לדרך! 🚗');
+            toast.success(t('wsu_on_way_toast'));
           }
         );
       } else {
         await onUpdate(update);
-        if (status === 'arrived') toast.success('הגעת למיקום! 📍');
-        if (status === 'done') toast.success('עבודה סיימה! ✅');
+        if (status === 'arrived') toast.success(t('wsu_arrived_toast'));
+        if (status === 'done') toast.success(t('wsu_done_toast'));
       }
     } catch (err) {
-      toast.error('שגיאה בעדכון סטטוס');
+      toast.error(t('wsu_error'));
     }
     setLoading(false);
   };
@@ -47,7 +49,7 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
         className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold h-12"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <Navigation className="w-4 h-4 ml-2" />}
-        יצאתי לדרך
+        {t('wsu_leave_btn')}
       </Button>
     );
   }
@@ -60,7 +62,7 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
         className="w-full rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold h-12"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <CheckCircle2 className="w-4 h-4 ml-2" />}
-        הגעתי למיקום
+        {t('wsu_arrived_btn')}
       </Button>
     );
   }
@@ -73,7 +75,7 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
         className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <PartyPopper className="w-4 h-4 ml-2" />}
-        סיימתי את העבודה
+        {t('wsu_done_btn')}
       </Button>
     );
   }

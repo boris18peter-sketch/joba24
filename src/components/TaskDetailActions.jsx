@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import RatingModal from '@/components/RatingModal';
 import InvoiceModal from '@/components/InvoiceModal';
 import ApplySheet from '@/components/ApplySheet';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function TaskDetailActions({
   task, me, id, isOwner, isWorker,
@@ -17,6 +18,7 @@ export default function TaskDetailActions({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [showRating, setShowRating] = useState(false);
   const [hasRated, setHasRated] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
@@ -31,10 +33,10 @@ export default function TaskDetailActions({
       queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
       queryClient.invalidateQueries({ queryKey: ['task', id] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success('יצאת מהמשימה והג\'ובות חזרו ליתרה 🪙');
+      toast.success(t('left_task_credits_back'));
       navigate('/');
     },
-    onError: () => toast.error('שגיאה ביציאה מהמשימה'),
+    onError: () => toast.error(t('tda_exit_error')),
   });
 
   const reopenMutation = useMutation({
@@ -44,7 +46,7 @@ export default function TaskDetailActions({
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('המשימה נפתחה מחדש!');
+      toast.success(t('task_reopened_toast'));
     },
   });
 
@@ -73,7 +75,7 @@ export default function TaskDetailActions({
             onClick={() => setShowInvoice(true)}
             style={{ width: '100%', height: 48, borderRadius: 14, background: task?.requires_invoice ? 'linear-gradient(135deg,#7c3aed,#6d28d9)' : '#faf5ff', border: task?.requires_invoice ? 'none' : '1.5px solid #e9d5ff', color: task?.requires_invoice ? 'white' : '#7c3aed', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: task?.requires_invoice ? '0 4px 14px rgba(124,58,237,0.3)' : 'none' }}>
             <FileText size={16} />
-            {task?.requires_invoice ? '📄 הפק חשבונית מס (נדרש על ידי הלקוח)' : 'הפק חשבונית מס'}
+            {task?.requires_invoice ? t('generate_tax_invoice_required') : t('generate_tax_invoice_btn')}
           </button>
         )}
 
@@ -82,13 +84,13 @@ export default function TaskDetailActions({
           <button
             onClick={() => setShowRating(true)}
             style={{ width: '100%', height: 52, borderRadius: 'var(--r-md)', background: 'linear-gradient(135deg,var(--brand-accent),var(--brand-accent-dark))', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, boxShadow: '0 4px 14px rgba(251,191,36,0.35)' }}>
-            <Star size={16} style={{ fill: 'white' }} /> דרג את {me?.id === task?.client_id ? task?.worker_name : task?.client_name}
+            <Star size={16} style={{ fill: 'white' }} /> {t('tda_rate_person', { name: me?.id === task?.client_id ? task?.worker_name : task?.client_name })}
           </button>
         )}
         {isCompleted && isParticipant && myReview && (
           <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 'var(--r-md)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#92400e', fontWeight: 700 }}>
             <Star size={15} style={{ fill: '#fbbf24', color: '#fbbf24' }} />
-            {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} הדירוג שלך נשמר — לא ניתן לדרג שוב
+            {[1,2,3,4,5].slice(0, myReview.rating).map(() => '★').join('')} {t('tda_rating_saved')}
           </div>
         )}
 
@@ -97,7 +99,7 @@ export default function TaskDetailActions({
           <button
             onClick={() => { window.dispatchEvent(new CustomEvent('hide_task_sheet')); navigate(buildRepostUrl(task)); }}
             style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--brand-primary-light)', border: '1px solid #bfdbfe', color: 'var(--brand-primary)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14 }}>
-            <RotateCcw size={16} /> פרסם שוב
+            <RotateCcw size={16} /> {t('repost')}
           </button>
         )}
 
@@ -107,7 +109,7 @@ export default function TaskDetailActions({
             onClick={() => cancelTakeMutation.mutate()}
             disabled={cancelTakeMutation.isPending}
             style={{ width: '100%', height: 48, borderRadius: 'var(--r-md)', background: 'var(--surface-2)', border: '1px solid var(--color-danger-border)', color: 'var(--color-danger)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-            {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> צא מהמשימה</>}
+            {cancelTakeMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><DoorOpen size={16} strokeWidth={1.8} /> {t('tda_exit_task_btn')}</>}
           </button>
         )}
       </div>
