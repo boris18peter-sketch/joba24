@@ -27,6 +27,13 @@
       .preload-text { font-family:-apple-system,BlinkMacSystemFont,sans-serif; font-size:14px; color:#94a3b8; font-weight:500; }
       @keyframes preload-spin { to{transform:rotate(360deg)} }
     </style>
+    <!-- Tranzila Apple Pay SDK — direct domain integration.
+         Runs Apple Pay from our top-level origin (required by Apple),
+         so the iframe's Apple Pay button can delegate the session to us.
+         jQuery is isolated via noConflict(true) → no pollution to the React app. -->
+    <script type="text/javascript" src="https://direct.tranzila.com/Tranzila_files/jquery.js"></script>
+    <script>document.write('<script src="https://direct.tranzila.com/js/tranzilanapple_v3.js?v=' + Date.now() + '"><\/script>');</script>
+    <script>var $n = jQuery.noConflict(true);</script>
   </head>
   <body>
     <div id="root">
