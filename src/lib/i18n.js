@@ -1125,6 +1125,13 @@ export const translations = {
     ex_25: 'צריך מילוי גז ❄️',
     ex_26: 'צריך ניקיון חלון 🪟',
     ex_27: 'צריך הסעת ילד 🚙',
+    review_from_client: 'ביקורת מלקוח',
+    review_from_worker: 'ביקורת ממבצע',
+    no_history_yet: 'אין היסטוריה עדיין',
+    history_will_appear: 'משימות וביקורות שהושלמו יופיעו כאן',
+    execution_history: 'היסטוריית ביצוע',
+    role_doer: 'מבצע',
+    role_poster: 'מפרסם',
     },
 
   en: {
@@ -2349,6 +2356,13 @@ export const translations = {
     ex_25: 'Need gas refill ❄️',
     ex_26: 'Need window cleaning 🪟',
     ex_27: 'Need a child pickup 🚙',
+    review_from_client: 'Review from client',
+    review_from_worker: 'Review from worker',
+    no_history_yet: 'No history yet',
+    history_will_appear: 'Completed tasks and reviews will appear here',
+    execution_history: 'Execution history',
+    role_doer: 'Doer',
+    role_poster: 'Poster',
     },
 
     ar: {

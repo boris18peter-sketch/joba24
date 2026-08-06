@@ -1074,4 +1074,11 @@ export const zh = {
   ex_25: '需要加气 ❄️',
   ex_26: '需要擦窗户 🪟',
   ex_27: '需要接送孩子 🚙',
+  review_from_client: '客户评价',
+  review_from_worker: '工人评价',
+  no_history_yet: '暂无历史',
+  history_will_appear: '已完成的任务和评价将显示在这里',
+  execution_history: '执行历史',
+  role_doer: '执行者',
+  role_poster: '发布者',
 };

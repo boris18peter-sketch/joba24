@@ -1074,4 +1074,11 @@ export const fil = {
   ex_25: 'Kailangan mag-refill ng gas ❄️',
   ex_26: 'Kailangan maglinis ng bintana 🪟',
   ex_27: 'Kailangan hatid ng bata 🚙',
+  review_from_client: 'Review mula sa client',
+  review_from_worker: 'Review mula sa worker',
+  no_history_yet: 'Wala pang history',
+  history_will_appear: 'Makikita rito ang nakumpletong tasks at reviews',
+  execution_history: 'History ng pagkumpleto',
+  role_doer: 'Tagagawa',
+  role_poster: 'Tagapag-post',
 };

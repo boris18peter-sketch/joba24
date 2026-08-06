@@ -8,22 +8,24 @@ import { CheckCircle, MapPin, Calendar } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
 
+const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
+
 const CHIPS = [
-  { field: 'arrived_on_time', label: '⏱️ הגיע בזמן',    color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-  { field: 'professional',    label: '💼 מקצועי',       color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  { field: 'good_communication', label: '💬 תקשורת טובה', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
-  { field: 'fair_pricing',    label: '💰 מחיר הוגן',    color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-  { field: 'would_hire_again',label: '🔁 ממליץ',        color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+  { field: 'arrived_on_time', key: 'arrived_on_time',     color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+  { field: 'professional',    key: 'professional',        color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  { field: 'good_communication', key: 'good_communication', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+  { field: 'fair_pricing',    key: 'fair_pricing',         color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+  { field: 'would_hire_again',key: 'would_hire_again',     color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
 ];
 
-function formatDate(dateStr) {
+function formatDate(dateStr, lang) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(LOCALE_MAP[lang] || 'he-IL', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function CompletionTimeline({ tasks = [], reviews = [] }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   if (tasks.length === 0) return null;
 
   // Build a map of task_id → review
@@ -35,7 +37,7 @@ export default function CompletionTimeline({ tasks = [], reviews = [] }) {
   return (
     <div style={{ background: 'white', borderRadius: 16, border: '1px solid #dce8f5', padding: '14px 16px' }}>
       <div style={{ fontSize: 11, fontWeight: 800, color: '#1a6fd4', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 14 }}>
-        היסטוריית ביצוע
+        {t('execution_history')}
       </div>
 
       <div style={{ position: 'relative' }}>
@@ -88,7 +90,7 @@ export default function CompletionTimeline({ tasks = [], reviews = [] }) {
                     {(task.completed_at || task.created_date) && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#94a3b8', marginRight: 'auto' }}>
                         <Calendar size={9} strokeWidth={1.8} />
-                        {formatDate(task.completed_at || task.created_date)}
+                        {formatDate(task.completed_at || task.created_date, lang)}
                       </span>
                     )}
                   </div>
@@ -102,7 +104,7 @@ export default function CompletionTimeline({ tasks = [], reviews = [] }) {
                           color: c.color, background: c.bg, border: `1px solid ${c.border}`,
                           borderRadius: 99, padding: '2px 8px',
                         }}>
-                          {c.label}
+                          {t(c.key)}
                         </span>
                       ))}
                     </div>

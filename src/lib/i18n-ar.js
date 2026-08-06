@@ -1101,4 +1101,11 @@ export const ar = {
     ex_25: 'أحتاج تعبئة غاز ❄️',
     ex_26: 'أحتاج تنظيف نافذة 🪟',
     ex_27: 'أحتاج توصيل طفل 🚙',
+    review_from_client: 'تقييم من العميل',
+    review_from_worker: 'تقييم من المنفذ',
+    no_history_yet: 'لا يوجد سجل بعد',
+    history_will_appear: 'المهام والتقييمات المكتملة ستظهر هنا',
+    execution_history: 'سجل التنفيذ',
+    role_doer: 'المنفذ',
+    role_poster: 'الناشر',
   };

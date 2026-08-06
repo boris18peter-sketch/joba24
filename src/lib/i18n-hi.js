@@ -1074,4 +1074,11 @@ export const hi = {
   ex_25: 'गैस भरना है ❄️',
   ex_26: 'खिड़की सफाई चाहिए 🪟',
   ex_27: 'बच्चा लाने-लेजाने में मदद 🚙',
+  review_from_client: 'क्लाइंट से समीक्षा',
+  review_from_worker: 'कर्मचारी से समीक्षा',
+  no_history_yet: 'अभी कोई इतिहास नहीं',
+  history_will_appear: 'पूर्ण कार्य और समीक्षाएँ यहाँ दिखाई देंगी',
+  execution_history: 'निष्पादन इतिहास',
+  role_doer: 'कर्ता',
+  role_poster: 'पोस्टर',
 };

@@ -1098,4 +1098,11 @@ export const es = {
     ex_25: 'Necesito recargar gas ❄️',
     ex_26: 'Necesito limpiar ventanas 🪟',
     ex_27: 'Necesito transporte para niño 🚙',
+    review_from_client: 'Reseña del cliente',
+    review_from_worker: 'Reseña del trabajador',
+    no_history_yet: 'Aún no hay historial',
+    history_will_appear: 'Las tareas y reseñas completadas aparecerán aquí',
+    execution_history: 'Historial de ejecución',
+    role_doer: 'Ejecutor',
+    role_poster: 'Anunciante',
   };

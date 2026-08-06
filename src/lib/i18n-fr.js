@@ -1060,4 +1060,11 @@ export const fr = {
     ex_25: 'Besoin de recharger du gaz ❄️',
     ex_26: 'Besoin de nettoyer des vitres 🪟',
     ex_27: "Besoin d'un transport pour enfant 🚙",
+    review_from_client: 'Avis du client',
+    review_from_worker: 'Avis du travailleur',
+    no_history_yet: "Pas encore d'historique",
+    history_will_appear: 'Les tâches et avis terminés apparaîtront ici',
+    execution_history: "Historique d'exécution",
+    role_doer: 'Exécuteur',
+    role_poster: 'Annonceur',
   };

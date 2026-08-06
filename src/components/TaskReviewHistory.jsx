@@ -3,13 +3,15 @@ import { Star, ChevronLeft, Briefcase, User, MessageSquare } from 'lucide-react'
 import { getCategoryLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
 
-function ReviewChips({ review }) {
+const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
+
+function ReviewChips({ review, t }) {
   const chips = [
-    review.arrived_on_time && { label: '⏱️ הגיע בזמן', color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-    review.professional && { label: '💼 מקצועי', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: '💬 תקשורת', color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
-    review.fair_pricing && { label: '💰 מחיר הוגן', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-    review.would_hire_again && { label: '🔁 ממליץ', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+    review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
+    review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    review.good_communication && { label: t('good_communication'), color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
+    review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+    review.would_hire_again && { label: t('would_hire_again'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   ].filter(Boolean);
   if (!chips.length) return null;
   return (
@@ -23,23 +25,23 @@ function ReviewChips({ review }) {
   );
 }
 
-function formatDate(dateStr) {
+function formatDate(dateStr, t, lang) {
   if (!dateStr) return '';
   const date = new Date(dateStr);
   const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-  if (diffDays === 0) return 'היום';
-  if (diffDays === 1) return 'אתמול';
-  if (diffDays < 7) return `לפני ${diffDays} ימים`;
-  return date.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' });
+  if (diffDays === 0) return t('today');
+  if (diffDays === 1) return t('yesterday');
+  if (diffDays < 7) return t('days_ago', { n: diffDays });
+  return date.toLocaleDateString(LOCALE_MAP[lang] || 'he-IL', { day: 'numeric', month: 'short' });
 }
 
-function RoleBadge({ userId, task }) {
+function RoleBadge({ userId, task, t }) {
   const isWorker = task.worker_id === userId;
   const isClient = task.client_id === userId;
   if (!isWorker && !isClient) return null;
   const cfg = isWorker
-    ? { label: 'מבצע', icon: Briefcase, color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' }
-    : { label: 'מפרסם', icon: User, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' };
+    ? { label: t('role_doer'), icon: Briefcase, color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' }
+    : { label: t('role_poster'), icon: User, color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' };
   const Icon = cfg.icon;
   return (
     <span style={{ fontSize: 10, fontWeight: 800, color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 99, padding: '3px 9px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -65,7 +67,7 @@ function Stars({ rating, size = 14 }) {
  */
 export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const reviewsByTaskId = {};
   const unmatchedReviews = [];
@@ -90,8 +92,8 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
     return (
       <div style={{ textAlign: 'center', padding: '48px 0' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>אין היסטוריה עדיין</div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>משימות וביקורות שהושלמו יופיעו כאן</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('no_history_yet')}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>{t('history_will_appear')}</div>
       </div>
     );
   }
@@ -116,9 +118,9 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
             >
               {/* Header: role badge + date + chevron */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <RoleBadge userId={userId} task={item.task} />
+                <RoleBadge userId={userId} task={item.task} t={t} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{formatDate(item.task.completed_at || item.task.updated_date)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{formatDate(item.task.completed_at || item.task.updated_date, t, lang)}</span>
                   <ChevronLeft size={14} color="var(--text-3)" />
                 </div>
               </div>
@@ -148,7 +150,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <Stars rating={item.review.rating} size={13} />
                     <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>
-                      {item.review.role === 'worker' ? 'ביקורת מלקוח' : 'ביקורת ממבצע'}
+                      {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')}
                     </span>
                   </div>
                   {item.review.comment && (
@@ -156,7 +158,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
                       "{item.review.comment}"
                     </p>
                   )}
-                  <ReviewChips review={item.review} />
+                  <ReviewChips review={item.review} t={t} />
                 </div>
               )}
             </div>
@@ -177,7 +179,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <Stars rating={item.review.rating} size={13} />
               <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <MessageSquare size={10} /> {item.review.role === 'worker' ? 'ביקורת מלקוח' : 'ביקורת ממבצע'} · {formatDate(item.review.created_date)}
+                <MessageSquare size={10} /> {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')} · {formatDate(item.review.created_date, t, lang)}
               </span>
             </div>
             {item.review.comment && (
@@ -185,7 +187,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
                 "{item.review.comment}"
               </p>
             )}
-            <ReviewChips review={item.review} />
+            <ReviewChips review={item.review} t={t} />
           </div>
         );
       })}
