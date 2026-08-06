@@ -8,6 +8,9 @@ import { ar } from '@/lib/i18n-ar';
 import { es } from '@/lib/i18n-es';
 import { fr } from '@/lib/i18n-fr';
 import { ru } from '@/lib/i18n-ru';
+import { fil } from '@/lib/i18n-fil';
+import { hi } from '@/lib/i18n-hi';
+import { zh } from '@/lib/i18n-zh';
 
 export const LANGUAGES = [
   { code: 'he', label: 'עברית',   flag: '🇮🇱', rtl: true  },
@@ -16,6 +19,9 @@ export const LANGUAGES = [
   { code: 'es', label: 'Español', flag: '🇪🇸', rtl: false },
   { code: 'fr', label: 'Français',flag: '🇫🇷', rtl: false },
   { code: 'ru', label: 'Русский', flag: '🇷🇺', rtl: false },
+  { code: 'fil', label: 'Filipino', flag: '🇵🇭', rtl: false },
+  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳', rtl: false },
+  { code: 'zh', label: '中文', flag: '🇨🇳', rtl: false },
 ];
 
 export const RTL_LANGS = new Set(['he', 'ar']);
@@ -524,6 +530,10 @@ export const translations = {
     people_post_everything: 'אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪',
     publish_task_onboard_title: 'פרסם משימה',
     publish_task_onboard_sub: 'קבל עזרה מאנשים בסביבתך תוך דקות. פרסם עכשיו — זה פשוט ומהיר.',
+    empty_need_help_title: 'צריך עזרה? פרסם משימה',
+    empty_desc: 'פרסום משימה לוקח פחות מדקה. תוך דקות אנשים מהאזור שלך שמתאימים למשימה יקבלו התראה, יגישו בקשה, ואתה תבחר את מי שמתאים.',
+    empty_examples_label: 'דוגמאות למשימות · גלול לראות עוד',
+    empty_trust: 'אנשים מפרסמים משימות בכל יום — ותמיד מגיע מישהו לעזור.',
     // CreateTask
     draft_saved: 'נשמר',
     draft_restored: 'טיוטה שמורה — המשך מהיכן שעצרת',
@@ -1146,6 +1156,10 @@ export const translations = {
     people_post_everything: 'People post everything — and someone always shows up to help 💪',
     publish_task_onboard_title: 'Post a Task',
     publish_task_onboard_sub: 'Get help from people near you in minutes. Post now — it\'s simple and fast.',
+    empty_need_help_title: 'Need Help? Post a Task',
+    empty_desc: 'Posting a task takes less than a minute. Within minutes, people near you who match the task get notified, apply, and you choose who fits.',
+    empty_examples_label: 'Task examples · scroll for more',
+    empty_trust: 'People post tasks every day — and someone always shows up to help.',
     // CreateTask
     draft_saved: 'Saved',
     draft_restored: 'Draft restored — continue where you left off',
@@ -1348,6 +1362,10 @@ export const translations = {
     location: 'Местоположение',
     notifications: 'Уведомления',
     },
+
+    fil: { ...fil },
+    hi: { ...hi },
+    zh: { ...zh },
   };
 
 /** Detect language from IP (uses free ipapi.co), fallback to browser/localStorage */
@@ -1364,6 +1382,7 @@ export async function detectLanguage() {
       ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es', VE: 'es',
       FR: 'fr', BE: 'fr', CH: 'fr', CA: 'fr',
       RU: 'ru', UA: 'ru', BY: 'ru', KZ: 'ru',
+      PH: 'fil', IN: 'hi', CN: 'zh',
     };
     const lang = countryLangMap[data.country_code];
     if (lang && translations[lang]) return lang;

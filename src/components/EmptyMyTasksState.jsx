@@ -168,7 +168,7 @@ export default function EmptyMyTasksState() {
         fontSize: 'clamp(26px, 6.5vw, 32px)', lineHeight: 1.2, letterSpacing: -0.5,
         textAlign: 'center', padding: '0 16px',
       }}>
-        צריך עזרה? פרסם משימה
+        {t('empty_need_help_title')}
       </h1>
 
       {/* Description */}
@@ -176,7 +176,7 @@ export default function EmptyMyTasksState() {
         fontSize: 14, color: '#64748b', lineHeight: 1.45, fontWeight: 500,
         textAlign: 'center', maxWidth: 320, margin: '7px 0 0', padding: '0 18px',
       }}>
-        פרסום משימה לוקח פחות מדקה. תוך דקות אנשים מהאזור שלך שמתאימים למשימה יקבלו התראה, יגישו בקשה, ואתה תבחר את מי שמתאים.
+        {t('empty_desc')}
       </p>
 
       {/* Primary CTA */}
@@ -211,7 +211,7 @@ export default function EmptyMyTasksState() {
       <div className="j-empty-bubbles" style={{ width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
           <span style={{ fontSize: 11.5, fontWeight: 600, color: '#94a3b8', letterSpacing: 0.2 }}>
-            דוגמאות למשימות · גלול לראות עוד
+            {t('empty_examples_label')}
           </span>
         </div>
 
@@ -235,7 +235,7 @@ export default function EmptyMyTasksState() {
 
       {/* Trust message */}
       <p className="j-empty-trust" style={{ fontSize: 13, color: '#64748b', fontWeight: 600, textAlign: 'center', margin: 0, padding: '0 24px' }}>
-        אלפי אנשים מפרסמים משימות — ותמיד מגיע מישהו לעזור.
+        {t('empty_trust')}
       </p>
     </div>
   );
