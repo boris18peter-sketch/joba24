@@ -611,7 +611,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                   )
                 )}
               </div>
-              {task.created_date && getRelativeTime(task.created_date) && (
+              {task.created_date && getRelativeTime(task.created_date, t) && (
                 <div style={{ fontSize: 10, color: '#b0bac8', marginTop: 4 }}>
                   {t('posted')} {getRelativeTime(task.created_date, t)}
                 </div>
