@@ -88,16 +88,16 @@ export default function Wallet() {
 
   const badgeMap = {
     inprogress: { label: t('in_progress'), bg: '#ede9fe', color: '#6d28d9' },
-    awaiting: { label: t('awaiting_payment'), bg: '#fef3c7', color: '#92400e' },
-    paid: { label: t('paid'), bg: '#dcfce7', color: '#166534' },
-    cancelled: { label: t('cancelled_refund'), bg: '#fef9ec', color: '#b45309' }
+    awaiting: { label: t('w_awaiting_payment'), bg: '#fef3c7', color: '#92400e' },
+    paid: { label: t('w_paid'), bg: '#dcfce7', color: '#166534' },
+    cancelled: { label: t('w_cancelled_refund'), bg: '#fef9ec', color: '#b45309' }
   };
 
   const appStatusConfig = {
     pending:  { label: t('waiting_approval_short'), bg: '#fef3c7', color: '#92400e', icon: Clock },
-    approved: { label: `${t('approved') || 'אושר'} ✅`, bg: '#dcfce7', color: '#166534', icon: CheckCircle2 },
-    rejected: { label: t('notif_app_rejected') || 'נדחה', bg: '#fee2e2', color: '#991b1b', icon: XCircle },
-    cancelled:{ label: t('cancel') || 'בוטל', bg: '#f3f4f6', color: '#6b7280', icon: Ban },
+    approved: { label: t('approved'), bg: '#dcfce7', color: '#166534', icon: CheckCircle2 },
+    rejected: { label: t('w_rejected'), bg: '#fee2e2', color: '#991b1b', icon: XCircle },
+    cancelled:{ label: t('w_cancelled'), bg: '#f3f4f6', color: '#6b7280', icon: Ban },
   };
 
   return (
@@ -124,7 +124,7 @@ export default function Wallet() {
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.12)' }}>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-              <CreditIcon size={13} /> יתרה זמינה
+              <CreditIcon size={13} /> {t('w_balance_available')}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ color: 'white', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{availableJobas}</span>
@@ -145,14 +145,14 @@ export default function Wallet() {
               }}
             >
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Lock size={12} color="#fbbf24" /> בהתחייבות
+                <Lock size={12} color="#fbbf24" /> {t('w_in_commitment')}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ color: '#fbbf24', fontSize: 26, fontWeight: 900, lineHeight: 1 }}>{lockedJobas}</span>
                 <CreditIcon size={20} />
               </div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4 }}>
-                לחץ לפרטים
+                {t('w_tap_details')}
               </div>
             </button>
           )}
@@ -187,7 +187,7 @@ export default function Wallet() {
                   Refund_Expiration: t('tx_refund_expiration') || 'Refund — Expired',
                   Loyalty_Reward: t('tx_loyalty_reward') || 'Loyalty Reward',
                   Purchase: t('tx_purchase') || 'Credit Purchase',
-                  Story_Publication: 'פרסום סטורי',
+                  Story_Publication: t('w_story_publication'),
                 };
                 const isPositive = txn.amount > 0;
                 return (
@@ -253,7 +253,7 @@ export default function Wallet() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#9ca3af' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CreditIcon size={13} /> {app.credits_charged}</span>
                                         {(app.status === 'rejected' || app.status === 'cancelled') && app.credits_charged > 0 && (
-                          <span style={{ color: '#16a34a', fontWeight: 700 }}>← חזרו ליתרה</span>
+                          <span style={{ color: '#16a34a', fontWeight: 700 }}>{t('w_returned_to_balance')}</span>
                         )}
                       </div>
                     </div>

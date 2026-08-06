@@ -276,25 +276,25 @@ export default function EarningsDashboard() {
               <Coins size={20} color="white" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#92400e' }}>בקשות ששומשו</div>
-              <div style={{ fontSize: 11, color: '#b45309', marginTop: 1 }}>לפי משימות שבוצעו</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#92400e' }}>{t('ed_apps_used')}</div>
+              <div style={{ fontSize: 11, color: '#b45309', marginTop: 1 }}>{t('ed_by_completed')}</div>
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 24, fontWeight: 900, color: '#92400e', lineHeight: 1 }}>{creditsData.netUsed}</div>
-              <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>בקשות</div>
+              <div style={{ fontSize: 10, color: '#b45309', fontWeight: 600 }}>{t('ed_apps')}</div>
             </div>
           </div>
           {creditsData.totalRefunded > 0 && (
             <div style={{ display: 'flex', gap: 10, fontSize: 11, color: '#92400e', fontWeight: 600 }}>
-              <span>שומשו: <strong>{creditsData.totalUsed}</strong></span>
-              <span style={{ color: '#059669' }}>הוחזרו: <strong>{creditsData.totalRefunded}</strong></span>
+              <span>{t('ed_used')} <strong>{creditsData.totalUsed}</strong></span>
+              <span style={{ color: '#059669' }}>{t('ed_refunded')} <strong>{creditsData.totalRefunded}</strong></span>
             </div>
           )}
         </div>
 
         {creditsData.fees.length > 0 && (
           <>
-            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>פירוט בקשות ששומשו</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', marginBottom: 10, padding: '0 4px' }}>{t('ed_apps_detail')}</div>
             <div style={{ background: 'var(--surface-2)', borderRadius: 16, border: '1px solid var(--border-1)', overflow: 'hidden', marginBottom: 16 }}>
               {creditsData.fees.slice(0, 10).map((tx, idx, arr) => {
                 const diffDays = Math.floor((Date.now() - new Date(tx.created_date + (tx.created_date?.endsWith('Z') || tx.created_date?.includes('+') ? '' : 'Z')).getTime()) / 86400000);
@@ -305,7 +305,7 @@ export default function EarningsDashboard() {
                       <Coins size={16} color="#d97706" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.task_title || 'משימה'}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.task_title || t('ed_task')}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{dateLabel}</div>
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 900, color: '#d97706', flexShrink: 0 }}>{tx.amount}</div>

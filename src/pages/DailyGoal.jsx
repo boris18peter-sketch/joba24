@@ -101,7 +101,7 @@ ${categoryFilterNote}
 ${JSON.stringify(tasksSummary, null, 2)}
 
 בחר את השילוב הטוב ביותר של משימות שיעזרו לעובד להגיע ליעד שלו.
-תן עצות מעשיות וממוקדות. ענה בעברית.`,
+תן עצות מעשיות וממוקדות. ${t('dg_respond_lang')}.`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -336,7 +336,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                         {dist != null && !isNaN(dist) && (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#1a6fd4', fontWeight: 700 }}>
                             <Navigation size={11} />
-                            {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+                            {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
                           </span>
                         )}
                       </div>

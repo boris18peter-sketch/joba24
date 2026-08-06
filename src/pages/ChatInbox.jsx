@@ -188,7 +188,7 @@ export default function ChatInbox() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                    <span style={{ fontWeight: 900, color: 'var(--text-1)', fontSize: 14 }}>תמיכת Joba24</span>
+                    <span style={{ fontWeight: 900, color: 'var(--text-1)', fontSize: 14 }}>{t('ci_support')}</span>
                     {lastSupportMsg?.created_date && (
                       <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
                         {formatDistanceToNow(new Date(lastSupportMsg.created_date), { addSuffix: true })}
@@ -197,8 +197,8 @@ export default function ChatInbox() {
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {lastSupportMsg
-                      ? (lastSupportMsg.sender_role === 'admin' ? '' : '← ') + lastSupportMsg.content
-                      : 'צוות התמיכה של Joba24 זמין עבורך 🎧'
+                      ? (lastSupportMsg.sender_role === 'admin' ? '' : (isRTL ? '← ' : '→ ')) + lastSupportMsg.content
+                      : t('ci_support_available')
                     }
                   </div>
                 </div>
@@ -210,8 +210,8 @@ export default function ChatInbox() {
             {visibleTasks.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
-                <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 15 }}>אין צ'אטים פעילים כרגע</p>
-                <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>צ'אטים עם לקוחות/עובדים יופיעו כאן כשעבודה תתחיל</p>
+                <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 15 }}>{t('no_active_conversations')}</p>
+                <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>{t('conversations_appear')}</p>
               </div>
             ) : (
               visibleTasks.map(task => {
@@ -270,7 +270,7 @@ export default function ChatInbox() {
                         </div>
                         {lastMsg && (
                           <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                            {lastMsg.sender_id === me?.id ? '← ' : ''}{lastMsg.content}
+                            {lastMsg.sender_id === me?.id ? (isRTL ? '← ' : '→ ') : ''}{lastMsg.content}
                           </div>
                         )}
                       </div>

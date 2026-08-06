@@ -38,7 +38,7 @@ export default function Notifications() {
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notificationsPage'],
@@ -62,7 +62,7 @@ export default function Notifications() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
       <PageHeader
         title={t('nav_notifications')}
         right={notifications.length > 0 && (
@@ -85,7 +85,7 @@ export default function Notifications() {
           </div>
         ) : (
           notifications.map((notif, i) => {
-            const cfg = getTypeConfig(t)[notif.type] || { emoji: '📢', label: t('notif_check')?.replace('לחץ לבדוק', 'Update') || 'Update', sub: '' };
+            const cfg = getTypeConfig(t)[notif.type] || { emoji: '📢', label: t('notif_update'), sub: '' };
             const isUnread = !notif.read;
             const subText = notif.preview || cfg.sub;
             const isLast = i === notifications.length - 1;

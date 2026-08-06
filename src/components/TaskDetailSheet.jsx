@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 import { lazy, Suspense } from 'react';
 
 const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
@@ -12,6 +13,7 @@ const ENTER_SPRING = { type: 'spring', damping: 36, stiffness: 420, mass: 0.65 }
 
 export default function TaskDetailSheet() {
   const { sheetTaskId, closeTaskSheet, hideTaskSheet } = useTaskSheet();
+  const { isRTL } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
@@ -117,7 +119,7 @@ export default function TaskDetailSheet() {
           display: 'flex', flexDirection: 'column',
           transition: 'height 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Drag handle — only area that starts drag */}
         <div
