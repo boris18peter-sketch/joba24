@@ -47,10 +47,10 @@ const EXPIRY_OPTIONS = [
 ];
 
 const URGENCY_TAGS = [
-  { value: 'immediate', emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
-  { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
-  { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+  { value: 'immediate', emoji: '🔥', label: 'צריך עובד דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', i18n_key: 'urgency_immediate' },
+  { value: 'few_hours', emoji: '⏰', label: 'עובד לשעות הקרובות', color: '#d97706', bg: '#fffbeb', border: '#fde68a', i18n_key: 'urgency_few_hours' },
+  { value: 'evening',   emoji: '🌅', label: 'עובד לקראת הערב', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd', i18n_key: 'urgency_evening' },
+  { value: 'flexible',  emoji: '😌', label: 'לא לחוץ בזמן', color: '#16a34a', bg: '#f0fdf4', border: '#86efac', i18n_key: 'urgency_flexible' },
 ];
 
 function toLocalDatetimeInput(isoStr) {
@@ -187,7 +187,7 @@ const PAYMENT_METHODS = [
    { value: 'Cash', label: 'מזומן', i18n_key: 'cash' },
    { value: 'Bit', label: 'Bit', i18n_key: 'bit' },
    { value: 'PayBox', label: 'PayBox', i18n_key: 'paybox' },
-   { value: 'Other', label: 'אחר', i18n_key: 'other' },
+   { value: 'Other', label: 'אחר', i18n_key: 'payment_other' },
 ];
 
 const TIME_OPTIONS = [
@@ -1297,7 +1297,7 @@ export default function CreateTask() {
           <div style={{ marginBottom: 4 }}>
             <SelectionSheet
               value={form.expiry_hours === null ? 'null' : String(form.expiry_hours)}
-              options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: opt.label }))}
+              options={EXPIRY_OPTIONS.map(opt => ({ value: opt.hours === null ? 'null' : String(opt.hours), label: t(opt.i18n_key) }))}
               onChange={v => set('expiry_hours', v === 'null' ? null : v === 'custom' ? 'custom' : parseFloat(v))}
             />
           </div>
@@ -1329,7 +1329,7 @@ export default function CreateTask() {
                       transition: 'all 0.15s',
                     }}
                   >
-                    {tag.label}
+                    {t(tag.i18n_key)}
                   </button>
                 );
               })}
@@ -1628,7 +1628,7 @@ export default function CreateTask() {
           {PAYMENT_METHODS.map(pm => (
             <button key={pm.value} onClick={() => { set('payment_method', form.payment_method === pm.value ? '' : pm.value); setErrors(p => ({...p, payment_method: false})); }}
               style={{ width: '100%', padding: '10px 4px', borderRadius: 10, fontSize: 13, fontWeight: form.payment_method === pm.value ? 700 : 500, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s', ...(form.payment_method === pm.value ? activeBtn : { ...inactiveBtn, outline: errors.payment_method ? '1.5px solid #ef4444' : 'none' }) }}
-            >{pm.label}</button>
+            >{t(pm.i18n_key)}</button>
           ))}
         </div>
         {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
