@@ -62,6 +62,7 @@ function toLocalDatetimeInput(isoStr) {
 }
 
 function SocialProofBar() {
+  const { t } = useLanguage();
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 100),
@@ -70,7 +71,7 @@ function SocialProofBar() {
   const completedCount = tasks.filter(t => t.status === 'COMPLETED').length || 238;
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      <span>הצטרף ל-<strong style={{ color: '#2563EB' }}>{completedCount}+</strong> משתמשים שכבר ביצעו משימות בהצלחה</span>
+      <span>{t('ct_social_proof', { count: completedCount })}</span>
     </div>
   );
 }
@@ -207,7 +208,7 @@ export default function CreateTask() {
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const [searchParams] = useSearchParams();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { isAuthenticated, login } = useAuth();
   const editId = searchParams.get('editId');
   const isEditMode = !!editId;
@@ -392,12 +393,11 @@ export default function CreateTask() {
   const scheduleDriven = isHourly && hasScheduleField && scheduleHours != null;
   const formatDuration = (minutes) => {
     if (minutes == null) return '';
-    if (minutes < 60) return `${minutes} דקות`;
+    if (minutes < 60) return `${minutes} ${t('ct_dur_minutes')}`;
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    if (m === 0) return h === 1 ? 'שעה' : `${h} שעות`;
-    if (h === 1) return `שעה ו-${m} דקות`;
-    return `${h} שעות ו-${m} דקות`;
+    if (m === 0) return h === 1 ? t('ct_dur_hour') : `${h} ${t('ct_dur_hours')}`;
+    return `${h} ${t('ct_dur_hours')} ${m} ${t('ct_dur_minutes')}`;
   };
   // Auto-sync: schedule → hours → price (hourly categories only)
   useEffect(() => {
@@ -456,7 +456,8 @@ export default function CreateTask() {
 
   // Check if text looks like gibberish (random key mashing)
   // Returns error string if looks like gibberish, null if ok
-  const checkGibberish = (text, fieldLabel = 'הטקסט') => {
+  const checkGibberish = (text, fieldLabel) => {
+    fieldLabel = fieldLabel || t('ct_field_text');
     if (!text || text.trim().length < 4) return null;
     const t = text.trim();
     // Too short overall
@@ -473,12 +474,12 @@ export default function CreateTask() {
       const tinyWords = words.filter(w => w.replace(/[^א-ת]/g,'').length > 0 && w.replace(/[^א-ת]/g,'').length <= 1).length;
       const tinyRatio = words.length > 0 ? tinyWords / words.length : 0;
       if (tinyRatio > 0.65 && words.length >= 3) {
-        return `${fieldLabel} נראה כמו קלט לא תקין. אנא תאר את הנדרש בצורה ברורה.`;
+        return t('ct_gibberish_invalid', { field: fieldLabel });
       }
     }
     // Check for runs of 5+ consecutive same/similar chars (lbgbmtz style)
     if (/(.)\1{4,}/.test(t)) {
-      return `${fieldLabel} מכיל תווים חוזרים — אנא כתוב תיאור ברור.`;
+      return t('ct_gibberish_repeat', { field: fieldLabel });
     }
     // Check for all-consonant Hebrew with no vowel helpers (e.g. לבגבמצ)
     if (hebrewLetters.length >= 4) {
@@ -486,7 +487,7 @@ export default function CreateTask() {
       const vowelCount = (hebrewLetters.match(hebrewVowelLike) || []).length;
       const ratio = vowelCount / hebrewLetters.length;
       if (ratio < 0.05 && hebrewLetters.length > 6) {
-        return `${fieldLabel} נראה כמו אותיות אקראיות. אנא כתוב תיאור שמובן לאחרים.`;
+        return t('ct_gibberish_random', { field: fieldLabel });
       }
     }
     return null;
@@ -552,9 +553,9 @@ export default function CreateTask() {
       const catLabel = CATEGORIES.find(c => c.value === category)?.label || category;
       if (detectedOtherCategory) {
         const detectedLabel = CATEGORIES.find(c => c.value === detectedOtherCategory)?.label || detectedOtherCategory;
-        return `הכותרת והתיאור נראים כמו "${detectedLabel}", אבל הקטגוריה שנבחרה היא "${catLabel}". שנה את הקטגוריה לקטגוריה המתאימה, או עדכן את הכותרת והתיאור.`;
+        return t('ct_cat_mismatch_detected', { detected: detectedLabel, selected: catLabel });
       }
-      return `הכותרת והתיאור לא תואמים לקטגוריה "${catLabel}". כדי שנמצא לך עובד מתאים, אנא תאר את המשימה בהתאם לקטגוריה שבחרת.`;
+      return t('ct_cat_mismatch_generic', { selected: catLabel });
     }
     return null;
   };
@@ -568,7 +569,7 @@ export default function CreateTask() {
     const result = await moderateText(text);
     setCheckingModeration('');
     if (result.flagged) {
-      setModerationErrors(p => ({ ...p, [field]: 'תוכן זה אינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.' }));
+      setModerationErrors(p => ({ ...p, [field]: t('ct_mod_field') }));
     } else {
       setModerationErrors(p => ({ ...p, [field]: null }));
     }
@@ -597,7 +598,7 @@ export default function CreateTask() {
     if (!form.contactPhone || form.contactPhone.replace(/\D/g, '').length < 9) newErrors.contactPhone = true;
     if (form.auto_bump_enabled && form.max_price && Number(form.max_price) <= Number(form.price)) {
       newErrors.max_price = true;
-      toast.error('מחיר היעד חייב להיות גבוה ממחיר המשימה');
+      toast.error(t('ct_max_err'));
       submittingRef.current = false;
       return;
     }
@@ -611,8 +612,8 @@ export default function CreateTask() {
         return;
       }
       // Gibberish check for edit mode too
-      const tg = checkGibberish(form.title, 'הכותרת');
-      const dg = checkGibberish(form.description, 'התיאור');
+      const tg = checkGibberish(form.title, t('ct_field_title'));
+      const dg = checkGibberish(form.description, t('ct_field_desc'));
       if (tg || dg) {
         setModerationErrors({ title: tg || undefined, description: dg || undefined });
         setShowErrorBanner(true);
@@ -655,12 +656,12 @@ export default function CreateTask() {
         });
       setLoading(false);
       submittingRef.current = false;
-      toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
+      toast.success(isRepostMode ? t('ct_repost_ok') : t('ct_edit_ok'));
       openTaskSheet(editId);
       } catch (err) {
         setLoading(false);
         submittingRef.current = false;
-        toast.error('תקלה בשמירה, נסה שוב');
+        toast.error(t('ct_save_err'));
       }
       return;
     }
@@ -683,7 +684,7 @@ export default function CreateTask() {
     setLoading(true);
 
     // Gibberish / meaningless content check (fast, no API) — description only
-    const descGibberish = checkGibberish(form.description, 'התיאור');
+    const descGibberish = checkGibberish(form.description, t('ct_field_desc'));
     if (descGibberish) {
       setModerationErrors({ description: descGibberish });
       setShowErrorBanner(true);
@@ -698,7 +699,7 @@ export default function CreateTask() {
     setCheckingModeration('');
     
     if (descCheck.flagged) {
-      setModerationErrors({ description: 'התיאור מכיל תוכן שאינו עומד בכללי הקהילה. אנא תקן כדי לפרסם.' });
+      setModerationErrors({ description: t('ct_mod_desc') });
       setShowErrorBanner(true);
       setLoading(false);
       submittingRef.current = false;
@@ -715,7 +716,7 @@ export default function CreateTask() {
       const imgCheck = await moderateImage(imgUrl);
       setCheckingModeration('');
       if (imgCheck.flagged) {
-        setModerationErrors({ images: 'אחת התמונות שהעלית נחסמה עקב תוכן לא הולם.' });
+        setModerationErrors({ images: t('ct_mod_img') });
         setShowErrorBanner(true);
         setLoading(false);
         submittingRef.current = false;
@@ -785,7 +786,7 @@ export default function CreateTask() {
     setLoading(false);
     submittingRef.current = false;
     localStorage.removeItem(DRAFT_KEY);
-    toast.success('המשימה פורסמה! ⚡');
+    toast.success(t('ct_publish_ok'));
     if (created?.id) {
       setSearchingTaskId(created.id);
       setSearchingTaskTitle(autoTitle);
@@ -851,7 +852,7 @@ export default function CreateTask() {
         });
         setLoading(false);
         submittingRef.current = false;
-        toast.success(isRepostMode ? "הג'ובה פורסמה מחדש! ✅" : 'המשימה עודכנה! ✅');
+        toast.success(isRepostMode ? t('ct_repost_ok') : t('ct_edit_ok'));
         navigate('/task/' + editId);
         return;
       }
@@ -923,7 +924,7 @@ export default function CreateTask() {
       setLoading(false);
       submittingRef.current = false;
       localStorage.removeItem(DRAFT_KEY);
-      toast.success('המשימה פורסמה! ⚡');
+      toast.success(t('ct_publish_ok'));
 
       if (created?.id) {
         setSearchingTaskId(created.id);
@@ -937,14 +938,14 @@ export default function CreateTask() {
     } catch (err) {
       setLoading(false);
       submittingRef.current = false;
-      toast.error('תקלה בפרסום, נסה שוב');
+      toast.error(t('ct_publish_err'));
     }
   };
 
   // Chat mode rendering — available in all modes (create, edit, repost)
   if (chatMode) {
     return createPortal(
-      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir="rtl">
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', flexDirection: 'column', background: '#f8fafc' }} dir={isRTL ? 'rtl' : 'ltr'}>
         {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
         {showNoCreditsModal && <BuyCreditsModal creditsNeeded={10} onClose={() => setShowNoCreditsModal(false)} />}
         {showLoginPrompt && (
@@ -991,7 +992,7 @@ export default function CreateTask() {
   }
 
   return (
-    <div style={{ background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }} dir="rtl">
+    <div style={{ background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && (
         <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />
       )}
@@ -1089,7 +1090,7 @@ export default function CreateTask() {
 
         {/* Category */}
         <SectionCard>
-          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>קטגוריה</Label>
+          <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
           <SelectionSheet
             value={form.category}
             options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
@@ -1128,7 +1129,7 @@ export default function CreateTask() {
         <div ref={fieldRefs.description}>
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>📝 תאר את המשימה *</Label>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{t('ct_describe_task')}</Label>
             <button
               type="button"
               onClick={recording ? stopRecording : startRecording}
@@ -1140,7 +1141,7 @@ export default function CreateTask() {
             </button>
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
-            תאר מה צריך לעשות במילים שלך — הכותרת והקטגוריה ייווצרו אוטומטית. כלול: <strong>מה צריך, איפה, מתי, וכמה</strong>
+            {t('ct_describe_helper')}
           </div>
           {recording && (
             <div style={{ background: '#fee2e2', borderRadius: 10, padding: '8px 12px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#dc2626', fontWeight: 700 }}>
@@ -1148,7 +1149,7 @@ export default function CreateTask() {
               {t('recording_press_stop')}
             </div>
           )}
-          <Textarea placeholder="לדוגמה: צריך צבעי לצבוע את הסלון ושני חדרי שינה בדירה ברחוב הרצל 15 תל אביב, הקירות לבנים ויש כבר צבע בבית. מוכן לשלם 800 ש״ח במזומן."
+          <Textarea placeholder={t('ct_describe_ph')}
             value={form.description}
             onChange={e => { set('description', e.target.value); setErrors(p => ({...p, description: false})); setModerationErrors(p => ({...p, description: null, categoryMismatch: null})); }}
             onBlur={() => {
@@ -1159,14 +1160,14 @@ export default function CreateTask() {
             }}
             style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.description || moderationErrors.description || moderationErrors.categoryMismatch ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, resize: 'none' }} rows={5}
           />
-          {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>🔍 בודק תוכן...</p>}
-          {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ שדה חובה</p>}
+          {checkingModeration === 'description' && <p style={{ fontSize: 11, color: '#1a6fd4', marginTop: 4 }}>{t('ct_checking')}</p>}
+          {errors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{t('ct_required')}</p>}
           {moderationErrors.description && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>🛡️ {moderationErrors.description}</p>}
 
           {/* Auto-detected category chip */}
           {form.description && form.category && form.category !== 'other' && (
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>קטגוריה שזוהתה:</span>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('ct_detected_cat')}</span>
               <span style={{
                 background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #bfdbfe',
                 borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: '#1a6fd4',
@@ -1191,7 +1192,7 @@ export default function CreateTask() {
         <SectionCard>
           {isHourly ? (
             <>
-              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>מחיר לשעה (₪) *</Label>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_price_hour')}</Label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                 <div>
                   <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="50"
@@ -1200,7 +1201,7 @@ export default function CreateTask() {
                     disabled={hasActiveApplications}
                     style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
                   />
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>₪ לשעה</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{t('ct_per_hour')}</p>
                 </div>
                 <div>
                   {scheduleDriven ? (
@@ -1215,30 +1216,30 @@ export default function CreateTask() {
                       style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
                     />
                   )}
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{scheduleDriven ? 'מחושב מהמועדים שנבחרו ✓' : 'מספר שעות'}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{scheduleDriven ? t('ct_from_schedule') : t('ct_num_hours')}</p>
                 </div>
               </div>
               {form.hourly_rate && form.hours ? (
                 scheduleDriven ? (
                   <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>⚡ חישוב אוטומטי</span>
+                      <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>{t('ct_auto_calc')}</span>
                       <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>{scheduleMinutes < 60 ? formatDuration(scheduleMinutes) : `₪${form.hourly_rate} לשעה · ${formatDuration(scheduleMinutes)}`}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #bbf7d0' }}>
-                      <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
+                      <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>{t('ct_total')}</span>
                       <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
                     </div>
                   </div>
                 ) : (
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>סה"כ לתשלום</span>
+                    <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>{t('ct_total')}</span>
                     <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
                   </div>
                 )
               ) : (
                 <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600 }}>
-                  {scheduleDriven ? 'הזן מחיר לשעה כדי לחשב את המחיר הסופי' : 'הזן מחיר לשעה ומספר שעות כדי לחשב את המחיר הסופי'}
+                  {scheduleDriven ? t('ct_enter_rate') : t('ct_enter_rate_hours')}
                 </div>
               )}
             </>
@@ -1253,10 +1254,10 @@ export default function CreateTask() {
               />
             </>
           )}
-          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>⛔ לא ניתן לשנות מחיר — קיימות בקשות פעילות</p>}
-          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>⚠️ שדה חובה</p>}
+          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{t('ct_price_locked')}</p>}
+          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>{t('ct_required')}</p>}
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
-            <strong>המחיר שפורסם הוא הסכום הסופי שישולם לעובד — לא פחות ולא יותר.</strong> שני הצדדים מחויבים לכבד מחיר זה.
+            {t('ct_price_note')}
           </div>
           <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
 
@@ -1268,21 +1269,21 @@ export default function CreateTask() {
               {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>📈 העלאת מחיר אוטומטית</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>המחיר יעלה מהמחיר שהגדרת לעיל עד למחיר המקסימלי, כל 5 דקות — כדי שהמשימה תהיה אטרקטיבית יותר ותמשוך בקשות. העלאת המחיר נעצרת אוטומטית ברגע שמגיעה בקשה ראשונה.</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{t('ct_bump_title')}</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>{t('ct_bump_desc')}</div>
             </div>
           </button>
           {form.auto_bump_enabled && (
             <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
-              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>{isHourly ? 'מחיר מקסימלי - סה"כ (₪)' : 'מחיר מקסימלי (₪)'}</Label>
-              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{isHourly ? `המחיר הכולל יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה (המחיר לשעה יתעדכן אוטומטית). ברגע שיגיע עובד — המחיר יוקפא.` : `המחיר יעלה בהדרגה מ-₪${form.price || '?'} עד לסכום זה. ברגע שיגיע עובד שמוכן לבצע — המחיר יוקפא.`}</div>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>{isHourly ? t('ct_max_price_total') : t('ct_max_price')}</Label>
+              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{isHourly ? t('ct_bump_help_hourly', { price: form.price || '?' }) : t('ct_bump_help', { price: form.price || '?' })}</div>
               <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
                 value={form.max_price}
                 onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
                 style={{ background: 'white', border: `1px solid ${form.max_price && Number(form.max_price) <= Number(form.price) ? '#ef4444' : '#fcd34d'}`, borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
               />
               {form.max_price && Number(form.max_price) <= Number(form.price) && (
-                <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>⚠️ מחיר היעד חייב להיות גבוה ממחיר המשימה (₪{form.price})</p>
+                <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_bump_err', { price: form.price })}</p>
               )}
             </div>
           )}
@@ -1292,7 +1293,7 @@ export default function CreateTask() {
         {/* Expiry + Urgency */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
-            <Clock size={14} /> תוקף המשימה
+            <Clock size={14} /> {t('ct_expiry')}
           </Label>
           <div style={{ marginBottom: 4 }}>
             <SelectionSheet
@@ -1302,7 +1303,7 @@ export default function CreateTask() {
             />
           </div>
           {form.expiry_hours === 'custom' && (
-            <input type="number" min="0.5" step="0.5" placeholder="מספר שעות (לדוגמא: 3)"
+            <input type="number" min="0.5" step="0.5" placeholder={t('ct_custom_hours_ph')}
               value={form.custom_expiry_hours} onChange={e => set('custom_expiry_hours', e.target.value)}
               style={{ width: '100%', marginTop: 8, padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box' }}
             />
@@ -1312,7 +1313,7 @@ export default function CreateTask() {
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <Zap size={14} color="#94a3b8" strokeWidth={1.8} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>מתי דרוש עובד?</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{t('ct_when_worker')}</span>
           </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {URGENCY_TAGS.map(tag => {
@@ -1340,7 +1341,7 @@ export default function CreateTask() {
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <Calendar size={14} color="#94a3b8" strokeWidth={1.8} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>תאריך ושעה מדויקים (לא חובה)</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{t('ct_exact_dt')}</span>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
@@ -1361,24 +1362,24 @@ export default function CreateTask() {
                     type="button"
                     onClick={() => set('scheduled_time', '')}
                     style={{ width: 48, height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--surface-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--text-2)' }}
-                    title="אפס תאריך ושעה"
+                    title={t('ct_reset_dt')}
                   >
                     <X size={18} />
                   </button>
                 )}
               </div>
-              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>הגדר מועד מדויק שבו העובד צריך להגיע — יוצג בצורה ברורה על כרטיס המשימה ובפרטי המשימה</p>
+              <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, lineHeight: 1.4 }}>{t('ct_exact_dt_help')}</p>
             </div>
             )}
             {hasScheduleField && scheduleMinutes != null && (
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <Calendar size={14} color="#16a34a" strokeWidth={1.8} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>המועדים נבחרו בטבלה למעלה ✓</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>{t('ct_schedule_selected')}</span>
               </div>
               <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Clock size={13} color="#16a34a" />
-                סך הזמן: {formatDuration(scheduleMinutes)}{scheduleSlots.length > 1 ? ` · ${scheduleSlots.length} מועדים` : ''}
+                {t('ct_total_time')} {formatDuration(scheduleMinutes)}{scheduleSlots.length > 1 ? ` · ${scheduleSlots.length} ${t('ct_slots')}` : ''}
               </div>
             </div>
             )}
@@ -1412,16 +1413,16 @@ export default function CreateTask() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: form.is_story ? '#7e22ce' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={15} color="#a855f7" /> הצג כ-Story
-                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'white', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>מומלץ</span>
+                <Sparkles size={15} color="#a855f7" /> {t('ct_story')}
+                <span style={{ fontSize: 10, fontWeight: 800, background: '#f59e0b', color: 'white', padding: '2px 7px', borderRadius: 20, marginRight: 4 }}>{t('ct_recommended')}</span>
               </div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: form.is_story ? 'rgba(168,85,247,0.08)' : 'var(--surface-3)', borderRadius: 12, padding: '10px 12px' }}>
             <Zap size={18} color="#a855f7" />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>חשיפה גבוהה פי 3 בשורת ה-Stories</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>המשימה תופיע למעלה בפיד למשך 24 שעות · עלות: <strong style={{color:'#7e22ce'}}>10 ג'ובות</strong></div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: form.is_story ? '#7e22ce' : '#0f2b6b' }}>{t('ct_story_3x')}</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{t('ct_story_help')}</div>
             </div>
           </div>
         </div>}
@@ -1429,7 +1430,7 @@ export default function CreateTask() {
         {/* Location */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
-            <MapPin size={14} /> מיקום *
+            <MapPin size={14} /> {t('ct_location_req')}
           </Label>
           <div ref={fieldRefs.location_name}>
             <AddressAutocomplete
@@ -1455,36 +1456,36 @@ export default function CreateTask() {
               }}
             />
           </div>
-          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ יש לבחור כתובת מהרשימה</p>}
+          {errors.location_name && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{t('ct_addr_err')}</p>}
           {/* Extra address details */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>בניין / מספר בית</p>
-              <Input placeholder="לדוגמה: 12"
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>{t('ct_building')}</p>
+              <Input placeholder={t('ct_building_ph')}
                 value={form.address_building || ''}
                 onChange={e => set('address_building', e.target.value)}
                 style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>קומה</p>
-              <Input placeholder="לדוגמה: 3"
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>{t('ct_floor')}</p>
+              <Input placeholder={t('ct_floor_ph')}
                 value={form.address_floor || ''}
                 onChange={e => set('address_floor', e.target.value)}
                 style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>דירה</p>
-              <Input placeholder="לדוגמה: 5"
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>{t('ct_apartment')}</p>
+              <Input placeholder={t('ct_apartment_ph')}
                 value={form.address_apartment || ''}
                 onChange={e => set('address_apartment', e.target.value)}
                 style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
               />
             </div>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>הערות ניווט</p>
-              <Input placeholder="לדוגמה: כניסה אחורית"
+              <p style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 600, marginBottom: 4 }}>{t('ct_nav_notes')}</p>
+              <Input placeholder={t('ct_nav_notes_ph')}
                 value={form.address_notes || ''}
                 onChange={e => set('address_notes', e.target.value)}
                 style={{ background: 'var(--input-bg)', border: '1.5px solid var(--border-1)', borderRadius: 12, height: 42 }}
@@ -1501,12 +1502,12 @@ export default function CreateTask() {
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: showRequirements ? 14 : 0 }}>
             <div>
               <Label className="text-sm font-bold flex items-center gap-1" style={{ color: 'var(--text-1)', cursor: 'pointer', margin: 0 }}>
-                <CheckSquare size={14} /> דרישות נוספות (לא חובה)
+                <CheckSquare size={14} /> {t('ct_extra_req')}
               </Label>
-              <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>⚠️ ככל שתוסיף יותר דרישות, פחות עובדים יוכלו להגיש בקשה</div>
+              <div style={{ fontSize: 11, color: '#f97316', fontWeight: 600, marginTop: 2 }}>{t('ct_req_warn')}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0) + (form.requires_invoice ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{count} נבחרו</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>לחץ להוספה</span>; })()}
+              {(() => { const count = Object.entries(form.requirements).filter(([k,v]) => k !== 'custom' && v === true).length + (form.requirements.custom ? 1 : 0) + (form.requires_invoice ? 1 : 0); return count > 0 ? <span style={{ fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1a6fd4', borderRadius: 20, padding: '2px 8px', border: '1px solid #bfdbfe' }}>{t('ct_selected', { count })}</span> : <span style={{ fontSize: 11, color: '#94a3b8' }}>{t('ct_click_add')}</span>; })()}
               {showRequirements ? <ChevronUp size={16} color="#64748b" /> : <ChevronDown size={16} color="#64748b" />}
             </div>
           </button>
@@ -1524,8 +1525,8 @@ export default function CreateTask() {
                   <FileText size={18} color={form.requires_invoice ? '#7c3aed' : '#94a3b8'} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: form.requires_invoice ? '#7c3aed' : 'var(--text-1)' }}>📄 חשבונית מס</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>דרוש מהעובד חשבונית מס — מתאים לעסקים ועצמאים</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: form.requires_invoice ? '#7c3aed' : 'var(--text-1)' }}>{t('ct_invoice')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1 }}>{t('ct_invoice_help')}</div>
                 </div>
                 <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.requires_invoice ? '#7c3aed' : 'var(--border-1)'}`, background: form.requires_invoice ? '#7c3aed' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {form.requires_invoice && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
@@ -1549,7 +1550,7 @@ export default function CreateTask() {
                           </div>
                           <span style={{ fontSize: 12, fontWeight: isSuggested ? 700 : 600, color: isActive ? '#1e40af' : isSuggested ? '#92400e' : 'var(--text-2)' }}>{label}</span>
                           {isSuggested && !isActive && (
-                            <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'white', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>מומלץ</span>
+                            <span style={{ position: 'absolute', top: -6, left: -6, fontSize: 8, fontWeight: 800, color: 'white', background: '#f59e0b', borderRadius: 99, padding: '1px 5px', boxShadow: '0 1px 4px rgba(245,158,11,0.4)' }}>{t('ct_recommended')}</span>
                           )}
                         </button>
                       );
@@ -1558,8 +1559,8 @@ export default function CreateTask() {
                 </div>
               ))}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>דרישה חופשית</div>
-                <input type="text" placeholder="לדוגמא: ניסיון עם מוצרי חשמל..."
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>{t('ct_custom_req')}</div>
+                <input type="text" placeholder={t('ct_custom_req_ph')}
                   value={form.requirements.custom || ''} onChange={e => setReq('custom', e.target.value)}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'var(--input-bg)', border: '1px solid var(--border-1)', fontSize: 16, outline: 'none', boxSizing: 'border-box', color: 'var(--text-1)' }} />
               </div>
@@ -1571,10 +1572,10 @@ export default function CreateTask() {
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
             <ShieldCheck size={14} color="#16a34a" strokeWidth={1.8} />
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>אימות עובד</Label>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_worker_verify')}</Label>
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 10, lineHeight: 1.5 }}>
-            בחר אם לדרוש מהעובדים אימות ווי ירוק כדי להגיש בקשה למשימה זו
+            {t('ct_verify_help')}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -1588,7 +1589,7 @@ export default function CreateTask() {
                 border: `1.5px solid ${!form.verification_required ? '#bbf7d0' : 'var(--border-1)'}`,
               }}
             >
-              לא חשוב אימות
+              {t('ct_no_verify')}
             </button>
             <button
               type="button"
@@ -1602,12 +1603,12 @@ export default function CreateTask() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               }}
             >
-              <ShieldCheck size={14} /> דרוש ווי ירוק ומעלה
+              <ShieldCheck size={14} /> {t('ct_require_green')}
             </button>
           </div>
           {form.verification_required && (
             <div style={{ marginTop: 8, padding: '8px 12px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', fontSize: 11, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
-              ✓ רק משתמשים עם ווי ירוק ומעלה (כולל ווי זהב) יוכלו להגיש בקשה למשימה זו
+              {t('ct_verify_note')}
             </div>
           )}
         </SectionCard>
@@ -1618,10 +1619,10 @@ export default function CreateTask() {
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
             <CreditCard size={14} color="#94a3b8" strokeWidth={1.8} />
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>איך תרצה לשלם על המשימה? *</Label>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_how_pay')}</Label>
           </div>
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.5 }}>
-            💡 אין צורך להזין פרטי תשלום — רק בחר את השיטה בה תשלם לעובד בסיום המשימה
+            {t('ct_pay_note')}
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 7 }}>
@@ -1631,7 +1632,7 @@ export default function CreateTask() {
             >{t(pm.i18n_key)}</button>
           ))}
         </div>
-        {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>יש לבחור אמצעי תשלום</p>}
+        {errors.payment_method && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 6 }}>{t('ct_pay_err')}</p>}
 
         </SectionCard>
         </div>
@@ -1640,10 +1641,10 @@ export default function CreateTask() {
         <SectionCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
             <Phone size={14} color="#94a3b8" strokeWidth={1.8} />
-            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>טלפון ליצירת קשר</Label>
+            <Label className="text-sm font-bold" style={{ color: 'var(--text-1)', margin: 0 }}>{t('ct_contact')}</Label>
           </div>
           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, lineHeight: 1.5 }}>
-            המספר יוצג לעובד שתאשר בלבד — לפני האישור הוא נסתר
+            {t('ct_contact_help')}
           </div>
           <Input
             type="tel"

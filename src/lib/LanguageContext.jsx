@@ -31,8 +31,16 @@ export function LanguageProvider({ children }) {
     setLangState(code);
   }, []);
 
-  const t = useCallback((key, fallback) => {
-    return translations[lang]?.[key] ?? translations['he']?.[key] ?? fallback ?? key;
+  const t = useCallback((key, paramsOrFallback) => {
+    const val = translations[lang]?.[key] ?? translations['he']?.[key];
+    if (val === undefined) {
+      return typeof paramsOrFallback === 'string' ? paramsOrFallback : key;
+    }
+    if (paramsOrFallback && typeof paramsOrFallback === 'object') {
+      return val.replace(/\{(\w+)\}/g, (_, k) =>
+        paramsOrFallback[k] != null ? String(paramsOrFallback[k]) : `{${k}}`);
+    }
+    return val;
   }, [lang]);
 
   const isRTL = RTL_LANGS.has(lang);
