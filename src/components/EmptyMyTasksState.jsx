@@ -176,7 +176,7 @@ export default function EmptyMyTasksState() {
         fontSize: 14, color: '#64748b', lineHeight: 1.45, fontWeight: 500,
         textAlign: 'center', maxWidth: 320, margin: '7px 0 0', padding: '0 18px',
       }}>
-        פרסום משימה לוקח פחות מדקה. תוך דקות אנשים יגישו בקשות ואתה בוחר את מי שמתאים.
+        פרסום משימה לוקח פחות מדקה. תוך דקות אנשים מהאזור שלך שמתאימים למשימה יקבלו התראה, יגישו בקשה, ואתה תבחר את מי שמתאים.
       </p>
 
       {/* Primary CTA */}
