@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MapPin, Sparkles, DollarSign, Zap, ArrowUpDown, CreditCard, FileText } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getCityLabel } from '@/lib/cityLabels';
 
 const cities = ['תל אביב', 'ירושלים', 'חיפה', 'באר שבע', 'ראשון לציון', 'פתח תקווה', 'נתניה', 'הרצליה', 'חולון', 'בת ים'];
 
@@ -43,7 +44,7 @@ function SectionLabel({ icon: Icon, children }) {
 }
 
 export default function FilterSheet({ open, onClose, filters, onApply, hasForYou = false }) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
 
   const URGENCY_FILTER_TAGS = [
     { value: 'immediate', label: t('urgency_immediate') },
@@ -252,7 +253,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
             <SectionLabel icon={MapPin}>{t('filter_location_label')}</SectionLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7, marginBottom: 10 }}>
               {cities.map(c => (
-                <Chip key={c} label={c}
+                <Chip key={c} label={getCityLabel(c, lang)}
                   active={local.city === c}
                   onClick={() => setLocal(p => ({ ...p, city: p.city === c ? '' : c }))}
                 />

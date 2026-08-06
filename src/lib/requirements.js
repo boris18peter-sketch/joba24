@@ -263,8 +263,45 @@ export const DEFAULT_REQUIREMENT_CATEGORIES = [
   ]},
 ];
 
-export const getRequirementCategories = (category) =>
-  CATEGORY_REQUIREMENTS[category] || DEFAULT_REQUIREMENT_CATEGORIES;
+// Map Hebrew group labels to i18n keys
+const GROUP_LABEL_KEYS = {
+  'כלי רכב': 'reqg_vehicle',
+  'כמות אנשים': 'reqg_people',
+  'כישורים': 'reqg_skills',
+  'הסמכה': 'reqg_certification',
+  'כלי עבודה': 'reqg_tools',
+  'ניסיון': 'reqg_experience',
+  'ניסיון מקצועי': 'reqg_professional',
+};
+
+// Translate a group label via t() if available, else return the Hebrew label
+function translateGroup(label, t) {
+  if (!t) return label;
+  const key = GROUP_LABEL_KEYS[label];
+  if (key) {
+    const translated = t(key);
+    if (translated && translated !== key) return translated;
+  }
+  return label;
+}
+
+// Translate an item label via t('req_<key>') if available, else return the Hebrew label
+function translateItem(item, t) {
+  if (!t) return item.label;
+  const translated = t(`req_${item.key}`);
+  if (translated && translated !== `req_${item.key}`) return translated;
+  return item.label;
+}
+
+export const getRequirementCategories = (category, t) => {
+  const cats = CATEGORY_REQUIREMENTS[category] || DEFAULT_REQUIREMENT_CATEGORIES;
+  if (!t) return cats;
+  return cats.map(group => ({
+    ...group,
+    label: translateGroup(group.label, t),
+    items: (group.items || []).map(item => ({ ...item, label: translateItem(item, t) })),
+  }));
+};
 
 /**
  * Extract all active requirements from a task.requirements object.
@@ -272,15 +309,15 @@ export const getRequirementCategories = (category) =>
  * Uses the category's requirement config for labels, falling back to default config.
  * Includes custom text requirements.
  */
-export const getActiveRequirements = (requirements, category) => {
+export const getActiveRequirements = (requirements, category, t) => {
   if (!requirements || typeof requirements !== 'object') return [];
-  const cats = getRequirementCategories(category);
+  const cats = getRequirementCategories(category, t);
   // Build a lookup map: key → label, from category config + defaults
   const labelMap = {};
   const allCats = [...cats, ...DEFAULT_REQUIREMENT_CATEGORIES];
   for (const cat of allCats) {
     for (const item of cat.items || []) {
-      if (!labelMap[item.key]) labelMap[item.key] = item.label;
+      if (!labelMap[item.key]) labelMap[item.key] = translateItem(item, t);
     }
   }
   const result = [];

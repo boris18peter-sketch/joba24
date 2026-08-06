@@ -192,8 +192,9 @@ function FeatureCard({ pill, active, onToggle, extraConfig, onExtraChange }) {
 
 // ── Requirements group — compact dropdown ──
 function RequirementsCardGroup({ category, requirements, onToggle, onInvoiceToggle, invoiceEnabled }) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const cats = getRequirementCategories(category);
+  const cats = getRequirementCategories(category, t);
   if (!cats.length) return null;
   const selectedCount = Object.values(requirements || {}).filter(Boolean).length;
   return (

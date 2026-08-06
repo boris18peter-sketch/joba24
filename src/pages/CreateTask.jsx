@@ -1532,7 +1532,7 @@ export default function CreateTask() {
                   {form.requires_invoice && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
                 </div>
               </button>
-              {getRequirementCategories(form.category).map(cat => (
+              {getRequirementCategories(form.category, t).map(cat => (
                 <div key={cat.label}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#64748b', marginBottom: 8, letterSpacing: 0.3 }}>{cat.label}</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>

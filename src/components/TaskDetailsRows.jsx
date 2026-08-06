@@ -118,7 +118,7 @@ export default function TaskDetailsRows({ task, compact = false }) {
   }
 
   // Requirements
-  const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
+  const reqs = getActiveRequirements(task.requirements, task.category, t).map(r =>
     r.value ? `${r.label}: ${r.value}` : r.label
   );
   if (task.requires_invoice) reqs.push(t('tdr_requires_invoice'));

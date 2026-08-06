@@ -3,6 +3,7 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { Navigation, MapPin, ChevronDown } from 'lucide-react';
 import { getCategoryConfig, formatCategoryDetails } from '@/lib/taskFlowConfig';
 import SchedulePicker from '@/components/SchedulePicker';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function distKm(a, b) {
   if (!a || !b) return null;
@@ -16,6 +17,7 @@ function distKm(a, b) {
 // ── Field type renderers ─────────────────────────────────────────────────────
 
 function SelectField({ field, value, onChange }) {
+  const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
   const opts = field.options || [];
   const visible = showAll ? opts : opts.slice(0, 6);
@@ -53,7 +55,7 @@ function SelectField({ field, value, onChange }) {
             color: '#1a6fd4', padding: 0,
           }}
         >
-          {showAll ? 'הצג פחות' : `עוד ${opts.length - 6} אפשרויות`}
+          {showAll ? t('cef_show_less') : t('cef_more_options').replace('{n}', opts.length - 6)}
           <ChevronDown size={13} style={{ transform: showAll ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
         </button>
       )}
@@ -62,6 +64,7 @@ function SelectField({ field, value, onChange }) {
 }
 
 function MultiSelectField({ field, value, onChange }) {
+  const { t } = useLanguage();
   const selected = Array.isArray(value) ? value : [];
   const opts = field.options || [];
   const toggle = (opt) => {
@@ -97,7 +100,7 @@ function MultiSelectField({ field, value, onChange }) {
       })}
       {selected.length > 0 && (
         <button type="button" onClick={() => onChange([])} style={{ padding: '8px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-1)', background: 'transparent', color: '#94a3b8' }}>
-          נקה ({selected.length})
+          {t('cef_clear').replace('{n}', selected.length)}
         </button>
       )}
     </div>
@@ -195,10 +198,11 @@ function TextareaField({ field, value, onChange }) {
 }
 
 function AddressField({ field, value, onChange, onCoords, originLat, originLng }) {
+  const { t } = useLanguage();
   return (
     <AddressAutocomplete
       value={value || ''}
-      placeholder={field.placeholder || 'התחל להקליד כתובת...'}
+      placeholder={field.placeholder || t('cef_address_ph')}
       onSelect={({ location_name, lat, lng }) => {
         if (location_name) {
           onCoords?.({ lat, lng });
@@ -213,6 +217,7 @@ function AddressField({ field, value, onChange, onCoords, originLat, originLng }
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function CategoryExtraFields({ category, originLat, originLng, initialValues, onChange }) {
+  const { t } = useLanguage();
   const config = getCategoryConfig(category);
   const [values, setValues] = useState(initialValues || {});
   // Filter out urgency fields — urgency is already handled in the main form
@@ -255,7 +260,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
   const formatExtra = (vals, fieldList, dist) => {
     const lines = [];
     if (config) lines.push(`--- ${config.label} ---`);
-    if (dist != null) lines.push(`📍 מרחק: ${dist < 1 ? `${Math.round(dist * 1000)} מטר` : `${dist.toFixed(1)} ק"מ`}`);
+    if (dist != null) lines.push(`📍 ${t('cef_distance')}: ${dist < 1 ? `${Math.round(dist * 1000)} ${t('cef_meter')}` : `${dist.toFixed(1)} ${t('cef_km')}`}`);
     fieldList.forEach(f => {
       const v = vals[f.key];
       if (v === undefined || v === '' || v === null) return;
@@ -303,7 +308,7 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
         }}>{emoji}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.2 }}>{labelName}</div>
-          <div style={{ fontSize: 11, color: '#1a6fd4', fontWeight: 600, marginTop: 1 }}>פרטים מקצועיים — יוצגו לעובדים</div>
+          <div style={{ fontSize: 11, color: '#1a6fd4', fontWeight: 600, marginTop: 1 }}>{t('cef_pro_details')}</div>
         </div>
       </div>
 
@@ -374,10 +379,10 @@ export default function CategoryExtraFields({ category, originLat, originLng, in
             </div>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#1e40af' }}>
-                {distance < 1 ? `${Math.round(distance * 1000)} מטר` : `${distance.toFixed(1)} ק"מ`}
+                {distance < 1 ? `${Math.round(distance * 1000)} ${t('cef_meter')}` : `${distance.toFixed(1)} ${t('cef_km')}`}
               </div>
               <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 1, fontWeight: 500 }}>
-                זמן נסיעה משוער: ~{Math.ceil(distance * 3)} דקות
+                {t('cef_travel_time').replace('{n}', Math.ceil(distance * 3))}
               </div>
             </div>
           </div>

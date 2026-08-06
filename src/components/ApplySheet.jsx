@@ -14,7 +14,7 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
   const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
 
   // Build requirements list for display
-  const reqs = getActiveRequirements(task?.requirements, task?.category).map(r =>
+  const reqs = getActiveRequirements(task?.requirements, task?.category, t).map(r =>
     r.value ? `${r.label}: ${r.value}` : r.label
   );
   if (task?.requires_invoice) reqs.push(t('as_requires_invoice'));

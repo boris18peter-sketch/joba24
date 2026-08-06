@@ -1271,7 +1271,7 @@ export default function TaskDetail(props) {
 
             {/* Requirements — dynamically extracted from all possible requirement keys */}
             {(() => {
-              const reqs = getActiveRequirements(task.requirements, task.category).map(r =>
+              const reqs = getActiveRequirements(task.requirements, task.category, t).map(r =>
                 r.value ? `${r.label}: ${r.value}` : r.label
               );
               if (task.requires_invoice) reqs.push(t('as_requires_invoice'));
