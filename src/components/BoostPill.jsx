@@ -33,7 +33,7 @@ function toUTCMs(str) {
  */
 export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose }) {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [pct, setPct] = useState(0);
   const [charged, setCharged] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -75,7 +75,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
         return;
       }
       if (res.data?.error === 'boost_cooldown') {
-        toast.error(res.data.message || `יש להמתין ${res.data.minutes_left} דקות לפני איתות נוסף`);
+        toast.error(res.data.message || t('boost_cooldown_msg').replace('{n}', res.data.minutes_left));
         // Force re-sync the pill state from server data
         queryClient.invalidateQueries({ queryKey: ['task', task.id] });
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -84,7 +84,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
         return;
       }
       if (res.data?.error === 'task_not_open') {
-        toast.error('ניתן לבצע איתות רק למשימות פתוחות');
+        toast.error(t('boost_only_open'));
         return;
       }
       if (!res.data?.success) {
@@ -176,7 +176,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       {/* Confirm sheet */}
       {showConfirm && createPortal(
         <div className="mobile-sheet-overlay" onClick={() => setShowConfirm(false)}>
-          <div dir="rtl" className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="mobile-sheet" style={{ width: '100%', maxWidth: 480, padding: '24px 20px 0' }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 20px' }} />
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 44, marginBottom: 10 }}>⚡</div>

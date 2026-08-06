@@ -7,16 +7,19 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
+import { useLanguage } from '@/lib/LanguageContext';
 
-const statusConfig = {
-  OPEN: { label: 'פתוח', color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
-  TAKEN: { label: 'בעבודה', color: '#fef9ec', textColor: '#92700a', dot: '#d4a017' },
-  COMPLETED: { label: 'הושלם', color: '#dcfce7', textColor: '#166534', dot: '#10b981' },
-  CANCELLED: { label: 'בוטל', color: '#fee2e2', textColor: '#991b1b', dot: '#ef4444' },
-  EXPIRED: { label: 'פג תוקף', color: '#fef3ea', textColor: '#8a4a1a', dot: '#c2773a' },
-};
+function statusConfig(t) {
+  return {
+    OPEN: { label: t('open_status'), color: '#dbeafe', textColor: '#1d4ed8', dot: '#3b82f6' },
+    TAKEN: { label: t('status_in_work'), color: '#fef9ec', textColor: '#92700a', dot: '#d4a017' },
+    COMPLETED: { label: t('status_completed'), color: '#dcfce7', textColor: '#166534', dot: '#10b981' },
+    CANCELLED: { label: t('status_cancelled'), color: '#fee2e2', textColor: '#991b1b', dot: '#ef4444' },
+    EXPIRED: { label: t('te_expired'), color: '#fef3ea', textColor: '#8a4a1a', dot: '#c2773a' },
+  };
+}
 
-function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
+function TaskMenuSheet({ task, onClose, queryClient, navigate, t, isRTL }) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -24,7 +27,7 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
     setCancelling(true);
     try {
       const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
-      if (!res.data?.success) throw new Error('שגיאה בביטול');
+      if (!res.data?.success) throw new Error(t('mtc_cancel_error'));
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
@@ -33,7 +36,7 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
       onClose();
     } catch {
       setCancelling(false);
-      toast.error('שגיאה בביטול, נסה שוב');
+      toast.error(t('error_cancelling_task'));
     }
   };
 
@@ -44,7 +47,7 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
 
   return createPortal(
     <>
-      <div className="mobile-sheet-overlay" onClick={onClose} dir="rtl">
+      <div className="mobile-sheet-overlay" onClick={onClose} dir={isRTL ? 'rtl' : 'ltr'}>
         <div className="mobile-sheet" style={{ width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
           {/* Handle */}
           <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '12px auto 16px' }} />
@@ -60,20 +63,20 @@ function TaskMenuSheet({ task, onClose, queryClient, navigate }) {
               <div style={{ width: 38, height: 38, borderRadius: 12, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Pencil size={16} color="#1a6fd4" />
               </div>
-              ערוך משימה
+              {t('mtc_edit_task')}
             </button>
             <button onClick={() => setShowCancelConfirm(true)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 12px', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, fontSize: 15, fontWeight: 700, color: '#dc2626' }}>
               <div style={{ width: 38, height: 38, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Trash2 size={16} color="#dc2626" />
               </div>
-              בטל משימה
+              {t('mtc_cancel_task')}
             </button>
           </div>
           <div style={{ padding: '0 12px 8px' }}>
             <button onClick={onClose}
               style={{ width: '100%', height: 48, borderRadius: 14, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700, color: '#64748b' }}>
-              ביטול
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -95,6 +98,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const [openMenuId, setOpenMenuId] = useState(null);
 
   // Show active/actionable tasks — OPEN, EXPIRED, TAKEN
@@ -136,7 +140,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
             <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Plus size={16} color="white" strokeWidth={3} />
             </div>
-            <span style={{ fontSize: 15, fontWeight: 900, color: 'white' }}>פרסם ג'ובה חדשה</span>
+            <span style={{ fontSize: 15, fontWeight: 900, color: 'white' }}>{t('mtc_post_new')}</span>
           </div>
         </Link>
       </div>
@@ -152,12 +156,12 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
         <h2 style={{ fontSize: 13, fontWeight: 700, color: '#64748b', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
-          משימות שפרסמתי
+          {t('hf_my_published')}
           <span style={{ fontSize: 11, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8', padding: '2px 7px', borderRadius: 20 }}>{relevantTasks.length}</span>
         </h2>
         <div style={{ flex: 1, height: 1, background: '#e8eef8' }} />
         <Link to="/my-tasks" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 700, color: '#1a6fd4', whiteSpace: 'nowrap' }}>
-          הכל <ChevronLeft size={13} />
+          {t('all_filter')} <ChevronLeft size={13} />
         </Link>
       </div>
 
@@ -168,7 +172,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
           .my-tasks-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
         `}</style>
         {relevantTasks.map(task => {
-          const status = statusConfig[task.status] || statusConfig.OPEN;
+          const status = (statusConfig(t))[task.status] || (statusConfig(t)).OPEN;
           const isTaken = task.status === 'TAKEN';
           const isExpired = task.status === 'EXPIRED';
           const isOpen = task.status === 'OPEN';
@@ -227,7 +231,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                   <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '4px 7px', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Users size={9} color="#d97706" />
                     <span style={{ fontSize: 9, fontWeight: 700, color: '#92400e', lineHeight: 1.2 }}>
-                      {pendingCount} בקשה{pendingCount > 1 ? 'ות' : ''} ממתינות
+                      {t('mtc_pending_apps').replace('{n}', pendingCount)}
                     </span>
                   </div>
                 )}
@@ -245,13 +249,13 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                       onClick={(e) => { e.stopPropagation(); handleReopen(e, task); }}
                       style={{ height: 22, padding: '0 8px', borderRadius: 7, background: '#ea580c', border: 'none', color: 'white', fontWeight: 700, fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}
                     >
-                      <RefreshCw size={9} /> ערוך ופתח
+                      <RefreshCw size={9} /> {t('mtc_edit_reopen')}
                     </button>
                   )}
                 </div>
               </div>
               {openMenuId === task.id && (
-                <TaskMenuSheet task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} />
+                <TaskMenuSheet task={task} onClose={() => setOpenMenuId(null)} queryClient={queryClient} navigate={navigate} t={t} isRTL={isRTL} />
               )}
             </div>
           );
