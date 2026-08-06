@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function ProfileCompletionBanner({ me }) {
   const { settings } = useJobaSettings();
+  const { t, isRTL } = useLanguage();
   const profileBonus = settings.profile_completion_bonus ?? 0;
   if (!me) return null;
 
@@ -16,7 +18,7 @@ export default function ProfileCompletionBanner({ me }) {
     <Link
       to="/join"
       id="onboarding-profile-banner"
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         display: 'block',
         textDecoration: 'none',
@@ -44,10 +46,10 @@ export default function ProfileCompletionBanner({ me }) {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 900, color: 'white', marginBottom: 5, lineHeight: 1.3 }}>
-            רוצה להרוויח ולקבל יותר משימות?
+            {t('pcb_title')}
           </div>
           <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.88)', lineHeight: 1.55 }}>
-            פרופיל מלא עוזר לנו להתאים לך משימות רלוונטיות יותר, ומגדיל את הסיכוי שמפרסמים יסמכו עליך ויבחרו בך מהר יותר.
+            {t('pcb_body')}
           </div>
         </div>
       </div>
@@ -69,7 +71,7 @@ export default function ProfileCompletionBanner({ me }) {
           boxShadow: '0 3px 12px rgba(251,191,36,0.45)',
         }}
       >
-        {profileBonus > 0 ? `🎁 השלם פרופיל עובד וקבל בונוס ${profileBonus} ג'ובות` : '🎁 השלם פרופיל עובד'}
+        {profileBonus > 0 ? t('pcb_cta_bonus').replace('{n}', profileBonus) : t('pcb_cta')}
       </div>
     </Link>
   );

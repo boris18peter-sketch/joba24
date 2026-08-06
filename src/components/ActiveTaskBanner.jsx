@@ -15,19 +15,19 @@ import InvoiceModal from '@/components/InvoiceModal';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
-function getRelativeTime(date) {
+function getRelativeTime(date, t) {
   if (!date) return null;
   const s = String(date);
   const normalized = s.includes('T') && !s.endsWith('Z') && !s.includes('+') ? s + 'Z' : s;
   const ms = Date.now() - new Date(normalized).getTime();
-  if (ms < 0) return 'עכשיו';
+  if (ms < 0) return t('now_label');
   const minutes = Math.floor(ms / 60000);
-  if (minutes < 1) return 'עכשיו';
-  if (minutes < 60) return `לפני ${minutes} דקות`;
+  if (minutes < 1) return t('now_label');
+  if (minutes < 60) return t('minutes_ago').replace('{n}', minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `לפני ${hours} שעות`;
+  if (hours < 24) return t('hours_ago').replace('{n}', hours);
   const days = Math.floor(hours / 24);
-  if (days < 30) return `לפני ${days} ימים`;
+  if (days < 30) return t('days_ago').replace('{n}', days);
   return null;
 }
 
@@ -202,7 +202,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
           const statusText = tIsOwner
-            ? tStatusInfo?.ownerLabel || 'ממתין לעדכון מהעובד'
+            ? tStatusInfo?.ownerLabel || t('waiting_worker_update')
             : tStatusInfo?.label || catConfig.actions.start.label;
 
           // Nav button → show only when on_the_way. After arrived → show chat.
@@ -219,7 +219,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           const personId = tIsWorker ? task.client_id : task.worker_id;
           const personRating = tIsWorker ? task.client_rating : task.worker_rating;
           const personVerified = tIsWorker ? task.client_verified : task.worker_verified;
-          const personLabel = tIsWorker ? 'מפרסם' : 'עובד';
+          const personLabel = tIsWorker ? t('role_poster') : t('role_worker');
 
           return (
             <div
@@ -239,7 +239,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                     <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
                   </span>
                   <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600 }}>
-                    {tIsWorker ? 'משימה פעילה' : 'בביצוע'}
+                    {tIsWorker ? t('active_task_label') : t('in_progress')}
                   </span>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '5px 12px' }}>
@@ -307,7 +307,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               {/* ── Completion proof preview — shown to owner when worker marked done ── */}
               {tIsOwner && task.worker_status === 'done' && (task.completion_photos?.length > 0 || task.completion_video_url) && (
                 <div style={{ marginTop: 6, marginBottom: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.18)' }} onClick={e => e.stopPropagation()}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>📸 הוכחת ביצוע מהעובד</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>{t('proof_from_worker')}</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(task.completion_photos || []).map((url, i) => (
                       <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block' }}>
@@ -410,13 +410,13 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               {/* ── Row 7: Stats (owner only, TaskDetail context) ── */}
               {extraInfo?.isOwner && (
                 <div onClick={e => e.stopPropagation()} style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 10 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5, marginBottom: 6, textAlign: 'center' }}>נתוני פרסום משימה</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {[
-                      { val: extraInfo.viewsCount || 0, label: 'צפיות' },
-                      { val: extraInfo.clicksCount || 0, label: 'כניסות' },
-                      { val: extraInfo.applicationCount || 0, label: 'מועמדים' },
-                    ].map(({ val, label }, i) => (
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.5, marginBottom: 6, textAlign: 'center' }}>{t('task_publish_stats')}</div>
+                   <div style={{ display: 'flex', gap: 6 }}>
+                     {[
+                       { val: extraInfo.viewsCount || 0, label: t('views') },
+                       { val: extraInfo.clicksCount || 0, label: t('clicks') },
+                       { val: extraInfo.applicationCount || 0, label: t('applications_count') },
+                     ].map(({ val, label }, i) => (
                       <div key={i} style={{ flex: 1, background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: '7px 6px', textAlign: 'center' }}>
                         <div style={{ fontSize: 17, fontWeight: 900, color: 'white', lineHeight: 1 }}>{val}</div>
                         <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: 600 }}>{label}</div>
@@ -440,7 +440,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                       onClick={() => setInvoiceTask(task)}
                       style={{ flex: 1, height: 36, borderRadius: 10, background: task.invoice_html ? 'rgba(124,58,237,0.3)' : 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', color: 'rgba(255,255,255,0.85)', fontWeight: 600, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                     >
-                      <FileText size={12} /> חשבונית {task.invoice_html ? '✓' : ''}
+                      <FileText size={12} /> {t('invoice_btn')} {task.invoice_html ? '✓' : ''}
                     </button>
                   )}
                 </div>
@@ -467,7 +467,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
           onPointerDown={e => e.stopPropagation()}
           onTouchStart={e => e.stopPropagation()}
         >
-          <div dir="rtl" onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg,white)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '80dvh', overflowY: 'auto' }}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} onClick={e => e.stopPropagation()} style={{ background: 'var(--sheet-bg,white)', borderRadius: '28px 28px 0 0', width: '100%', maxWidth: 480, padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))', boxShadow: '0 -20px 80px rgba(0,0,0,0.25)', maxHeight: '80dvh', overflowY: 'auto' }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 16px' }} />
             <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1,#0f1e40)', marginBottom: 4 }}>📸 {getCategoryConfig(mediaTask.category).proofLabel}</div>
             <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>{getCategoryConfig(mediaTask.category).proofSub}</div>
@@ -488,20 +488,20 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 if (mediaTask.client_id && mediaTask.client_id !== me?.id) {
                   base44.functions.invoke('sendPushNotification', {
                     user_ids: [mediaTask.client_id],
-                    title: 'הוכחת ביצוע הועלתה 📸',
-                    body: `העובד העלה הוכחת ביצוע למשימה "${mediaTask.title}"`,
+                    title: t('td_proof_uploaded_title'),
+                    body: t('td_proof_uploaded_body').replace('{title}', mediaTask.title),
                     url: `/task/${mediaTask.id}`,
                     tag: `completion_${mediaTask.id}`,
                   }).catch(() => {});
                 }
                 setSavingMedia(false);
-                toast.success('הוכחת הביצוע נשמרה ✓');
+                toast.success(t('proof_saved_toast'));
                 setMediaTask(null);
               }}
               disabled={savingMedia}
               style={{ marginTop: 14, width: '100%', height: 50, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 900, fontSize: 15, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              {savingMedia ? <Loader2 size={18} className="animate-spin" /> : '💾 שמור'}
+              {savingMedia ? <Loader2 size={18} className="animate-spin" /> : t('save_btn')}
             </button>
           </div>
         </div>,

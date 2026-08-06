@@ -88,7 +88,7 @@ function StoryCard({ task, isViewed, isOwn, onClick, t }) {
   );
 }
 
-function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUserId, t }) {
+function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUserId, t, isRTL }) {
   const { openTaskSheet } = useTaskSheet();
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [progress, setProgress] = useState(0);
@@ -261,7 +261,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Progress bars */}
       <div className="absolute top-0 left-0 right-0 z-20 flex gap-1 px-3" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
@@ -318,7 +318,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
               {distKm != null && !isNaN(distKm) && (
                 <span style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
                   <Navigation size={10} />
-                  {distKm < 1 ? `${Math.round(distKm * 1000)}מ'` : `${distKm.toFixed(1)}ק"מ`}
+                  {distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}
                 </span>
               )}
             </div>
@@ -365,7 +365,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 }
 
 export default function StoriesBar({ filterCategory = null, currentUserId = null }) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { openTaskSheet } = useTaskSheet();
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -473,6 +473,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
           currentUserId={currentUserId}
           onClose={handleClose}
           t={t}
+          isRTL={isRTL}
         />
       )}
     </>

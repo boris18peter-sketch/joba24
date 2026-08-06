@@ -5,7 +5,7 @@ import { SearchX } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function EmptySearchState({ hasFilters, onReset }) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   return (
     <>
@@ -21,7 +21,7 @@ export default function EmptySearchState({ hasFilters, onReset }) {
       `}</style>
 
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           padding: '52px 24px 32px',

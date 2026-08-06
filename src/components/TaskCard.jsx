@@ -267,8 +267,10 @@ function ScanningLabel({ taskId }) {
 }
 
 // ── TaskCard ──────────────────────────────────────────────────────────────────
+const LOCALE_MAP = { he: 'he-IL', ar: 'ar-IL', en: 'en-US', es: 'es-ES', fr: 'fr-FR', ru: 'ru-RU', fil: 'fil-PH', hi: 'hi-IN', zh: 'zh-CN' };
+
 function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, isMyPublished }) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const { user: me } = useAuth();
@@ -529,11 +531,12 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               const isToday = sDate.toDateString() === now.toDateString();
               const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
               const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
-              const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+              const locale = LOCALE_MAP[lang] || 'he-IL';
+              const timeStr = sDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
               let label;
               if (isToday) label = `${t('today')} ${timeStr}`;
               else if (isTomorrow) label = `${t('tomorrow')} ${timeStr}`;
-              else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }) + ' ' + timeStr;
+              else label = sDate.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ' ' + timeStr;
               const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
               return (
                 <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', color: '#1a6fd4', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>

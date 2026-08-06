@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Shield, Clock, XCircle } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
 import { isUserVerified } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * VerificationStatusBanner — identical green banner across the whole interface.
@@ -18,6 +19,7 @@ import { isUserVerified } from '@/lib/utils';
  */
 export default function VerificationStatusBanner({ me }) {
   const [showVerify, setShowVerify] = useState(false);
+  const { t, isRTL } = useLanguage();
 
   if (!me || isUserVerified(me)) return null;
 
@@ -26,23 +28,23 @@ export default function VerificationStatusBanner({ me }) {
   const config = {
     pending: {
       icon: Clock,
-      title: 'אימות בבדיקה',
-      sub: 'הפרטים שלך נשלחו וממתינים לאישור הצוות. בינתיים תוכל לפרסם משימות ולהגיש בקשות.',
-      cta: 'ערוך פרטים',
+      title: t('pr_verify_pending'),
+      sub: t('vsb_pending_sub'),
+      cta: t('vsb_edit_details'),
       showNote: true,
     },
     rejected: {
       icon: XCircle,
-      title: 'אימות נדחה',
-      sub: 'האימות נדחה — ניתן לעדכן את הפרטים ולשלוח שוב.',
-      cta: 'שלח שוב',
+      title: t('pr_verify_rejected'),
+      sub: t('pr_verify_rejected_sub'),
+      cta: t('vsb_send_again'),
       showNote: false,
     },
     default: {
       icon: Shield,
-      title: 'אימות זהות',
-      sub: 'אימות חד־פעמי פותח ווי ירוק 🟢 בפרופיל ובונה אמון עם משתמשים. נדרש גם להגשת בקשות על משימות מאומתות.',
-      cta: 'אמת זהות עכשיו',
+      title: t('vsb_verify_identity'),
+      sub: t('vsb_default_sub'),
+      cta: t('vsb_verify_now'),
       showNote: true,
     },
   };
@@ -55,7 +57,7 @@ export default function VerificationStatusBanner({ me }) {
       <button
         id="onboarding-verify-banner"
         onClick={() => setShowVerify(true)}
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           all: 'unset',
           cursor: 'pointer',
@@ -98,7 +100,7 @@ export default function VerificationStatusBanner({ me }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '0 2px' }}>
             <Clock size={12} color="rgba(255,255,255,0.85)" strokeWidth={2} />
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>
-              בדרך כלל מקבלים ווי ירוק לאחר כ-6 שעות
+              {t('vsb_green_hours')}
             </span>
           </div>
         )}
