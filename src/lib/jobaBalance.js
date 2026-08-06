@@ -26,10 +26,7 @@ export function jobasToNis(jobas) {
  */
 export function packageValueLabel(jobas) {
   const nis = jobasToNis(jobas);
-  if (nis >= 1000) {
-    return `שווה ₪${(nis / 1000).toFixed(nis % 1000 === 0 ? 0 : 1)}K עבודות`;
-  }
-  return `שווה ₪${nis} עבודות`;
+  return `מאפשר להגיש בקשות למשימות עד ₪${nis.toLocaleString('he-IL')}`;
 }
 
 /**
