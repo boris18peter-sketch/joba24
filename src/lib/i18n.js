@@ -523,7 +523,7 @@ export const translations = {
     post_task_btn: 'פרסם משימה',
     people_post_everything: 'אנשים מפרסמים כל דבר — ומישהו תמיד מגיע לעזור 💪',
     publish_task_onboard_title: 'פרסם משימה',
-    publish_task_onboard_sub: 'קבל עזרה מאנשים בסביבתך תוך דקות. פרסם עכשיו — זה פשוט ומהיר.',
+    publish_task_onboard_sub: 'פרסום משימה לוקח פחות מדקה. תוך דקות אנשים מהאזור שלך שמתאימים למשימה יקבלו התראה, יגישו בקשה, ואתה תבחר את מי שמתאים לך',
     // CreateTask
     draft_saved: 'נשמר',
     draft_restored: 'טיוטה שמורה — המשך מהיכן שעצרת',
@@ -1145,7 +1145,7 @@ export const translations = {
     post_task_btn: 'Post a Task',
     people_post_everything: 'People post everything — and someone always shows up to help 💪',
     publish_task_onboard_title: 'Post a Task',
-    publish_task_onboard_sub: 'Get help from people near you in minutes. Post now — it\'s simple and fast.',
+    publish_task_onboard_sub: 'Posting a task takes less than a minute. Within minutes, people near you who match the task get notified, apply, and you choose who fits.',
     // CreateTask
     draft_saved: 'Saved',
     draft_restored: 'Draft restored — continue where you left off',

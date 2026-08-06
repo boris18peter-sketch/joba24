@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Zap } from 'lucide-react';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 export default function ProfileCompletionBanner({ me }) {
+  const { settings } = useJobaSettings();
+  const profileBonus = settings.profile_completion_bonus ?? 0;
   if (!me) return null;
 
   // Single source of truth: user entity. If the user already has categories AND cities,
@@ -66,7 +69,7 @@ export default function ProfileCompletionBanner({ me }) {
           boxShadow: '0 3px 12px rgba(251,191,36,0.45)',
         }}
       >
-        🎁 השלם פרופיל עובד וקבל בונוס 25 ג'ובות
+        {profileBonus > 0 ? `🎁 השלם פרופיל עובד וקבל בונוס ${profileBonus} ג'ובות` : '🎁 השלם פרופיל עובד'}
       </div>
     </Link>
   );

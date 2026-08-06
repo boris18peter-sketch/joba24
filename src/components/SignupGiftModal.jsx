@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { X } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,6 +103,11 @@ export default function SignupGiftModal({ onClose }) {
   const [claimed, setClaimed] = useState(false);
   const [animPhase, setAnimPhase] = useState('idle'); // idle → enter → reveal
   const queryClient = useQueryClient();
+  const { settings } = useJobaSettings();
+  const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), staleTime: 30000 });
+  const isReferred = !!(me?.referred_by_agent_code);
+  // Mirrors grantSignupBonus backend: base signup bonus + referral bonus when referred.
+  const giftAmount = (settings.signup_bonus ?? 0) + (isReferred ? (settings.referral_signup_bonus ?? 0) : 0);
 
   useEffect(() => {
     injectSGMCSS();
@@ -251,7 +257,7 @@ export default function SignupGiftModal({ onClose }) {
                 whiteSpace: 'nowrap',
               }}
             >
-              +100
+              +{giftAmount}
             </motion.div>
           )}
         </AnimatePresence>
@@ -277,7 +283,7 @@ export default function SignupGiftModal({ onClose }) {
               מתנת הצטרפות
             </div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', lineHeight: 1.65, marginBottom: 18 }}>
-              פינקנו אותך ב-<span style={{ color: '#fbbf24', fontWeight: 800 }}>100 ג'ובות</span> במתנה<br />
+              פינקנו אותך ב-<span style={{ color: '#fbbf24', fontWeight: 800 }}>{giftAmount} ג'ובות</span> במתנה<br />
               כדי שתוכל לצאת לדרך ולהגיש בקשות
             </div>
 
@@ -294,7 +300,7 @@ export default function SignupGiftModal({ onClose }) {
                 marginBottom: 14,
               }}
             >
-              <span style={{ fontSize: 48, fontWeight: 900, color: '#fbbf24', letterSpacing: -3, lineHeight: 1 }}>100</span>
+              <span style={{ fontSize: 48, fontWeight: 900, color: '#fbbf24', letterSpacing: -3, lineHeight: 1 }}>{giftAmount}</span>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
                 <CreditIcon size={30} />
                 <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>ג'ובות</span>
@@ -337,7 +343,7 @@ export default function SignupGiftModal({ onClose }) {
               letterSpacing: 0.2,
             }}
           >
-            {claimed ? 'מעביר ג\'ובות...' : 'קבל 100 ג\'ובות חינם'}
+            {claimed ? 'מעביר ג\'ובות...' : `קבל ${giftAmount} ג\'ובות חינם`}
           </motion.button>
         )}
       </AnimatePresence>

@@ -11,6 +11,7 @@ import {
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import LoginPromptModal from '@/components/LoginPromptModal';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
@@ -55,17 +56,8 @@ export default function WorkerOnboarding() {
 
   // Configurable profile-completion bonus (admin-controlled via "הגדרות ג'ובות").
   // Default 0 — only grants a bonus if the admin explicitly sets a value.
-  const { data: jobaSettings } = useQuery({
-    queryKey: ['jobaSettings'],
-    queryFn: async () => {
-      const list = await base44.entities.JobaSettings.list('-updated_date', 1);
-      return list[0] || null;
-    },
-    enabled: isAuthenticated,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
-  const profileBonus = jobaSettings?.profile_completion_bonus ?? 0;
+  const { settings: jobaSettings } = useJobaSettings();
+  const profileBonus = jobaSettings.profile_completion_bonus ?? 0;
 
   // Pre-fill from existing profile
   useEffect(() => {
