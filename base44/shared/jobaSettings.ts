@@ -29,6 +29,7 @@ export async function getJobaSettings(base44) {
         ...DEFAULT_SETTINGS,
         signup_bonus: num(rec.signup_bonus, DEFAULT_SETTINGS.signup_bonus),
         referral_signup_bonus: num(rec.referral_signup_bonus, DEFAULT_SETTINGS.referral_signup_bonus),
+        profile_completion_bonus: num(rec.profile_completion_bonus, DEFAULT_SETTINGS.profile_completion_bonus),
         application_fee_percent: num(rec.application_fee_percent, DEFAULT_SETTINGS.application_fee_percent),
         application_fee_min: num(rec.application_fee_min, DEFAULT_SETTINGS.application_fee_min),
         story_cost: num(rec.story_cost, DEFAULT_SETTINGS.story_cost),

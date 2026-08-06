@@ -94,6 +94,7 @@ const FIELDS = [
 const DEFAULTS = {
   signup_bonus: 60,
   referral_signup_bonus: 40,
+  profile_completion_bonus: 0,
   application_fee_percent: 5,
   application_fee_min: 1,
   story_cost: 10,
@@ -182,6 +183,7 @@ export default function JobaSettingsTab() {
       const payload = {
         signup_bonus: Number(draft.signup_bonus),
         referral_signup_bonus: Number(draft.referral_signup_bonus),
+        profile_completion_bonus: Number(draft.profile_completion_bonus),
         application_fee_percent: Number(draft.application_fee_percent),
         application_fee_min: Number(draft.application_fee_min),
         story_cost: Number(draft.story_cost),
