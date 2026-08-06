@@ -53,6 +53,20 @@ export default function WorkerOnboarding() {
     refetchOnWindowFocus: false,
   });
 
+  // Configurable profile-completion bonus (admin-controlled via "הגדרות ג'ובות").
+  // Default 0 — only grants a bonus if the admin explicitly sets a value.
+  const { data: jobaSettings } = useQuery({
+    queryKey: ['jobaSettings'],
+    queryFn: async () => {
+      const list = await base44.entities.JobaSettings.list('-updated_date', 1);
+      return list[0] || null;
+    },
+    enabled: isAuthenticated,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+  });
+  const profileBonus = jobaSettings?.profile_completion_bonus ?? 0;
+
   // Pre-fill from existing profile
   useEffect(() => {
     if (me) {
@@ -102,7 +116,7 @@ export default function WorkerOnboarding() {
         await base44.auth.updateMe(updateData);
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
-        // On last step — mark join completed + grant 20 credits profile bonus (once per user, server-checked)
+        // On last step — mark join completed + grant the configured profile bonus (once per user, server-checked)
         if (isLastStep && me?.id) {
           localStorage.setItem(JOIN_COMPLETED_KEY, '1');
           const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
@@ -113,16 +127,16 @@ export default function WorkerOnboarding() {
               user_id: me.id,
               type: 'Loyalty_Reward',
             });
-            if (existingBonus.length === 0) {
+            if (existingBonus.length === 0 && profileBonus > 0) {
               const freshMe = await base44.auth.me();
-              const currentCredits = freshMe.worker_credits ?? 60;
-              await base44.auth.updateMe({ worker_credits: currentCredits + 20 });
+              const currentCredits = freshMe.worker_credits ?? 0;
+              await base44.auth.updateMe({ worker_credits: currentCredits + profileBonus });
               await base44.entities.CreditTransaction.create({
                 user_id: me.id,
-                amount: 20,
+                amount: profileBonus,
                 type: 'Loyalty_Reward',
                 note: 'בונוס מילוי פרופיל עובד',
-                balance_after: currentCredits + 20,
+                balance_after: currentCredits + profileBonus,
               });
               queryClient.invalidateQueries({ queryKey: ['me'] });
             }
@@ -278,12 +292,14 @@ export default function WorkerOnboarding() {
         <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
           {me?.full_name ? `${me.full_name}, ` : ''}הפרופיל שלך נשמר — ממתין לאישור מנהל.
         </p>
-        {/* Bonus badge */}
-        <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
-          <div style={{ fontSize: 28, marginBottom: 4 }}>🎁</div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>קיבלת 20 ג'ובות!</div>
-          <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>בונוס על מילוי הפרופיל</div>
-        </div>
+        {/* Bonus badge — only shown when a profile-completion bonus is configured */}
+        {profileBonus > 0 && (
+          <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
+            <div style={{ fontSize: 28, marginBottom: 4 }}>🎁</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>קיבלת {profileBonus} ג'ובות!</div>
+            <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>בונוס על מילוי הפרופיל</div>
+          </div>
+        )}
         <button
           onClick={handleGoToApp}
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}

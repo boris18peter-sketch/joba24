@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -11,6 +12,7 @@ import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
 import JobaSettingsTab from '@/components/JobaSettingsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import CopyableId from '@/components/CopyableId';
 import { toast } from 'sonner';
 
 const STATUS_COLORS = {
@@ -190,6 +192,7 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
   const isAgent = user.role === 'agent';
 
   const handleBlock = async (e) => {
@@ -249,6 +252,14 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
       </div>
       {open && (
         <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border-1)', fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Open full profile in-app */}
+          <button
+            onClick={(e) => { e.stopPropagation(); navigate(`/public-profile?id=${user.id}`); }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 10, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', fontSize: 12, fontWeight: 800, cursor: 'pointer', marginTop: 8 }}
+          >
+            <ExternalLink size={13} /> פרופיל מלא באפליקציה
+          </button>
+
           {/* Verification status */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
             {isUserVerified(user) ? (
@@ -375,7 +386,10 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
           )}
           {user.score_tasks > 0 && <div><strong>משימות הושלמו:</strong> {user.score_tasks}</div>}
           {user.rating_count > 0 && <div><strong>דירוגים שניתנו:</strong> {user.rating_count}</div>}
-          <div style={{ fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <CopyableId id={user.id} />
+            <span style={{ fontSize: 10, color: '#cbd5e1' }}>{user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</span>
+          </div>
         </div>
       )}
     </div>
@@ -532,9 +546,11 @@ export default function AdminDashboard() {
   const [supportReply, setSupportReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
-  const kycUsers = allUsers.filter(u => u.id_number || u.id_photo_url || u.kyc_status || u.is_verified);
-  const pendingKyc = allUsers.filter(u => u.kyc_status === 'pending' || (!u.kyc_status && (u.id_number || u.id_photo_url) && !u.is_verified));
-  const fakeVerified = allUsers.filter(u => u.is_verified && !u.id_number);
+  // KYC users = those with a KYC status OR submitted ID docs.
+  // `is_verified` is the platform's email-verification flag (auto-set by Google/Apple/OTP),
+  // NOT app-level KYC — it must NOT be used to decide KYC approval.
+  const kycUsers = allUsers.filter(u => u.kyc_status || u.id_number || u.id_photo_url);
+  const pendingKyc = allUsers.filter(u => u.kyc_status === 'pending' || (!u.kyc_status && (u.id_number || u.id_photo_url)));
 
   // Group support messages by user_id
   const supportConversations = useMemo(() => {
@@ -847,7 +863,8 @@ export default function AdminDashboard() {
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#0f2b6b' }}>אין נתוני KYC עדיין</div>
               </div>
             ) : kycUsers.map(user => {
-              const kycStatus = user.kyc_status || (user.is_verified ? 'approved' : (user.id_number || user.id_photo_url ? 'pending' : 'none'));
+              // Derive KYC status from kyc_status only — is_verified is the platform email flag.
+              const kycStatus = user.kyc_status || (user.id_number || user.id_photo_url ? 'pending' : 'none');
               const statusConfig = {
                 approved: { label: '✓ מאומת', color: '#166534', bg: '#dcfce7', border: '#bbf7d0' },
                 pending: { label: '⏳ ממתין לאישור', color: '#854d0e', bg: '#fef9c3', border: '#fde68a' },
@@ -913,7 +930,10 @@ export default function AdminDashboard() {
                         <img src={user.id_photo_url} alt="ת.ז." style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff' }} />
                       </div>
                     )}
-                    <div style={{ gridColumn: '1 / -1', fontSize: 10, color: '#cbd5e1' }}>ID: {user.id} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</div>
+                    <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <CopyableId id={user.id} />
+                      <span style={{ fontSize: 10, color: '#cbd5e1' }}>{user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</span>
+                    </div>
                     <KycButtons user={user} kycStatus={kycStatus} />
                   </div>
                 </div>
