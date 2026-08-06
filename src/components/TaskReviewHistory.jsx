@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Star, ChevronLeft, Briefcase, User, MessageSquare } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function ReviewChips({ review }) {
   const chips = [
@@ -64,6 +65,7 @@ function Stars({ rating, size = 14 }) {
  */
 export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const reviewsByTaskId = {};
   const unmatchedReviews = [];
@@ -130,7 +132,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
                 {item.task.category && (
                   <span style={{ fontSize: 11, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 8, padding: '2px 8px', fontWeight: 600 }}>
-                    {getCategoryLabel(item.task.category)}
+                    {getCategoryLabel(item.task.category, t)}
                   </span>
                 )}
                 {item.task.price > 0 && (

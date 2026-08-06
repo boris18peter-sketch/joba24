@@ -76,16 +76,16 @@ export default function DailyGoal() {
     const earned = earnedToday();
     const remaining = Math.max(0, goalNum - earned);
 
-    const tasksSummary = openTasksNearby.slice(0, 20).map(t => ({
-      title: t.title,
-      price: t.price,
-      category: getCategoryLabel(t.category),
+    const tasksSummary = openTasksNearby.slice(0, 20).map(tk => ({
+      title: tk.title,
+      price: tk.price,
+      category: getCategoryLabel(tk.category, t),
       time: t.estimated_time,
       location: t.location_name,
     }));
 
     const categoryFilterNote = selectedCategories.length > 0
-      ? `העובד ביקש לקבל משימות רק מהקטגוריות הבאות: ${selectedCategories.map(c => getCategoryLabel(c)).join(', ')}`
+      ? `העובד ביקש לקבל משימות רק מהקטגוריות הבאות: ${selectedCategories.map(c => getCategoryLabel(c, t)).join(', ')}`
       : 'אין הגבלת קטגוריות — כל הקטגוריות רלוונטיות.';
 
     const res = await base44.integrations.Core.InvokeLLM({
@@ -317,7 +317,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                         <div style={{ fontSize: 20, fontWeight: 900, color: '#1a6fd4', flexShrink: 0 }}>₪{task.price}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        <span style={{ fontSize: 11, background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{getCategoryLabel(task.category)}</span>
+                        <span style={{ fontSize: 11, background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{getCategoryLabel(task.category, t)}</span>
                         {task.estimated_time && (
                           <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
                             <Clock size={10} />{task.estimated_time}

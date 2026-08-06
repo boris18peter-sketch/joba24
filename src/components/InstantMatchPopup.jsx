@@ -217,7 +217,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               )}
               {task.category && (
                 <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 7px', borderRadius: 20, fontWeight: 600 }}>
-                  {getCategoryLabel(task.category)}
+                  {getCategoryLabel(task.category, t)}
                 </span>
               )}
             </div>

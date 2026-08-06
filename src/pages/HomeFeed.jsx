@@ -650,7 +650,7 @@ export default function HomeFeed() {
                   <div className="cat-scroll" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', minWidth: 0 }}>
                     {(filters.categories || []).map(cat => (
                       <span key={cat} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, paddingRight: 6, paddingLeft: 4, height: 22, borderRadius: 6, background: '#dbeafe', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1d4ed8', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        {getCategoryLabel(cat)}
+                        {getCategoryLabel(cat, t)}
                         <button onClick={(e) => { e.stopPropagation(); setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) })); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#60a5fa', lineHeight: 1, marginTop: 0 }}><X size={9} /></button>
                       </span>
                     ))}

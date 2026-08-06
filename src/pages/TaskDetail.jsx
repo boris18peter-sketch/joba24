@@ -1244,7 +1244,7 @@ export default function TaskDetail(props) {
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('category_label')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>{getCategoryLabel(task.category, t)}</div>
                 </div>
               </div>
             )}

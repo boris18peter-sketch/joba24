@@ -41,7 +41,7 @@ function sortStories(stories) {
 }
 
 function StoryCard({ task, isViewed, isOwn, onClick, t }) {
-  const label = getCategoryLabel(task.category);
+  const label = getCategoryLabel(task.category, t);
   const emoji = label.split(' ')[0];
   const currentPrice = calculateCurrentPrice(task);
   const ringGradient = isOwn
@@ -236,7 +236,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
 
   if (!task) return null;
 
-  const label = getCategoryLabel(task.category);
+  const label = getCategoryLabel(task.category, t);
   const currentPrice = calculateCurrentPrice(task);
   const applyCost = Math.max(1, Math.round((currentPrice || 0) * 0.05));
   const distKm = calcDistKm(userLocation, task);

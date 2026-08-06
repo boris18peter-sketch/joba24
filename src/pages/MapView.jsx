@@ -414,7 +414,7 @@ export default function MapView() {
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >
-                {filters.category ? getCategoryLabel(filters.category) : t('category')}
+                {filters.category ? getCategoryLabel(filters.category, t) : t('category')}
                 {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
 
@@ -624,7 +624,7 @@ export default function MapView() {
                 <div style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                   {selectedTask.location_name && <><MapPin size={10} /><span>{selectedTask.location_name}</span></>}
                   {selectedTask.estimated_time && <><Clock size={10} /><span>{selectedTask.estimated_time}</span></>}
-                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{getCategoryLabel(selectedTask.category)}</span>
+                  <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{getCategoryLabel(selectedTask.category, t)}</span>
                 </div>
               </div>
             </div>

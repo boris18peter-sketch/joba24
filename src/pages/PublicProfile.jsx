@@ -10,6 +10,7 @@ import TrustCard from '@/components/TrustCard';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { getCategoryLabel } from '@/lib/categories';
+import { getCityLabel } from '@/lib/cityLabels';
 import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -50,7 +51,7 @@ function SectionCard({ title, children }) {
 
 export default function PublicProfile() {
   const navigate = useNavigate();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get('id');
   const taskId = searchParams.get('taskId');
@@ -188,7 +189,7 @@ export default function PublicProfile() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_categories.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
-                  {getCategoryLabel(c)}
+                  {getCategoryLabel(c, t)}
                 </span>
               ))}
             </div>
@@ -201,7 +202,7 @@ export default function PublicProfile() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {user.preferred_cities.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {c}
+                  <MapPin size={11} /> {getCityLabel(c, lang)}
                 </span>
               ))}
             </div>

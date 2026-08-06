@@ -6,6 +6,7 @@
  */
 import { CheckCircle, MapPin, Calendar } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const CHIPS = [
   { field: 'arrived_on_time', label: '⏱️ הגיע בזמן',    color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
@@ -22,6 +23,7 @@ function formatDate(dateStr) {
 }
 
 export default function CompletionTimeline({ tasks = [], reviews = [] }) {
+  const { t } = useLanguage();
   if (tasks.length === 0) return null;
 
   // Build a map of task_id → review
@@ -81,7 +83,7 @@ export default function CompletionTimeline({ tasks = [], reviews = [] }) {
                       </span>
                     )}
                     {task.category && (
-                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{getCategoryLabel(task.category)}</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8' }}>{getCategoryLabel(task.category, t)}</span>
                     )}
                     {(task.completed_at || task.created_date) && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#94a3b8', marginRight: 'auto' }}>

@@ -306,7 +306,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     return () => document.removeEventListener('click', handler);
   }, [showMenu]);
 
-  const catLabel = getCategoryLabel(task.category);
+  const catLabel = getCategoryLabel(task.category, t);
   const dist = task._distKm;
   const appStatus = myApp?.status;
   const hasActiveApp = appStatus === 'pending' || appStatus === 'approved';

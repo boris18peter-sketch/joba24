@@ -11,6 +11,7 @@ import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
+import { getCityLabel } from '@/lib/cityLabels';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -51,7 +52,7 @@ function ReviewChips({ review }) {
 export default function WorkerProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const [searchParams] = useSearchParams();
   const viewUserId = searchParams.get('id');
   const taskId = searchParams.get('taskId');
@@ -322,7 +323,7 @@ export default function WorkerProfile() {
                     color: sel ? 'white' : 'var(--text-2)',
                     borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
                   }}
-                >{c.label}</button>
+                >{getCategoryLabel(c.value, t)}</button>
               );
             })}
           </div>
@@ -405,7 +406,7 @@ export default function WorkerProfile() {
                         color: sel ? 'white' : 'var(--text-2)',
                         borderColor: sel ? '#1a6fd4' : 'var(--border-1)',
                       }}
-                    >{c}</button>
+                    >{getCityLabel(c, lang)}</button>
                   );
                 })}
                 {hasMore && !isViewingOther && (

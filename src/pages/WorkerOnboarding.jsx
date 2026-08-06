@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
+import { getCityLabel } from '@/lib/cityLabels';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -31,7 +32,7 @@ export default function WorkerOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoadingAuth } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const STEPS = getSteps(t);
   const [showLogin, setShowLogin] = useState(false);
   const [step, setStep] = useState(-1); // -1 = welcome, 0..N-1 = steps, N = done
@@ -492,7 +493,7 @@ export default function WorkerOnboarding() {
                           minHeight: 'unset',
                         }}
                       >
-                        {active && !isOther && '✓ '}{city}
+                        {active && !isOther && '✓ '}{getCityLabel(city, lang)}
                       </button>
                     );
                   })}
@@ -531,7 +532,7 @@ export default function WorkerOnboarding() {
                         minHeight: 'unset',
                       }}
                     >
-                      ✓ {city} ✕
+                      ✓ {getCityLabel(city, lang)} ✕
                     </button>
                   ))}
                 </div>
@@ -556,7 +557,7 @@ export default function WorkerOnboarding() {
                           minHeight: 'unset',
                         }}
                       >
-                        {active && '✓ '}{getCategoryLabel(cat.value)}
+                        {active && '✓ '}{getCategoryLabel(cat.value, t)}
                       </button>
                     );
                   })}

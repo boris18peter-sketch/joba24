@@ -69,7 +69,7 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
             {task?.category && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: reqs.length > 0 ? 8 : 0 }}>
                 <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{t('category')}:</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>{getCategoryLabel(task.category)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>{getCategoryLabel(task.category, t)}</span>
               </div>
             )}
             {task?.location_name && (

@@ -17,6 +17,7 @@ import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
+import { getCityLabel } from '@/lib/cityLabels';
 import { computeLockedJobas } from '@/lib/jobaBalance';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -56,7 +57,7 @@ function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, dange
 export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const { user: authUser, refreshUser } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -294,7 +295,7 @@ export default function Profile() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
-                  {getCategoryLabel(c)}
+                  {getCategoryLabel(c, t)}
                 </span>
               ))}
             </div>
@@ -310,7 +311,7 @@ export default function Profile() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {cities.map(c => (
                 <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {c}
+                  <MapPin size={11} /> {getCityLabel(c, lang)}
                 </span>
               ))}
             </div>
