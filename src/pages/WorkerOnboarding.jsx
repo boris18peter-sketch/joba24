@@ -12,22 +12,27 @@ import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
 
-const STEPS = [
-  { key: 'preferred_categories', icon: Tag, title: 'איזה סוגי עבודות תרצה לראות?', subtitle: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯', type: 'chips' },
-  { key: 'preferred_cities', icon: MapPin, title: 'באילו ערים אתה עובד?', subtitle: 'בחר ערים מהרשימה', type: 'cities' },
-  { key: 'bio', icon: FileText, title: 'ספר קצת על עצמך', subtitle: 'ניסיון, התמחות, זמינות...', type: 'textarea', placeholder: 'בעל 10 שנות ניסיון באינסטלציה, מתמחה בתיקון נזילות והתקנת ברזים...' },
-  { key: 'phone', icon: Phone, title: 'מספר טלפון', subtitle: 'ליצירת קשר עם לקוחות', type: 'phone', placeholder: '050-1234567' },
-  { key: 'profile_photo', icon: Camera, title: 'תמונת פרופיל', subtitle: 'אופציונלי — אבל מומלץ!', type: 'photo' },
-];
+function getSteps(t) {
+  return [
+    { key: 'preferred_categories', icon: Tag, title: t('wo_step_cat_title'), subtitle: t('wo_step_cat_sub'), type: 'chips' },
+    { key: 'preferred_cities', icon: MapPin, title: t('wo_step_city_title'), subtitle: t('wo_step_city_sub'), type: 'cities' },
+    { key: 'bio', icon: FileText, title: t('wo_step_bio_title'), subtitle: t('wo_step_bio_sub'), type: 'textarea', placeholder: t('wo_step_bio_ph') },
+    { key: 'phone', icon: Phone, title: t('wo_step_phone_title'), subtitle: t('wo_step_phone_sub'), type: 'phone', placeholder: '050-1234567' },
+    { key: 'profile_photo', icon: Camera, title: t('wo_step_photo_title'), subtitle: t('wo_step_photo_sub'), type: 'photo' },
+  ];
+}
 
 export default function WorkerOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoadingAuth } = useAuth();
+  const { t, isRTL } = useLanguage();
+  const STEPS = getSteps(t);
   const [showLogin, setShowLogin] = useState(false);
   const [step, setStep] = useState(-1); // -1 = welcome, 0..N-1 = steps, N = done
   const [direction, setDirection] = useState(0);
@@ -127,7 +132,7 @@ export default function WorkerOnboarding() {
                 user_id: me.id,
                 amount: profileBonus,
                 type: 'Loyalty_Reward',
-                note: 'בונוס מילוי פרופיל עובד',
+                note: t('wo_bonus_note'),
                 balance_after: currentCredits + profileBonus,
               });
               queryClient.invalidateQueries({ queryKey: ['me'] });
@@ -205,7 +210,7 @@ export default function WorkerOnboarding() {
   // ── Not authenticated — landing hero with inline login ──
   if (!isAuthenticated) {
     return (
-      <div dir="rtl" style={{ position: 'fixed', inset: 0, background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(36px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', overflow: 'hidden' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, background: 'linear-gradient(165deg, #0a1f4e 0%, #0f2b6b 35%, #1a6fd4 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: 'max(36px, env(safe-area-inset-top)) 24px max(32px, env(safe-area-inset-bottom))', textAlign: 'center', overflow: 'hidden' }}>
         {showLogin && <LoginPromptModal onClose={() => setShowLogin(false)} />}
 
         {/* Decorative blurred glow circles */}
@@ -225,13 +230,13 @@ export default function WorkerOnboarding() {
         {/* Middle — Headline */}
         <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px 0' }}>
           <h1 style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, marginBottom: 16, lineHeight: 1.2 }}>
-            רוצה יותר עבודות?
+            {t('wo_hero_title')}
           </h1>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.9)', margin: 0, marginBottom: 10, lineHeight: 1.6, maxWidth: 380 }}>
-            הצטרף ל־Joba24 ותהיה מוכן לקבל גישה לאלפי עבודות שיפורסמו על ידי אנשים שמחפשים עזרה ובעלי מקצוע.
+            {t('wo_hero_body')}
           </p>
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.95)', margin: 0, lineHeight: 1.6, maxWidth: 380, fontWeight: 700 }}>
-            זה הזמן להירשם ולהכין את הפרופיל שלך.
+            {t('wo_hero_body2')}
           </p>
         </div>
 
@@ -241,15 +246,15 @@ export default function WorkerOnboarding() {
             onClick={() => setShowLogin(true)}
             style={{ width: '100%', padding: '20px 0', borderRadius: 18, background: 'white', color: '#0f2b6b', fontSize: 20, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 10px 36px rgba(0,0,0,0.25)' }}
           >
-            הרשם עכשיו 🚀
+            {t('wo_register_btn')}
           </button>
           <div style={{ marginTop: 14, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-            *הגדרת פרופיל לוקחת פחות מדקה
+            {t('wo_setup_note')}
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, flexWrap: 'nowrap' }}>
-            <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>תנאי שימוש</Link>
+            <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
             <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
-            <Link to="/privacy" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>מדיניות פרטיות</Link>
+            <Link to="/privacy" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
           </div>
         </div>
       </div>
@@ -275,29 +280,29 @@ export default function WorkerOnboarding() {
     };
 
     return (
-      <div dir="rtl" style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
         <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
           <Check size={40} color="white" strokeWidth={3} />
         </motion.div>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 8 }}>הפרופיל מוכן! 🎉</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 8 }}>{t('wo_done_title')}</h1>
         <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
-          {me?.full_name ? `${me.full_name}, ` : ''}הפרופיל שלך נשמר — ממתין לאישור מנהל.
+          {me?.full_name ? `${me.full_name}, ` : ''}{t('wo_done_body')}
         </p>
         {/* Bonus badge — only shown when a profile-completion bonus is configured */}
         {profileBonus > 0 && (
           <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
             <div style={{ fontSize: 28, marginBottom: 4 }}>🎁</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>קיבלת {profileBonus} ג'ובות!</div>
-            <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>בונוס על מילוי הפרופיל</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>{t('wo_bonus_received').replace('{n}', profileBonus)}</div>
+            <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>{t('wo_bonus_for_profile')}</div>
           </div>
         )}
         <button
           onClick={handleGoToApp}
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
         >
-          המשך לאפליקציה 🚀
-        </button>
+          {t('wo_go_to_app')}
+          </button>
       </div>
     );
   }
@@ -310,7 +315,7 @@ export default function WorkerOnboarding() {
   const canSkip = isPhotoStep;
 
   return (
-    <div dir="rtl" style={{ position: 'fixed', inset: 0, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Header with progress ── */}
       <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
@@ -322,7 +327,7 @@ export default function WorkerOnboarding() {
             <div style={{ width: 36, height: 36 }} />
           )}
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }}>{step + 1} / {totalSteps}</span>
-          <button onClick={() => navigate('/')} style={{ marginRight: 'auto', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>דלג</button>
+          <button onClick={() => navigate('/')} style={{ marginRight: 'auto', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('wo_skip')}</button>
         </div>
         {/* Progress bar */}
         <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
@@ -361,19 +366,19 @@ export default function WorkerOnboarding() {
               <p style={{ fontSize: 14, color: 'var(--text-3)', margin: 0, marginBottom: 6, lineHeight: 1.5 }}>{currentStep.subtitle}</p>
               <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 5, opacity: 0.85, background: 'var(--surface-3)', padding: '6px 10px', borderRadius: 10, border: '1px solid var(--border-1)' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                ניתן לערוך את הפרטים בהמשך בעמוד הפרופיל
+                {t('wo_edit_later')}
               </div>
 
               {/* Selected count badge for chips */}
               {currentStep.type === 'chips' && (data.preferred_categories || []).length > 0 && (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_categories || []).length} נבחרו</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_categories || []).length} {t('wo_selected')}</span>
                 </div>
               )}
               {/* Selected count badge for cities */}
               {currentStep.type === 'cities' && (data.preferred_cities || []).length > 0 && (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 99, padding: '4px 12px', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_cities || []).length} נבחרו</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4' }}>✓ {(data.preferred_cities || []).length} {t('wo_selected')}</span>
                 </div>
               )}
             </div>
@@ -452,9 +457,9 @@ export default function WorkerOnboarding() {
                       type="text"
                       value={data.profession || ''}
                       onChange={e => setData(prev => ({ ...prev, profession: e.target.value }))}
-                      placeholder="הקלד את המקצוע שלך"
+                      placeholder={t('wo_type_profession')}
                       autoFocus
-                      dir="rtl"
+                      dir={isRTL ? 'rtl' : 'ltr'}
                       style={{ width: '100%', padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit', marginTop: 4 }}
                     />
                   )}
@@ -498,9 +503,9 @@ export default function WorkerOnboarding() {
                         value={customCity}
                         onChange={e => setCustomCity(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomCity(); } }}
-                        placeholder="הקלד עיר ולחץ Enter"
+                        placeholder={t('wo_type_city')}
                         autoFocus
-                        dir="rtl"
+                        dir={isRTL ? 'rtl' : 'ltr'}
                         style={{ flex: 1, padding: '14px 16px', borderRadius: 14, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', fontSize: 16, outline: 'none', color: 'var(--text-1)', boxSizing: 'border-box', fontFamily: 'inherit' }}
                       />
                       <button
@@ -508,8 +513,8 @@ export default function WorkerOnboarding() {
                         disabled={!customCity.trim()}
                         style={{ padding: '0 16px', borderRadius: 14, background: customCity.trim() ? '#1a6fd4' : 'var(--surface-3)', color: customCity.trim() ? 'white' : 'var(--text-3)', border: 'none', fontWeight: 700, fontSize: 14, cursor: customCity.trim() ? 'pointer' : 'not-allowed', minHeight: 'unset', minWidth: 'unset' }}
                       >
-                        הוסף
-                      </button>
+                        {t('wo_add')}
+                        </button>
                     </div>
                   )}
                   {/* Show custom cities that were added (not in the predefined list) */}
@@ -583,7 +588,7 @@ export default function WorkerOnboarding() {
                     onClick={() => photoInputRef.current?.click()}
                     style={{ padding: '10px 20px', borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                   >
-                    {data.profile_photo ? 'החלף תמונה' : 'בחר תמונה'}
+                    {data.profile_photo ? t('wo_change_photo') : t('wo_choose_photo')}
                   </button>
                 </div>
               )}
@@ -606,8 +611,8 @@ export default function WorkerOnboarding() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
         >
-          {saving ? <><Loader2 size={20} className="animate-spin" /> שומר...</> : <>
-            {step === totalSteps - 1 ? 'סיום ✓' : 'הבא'}
+          {saving ? <><Loader2 size={20} className="animate-spin" /> {t('wo_saving')}</> : <>
+            {step === totalSteps - 1 ? t('wo_finish') : t('wo_next')}
             <ChevronLeft size={20} />
           </>}
         </button>

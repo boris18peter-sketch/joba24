@@ -14,6 +14,7 @@ import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -67,8 +68,9 @@ function usePingPresence(userId) {
 }
 
 function DateSeparator({ date }) {
+  const { t } = useLanguage();
   const d = new Date(date);
-  const label = isToday(d) ? 'היום' : isYesterday(d) ? 'אתמול' : format(d, 'dd/MM/yyyy');
+  const label = isToday(d) ? t('chat_today') : isYesterday(d) ? t('chat_yesterday') : format(d, 'dd/MM/yyyy');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0' }}>
       <div style={{ flex: 1, height: 1, background: 'var(--border-1)' }} />
@@ -94,9 +96,10 @@ function TypingIndicator() {
 
 function TaskInfoPopup({ task, onClose }) {
   const { openTaskSheet } = useTaskSheet();
+  const { t, isRTL } = useLanguage();
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div dir="rtl" style={{ background: 'var(--surface-1)', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '85dvh', overflowY: 'auto', padding: '20px 16px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '85dvh', overflowY: 'auto', padding: '20px 16px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 16px' }} />
         {/* Title + price */}
         <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>{task.title}</div>
@@ -105,7 +108,7 @@ function TaskInfoPopup({ task, onClose }) {
         <TaskDetailsRows task={task} compact={false} />
         <button onClick={() => { onClose(); openTaskSheet(task.id); }}
           style={{ marginTop: 16, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
-          פתח דף המשימה המלא
+          {t('chat_open_full_task')}
         </button>
       </div>
     </div>
@@ -116,6 +119,7 @@ export default function Chat() {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
+  const { t, isRTL } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -313,7 +317,7 @@ export default function Chat() {
     } catch {
       // Remove optimistic on error
       setMessages(prev => prev.filter(m => m.id !== optimisticId));
-      toast.error('שגיאה בשליחה');
+      toast.error(t('chat_send_error'));
     } finally {
       setSending(false);
     }
@@ -348,12 +352,12 @@ export default function Chat() {
     return result;
   }, [messages]);
 
-  const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || 'הפועל') : (task?.client_name || 'המעסיק');
+  const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || t('chat_worker_default')) : (task?.client_name || t('chat_client_default'));
   const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
-  const roleLabel = me?.id === task?.client_id ? '👷 פועל' : '👤 מעסיק';
+  const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return (
-    <div ref={outerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir="rtl">
+    <div ref={outerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Spacer for iOS safe area top (in case body padding doesn't apply) */}
       <div style={{ height: 'env(safe-area-inset-top)', flexShrink: 0, background: 'var(--surface-2)' }} />
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
@@ -387,7 +391,7 @@ export default function Chat() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 2 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: otherIsOnline ? '#22c55e' : '#d1d5db', display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>{otherIsOnline ? 'מחובר עכשיו' : 'לא מחובר'}</span>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>{otherIsOnline ? t('chat_online') : t('chat_offline')}</span>
           </div>
         </div>
 
@@ -396,8 +400,8 @@ export default function Chat() {
           onClick={() => setShowTaskInfo(true)}
           style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
         >
-          <Info size={14} /> פרטי משימה
-        </button>
+          <Info size={14} /> {t('chat_task_info')}
+          </button>
       </div>
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
@@ -406,8 +410,8 @@ export default function Chat() {
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', paddingTop: 60 }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
-            <div style={{ fontWeight: 700, color: '#334155', fontSize: 15 }}>התחל שיחה</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>שלח הודעה ל{otherPersonName}</div>
+            <div style={{ fontWeight: 700, color: '#334155', fontSize: 15 }}>{t('chat_start_conv')}</div>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{t('chat_send_msg_to').replace('{name}', otherPersonName)}</div>
           </div>
         )}
 
@@ -449,7 +453,7 @@ export default function Chat() {
                 {isImage ? (
                   <img
                     src={imgUrl}
-                    alt="תמונה"
+                    alt={t('chat_task_info')}
                     style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, objectFit: 'cover', cursor: 'pointer', border: isMe ? 'none' : '1px solid #e2e8f0' }}
                     onClick={() => window.open(imgUrl, '_blank')}
                   />
@@ -491,14 +495,14 @@ export default function Chat() {
 
         {otherTyping && <TypingIndicator />}
         {blockedMsg && (
-          <div dir="rtl" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
             <div style={{ maxWidth: '80%', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '18px 18px 4px 18px', padding: '10px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                 <ShieldAlert size={14} color="#dc2626" />
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>הודעה נחסמה</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{t('chat_blocked_title')}</span>
               </div>
               <div style={{ fontSize: 13, color: '#7f1d1d', wordBreak: 'break-word' }}>{blockedMsg.slice(0, 60)}{blockedMsg.length > 60 ? '...' : ''}</div>
-              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, lineHeight: 1.5 }}>הודעה זו נחסמה כיוון שהיא מפרה את תנאי השימוש — שמרו על שיח מכבד 🤝</div>
+              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, lineHeight: 1.5 }}>{t('chat_blocked_body')}</div>
             </div>
           </div>
         )}
@@ -536,16 +540,16 @@ export default function Chat() {
             <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>
               {formatTime(recordSeconds)}
             </span>
-            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>מקליט...</span>
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{t('chat_recording')}</span>
             <button onClick={cancelRecording} style={{ marginRight: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <X size={14} /> ביטול
+              <X size={14} /> {t('chat_cancel')}
             </button>
           </div>
         ) : (
           <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 22, border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
             <textarea
               ref={inputRef}
-              placeholder="הקלד הודעה..."
+              placeholder={t('chat_type_msg')}
               value={input}
               rows={1}
               onChange={e => {
@@ -556,7 +560,7 @@ export default function Chat() {
               onKeyDown={e => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input); }
               }}
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: 'rtl' }}
+              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120, overflowY: 'auto', padding: '6px 0', direction: isRTL ? 'rtl' : 'ltr' }}
             />
           </div>
         )}
