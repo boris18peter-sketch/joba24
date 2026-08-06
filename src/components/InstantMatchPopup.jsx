@@ -52,7 +52,7 @@ function calcRelevanceScore({ task, currentUser, userLocation, myApplications, m
 }
 
 export default function InstantMatchPopup({ userLocation, currentUserId, activeCategory }) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [popup, setPopup] = useState(null);
   const [countdown, setCountdown] = useState(DURATION);
   const timerRef = useRef(null);
@@ -155,7 +155,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
   const isUrgent = countdown <= 6;
 
   return (
-    <div style={{ position: 'fixed', bottom: 'calc(80px + max(0px, env(safe-area-inset-bottom)) + 12px)', left: 12, right: 12, zIndex: 100000 }} dir="rtl">
+    <div style={{ position: 'fixed', bottom: 'calc(80px + max(0px, env(safe-area-inset-bottom)) + 12px)', left: 12, right: 12, zIndex: 100000 }} dir={isRTL ? 'rtl' : 'ltr'}>
       <style>{`
         @keyframes slideUpPop {
           from { opacity: 0; transform: translateY(40px) scale(0.94); }
@@ -212,7 +212,7 @@ export default function InstantMatchPopup({ userLocation, currentUserId, activeC
               {dist !== null && (
                 <span style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 3 }}>
                   <MapPin size={11} />
-                  {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+                  {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
                 </span>
               )}
               {task.category && (

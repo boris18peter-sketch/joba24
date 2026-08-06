@@ -43,7 +43,7 @@ function SectionLabel({ icon: Icon, children }) {
 }
 
 export default function FilterSheet({ open, onClose, filters, onApply, hasForYou = false }) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   const URGENCY_FILTER_TAGS = [
     { value: 'immediate', label: t('urgency_immediate') },
@@ -102,7 +102,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        dir="rtl"
+        dir={isRTL ? 'rtl' : 'ltr'}
         style={{
           background: 'white',
           borderRadius: '28px 28px 0 0',

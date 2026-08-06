@@ -34,25 +34,25 @@ function normalizeDate(d) {
   return s;
 }
 
-function getRelativeTime(date) {
+function getRelativeTime(date, t) {
   if (!date) return null;
   const ms = Date.now() - new Date(normalizeDate(date)).getTime();
-  if (ms < 0) return 'עכשיו';
+  if (ms < 0) return t('now_label');
   const minutes = Math.floor(ms / 60000);
-  if (minutes < 1) return 'עכשיו';
-  if (minutes < 60) return `לפני ${minutes} דקות`;
+  if (minutes < 1) return t('now_label');
+  if (minutes < 60) return t('minutes_ago').replace('{n}', minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `לפני ${hours} שעות`;
+  if (hours < 24) return t('hours_ago').replace('{n}', hours);
   const days = Math.floor(hours / 24);
-  if (days < 30) return `לפני ${days} ימים`;
+  if (days < 30) return t('days_ago').replace('{n}', days);
   return null;
 }
 
 const URGENCY_TAG_CONFIG = {
-  immediate: { emoji: '🔥', label: 'דחוף', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
-  few_hours: { emoji: '⏰', label: 'שעות הקרובות', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
-  evening:   { emoji: '🌅', label: 'לקראת הערב', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
-  flexible:  { emoji: '😌', label: 'לא לחוץ', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
+  immediate: { emoji: '🔥', label: 'urgency_immediate', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5' },
+  few_hours: { emoji: '⏰', label: 'urgency_few_hours', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
+  evening:   { emoji: '🌅', label: 'urgency_evening', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
+  flexible:  { emoji: '😌', label: 'urgency_flexible', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
 };
 
 // ── Apply Modal ──────────────────────────────────────────────────────────────
@@ -152,9 +152,9 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
 
         <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
-            <span>התחייבות:</span>
+            <span>{t('application_fee')}</span>
             <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} /> ג'ובות
+              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} /> {t('credits')}
             </span>
           </div>
           <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
@@ -166,7 +166,7 @@ function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onIns
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', marginBottom: 14 }}>
           <ShieldCheck size={16} color="#16a34a" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.4 }}>
-            הג'ובות חוזרות אליך אוטומטית אם לא נבחרת או שהמשימה בוטלה
+            {t('application_commitment_note')}
           </span>
         </div>
 
@@ -327,12 +327,12 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה');
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
       queryClient.invalidateQueries({ queryKey: ['me'] });
-      toast.success(t('cancelled_credits_returned') || 'הבקשה בוטלה והג\'ובות חזרו ליתרה 🪙');
+      toast.success(t('app_cancelled_credits_back'));
     } catch {
       // Rollback optimistic update
       queryClient.setQueryData(['myApp', task.id, currentUserId], myApp);
       queryClient.invalidateQueries({ queryKey: ['myApplicationsFeed', currentUserId] });
-      toast.error(t('error_cancelling') || 'שגיאה בביטול, נסה שוב');
+      toast.error(t('error_cancelling_task'));
     } finally {
       cancellingRef.current = false;
       setCancelling(false);
@@ -362,13 +362,13 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     setCancellingTask(true);
     try {
       const res = await base44.functions.invoke('cancelTaskPayment', { taskId: task.id });
-      if (!res.data?.success) throw new Error(t('error_cancelling') || 'שגיאה בביטול');
+      if (!res.data?.success) throw new Error(t('error_cancelling_task'));
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasksPage'] });
       setShowCancelConfirm(false);
     } catch {
-      toast.error(t('error_cancelling') || 'שגיאה בביטול, נסה שוב');
+      toast.error(t('error_cancelling_task'));
     } finally {
       cancelTaskRef.current = false;
       setCancellingTask(false);
@@ -437,7 +437,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               letterSpacing: 0.3,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
             }}>
-              ווי ירוק+
+              {t('verification_required_ribbon')}
             </div>
           </>
         )}
@@ -466,9 +466,9 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             <div style={{ fontSize: 15, fontWeight: 900, color: '#14532d' }}>{t('application_sent')}</div>
              {cardSuccessCredits > 0 && (
                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#b45309', fontWeight: 700, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 20, padding: '3px 10px', animation: 'coinBadgePop 0.35s 0.15s cubic-bezier(0.34,1.6,0.64,1) both' }}>
-                 <span>בהתחייבות: {cardSuccessCredits}</span>
+                 <span>{t('commitment_label')} {cardSuccessCredits}</span>
                  <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="11" fill="#fbbf24"/><text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="900" fontFamily="Inter,sans-serif" fill="#1a6fd4">J</text></svg>
-                 <span>ג'ובות</span>
+                 <span>{t('credits')}</span>
                </div>
              )}
              <div style={{ fontSize: 11, color: '#16a34a' }}>{t('waiting_approval_short')}</div>
@@ -517,7 +517,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               const tag = URGENCY_TAG_CONFIG[task.urgency_tag];
               return (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`, whiteSpace: 'nowrap' }}>
-                  {tag.emoji} {tag.label}
+                  {tag.emoji} {t(tag.label)}
                 </span>
               );
             })()}
@@ -531,13 +531,13 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               const isTomorrow = sDate.toDateString() === tomorrow.toDateString();
               const timeStr = sDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
               let label;
-              if (isToday) label = `היום ${timeStr}`;
-              else if (isTomorrow) label = `מחר ${timeStr}`;
+              if (isToday) label = `${t('today')} ${timeStr}`;
+              else if (isTomorrow) label = `${t('tomorrow')} ${timeStr}`;
               else label = sDate.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }) + ' ' + timeStr;
               const slotCount = Array.isArray(task.category_details?.schedule) ? task.category_details.schedule.length : 0;
               return (
                 <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', color: '#1a6fd4', border: '1px solid #93c5fd', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                  📅 {label}{slotCount > 1 ? ` · ${slotCount} מועדים` : ''}
+                  📅 {label}{slotCount > 1 ? ` · ${slotCount} ${t('slots')}` : ''}
                 </span>
               );
             })()}
@@ -561,7 +561,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 letterSpacing: 0.1,
                 border: '1px solid rgba(255,255,255,0.25)',
               }}>
-                ✦ For You
+                ✦ {t('for_you_badge')}
               </span>
             )}
             {task.status === 'OPEN' && liveApplicantCount > 0 && (
@@ -600,7 +600,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 )}
                 {task.client_name && (
                   task.client_id === currentUserId ? (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>אני</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 20, padding: '1px 6px' }}>{t('me_pill')}</span>
                   ) : (
                     <UserBadge
                       name={task.client_name}
@@ -613,7 +613,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
               </div>
               {task.created_date && getRelativeTime(task.created_date) && (
                 <div style={{ fontSize: 10, color: '#b0bac8', marginTop: 4 }}>
-                  {t('posted')} {getRelativeTime(task.created_date)}
+                  {t('posted')} {getRelativeTime(task.created_date, t)}
                 </div>
               )}
             </div>
@@ -657,7 +657,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap' }}>
               <span style={{ fontWeight: 800, color: 'var(--text-1)', fontSize: 20, lineHeight: 1, letterSpacing: -0.5, whiteSpace: 'nowrap' }}>₪{Math.round(currentPrice)}</span>
-              {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? 'מזומן' : task.payment_method}</span>}
+              {task.payment_method && <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{task.payment_method === 'Cash' ? t('cash') : task.payment_method}</span>}
             </div>
             {hourlyBreakdown && (
               <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>{formatHourlySublabel(task)}</span>
@@ -665,7 +665,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             {dist != null && !isNaN(dist) && (
               <span style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', display: 'inline-flex', alignItems: 'center', gap: 2, background: '#eff6ff', borderRadius: 8, padding: '2px 6px', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
                 <Navigation size={9} strokeWidth={2} color="#1a6fd4" />
-                {dist < 1 ? `${Math.round(dist * 1000)}מ'` : `${dist.toFixed(1)}ק"מ`}
+                {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
               </span>
             )}
             <div style={{ display: 'none' }}>
@@ -763,7 +763,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                     style={{ height: 36, padding: '0 14px', borderRadius: 'var(--r-sm)', background: 'var(--brand-primary)', border: 'none', color: 'white', fontSize: 12, fontWeight: 700, cursor: applyLocked ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, opacity: applyLocked ? 0.6 : 1, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent', transform: applyPressed ? 'scale(0.93)' : 'scale(1)', transition: 'transform 0.1s ease, opacity 0.15s', boxShadow: applyPressed ? 'none' : 'var(--shadow-sm)' }}
                   >
                     {applyLocked ? <Loader2 size={12} className="animate-spin" /> : (
-                      <><span>הגש מועמדות</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
+                      <><span>{t('apply')}</span><span style={{ fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, opacity: 0.85 }}>{Math.max(1, Math.round((currentPrice || 0) * 0.05))} <CreditIcon size={10} /></span></>
                     )}
                   </button>
                 )}

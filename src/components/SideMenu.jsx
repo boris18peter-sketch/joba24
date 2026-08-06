@@ -198,7 +198,7 @@ export default function SideMenu({ open, onClose }) {
             <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 10 }}>|</span>
             <Link to="/terms" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('nav_terms')}</Link>
             <span style={{ color: 'rgba(147,197,253,0.3)', fontSize: 10 }}>|</span>
-            <Link to="/privacy" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>פרטיות</Link>
+            <Link to="/privacy" onClick={onClose} style={{ fontSize: 10, color: '#93c5fd', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('nav_privacy')}</Link>
           </div>
         </div>
       </div>

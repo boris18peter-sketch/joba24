@@ -6,8 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import TaskTakenConfetti from '@/components/TaskTakenConfetti';
 import BottomSheet from '@/components/BottomSheet';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function ApprovedPopup({ task, onClose }) {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { openTaskSheet } = useTaskSheet();
   const queryClient = useQueryClient();
@@ -16,13 +18,13 @@ export default function ApprovedPopup({ task, onClose }) {
   const [timeLeft, setTimeLeft] = useState(20);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    const interval = setInterval(() => {
       setTimeLeft(s => {
-        if (s <= 1) { clearInterval(t); onClose(); return 0; }
+        if (s <= 1) { clearInterval(interval); onClose(); return 0; }
         return s - 1;
       });
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(interval);
   }, []);
 
   const handleStartWork = async () => {
@@ -69,8 +71,8 @@ export default function ApprovedPopup({ task, onClose }) {
           borderRadius: 'var(--r-lg)',
         }}>
           <div style={{ fontSize: 52, marginBottom: 8 }}>🎉</div>
-          <div style={{ color: 'white', fontWeight: 900, fontSize: 22, marginBottom: 4 }}>הבקשה אושרה!</div>
-          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>בעל המשימה בחר בך</div>
+          <div style={{ color: 'white', fontWeight: 900, fontSize: 22, marginBottom: 4 }}>{t('approved_popup_title')}</div>
+          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>{t('approved_popup_sub')}</div>
         </div>
 
         {/* Details */}
@@ -83,12 +85,12 @@ export default function ApprovedPopup({ task, onClose }) {
             <div style={{ display: 'flex', gap: 16 }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--color-success)' }}>₪{task?.price}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>תשלום</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('payment_label')}</div>
               </div>
               {task?.location_name && (
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>📍 {task.location_name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>מיקום</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('location')}</div>
                 </div>
               )}
             </div>
@@ -106,7 +108,7 @@ export default function ApprovedPopup({ task, onClose }) {
               boxShadow: '0 8px 28px rgba(5,150,105,0.4)', marginBottom: 10,
             }}
           >
-            {loading ? '⏳ רגע...' : <><Navigation size={18} /> יצא לדרך!</>}
+            {loading ? t('starting_moment') : <><Navigation size={18} /> {t('lets_go')}</>}
           </button>
 
           <button
@@ -117,7 +119,7 @@ export default function ApprovedPopup({ task, onClose }) {
               color: 'var(--text-3)', fontSize: 13, cursor: 'pointer',
             }}
           >
-            אראה זאת מאוחר יותר ({timeLeft}s)
+            {t('view_later')} ({timeLeft}s)
           </button>
         </div>
       </BottomSheet>

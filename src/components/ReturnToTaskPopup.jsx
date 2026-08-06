@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
+import { useLanguage } from '@/lib/LanguageContext';
 import { X, ArrowUp } from 'lucide-react';
 
 /**
@@ -12,6 +13,7 @@ import { X, ArrowUp } from 'lucide-react';
  */
 export default function ReturnToTaskPopup() {
   const { hiddenTaskId, clearHiddenTask, openTaskSheet } = useTaskSheet();
+  const { t, isRTL } = useLanguage();
   const [visible, setVisible] = useState(false);
 
   const { data: task } = useQuery({
@@ -49,7 +51,7 @@ export default function ReturnToTaskPopup() {
 
   return createPortal(
     <div
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         position: 'fixed',
         bottom: 'calc(68px + env(safe-area-inset-bottom))',
@@ -83,7 +85,7 @@ export default function ReturnToTaskPopup() {
         {/* Close */}
         <button
           onClick={dismiss}
-          aria-label="סגור"
+          aria-label={t('close')}
           className="j-icon-btn"
           style={{
             width: 44, height: 48, flexShrink: 0,
@@ -108,7 +110,7 @@ export default function ReturnToTaskPopup() {
           }}
         >
           <ArrowUp size={16} color="#1a6fd4" strokeWidth={2.2} />
-          צפייה במשימה{task?.title ? ` · ${task.title}` : ''}
+          {t('view_task')}{task?.title ? ` · ${task.title}` : ''}
         </button>
       </div>
     </div>,
