@@ -1,9 +1,11 @@
 import PageHeader from '@/components/PageHeader';
 import { useAuth } from '@/lib/AuthContext';
 import AccountDeletionRequest from '@/components/AccountDeletionRequest';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function Privacy() {
   const { isAuthenticated } = useAuth();
+  const { t, isRTL } = useLanguage();
   const sections = [
     {
       title: 'מבוא',
@@ -180,16 +182,16 @@ export default function Privacy() {
   ];
 
   return (
-    <div style={{ background: '#f8f9fc', minHeight: '100vh' }} dir="rtl">
-      <PageHeader title="מדיניות פרטיות" backTo={!isAuthenticated ? '/join' : undefined} />
+    <div style={{ background: '#f8f9fc', minHeight: '100vh' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader title={t('privacy_title')} backTo={!isAuthenticated ? '/join' : undefined} />
       
       {/* Intro Section */}
       <div style={{ padding: '20px 16px' }}>
         <h1 style={{ fontSize: 24, fontWeight: 900, color: '#0f2b6b', marginBottom: 12, textAlign: 'center' }}>
-          מדיניות פרטיות – Joba24
+          {t('privacy_h1')}
         </h1>
         <p style={{ fontSize: 13, color: '#64748b', textAlign: 'center', marginBottom: 8 }}>
-          <strong>תאריך עדכון אחרון:</strong> 1 ביולי 2026
+          <strong>{t('privacy_last_update')}</strong> {t('privacy_date')}
         </p>
         
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', padding: '16px', marginBottom: 20 }}>
@@ -234,9 +236,9 @@ export default function Privacy() {
       {/* Account Deletion — Google Play requirement */}
       <div style={{ padding: '0 16px 24px' }}>
         <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e2e8f0', padding: 20, textAlign: 'center' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 900, color: '#0f2b6b', margin: '0 0 6px' }}>מחיקת חשבון</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 900, color: '#0f2b6b', margin: '0 0 6px' }}>{t('privacy_delete_account')}</h2>
           <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, margin: '0 0 16px' }}>
-            ניתן למחוק את חשבון ה-Joba24 שלך ואת כל הנתונים המשויכים אליו בכל עת.
+            {t('privacy_delete_desc')}
           </p>
           <AccountDeletionRequest />
         </div>
@@ -245,9 +247,9 @@ export default function Privacy() {
       {/* Footer */}
       <div style={{ background: '#f1f5f9', borderTop: '1px solid #e2e8f0', padding: '20px 16px', textAlign: 'center' }}>
         <p style={{ fontSize: 12, color: '#64748b', margin: 0, lineHeight: 1.6 }}>
-          © 2026 Joba24 — כל הזכויות שמורות.
-          <br />
-          <strong style={{ color: '#1a6fd4' }}>שימוש בפלטפורמה מהווה הסכמה למדיניות זו.</strong>
+          {t('privacy_footer')}
+           <br />
+           <strong style={{ color: '#1a6fd4' }}>{t('privacy_footer_agree')}</strong>
         </p>
       </div>
     </div>

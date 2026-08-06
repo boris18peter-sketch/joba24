@@ -2,37 +2,40 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, ArrowRight, X, Zap, Briefcase, Coins } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
-const STEPS = [
-  {
-    targetId: 'onboarding-create-btn',
-    tooltip: 'below',
-    icon: <Briefcase size={22} color="#1a6fd4" />,
-    badge: 'פרסום משימה',
-    title: 'פרסם משימה תוך 30 שניות',
-    body: 'לחץ על כפתור הפלוס כדי לפרסם את המשימה שלך. תאר את הצורך, קבע מחיר, בחר מיקום — ועובדים זמינים יגיעו אליך ישירות.',
-    highlight: 'כל פרסום חינמי לחלוטין!',
-  },
-  {
-    targetId: 'onboarding-apply-btn',
-    tooltip: 'above',
-    icon: <Zap size={22} color="#f59e0b" />,
-    badge: 'הגשת בקשה',
-    title: 'מצאת משהו מעניין? הגש בקשה!',
-    body: 'גלול בפיד, מצא משימות שמתאימות לך ולחץ "הגש בקשה". המפרסם יקבל עדכון ויאשר אותך — ואז אפשר לצאת לדרך.',
-    highlight: 'אפשר לגלול ימינה/שמאלה כדי לסמן לא רלוונטי.',
-  },
-  {
-    targetId: 'onboarding-credits-pill',
-    tooltip: 'below',
-    icon: <Coins size={22} color="#d97706" />,
-    badge: 'ג\'ובות',
-    title: 'ג\'ובות — הדלק שלך ב-Joba24',
-    body: 'כאן רואים את יתרת הג\'ובות שלך. כעובד, אתה משתמש בג\'ובות כדי להגיש בקשות למשימות. ככל שהמשימה שווה יותר — כך עולה הגישה אליה.',
-    highlight: 'קיבלת 50 ג\'ובות בונוס עם ההרשמה!',
-    isLast: true,
-  },
-];
+function getSteps(t) {
+  return [
+    {
+      targetId: 'onboarding-create-btn',
+      tooltip: 'below',
+      icon: <Briefcase size={22} color="#1a6fd4" />,
+      badge: t('ot_badge_post'),
+      title: t('ot_title_post'),
+      body: t('ot_body_post'),
+      highlight: t('ot_highlight_post'),
+    },
+    {
+      targetId: 'onboarding-apply-btn',
+      tooltip: 'above',
+      icon: <Zap size={22} color="#f59e0b" />,
+      badge: t('ot_badge_apply'),
+      title: t('ot_title_apply'),
+      body: t('ot_body_apply'),
+      highlight: t('ot_highlight_apply'),
+    },
+    {
+      targetId: 'onboarding-credits-pill',
+      tooltip: 'below',
+      icon: <Coins size={22} color="#d97706" />,
+      badge: t('ot_badge_credits'),
+      title: t('ot_title_credits'),
+      body: t('ot_body_credits'),
+      highlight: t('ot_highlight_credits'),
+      isLast: true,
+    },
+  ];
+}
 
 const PAD = 10;
 
@@ -47,7 +50,9 @@ export default function OnboardingTutorial({ onDone }) {
   const [rect, setRect] = useState(null);
   const [visible, setVisible] = useState(false);
   const [animDir, setAnimDir] = useState(1); // 1=forward, -1=back
+  const { t, isRTL } = useLanguage();
 
+  const STEPS = getSteps(t);
   const current = STEPS[step];
 
   const measureTarget = useCallback(() => {
@@ -126,7 +131,7 @@ export default function OnboardingTutorial({ onDone }) {
         opacity: visible ? 1 : 0,
         transition: 'opacity 0.25s ease',
       }}
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Overlay — 4 sides */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: spotY, background: 'rgba(4,11,31,0.78)' }} />
@@ -161,7 +166,7 @@ export default function OnboardingTutorial({ onDone }) {
           }}>
             <span style={{ color: '#fbbf24', fontWeight: 900, fontSize: 16 }}>J</span>
           </div>
-          <span style={{ color: 'white', fontWeight: 800, fontSize: 15, letterSpacing: -0.3 }}>מדריך מהיר</span>
+          <span style={{ color: 'white', fontWeight: 800, fontSize: 15, letterSpacing: -0.3 }}>{t('ot_tutorial')}</span>
         </div>
 
         {/* Step dots + skip */}
@@ -185,7 +190,7 @@ export default function OnboardingTutorial({ onDone }) {
               fontSize: 12, fontWeight: 600, padding: '6px 14px', cursor: 'pointer',
             }}
           >
-            <X size={12} /> דלג
+            <X size={12} /> {t('ot_skip')}
           </button>
         </div>
       </div>
@@ -271,7 +276,7 @@ export default function OnboardingTutorial({ onDone }) {
 
           {/* Step counter */}
           <div style={{ marginTop: 12, fontSize: 11, color: '#9ca3af', textAlign: 'center' }}>
-            שלב {step + 1} מתוך {STEPS.length}
+            {t('ot_step_of').replace('{n}', step + 1).replace('{total}', STEPS.length)}
           </div>
         </div>
 
@@ -313,9 +318,9 @@ export default function OnboardingTutorial({ onDone }) {
             }}
           >
             {current.isLast ? (
-              <>🚀 יאללה, מתחילים!</>
+              <>{t('ot_start')}</>
             ) : (
-              <>הבא <ArrowLeft size={16} /></>
+              <>{t('ot_next')} <ArrowLeft size={16} /></>
             )}
           </button>
         </div>

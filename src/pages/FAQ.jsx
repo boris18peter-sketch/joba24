@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import { useLanguage } from '@/lib/LanguageContext';
 
-const categories = [
-  { id: 'general',   label: '📋 כללי' },
-  { id: 'publish',   label: '📝 פרסום' },
-  { id: 'worker',    label: '🔨 עובדים' },
-  { id: 'credits',   label: '🪙 ג\'ובות' },
-  { id: 'payment',   label: '💳 תשלום' },
-  { id: 'trust',     label: '⭐ אמינות' },
-  { id: 'features',  label: '⚡ פיצ\'רים' },
-];
+function getCategories(t) {
+  return [
+    { id: 'general',   label: t('faq_cat_general') },
+    { id: 'publish',   label: t('faq_cat_publish') },
+    { id: 'worker',    label: t('faq_cat_worker') },
+    { id: 'credits',   label: t('faq_cat_credits') },
+    { id: 'payment',   label: t('faq_cat_payment') },
+    { id: 'trust',     label: t('faq_cat_trust') },
+    { id: 'features',  label: t('faq_cat_features') },
+  ];
+}
 
 const faqs = [
   // ── כללי ─────────────────────────────────────────────────────────────
@@ -205,17 +208,19 @@ function FAQItem({ q, a }) {
 
 export default function FAQ() {
   const [activeCategory, setActiveCategory] = useState('general');
+  const { t, isRTL } = useLanguage();
+  const categories = getCategories(t);
   const filtered = faqs.filter(f => f.cat === activeCategory);
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir="rtl">
-      <PageHeader title="שאלות ותשובות" />
+    <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
+      <PageHeader title={t('faq_title')} />
 
       {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', padding: '28px 20px 24px' }}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
-        <h1 style={{ color: 'white', fontSize: 22, fontWeight: 900, marginBottom: 6 }}>שאלות ותשובות</h1>
-        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>כל מה שרצית לדעת על Joba24 — מדויק ומעודכן</p>
+        <h1 style={{ color: 'white', fontSize: 22, fontWeight: 900, marginBottom: 6 }}>{t('faq_title')}</h1>
+        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13 }}>{t('faq_sub')}</p>
       </div>
 
       {/* Category Tabs */}
@@ -247,7 +252,7 @@ export default function FAQ() {
       </div>
 
       <div style={{ textAlign: 'center', padding: '0 20px 40px', fontSize: 13, color: '#94a3b8' }}>
-        לא מצאת תשובה? 📩 צור קשר עם התמיכה שלנו
+        {t('faq_contact')}
       </div>
     </div>
   );

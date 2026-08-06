@@ -6,6 +6,7 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { X } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 const COIN_COUNT = 26;
@@ -103,6 +104,7 @@ export default function SignupGiftModal({ onClose }) {
   const [claimed, setClaimed] = useState(false);
   const [animPhase, setAnimPhase] = useState('idle'); // idle → enter → reveal
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const { settings } = useJobaSettings();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), staleTime: 30000 });
   const isReferred = !!(me?.referred_by_agent_code);
@@ -272,7 +274,7 @@ export default function SignupGiftModal({ onClose }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', damping: 14, stiffness: 150 }}
             style={{ textAlign: 'center', padding: '0 28px', width: '100%', marginBottom: 28 }}
-            dir="rtl"
+            dir={isRTL ? 'rtl' : 'ltr'}
           >
             {/* Title */}
             <div style={{
@@ -280,11 +282,11 @@ export default function SignupGiftModal({ onClose }) {
               letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 6,
               textShadow: '0 0 24px rgba(251,191,36,.55)',
             }}>
-              מתנת הצטרפות
+              {t('sgm_title')}
             </div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', lineHeight: 1.65, marginBottom: 18 }}>
-              פינקנו אותך ב-<span style={{ color: '#fbbf24', fontWeight: 800 }}>{giftAmount} ג'ובות</span> במתנה<br />
-              כדי שתוכל לצאת לדרך ולהגיש בקשות
+              {t('sgm_body').replace('{amount}', '')}<span style={{ color: '#fbbf24', fontWeight: 800 }}>{giftAmount} {t('sgm_credits_label')}</span> {t('sgm_body')}<br />
+              {t('sgm_body2')}
             </div>
 
             {/* Credits pill */}
@@ -303,7 +305,7 @@ export default function SignupGiftModal({ onClose }) {
               <span style={{ fontSize: 48, fontWeight: 900, color: '#fbbf24', letterSpacing: -3, lineHeight: 1 }}>{giftAmount}</span>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
                 <CreditIcon size={30} />
-                <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>ג'ובות</span>
+                <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 700 }}>{t('sgm_credits_label')}</span>
               </div>
             </motion.div>
 
@@ -315,7 +317,7 @@ export default function SignupGiftModal({ onClose }) {
               fontSize: 12, color: 'rgba(255,255,255,.55)', lineHeight: 1.6,
               textAlign: 'right',
             }}>
-              <strong style={{ color: 'rgba(255,255,255,.8)' }}>ג'ובות</strong> — יתרת העבודה שלך ב-Joba24. הן עוברות להתחייבות כשמגישים בקשה וחוזרות אוטומטית אם לא נבחרת. ניתן לטעון עוד בכל עת.
+              <span dangerouslySetInnerHTML={{ __html: t('sgm_info') }} />
             </div>
           </motion.div>
         )}
@@ -343,14 +345,14 @@ export default function SignupGiftModal({ onClose }) {
               letterSpacing: 0.2,
             }}
           >
-            {claimed ? 'מעביר ג\'ובות...' : `קבל ${giftAmount} ג\'ובות חינם`}
+            {claimed ? t('sgm_claiming') : t('sgm_claim_btn').replace('{amount}', giftAmount)}
           </motion.button>
         )}
       </AnimatePresence>
 
       {animPhase === 'reveal' && (
         <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,.25)', fontWeight: 500 }}>
-          מתנה חד-פעמית · אחד לכל משתמש
+          {t('sgm_one_time')}
         </div>
       )}
     </div>,
