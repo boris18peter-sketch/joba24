@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Shield, Lock, RefreshCw, Smartphone, Check } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PAYMENT_METHODS = [
   { id: 'card', label: 'כרטיס אשראי', icon: 'card' },

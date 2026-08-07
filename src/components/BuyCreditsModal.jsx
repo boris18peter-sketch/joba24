@@ -12,6 +12,7 @@ import PurchaseSuccess from '@/components/credits/PurchaseSuccess';
 import TranzilaIframe from '@/components/credits/TranzilaIframe';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const SHIMMER_STYLE = `
   @keyframes shimmerWipe {
@@ -50,16 +51,20 @@ const SUBSCRIPTION_PACKAGES = [
   { id: 'sub5', credits: 190, price: 199.99, badge: 'best',    coins: 5 },
 ];
 
-const TRUST_FEATURES = [
-  { icon: Shield,     title: 'רכישה מאובטחת',    desc: 'המידע הפיננסי מוצפן ומאובטח בתקנים המחמירים ביותר' },
-  { icon: RotateCcw, title: 'החזר אוטומטי',    desc: 'לא נבחרת למשימה? הג\'ובות חוזרות מיידית ליתרה' },
-  { icon: CreditCard, title: 'גמישות מלאה',     desc: 'ניתן לבטל מנוי בכל עת ישירות מהגדרות החשבון' },
-];
+function useTrustFeatures(t) {
+  return [
+    { icon: Shield,     title: t('buy_trust_secure'),    desc: t('buy_trust_secure_desc') },
+    { icon: RotateCcw,  title: t('buy_trust_refund'),   desc: t('buy_trust_refund_desc') },
+    { icon: CreditCard, title: t('buy_trust_flex'),     desc: t('buy_trust_flex_desc') },
+  ];
+}
 
 export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
+  const { t, isRTL } = useLanguage();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
+  const TRUST_FEATURES = useTrustFeatures(t);
 
   // Pending applications — for locked (committed) balance display next to available
   const { data: myApplications = [] } = useQuery({
@@ -140,7 +145,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
 
   return createPortal(
     <div
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
         background: 'rgba(5,15,40,0.65)',
@@ -190,14 +195,14 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3, lineHeight: 1.1 }}>
-                      טעינת יתרת ג'ובות
+                      {t('buy_header_title')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
                       <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', letterSpacing: -0.3, lineHeight: 1 }}>
                         {animatedCredits}
                       </span>
                       <CreditIcon size={13} />
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>ביתרה</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>{t('buy_balance_label')}</span>
                       {lockedJobas > 0 && (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginRight: 4, background: 'rgba(217,119,6,0.25)', borderRadius: 99, padding: '1px 7px', border: '1px solid rgba(217,119,6,0.45)' }}>
                           <Lock size={10} color="#fbbf24" strokeWidth={2.5} />
@@ -229,7 +234,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 }}>
                   <Zap size={13} color="#fbbf24" fill="#fbbf24" />
                   <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    נדרשים עוד <strong style={{ display: 'flex', alignItems: 'center', gap: 3 }}>{creditsNeeded} <CreditIcon size={12} /></strong> ג'ובות כדי להגיש בקשה
+                    {t('buy_credits_needed', { n: creditsNeeded })} <CreditIcon size={12} />
                   </span>
                 </div>
               )}
@@ -253,7 +258,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     transition: 'all 0.2s',
                   }}
                 >
-                  חבילות חד-פעמיות
+                  {t('buy_tab_onetime')}
                 </button>
                 <button
                   onClick={() => setTab('subscription')}
@@ -267,7 +272,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                     transition: 'all 0.2s',
                   }}
                 >
-                  מנוי חודשי
+                  {t('buy_tab_subscription')}
                 </button>
               </div>
             </div>
@@ -284,10 +289,10 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           <>
             <div style={{ padding: '8px 16px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>
-                {isSubscription ? 'בחר מנוי חודשי' : 'בחר חבילה'}
+                {isSubscription ? t('buy_choose_sub') : t('buy_choose_pkg')}
               </span>
               <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
-                {packages.length} אפשרויות
+                {t('buy_options', { n: packages.length })}
               </span>
             </div>
             <div style={{
@@ -337,7 +342,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               color: 'var(--text-3)', fontSize: 10, fontWeight: 600,
             }}>
               <Shield size={11} color="var(--text-3)" />
-              רכישה מאובטחת · Tranzila · PCI DSS Level 1
+              {t('buy_secure_footer')}
             </div>
           </>
         )}

@@ -1,11 +1,13 @@
 import CreditIcon from '@/components/CreditIcon';
 import { packageValueLabel } from '@/lib/jobaBalance';
 import { Star, Crown, Check } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * CreditPackageCard — large, readable, attractive package tile (2-column grid friendly).
  */
 export default function CreditPackageCard({ pkg, selected, onSelect, isSubscription }) {
+  const { t } = useLanguage();
   const isPopular = pkg.badge === 'popular';
   const isBest = pkg.badge === 'best';
 
@@ -62,7 +64,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           letterSpacing: 0.2,
         }}>
           {isBest ? <Crown size={12} fill="currentColor" /> : <Star size={12} fill="currentColor" />}
-          {isBest ? 'הכי משתלם' : 'פופולרי'}
+          {isBest ? t('buy_best_value') : t('buy_popular_badge')}
         </div>
       )}
 
@@ -97,7 +99,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         color: selected ? 'rgba(255,255,255,0.75)' : 'var(--text-3)',
         marginTop: 2,
       }}>
-        {isSubscription ? 'ג\'ובות לחודש' : 'ג\'ובות'}
+        {isSubscription ? t('buy_jobs_month') : t('buy_jobs_label')}
       </div>
 
       {/* Value label — sharp, single line */}
@@ -133,7 +135,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
             color: selected ? 'rgba(255,255,255,0.6)' : 'var(--text-3)',
             marginTop: 1,
           }}>
-            לחודש
+            {t('buy_per_month')}
           </div>
         )}
       </div>
