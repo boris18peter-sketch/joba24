@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
@@ -441,7 +442,7 @@ export default function MapView() {
               {/* Category dropdown */}
               {showCategoryDropdown && (
                 <>
-                  <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+                  {createPortal(<div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'transparent' }} />, document.body)}
                   <div style={{
                     position: 'absolute', top: 42, right: 0, left: 0,
                     background: 'var(--card-bg)', borderRadius: 10, border: '1px solid var(--border-1)',
