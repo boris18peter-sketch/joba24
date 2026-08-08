@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getProfessionLabel } from '@/lib/professions';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
@@ -169,7 +170,7 @@ export default function Leaderboard() {
                   {user.name}{user.is_verified && (user.social_verified ? <GoldBadge size="sm" /> : <VerifiedBadge size="sm" />)}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{user.profession}</span>}
+                  {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{getProfessionLabel(user.profession, t)}</span>}
                   <span className="text-xs text-gray-400">{user.count} {t('tasks')}</span>
                   {user.avg > 0 && (
                     <span className="flex items-center gap-0.5 text-xs text-yellow-600">

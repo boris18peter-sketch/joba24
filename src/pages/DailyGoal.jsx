@@ -249,7 +249,7 @@ ${JSON.stringify(tasksSummary, null, 2)}
                     <button key={cat.value} onClick={() => setSelectedCategories(prev => active ? prev.filter(c => c !== cat.value) : [...prev, cat.value])}
                       style={{ padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
                         background: active ? '#1a6fd4' : 'white', color: active ? 'white' : '#666', border: `1px solid ${active ? '#1a6fd4' : '#dce8f5'}` }}>
-                      {active && '✓ '}{cat.label}
+                      {active && '✓ '}{getCategoryLabel(cat.value, t)}
                     </button>
                   );
                 })}
