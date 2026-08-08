@@ -71,6 +71,7 @@ export function useTaskTranslation(task) {
           ...task,
           title: isTranslated ? data.title : task.title,
           description: isTranslated ? data.description : task.description,
+          location_name: isTranslated && data.location_name ? data.location_name : task.location_name,
         }
       : task,
     isTranslated,

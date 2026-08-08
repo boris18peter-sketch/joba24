@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { calculateTrustScore, getTrustLevel, getCompletedCount } from '@/lib/trustScore';
+import { calculateTrustScore, getTrustLevel, getCompletedCount, getTrustLevelLabel } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
 import { Star, X, Shield, Briefcase, TrendingUp } from 'lucide-react';
 import VerifyModal from '@/components/VerifyModal';
@@ -138,7 +138,7 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
           <div style={{ height: '100%', width: `${trustScore}%`, background: mainColor, borderRadius: 99, boxShadow: `0 0 10px ${mainColor}80`, transition: 'width 0.6s ease' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: mainColor }}>✨ {trustLevel.label}</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: mainColor }}>✨ {getTrustLevelLabel(trustLevel, t)}</span>
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('tc_out_of_100')}</span>
         </div>
 
@@ -246,7 +246,7 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
         <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
           <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, boxShadow: `0 0 10px ${barColor}80`, transition: 'background-color 0.1s, box-shadow 0.1s' }} />
         </div>
-        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>✨ {trustLevel.label}</div>
+        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>✨ {getTrustLevelLabel(trustLevel, t)}</div>
       </div>
 
       {open && (

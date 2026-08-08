@@ -32,6 +32,7 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({
         title: cached.title,
         description: cached.description,
+        location_name: cached.location_name || task.location_name || null,
         source_lang: cached.source_lang || null,
         was_translated: cached.was_translated !== false,
         from_cache: true,
@@ -41,24 +42,29 @@ export default async function(req: Request): Promise<Response> {
     const targetName = LANG_NAMES[target_lang] || target_lang;
     const titleText = task.title || '';
     const descText = task.description || '';
+    const locText = task.location_name || '';
 
-    const prompt = `You are a translation engine for a freelance services marketplace app (Joba24). Translate the following task title and description into ${targetName}.
+    const prompt = `You are a translation engine for a freelance services marketplace app (Joba24). Translate the following task title, description, and location into ${targetName}.
 
 Rules:
 - If the content is already in ${targetName}, return it unchanged and set was_translated to false.
 - Otherwise translate to ${targetName} and set was_translated to true.
 - Detect the source language and return its ISO 639-1 code (he, en, ar, ru, es, fr, hi, zh, fil).
 - Preserve meaning, tone, formatting (line breaks), phone numbers, addresses, prices, and any structured lines.
+- For location_name, translate/transliterate place names and city names naturally for the target language (e.g. "Herzliya" → "हर्ज़लिया" in Hindi).
 - Do not add commentary or notes — only return the JSON.
 
 Return JSON with this exact schema:
-{ "title": string, "description": string, "source_lang": string, "was_translated": boolean }
+{ "title": string, "description": string, "location_name": string, "source_lang": string, "was_translated": boolean }
 
 TITLE:
 ${titleText}
 
 DESCRIPTION:
-${descText}`;
+${descText}
+
+LOCATION_NAME:
+${locText}`;
 
     const llmResult: any = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
@@ -67,6 +73,7 @@ ${descText}`;
         properties: {
           title: { type: 'string' },
           description: { type: 'string' },
+          location_name: { type: 'string' },
           source_lang: { type: 'string' },
           was_translated: { type: 'boolean' },
         },
@@ -81,6 +88,7 @@ ${descText}`;
     existingTranslations[target_lang] = {
       title: translation.title,
       description: translation.description,
+      location_name: translation.location_name || task.location_name || '',
       source_lang: translation.source_lang,
       was_translated: translation.was_translated,
     };
@@ -89,6 +97,7 @@ ${descText}`;
     return Response.json({
       title: translation.title,
       description: translation.description,
+      location_name: translation.location_name || task.location_name || null,
       source_lang: translation.source_lang,
       was_translated: translation.was_translated,
       from_cache: false,

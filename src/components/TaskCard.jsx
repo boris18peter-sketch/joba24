@@ -25,6 +25,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 
 
 function normalizeDate(d) {
@@ -275,6 +276,8 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const { openTaskSheet } = useTaskSheet();
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
+  const { translatedTask } = useTaskTranslation(task);
+  const displayTask = translatedTask;
   const [cancelling, setCancelling] = useState(false);
   const cancellingRef = useRef(false); // hard guard — survives re-renders
   const cancelTaskRef = useRef(false);
@@ -589,11 +592,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                {task.title}
+                {displayTask.title}
               </h3>
-              {task.description && (
+              {displayTask.description && (
                 <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
-                  {parseDescription(task.description).mainDescription}
+                  {parseDescription(displayTask.description).mainDescription}
                 </p>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
@@ -795,7 +798,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         </div>
         {showDetails && (
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 8, paddingBottom: 4 }} onClick={e => e.stopPropagation()}>
-            <TaskDetailsRows task={task} compact={true} />
+            <TaskDetailsRows task={displayTask} compact={true} />
 
 
           </div>
@@ -804,7 +807,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
 
       {showApplyModal && createPortal(
         <ApplyModal
-          task={task}
+          task={displayTask}
           currentUserId={currentUserId}
           workerName={workerName}
           onClose={() => setShowApplyModal(false)}

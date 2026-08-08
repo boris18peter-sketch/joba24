@@ -34,8 +34,21 @@ export function calculateTrustScore(user, { tasks = [], reviews = [] } = {}) {
 }
 
 export function getTrustLevel(score) {
-  if (score >= 80) return { label: 'אמון גבוה',   color: '#059669', bg: '#f0fdf4', border: '#bbf7d0', bar: '#10b981' };
-  if (score >= 50) return { label: 'אמון טוב',    color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe', bar: '#3b82f6' };
-  if (score >= 20) return { label: 'אמון בינוני', color: '#d97706', bg: '#fffbeb', border: '#fde68a', bar: '#f59e0b' };
-  return             { label: 'חדש',             color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', bar: '#9ca3af' };
+  if (score >= 80) return { labelKey: 'tl_high_trust',   label: 'אמון גבוה',   color: '#059669', bg: '#f0fdf4', border: '#bbf7d0', bar: '#10b981' };
+  if (score >= 50) return { labelKey: 'tl_good_trust',  label: 'אמון טוב',    color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe', bar: '#3b82f6' };
+  if (score >= 20) return { labelKey: 'tl_medium_trust', label: 'אמון בינוני', color: '#d97706', bg: '#fffbeb', border: '#fde68a', bar: '#f59e0b' };
+  return             { labelKey: 'tl_new',              label: 'חדש',         color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', bar: '#9ca3af' };
+}
+
+/**
+ * Get the translated trust level label using the i18n t() function.
+ * Falls back to the Hebrew label if the key is not translated.
+ */
+export function getTrustLevelLabel(trustLevel, t) {
+  if (!trustLevel) return '';
+  if (t && trustLevel.labelKey) {
+    const translated = t(trustLevel.labelKey);
+    if (translated && translated !== trustLevel.labelKey) return translated;
+  }
+  return trustLevel.label || '';
 }
