@@ -875,10 +875,10 @@ export default function TaskDetail(props) {
                 size="md"
               />
             }
-              {task.location_name && (
+              {translatedTask.location_name && (
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', display: 'flex', alignItems: 'center', gap: 3 }}>
                   <MapPin size={10} strokeWidth={2} />
-                  {task.location_name}
+                  {translatedTask.location_name}
                   {distKm != null && !isNaN(distKm) && ` · ${distKm < 1 ? `${Math.round(distKm * 1000)}${t('meters_short')}` : `${distKm.toFixed(1)}${t('km_short')}`}`}
                 </span>
               )}

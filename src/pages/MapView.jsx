@@ -3,7 +3,7 @@ import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
@@ -90,6 +90,7 @@ export default function MapView() {
   const mapRef = useRef(null);
   const seedRef = useRef({});
   const navigate = useNavigate();
+  const location = useLocation();
   const { openTaskSheet } = useTaskSheet();
   const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
@@ -103,6 +104,10 @@ export default function MapView() {
   const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
+  // Close the category dropdown immediately when navigating away —
+  // otherwise it stays visible during the page-exit animation.
+  useEffect(() => { setShowCategoryDropdown(false); }, [location.pathname]);
 
   // Route & nav state
   const [route, setRoute] = useState(null);
@@ -453,7 +458,7 @@ export default function MapView() {
                       return (
                         <button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }}
                           style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
-                          <span>{c.label}</span>
+                          <span>{getCategoryLabel(c.value, t)}</span>
                           <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
                         </button>
                       );
