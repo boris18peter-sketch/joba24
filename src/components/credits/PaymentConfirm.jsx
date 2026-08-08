@@ -4,18 +4,18 @@ import CreditIcon from '@/components/CreditIcon';
 import { useLanguage } from '@/lib/LanguageContext';
 
 const PAYMENT_METHODS = [
-  { id: 'card', label: 'כרטיס אשראי', icon: 'card' },
-  { id: 'bit', label: 'Bit', icon: 'bit' },
-  { id: 'paypal', label: 'PayPal', icon: 'paypal' },
-  { id: 'apple', label: 'Apple Pay', icon: 'apple' },
-  { id: 'google', label: 'Google Pay', icon: 'google' },
-  { id: 'phone', label: 'חיוב סלולרי', icon: 'phone' },
+  { id: 'card', icon: 'card' },
+  { id: 'bit', icon: 'bit' },
+  { id: 'paypal', icon: 'paypal' },
+  { id: 'apple', icon: 'apple' },
+  { id: 'google', icon: 'google' },
+  { id: 'phone', icon: 'phone' },
 ];
 
-function MethodIcon({ type }) {
+function MethodIcon({ type, t }) {
   switch (type) {
     case 'card':
-      return <span style={{ fontSize: 13, fontWeight: 800, color: 'inherit' }}>כרטיס אשראי</span>;
+      return <span style={{ fontSize: 13, fontWeight: 800, color: 'inherit' }}>{t('buy_pay_card')}</span>;
     case 'bit':
       return <span style={{ fontSize: 14, fontWeight: 900, color: '#0055a5', letterSpacing: 0.5 }}>Bit</span>;
     case 'paypal':
@@ -32,7 +32,7 @@ function MethodIcon({ type }) {
     case 'phone':
       return (
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700 }}>
-          <Smartphone size={15} /> סלולרי
+          <Smartphone size={15} /> {t('buy_pay_phone_short')}
         </span>
       );
     default:
@@ -41,6 +41,7 @@ function MethodIcon({ type }) {
 }
 
 export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm, loading }) {
+  const { t } = useLanguage();
   const [payMethod, setPayMethod] = useState('card');
 
   return (
@@ -55,7 +56,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           padding: 0, marginBottom: 16,
         }}
       >
-        <ArrowRight size={15} /> חזרה לחבילות
+        <ArrowRight size={15} /> {t('buy_back_to_pkg')}
       </button>
 
       {/* Summary card */}
@@ -70,7 +71,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           fontSize: 12, fontWeight: 700, color: 'var(--text-3)',
           textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
         }}>
-          {isSubscription ? 'המנוי שנבחר' : 'החבילה שנבחרה'}
+          {isSubscription ? t('buy_selected_sub') : t('buy_selected_pkg')}
         </div>
         <div style={{
           fontSize: 36, fontWeight: 900, color: 'var(--brand-primary)',
@@ -81,19 +82,19 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
           <CreditIcon size={24} />
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>
-          {isSubscription ? 'ג\'ובות שיתווספו מדי חודש' : 'ג\'ובות שיתווספו ליתרה'}
+          {isSubscription ? t('buy_jobs_added_monthly') : t('buy_jobs_added_balance')}
         </div>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           background: 'var(--surface-2)', borderRadius: 99,
           padding: '6px 18px',
         }}>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>מחיר סופי</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('buy_final_price')}</span>
           <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>
             ₪{pkg.price.toFixed(2)}
           </span>
           {isSubscription && (
-            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>/חודש</span>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('buy_month_slash')}</span>
           )}
         </div>
       </div>
@@ -111,20 +112,20 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
             fontSize: 13, fontWeight: 800, color: 'var(--brand-primary)',
             marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6,
           }}>
-            <RefreshCw size={14} /> איך עובד המנוי החודשי?
+            <RefreshCw size={14} /> {t('buy_how_sub_works')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7 }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
-              <span>עכשיו תחויב <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> עבור החודש הנוכחי והג\'ובות יתווספו מיד</span>
+              <span>{t('buy_sub_now').replace('{price}', pkg.price.toFixed(2))}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
-              <span>בכל חודש תחויב אוטומטית <strong style={{ color: 'var(--text-1)' }}>₪{pkg.price.toFixed(2)}</strong> והג\'ובות יתווספו ליתרה</span>
+              <span>{t('buy_sub_monthly').replace('{price}', pkg.price.toFixed(2))}</span>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <span style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>•</span>
-              <span>ניתן לבטל את המנוי בכל עת מהגדרות החשבון</span>
+              <span>{t('buy_sub_cancel_anytime')}</span>
             </div>
           </div>
         </div>
@@ -132,7 +133,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
 
       {/* Payment methods — clickable selection */}
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 10 }}>
-        בחר אמצעי תשלום
+        {t('buy_choose_pay_method')}
       </div>
       <div style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
@@ -158,7 +159,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
                 position: 'relative',
               }}
             >
-              <MethodIcon type={method.icon} />
+              <MethodIcon type={method.icon} t={t} />
               {selected && (
                 <span style={{
                   position: 'absolute', top: 4, left: 4,
@@ -177,7 +178,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         fontSize: 11, color: 'var(--text-3)', fontWeight: 600,
         marginBottom: 20, textAlign: 'center',
       }}>
-        תועבר/י לעמוד התשלום המאובטח של Tranzila להשלמת הרכישה
+        {t('buy_redirect_tranzila')}
       </div>
 
       {/* Confirm button */}
@@ -201,7 +202,7 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         ) : (
           <>
             <Shield size={17} />
-            המשך לתשלום · ₪{pkg.price.toFixed(2)}
+            {t('buy_continue_pay').replace('{price}', pkg.price.toFixed(2))}
           </>
         )}
       </button>
@@ -212,14 +213,14 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
         fontSize: 11, color: 'var(--text-3)', marginBottom: 8,
       }}>
         <Lock size={11} />
-        רכישה מאובטחת SSL · ניתן לבטל מנוי בכל עת
+        {t('buy_ssl_secure')}
       </div>
 
       <div style={{
         fontSize: 10, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.6,
         paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
       }}>
-        בלחיצה על כפתור התשלום אתה מאשר את תנאי השימוש ומדיניות הפרטיות של Joba24
+        {t('buy_terms_agree')}
       </div>
     </div>
   );

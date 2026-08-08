@@ -5,11 +5,13 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { RefreshCw, X, AlertTriangle, CheckCircle2, Calendar } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * SubscriptionManager — shows active subscriptions with cancel option.
  */
 export default function SubscriptionManager() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [showCancel, setShowCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
@@ -41,7 +43,7 @@ export default function SubscriptionManager() {
       }, 2000);
     } catch (err) {
       console.error('Cancel failed:', err);
-      toast.error('ביטול המנוי נכשל. נסה שוב או צור קשר עם התמיכה.');
+      toast.error(t('buy_sub_cancel_failed'));
     } finally {
       setCancelling(false);
     }
@@ -64,7 +66,7 @@ export default function SubscriptionManager() {
         }}>
           <RefreshCw size={15} color="var(--brand-primary)" />
           <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>
-            המנויים שלי
+            {t('buy_my_subs')}
           </span>
           <span style={{
             background: 'var(--color-success-bg)',
@@ -73,8 +75,8 @@ export default function SubscriptionManager() {
             padding: '2px 8px', borderRadius: 99,
             border: '1px solid var(--color-success-border)',
           }}>
-            פעיל
-          </span>
+            {t('buy_sub_active')}
+            </span>
         </div>
 
         {subscriptions.map((sub) => (
@@ -87,17 +89,17 @@ export default function SubscriptionManager() {
               <CreditIcon size={22} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
-                  {sub.credits} ג'ובות לחודש
+                  {t('buy_sub_jobs_month').replace('{n}', sub.credits)}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
-                  ₪{sub.amount.toFixed(2)} / חודש · חידוש אוטומטי
+                  {t('buy_sub_per_month_auto').replace('{amount}', sub.amount.toFixed(2))}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Calendar size={10} /> הופעל: {moment(sub.created_date).format('DD/MM/YYYY HH:mm')}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <RefreshCw size={10} /> חידוש הבא: {moment(sub.created_date).add(1, 'month').format('DD/MM/YYYY')}
+                    <Calendar size={10} /> {t('buy_sub_activated')} {moment(sub.created_date).format('DD/MM/YYYY HH:mm')}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <RefreshCw size={10} /> {t('buy_sub_next_renewal')} {moment(sub.created_date).add(1, 'month').format('DD/MM/YYYY')}
                   </span>
                 </div>
               </div>
@@ -114,7 +116,7 @@ export default function SubscriptionManager() {
                 cursor: 'pointer',
               }}
             >
-              בטל מנוי
+              {t('buy_cancel_sub_btn')}
             </button>
           </div>
         ))}
@@ -152,10 +154,10 @@ export default function SubscriptionManager() {
                   <CheckCircle2 size={32} color="var(--color-success)" />
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>
-                  המנוי בוטל
+                  {t('buy_sub_cancelled_title')}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-                  החיוב האוטומטי הופסק. הג'ובות שכבר נרכשו נשארים ביתרה שלך.
+                  {t('buy_sub_cancelled_body')}
                 </div>
               </>
             ) : (
@@ -169,11 +171,10 @@ export default function SubscriptionManager() {
                   <AlertTriangle size={26} color="var(--color-danger)" />
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>
-                  ביטול המנוי?
+                  {t('buy_cancel_sub_title')}
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 24 }}>
-                  החיוב האוטומטי החודשי יופסק. תוכל להמשיך להשתמש בג'ובות שכבר נרכשו.
-                  ניתן לרכוש מנוי מחדש בכל עת.
+                  {t('buy_cancel_sub_body')}
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -187,7 +188,7 @@ export default function SubscriptionManager() {
                       fontSize: 14, fontWeight: 700, cursor: 'pointer',
                     }}
                   >
-                    חזור
+                    {t('buy_back_btn')}
                   </button>
                   <button
                     onClick={handleCancel}
@@ -201,7 +202,7 @@ export default function SubscriptionManager() {
                   >
                     {cancelling ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : 'אשר ביטול'}
+                    ) : t('buy_confirm_cancel')}
                   </button>
                 </div>
               </>

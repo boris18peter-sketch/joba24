@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { CheckCircle2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * PurchaseSuccess — celebration screen shown after a successful purchase.
@@ -11,6 +12,7 @@ import CreditIcon from '@/components/CreditIcon';
  *   onDone: () => void
  */
 export default function PurchaseSuccess({ pkg, isSubscription, onDone }) {
+  const { t } = useLanguage();
   useEffect(() => {
     const fire = (x, y) => {
       confetti({
@@ -40,17 +42,15 @@ export default function PurchaseSuccess({ pkg, isSubscription, onDone }) {
       </div>
 
       <div style={{ fontSize: 21, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>
-        היתרה נטענה בהצלחה!
+        {t('buy_success_title')}
       </div>
 
       <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 8 }}>
-        נוספו לך <strong style={{ color: 'var(--brand-primary)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-          {pkg.credits} <CreditIcon size={15} />
-        </strong> ג'ובות ליתרה{isSubscription ? ' (יתווספו מדי חודש)' : ''}
+        {t('buy_success_added').replace('{n}', pkg.credits).replace('{monthly}', isSubscription ? t('buy_success_monthly_suffix') : '')}
       </div>
 
       <div style={{ fontSize: 13, color: 'var(--color-success)', fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6 }}>
-        🚀 מוכן להגיש בקשות ולהתחיל להרוויח
+        {t('buy_success_ready')}
       </div>
 
       <button
@@ -63,7 +63,7 @@ export default function PurchaseSuccess({ pkg, isSubscription, onDone }) {
           boxShadow: '0 4px 20px rgba(16,185,129,0.3)',
         }}
       >
-        אישור, תודה!
+        {t('buy_success_done')}
       </button>
 
       <style>{`

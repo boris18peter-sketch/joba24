@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Loader2, Shield } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
+import { useLanguage } from '@/lib/LanguageContext';
 
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
@@ -24,6 +25,7 @@ import { appParams } from '@/lib/app-params';
  *   onSuccess     — Called when payment confirmed completed
  */
 export default function TranzilaIframe({ supplier, sum, paymentId, isSubscription, pkg, payMethod, thtk, onClose, onSuccess }) {
+  const { t } = useLanguage();
   const formRef = useRef(null);
   const pollRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -132,7 +134,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Shield size={18} color="#1a6fd4" />
           <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>
-            תשלום מאובטח · Tranzila
+            {t('buy_secure_payment')}
           </span>
         </div>
         <button onClick={onClose} style={{
@@ -153,7 +155,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
           <div style={{ textAlign: 'center' }}>
             <Loader2 size={32} className="animate-spin" color="#1a6fd4" />
             <div style={{ marginTop: 12, fontSize: 14, color: 'var(--text-2)', fontWeight: 600 }}>
-              טוען טופס תשלום...
+              {t('buy_loading_form')}
             </div>
           </div>
         </div>
@@ -178,7 +180,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
         <input type="hidden" name="cred_type" value="1" />
         <input type="hidden" name="tranmode" value="A" />
         <input type="hidden" name="lang" value="il" />
-        <input type="hidden" name="pdesc" value={`Joba24 ג'ובות${pkg ? ` — ${pkg.credits} ג'ובות` : ''}${payMethod ? ` (${payMethod})` : ''}`} />
+        <input type="hidden" name="pdesc" value={t('buy_pdesc').replace('{n}', pkg ? pkg.credits : '')} />
         <input type="hidden" name="nologo" value="1" />
         <input type="hidden" name="accessibility" value="2" />
         {/* Payment method — tells Tranzila which method to pre-select */}
