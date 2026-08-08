@@ -1,5 +1,26 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
+// Script detection — used to verify cached location_name is in the target language
+const SCRIPT_RANGES: Record<string, [number, number][]> = {
+  he: [[0x0590, 0x05FF]],
+  ar: [[0x0600, 0x06FF], [0x0750, 0x077F]],
+  ru: [[0x0400, 0x04FF]],
+  hi: [[0x0900, 0x097F]],
+  zh: [[0x4E00, 0x9FFF], [0x3400, 0x4DBF]],
+};
+
+function matchesScript(text: string, lang: string): boolean {
+  const ranges = SCRIPT_RANGES[lang];
+  if (!ranges) return false;
+  for (const [start, end] of ranges) {
+    for (let i = 0; i < text.length; i++) {
+      const code = text.codePointAt(i);
+      if (code !== undefined && code >= start && code <= end) return true;
+    }
+  }
+  return false;
+}
+
 const LANG_NAMES: Record<string, string> = {
   he: 'Hebrew',
   en: 'English',
@@ -26,32 +47,42 @@ export default async function(req: Request): Promise<Response> {
     const task = tasks && tasks[0];
     if (!task) return Response.json({ error: 'task not found' }, { status: 404 });
 
-    // Return cached translation if present
+    const locText = task.location_name || '';
+
+    // Return cached translation if present — BUT only if the cached location_name
+    // is already in the target language script. If the location is still in a
+    // different script (e.g. Hebrew city name on a Russian task), the previous
+    // translation likely skipped the location — re-translate to fix it.
     const cached = task.translations && task.translations[target_lang];
     if (cached && cached.title != null && cached.description != null) {
-      return Response.json({
-        title: cached.title,
-        description: cached.description,
-        location_name: cached.location_name || task.location_name || null,
-        source_lang: cached.source_lang || null,
-        was_translated: cached.was_translated !== false,
-        from_cache: true,
-      });
+      const cachedLoc = cached.location_name || '';
+      const locInTargetScript = !locText || !SCRIPT_RANGES[target_lang] || matchesScript(cachedLoc, target_lang);
+      if (locInTargetScript) {
+        return Response.json({
+          title: cached.title,
+          description: cached.description,
+          location_name: cached.location_name || task.location_name || null,
+          source_lang: cached.source_lang || null,
+          was_translated: cached.was_translated !== false,
+          from_cache: true,
+        });
+      }
+      // Location not in target script — fall through to re-translate
     }
 
     const targetName = LANG_NAMES[target_lang] || target_lang;
     const titleText = task.title || '';
     const descText = task.description || '';
-    const locText = task.location_name || '';
 
     const prompt = `You are a translation engine for a freelance services marketplace app (Joba24). Translate the following task title, description, and location into ${targetName}.
 
 Rules:
-- If the content is already in ${targetName}, return it unchanged and set was_translated to false.
-- Otherwise translate to ${targetName} and set was_translated to true.
+- Translate each field (title, description, location_name) INDEPENDENTLY into ${targetName}.
+- If a field is already in ${targetName}, keep it unchanged.
+- Set was_translated to true if ANY field was translated (changed). Set to false ONLY if ALL three fields were already in ${targetName}.
+- For location_name, ALWAYS translate/transliterate place names and city names into ${targetName}, even if the title and description are already in ${targetName}. Examples: "הרצליה" → "Герцлия" in Russian, "Wingate" → "Вингейт" in Russian, "Herzliya" → "हर्ज़लिया" in Hindi.
 - Detect the source language and return its ISO 639-1 code (he, en, ar, ru, es, fr, hi, zh, fil).
 - Preserve meaning, tone, formatting (line breaks), phone numbers, addresses, prices, and any structured lines.
-- For location_name, translate/transliterate place names and city names naturally for the target language (e.g. "Herzliya" → "हर्ज़लिया" in Hindi).
 - Do not add commentary or notes — only return the JSON.
 
 Return JSON with this exact schema:
