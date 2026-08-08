@@ -471,12 +471,28 @@ export default function Layout() {
     return <PreLaunchWaitingPage me={me} />;
   }
 
+  // English fallback for bottom-nav labels — used when the translated label is
+  // too long for the narrow tab bar (e.g. Russian "Опубликовать" = 12 chars,
+  // Arabic "الملف الشخصي" = 13 chars). Keeps the nav clean and prevents overflow.
+  const NAV_FALLBACK_EN = {
+    nav_feed_short: 'Feed',
+    nav_map_short: 'Map',
+    nav_create_short: 'Post',
+    nav_chats_short: 'Chats',
+    nav_profile_short: 'Profile',
+  };
+  const MAX_NAV_LABEL_LEN = 8;
+  const navLabel = (key) => {
+    const label = t(key);
+    return label && label.length > MAX_NAV_LABEL_LEN ? (NAV_FALLBACK_EN[key] || label) : label;
+  };
+
   const navItems = [
-    { to: '/', icon: Home, label: t('nav_feed_short') },
-    { to: '/map', icon: Map, label: t('nav_map_short') },
-    { to: '/create-task', icon: Plus, label: t('nav_create_short'), primary: true },
-    { to: '/chats', icon: MessageCircle, label: t('nav_chats_short'), badge: unreadMessages },
-    { to: '/profile', icon: User, label: t('nav_profile_short') },
+    { to: '/', icon: Home, label: navLabel('nav_feed_short') },
+    { to: '/map', icon: Map, label: navLabel('nav_map_short') },
+    { to: '/create-task', icon: Plus, label: navLabel('nav_create_short'), primary: true },
+    { to: '/chats', icon: MessageCircle, label: navLabel('nav_chats_short'), badge: unreadMessages },
+    { to: '/profile', icon: User, label: navLabel('nav_profile_short') },
   ];
 
   return (

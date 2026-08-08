@@ -46,8 +46,12 @@ export function useTaskTranslation(task) {
   const { lang } = useLanguage();
 
   const content = task ? `${task.title || ''} ${task.description || ''}` : '';
-  // Skip: no task, or content already in the user's language script
-  const skip = !task || contentMatchesLangScript(content, lang);
+  const location = task?.location_name || '';
+  // Skip only when BOTH content AND location match the user's language script.
+  // Without the location check, a task whose title/description are in the user's
+  // language but whose location_name is in a different language (e.g. Hebrew city
+  // name on a Russian task) would never get its location translated.
+  const skip = !task || (contentMatchesLangScript(content, lang) && contentMatchesLangScript(location, lang));
 
   const { data, isLoading } = useQuery({
     queryKey: ['taskTranslation', task?.id, lang],
@@ -71,7 +75,7 @@ export function useTaskTranslation(task) {
           ...task,
           title: isTranslated ? data.title : task.title,
           description: isTranslated ? data.description : task.description,
-          location_name: isTranslated && data.location_name ? data.location_name : task.location_name,
+          location_name: data?.location_name ? data.location_name : task.location_name,
         }
       : task,
     isTranslated,
