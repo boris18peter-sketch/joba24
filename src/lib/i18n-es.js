@@ -1378,4 +1378,16 @@ export const es = {
   prof_tv_tech: 'Técnico de TV',
   prof_math_tutor: 'Profesor de matemáticas',
   prof_other: 'Otro',
+  // Support chat
+  support_title: 'Soporte Joba24',
+  support_subtitle: 'Equipo de Soporte',
+  support_empty_title: '¿Cómo podemos ayudar?',
+  support_empty_body: 'Escríbenos un mensaje y te responderemos pronto',
+  support_upload_error: 'Error al subir el archivo',
+  support_send_error: 'Error al enviar',
+  support_voice_error: 'Error al enviar la grabación',
+  support_mic_error: 'No se puede acceder al micrófono',
+  support_recording: 'Grabando...',
+  support_cancel: 'Cancelar',
+  support_type_msg: 'Escribe un mensaje...',
   };

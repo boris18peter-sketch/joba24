@@ -1354,4 +1354,16 @@ export const hi = {
   prof_tv_tech: 'टीवी तकनीशियन',
   prof_math_tutor: 'गणित शिक्षक',
   prof_other: 'अन्य',
+  // Support chat
+  support_title: 'Joba24 सहायता',
+  support_subtitle: 'सहायता टीम',
+  support_empty_title: 'हम आपकी कैसे मदद कर सकते हैं?',
+  support_empty_body: 'हमें संदेश भेजें और हम जल्द ही आपसे संपर्क करेंगे',
+  support_upload_error: 'फ़ाइल अपलोड में त्रुटि',
+  support_send_error: 'भेजने में त्रुटि',
+  support_voice_error: 'रिकॉर्डिंग भेजने में פ्रुटि',
+  support_mic_error: 'माइक्रोफ़ोन एक्सेस नहीं हो सका',
+  support_recording: 'रिकॉर्ड हो रहा है...',
+  support_cancel: 'रद्द करें',
+  support_type_msg: 'संदेश टाइप करें...',
 };

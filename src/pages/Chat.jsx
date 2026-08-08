@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert, Mic, X } from 'lucide-react';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
-import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { toast } from 'sonner';
 import BackButton from '@/components/BackButton';
 import { moderateText } from '@/hooks/useModeration';
@@ -94,31 +92,9 @@ function TypingIndicator() {
   );
 }
 
-function TaskInfoPopup({ task, onClose }) {
-  const { openTaskSheet } = useTaskSheet();
-  const { t, isRTL } = useLanguage();
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' }} onClick={onClose}>
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', borderRadius: '24px 24px 0 0', width: '100%', maxHeight: '85dvh', overflowY: 'auto', padding: '20px 16px', paddingBottom: 'max(24px,env(safe-area-inset-bottom))' }} onClick={e => e.stopPropagation()}>
-        <div style={{ width: 40, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 16px' }} />
-        {/* Title + price */}
-        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', marginBottom: 4 }}>{task.title}</div>
-        <div style={{ fontSize: 26, fontWeight: 900, color: '#1a6fd4', marginBottom: 16 }}>₪{task.price}</div>
-        {/* Shared structured rows */}
-        <TaskDetailsRows task={task} compact={false} />
-        <button onClick={() => { onClose(); openTaskSheet(task.id); }}
-          style={{ marginTop: 16, width: '100%', height: 48, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
-          {t('chat_open_full_task')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function Chat() {
   const { taskId } = useParams();
   const navigate = useNavigate();
-  const { openTaskSheet } = useTaskSheet();
   const { t, isRTL } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -126,7 +102,6 @@ export default function Chat() {
   const [uploading, setUploading] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
   const [blockedMsg, setBlockedMsg] = useState(null);
-  const [showTaskInfo, setShowTaskInfo] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -397,13 +372,12 @@ export default function Chat() {
 
         {/* Left: Task info button */}
         <button
-          onClick={() => setShowTaskInfo(true)}
+          onClick={() => task && navigate(`/task/${task.id}`)}
           style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
         >
           <Info size={14} /> {t('chat_task_info')}
           </button>
       </div>
-      {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
       {/* Messages */}
       <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}>

@@ -1354,4 +1354,16 @@ export const zh = {
   prof_tv_tech: '电视技术员',
   prof_math_tutor: '数学老师',
   prof_other: '其他',
+  // Support chat
+  support_title: 'Joba24 支持',
+  support_subtitle: '支持团队',
+  support_empty_title: '我们能帮您什么？',
+  support_empty_body: '给我们发消息，我们会尽快回复您',
+  support_upload_error: '上传文件出错',
+  support_send_error: '发送出错',
+  support_voice_error: '发送录音出错',
+  support_mic_error: '无法访问麦克风',
+  support_recording: '录制中...',
+  support_cancel: '取消',
+  support_type_msg: '输入消息...',
 };

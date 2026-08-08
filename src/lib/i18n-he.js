@@ -1380,4 +1380,16 @@ export const he = {
   prof_tv_tech: 'טכנאי טלוויזיה',
   prof_math_tutor: 'מורה לחשבון',
   prof_other: 'אחר',
+  // Support chat
+  support_title: 'תמיכת Joba24',
+  support_subtitle: 'צוות התמיכה',
+  support_empty_title: 'איך נוכל לעזור?',
+  support_empty_body: 'כתבו לנו הודעה ונחזור אליכם בהקדם',
+  support_upload_error: 'שגיאה בהעלאת קובץ',
+  support_send_error: 'שגיאה בשליחה',
+  support_voice_error: 'שגיאה בשליחת ההקלטה',
+  support_mic_error: 'לא ניתן להפעיל את המיקרופון',
+  support_recording: 'מקליט...',
+  support_cancel: 'ביטול',
+  support_type_msg: 'הקלד הודעה...',
 };

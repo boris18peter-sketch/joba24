@@ -1343,4 +1343,16 @@ export const ru = {
   prof_tv_tech: 'Телевизионный техник',
   prof_math_tutor: 'Учитель математики',
   prof_other: 'Другое',
+  // Support chat
+  support_title: 'Поддержка Joba24',
+  support_subtitle: 'Команда поддержки',
+  support_empty_title: 'Чем мы можем помочь?',
+  support_empty_body: 'Напишите нам сообщение, и мы скоро ответим',
+  support_upload_error: 'Ошибка загрузки файла',
+  support_send_error: 'Ошибка отправки',
+  support_voice_error: 'Ошибка отправки записи',
+  support_mic_error: 'Не удалось получить доступ к микрофону',
+  support_recording: 'Запись...',
+  support_cancel: 'Отмена',
+  support_type_msg: 'Введите сообщение...',
   };

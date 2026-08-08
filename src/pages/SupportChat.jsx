@@ -5,10 +5,12 @@ import { Headphones, Send, Loader2, Image as ImageIcon, Mic, X } from 'lucide-re
 import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/LanguageContext';
 
 export default function SupportChat() {
   const { user: me, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -120,7 +122,7 @@ export default function SupportChat() {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         urls.push(file_url);
       } catch {
-        toast.error('שגיאה בהעלאת קובץ');
+        toast.error(t('support_upload_error'));
       }
     }
     setUploading(false);
@@ -136,7 +138,7 @@ export default function SupportChat() {
         });
         setMessages(prev => [...prev, msg]);
       } catch {
-        toast.error('שגיאה בשליחה');
+        toast.error(t('support_send_error'));
       }
       setSending(false);
     }
@@ -169,7 +171,7 @@ export default function SupportChat() {
           });
           setMessages(prev => [...prev, msg]);
         } catch {
-          toast.error('שגיאה בשליחת ההקלטה');
+          toast.error(t('support_voice_error'));
         }
         setSending(false);
       };
@@ -181,7 +183,7 @@ export default function SupportChat() {
         setRecordSeconds(s => s + 1);
       }, 1000);
     } catch {
-      toast.error('לא ניתן להפעיל את המיקרופון');
+      toast.error(t('support_mic_error'));
     }
   };
 
@@ -233,7 +235,7 @@ export default function SupportChat() {
   const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div dir="rtl" style={{
+    <div dir={isRTL ? 'rtl' : 'ltr'} style={{
       display: 'flex', flexDirection: 'column', height: '100%',
       background: 'var(--surface-1)', zIndex: 9999, position: 'relative',
     }}>
@@ -256,8 +258,8 @@ export default function SupportChat() {
             <Headphones size={18} color="white" />
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>תמיכת Joba24</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>צוות התמיכה</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>{t('support_title')}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('support_subtitle')}</div>
           </div>
         </div>
       </div>
@@ -275,8 +277,8 @@ export default function SupportChat() {
         ) : messages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>🎧</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>איך נוכל לעזור?</div>
-            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>כתבו לנו הודעה ונחזור אליכם בהקדם</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{t('support_empty_title')}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>{t('support_empty_body')}</div>
           </div>
         ) : (
           messages.map(msg => (
@@ -344,9 +346,9 @@ export default function SupportChat() {
             <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>
               {formatTime(recordSeconds)}
             </span>
-            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>מקליט...</span>
+            <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{t('support_recording')}</span>
             <button onClick={cancelRecording} style={{ marginRight: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <X size={14} /> ביטול
+              <X size={14} /> {t('support_cancel')}
             </button>
           </div>
         ) : (
@@ -363,12 +365,12 @@ export default function SupportChat() {
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
               }}
               onKeyDown={handleKeyDown}
-              placeholder="הקלד הודעה..."
+              placeholder={t('support_type_msg')}
               rows={1}
               style={{
                 flex: 1, background: 'transparent', border: 'none', outline: 'none',
                 fontSize: 16, lineHeight: 1.5, resize: 'none', maxHeight: 120,
-                overflowY: 'auto', padding: '6px 0', direction: 'rtl',
+                overflowY: 'auto', padding: '6px 0', direction: isRTL ? 'rtl' : 'ltr',
               }}
             />
           </div>

@@ -1381,4 +1381,16 @@ export const ar = {
   prof_tv_tech: 'فني تلفزيون',
   prof_math_tutor: 'معلم رياضيات',
   prof_other: 'آخر',
+  // Support chat
+  support_title: 'دعم Joba24',
+  support_subtitle: 'فريق الدعم',
+  support_empty_title: 'كيف يمكننا المساعدة؟',
+  support_empty_body: 'اكتب لنا رسالة وسنعود إليك في أقرب وقت',
+  support_upload_error: 'خطأ في رفع الملف',
+  support_send_error: 'خطأ في الإرسال',
+  support_voice_error: 'خطأ في إرسال التسجيل',
+  support_mic_error: 'تعذر الوصول إلى الميكروفون',
+  support_recording: 'جارٍ التسجيل...',
+  support_cancel: 'إلغاء',
+  support_type_msg: 'اكتب رسالة...',
   };

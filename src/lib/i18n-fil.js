@@ -1354,4 +1354,16 @@ export const fil = {
   prof_tv_tech: 'TV Technician',
   prof_math_tutor: 'Math Tutor',
   prof_other: 'Iba pa',
+  // Support chat
+  support_title: 'Joba24 Support',
+  support_subtitle: 'Support Team',
+  support_empty_title: 'Paano kami makakatulong?',
+  support_empty_body: 'Magpadala ng mensahe at babalikan ka namin agad',
+  support_upload_error: 'Error sa pag-upload ng file',
+  support_send_error: 'Error sa pagpapadala',
+  support_voice_error: 'Error sa pagpapadala ng recording',
+  support_mic_error: 'Hindi ma-access ang mikropono',
+  support_recording: 'Nagrerecord...',
+  support_cancel: 'Cancel',
+  support_type_msg: 'Mag-type ng mensahe...',
 };

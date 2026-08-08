@@ -1378,4 +1378,16 @@ export const en = {
   prof_tv_tech: 'TV Technician',
   prof_math_tutor: 'Math Tutor',
   prof_other: 'Other',
+  // Support chat
+  support_title: 'Joba24 Support',
+  support_subtitle: 'Support Team',
+  support_empty_title: 'How can we help?',
+  support_empty_body: 'Send us a message and we\'ll get back to you shortly',
+  support_upload_error: 'Error uploading file',
+  support_send_error: 'Error sending',
+  support_voice_error: 'Error sending recording',
+  support_mic_error: 'Unable to access microphone',
+  support_recording: 'Recording...',
+  support_cancel: 'Cancel',
+  support_type_msg: 'Type a message...',
 };
