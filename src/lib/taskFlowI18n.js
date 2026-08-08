@@ -12,6 +12,12 @@
  *   tTaskFlow('מה הבעיה? 🔧', 'en')  // → "What is the problem? 🔧"
  *   tTaskFlow('מה הבעיה? 🔧', 'he')  // → "מה הבעיה? 🔧" (Hebrew original)
  */
+import arDict from './taskflow-dicts/ar.js';
+import esDict from './taskflow-dicts/es.js';
+import frDict from './taskflow-dicts/fr.js';
+import ruDict from './taskflow-dicts/ru.js';
+import filDict from './taskflow-dicts/fil.js';
+import zhDict from './taskflow-dicts/zh.js';
 
 // ── English translations (primary LTR language) ──
 const en = {
@@ -743,12 +749,12 @@ const en = {
   'למשל: עבודה אחת': 'e.g. one job',
 };
 
-// ── Other language dictionaries can be added here (they fall back to Hebrew) ──
-const ar = {};
-const es = {};
-const fr = {};
-const ru = {};
-const fil = {};
+// ── Other language dictionaries (auto-translated via LLM, imported from taskflow-dicts/) ──
+const ar = arDict;
+const es = esDict;
+const fr = frDict;
+const ru = ruDict;
+const fil = filDict;
 
 // ── Hindi translations ──
 const hi = {
@@ -1483,7 +1489,7 @@ const hi = {
   'למשל: עבודה אחת': 'उदा: एक काम',
 };
 
-const zh = {};
+const zh = zhDict;
 
 const DICTS = { en, ar, es, fr, ru, fil, hi, zh };
 
