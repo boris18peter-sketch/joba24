@@ -17,6 +17,7 @@ import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
 import ResetPassword from '@/pages/ResetPassword';
 import GlobalPopups from '@/components/GlobalPopups';
+import TaskDetailSheet from '@/components/TaskDetailSheet';
 
 // Add page imports here
 // App entry — force reload to clear stale dynamic import cache
@@ -233,6 +234,7 @@ function App() {
                 <CaptureRefCode />
                 <ScrollToTop />
                 <AuthenticatedApp />
+                <TaskDetailSheet />
               </TaskSheetProvider>
             </Router>
             <Toaster />

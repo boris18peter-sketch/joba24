@@ -13,6 +13,7 @@ import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -96,6 +97,7 @@ export default function Chat() {
   const { taskId } = useParams();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { openTaskSheet } = useTaskSheet();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -372,7 +374,7 @@ export default function Chat() {
 
         {/* Left: Task info button */}
         <button
-          onClick={() => task && navigate(`/task/${task.id}`)}
+          onClick={() => task && openTaskSheet(task.id)}
           style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
         >
           <Info size={14} /> {t('chat_task_info')}

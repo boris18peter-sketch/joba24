@@ -206,7 +206,7 @@ export const zh = {
   ct_enter_rate: '输入每小时价格以计算最终价格',
   ct_enter_rate_hours: '输入每小时价格和小时数以计算最终价格',
   ct_price_locked: '⛔ 无法更改价格 — 有活跃申请',
-  ct_price_note: '发布的价格是协商的起点——你们可以一起商定其他价格。重要的是双方都遵守彼此之间的约定。',
+  ct_price_note: '双方都应遵守约定的价格。',
   ct_bump_title: '📈 自动加价',
   ct_bump_desc: '价格会每 5 分钟从你设定的价格逐步升至最高价 — 让任务更有吸引力并获得申请。第一个申请到达时自动停止加价。',
   ct_max_price: '最高价 (₪)',

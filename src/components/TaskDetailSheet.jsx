@@ -1,29 +1,27 @@
 import { createPortal } from 'react-dom';
-import { motion, useDragControls } from 'framer-motion';
-import { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { lazy, Suspense } from 'react';
 
 const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 
-const ENTER_SPRING = { type: 'spring', damping: 36, stiffness: 420, mass: 0.65 };
-
+// Task detail popup — a centered modal (replaces the old bottom sheet).
+// Rendered globally (in App.jsx) so it works on every page, including Chat
+// (which lives outside the Layout). Opens via `openTaskSheet(taskId)`.
 export default function TaskDetailSheet() {
   const { sheetTaskId, closeTaskSheet, hideTaskSheet } = useTaskSheet();
   const { isRTL } = useLanguage();
-  const [expanded, setExpanded] = useState(false);
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
   const scrollRef = useRef(null);
-  const dragControls = useDragControls();
 
-  // Route change: hide the sheet when user navigates away (e.g., clicks a profile link).
-  // Uses hideTaskSheet (not closeTaskSheet) so the {taskSheet} history entry stays —
-  // pressing Back will restore the sheet via the popstate handler in TaskSheetContext.
-  // When navigating BACK to the sheet's history entry (restored by popstate), don't hide.
+  // Route change: hide the popup when the user navigates away (e.g. taps a
+  // profile link inside it). The {taskSheet} history entry stays so pressing
+  // Back restores the popup via the popstate handler in TaskSheetContext.
   useEffect(() => {
     if (sheetTaskId && location.pathname !== prevPathRef.current) {
       if (!window.history.state?.taskSheet) {
@@ -40,8 +38,7 @@ export default function TaskDetailSheet() {
     return () => window.removeEventListener('close_task_sheet', handler);
   }, [closeTaskSheet]);
 
-  // Hide event — hides the sheet WITHOUT history manipulation (used before navigate,
-  // so the {taskSheet} entry stays and pressing Back restores the sheet, just like profile links)
+  // Hide event — hides the popup WITHOUT history manipulation
   useEffect(() => {
     const handler = () => hideTaskSheet();
     window.addEventListener('hide_task_sheet', handler);
@@ -65,10 +62,9 @@ export default function TaskDetailSheet() {
     }
   }, [sheetTaskId]);
 
-  // Reset scroll and expanded on open
+  // Reset scroll on open
   useEffect(() => {
     if (sheetTaskId) {
-      setExpanded(false);
       requestAnimationFrame(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       });
@@ -77,69 +73,53 @@ export default function TaskDetailSheet() {
 
   if (!sheetTaskId) return null;
 
+  const closeBtnSide = isRTL ? 'left' : 'right';
+
   return createPortal(
     <div
       onClick={closeTaskSheet}
       style={{
-        position: 'fixed', inset: 0, zIndex: 9000,
-        background: 'rgba(5,15,40,0.5)',
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(5,15,40,0.55)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px',
+        animation: 'tdPopupFade 0.2s ease',
       }}
     >
       <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        transition={ENTER_SPRING}
-        drag="y"
-        dragListener={false}
-        dragControls={dragControls}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 0.6 }}
-        dragMomentum={false}
-        onDragEnd={(_, info) => {
-          const { offset, velocity } = info;
-          if (offset.y > 100 || velocity.y > 500) {
-            closeTaskSheet();
-          } else if (offset.y < -50 || velocity.y < -500) {
-            setExpanded(true);
-          } else if (offset.y > 30 && expanded) {
-            setExpanded(false);
-          }
-        }}
+        initial={{ opacity: 0, scale: 0.94, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 30, stiffness: 320, mass: 0.7 }}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 480,
-          height: expanded ? '92dvh' : '70dvh',
+          maxHeight: '88dvh',
           background: 'var(--surface-1)',
-          borderRadius: '28px 28px 0 0',
-          boxShadow: '0 -12px 48px rgba(0,0,0,0.22), 0 -1px 0 rgba(255,255,255,0.06) inset',
+          borderRadius: 24,
+          boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
           overflow: 'hidden',
           display: 'flex', flexDirection: 'column',
-          transition: 'height 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+          position: 'relative',
         }}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {/* Drag handle — only area that starts drag */}
-        <div
-          onPointerDown={(e) => dragControls.start(e)}
-          onClick={() => setExpanded(v => !v)}
+        {/* Close button */}
+        <button
+          onClick={closeTaskSheet}
+          aria-label="Close"
           style={{
-            padding: '10px 0 6px',
-            cursor: 'grab',
-            display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 3,
-            flexShrink: 0,
-            background: 'var(--surface-2)',
-            borderRadius: '28px 28px 0 0',
-            touchAction: 'none',
+            position: 'absolute', top: 10, [closeBtnSide]: 10,
+            width: 34, height: 34, borderRadius: 10,
+            background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', zIndex: 10, flexShrink: 0,
+            boxShadow: 'var(--shadow-xs)',
           }}
         >
-          <div style={{
-            width: 42, height: 5, borderRadius: 99,
-            background: 'var(--border-2)',
-          }} />
-        </div>
+          <X size={18} color="var(--text-2)" />
+        </button>
 
         {/* Scrollable content */}
         <div
@@ -150,7 +130,6 @@ export default function TaskDetailSheet() {
             overflowX: 'hidden',
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
-            touchAction: 'pan-y',
           }}
         >
           <Suspense fallback={
@@ -162,6 +141,7 @@ export default function TaskDetailSheet() {
           </Suspense>
         </div>
       </motion.div>
+      <style>{`@keyframes tdPopupFade { from{opacity:0} to{opacity:1} }`}</style>
     </div>,
     document.body
   );

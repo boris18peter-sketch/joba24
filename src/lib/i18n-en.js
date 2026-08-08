@@ -628,7 +628,7 @@ export const en = {
     ct_enter_rate: 'Enter an hourly rate to calculate the final price',
     ct_enter_rate_hours: 'Enter an hourly rate and number of hours to calculate the final price',
     ct_price_locked: '⛔ Cannot change price — there are active applications',
-    ct_price_note: 'The posted price is a starting point — you can agree together on a different price. The main thing is that both parties honor the agreement between you.',
+    ct_price_note: 'Both parties must honor the agreed price.',
     ct_bump_title: '📈 Automatic price increase',
     ct_bump_desc: 'The price will rise from the price you set above up to the maximum price, every 5 minutes — to make the task more attractive and draw applications. The increase stops automatically when the first application arrives.',
     ct_max_price: 'Maximum price (₪)',

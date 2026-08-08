@@ -51,7 +51,6 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
-import TaskDetailSheet from '@/components/TaskDetailSheet';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import BoostOverlay from '@/components/BoostOverlay';
 
@@ -651,7 +650,6 @@ export default function Layout() {
         </div>,
         document.body
       )}
-      <TaskDetailSheet />
       {boostOverlayData && createPortal(
         <BoostOverlay
           taskId={boostOverlayData.taskId}

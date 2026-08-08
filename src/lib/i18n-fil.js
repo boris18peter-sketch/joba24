@@ -206,7 +206,7 @@ export const fil = {
   ct_enter_rate: 'Maglagay ng presyo bawat oras para kalkulahin ang final na presyo',
   ct_enter_rate_hours: 'Maglagay ng presyo bawat oras at bilang ng oras para kalkulahin ang final na presyo',
   ct_price_locked: '⛔ Hindi mababago ang presyo — may aktibong aplikasyon',
-  ct_price_note: 'Ang nai-post na presyo ay panimula — maaari kayong magkasundo ng ibang presyo. Ang mahalaga, igalang ng parehong partido ang napagkasunduan.',
+  ct_price_note: 'Dapat igalang ng parehong partido ang napagkasunduhang presyo.',
   ct_bump_title: '📈 Awtomatikong pagtaas ng presyo',
   ct_bump_desc: 'Tataas ang presyo mula sa itinakda mo hanggang sa pinakamataas na presyo, tuwing 5 minuto — para mas maganda ang task at humatak ng aplikasyon. Hihinto ang pagtaas awtomatiko kapag dumating ang unang aplikasyon.',
   ct_max_price: 'Pinakamataas na presyo (₪)',

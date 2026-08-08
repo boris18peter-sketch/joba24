@@ -304,7 +304,7 @@ export const es = {
     ct_enter_rate: 'Introduce un precio por hora para calcular el precio final',
     ct_enter_rate_hours: 'Introduce un precio por hora y número de horas para calcular el precio final',
     ct_price_locked: '⛔ No se puede cambiar el precio — hay solicitudes activas',
-    ct_price_note: 'El precio publicado es un punto de partida — pueden acordar juntos un precio distinto. Lo importante es que ambas partes respeten el acuerdo entre ustedes.',
+    ct_price_note: 'Ambas partes deben respetar el precio acordado.',
     ct_bump_title: '📈 Aumento automático de precio',
     ct_bump_desc: 'El precio subirá desde el que definiste arriba hasta el precio máximo, cada 5 minutos — para hacer la tarea más atractiva y atraer solicitudes. El aumento se detiene automáticamente al recibir la primera solicitud.',
     ct_max_price: 'Precio máximo (₪)',
