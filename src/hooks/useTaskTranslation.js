@@ -61,7 +61,7 @@ export function useTaskTranslation(task) {
     enabled: !skip,
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60,
-    retry: false,
+    retry: 1,
   });
 
   const isTranslated = !!data?.was_translated;

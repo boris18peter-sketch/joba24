@@ -12,21 +12,11 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { autoDetectCategory } from '@/lib/taskFlowConfig';
+import { getCategoryPluralLabel } from '@/lib/categories';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
-
-const CATEGORY_NAME_PLURAL = {
-  plumbing: 'אינסטלטורים', electricity: 'חשמלאים', gardening: 'גננים',
-  cleaning: 'מנקים', moving: 'עוזרי הובלה', painting: 'צבעים',
-  carpentry: 'מרכיבי רהיטים / נגרים', ac: 'טכנאי מזגנים', locksmith: 'מנעולנים',
-  shopping: 'שליחים', delivery: 'שליחים', babysitting: 'מטפלים',
-  tutoring: 'מורים פרטיים', it_support: 'תומכי IT', handyman: 'הנדימנים',
-  heavy_lifting: 'עוזרים פיזיים', home_maintenance: 'אנשי תחזוקה',
-  transportation: 'נהגים', pets: 'מטפלים בחיות', elderly_care: 'מטפלים בקשישים',
-  fitness: 'מאמנים', photography: 'צלמים', events: 'צוות אירועים',
-  personal_help: 'עוזרים אישיים', other: 'עובדים'
-};
 
 // ── CSS (injected once) ───────────────────────────────────────────────────────
 const ANIM_CSS = `
@@ -52,19 +42,20 @@ function injectCSS() {
   document.head.appendChild(s);
 }
 
-const CELEBRATION_STATUS_MSGS = [
-  'מאותת לעובדים',
-  'סורק עובדים בקרבת מקום',
-  'מחפש התאמות',
-  'מגביר חשיפה',
-  'מפיץ את המשימה',
-  'מרחיב חשיפה',
+const CELEBRATION_STATUS_KEYS = [
+  'lso_status_signaling',
+  'lso_status_scanning',
+  'lso_status_matching',
+  'lso_status_boosting',
+  'lso_status_spreading',
+  'lso_status_expanding',
 ];
 
 function RotatingStatusMsgs() {
+  const { t } = useLanguage();
   const [idx, setIdx] = useState(0);
   useEffect(() => {
-    const iv = setInterval(() => setIdx(i => (i + 1) % CELEBRATION_STATUS_MSGS.length), 2800);
+    const iv = setInterval(() => setIdx(i => (i + 1) % CELEBRATION_STATUS_KEYS.length), 2800);
     return () => clearInterval(iv);
   }, []);
   return (
@@ -82,7 +73,7 @@ function RotatingStatusMsgs() {
           }}
         >
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'lsoBlink 1.2s .1s infinite', flexShrink: 0 }} />
-          {CELEBRATION_STATUS_MSGS[idx]}
+          {t(CELEBRATION_STATUS_KEYS[idx])}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -93,6 +84,7 @@ function RotatingStatusMsgs() {
 // STEP 1 — Celebration
 // ─────────────────────────────────────────────────────────────────────────────
 function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
+  const { t, isRTL } = useLanguage();
   const [phase, setPhase] = useState('idle');
   // idle → enter → descend → land → slam → reveal
   const [showMap,       setShowMap]       = useState(false);
@@ -449,7 +441,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
               letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 12,
               textShadow: '0 0 24px rgba(251,191,36,.6)',
             }}>
-              המשימה שלך באוויר! 🚀
+              {t('lso_task_airborne')}
             </div>
 
             {/* Task pill */}
@@ -501,7 +493,7 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            לפרטי המשימה ›
+            {t('lso_to_task_details')}
           </motion.button>
         )}
       </AnimatePresence>
@@ -514,16 +506,17 @@ function CelebrationStep({ taskTitle, taskPrice, taskLocation, onContinue }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation, onNavigate }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [workerCount,       setWorkerCount]       = useState(0);
   const [pulseWorkers,      setPulseWorkers]       = useState([]);
   const [firstAppReceived,  setFirstAppReceived]   = useState(false);
-  const [statusMsg,         setStatusMsg]           = useState('שולח התראות לעובדים...');
+  const [statusMsg,         setStatusMsg]           = useState(() => t('lso_sending_notifs'));
 
   // When category is "other", detect the best matching worker type from the title
   const effectiveCategory = taskCategory === 'other'
     ? (autoDetectCategory(taskTitle || '') || 'other')
     : taskCategory;
-  const workerLabel = CATEGORY_NAME_PLURAL[effectiveCategory] || 'עובדים';
+  const workerLabel = getCategoryPluralLabel(effectiveCategory, t);
 
   const goToTask = () => {
     onNavigate?.();
@@ -552,21 +545,21 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
   }, [taskId]);
 
   useEffect(() => {
-    const msgs = [
-      `מאותת ל${workerLabel}...`,
-      `סורק ${workerLabel} בקרבת מקום`,
-      'מחפש התאמות',
-      'מגביר חשיפה',
-      'מפיץ את המשימה',
-      'מרחיב חשיפה',
+    const msgKeys = [
+      t('lso_scan_signaling', { workers: workerLabel }),
+      t('lso_scan_scanning', { workers: workerLabel }),
+      t('lso_scan_matching'),
+      t('lso_scan_boosting'),
+      t('lso_scan_spreading'),
+      t('lso_scan_expanding'),
     ];
     let i = 0;
     const iv = setInterval(() => {
-      if (i < msgs.length) { setStatusMsg(msgs[i]); i++; }
+      if (i < msgKeys.length) { setStatusMsg(msgKeys[i]); i++; }
       else clearInterval(iv);
     }, 3200);
     return () => clearInterval(iv);
-  }, []);
+  }, [workerLabel]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -585,7 +578,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
       if (event.data?.task_id === taskId && event.type === 'create') {
         setWorkerCount(c => c + 1);
         setFirstAppReceived(true);
-        setStatusMsg('התקבלה מועמדות ראשונה');
+        setStatusMsg(t('lso_first_app'));
       }
     });
     return () => unsub();
@@ -623,12 +616,12 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
         style={{ textAlign: 'center', paddingTop: 12, padding: '12px 24px 0', width: '100%' }}
       >
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 5, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}>
-          {firstAppReceived ? 'נמצא עובד' : 'שוק חי · Joba24'}
+          {firstAppReceived ? t('lso_worker_found') : t('lso_live_market')}
         </div>
         <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', lineHeight: 1.25, marginBottom: 6 }}>
           {firstAppReceived
-            ? <span style={{ animation: 'foundPop2 0.5s ease' }}>התקבלה מועמדות</span>
-            : 'מחפשים את העובד המושלם'}
+            ? <span style={{ animation: 'foundPop2 0.5s ease' }}>{t('lso_app_received')}</span>
+            : t('lso_finding_perfect')}
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           {taskTitle && <span style={{ fontWeight: 700, color: 'rgba(255,255,255,.75)' }}>"{taskTitle}"</span>}
@@ -708,7 +701,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'dotBlink2 1.2s .1s infinite' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-              {workerLabel} מקבלים עדכון
+              {workerLabel} {t('lso_workers_update')}
             </span>
           </div>
         )}
@@ -730,7 +723,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           WebkitTapHighlightColor: 'transparent',
         }}
       >
-        עבור לפרטי המשימה
+        {t('lso_go_to_task')}
       </motion.button>
     </div>
   );
@@ -744,6 +737,7 @@ export default function LiveSearchOverlay({
 }) {
   const [step, setStep] = useState('celebration'); // 'celebration' | 'scanner'
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
 
   const handleDismiss = () => {
     onDismiss?.();
@@ -752,7 +746,7 @@ export default function LiveSearchOverlay({
 
   return createPortal(
     <div
-      dir="rtl"
+      dir={isRTL ? 'rtl' : 'ltr'}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999998,
         background: 'linear-gradient(160deg, #05112e 0%, #0a1f4e 58%, #0d2a60 100%)',
@@ -800,7 +794,7 @@ export default function LiveSearchOverlay({
                 zIndex: 10,
               }}
             >
-              <ChevronLeft size={14} /> חזור
+              <ChevronLeft size={14} /> {t('lso_back')}
             </button>
 
             <ScannerStep

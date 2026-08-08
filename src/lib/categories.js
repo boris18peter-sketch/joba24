@@ -36,6 +36,15 @@ export const getCategoryLabel = (value, t) => {
   return CATEGORIES.find(c => c.value === value)?.label || '📋 אחר';
 };
 
+export const getCategoryPluralLabel = (value, t) => {
+  if (t) {
+    const key = `catp_${value}`;
+    const translated = t(key);
+    if (translated && translated !== key) return translated;
+  }
+  return CATEGORIES.find(c => c.value === value)?.label || 'עובדים';
+};
+
 // Categories that use hourly pricing (rate × hours = total)
 export const HOURLY_CATEGORIES = ['babysitting', 'elderly_care', 'pets', 'tutoring', 'fitness'];
 export const isHourlyCategory = (category) => HOURLY_CATEGORIES.includes(category);
