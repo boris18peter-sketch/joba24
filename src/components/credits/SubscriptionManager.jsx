@@ -11,7 +11,7 @@ import { useLanguage } from '@/lib/LanguageContext';
  * SubscriptionManager — shows active subscriptions with cancel option.
  */
 export default function SubscriptionManager() {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [showCancel, setShowCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
