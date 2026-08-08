@@ -46,5 +46,6 @@ export const getCategoryPluralLabel = (value, t) => {
 };
 
 // Categories that use hourly pricing (rate × hours = total)
+// getCategoryPluralLabel — pluralized category label with i18n support
 export const HOURLY_CATEGORIES = ['babysitting', 'elderly_care', 'pets', 'tutoring', 'fitness'];
 export const isHourlyCategory = (category) => HOURLY_CATEGORIES.includes(category);
