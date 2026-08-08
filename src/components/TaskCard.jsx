@@ -276,7 +276,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const { openTaskSheet } = useTaskSheet();
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
-  const { translatedTask } = useTaskTranslation(task);
+  const { translatedTask, isTranslated, isLoading: isTranslating } = useTaskTranslation(task);
   const displayTask = translatedTask;
   const [cancelling, setCancelling] = useState(false);
   const cancellingRef = useRef(false); // hard guard — survives re-renders
@@ -593,6 +593,14 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 15, lineHeight: 1.35, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {displayTask.title}
+                {isTranslated && (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--brand-primary)', background: 'var(--brand-primary-light)', borderRadius: 6, padding: '1px 5px', marginRight: 4, verticalAlign: 'middle', whiteSpace: 'nowrap', border: '1px solid #bfdbfe' }}>
+                    {t('translated_badge')}
+                  </span>
+                )}
+                {isTranslating && (
+                  <span style={{ fontSize: 9, fontWeight: 600, color: '#94a3b8', marginRight: 4, verticalAlign: 'middle' }}>…</span>
+                )}
               </h3>
               {displayTask.description && (
                 <p style={{ color: '#94a3b8', fontSize: 12, margin: '0 0 4px', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' }}>
@@ -600,9 +608,9 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
                 </p>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
-                {task.location_name && (
+                {displayTask.location_name && (
                   <><MapPin size={10} strokeWidth={1.8} />
-                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.location_name}</span></>
+                  <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTask.location_name}</span></>
                 )}
                 {task.client_name && (
                   task.client_id === currentUserId ? (

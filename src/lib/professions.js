@@ -26,6 +26,8 @@ const PROFESSION_KEYS = {
   'אינסטלטור': 'prof_plumber',
   'חשמלאי': 'prof_electrician',
   'איש תיקונים / הנדימן': 'prof_handyman',
+  'איש תיקונים': 'prof_handyman',
+  'הנדימן': 'prof_handyman',
   'מנקה': 'prof_cleaner',
   'נגר': 'prof_carpenter',
   'צבע': 'prof_painter',
@@ -37,21 +39,26 @@ const PROFESSION_KEYS = {
   'מאבטח': 'prof_security',
   'טבח': 'prof_cook',
   'מורה פרטי': 'prof_tutor',
+  'מורה': 'prof_tutor',
   'מאמן כושר': 'prof_fitness',
   'צלם': 'prof_photographer',
   'דייסת': 'prof_nanny',
   'מטפל': 'prof_caregiver',
   'מעצב גרפי': 'prof_designer',
   'מפתח תוכנה': 'prof_developer',
+  'מחשב': 'prof_developer',
+  'טכנאי טלוויזיה': 'prof_tv_tech',
+  'מורה לחשבון': 'prof_math_tutor',
   'אחר': 'prof_other',
 };
 
 export const getProfessionLabel = (profession, t) => {
   if (!profession) return '';
-  const key = PROFESSION_KEYS[profession];
+  const trimmed = profession.trim();
+  const key = PROFESSION_KEYS[trimmed];
   if (key && t) {
     const translated = t(key);
     if (translated && translated !== key) return translated;
   }
-  return profession;
+  return trimmed;
 };

@@ -8,6 +8,60 @@ import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskTranslation } from '@/hooks/useTaskTranslation';
+
+function RecommendedTaskCard({ task, isTop, aiReason, t, userLocation, onOpen }) {
+  const { translatedTask, isTranslated } = useTaskTranslation(task);
+  const displayTask = translatedTask;
+  const dist = userLocation ? getDistance(userLocation.lat, userLocation.lng, task.lat, task.lng) : null;
+
+  return (
+    <div onClick={() => onOpen(task.id)} style={{ textDecoration: 'none', cursor: 'pointer' }}>
+      <div style={{ background: 'white', borderRadius: 18, padding: '14px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 8px rgba(26,111,212,0.05)', position: 'relative', overflow: 'hidden' }}>
+        {isTop && (
+          <div style={{ position: 'absolute', top: 0, right: 0, background: '#fbbf24', fontSize: 10, fontWeight: 800, color: '#78350f', padding: '3px 10px', borderBottomLeftRadius: 12 }}>
+            ⭐ {t('recommended')}
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b', flex: 1, paddingLeft: 40 }}>
+            {displayTask.title}
+            {isTranslated && (
+              <span style={{ fontSize: 8, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', borderRadius: 5, padding: '1px 5px', marginRight: 4, border: '1px solid #bfdbfe', verticalAlign: 'middle' }}>
+                {t('translated_badge')}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: '#1a6fd4', flexShrink: 0 }}>₪{task.price}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+          <span style={{ fontSize: 11, background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{getCategoryLabel(task.category, t)}</span>
+          {task.estimated_time && (
+            <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Clock size={10} />{task.estimated_time}
+            </span>
+          )}
+        </div>
+        {aiReason && (
+          <p style={{ fontSize: 12, color: '#2563eb', margin: '4px 0 6px', fontStyle: 'italic' }}>{aiReason}</p>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#94a3b8' }}>
+          {displayTask.location_name && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <MapPin size={11} />{displayTask.location_name}
+            </span>
+          )}
+          {dist != null && !isNaN(dist) && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#1a6fd4', fontWeight: 700 }}>
+              <Navigation size={11} />
+              {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function getDistance(lat1, lng1, lat2, lng2) {
   if (!lat1 || !lng1 || !lat2 || !lng2) return null;
@@ -80,8 +134,8 @@ export default function DailyGoal() {
       title: tk.title,
       price: tk.price,
       category: getCategoryLabel(tk.category, t),
-      time: t.estimated_time,
-      location: t.location_name,
+      time: tk.estimated_time,
+      location: tk.location_name,
     }));
 
     const categoryFilterNote = selectedCategories.length > 0
@@ -302,46 +356,17 @@ ${JSON.stringify(tasksSummary, null, 2)}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {displayTasks.map((task, i) => {
-                const dist = userLocation ? getDistance(userLocation.lat, userLocation.lng, task.lat, task.lng) : null;
                 const aiRec = aiPlan?.recommended_tasks?.find(r => r.title === task.title);
                 return (
-                  <div key={task.id} onClick={() => openTaskSheet(task.id)} style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                    <div style={{ background: 'white', borderRadius: 18, padding: '14px 16px', border: '1px solid #dce8f5', boxShadow: '0 2px 8px rgba(26,111,212,0.05)', position: 'relative', overflow: 'hidden' }}>
-                      {i === 0 && aiPlan && (
-                        <div style={{ position: 'absolute', top: 0, right: 0, background: '#fbbf24', fontSize: 10, fontWeight: 800, color: '#78350f', padding: '3px 10px', borderBottomLeftRadius: 12 }}>
-                          ⭐ {t('recommended')}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: '#0f2b6b', flex: 1, paddingLeft: 40 }}>{task.title}</div>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: '#1a6fd4', flexShrink: 0 }}>₪{task.price}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                        <span style={{ fontSize: 11, background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{getCategoryLabel(task.category, t)}</span>
-                        {task.estimated_time && (
-                          <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
-                            <Clock size={10} />{task.estimated_time}
-                          </span>
-                        )}
-                      </div>
-                      {aiRec?.reason && (
-                        <p style={{ fontSize: 12, color: '#2563eb', margin: '4px 0 6px', fontStyle: 'italic' }}>{aiRec.reason}</p>
-                      )}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#94a3b8' }}>
-                        {task.location_name && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                            <MapPin size={11} />{task.location_name}
-                          </span>
-                        )}
-                        {dist != null && !isNaN(dist) && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#1a6fd4', fontWeight: 700 }}>
-                            <Navigation size={11} />
-                            {dist < 1 ? `${Math.round(dist * 1000)}${t('meters_short')}` : `${dist.toFixed(1)}${t('km_short')}`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <RecommendedTaskCard
+                    key={task.id}
+                    task={task}
+                    isTop={i === 0 && !!aiPlan}
+                    aiReason={aiRec?.reason}
+                    t={t}
+                    userLocation={userLocation}
+                    onOpen={openTaskSheet}
+                  />
                 );
               })}
             </div>
