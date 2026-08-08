@@ -407,6 +407,7 @@ export const hi = {
     buy_pdesc: 'Joba24 जोब — {n} जोब',
     buy_value_label: '₪{nis} तक के कार्यों पर आवेदन करने की अनुमति देता है',
     balance_value_caption: '₪{nis} मूल्य के कार्य के लिए पर्याप्त',
+    translated_badge: 'स्वतः अनुवादित',
   cancel_application_btn: 'आवेदन रद्द करें',
   cancel_task_btn_label: 'कार्य रद्द करें',
   cancel_task_sub: 'कार्य सूची में लौटेगा',

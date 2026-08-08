@@ -1236,4 +1236,5 @@ export const en = {
     buy_pdesc: 'Joba24 Joobs — {n} Joobs',
     buy_value_label: 'Allows applying to tasks up to ₪{nis}',
     balance_value_caption: 'Enough for work worth ₪{nis}',
+    translated_badge: 'Auto-translated',
 };

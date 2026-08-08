@@ -407,6 +407,7 @@ export const zh = {
     buy_pdesc: 'Joba24 乔布 — {n} 乔布',
     buy_value_label: '可申请最高 ₪{nis} 的任务',
     balance_value_caption: '足够用于价值 ₪{nis} 的工作',
+    translated_badge: '自动翻译',
   cancel_application_btn: '取消申请',
   cancel_task_btn_label: '取消任务',
   cancel_task_sub: '任务将返回列表',

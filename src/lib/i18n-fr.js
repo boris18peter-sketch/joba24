@@ -446,6 +446,7 @@ export const fr = {
     buy_pdesc: 'Joba24 Joobs — {n} Joobs',
     buy_value_label: 'Permet de postuler à des tâches jusqu\'à ₪{nis}',
     balance_value_caption: 'Suffisant pour un travail de ₪{nis}',
+    translated_badge: 'Traduction automatique',
     cancel_application_btn: 'Annuler la demande',
     cancel_task_btn_label: 'Annuler la tâche',
     cancel_task_sub: 'La tâche retournera à la liste',
