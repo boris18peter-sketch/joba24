@@ -550,9 +550,9 @@ export default function CreateTask() {
     }
 
     if (!hasMatch) {
-      const catLabel = CATEGORIES.find(c => c.value === category)?.label || category;
+      const catLabel = getCategoryLabel(category, t);
       if (detectedOtherCategory) {
-        const detectedLabel = CATEGORIES.find(c => c.value === detectedOtherCategory)?.label || detectedOtherCategory;
+        const detectedLabel = getCategoryLabel(detectedOtherCategory, t);
         return t('ct_cat_mismatch_detected', { detected: detectedLabel, selected: catLabel });
       }
       return t('ct_cat_mismatch_generic', { selected: catLabel });
@@ -1093,7 +1093,7 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
           <SelectionSheet
             value={form.category}
-            options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
+            options={CATEGORIES.map(c => ({ value: c.value, label: getCategoryLabel(c.value, t) }))}
             onChange={val => {
               set('category', val);
               // Re-validate mismatch immediately when category changes
@@ -1172,7 +1172,7 @@ export default function CreateTask() {
                 background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #bfdbfe',
                 borderRadius: 10, padding: '3px 10px', fontSize: 12, fontWeight: 700, color: '#1a6fd4',
               }}>
-                🏷️ {CATEGORIES.find(c => c.value === form.category)?.label || form.category}
+                🏷️ {getCategoryLabel(form.category, t)}
               </span>
             </div>
           )}

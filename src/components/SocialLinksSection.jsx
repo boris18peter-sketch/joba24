@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import GoldBadge from '@/components/GoldBadge';
 import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 const PLATFORMS = [
   {
@@ -19,7 +20,7 @@ const PLATFORMS = [
     brandSolid: '#dc2743',
     url: (u) => `https://instagram.com/${u}`,
     editBioUrl: 'https://www.instagram.com/accounts/edit/',
-    bioHint: 'הביו הוא הטקסט שמופיע מתחת לשם שלך בפרופיל',
+    bioHintKey: 'sl_bio_hint_ig',
   },
   {
     key: 'facebook', label: 'Facebook', icon: Facebook,
@@ -27,7 +28,7 @@ const PLATFORMS = [
     brandSolid: '#1877F2',
     url: (u) => `https://facebook.com/${u}`,
     editBioUrl: 'https://www.facebook.com/profile/',
-    bioHint: 'הביו הוא הטקסט שמופיע ב"אודות" בפרופיל שלך',
+    bioHintKey: 'sl_bio_hint_fb',
   },
   {
     key: 'tiktok', label: 'TikTok', icon: Music2,
@@ -35,7 +36,7 @@ const PLATFORMS = [
     brandSolid: '#000000',
     url: (u) => `https://tiktok.com/@${u}`,
     editBioUrl: 'https://www.tiktok.com/profile/edit',
-    bioHint: 'הביו הוא הטקסט שמופיע מתחת לתמונה שלך בפרופיל',
+    bioHintKey: 'sl_bio_hint_tt',
   },
 ];
 
@@ -47,6 +48,7 @@ function platformLabel(key) {
 export default function SocialLinksSection({ user }) {
   const queryClient = useQueryClient();
   const { refreshUser } = useAuth();
+  const { t, isRTL } = useLanguage();
   const [showConnect, setShowConnect] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,7 +74,7 @@ export default function SocialLinksSection({ user }) {
       await refresh();
       return res.data;
     } catch (e) {
-      toast.error('שגיאה בחיבור הרשת');
+      toast.error(t('sl_error_connect'));
       return false;
     } finally {
       setLoading(false);
@@ -91,20 +93,20 @@ export default function SocialLinksSection({ user }) {
         });
         if (res.data?.error) { toast.error(res.data.error); break; }
         if (res.data?.verified) {
-          toast.success(`${platformLabel(platform)} אומת בהצלחה! 🎉`);
+          toast.success(t('sl_verified_success', { platform: platformLabel(platform) }));
           await refresh();
           success = true;
         } else if (attempt < maxAttempts) {
-          toast.message(`הקוד עדיין לא נמצא. מנסה שוב... (ניסיון ${attempt + 1}/${maxAttempts})`, { duration: 4000 });
+          toast.message(t('sl_code_not_found_retry', { n: attempt + 1, total: maxAttempts }), { duration: 4000 });
           await new Promise(r => setTimeout(r, 5000));
         }
       } catch (e) {
-        toast.error('שגיאה באימות');
+        toast.error(t('sl_error_verify'));
         break;
       }
     }
     if (!success) {
-      toast.error('הקוד לא נמצא בפרופיל. ודא שהוספת אותו לביו ונסה שוב.');
+      toast.error(t('sl_code_not_found'));
     }
     setVerifyAttempt(0);
     setLoading(false);
@@ -116,11 +118,11 @@ export default function SocialLinksSection({ user }) {
     try {
       await base44.functions.invoke('verifyInstagram', { action: 'disconnect', platform });
       await refresh();
-      toast.success(`${platformLabel(platform)} הוסר בהצלחה`);
+      toast.success(t('sl_disconnected', { platform: platformLabel(platform) }));
       setConfirmDisconnect(null);
       setShowManage(false);
     } catch (e) {
-      toast.error('שגיאה בניתוק');
+      toast.error(t('sl_error_disconnect'));
     } finally {
       setLoading(false);
     }
@@ -134,16 +136,16 @@ export default function SocialLinksSection({ user }) {
       }}>
         <div style={{ padding: '12px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.4, textTransform: 'uppercase' }}>
-            רשתות חברתיות
+            {t('sl_social_networks')}
           </div>
           {isConnected && isKycVerified && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <GoldBadge size="sm" />
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>מאומת זהב</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>{t('sl_verified_gold')}</span>
             </span>
           )}
           {isConnected && !isKycVerified && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>מחובר (ללא ווי זהב)</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>{t('sl_connected_no_gold')}</span>
           )}
         </div>
 
@@ -155,10 +157,10 @@ export default function SocialLinksSection({ user }) {
               if (isConfirming) {
                 return (
                   <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fef2f2', borderRadius: 12, padding: '4px 6px 4px 10px', border: '1px solid #fecaca' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626' }}>לנתק?</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626' }}>{t('sl_disconnect_q')}</span>
                     <button onClick={() => handleDisconnect(p.key)} disabled={loading}
                       style={{ height: 26, padding: '0 10px', borderRadius: 8, background: '#dc2626', border: 'none', color: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                      {loading ? <Loader2 size={11} className="animate-spin" /> : 'כן'}
+                      {loading ? <Loader2 size={11} className="animate-spin" /> : t('sl_yes')}
                     </button>
                     <button onClick={() => setConfirmDisconnect(null)} style={{ height: 26, width: 26, borderRadius: 8, background: 'white', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>×</button>
                   </div>
@@ -190,8 +192,8 @@ export default function SocialLinksSection({ user }) {
               <ShieldCheck size={16} color="white" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', lineHeight: 1.3 }}>חבר רשת וקבל ווי זהב 🥇</div>
-              {!isKycVerified && <div style={{ fontSize: 10, color: '#b45309', marginTop: 2 }}>ווי זהב יופיע לאחר אימות זהות</div>}
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', lineHeight: 1.3 }}>{t('sl_connect_social_gold')}</div>
+              {!isKycVerified && <div style={{ fontSize: 10, color: '#b45309', marginTop: 2 }}>{t('sl_gold_after_verify')}</div>}
             </div>
           </div>
         )}
@@ -202,7 +204,7 @@ export default function SocialLinksSection({ user }) {
               <button onClick={() => setShowConnect(true)} disabled={loading}
                 style={{ flex: 1, height: 46, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
-                {loading ? 'מחכה...' : 'חבר עוד רשת'}
+                {loading ? t('sl_waiting') : t('sl_connect_more')}
               </button>
               <button onClick={() => setShowManage(true)} style={{ height: 46, width: 46, borderRadius: 12, cursor: 'pointer', background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-2)' }}>
                 <Unlink size={16} />
@@ -212,19 +214,19 @@ export default function SocialLinksSection({ user }) {
             <button onClick={() => setShowConnect(true)} disabled={loading}
               style={{ width: '100%', height: 48, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(26,111,212,0.2)' }}>
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-              {loading ? 'פותח...' : 'חבר רשת חברתית'}
+              {loading ? t('sl_opening') : t('sl_connect_social')}
             </button>
           )}
         </div>
       </div>
 
       {showConnect && createPortal(
-        <ConnectSheet user={user} platforms={PLATFORMS} onClose={() => setShowConnect(false)} onConnect={handleConnectCode} onVerify={handleVerifyCode} loading={loading} verifyAttempt={verifyAttempt} />,
+        <ConnectSheet user={user} platforms={PLATFORMS} onClose={() => setShowConnect(false)} onConnect={handleConnectCode} onVerify={handleVerifyCode} loading={loading} verifyAttempt={verifyAttempt} t={t} isRTL={isRTL} />,
         document.body
       )}
 
       {showManage && createPortal(
-        <ManageSheet user={user} platforms={PLATFORMS} onClose={() => setShowManage(false)} onDisconnect={handleDisconnect} loading={loading} isKycVerified={isKycVerified} />,
+        <ManageSheet user={user} platforms={PLATFORMS} onClose={() => setShowManage(false)} onDisconnect={handleDisconnect} loading={loading} isKycVerified={isKycVerified} t={t} isRTL={isRTL} />,
         document.body
       )}
     </>
@@ -234,7 +236,7 @@ export default function SocialLinksSection({ user }) {
 // ═══════════════════════════════════════════════════════════════════
 // ConnectSheet — 3 simple steps: choose → enter username → add code → verify
 // ═══════════════════════════════════════════════════════════════════
-function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, verifyAttempt }) {
+function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, verifyAttempt, t, isRTL }) {
   const [step, setStep] = useState('choose'); // 'choose' | 'username' | 'code'
   const [selected, setSelected] = useState(null);
   const [usernameInput, setUsernameInput] = useState('');
@@ -244,12 +246,9 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
   const p = platforms.find(pl => pl.key === selected);
   const existingUsername = selected ? user?.[`${selected}_username`] : null;
   const existingCode = selected ? user?.[`${selected}_verify_code`] : null;
-  const existingVerified = selected ? user?.[`${selected}_verified`] : false;
 
-  // If user already has a pending code for this platform, jump to code step
   const handleSelectPlatform = (key) => {
     setSelected(key);
-    const plat = platforms.find(pl => pl.key === key);
     const u = user?.[`${key}_username`];
     const c = user?.[`${key}_verify_code`];
     if (u && c && !user?.[`${key}_verified`]) {
@@ -257,7 +256,6 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
       setCode(c);
       setStep('code');
     } else if (u && user?.[`${key}_verified`]) {
-      // Already verified — go to code step showing verified state
       setUsernameInput(u);
       setVerified(true);
       setStep('code');
@@ -290,10 +288,12 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
     onClose();
   };
 
+  const backIconStyle = isRTL ? { transform: 'scaleX(-1)' } : {};
+
   return (
     <div onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
       style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.72)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-      <div dir="rtl" style={{
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{
         background: 'var(--sheet-bg)', borderRadius: '24px 24px 0 0',
         width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
         paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
@@ -312,16 +312,16 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
             <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
               <ShieldCheck size={26} color="white" />
             </div>
-            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>חיבור רשת חברתית</h3>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>{t('sl_connect_title')}</h3>
             <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4, lineHeight: 1.5 }}>
-              חבר רשת וקבל ווי זהב
+              {t('sl_connect_subtitle')}
             </p>
           </div>
 
           {/* ── Step 1: Choose platform ── */}
           {step === 'choose' && (
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8 }}>בחר רשת לחיבור</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8 }}>{t('sl_choose_network')}</div>
               {platforms.map(pl => {
                 const isConnected = user?.[`${pl.key}_username`];
                 return (
@@ -333,10 +333,10 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{pl.label}</span>
                     {isConnected ? (
                       <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#d97706' }}>
-                        {user?.[`${pl.key}_verified`] ? '✓ מאומת' : 'ממתין לאימות'}
+                        {user?.[`${pl.key}_verified`] ? t('sl_verified_check') : t('sl_pending_verify')}
                       </span>
                     ) : (
-                      <ArrowRight size={16} color="var(--text-3)" style={{ marginLeft: 'auto', transform: 'scaleX(-1)' }} />
+                      <ArrowRight size={16} color="var(--text-3)" style={{ marginLeft: 'auto', ...backIconStyle }} />
                     )}
                   </button>
                 );
@@ -348,7 +348,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
           {step === 'username' && p && (
             <div>
               <button onClick={() => setStep('choose')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 12px' }}>
-                <ArrowRight size={14} /> חזרה
+                <ArrowRight size={14} style={backIconStyle} /> {t('sl_back')}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -361,26 +361,26 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
               </div>
 
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>שם המשתמש שלך ב{p.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>{t('sl_your_username', { platform: p.label })}</div>
                 <input
                   type="text"
                   value={usernameInput}
                   onChange={e => setUsernameInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleGenerateCode(); }}
-                  placeholder="לדוגמה: israel123"
+                  placeholder={t('sl_username_placeholder')}
                   dir="ltr"
                   autoFocus
                   style={{ width: '100%', height: 48, borderRadius: 12, border: '1.5px solid var(--border-1)', background: 'var(--surface-2)', color: 'var(--text-1)', padding: '0 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box' }}
                 />
                 <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-                  כתוב רק את שם המשתמש — בלי @, בלי קישור
+                  {t('sl_username_hint')}
                 </div>
               </div>
 
               <button onClick={handleGenerateCode} disabled={!usernameInput.trim() || loading}
                 style={{ width: '100%', height: 48, borderRadius: 12, background: usernameInput.trim() ? p.brandSolid : 'var(--surface-3)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, cursor: usernameInput.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} style={{ transform: 'scaleX(-1)' }} />}
-                המשך
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} style={backIconStyle} />}
+                {t('sl_continue')}
               </button>
             </div>
           )}
@@ -389,7 +389,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
           {step === 'code' && p && (
             <div>
               <button onClick={() => setStep('choose')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 12px' }}>
-                <ArrowRight size={14} /> חזרה
+                <ArrowRight size={14} style={backIconStyle} /> {t('sl_back')}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -400,10 +400,9 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                   <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{p.label}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-3)' }}>@{existingUsername || usernameInput}</div>
                 </div>
-                {/* Edit username button */}
                 <button onClick={() => { setStep('username'); setVerified(false); }}
                   style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 10, padding: '7px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', cursor: 'pointer' }}>
-                  <Edit3 size={13} /> ערוך
+                  <Edit3 size={13} /> {t('sl_edit')}
                 </button>
               </div>
 
@@ -413,22 +412,22 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                   <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(217,119,6,0.35)' }}>
                     <CheckCircle size={36} color="white" />
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>אומתה! 🎉</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', marginBottom: 6 }}>{t('sl_verified_title')}</div>
                   <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                    ווי הזהב יופיע בפרופיל שלך{!isUserVerified(user) ? ' לאחר אימות זהות' : ''}.
+                    {t('sl_verified_body')}{!isUserVerified(user) ? t('sl_verified_after_kyc') : ''}.
                   </div>
                   <button onClick={handleClose} style={{ marginTop: 20, width: '100%', height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #fbbf24, #d97706)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
-                    סיים
+                    {t('sl_done')}
                   </button>
                 </div>
               ) : (
                 <>
                   {/* The code — big and copyable */}
                   <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderRadius: 14, border: '1.5px solid #bfdbfe', padding: '16px', textAlign: 'center', marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>הקוד שלך</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>{t('sl_your_code')}</div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                       <code style={{ fontSize: 28, fontWeight: 900, color: '#1a6fd4', letterSpacing: 4 }}>{code || existingCode}</code>
-                      <button onClick={() => { navigator.clipboard.writeText(code || existingCode); toast.success('הקוד הועתק'); }}
+                      <button onClick={() => { navigator.clipboard.writeText(code || existingCode); toast.success(t('sl_code_copied')); }}
                         style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1.5px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                         <Copy size={16} color="#1a6fd4" />
                       </button>
@@ -436,14 +435,14 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                   </div>
 
                   {/* Step-by-step instructions */}
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8 }}>מה עושים עכשיו?</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 8 }}>{t('sl_what_to_do')}</div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {/* Step 1 */}
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>העתק את הקוד</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_copy_code')}</div>
                       </div>
                     </div>
 
@@ -451,8 +450,8 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>פתח את {p.label}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{p.bioHint}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_open_platform', { platform: p.label })}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{t(p.bioHintKey)}</div>
                       </div>
                     </div>
 
@@ -460,10 +459,10 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>הדבק בביו ושמור</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_paste_bio')}</div>
                         <a href={p.editBioUrl} target="_blank" rel="noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 12, fontWeight: 700, color: '#1a6fd4', textDecoration: 'none' }}>
-                          עריכת פרופיל <ExternalLink size={12} />
+                          {t('sl_edit_profile')} <ExternalLink size={12} />
                         </a>
                       </div>
                     </div>
@@ -472,7 +471,7 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--surface-3)', borderRadius: 10, padding: '10px 12px' }}>
                       <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#1a6fd4', color: 'white', fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>4</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>חזור ולחץ "אימתתי"</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>{t('sl_back_and_verify')}</div>
                       </div>
                     </div>
                   </div>
@@ -481,19 +480,19 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
                   <button onClick={handleVerify} disabled={loading}
                     style={{ marginTop: 16, width: '100%', height: 50, borderRadius: 12, background: loading ? '#93c5fd' : 'linear-gradient(135deg, #16a34a, #059669)', color: 'white', border: 'none', fontWeight: 800, fontSize: 15, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(16,185,129,0.3)' }}>
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
-                    {loading ? (verifyAttempt > 1 ? `מנסה שוב (${verifyAttempt}/3)...` : 'סורק...') : 'אימתתי'}
+                    {loading ? (verifyAttempt > 1 ? t('sl_retrying', { n: verifyAttempt }) : t('sl_scanning')) : t('sl_i_verified')}
                   </button>
 
                   {loading && (
                     <div style={{ marginTop: 10, padding: '10px 14px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe', textAlign: 'center' }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>סורקים את הפרופיל...</div>
-                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>{verifyAttempt > 1 ? `ניסיון ${verifyAttempt} מ-3 — אל תסגור` : 'לוקח כמה שניות. אל תסגור.'}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#1e40af' }}>{t('sl_scanning_profile')}</div>
+                      <div style={{ fontSize: 11, color: '#3b82f6', marginTop: 2 }}>{verifyAttempt > 1 ? t('sl_attempt_n', { n: verifyAttempt }) : t('sl_takes_seconds')}</div>
                     </div>
                   )}
 
                   {!loading && (
                     <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
-                      ודא שהפרופיל ציבורי
+                      {t('sl_ensure_public')}
                     </div>
                   )}
                 </>
@@ -509,14 +508,14 @@ function ConnectSheet({ user, platforms, onClose, onConnect, onVerify, loading, 
 // ═══════════════════════════════════════════════════════════════════
 // ManageSheet — disconnect / reconnect
 // ═══════════════════════════════════════════════════════════════════
-function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVerified }) {
+function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVerified, t, isRTL }) {
   const connectedPlatforms = platforms.filter(p => user?.[`${p.key}_username`]);
   const [confirmDisconnect, setConfirmDisconnect] = useState(null);
 
   return (
     <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(5,15,40,0.72)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-      <div dir="rtl" style={{
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{
         background: 'var(--sheet-bg)', borderRadius: '24px 24px 0 0',
         width: '100%', maxWidth: 480, boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
         paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
@@ -530,8 +529,8 @@ function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVer
         </div>
         <div style={{ padding: '8px 20px 20px' }}>
           <div style={{ textAlign: 'center', marginBottom: 14 }}>
-            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>ניהול רשתות חברתיות</h3>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>{connectedPlatforms.length} רשתות מחוברות</p>
+            <h3 style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)', margin: 0 }}>{t('sl_manage_title')}</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 4 }}>{t('sl_networks_connected', { n: connectedPlatforms.length })}</p>
           </div>
 
           {connectedPlatforms.map(p => {
@@ -545,7 +544,7 @@ function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVer
                   </span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>@{u}</div>
-                    <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? '✓ מאומת' : 'ממתין לאימות'}</div>
+                    <div style={{ fontSize: 11, color: v && isKycVerified ? '#d97706' : 'var(--text-3)' }}>{p.label} {v ? t('sl_verified_check') : t('sl_pending_verify')}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -553,16 +552,16 @@ function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVer
                     <>
                       <button onClick={() => { onDisconnect(p.key); setConfirmDisconnect(null); }} disabled={loading}
                         style={{ flex: 1, height: 34, borderRadius: 9, cursor: loading ? 'wait' : 'pointer', background: '#dc2626', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: 'white' }}>
-                        {loading ? <Loader2 size={12} className="animate-spin" /> : 'אישור ניתוק'}
+                        {loading ? <Loader2 size={12} className="animate-spin" /> : t('sl_confirm_disconnect')}
                       </button>
                       <button onClick={() => setConfirmDisconnect(null)} style={{ height: 34, width: 60, borderRadius: 9, cursor: 'pointer', background: 'var(--surface-2)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-2)' }}>
-                        ביטול
+                        {t('sl_cancel')}
                       </button>
                     </>
                   ) : (
                     <button onClick={() => setConfirmDisconnect(p.key)} disabled={loading}
                       style={{ width: '100%', height: 34, borderRadius: 9, cursor: loading ? 'wait' : 'pointer', background: '#fef2f2', border: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#dc2626' }}>
-                      <Unlink size={12} /> נתק רשת זו
+                      <Unlink size={12} /> {t('sl_disconnect_this')}
                     </button>
                   )}
                 </div>
@@ -571,7 +570,7 @@ function ManageSheet({ user, platforms, onClose, onDisconnect, loading, isKycVer
           })}
 
           {connectedPlatforms.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-3)', fontSize: 13 }}>אין רשתות מחוברות</div>
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-3)', fontSize: 13 }}>{t('sl_no_networks')}</div>
           )}
         </div>
       </div>
