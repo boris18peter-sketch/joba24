@@ -2,8 +2,24 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 
-function hasHebrew(text) {
-  return /[\u0590-\u05FF]/.test(text || '');
+// Script detection — lets us skip the network call entirely when the task
+// content is already written in the user's UI language script.
+const SCRIPT_TESTS = {
+  he: { re: /[\u0590-\u05FF]/, name: 'Hebrew' },
+  ar: { re: /[\u0600-\u06FF\u0750-\u077F]/, name: 'Arabic' },
+  ru: { re: /[\u0400-\u04FF]/, name: 'Cyrillic' },
+  hi: { re: /[\u0900-\u097F]/, name: 'Devanagari' },
+  zh: { re: /[\u4E00-\u9FFF\u3400-\u4DBF]/, name: 'CJK' },
+};
+
+// Latin-script languages can't be reliably distinguished by script alone
+// (English, Spanish, French, Filipino all use Latin), so we always send
+// those to the backend which detects the language and caches the result.
+
+function contentMatchesLangScript(text, lang) {
+  const test = SCRIPT_TESTS[lang];
+  if (!test) return false; // Latin-script languages — always send to backend
+  return test.re.test(text || '');
 }
 
 /**
@@ -14,8 +30,9 @@ function hasHebrew(text) {
  *     the content is automatically translated and displayed.
  *   - Translations are cached on the task entity (server-side), so each language is
  *     translated only once per task — shared across all users and devices.
- *   - Skips the LLM call entirely when the user is Hebrew AND the task content is in Hebrew
- *     (the most common case in this Israeli app), to save credits and latency.
+ *   - Skips the LLM call entirely when the task content is already in the user's
+ *     language script (Hebrew, Arabic, Russian, Hindi, Chinese) — saves credits
+ *     and eliminates latency for the most common same-language cases.
  *
  * Returns:
  *   { translatedTask, isTranslated, sourceLang, isLoading }
@@ -29,7 +46,8 @@ export function useTaskTranslation(task) {
   const { lang } = useLanguage();
 
   const content = task ? `${task.title || ''} ${task.description || ''}` : '';
-  const skip = !task || (lang === 'he' && hasHebrew(content));
+  // Skip: no task, or content already in the user's language script
+  const skip = !task || contentMatchesLangScript(content, lang);
 
   const { data, isLoading } = useQuery({
     queryKey: ['taskTranslation', task?.id, lang],
