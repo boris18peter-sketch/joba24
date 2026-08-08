@@ -52,6 +52,7 @@ import BoostPill from '@/components/BoostPill';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 
 const getScanningTexts = (t) => t('scanning_texts');
 
@@ -206,6 +207,9 @@ export default function TaskDetail(props) {
     staleTime: 30000,
     refetchOnWindowFocus: false
   });
+
+  // Auto-translate task content to the user's UI language (like Twitter)
+  const { translatedTask, isTranslated, isLoading: isTranslating } = useTaskTranslation(task);
 
   // Rotate status label text every 3s for OPEN tasks
   useEffect(() => {
@@ -600,7 +604,7 @@ export default function TaskDetail(props) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   })();
 
-  const { mainDescription, extraLines } = parseDescription(task.description);
+  const { mainDescription, extraLines } = parseDescription(translatedTask.description);
 
   const isOwner = me?.id === task.client_id;
 
@@ -677,7 +681,7 @@ export default function TaskDetail(props) {
         document.body
       )}
 
-      {!sheetMode && <PageHeader title={task.title} right={null} />}
+      {!sheetMode && <PageHeader title={translatedTask.title} right={null} />}
       
 
       {/* ActiveTaskBanner — reads from the shared activeWorkerTask/activeClientTask cache
@@ -766,9 +770,18 @@ export default function TaskDetail(props) {
 
             {/* Title row — with 3-dot on left for owner */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-              {task.title && (
-                <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25, flex: 1, minWidth: 0 }}>
-                  {task.title}
+              {translatedTask.title && (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: 'white', lineHeight: 1.25 }}>
+                    {translatedTask.title}
+                    {isTranslating && <Loader2 size={13} className="animate-spin" style={{ display: 'inline-block', marginRight: 6, verticalAlign: 'middle', opacity: 0.7 }} />}
+                  </div>
+                  {isTranslated && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 99, padding: '2px 9px', border: '1px solid rgba(255,255,255,0.25)' }}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>{t('translated_badge')}</span>
+                    </div>
+                  )}
                 </div>
               )}
               {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
