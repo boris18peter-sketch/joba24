@@ -131,7 +131,7 @@ export default function Wallet() {
               <CreditIcon size={20} />
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginTop: 4 }}>
-              {balanceValueCaption(availableJobas)}
+              {balanceValueCaption(availableJobas, t)}
             </div>
           </div>
 

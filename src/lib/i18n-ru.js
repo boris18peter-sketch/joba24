@@ -447,6 +447,8 @@ export const ru = {
     buy_secure_payment: 'Безопасный платёж · Tranzila',
     buy_loading_form: 'Загрузка формы оплаты...',
     buy_pdesc: 'Joba24 джобы — {n} джобов',
+    buy_value_label: 'Позволяет подавать заявки на задачи до ₪{nis}',
+    balance_value_caption: 'Достаточно для работы на сумму ₪{nis}',
     cancel_application_btn: 'Отменить заявку',
     cancel_task_btn_label: 'Отменить задачу',
     cancel_task_sub: 'Задача вернётся в список',

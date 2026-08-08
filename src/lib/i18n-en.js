@@ -1234,4 +1234,6 @@ export const en = {
     buy_secure_payment: 'Secure payment · Tranzila',
     buy_loading_form: 'Loading payment form...',
     buy_pdesc: 'Joba24 Joobs — {n} Joobs',
+    buy_value_label: 'Allows applying to tasks up to ₪{nis}',
+    balance_value_caption: 'Enough for work worth ₪{nis}',
 };

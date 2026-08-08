@@ -530,6 +530,8 @@ export const ar = {
     buy_secure_payment: 'دفع آمن · Tranzila',
     buy_loading_form: 'جاري تحميل نموذج الدفع...',
     buy_pdesc: 'Joba24 جوبا — {n} جوبا',
+    buy_value_label: 'يتيح التقديم على مهام حتى ₪{nis}',
+    balance_value_caption: 'يكفي لعمل بقيمة ₪{nis}',
     cancel_application_btn: 'إلغاء الطلب',
     cancel_task_btn_label: 'إلغاء المهمة',
     cancel_task_sub: 'ستعود المهمة إلى القائمة',

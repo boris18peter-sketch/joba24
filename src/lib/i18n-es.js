@@ -482,6 +482,8 @@ export const es = {
     buy_secure_payment: 'Pago seguro · Tranzila',
     buy_loading_form: 'Cargando formulario de pago...',
     buy_pdesc: 'Joba24 Joobs — {n} Joobs',
+    buy_value_label: 'Permite postularse a tareas hasta ₪{nis}',
+    balance_value_caption: 'Suficiente para trabajos de ₪{nis}',
     cancel_application_btn: 'Cancelar solicitud',
     cancel_task_btn_label: 'Cancelar tarea',
     cancel_task_sub: 'La tarea volverá a la lista',

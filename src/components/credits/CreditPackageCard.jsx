@@ -109,7 +109,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
         marginTop: 5, lineHeight: 1.25, textAlign: 'center',
         padding: '0 2px',
       }}>
-        {packageValueLabel(pkg.credits)}
+        {packageValueLabel(pkg.credits, t)}
       </div>
 
       {/* Price */}

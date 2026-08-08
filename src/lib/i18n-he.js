@@ -1236,4 +1236,6 @@ export const he = {
     buy_secure_payment: 'תשלום מאובטח · Tranzila',
     buy_loading_form: 'טוען טופס תשלום...',
     buy_pdesc: 'Joba24 ג\'ובות — {n} ג\'ובות',
+    buy_value_label: 'מאפשר להגיש בקשות למשימות עד ₪{nis}',
+    balance_value_caption: 'מספיק לעבודות בשווי ₪{nis}',
 };

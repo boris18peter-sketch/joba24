@@ -405,6 +405,8 @@ export const fil = {
     buy_secure_payment: 'Ligtas na pagbabayad · Tranzila',
     buy_loading_form: 'Naglo-load ng payment form...',
     buy_pdesc: 'Joba24 Joobs — {n} Joobs',
+    buy_value_label: 'Nagpapahintulot na mag-apply sa mga gawain hanggang ₪{nis}',
+    balance_value_caption: 'Sapat para sa gawaing nagkakahalaga ng ₪{nis}',
   cancel_application_btn: 'Kanselahin ang aplikasyon',
   cancel_task_btn_label: 'Kanselahin ang gawain',
   cancel_task_sub: 'Babalik ang gawain sa listahan',

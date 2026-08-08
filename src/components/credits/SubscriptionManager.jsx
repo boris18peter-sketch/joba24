@@ -134,7 +134,7 @@ export default function SubscriptionManager() {
           onClick={(e) => e.target === e.currentTarget && setShowCancel(null)}
         >
           <div
-            dir="rtl"
+            dir={isRTL ? 'rtl' : 'ltr'}
             style={{
               background: 'var(--surface-2)',
               borderRadius: 24,

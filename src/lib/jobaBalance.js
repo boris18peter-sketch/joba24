@@ -24,18 +24,20 @@ export function jobasToNis(jobas) {
 /**
  * Human label for a package — short, sharp value framing.
  */
-export function packageValueLabel(jobas) {
-  const nis = jobasToNis(jobas);
-  return `מאפשר להגיש בקשות למשימות עד ₪${nis.toLocaleString('he-IL')}`;
+export function packageValueLabel(jobas, t) {
+  const nis = jobasToNis(jobas).toLocaleString('en-US');
+  if (typeof t === 'function') return t('buy_value_label', { nis });
+  return `מאפשר להגיש בקשות למשימות עד ₪${nis}`;
 }
 
 /**
  * Short balance caption for wallet header.
  * Example: "מספיק לעבודות בשווי ₪2,000"
  */
-export function balanceValueCaption(jobas) {
-  const nis = jobasToNis(jobas);
-  return `מספיק לעבודות בשווי ₪${nis.toLocaleString('he-IL')}`;
+export function balanceValueCaption(jobas, t) {
+  const nis = jobasToNis(jobas).toLocaleString('en-US');
+  if (typeof t === 'function') return t('balance_value_caption', { nis });
+  return `מספיק לעבודות בשווי ₪${nis}`;
 }
 
 /**
