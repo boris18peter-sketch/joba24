@@ -1334,5 +1334,7 @@ export const fr = {
   prof_caregiver: 'Soignant',
   prof_designer: 'Designer graphique',
   prof_developer: 'Développeur logiciel',
+  prof_tv_tech: 'Technicien TV',
+  prof_math_tutor: 'Professeur de mathématiques',
   prof_other: 'Autre',
   };

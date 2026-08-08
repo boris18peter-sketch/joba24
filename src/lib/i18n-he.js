@@ -1374,5 +1374,7 @@ export const he = {
   prof_caregiver: 'מטפל',
   prof_designer: 'מעצב גרפי',
   prof_developer: 'מפתח תוכנה',
+  prof_tv_tech: 'טכנאי טלוויזיה',
+  prof_math_tutor: 'מורה לחשבון',
   prof_other: 'אחר',
 };

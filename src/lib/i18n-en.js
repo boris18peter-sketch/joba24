@@ -1372,5 +1372,7 @@ export const en = {
   prof_caregiver: 'Caregiver',
   prof_designer: 'Graphic Designer',
   prof_developer: 'Software Developer',
+  prof_tv_tech: 'TV Technician',
+  prof_math_tutor: 'Math Tutor',
   prof_other: 'Other',
 };

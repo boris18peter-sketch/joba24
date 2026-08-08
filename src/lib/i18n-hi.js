@@ -1348,5 +1348,7 @@ export const hi = {
   prof_caregiver: 'देखभाल करने वाला',
   prof_designer: 'ग्राफिक डिजाइनर',
   prof_developer: 'सॉफ्टवेयर डेवलपर',
+  prof_tv_tech: 'टीवी तकनीशियन',
+  prof_math_tutor: 'गणित शिक्षक',
   prof_other: 'अन्य',
 };

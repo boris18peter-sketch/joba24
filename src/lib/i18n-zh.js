@@ -1348,5 +1348,7 @@ export const zh = {
   prof_caregiver: '护理员',
   prof_designer: '平面设计师',
   prof_developer: '软件开发者',
+  prof_tv_tech: '电视技术员',
+  prof_math_tutor: '数学老师',
   prof_other: '其他',
 };

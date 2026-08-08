@@ -1375,5 +1375,7 @@ export const ar = {
   prof_caregiver: 'مقدم رعاية',
   prof_designer: 'مصمم جرافيك',
   prof_developer: 'مطور برمجيات',
+  prof_tv_tech: 'فني تلفزيون',
+  prof_math_tutor: 'معلم رياضيات',
   prof_other: 'آخر',
   };

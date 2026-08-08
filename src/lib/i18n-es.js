@@ -1372,5 +1372,7 @@ export const es = {
   prof_caregiver: 'Cuidador',
   prof_designer: 'Diseñador gráfico',
   prof_developer: 'Desarrollador de software',
+  prof_tv_tech: 'Técnico de TV',
+  prof_math_tutor: 'Profesor de matemáticas',
   prof_other: 'Otro',
   };

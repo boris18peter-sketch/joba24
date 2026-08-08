@@ -1337,5 +1337,7 @@ export const ru = {
   prof_caregiver: 'Сиделка',
   prof_designer: 'Графический дизайнер',
   prof_developer: 'Разработчик ПО',
+  prof_tv_tech: 'Телевизионный техник',
+  prof_math_tutor: 'Учитель математики',
   prof_other: 'Другое',
   };
