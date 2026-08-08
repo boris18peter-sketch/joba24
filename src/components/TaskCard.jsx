@@ -686,7 +686,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
             </div>
             {isMyPublished && task.auto_bump_enabled && task.base_price && task.max_price && task.status === 'OPEN' && (
              <span style={{ fontSize: 10, color: liveApplicantCount > 0 ? '#059669' : '#b45309', fontWeight: 600 }}>
-               📈 ₪{task.base_price} ← ₪{task.max_price}{liveApplicantCount > 0 ? ` · ${t('auto_bump_active')}` : ` · ${t('auto_bump_desc')}`}
+               📈 ₪{task.base_price} {isRTL ? '←' : '→'} ₪{task.max_price}{liveApplicantCount > 0 ? ` · ${t('auto_bump_active')}` : ` · ${t('auto_bump_desc')}`}
              </span>
              )}
 

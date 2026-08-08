@@ -628,7 +628,7 @@ export const en = {
     ct_enter_rate: 'Enter an hourly rate to calculate the final price',
     ct_enter_rate_hours: 'Enter an hourly rate and number of hours to calculate the final price',
     ct_price_locked: '⛔ Cannot change price — there are active applications',
-    ct_price_note: 'The published price is the final amount paid to the worker — no less, no more. Both parties are committed to this price.',
+    ct_price_note: 'The posted price is a starting point — you can agree together on a different price. The main thing is that both parties honor the agreement between you.',
     ct_bump_title: '📈 Automatic price increase',
     ct_bump_desc: 'The price will rise from the price you set above up to the maximum price, every 5 minutes — to make the task more attractive and draw applications. The increase stops automatically when the first application arrives.',
     ct_max_price: 'Maximum price (₪)',
@@ -1390,4 +1390,12 @@ export const en = {
   support_recording: 'Recording...',
   support_cancel: 'Cancel',
   support_type_msg: 'Type a message...',
+  // Price suggestion
+  ps_loading: 'Calculating recommended price...',
+  ps_recommended: 'Recommended price',
+  ps_per_hour: '/hour',
+  ps_hourly_suffix: ' /hr',
+  ps_use: 'Use',
+  ps_market_based: 'Price based on market rates and similar tasks',
+  ps_market_fallback: 'Based on market rates',
 };

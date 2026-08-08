@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { getCategoryPriceRange } from '@/lib/taskFlowConfig';
+import { useLanguage } from '@/lib/LanguageContext';
 
 // Realistic per-hour rate ranges for hourly categories in the Israeli market (2025)
 // Used to constrain LLM suggestions and as a fallback when the LLM is unavailable
@@ -11,6 +12,12 @@ const HOURLY_RATE_RANGES = {
   elderly_care: { min: 45,  max: 100 },
   tutoring:     { min: 80,  max: 180 },
   fitness:      { min: 100, max: 250 },
+};
+
+// Maps app language code → English name, so the LLM `reason` is returned in the user's language
+const LANG_NAMES = {
+  he: 'Hebrew', en: 'English', ar: 'Arabic', es: 'Spanish', fr: 'French',
+  ru: 'Russian', fil: 'Filipino', hi: 'Hindi', zh: 'Chinese',
 };
 
 function getRateRange(category, isHourly) {
@@ -25,6 +32,7 @@ function clampToRange(value, range) {
 }
 
 export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, onAccept }) {
+  const { t, isRTL, lang } = useLanguage();
   const [range, setRange] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,6 +44,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       const configRange = getRateRange(category, isHourly);
       try {
         const unit = isHourly ? 'לשעה אחת' : 'לכל המשימה המלאה';
+        const langName = LANG_NAMES[lang] || 'English';
         const prompt = `
 אתה מומחה תמחור לפלטפורמת עבודות קטנות בישראל (דומה ל-TaskRabbit / Fixlers).
 תן המלצת מחיר ריאלית לג'ובה הבאה. המחיר הוא ${unit}.
@@ -49,7 +58,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 טווח מחירים ריאלי לפי מחירי שוק בישראל 2025: ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''}
 
 השב בלבד עם JSON תקין בפורמט:
-{"min": <מספר>, "max": <מספר>, "reason": "<משפט קצר בעברית עד 8 מילים מדוע>"}
+{"min": <מספר>, "max": <מספר>, "reason": "<משפט קצר עד 8 מילים מדוע>"}
 
 הכללים:
 - min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות
@@ -58,6 +67,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 - המחירים חייבים להיות בתוך הטווח ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''} — אל תחרוג ממנו
 - ${isHourly ? 'המחיר הוא לשעה אחת בלבד, לא לכל המשימה' : 'המחיר הוא לכל המשימה'}
 - בסס את ההמלצה על מחירי שוק ריאליים בישראל לשנת 2025 לתחום ${category}
+- שדה ה-reason חייב להיות כתוב בשפה הבאה: ${langName}
 `;
         const result = await base44.integrations.Core.InvokeLLM({
           prompt,
@@ -81,7 +91,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
       } catch (e) {
         // Fallback to config range if LLM fails
         if (!cancelled) {
-          setRange({ min: configRange.min, max: configRange.max, reason: 'מבוסס על מחירי שוק' });
+          setRange({ min: configRange.min, max: configRange.max, reason: t('ps_market_fallback') });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -89,13 +99,13 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
     }, 600);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [category, estimatedTime, description, location, isHourly]);
+  }, [category, estimatedTime, description, location, isHourly, lang, t]);
 
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#f8faff', border: '1px solid #dbeafe', borderRadius: 14, marginTop: 8 }}>
         <Loader2 size={14} color="#1a6fd4" className="animate-spin" />
-        <span style={{ fontSize: 12, color: '#1a6fd4', fontWeight: 600 }}>מחשב מחיר מומלץ...</span>
+        <span style={{ fontSize: 12, color: '#1a6fd4', fontWeight: 600 }}>{t('ps_loading')}</span>
       </div>
     );
   }
@@ -106,7 +116,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
     <button
       onClick={() => onAccept(Math.round((range.min + range.max) / 2))}
       style={{
-        display: 'block', width: '100%', textAlign: 'right', cursor: 'pointer',
+        display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left', cursor: 'pointer',
         background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
         border: '1.5px solid #93c5fd',
         borderRadius: 14,
@@ -124,10 +134,10 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
           <Sparkles size={16} color="#1a6fd4" />
           <div>
             <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 600, marginBottom: 1 }}>
-              מחיר מומלץ {isHourly ? 'לשעה' : ''}
+              {t('ps_recommended')}{isHourly ? ` ${t('ps_per_hour')}` : ''}
             </div>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b', letterSpacing: -0.5 }}>
-              ₪{range.min}–{range.max}{isHourly ? ' /שעה' : ''}
+              ₪{range.min}–{range.max}{isHourly ? t('ps_hourly_suffix') : ''}
             </div>
           </div>
         </div>
@@ -135,12 +145,12 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
           background: '#1a6fd4', color: 'white', borderRadius: 10,
           padding: '7px 14px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
         }}>
-          השתמש
+          {t('ps_use')}
         </div>
       </div>
       <div style={{ fontSize: 10, color: '#3b82f6', marginTop: 6 }}>
         {range.reason && <span>{range.reason} · </span>}
-        המחיר מבוסס על מחירי שוק ומשימות דומות
+        {t('ps_market_based')}
       </div>
     </button>
   );

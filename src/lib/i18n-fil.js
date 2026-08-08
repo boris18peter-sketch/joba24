@@ -206,7 +206,7 @@ export const fil = {
   ct_enter_rate: 'Maglagay ng presyo bawat oras para kalkulahin ang final na presyo',
   ct_enter_rate_hours: 'Maglagay ng presyo bawat oras at bilang ng oras para kalkulahin ang final na presyo',
   ct_price_locked: '⛔ Hindi mababago ang presyo — may aktibong aplikasyon',
-  ct_price_note: 'Ang nai-post na presyo ang final na halagang babayaran sa worker — walang kulang, walang sobra. Pareho ang nakakompromiso sa presyong ito.',
+  ct_price_note: 'Ang nai-post na presyo ay panimula — maaari kayong magkasundo ng ibang presyo. Ang mahalaga, igalang ng parehong partido ang napagkasunduan.',
   ct_bump_title: '📈 Awtomatikong pagtaas ng presyo',
   ct_bump_desc: 'Tataas ang presyo mula sa itinakda mo hanggang sa pinakamataas na presyo, tuwing 5 minuto — para mas maganda ang task at humatak ng aplikasyon. Hihinto ang pagtaas awtomatiko kapag dumating ang unang aplikasyon.',
   ct_max_price: 'Pinakamataas na presyo (₪)',
@@ -1366,4 +1366,12 @@ export const fil = {
   support_recording: 'Nagrerecord...',
   support_cancel: 'Cancel',
   support_type_msg: 'Mag-type ng mensahe...',
+  // Price suggestion
+  ps_loading: 'Kinakalkula ang inirerekomendang presyo...',
+  ps_recommended: 'Inirerekomendang presyo',
+  ps_per_hour: '/oras',
+  ps_hourly_suffix: ' /oras',
+  ps_use: 'Gamitin',
+  ps_market_based: 'Presyo batay sa presyo ng merkado at katulad na gawain',
+  ps_market_fallback: 'Batay sa presyo ng merkado',
 };
