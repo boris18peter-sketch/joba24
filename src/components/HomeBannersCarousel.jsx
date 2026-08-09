@@ -41,19 +41,15 @@ export default function HomeBannersCarousel({ me }) {
   if (count === 1) return <div style={{ marginBottom: 12 }}>{banners[0].node}</div>;
 
   return (
-    <div style={{ position: 'relative', marginBottom: 14 }}>
-      <div style={{ overflow: 'hidden' }}>
-        <div style={{
-          display: 'flex',
-          transform: `translateX(${-current * 100}%)`,
-          transition: 'transform 0.5s cubic-bezier(0.32, 0.72, 0, 1)',
-        }}>
-          {banners.map(b => (
-            <div key={b.key} style={{ flex: '0 0 100%', minWidth: 0, padding: 2, boxSizing: 'border-box' }}>
-              {b.node}
-            </div>
-          ))}
-        </div>
+    <div style={{ marginBottom: 14 }}>
+      {/* Only the active banner is mounted, so the container always shrinks
+          to the visible banner's height — no empty space from a taller
+          off-screen banner. */}
+      <div
+        key={banners[current].key}
+        style={{ animation: 'fadeIn 0.4s ease-out' }}
+      >
+        {banners[current].node}
       </div>
 
       {/* Pagination dots — small, elegant pills. Inline min-height/min-width
