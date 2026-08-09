@@ -16,7 +16,7 @@ export default function ProfileCompletionBanner({ me }) {
 
   return (
     <Link
-      to="/worker-profile"
+      to="/join"
       id="onboarding-profile-banner"
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
