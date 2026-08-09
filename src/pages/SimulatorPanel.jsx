@@ -845,7 +845,14 @@ export default function SimulatorPanel() {
           {preview === 'verify_default' && <VerificationStatusBanner me={{ ...mockMe, kyc_status: undefined }} />}
           {preview === 'verify_pending' && <VerificationStatusBanner me={{ ...mockMe, kyc_status: 'pending' }} />}
           {preview === 'verify_rejected' && <VerificationStatusBanner me={{ ...mockMe, kyc_status: 'rejected' }} />}
-          {preview === 'profile' && <ProfileCompletionBanner me={{ ...mockMe, preferred_categories: [], preferred_cities: [] }} />}
+          {preview === 'profile' && (
+            <div
+              onClickCapture={(e) => { e.preventDefault(); e.stopPropagation(); navigate('/join?preview=1'); }}
+              title="פתיחת עמוד השלמת פרופיל (מצב תצוגה — לא מפנה אוטומטית לבית)"
+            >
+              <ProfileCompletionBanner me={{ ...mockMe, preferred_categories: [], preferred_cities: [] }} />
+            </div>
+          )}
           {preview === 'carousel' && <HomeBannersCarousel me={{ ...mockMe, kyc_status: undefined, preferred_categories: [], preferred_cities: [] }} />}
         </div>
       </Section>

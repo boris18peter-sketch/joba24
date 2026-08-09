@@ -95,7 +95,10 @@ export default function WorkerOnboarding() {
     // ProfileCompletionBanner's completeness check) → skip straight to the app.
     // Using || here would bounce users with a half-complete profile right back,
     // making the "complete profile" button look like it does nothing.
-    if (me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0) {
+    // Preview mode (e.g. from the Simulator) — skip the auto-redirect so
+    // testers can view the onboarding even if their profile is already complete.
+    const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
+    if (!isPreview && me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0) {
       localStorage.setItem(JOIN_COMPLETED_KEY, '1');
       navigate('/');
       return;
