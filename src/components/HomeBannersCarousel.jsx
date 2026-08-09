@@ -15,7 +15,6 @@ const ROTATE_MS = 6000;
 
 export default function HomeBannersCarousel({ me }) {
   const [idx, setIdx] = useState(0);
-  const [paused, setPaused] = useState(false);
 
   const showVerify = !!me && !isUserVerified(me);
   const showProfile = !!me && !(me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0);
@@ -27,22 +26,22 @@ export default function HomeBannersCarousel({ me }) {
   const count = banners.length;
   const current = Math.min(idx, Math.max(0, count - 1));
 
+  // Auto-rotate only when there are multiple banners. No pause-on-touch: that
+  // handler was fragile (pointerup not firing during scroll) and could freeze
+  // the carousel so the second banner never appeared.
   useEffect(() => {
-    if (count <= 1 || paused) return;
+    if (count <= 1) return;
     const t = setInterval(() => setIdx(i => (i + 1) % count), ROTATE_MS);
     return () => clearInterval(t);
-  }, [count, paused]);
+  }, [count]);
 
+  // Nothing to show (both verification and profile complete) → render nothing.
   if (count === 0) return null;
+  // Single relevant banner → render it statically, no dots, no empty space.
   if (count === 1) return <div style={{ marginBottom: 12 }}>{banners[0].node}</div>;
 
   return (
-    <div
-      style={{ position: 'relative', marginBottom: 14 }}
-      onPointerDown={() => setPaused(true)}
-      onPointerUp={() => setPaused(false)}
-      onPointerLeave={() => setPaused(false)}
-    >
+    <div style={{ position: 'relative', marginBottom: 14 }}>
       <div style={{ overflow: 'hidden' }}>
         <div style={{
           display: 'flex',
@@ -57,22 +56,27 @@ export default function HomeBannersCarousel({ me }) {
         </div>
       </div>
 
-      {/* Pagination dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6 }}>
+      {/* Pagination dots — small, elegant pills. Inline min-height/min-width
+          override the global `button { min-height: 44px }` tap-target rule,
+          which otherwise inflates these into giant circles. */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
         {banners.map((b, i) => (
           <button
             key={b.key}
             onClick={() => setIdx(i)}
             aria-label={`banner ${i + 1}`}
+            className="j-icon-btn"
             style={{
-              width: i === current ? 18 : 6,
-              height: 6,
+              width: i === current ? 20 : 7,
+              height: 7,
+              minHeight: 7,
+              minWidth: 7,
               borderRadius: 99,
               border: 'none',
-              background: i === current ? '#1a6fd4' : '#cbd5e1',
+              background: i === current ? 'var(--brand-primary)' : '#cbd5e1',
               cursor: 'pointer',
               padding: 0,
-              transition: 'all 0.3s',
+              transition: 'width 0.3s, background 0.3s',
             }}
           />
         ))}
