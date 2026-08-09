@@ -91,8 +91,11 @@ export default function WorkerOnboarding() {
     if (!isAuthenticated || step !== -1) return;
     if (!me) return; // wait for user data to load
 
-    // Already completed onboarding → skip straight to the app
-    if (me.preferred_categories?.length > 0 || me.preferred_cities?.length > 0) {
+    // Already completed onboarding (has BOTH categories AND cities — matches
+    // ProfileCompletionBanner's completeness check) → skip straight to the app.
+    // Using || here would bounce users with a half-complete profile right back,
+    // making the "complete profile" button look like it does nothing.
+    if (me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0) {
       localStorage.setItem(JOIN_COMPLETED_KEY, '1');
       navigate('/');
       return;
