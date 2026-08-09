@@ -16,7 +16,7 @@ export default function ProfileCompletionBanner({ me }) {
 
   return (
     <Link
-      to="/join"
+      to="/worker-profile"
       id="onboarding-profile-banner"
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
@@ -25,7 +25,6 @@ export default function ProfileCompletionBanner({ me }) {
         background: 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)',
         borderRadius: 16,
         padding: '16px',
-        marginBottom: 12,
         overflow: 'hidden',
         position: 'relative',
         zIndex: 10,

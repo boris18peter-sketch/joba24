@@ -77,6 +77,16 @@ function elementVisible(el) {
   return rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth;
 }
 
+function isOverlayOpen() {
+  // Detect any portaled popup/sheet/modal sitting on top of the page (z-index ≥ 9999).
+  // The tutorial must never render over a popup — it waits until the screen is clear.
+  return Array.from(document.body.children).some(child => {
+    const style = child.getAttribute('style') || '';
+    if (/pointer-events:\s*none/.test(style)) return false;
+    return /z-index:\s*9{4,}/.test(style);
+  });
+}
+
 export default function WelcomeTutorial() {
   const { user: me, isAuthenticated } = useAuth();
   const [visible, setVisible] = useState(false);
@@ -102,21 +112,24 @@ export default function WelcomeTutorial() {
     if (localStorage.getItem(STORAGE_KEY)) return;
     const candidates = buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral });
 
-    let attempts = 0;
-    const maxAttempts = 14; // ~3.5s
+    const startedAt = Date.now();
+    const MAX_WAIT = 60000; // keep waiting while a popup/sheet covers the screen
     const detect = () => {
-      attempts++;
+      // Wait while any overlay (popup/sheet/modal) is open — the tutorial must
+      // never appear over a popup. Re-check until the screen is clear, then start.
+      if (Date.now() - startedAt > MAX_WAIT) return;
+      if (isOverlayOpen()) { setTimeout(detect, 350); return; }
       const found = candidates.filter(s => elementVisible(document.getElementById(s.id)));
-      if (found.length >= 2 || found.length === candidates.length || attempts >= maxAttempts) {
+      if (found.length >= 2 || found.length === candidates.length) {
         if (found.length > 0) {
           setSteps(found);
           setVisible(true);
         }
         return;
       }
-      setTimeout(detect, 250);
+      setTimeout(detect, 300);
     };
-    const t = setTimeout(detect, 500);
+    const t = setTimeout(detect, 600);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, signupBonus, referralBonus]);

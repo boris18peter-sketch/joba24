@@ -66,7 +66,6 @@ export default function VerificationStatusBanner({ me }) {
           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
           borderRadius: 16,
           padding: 16,
-          marginBottom: 12,
           overflow: 'hidden',
           position: 'relative',
           zIndex: 10,

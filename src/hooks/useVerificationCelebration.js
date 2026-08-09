@@ -20,8 +20,12 @@ export function useVerificationCelebration(user) {
   useEffect(() => {
     if (!user?.id) return;
 
-    const isVerified = user.is_verified === true;
-    if (!isVerified) return;
+    // Only celebrate an explicit staff approval (kyc_status === 'approved').
+    // `is_verified` alone can be auto-granted without staff review, which used to
+    // fire the popup for unverified users. Now the popup only fires once per user,
+    // in the first session after the staff actually approves verification.
+    const isApproved = user.kyc_status === 'approved';
+    if (!isApproved) return;
 
     const flagKey = `joba24_verified_celebration_${user.id}`;
     if (localStorage.getItem(flagKey)) return; // already celebrated for this user
