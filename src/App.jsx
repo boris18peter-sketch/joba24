@@ -20,40 +20,55 @@ import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 
 // Add page imports here
+// lazyRetry — Vite lazy chunks are hashed; after a new deploy the browser may
+// still hold a stale route URL whose chunk no longer exists on the server, so
+// the dynamic import 404s ("Failed to fetch dynamically imported module").
+// Catch that and reload once (throttled to 10s) to fetch fresh assets.
+const lazyRetry = (importFn) => lazy(() =>
+  importFn().catch((err) => {
+    const KEY = 'joba24_chunk_reload_ts';
+    const last = Number(sessionStorage.getItem(KEY) || 0);
+    if (Date.now() - last > 10000) {
+      sessionStorage.setItem(KEY, String(Date.now()));
+      window.location.reload();
+    }
+    throw err;
+  })
+);
 // App entry — force reload to clear stale dynamic import cache
 // Tab pages — preloaded for instant tab switching
-const HomeFeed = lazy(() => import('@/pages/HomeFeed'));
-const MapView = lazy(() => import('@/pages/MapView'));
-const ChatInbox = lazy(() => import('@/pages/ChatInbox'));
-const Profile = lazy(() => import('@/pages/Profile'));
+const HomeFeed = lazyRetry(() => import('@/pages/HomeFeed'));
+const MapView = lazyRetry(() => import('@/pages/MapView'));
+const ChatInbox = lazyRetry(() => import('@/pages/ChatInbox'));
+const Profile = lazyRetry(() => import('@/pages/Profile'));
 
 // Preload all tab pages immediately after initial render
 import('@/pages/HomeFeed'); import('@/pages/MapView'); import('@/pages/ChatInbox'); import('@/pages/Profile');
 
 // All other pages — lazy loaded, fetched only when user navigates there
-const Landing = lazy(() => import('@/pages/Landing'));
-const CreateTask = lazy(() => import('@/pages/CreateTask'));
-const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
-const Chat = lazy(() => import('@/pages/Chat'));
-const SupportChat = lazy(() => import('@/pages/SupportChat'));
-const Wallet = lazy(() => import('@/pages/Wallet'));
-const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
-const WorkerProfile = lazy(() => import('@/pages/WorkerProfile'));
-const FAQ = lazy(() => import('@/pages/FAQ'));
-const DailyGoal = lazy(() => import('@/pages/DailyGoal'));
-const Presentation = lazy(() => import('@/pages/Presentation'));
-const WorkerOnboarding = lazy(() => import('@/pages/WorkerOnboarding'));
-const SimulatorPanel = lazy(() => import('@/pages/SimulatorPanel'));
-const MyTasks = lazy(() => import('@/pages/MyTasks'));
-const PublicProfile = lazy(() => import('@/pages/PublicProfile'));
-const Notifications = lazy(() => import('@/pages/Notifications'));
-const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
-const AgentDashboard = lazy(() => import('@/pages/AgentDashboard'));
-const AgentReferralsReport = lazy(() => import('@/pages/AgentReferralsReport'));
-const QADashboard = lazy(() => import('@/pages/QADashboard'));
-const Terms = lazy(() => import('@/pages/Terms'));
-const Privacy = lazy(() => import('@/pages/Privacy'));
-const ReferralRedirect = lazy(() => import('@/pages/ReferralRedirect'));
+const Landing = lazyRetry(() => import('@/pages/Landing'));
+const CreateTask = lazyRetry(() => import('@/pages/CreateTask'));
+const TaskDetail = lazyRetry(() => import('@/pages/TaskDetail'));
+const Chat = lazyRetry(() => import('@/pages/Chat'));
+const SupportChat = lazyRetry(() => import('@/pages/SupportChat'));
+const Wallet = lazyRetry(() => import('@/pages/Wallet'));
+const Leaderboard = lazyRetry(() => import('@/pages/Leaderboard'));
+const WorkerProfile = lazyRetry(() => import('@/pages/WorkerProfile'));
+const FAQ = lazyRetry(() => import('@/pages/FAQ'));
+const DailyGoal = lazyRetry(() => import('@/pages/DailyGoal'));
+const Presentation = lazyRetry(() => import('@/pages/Presentation'));
+const WorkerOnboarding = lazyRetry(() => import('@/pages/WorkerOnboarding'));
+const SimulatorPanel = lazyRetry(() => import('@/pages/SimulatorPanel'));
+const MyTasks = lazyRetry(() => import('@/pages/MyTasks'));
+const PublicProfile = lazyRetry(() => import('@/pages/PublicProfile'));
+const Notifications = lazyRetry(() => import('@/pages/Notifications'));
+const AdminDashboard = lazyRetry(() => import('@/pages/AdminDashboard'));
+const AgentDashboard = lazyRetry(() => import('@/pages/AgentDashboard'));
+const AgentReferralsReport = lazyRetry(() => import('@/pages/AgentReferralsReport'));
+const QADashboard = lazyRetry(() => import('@/pages/QADashboard'));
+const Terms = lazyRetry(() => import('@/pages/Terms'));
+const Privacy = lazyRetry(() => import('@/pages/Privacy'));
+const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
