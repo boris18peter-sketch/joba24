@@ -14,12 +14,15 @@ import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import InstantMatchPopup from '@/components/InstantMatchPopup';
 import RatingModal from '@/components/RatingModal';
+import VerificationStatusBanner from '@/components/VerificationStatusBanner';
+import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
+import HomeBannersCarousel from '@/components/HomeBannersCarousel';
 import {
   ArrowRight, FlaskConical, Loader2, RefreshCw, Trash2,
   CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp,
   Play, Zap, Clock, User, Wallet, Star, MessageCircle, ShieldCheck,
   Sparkles, Bell, Map, List, CreditCard, Flag, Navigation,
-  Eye, AlertTriangle, Gift, Phone, BarChart3, Layers, Building2
+  Eye, AlertTriangle, Gift, Phone, BarChart3, Layers, Layout, Building2
 } from 'lucide-react';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 
@@ -163,6 +166,16 @@ export default function SimulatorPanel() {
 
   const [popup, setPopup] = useState(null);
   const closePopup = () => setPopup(null);
+
+  // Conditional banners/elements preview — rendered with mock data so they
+  // always appear regardless of the real user's state.
+  const [preview, setPreview] = useState('verify_default');
+  const mockMe = {
+    id: 'sim_preview_' + (me?.id || 'x'),
+    full_name: me?.full_name || 'משתמש בדיקה',
+    is_verified: false,
+    email: 'sim@joba24.com',
+  };
 
   // Bulk task generator state
   const [bulkCity, setBulkCity] = useState('תל אביב');
@@ -802,6 +815,39 @@ export default function SimulatorPanel() {
             inv(); refetchMe();
             toast.success('בונוס הרשמה נשלח!');
           }} />
+      </Section>
+
+      {/* ── CONDITIONAL BANNERS & ELEMENTS ── */}
+      <Section title="🚩 באנרים ואלמנטים מותנים" icon={<Layout size={14} color="#0891b2" />} defaultOpen={false}>
+        <div style={{ fontSize: 11, color: '#64748b', padding: '5px 9px', background: '#ecfeff', borderRadius: 8, border: '1px solid #a5f3fc', marginBottom: 4, lineHeight: 1.5 }}>
+          בחר אלמנט כדי לראות תצוגה מקדימה איך הוא נראה בפיד. מוצג עם נתוני דמה — לא משנה את המצב האמיתי שלך.
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {[
+            { key: 'verify_default', label: '🛡️ אימות — ברירת מחדל' },
+            { key: 'verify_pending', label: '⏳ אימות — בבדיקה' },
+            { key: 'verify_rejected', label: '❌ אימות — נדחה' },
+            { key: 'profile', label: '⚡ השלמת פרופיל' },
+            { key: 'carousel', label: '🎠 קרוסלת באנרים' },
+          ].map(opt => (
+            <button key={opt.key} onClick={() => setPreview(opt.key)}
+              style={{
+                padding: '6px 11px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                border: `1.5px solid ${preview === opt.key ? '#0891b2' : '#dce8f5'}`,
+                background: preview === opt.key ? '#0891b2' : 'white',
+                color: preview === opt.key ? 'white' : '#0f2b6b',
+              }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ border: '1.5px dashed #bae6fd', borderRadius: 14, padding: 12, background: '#f8feff', minHeight: 80 }}>
+          {preview === 'verify_default' && <VerificationStatusBanner me={{ ...mockMe, kyc_status: undefined }} />}
+          {preview === 'verify_pending' && <VerificationStatusBanner me={{ ...mockMe, kyc_status: 'pending' }} />}
+          {preview === 'verify_rejected' && <VerificationStatusBanner me={{ ...mockMe, kyc_status: 'rejected' }} />}
+          {preview === 'profile' && <ProfileCompletionBanner me={{ ...mockMe, preferred_categories: [], preferred_cities: [] }} />}
+          {preview === 'carousel' && <HomeBannersCarousel me={{ ...mockMe, kyc_status: undefined, preferred_categories: [], preferred_cities: [] }} />}
+        </div>
       </Section>
 
       {/* ── POPUPS SECTION ── */}
