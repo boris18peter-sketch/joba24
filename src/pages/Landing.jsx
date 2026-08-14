@@ -4,6 +4,7 @@ import { Mail, Check, Zap, Clock, MapPin, CheckCircle2, Loader2, ArrowRight } fr
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
+import { isStandaloneApp } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function Landing() {
@@ -71,12 +72,14 @@ export default function Landing() {
             </Button>
           </a>
 
-          <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-              או הורד את האפליקציה
+          {!isStandaloneApp && (
+            <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
+                או הורד את האפליקציה
+              </div>
+              <StoreDownloadButtons size="md" />
             </div>
-            <StoreDownloadButtons size="md" />
-          </div>
+          )}
         </div>
       </section>
 

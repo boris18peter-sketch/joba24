@@ -9,7 +9,7 @@ import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import GoldBadge from '@/components/GoldBadge';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { isUserVerified, hasSocialVerified, isStandaloneApp } from '@/lib/utils';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
@@ -325,13 +325,15 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         </div>
 
-        {/* Official store download buttons */}
-        <div style={{ marginTop: 22 }}>
-          <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
-            הורד את האפליקציה ותישאר מעודכן
+        {/* Official store download buttons — hidden inside the installed app */}
+        {!isStandaloneApp && (
+          <div style={{ marginTop: 22 }}>
+            <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 12 }}>
+              הורד את האפליקציה ותישאר מעודכן
+            </div>
+            <StoreDownloadButtons size="md" />
           </div>
-          <StoreDownloadButtons size="md" />
-        </div>
+        )}
       </div>
 
       {showVerifyModal && createPortal(

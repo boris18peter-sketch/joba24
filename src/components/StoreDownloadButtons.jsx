@@ -1,6 +1,9 @@
 // Official-style App Store + Google Play download badges.
 // Pass dedicated store URLs via props once available; until then they fall back to '#'.
 //   <StoreDownloadButtons appStoreUrl="..." playStoreUrl="..." />
+// Hidden entirely inside the installed PWA/app — no point prompting to install when already in it.
+import { isStandaloneApp } from '@/lib/utils';
+
 export default function StoreDownloadButtons({
   appStoreUrl,
   playStoreUrl,
@@ -8,6 +11,8 @@ export default function StoreDownloadButtons({
   align = 'center',
   dark = false,
 }) {
+  if (isStandaloneApp) return null;
+
   const sizes = {
     sm: { height: 42, padX: 14, gap: 9, icon: 20, text: 13 },
     md: { height: 50, padX: 18, gap: 10, icon: 24, text: 15 },

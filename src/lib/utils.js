@@ -9,6 +9,17 @@ export function cn(...inputs) {
 export const isIframe = window.self !== window.top;
 
 /**
+ * isStandaloneApp — true when running as an installed PWA / wrapped app
+ * (display-mode: standalone or iOS Safari navigator.standalone).
+ * Used to hide "download the app" CTAs that are pointless inside the app itself.
+ */
+export const isStandaloneApp =
+  (typeof window !== 'undefined' && window.matchMedia)
+    ? (window.matchMedia('(display-mode: standalone)').matches ||
+       window.navigator?.standalone === true)
+    : false;
+
+/**
  * isUserVerified — Single source of truth for whether a user is verified (KYC).
  *
  * IMPORTANT: `is_verified` is a PLATFORM-LEVEL field (email verification), NOT

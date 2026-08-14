@@ -7,6 +7,7 @@ import { useState } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
+import { isStandaloneApp } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
 
@@ -190,9 +191,11 @@ export default function SideMenu({ open, onClose }) {
           <div style={{ marginBottom: 14 }}>
             <LanguageSwitcher onClose={onClose} />
           </div>
-          <div style={{ marginBottom: 14 }}>
-            <StoreDownloadButtons size="sm" />
-          </div>
+          {!isStandaloneApp && (
+            <div style={{ marginBottom: 14 }}>
+              <StoreDownloadButtons size="sm" />
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, paddingTop: 2, flexWrap: 'nowrap' }}>
             {(() => {
               const FOOTER_FALLBACK_EN = { nav_faq: 'FAQ', nav_terms: 'Terms', nav_privacy: 'Privacy' };
