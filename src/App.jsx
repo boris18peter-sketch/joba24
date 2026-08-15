@@ -16,6 +16,7 @@ import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
 import ResetPassword from '@/pages/ResetPassword';
+import AdminDashboard from '@/pages/AdminDashboard';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 
@@ -69,7 +70,6 @@ const SimulatorPanel = lazyRetry(() => import('@/pages/SimulatorPanel'));
 const MyTasks = lazyRetry(() => import('@/pages/MyTasks'));
 const PublicProfile = lazyRetry(() => import('@/pages/PublicProfile'));
 const Notifications = lazyRetry(() => import('@/pages/Notifications'));
-const AdminDashboard = lazyRetry(() => import('@/pages/AdminDashboard'));
 const AgentDashboard = lazyRetry(() => import('@/pages/AgentDashboard'));
 const AgentReferralsReport = lazyRetry(() => import('@/pages/AgentReferralsReport'));
 const QADashboard = lazyRetry(() => import('@/pages/QADashboard'));
