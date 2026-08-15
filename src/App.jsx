@@ -25,11 +25,18 @@ import TaskDetailSheet from '@/components/TaskDetailSheet';
 // the dynamic import 404s ("Failed to fetch dynamically imported module").
 // Catch that and reload once (throttled to 10s) to fetch fresh assets.
 const lazyRetry = (importFn) => lazy(() =>
-  importFn().catch((err) => {
+  importFn().catch(async (err) => {
     const KEY = 'joba24_chunk_reload_ts';
     const last = Number(sessionStorage.getItem(KEY) || 0);
     if (Date.now() - last > 10000) {
       sessionStorage.setItem(KEY, String(Date.now()));
+      // A stale service worker / HTTP cache can keep serving a broken chunk URL
+      // even after a rebuild (the ?t= changes but the SW returns the old 500).
+      // Unregister all SWs so the reload fetches the fresh chunk from the server.
+      try {
+        const regs = await navigator.serviceWorker?.getRegistrations?.();
+        if (regs?.length) await Promise.all(regs.map(r => r.unregister()));
+      } catch {}
       window.location.reload();
     }
     throw err;
