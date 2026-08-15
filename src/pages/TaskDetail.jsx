@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone } from 'lucide-react';
+import { MapPin, Clock, Star, MessageCircle, Flag, CheckCircle2, Loader2, Pencil, RefreshCw, AlertTriangle, Send, DoorOpen, X, Play, MoreVertical, ChevronLeft, ChevronRight, FileText, Phone, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import TaskDetailActions from '@/components/TaskDetailActions';
@@ -351,26 +351,6 @@ export default function TaskDetail(props) {
     return () => { unsubTask(); unsubApp(); };
   }, [id, queryClient]); // ← stable deps only — me?.id read via ref, no re-subscribe on auth load
 
-  // Sheet mode: the owner kebab lives in the popup header (next to Share & X)
-  // so all three sit in one neat row. TaskDetail signals whether to show it and
-  // toggles the menu when the header is tapped. Kept above the early returns so
-  // these hooks always run in the same order.
-  useEffect(() => {
-    if (!sheetMode || !task) return;
-    const canManage = me?.id === task.client_id && (task.status === 'OPEN' || task.status === 'EXPIRED');
-    window.dispatchEvent(new CustomEvent('task_sheet_menu_state', { detail: { canManage } }));
-    return () => {
-      window.dispatchEvent(new CustomEvent('task_sheet_menu_state', { detail: { canManage: false } }));
-    };
-  }, [sheetMode, me?.id, task?.client_id, task?.status]);
-
-  useEffect(() => {
-    if (!sheetMode) return;
-    const handler = () => setShowOwnerMenu(v => !v);
-    window.addEventListener('toggle_owner_menu', handler);
-    return () => window.removeEventListener('toggle_owner_menu', handler);
-  }, [sheetMode]);
-
   // Central update: write to DB — WebSocket event will propagate to Layout (single broadcaster)
   // which updates all shared caches. We only need to update the local ['task', id] cache optimistically.
   const handleWorkerUpdate = async (data) => {
@@ -641,6 +621,26 @@ export default function TaskDetail(props) {
   const canApplyManual = task.status === 'OPEN' && !isOwner && !hasWorker && !hasPendingApp && !isApproved && !alreadyApplied;
   const status = statusConfig[task.status] || statusConfig.OPEN;
 
+  // Native share sheet (Apple on iOS, Android/Google on Android). Falls back to
+  // copying the link when the Web Share API is unavailable. The link opens the
+  // task popup in the app (PWA deep link) or on the website if no app installed.
+  const handleShare = async () => {
+    const url = `${window.location.origin}/?open_task=${id}`;
+    const shareData = { title: 'Joba24', url };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(t('share_link_copied'));
+      }
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        try { await navigator.clipboard.writeText(url); toast.success(t('share_link_copied')); } catch {}
+      }
+    }
+  };
+
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', paddingBottom: sheetMode ? 'max(24px, env(safe-area-inset-bottom))' : 'calc(80px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
@@ -804,13 +804,33 @@ export default function TaskDetail(props) {
                   )}
                 </div>
               )}
-              {isOwner && !sheetMode && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginTop: 2 }}>
+                {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
+                  <button
+                    className="j-icon-btn"
+                    onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
+                    aria-label="More"
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                    <MoreVertical size={15} />
+                  </button>
+                )}
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
-                  style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
-                  <MoreVertical size={17} />
+                  className="j-icon-btn"
+                  onClick={handleShare}
+                  aria-label={t('share_task')}
+                  style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                  <Share size={15} />
                 </button>
-              )}
+                {sheetMode && (
+                  <button
+                    className="j-icon-btn"
+                    onClick={onSheetClose}
+                    aria-label="Close"
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Price + Media row — on same line */}
