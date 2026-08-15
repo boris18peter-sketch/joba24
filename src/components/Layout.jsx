@@ -462,10 +462,16 @@ export default function Layout() {
 
   const isBlocked = approvalStatus?.data?.is_blocked;
   const dbIsApproved = approvalStatus?.data?.is_approved;
+  // Launch-mode gate: when the admin turns "pre-launch" OFF (public distribution),
+  // every authenticated user enters the full app — no waiting page. Defaults to
+  // active (true) until settings load, so the app never opens accidentally.
+  const preLaunchGateActive = approvalStatus?.data?.pre_launch_gate_active !== false;
   // Use DB value if available (freshest); fall back to JWT value while loading
   const isApprovedUser = isBlocked
     ? false
-    : (dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin' || me?.role === 'agent';
+    : preLaunchGateActive
+      ? ((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin' || me?.role === 'agent')
+      : true;
   if (isAuthenticated && me && !isApprovedUser) {
     return <PreLaunchWaitingPage me={me} />;
   }

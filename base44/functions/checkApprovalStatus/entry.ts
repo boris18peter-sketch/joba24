@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getJobaSettings } from '../../shared/jobaSettings.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -11,11 +12,13 @@ Deno.serve(async (req) => {
     const freshUser = freshUsers[0];
     if (!freshUser) return Response.json({ error: 'User not found' }, { status: 404 });
 
+    const settings = await getJobaSettings(base44);
     return Response.json({
       is_approved: freshUser.is_approved ?? false,
       is_blocked: freshUser.is_blocked ?? false,
       role: freshUser.role ?? 'user',
       worker_credits: freshUser.worker_credits,
+      pre_launch_gate_active: settings.pre_launch_gate_active !== false,
     });
   } catch (error) {
     console.error('❌ checkApprovalStatus error:', error);

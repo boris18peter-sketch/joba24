@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS = {
   boost_cost: 5,
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
+  pre_launch_gate_active: true,
 };
 
 /**
@@ -36,6 +37,7 @@ export async function getJobaSettings(base44) {
         boost_cost: num(rec.boost_cost, DEFAULT_SETTINGS.boost_cost),
         loyalty_reward_percent: num(rec.loyalty_reward_percent, DEFAULT_SETTINGS.loyalty_reward_percent),
         loyalty_reward_min: num(rec.loyalty_reward_min, DEFAULT_SETTINGS.loyalty_reward_min),
+        pre_launch_gate_active: rec.pre_launch_gate_active !== false,
       };
     }
   } catch (e) {

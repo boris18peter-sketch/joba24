@@ -16,6 +16,7 @@ export const DEFAULT_JOBA_SETTINGS = {
   boost_cost: 5,
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
+  pre_launch_gate_active: true,
 };
 
 /**

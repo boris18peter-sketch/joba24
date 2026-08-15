@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer } from 'lucide-react';
+import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 
 const FIELDS = [
   {
@@ -101,6 +102,7 @@ const DEFAULTS = {
   boost_cost: 5,
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
+  pre_launch_gate_active: true,
 };
 
 function SettingRow({ field, value, onChange }) {
@@ -167,6 +169,7 @@ export default function JobaSettingsTab() {
         const v = settingsRecord[f.key];
         if (v !== undefined && v !== null) merged[f.key] = Number(v);
       });
+      merged.pre_launch_gate_active = settingsRecord.pre_launch_gate_active !== false;
       setDraft(merged);
       setHasChanges(false);
     }
@@ -190,6 +193,7 @@ export default function JobaSettingsTab() {
         boost_cost: Number(draft.boost_cost),
         loyalty_reward_percent: Number(draft.loyalty_reward_percent),
         loyalty_reward_min: Number(draft.loyalty_reward_min),
+        pre_launch_gate_active: draft.pre_launch_gate_active !== false,
         updated_by: me?.full_name || 'admin',
       };
       if (settingsRecord?.id) {
@@ -239,6 +243,34 @@ export default function JobaSettingsTab() {
             <div style={{ fontSize: 9, color: '#6d28d9' }}>ג'ובות ({draft.signup_bonus}+{draft.referral_signup_bonus})</div>
           </div>
         </div>
+      </div>
+
+      {/* Launch mode toggle — controls the pre-launch waiting page gate */}
+      <div style={{
+        background: draft.pre_launch_gate_active ? '#fffbeb' : '#f0fdf4',
+        border: `1.5px solid ${draft.pre_launch_gate_active ? '#fde68a' : '#bbf7d0'}`,
+        borderRadius: 14, padding: '14px', marginBottom: 12,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+          background: draft.pre_launch_gate_active ? 'rgba(217,119,6,0.12)' : 'rgba(22,163,74,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Rocket size={18} color={draft.pre_launch_gate_active ? '#d97706' : '#16a34a'} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)' }}>מצב השקה</div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>
+            {draft.pre_launch_gate_active
+              ? 'דלוק — משתמשים חדשים רואים דף המתנה עד לאישור (מצב קדם-השקה).'
+              : 'כבוי — האפליקציה פתוחה לחלוקה ציבורית. כולם נכנסים ישר (לבדיקת App Store).'}
+          </div>
+        </div>
+        <Switch
+          checked={draft.pre_launch_gate_active}
+          onCheckedChange={(checked) => handleChange('pre_launch_gate_active', checked)}
+        />
       </div>
 
       {/* Settings rows */}
