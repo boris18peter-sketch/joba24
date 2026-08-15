@@ -6,6 +6,7 @@ import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2,
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
+// JobaSettings — single source of truth for all credit/bonus charges and the launch gate.
 const FIELDS = [
   {
     key: 'signup_bonus',
