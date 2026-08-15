@@ -1,9 +1,9 @@
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Loader2, X, Share2 } from 'lucide-react';
+import { Loader2, X, Share, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 import { lazy, Suspense } from 'react';
@@ -13,12 +13,18 @@ const TaskDetail = lazy(() => import('@/pages/TaskDetail'));
 // Task detail popup — a bottom sheet (non-floating), like previous versions.
 // Rendered globally (in App.jsx) so it works on every page, including Chat
 // (which lives outside the Layout). Opens via `openTaskSheet(taskId)`.
+//
+// The header holds three small, neat action buttons together: the owner kebab
+// (3-dots), Share, and Close (X). The kebab only appears when the embedded
+// TaskDetail signals it is an owner task that can be managed — it taps back
+// into TaskDetail via a window event so all menu logic stays there.
 export default function TaskDetailSheet() {
   const { sheetTaskId, closeTaskSheet, hideTaskSheet } = useTaskSheet();
   const { isRTL, t } = useLanguage();
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
   const scrollRef = useRef(null);
+  const [showKebab, setShowKebab] = useState(false);
 
   // Route change: hide the popup when the user navigates away (e.g. taps a
   // profile link inside it). The {taskSheet} history entry stays so pressing
@@ -72,6 +78,13 @@ export default function TaskDetailSheet() {
     }
   }, [sheetTaskId]);
 
+  // Owner kebab visibility is driven by the embedded TaskDetail
+  useEffect(() => {
+    const handler = (e) => setShowKebab(!!e.detail?.canManage);
+    window.addEventListener('task_sheet_menu_state', handler);
+    return () => window.removeEventListener('task_sheet_menu_state', handler);
+  }, []);
+
   if (!sheetTaskId) return null;
 
   // Native share sheet (Apple on iOS, Android/Google on Android). Falls back to
@@ -96,6 +109,13 @@ export default function TaskDetailSheet() {
         } catch {}
       }
     }
+  };
+
+  const btnStyle = {
+    width: 30, height: 30, borderRadius: 9,
+    background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', flexShrink: 0, boxShadow: 'var(--shadow-xs)',
   };
 
   return createPortal(
@@ -127,43 +147,41 @@ export default function TaskDetailSheet() {
         }}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {/* Sheet header — drag handle + Share + Close (fixed row, not floating) */}
+        {/* Sheet header — drag handle + neat row of kebab / Share / Close */}
         <div style={{
-          flexShrink: 0, position: 'relative',
+          flexShrink: 0,
           paddingTop: 10, paddingBottom: 8,
           background: 'var(--surface-1)',
           borderBottom: '1px solid var(--border-1)',
           zIndex: 5,
         }}>
-          <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 6px' }} />
-          <div style={{
-            position: 'absolute', top: 10,
-            insetInlineStart: 12,
-            display: 'flex', gap: 8,
-          }}>
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto 8px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px 2px' }}>
+            {showKebab && (
+              <button
+                className="j-icon-btn"
+                onClick={() => window.dispatchEvent(new CustomEvent('toggle_owner_menu'))}
+                aria-label="More"
+                style={btnStyle}
+              >
+                <MoreVertical size={15} color="var(--text-2)" />
+              </button>
+            )}
             <button
-              onClick={closeTaskSheet}
-              aria-label="Close"
-              style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', flexShrink: 0, boxShadow: 'var(--shadow-xs)',
-              }}
-            >
-              <X size={18} color="var(--text-2)" />
-            </button>
-            <button
+              className="j-icon-btn"
               onClick={handleShare}
               aria-label={t('share_task')}
-              style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'var(--surface-3)', border: '1px solid var(--border-1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', flexShrink: 0, boxShadow: 'var(--shadow-xs)',
-              }}
+              style={btnStyle}
             >
-              <Share2 size={17} color="var(--text-2)" />
+              <Share size={15} color="var(--text-2)" />
+            </button>
+            <button
+              className="j-icon-btn"
+              onClick={closeTaskSheet}
+              aria-label="Close"
+              style={btnStyle}
+            >
+              <X size={15} color="var(--text-2)" />
             </button>
           </div>
         </div>

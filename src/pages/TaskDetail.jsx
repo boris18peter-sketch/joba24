@@ -351,6 +351,26 @@ export default function TaskDetail(props) {
     return () => { unsubTask(); unsubApp(); };
   }, [id, queryClient]); // ← stable deps only — me?.id read via ref, no re-subscribe on auth load
 
+  // Sheet mode: the owner kebab lives in the popup header (next to Share & X)
+  // so all three sit in one neat row. TaskDetail signals whether to show it and
+  // toggles the menu when the header is tapped. Kept above the early returns so
+  // these hooks always run in the same order.
+  useEffect(() => {
+    if (!sheetMode || !task) return;
+    const canManage = me?.id === task.client_id && (task.status === 'OPEN' || task.status === 'EXPIRED');
+    window.dispatchEvent(new CustomEvent('task_sheet_menu_state', { detail: { canManage } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('task_sheet_menu_state', { detail: { canManage: false } }));
+    };
+  }, [sheetMode, me?.id, task?.client_id, task?.status]);
+
+  useEffect(() => {
+    if (!sheetMode) return;
+    const handler = () => setShowOwnerMenu(v => !v);
+    window.addEventListener('toggle_owner_menu', handler);
+    return () => window.removeEventListener('toggle_owner_menu', handler);
+  }, [sheetMode]);
+
   // Central update: write to DB — WebSocket event will propagate to Layout (single broadcaster)
   // which updates all shared caches. We only need to update the local ['task', id] cache optimistically.
   const handleWorkerUpdate = async (data) => {
@@ -784,7 +804,7 @@ export default function TaskDetail(props) {
                   )}
                 </div>
               )}
-              {isOwner && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
+              {isOwner && !sheetMode && (task.status === 'OPEN' || task.status === 'EXPIRED' || task.status === 'TAKEN') && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowOwnerMenu(v => !v); }}
                   style={{ width: 34, height: 34, borderRadius: 11, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, marginTop: 2 }}>
