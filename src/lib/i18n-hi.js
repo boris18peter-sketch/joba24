@@ -1374,4 +1374,6 @@ export const hi = {
   ps_use: 'उपयोग करें',
   ps_market_based: 'मूल्य बाज़ार दरों और समान कार्यों पर आधारित है',
   ps_market_fallback: 'बाज़ार दरों पर आधारित',
+  share_task: 'कार्य साझा करें',
+  share_link_copied: 'लिंक कॉपी हो गया',
 };

@@ -1374,4 +1374,6 @@ export const zh = {
   ps_use: '使用',
   ps_market_based: '价格基于市场价格和类似任务',
   ps_market_fallback: '基于市场价格',
+  share_task: '分享任务',
+  share_link_copied: '链接已复制',
 };

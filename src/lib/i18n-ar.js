@@ -1401,4 +1401,6 @@ export const ar = {
   ps_use: 'استخدم',
   ps_market_based: 'السعر مبني على أسعار السوق ومهام مماثلة',
   ps_market_fallback: 'مبني على أسعار السوق',
-  };
+    share_task: 'مشاركة المهمة',
+  share_link_copied: 'تم نسخ الرابط',
+};

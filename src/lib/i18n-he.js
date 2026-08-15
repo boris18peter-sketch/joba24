@@ -1400,4 +1400,6 @@ export const he = {
   ps_use: 'השתמש',
   ps_market_based: 'המחיר מבוסס על מחירי שוק ומשימות דומות',
   ps_market_fallback: 'מבוסס על מחירי שוק',
-};
+  share_task: 'שתף משימה',
+  share_link_copied: 'הקישור הועתק',
+  };

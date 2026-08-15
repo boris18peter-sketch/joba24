@@ -1398,4 +1398,6 @@ export const en = {
   ps_use: 'Use',
   ps_market_based: 'Price based on market rates and similar tasks',
   ps_market_fallback: 'Based on market rates',
-};
+  share_task: 'Share Task',
+  share_link_copied: 'Link copied',
+  };

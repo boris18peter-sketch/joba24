@@ -1374,4 +1374,6 @@ export const fil = {
   ps_use: 'Gamitin',
   ps_market_based: 'Presyo batay sa presyo ng merkado at katulad na gawain',
   ps_market_fallback: 'Batay sa presyo ng merkado',
+  share_task: 'Ibahagi ang gawain',
+  share_link_copied: 'Nakopya ang link',
 };

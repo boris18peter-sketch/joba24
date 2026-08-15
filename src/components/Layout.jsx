@@ -495,7 +495,7 @@ export default function Layout() {
   const navItems = [
     { to: '/', icon: Home, label: navLabel('nav_feed_short') },
     { to: '/map', icon: Map, label: navLabel('nav_map_short') },
-    { to: '/create-task', icon: Plus, label: navLabel('nav_create_short'), primary: true },
+    { to: '/create-task', icon: Plus, label: t('nav_create_short'), primary: true },
     { to: '/chats', icon: MessageCircle, label: navLabel('nav_chats_short'), badge: unreadMessages },
     { to: '/profile', icon: User, label: navLabel('nav_profile_short') },
   ];

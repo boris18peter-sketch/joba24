@@ -1360,4 +1360,6 @@ export const fr = {
   ps_use: 'Utiliser',
   ps_market_based: 'Prix basé sur les prix du marché et des tâches similaires',
   ps_market_fallback: 'Basé sur les prix du marché',
-  };
+    share_task: 'Partager la tâche',
+  share_link_copied: 'Lien copié',
+};

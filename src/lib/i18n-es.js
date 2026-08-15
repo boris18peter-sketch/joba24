@@ -1398,4 +1398,6 @@ export const es = {
   ps_use: 'Usar',
   ps_market_based: 'Precio basado en precios de mercado y tareas similares',
   ps_market_fallback: 'Basado en precios de mercado',
-  };
+    share_task: 'Compartir tarea',
+  share_link_copied: 'Enlace copiado',
+};

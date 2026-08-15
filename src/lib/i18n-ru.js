@@ -1363,4 +1363,6 @@ export const ru = {
   ps_use: 'Использовать',
   ps_market_based: 'Цена основана на рыночных ценах и похожих задачах',
   ps_market_fallback: 'На основе рыночных цен',
-  };
+    share_task: 'Поделиться задачей',
+  share_link_copied: 'Ссылка скопирована',
+};
