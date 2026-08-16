@@ -51,7 +51,6 @@ import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
-import { useTaskSheet } from '@/lib/TaskSheetContext';
 import BoostOverlay from '@/components/BoostOverlay';
 
 
@@ -358,29 +357,8 @@ export default function Layout() {
     return () => window.removeEventListener('show_boost_overlay', handler);
   }, []);
 
-  // ── Notification click → open task sheet popup (not the old TaskDetail page) ──
-  // Handles two cases:
-  // 1. App already open: SW sends postMessage({ type: 'OPEN_TASK_SHEET', taskId })
-  // 2. App launched from notification: URL contains ?open_task=TASK_ID
-  const { openTaskSheet } = useTaskSheet();
-  useEffect(() => {
-    // Case 2: check URL param on mount (app just launched from notification click)
-    const params = new URLSearchParams(window.location.search);
-    const taskIdFromUrl = params.get('open_task');
-    if (taskIdFromUrl) {
-      // Clean the URL so it doesn't re-trigger on refresh
-      window.history.replaceState({}, '', window.location.pathname);
-      openTaskSheet(taskIdFromUrl);
-    }
-    // Case 1: listen for postMessage from service worker
-    const handler = (event) => {
-      if (event.data?.type === 'OPEN_TASK_SHEET' && event.data?.taskId) {
-        openTaskSheet(event.data.taskId);
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [openTaskSheet]);
+  // Deep-link / notification-click handling now lives in DeepLinkHandler (App level)
+  // so it works on every route, including /join, and survives auth redirects.
 
   // ── All WebSocket subscriptions via hook ─────────────────────────────────
   useRealtimeSync({

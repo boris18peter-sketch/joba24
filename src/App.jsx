@@ -19,6 +19,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import AdminDashboard from '@/pages/AdminDashboard';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
+import DeepLinkHandler from '@/components/DeepLinkHandler';
 
 // Add page imports here
 // lazyRetry — Vite lazy chunks are hashed; after a new deploy the browser may
@@ -255,6 +256,7 @@ function App() {
               <TaskSheetProvider>
                 <CaptureRefCode />
                 <ScrollToTop />
+                <DeepLinkHandler />
                 <AuthenticatedApp />
                 <TaskDetailSheet />
               </TaskSheetProvider>
