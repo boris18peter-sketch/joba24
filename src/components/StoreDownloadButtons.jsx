@@ -1,8 +1,12 @@
 // Official-style App Store + Google Play download badges.
-// Pass dedicated store URLs via props once available; until then they fall back to '#'.
-//   <StoreDownloadButtons appStoreUrl="..." playStoreUrl="..." />
-// Hidden entirely inside the installed PWA/app — no point prompting to install when already in it.
+// The store URLs and visibility are SERVER-DRIVEN via the JobaSettings entity
+// (admin updates them in the dashboard — no app rebuild needed). Callers can
+// still pass explicit `appStoreUrl` / `playStoreUrl` props to override (e.g.
+// for a specific landing page); when not provided, the server values are used.
+// Hidden entirely inside the installed PWA/app — no point prompting to install
+// when already in it.
 import { isStandaloneApp } from '@/lib/utils';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 export default function StoreDownloadButtons({
   appStoreUrl,
@@ -11,7 +15,14 @@ export default function StoreDownloadButtons({
   align = 'center',
   dark = false,
 }) {
-  if (isStandaloneApp) return null;
+  const { settings } = useJobaSettings();
+
+  // Server-driven master toggle — admin can hide all store buttons remotely
+  if (isStandaloneApp || settings.store_buttons_enabled === false) return null;
+
+  // Resolve URLs: explicit prop override → server setting → none
+  const resolvedApp = appStoreUrl || settings.app_store_url || '';
+  const resolvedPlay = playStoreUrl || settings.google_play_url || '';
 
   const sizes = {
     sm: { height: 42, padX: 14, gap: 9, icon: 20, text: 13 },
@@ -38,6 +49,7 @@ export default function StoreDownloadButtons({
     transition: 'transform 0.12s ease, opacity 0.12s ease',
     WebkitTapHighlightColor: 'transparent',
     whiteSpace: 'nowrap',
+    opacity: 1,
   };
 
   const Apple = (
@@ -57,34 +69,45 @@ export default function StoreDownloadButtons({
     </svg>
   );
 
+  // A badge is shown only when it has a destination URL. When both are empty,
+  // nothing renders (so the surrounding "download" heading should be hidden
+  // by the caller when appropriate).
+  const showApp = !!resolvedApp;
+  const showPlay = !!resolvedPlay;
+  if (!showApp && !showPlay) return null;
+
   return (
     <div style={{ display: 'flex', gap: 10, justifyContent: align === 'center' ? 'center' : 'flex-start', flexWrap: 'nowrap', width: '100%', maxWidth: 360, margin: align === 'center' ? '0 auto' : undefined }}>
-      <a
-        href={appStoreUrl || '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-tap"
-        style={badgeBase}
-        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
-        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-      >
-        {Apple}
-        <span style={{ fontSize: sizes.text, fontWeight: 600, letterSpacing: 0.3 }}>App Store</span>
-      </a>
-      <a
-        href={playStoreUrl || '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-tap"
-        style={badgeBase}
-        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
-        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-      >
-        {GooglePlay}
-        <span style={{ fontSize: sizes.text, fontWeight: 600, letterSpacing: 0.3 }}>Google Play</span>
-      </a>
+      {showApp && (
+        <a
+          href={resolvedApp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-tap"
+          style={badgeBase}
+          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
+          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          {Apple}
+          <span style={{ fontSize: sizes.text, fontWeight: 600, letterSpacing: 0.3 }}>App Store</span>
+        </a>
+      )}
+      {showPlay && (
+        <a
+          href={resolvedPlay}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-tap"
+          style={badgeBase}
+          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.96)')}
+          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          {GooglePlay}
+          <span style={{ fontSize: sizes.text, fontWeight: 600, letterSpacing: 0.3 }}>Google Play</span>
+        </a>
+      )}
     </div>
   );
 }

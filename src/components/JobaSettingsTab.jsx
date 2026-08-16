@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer, Rocket } from 'lucide-react';
+import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer, Rocket, Apple, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
@@ -104,6 +104,9 @@ const DEFAULTS = {
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
   pre_launch_gate_active: true,
+  app_store_url: '',
+  google_play_url: '',
+  store_buttons_enabled: true,
 };
 
 function SettingRow({ field, value, onChange }) {
@@ -171,6 +174,9 @@ export default function JobaSettingsTab() {
         if (v !== undefined && v !== null) merged[f.key] = Number(v);
       });
       merged.pre_launch_gate_active = settingsRecord.pre_launch_gate_active !== false;
+      merged.app_store_url = settingsRecord.app_store_url || '';
+      merged.google_play_url = settingsRecord.google_play_url || '';
+      merged.store_buttons_enabled = settingsRecord.store_buttons_enabled !== false;
       setDraft(merged);
       setHasChanges(false);
     }
@@ -195,6 +201,9 @@ export default function JobaSettingsTab() {
         loyalty_reward_percent: Number(draft.loyalty_reward_percent),
         loyalty_reward_min: Number(draft.loyalty_reward_min),
         pre_launch_gate_active: draft.pre_launch_gate_active !== false,
+        app_store_url: String(draft.app_store_url || ''),
+        google_play_url: String(draft.google_play_url || ''),
+        store_buttons_enabled: draft.store_buttons_enabled !== false,
         updated_by: me?.full_name || 'admin',
       };
       if (settingsRecord?.id) {
@@ -272,6 +281,53 @@ export default function JobaSettingsTab() {
           checked={draft.pre_launch_gate_active}
           onCheckedChange={(checked) => handleChange('pre_launch_gate_active', checked)}
         />
+      </div>
+
+      {/* Store download buttons — server-driven links + visibility */}
+      <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Apple size={15} color="#16a34a" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>כפתורי הורדה (App Store / Google Play)</div>
+            <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 1, lineHeight: 1.4 }}>
+              מתעדכן מרחוק — ללא build מחדש. ריק = הכפתור מוסתר.
+            </div>
+          </div>
+        </div>
+
+        {/* Visibility toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 11, background: draft.store_buttons_enabled ? '#f0fdf4' : 'var(--surface-3)', border: `1.5px solid ${draft.store_buttons_enabled ? '#bbf7b0' : 'var(--border-1)'}`, marginBottom: 10 }}>
+          <Eye size={16} color={draft.store_buttons_enabled ? '#16a34a' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>
+            {draft.store_buttons_enabled ? 'מציג כפתורים באפליקציה' : 'כפתורים מוסתרים'}
+          </div>
+          <Switch checked={draft.store_buttons_enabled} onCheckedChange={(c) => handleChange('store_buttons_enabled', c)} />
+        </div>
+
+        {/* App Store URL */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 4 }}>קישור App Store</div>
+          <input
+            type="url"
+            placeholder="https://apps.apple.com/.../id..."
+            value={draft.app_store_url}
+            onChange={(e) => handleChange('app_store_url', e.target.value)}
+            style={{ width: '100%', height: 40, borderRadius: 10, border: '1.5px solid var(--border-1)', background: 'var(--surface-3)', color: 'var(--text-1)', fontSize: 13, padding: '0 12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+          />
+        </div>
+        {/* Google Play URL */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', marginBottom: 4 }}>קישור Google Play</div>
+          <input
+            type="url"
+            placeholder="https://play.google.com/store/apps/details?id=..."
+            value={draft.google_play_url}
+            onChange={(e) => handleChange('google_play_url', e.target.value)}
+            style={{ width: '100%', height: 40, borderRadius: 10, border: '1.5px solid var(--border-1)', background: 'var(--surface-3)', color: 'var(--text-1)', fontSize: 13, padding: '0 12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+          />
+        </div>
       </div>
 
       {/* Settings rows */}

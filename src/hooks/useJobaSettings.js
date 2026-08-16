@@ -17,6 +17,9 @@ export const DEFAULT_JOBA_SETTINGS = {
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
   pre_launch_gate_active: true,
+  app_store_url: '',
+  google_play_url: '',
+  store_buttons_enabled: true,
 };
 
 /**
