@@ -91,7 +91,7 @@ export default function TaskCompletedCelebration({ task, onDismiss }) {
               const dist = 30 + Math.random() * 50;
               const tx = Math.cos((angle * Math.PI) / 180) * dist;
               const ty = Math.sin((angle * Math.PI) / 180) * dist * 0.6 - 10;
-              const colors = ['#fbbf24', '#f59e0b', '#4ade80', '#86efac', '#white', '#fde68a'];
+              const colors = ['#fbbf24', '#f59e0b', '#4ade80', '#86efac', '#ffffff', '#fde68a'];
               const color = colors[i % colors.length];
               return (
                 <div

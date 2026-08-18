@@ -41,6 +41,8 @@ export default function ApplySheet({ task, onClose, onApply, loading, showImages
           boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
           animation: 'sheetSlideUp 0.3s cubic-bezier(0.34,1.4,0.64,1)',
           position: 'relative',
+          maxHeight: '92dvh', overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain',
         }}
         onClick={e => e.stopPropagation()}
       >

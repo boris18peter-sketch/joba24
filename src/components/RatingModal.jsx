@@ -92,6 +92,7 @@ export default function RatingModal({ task, me, onClose }) {
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         touchAction: 'none',
       }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       onPointerDown={e => e.stopPropagation()}
       onTouchStart={e => e.stopPropagation()}
     >
@@ -105,6 +106,9 @@ export default function RatingModal({ task, me, onClose }) {
           boxShadow: 'var(--shadow-xl)',
           animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1) both',
           maxHeight: '92dvh', overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
+          overscrollBehavior: 'contain',
           position: 'relative',
         }}
       >
