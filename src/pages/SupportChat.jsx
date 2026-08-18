@@ -6,11 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import BackButton from '@/components/BackButton';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 
 export default function SupportChat() {
   const { user: me, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const viewportHeight = useViewportHeight();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -236,7 +238,7 @@ export default function SupportChat() {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
+      display: 'flex', flexDirection: 'column', height: viewportHeight,
       background: 'var(--surface-1)', zIndex: 9999, position: 'relative',
     }}>
       {/* Header */}

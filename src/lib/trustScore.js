@@ -21,9 +21,17 @@ export function calculateTrustScore(user, { tasks = [], reviews = [] } = {}) {
   if (user.kyc_status === 'approved') score += 40;
 
   // Rating quality (30 pts)
+  // The denormalized `rating`/`rating_count` fields can be out of sync (e.g.
+  // wiped by the new-user simulator). Fall back to the actual reviews so the
+  // trust bar always reflects real ratings the user received.
   const ratingCount = user.rating_count || (Array.isArray(reviews) ? reviews.length : 0);
-  if ((user.rating || 0) > 0 && ratingCount >= 1) {
-    score += Math.round((user.rating / 5) * 30);
+  let rating = user.rating;
+  if ((!rating || rating <= 0) && Array.isArray(reviews) && reviews.length > 0) {
+    const valid = reviews.map(r => r.rating).filter(r => typeof r === 'number' && r > 0);
+    if (valid.length) rating = valid.reduce((a, b) => a + b, 0) / valid.length;
+  }
+  if ((rating || 0) > 0 && ratingCount >= 1) {
+    score += Math.round((rating / 5) * 30);
   }
 
   // Completed tasks experience (30 pts, 1.5 pts per task, max 30)

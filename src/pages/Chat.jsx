@@ -14,6 +14,7 @@ import UserVerificationBadge from '@/components/UserVerificationBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -218,26 +219,10 @@ export default function Chat() {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
-  // Keyboard handling — push input bar above keyboard (iOS PWA fix)
-  // Instead of overriding the outer div height (which breaks safe-area top padding),
-  // we calculate the keyboard height and add it as paddingBottom on the input bar.
-  const [keyboardInset, setKeyboardInset] = useState(0);
-  useEffect(() => {
-    const onResize = () => {
-      const vv = window.visualViewport;
-      if (vv) {
-        const kb = window.innerHeight - vv.height - vv.offsetTop;
-        setKeyboardInset(kb > 0 ? kb : 0);
-      }
-    };
-    window.visualViewport?.addEventListener('resize', onResize);
-    window.visualViewport?.addEventListener('scroll', onResize);
-    onResize();
-    return () => {
-      window.visualViewport?.removeEventListener('resize', onResize);
-      window.visualViewport?.removeEventListener('scroll', onResize);
-    };
-  }, []);
+  // WhatsApp-style keyboard: the chat container shrinks to the VisualViewport
+  // height so the input bar sits right above the keyboard without the whole
+  // screen being pushed up by the browser's scroll-into-view behavior.
+  const viewportHeight = useViewportHeight();
 
   const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
     gate(() => sendMessage(content, mediaUrl, mediaType));
@@ -334,7 +319,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return (
-    <div ref={outerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div ref={outerRef} style={{ display: 'flex', flexDirection: 'column', height: viewportHeight, background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Spacer for iOS safe area top (in case body padding doesn't apply) */}
       <div style={{ height: 'env(safe-area-inset-top)', flexShrink: 0, background: 'var(--surface-2)' }} />
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
@@ -489,10 +474,9 @@ export default function Chat() {
         background: 'var(--surface-2)',
         borderTop: '1px solid var(--border-1)',
         padding: '10px 12px',
-        paddingBottom: keyboardInset > 0 ? `${keyboardInset}px` : 'max(10px, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
         display: 'flex', alignItems: 'flex-end', gap: 8,
         flexShrink: 0,
-        transition: 'padding-bottom 0.15s ease',
       }}>
         {/* File upload */}
         <button
