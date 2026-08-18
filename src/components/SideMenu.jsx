@@ -7,6 +7,7 @@ import { useState } from 'react';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
+import NewUserSimulator from '@/components/NewUserSimulator';
 import { isStandaloneApp } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -142,6 +143,7 @@ export default function SideMenu({ open, onClose }) {
           })}
           {/* Admin link — shown only to admins */}
           {isAuthenticated && me?.role === 'admin' &&
+          <>
           <Link to="/admin" onClick={onClose}
           style={{
             display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px',
@@ -154,6 +156,10 @@ export default function SideMenu({ open, onClose }) {
               <ShieldCheck size={18} />
               {t('nav_admin')}
             </Link>
+            <div onClick={onClose}>
+              <NewUserSimulator />
+            </div>
+          </>
           }
           {/* Agent link — shown only to agents */}
           {isAuthenticated && me?.role === 'agent' &&

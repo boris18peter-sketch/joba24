@@ -20,6 +20,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
+import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 
 // Add page imports here
 // lazyRetry — Vite lazy chunks are hashed; after a new deploy the browser may
@@ -271,6 +272,7 @@ function App() {
                 <DeepLinkHandler />
                 <AuthenticatedApp />
                 <TaskDetailSheet />
+                <DemoModeExitBanner />
               </TaskSheetProvider>
             </Router>
             <Toaster />
