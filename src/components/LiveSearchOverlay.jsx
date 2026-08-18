@@ -7,7 +7,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
@@ -783,20 +782,6 @@ export default function LiveSearchOverlay({
             transition={{ duration: 0.32, ease: 'easeInOut' }}
             style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}
           >
-            {/* Back to celebration */}
-            <button
-              onClick={() => setStep('celebration')}
-              style={{
-                position: 'absolute', top: 0, left: 16,
-                background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)',
-                borderRadius: 20, padding: '7px 14px', color: 'rgba(255,255,255,.8)', fontSize: 13,
-                fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                zIndex: 10,
-              }}
-            >
-              <ChevronLeft size={14} /> {t('lso_back')}
-            </button>
-
             <ScannerStep
               taskId={taskId}
               taskTitle={taskTitle}

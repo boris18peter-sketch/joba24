@@ -1123,6 +1123,12 @@ export const en = {
     pcb_body: 'A complete profile helps us match you with more relevant tasks and increases the chance publishers will trust you and pick you faster.',
     pcb_cta_bonus: '🎁 Complete worker profile and get {n} Jobas bonus',
     pcb_cta: '🎁 Complete worker profile',
+    // Unified home CTA banners (single-button, branded)
+    cta_verify: 'Verify profile and get green badge',
+    cta_social: 'Connect social network and get gold badge',
+    cta_profile_bonus: 'Complete worker profile and get {n} Jobas bonus',
+    cta_profile: 'Complete worker profile',
+    catp_car: 'Drivers',
     status_in_work: 'In work',
     status_completed: 'Completed',
     status_cancelled: 'Cancelled',

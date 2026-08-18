@@ -83,34 +83,21 @@ export default function VerificationRequiredModal({ onClose, onVerify }) {
             ))}
           </div>
 
-          {/* CTA button */}
+          {/* CTA button — single emphasized action */}
           <button
             onClick={onVerify}
             style={{
-              width: '100%', height: 52, borderRadius: 14,
+              width: '100%', height: 54, borderRadius: 14,
               background: 'linear-gradient(135deg,#16a34a,#059669)',
-              color: 'white', fontWeight: 800, fontSize: 15,
+              color: 'white', fontWeight: 800, fontSize: 16,
               border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: '0 4px 20px rgba(22,163,74,0.3)',
+              boxShadow: '0 4px 20px rgba(22,163,74,0.35)',
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <ShieldCheck size={18} strokeWidth={2} /> {t('vrm_cta')}
-          </button>
-
-          {/* Dismiss */}
-          <button
-            onClick={onClose}
-            style={{
-              width: '100%', height: 44, borderRadius: 14,
-              background: 'transparent', color: '#9ca3af',
-              fontWeight: 600, fontSize: 14, border: 'none',
-              cursor: 'pointer', marginTop: 8,
-            }}
-          >
-            {t('vrm_later')}
+            <ShieldCheck size={20} strokeWidth={2} /> {t('vrm_cta')}
           </button>
         </div>
       </div>

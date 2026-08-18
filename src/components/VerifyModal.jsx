@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Shield, X, CheckCircle, Loader2, Camera, Eye, EyeOff,
-  Lock, Clock, ChevronDown, ChevronUp, UserCheck, Star
+  Lock, Clock, ChevronDown, ChevronUp, UserCheck, Star, BadgeCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -206,14 +206,17 @@ export default function VerifyModal({ onClose, onSuccess }) {
                   <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>שלב אחד · פחות מדקה</span>
                 </div>
 
-                {/* Icon + Title */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                  <div style={{ width: 46, height: 46, borderRadius: 14, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Shield size={22} color="white" strokeWidth={1.8} />
+                {/* Icon + Title — prominent green badge to attract verification */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 6 }}>
+                  <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.28) 0%, transparent 70%)' }} />
+                    <div style={{ position: 'relative', width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg,#10b981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(16,185,129,0.35)' }}>
+                      <BadgeCheck size={32} color="white" strokeWidth={1.8} />
+                    </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 19, fontWeight: 800, color: '#0f1e40', letterSpacing: -0.3 }}>אימות זהות</div>
-                    <div style={{ fontSize: 12, color: '#6b7280', fontWeight: 400, marginTop: 1 }}>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: '#0f1e40', letterSpacing: -0.3 }}>אימות זהות</div>
+                    <div style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 500, marginTop: 2 }}>
                       אימות חד־פעמי לכל משתמשי Joba24
                     </div>
                   </div>
