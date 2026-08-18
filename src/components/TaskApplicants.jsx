@@ -50,8 +50,11 @@ export default function TaskApplicants({ task, onApprove }) {
 
   const approvedWorkerId = applications.find(a => a.status === 'approved')?.worker_id;
 
+  const [approvingId, setApprovingId] = useState(null);
+
   const approveMutation = useMutation({
     mutationFn: async (app) => {
+      setApprovingId(app.id);
       const res = await base44.functions.invoke('approveWorker', {
         taskId: task.id,
         applicationId: app.id,
@@ -62,6 +65,7 @@ export default function TaskApplicants({ task, onApprove }) {
       return { task: res.data.task };
     },
     onSuccess: (data) => {
+      setApprovingId(null);
       const updatedTask = data.task;
       if (updatedTask) {
         queryClient.setQueryData(['task', task.id], (old) => old ? { ...old, ...updatedTask } : updatedTask);
@@ -89,6 +93,7 @@ export default function TaskApplicants({ task, onApprove }) {
       onApprove?.();
     },
     onError: (error) => {
+      setApprovingId(null);
       toast.error(t('error_colon') + error.message);
     },
   });
@@ -430,17 +435,17 @@ export default function TaskApplicants({ task, onApprove }) {
                   </button>
                   <button
                     onClick={() => approveMutation.mutate(app)}
-                    disabled={approveMutation.isPending}
+                    disabled={approvingId === app.id}
                     style={{
                       flex: 1.5, height: 40, borderRadius: 11,
-                      background: approveMutation.isPending ? '#86efac' : 'linear-gradient(135deg,#059669,#047857)',
+                      background: approvingId === app.id ? '#86efac' : 'linear-gradient(135deg,#059669,#047857)',
                       border: 'none', color: 'white', fontWeight: 800, fontSize: 13,
-                      cursor: 'pointer', opacity: approveMutation.isPending ? 0.7 : 1,
+                      cursor: 'pointer', opacity: approvingId === app.id ? 0.7 : 1,
                       boxShadow: '0 2px 10px rgba(5,150,105,0.3)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     }}
                   >
-                    {approveMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> {t('ta_approve_worker_btn')}</>}
+                    {approvingId === app.id ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> {t('ta_approve_worker_btn')}</>}
                   </button>
                 </>
               ) : null}

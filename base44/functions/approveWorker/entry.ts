@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
     const { taskId, applicationId, workerId, workerName } = await req.json();
 
-    if (!taskId || !applicationId || !workerId || !workerName) {
+    if (!taskId || !applicationId || !workerId) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -42,11 +42,21 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Application no longer pending' }, { status: 409 });
     }
 
+    // Resolve worker name server-side — the client may pass an empty string
+    // when the worker's full_name was never set on their User record. Fall back
+    // to the application record, then to the User record, so approval never
+    // fails on a missing name.
+    let resolvedWorkerName = workerName || app.worker_name || '';
+    if (!resolvedWorkerName) {
+      const workerUsers = await base44.asServiceRole.entities.User.filter({ id: workerId });
+      resolvedWorkerName = workerUsers[0]?.full_name || 'עובד';
+    }
+
     // Assign worker to task
     await base44.asServiceRole.entities.Task.update(taskId, {
       status: 'TAKEN',
       worker_id: workerId,
-      worker_name: workerName,
+      worker_name: resolvedWorkerName,
       worker_rating: app.worker_rating || 0,
       worker_verified: app.worker_verified || false,
     });
