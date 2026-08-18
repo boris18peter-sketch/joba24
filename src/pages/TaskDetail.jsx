@@ -24,7 +24,7 @@ import { getActiveRequirements } from '@/lib/requirements';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
-import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { isUserVerified, hasSocialVerified, copyToClipboard } from '@/lib/utils';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
@@ -638,12 +638,13 @@ export default function TaskDetail(props) {
       if (navigator.share) {
         await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(url);
-        toast.success(t('share_link_copied'));
+        const ok = await copyToClipboard(url);
+        if (ok) toast.success(t('share_link_copied'));
       }
     } catch (e) {
       if (e?.name !== 'AbortError') {
-        try { await navigator.clipboard.writeText(url); toast.success(t('share_link_copied')); } catch {}
+        const ok = await copyToClipboard(url);
+        if (ok) toast.success(t('share_link_copied'));
       }
     }
   };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { copyToClipboard } from '@/lib/utils';
 
 /**
  * CopyableId — displays an entity ID (or any string) with a one-tap copy button.
@@ -11,10 +12,12 @@ export default function CopyableId({ id, label = 'ID', fontSize = 10, color = '#
   const handleCopy = (e) => {
     e.stopPropagation();
     if (!id) return;
-    navigator.clipboard.writeText(id).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
+    copyToClipboard(id).then((ok) => {
+      if (ok) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    });
   };
 
   return (

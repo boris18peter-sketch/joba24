@@ -1,15 +1,14 @@
 import { createPortal } from 'react-dom';
-import { X, Download } from 'lucide-react';
+import { X, Download, Loader2, Share } from 'lucide-react';
+import { useState } from 'react';
+import { downloadHtmlInvoice } from '@/lib/utils';
 
 export default function InvoiceViewModal({ invoiceHtml, onClose }) {
-  const handleDownload = () => {
-    const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body>${invoiceHtml}</body></html>`], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'חשבונית.html';
-    a.click();
-    URL.revokeObjectURL(url);
+  const [downloading, setDownloading] = useState(false);
+  const handleDownload = async () => {
+    setDownloading(true);
+    await downloadHtmlInvoice('חשבונית.html', invoiceHtml);
+    setDownloading(false);
   };
 
   return createPortal(
@@ -27,9 +26,10 @@ export default function InvoiceViewModal({ invoiceHtml, onClose }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={handleDownload}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              disabled={downloading}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: downloading ? 0.7 : 1 }}
             >
-              <Download size={14} /> הורד
+              {downloading ? <Loader2 size={14} className="animate-spin" /> : (navigator.canShare ? <><Share size={14} /> שיתוף</> : <><Download size={14} /> הורד</>)}
             </button>
             <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <X size={16} color="#6b7280" />

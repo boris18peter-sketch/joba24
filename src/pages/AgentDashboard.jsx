@@ -6,13 +6,15 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase, Download } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
+import { copyToClipboard } from '@/lib/utils';
 
 function WorkerLinkCopy({ link }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -71,9 +73,10 @@ export default function AgentDashboard() {
   const workerOnboardingLink = `${window.location.origin}/join?ref=${me.agent_code}`;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(referralLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const isLoading = isLoadingReferrals;
