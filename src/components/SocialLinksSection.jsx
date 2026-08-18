@@ -12,6 +12,7 @@ import GoldBadge from '@/components/GoldBadge';
 import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import HomeCtaBanner from '@/components/HomeCtaBanner';
 
 const PLATFORMS = [
   {
@@ -186,20 +187,8 @@ export default function SocialLinksSection({ user }) {
           </div>
         )}
 
-        {!isConnected && (
-          <div style={{ margin: '0 16px 10px', padding: '10px 14px', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 12, border: '1px solid #fde68a', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ShieldCheck size={16} color="white" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', lineHeight: 1.3 }}>{t('sl_connect_social_gold')}</div>
-              {!isKycVerified && <div style={{ fontSize: 10, color: '#b45309', marginTop: 2 }}>{t('sl_gold_after_verify')}</div>}
-            </div>
-          </div>
-        )}
-
-        <div style={{ padding: '0 16px 14px' }}>
-          {isConnected ? (
+        {isConnected ? (
+          <div style={{ padding: '0 16px 14px' }}>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowConnect(true)} disabled={loading}
                 style={{ flex: 1, height: 46, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'var(--surface-3)', color: 'var(--text-1)', border: '1px solid var(--border-1)', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -210,14 +199,18 @@ export default function SocialLinksSection({ user }) {
                 <Unlink size={16} />
               </button>
             </div>
-          ) : (
-            <button onClick={() => setShowConnect(true)} disabled={loading}
-              style={{ width: '100%', height: 48, borderRadius: 12, cursor: loading ? 'wait' : 'pointer', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', border: 'none', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 3px 12px rgba(26,111,212,0.2)' }}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-              {loading ? t('sl_opening') : t('sl_connect_social')}
-            </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div style={{ padding: '0 16px 14px' }}>
+            <HomeCtaBanner
+              theme="gold"
+              iconType="social"
+              label={t('cta_social')}
+              sublabel={!isKycVerified ? t('sl_gold_after_verify') : undefined}
+              onClick={() => !loading && setShowConnect(true)}
+            />
+          </div>
+        )}
       </div>
 
       {showConnect && createPortal(

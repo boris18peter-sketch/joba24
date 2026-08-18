@@ -319,23 +319,12 @@ export default function WelcomeTutorial() {
               {isLast ? 'סיום' : 'הבא'}
               <ArrowLeft size={18} color="white" />
             </button>
+            <button onClick={finish} style={{ height: 46, padding: '0 16px', borderRadius: 13, flexShrink: 0, background: 'transparent', border: '1px solid #e2e8f0', color: '#64748b', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <X size={14} color="#94a3b8" /> דלג
+            </button>
           </div>
         </motion.div>
       </AnimatePresence>
-
-      {/* Skip button (top-left) */}
-      <button
-        onClick={finish}
-        style={{
-          position: 'fixed', top: 16, left: 16, zIndex: 4, pointerEvents: 'auto',
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.25)',
-          color: 'rgba(255,255,255,0.85)', borderRadius: 20, fontSize: 13, fontWeight: 700,
-          padding: '8px 14px', cursor: 'pointer', backdropFilter: 'blur(4px)',
-        }}
-      >
-        <X size={13} /> דלג
-      </button>
 
       <style>{`
         @keyframes jtPulse {

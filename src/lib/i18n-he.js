@@ -1004,6 +1004,7 @@ export const he = {
     wo_hero_body2: 'זה הזמן להירשם ולהכין את הפרופיל שלך.',
     wo_register_btn: 'הרשם עכשיו 🚀',
     wo_setup_note: '*הגדרת פרופיל לוקחת פחות מדקה',
+    cta_profile_sub: 'פרופיל מלא מעלה את האמון — ואנשים יבחרו בך יותר',
     wo_done_title: 'הפרופיל מוכן! 🎉',
     wo_done_body: 'הפרטים שלך נשמרו בהצלחה.',
     wo_bonus_received: "קיבלת {n} ג'ובות!",

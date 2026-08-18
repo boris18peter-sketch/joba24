@@ -1046,6 +1046,7 @@ export const fil = {
   wo_hero_body2: 'Panahon na para mag-sign up at i-set up ang iyong profile.',
   wo_register_btn: 'Mag-sign up na 🚀',
   wo_setup_note: '*Ang pag-set up ng profile ay umaabot ng less than a minute',
+  cta_profile_sub: 'Ang kumpletong profile ay nagbubuo ng higit na tiwala — at mas maraming tao ang pipiliin ka',
   wo_done_title: 'Handa na ang profile! 🎉',
   wo_done_body: 'Matagumpay na na-save ang iyong profile.',
   wo_bonus_received: 'Nakakuha ka ng {n} Joobs!',

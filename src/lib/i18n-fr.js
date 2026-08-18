@@ -1032,6 +1032,7 @@ export const fr = {
     wo_hero_body2: "C'est le moment de t'inscrire et de configurer ton profil.",
     wo_register_btn: 'Inscris-toi maintenant 🚀',
     wo_setup_note: "*Configurer ton profil prend moins d'une minute",
+    cta_profile_sub: 'Un profil complet inspire plus de confiance — et plus de gens te choisiront',
     wo_done_title: 'Le profil est prêt ! 🎉',
     wo_done_body: 'Ton profil a été enregistré avec succès.',
     wo_bonus_received: 'Tu as reçu {n} Joobs !',

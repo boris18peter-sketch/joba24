@@ -1046,6 +1046,7 @@ export const zh = {
   wo_hero_body2: '是时候注册并设置你的资料了。',
   wo_register_btn: '立即注册 🚀',
   wo_setup_note: '*设置资料不到一分钟',
+  cta_profile_sub: '完整的资料能建立更多信任 — 更多人会选择你',
   wo_done_title: '资料已就绪！🎉',
   wo_done_body: '你的资料已成功保存。',
   wo_bonus_received: '你获得了 {n} Joobs！',

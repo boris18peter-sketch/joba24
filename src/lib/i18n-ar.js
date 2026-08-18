@@ -1073,6 +1073,7 @@ export const ar = {
     wo_hero_body2: 'حان وقت التسجيل وإعداد ملفك الشخصي.',
     wo_register_btn: 'سجل الآن 🚀',
     wo_setup_note: '*إعداد ملفك الشخصي يستغرق أقل من دقيقة',
+    cta_profile_sub: 'الملف الشخصي الكامل يبني ثقة أكبر — ويختارك المزيد من الناس',
     wo_done_title: 'الملف جاهز! 🎉',
     wo_done_body: 'تم حفظ ملفك بنجاح.',
     wo_bonus_received: 'حصلت على {n} جوبس!',

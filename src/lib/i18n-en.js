@@ -1002,6 +1002,7 @@ export const en = {
     wo_hero_body2: "It's time to sign up and set up your profile.",
     wo_register_btn: 'Sign up now 🚀',
     wo_setup_note: '*Setting up your profile takes less than a minute',
+    cta_profile_sub: 'A complete profile builds more trust — so more people choose you',
     wo_done_title: 'Profile is ready! 🎉',
     wo_done_body: 'Your profile has been saved successfully.',
     wo_bonus_received: 'You got {n} Jobas!',
