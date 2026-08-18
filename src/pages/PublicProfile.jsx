@@ -312,7 +312,7 @@ export default function PublicProfile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
-              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={allReviews} userId={userId} />
+              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={allReviews} userId={userId} clickable={false} hidePrices />
             </div>
           </div>
         </div>,
