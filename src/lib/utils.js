@@ -9,6 +9,32 @@ export function cn(...inputs) {
 export const isIframe = window.self !== window.top;
 
 /**
+ * PUBLIC_BASE_URL — the canonical public domain for Joba24 (used for referral /
+ * share links so they read "joba24.com" instead of the internal base44app host).
+ * Falls back to window.location.origin when the custom domain isn't reachable
+ * (e.g. local dev / preview), so links never break.
+ */
+export const PUBLIC_BASE_URL = 'https://joba24.com';
+
+export function getPublicBaseUrl() {
+  // In dev/preview (base44app origin), keep links working by using the current origin.
+  const origin = (typeof window !== 'undefined' && window.location?.origin) || '';
+  if (origin && /base44/i.test(origin)) return origin;
+  return PUBLIC_BASE_URL;
+}
+
+/**
+ * Detects the user's mobile platform from the UA.
+ */
+export function detectMobilePlatform() {
+  if (typeof navigator === 'undefined') return 'other';
+  const ua = navigator.userAgent || '';
+  if (/iPad|iPhone|iPod/i.test(ua)) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'other';
+}
+
+/**
  * isStandaloneApp — true when running as an installed PWA / wrapped app
  * (display-mode: standalone or iOS Safari navigator.standalone).
  * Used to hide "download the app" CTAs that are pointless inside the app itself.

@@ -24,47 +24,46 @@ const PAD = 10; // spotlight padding around the target element
 // ── Step definitions ──────────────────────────────────────────────────────
 // Each step targets a real DOM element by id and only runs if that element exists.
 function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral }) {
-  const jobasBody = isAuthenticated
-    ? (hasReferral
-        ? `קיבלת ${signupBonus} ג'ובות בונוס הצטרפות + ${referralBonus} מהפניית סוכן 🎁 כאן תראה את יתרת הג'ובות שלך — המטבע שמשמש להתחייבות בעת הגשת בקשה למשימה.`
-        : `קיבלת ${signupBonus} ג'ובות בונוס הצטרפות 🎁 כאן תראה את יתרת הג'ובות שלך — המטבע שמשמש להתחייבות בעת הגשת בקשה למשימה.`)
-    : `כאן תופיע יתרת הג'ובות שלך — המטבע שמשמש להתחייבות בעת הגשת בקשה למשימה. עם ההרשמה תקבל ג'ובות בונוס 🎁`;
+  const totalBonus = (signupBonus || 0) + (hasReferral ? (referralBonus || 0) : 0);
+  const jobasTitle = isAuthenticated
+    ? `קיבלתם ${totalBonus} ג'ובות במתנה!`
+    : "קבלו ג'ובות במתנה בהרשמה!";
 
   return [
     {
       id: 'onboarding-verify-banner',
       icon: Shield,
       badge: 'אימות',
-      title: 'אימות זהות',
-      body: 'כאן מאמתים את הזהות. לאחר אישור הצוות תקבל ווי ירוק 🟢 שמעיד על משתמש מאומת. בדרך כלל לוקח כ-6 שעות.',
+      title: 'אמתו את הזהות שלכם',
+      body: 'קבלו ווי ירוק של משתמש מאומת ובנו אמון מול משתמשים אחרים. הצוות של Joba24 מאמת פרטים תוך 6 שעות.',
     },
     {
       id: 'onboarding-profile-banner',
       icon: UserCircle2,
       badge: 'פרופיל',
-      title: 'השלמת פרופיל',
-      body: 'כאן משלימים את פרופיל העובד — תחומי עיסוק וערים מועדפים. פרופיל מלא מגדיל את כמות המשימות הרלוונטיות שתקבל.',
+      title: 'השלימו את הפרופיל',
+      body: 'תחומי עיסוק וערים מועדפים — פרופיל מלא מגדיל את כמות המשימות הרלוונטיות שתקבלו.',
     },
     {
       id: 'onboarding-create-btn',
       icon: Plus,
       badge: 'פרסום',
-      title: 'כאן מפרסמים משימות',
-      body: 'כפתור הפלוס פותח את טופס פרסום המשימה. זה המקום להתחיל כשאתה צריך עזרה.',
+      title: 'צריכים עזרה? פרסמו משימה',
+      body: 'לחצו על +, הגדירו מה צריך לעשות ואנשים מתאימים באזור שלכם יוכלו להגיש בקשה.',
     },
     {
       id: 'onboarding-credits-pill',
       icon: Coins,
       badge: "ג'ובות",
-      title: "יתרת הג'ובות שלך",
-      body: jobasBody,
+      title: jobasTitle,
+      body: "הג'ובות משמשות להגשת בקשות למשימות. תוכלו לראות את היתרה שלכם כאן.",
     },
     {
       id: 'onboarding-apply-btn',
       icon: Send,
       badge: 'הגשה',
-      title: 'כאן מגישים מועמדות',
-      body: 'בכל כרטיס משימה תמצא כפתור "הגש מועמדות". לחץ עליו כדי להגיש בקשה לעבודה. לא נבחרת? הג\'ובות חוזרות אליך.',
+      title: 'מצאתם משימה שמתאימה לכם?',
+      body: 'לחצו על "הגש מועמדות" ושלחו בקשה. לא נבחרתם? הג\'ובות יוחזרו אליכם.',
     },
   ];
 }

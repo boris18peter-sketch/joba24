@@ -6,7 +6,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase, Download } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-import { copyToClipboard } from '@/lib/utils';
+import { copyToClipboard, getPublicBaseUrl } from '@/lib/utils';
 
 function WorkerLinkCopy({ link }) {
   const [copied, setCopied] = useState(false);
@@ -69,8 +69,9 @@ export default function AgentDashboard() {
   const allTasks = Object.values(allTasksMap);
 
   const totalTurnover = workerTasks.reduce((sum, t) => sum + (t.price || 0), 0);
-  const referralLink = `${window.location.origin}/r/${me.agent_code}`;
-  const workerOnboardingLink = `${window.location.origin}/join?ref=${me.agent_code}`;
+  const publicBase = getPublicBaseUrl();
+  const referralLink = `${publicBase}/r/${me.agent_code}`;
+  const workerOnboardingLink = `${publicBase}/join?ref=${me.agent_code}`;
 
   const handleCopy = () => {
     copyToClipboard(referralLink).then(() => {
