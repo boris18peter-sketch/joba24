@@ -4,10 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Star, LogOut, Briefcase, CreditCard, ChevronLeft, Camera, Loader2,
-  Shield, X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award,
+  X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award,
 } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
-import VerifyModal from '@/components/VerifyModal';
+import VerificationStatusBanner from '@/components/VerificationStatusBanner';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
@@ -60,7 +60,6 @@ export default function Profile() {
   const { t, isRTL, lang } = useLanguage();
   const { user: authUser, refreshUser } = useAuth();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -154,13 +153,6 @@ export default function Profile() {
 
   return (
     <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {showVerifyModal && (
-        <VerifyModal
-          onClose={() => setShowVerifyModal(false)}
-          onSuccess={() => { setShowVerifyModal(false); refreshUser(); }}
-        />
-      )}
-
       {/* ── Hero: gradient header + avatar + name + stats ── */}
       <div style={{
         background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
@@ -243,37 +235,8 @@ export default function Profile() {
       {/* ── Content: connected sections with minimal spacing ── */}
       <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* Verify CTA — shows whenever not verified, with status */}
-        {!isUserVerified(me) && (
-          <button onClick={() => setShowVerifyModal(true)} style={{ all: 'unset', cursor: 'pointer', width: '100%' }}>
-            <div style={{
-              background: 'var(--surface-2)', borderRadius: 14,
-              border: `1px solid ${me?.kyc_status === 'pending' ? '#fde68a' : me?.kyc_status === 'rejected' ? '#fecaca' : 'var(--border-1)'}`,
-              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
-            }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: 11,
-                background: me?.kyc_status === 'pending' ? '#fffbeb' : me?.kyc_status === 'rejected' ? '#fef2f2' : '#eff6ff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <Shield size={18} color={me?.kyc_status === 'pending' ? '#d97706' : me?.kyc_status === 'rejected' ? '#dc2626' : '#1a6fd4'} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
-                  {me?.kyc_status === 'pending' ? t('pr_verify_pending') : me?.kyc_status === 'rejected' ? t('pr_verify_rejected') : t('verify_title')}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                  {me?.kyc_status === 'pending'
-                    ? t('pr_verify_pending_sub')
-                    : me?.kyc_status === 'rejected'
-                    ? t('pr_verify_rejected_sub')
-                    : t('verify_sub')}
-                </div>
-              </div>
-              <ChevronLeft size={15} color="var(--text-3)" />
-            </div>
-          </button>
-        )}
+        {/* Verify CTA — unified, status-aware (same banner as Home feed) */}
+        <VerificationStatusBanner me={me} />
 
         {/* Trust Bar — opens a popup with "how to improve" guide */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />

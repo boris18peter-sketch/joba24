@@ -296,14 +296,6 @@ export default function WorkerOnboarding() {
         <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
           {me?.full_name ? `${me.full_name}, ` : ''}{t('wo_done_body')}
         </p>
-        {/* Bonus badge — only shown when a profile-completion bonus is configured */}
-        {profileBonus > 0 && (
-          <div style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', borderRadius: 16, padding: '14px 24px', marginBottom: 32, boxShadow: '0 4px 20px rgba(251,191,36,0.4)' }}>
-            <div style={{ fontSize: 28, marginBottom: 4 }}>🎁</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: '#1a3a6b' }}>{t('wo_bonus_received').replace('{n}', profileBonus)}</div>
-            <div style={{ fontSize: 13, color: '#1a3a6b', opacity: 0.75, marginTop: 2 }}>{t('wo_bonus_for_profile')}</div>
-          </div>
-        )}
         <button
           onClick={handleGoToApp}
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
