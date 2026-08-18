@@ -886,16 +886,16 @@ export default function TaskDetail(props) {
                     )}
                     {/* Prev arrow */}
                     {allMedia.length > 1 && (
-                      <button onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i - 1 + allMedia.length) % allMedia.length); }}
-                        style={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0 }}>
-                        <ChevronRight size={13} color="#1a1a1a" />
+                      <button className="j-icon-btn" onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i - 1 + allMedia.length) % allMedia.length); }}
+                        style={{ position: 'absolute', top: '50%', right: -6, transform: 'translateY(-50%)', width: 16, height: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', padding: 0, zIndex: 2 }}>
+                        <ChevronRight size={9} color="#1a1a1a" strokeWidth={2.5} />
                       </button>
                     )}
                     {/* Next arrow */}
                     {allMedia.length > 1 && (
-                      <button onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i + 1) % allMedia.length); }}
-                        style={{ position: 'absolute', top: '50%', left: -10, transform: 'translateY(-50%)', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.2)', padding: 0 }}>
-                        <ChevronLeft size={13} color="#1a1a1a" />
+                      <button className="j-icon-btn" onClick={(e) => { e.stopPropagation(); setMediaIdx(i => (i + 1) % allMedia.length); }}
+                        style={{ position: 'absolute', top: '50%', left: -6, transform: 'translateY(-50%)', width: 16, height: 16, borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', padding: 0, zIndex: 2 }}>
+                        <ChevronLeft size={9} color="#1a1a1a" strokeWidth={2.5} />
                       </button>
                     )}
                   </div>
