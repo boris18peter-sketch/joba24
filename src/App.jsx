@@ -51,8 +51,20 @@ const MapView = lazyRetry(() => import('@/pages/MapView'));
 const ChatInbox = lazyRetry(() => import('@/pages/ChatInbox'));
 const Profile = lazyRetry(() => import('@/pages/Profile'));
 
-// Preload all tab pages immediately after initial render
-import('@/pages/HomeFeed'); import('@/pages/MapView'); import('@/pages/ChatInbox'); import('@/pages/Profile');
+// Preload remaining tab pages after initial render is complete (idle callback)
+// so they don't compete with the critical path (HomeFeed) on slow connections
+if (typeof window !== 'undefined') {
+  const preloadTabs = () => {
+    import('@/pages/MapView');
+    import('@/pages/ChatInbox');
+    import('@/pages/Profile');
+  };
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(preloadTabs, { timeout: 3000 });
+  } else {
+    setTimeout(preloadTabs, 1500);
+  }
+}
 
 // All other pages — lazy loaded, fetched only when user navigates there
 const Landing = lazyRetry(() => import('@/pages/Landing'));

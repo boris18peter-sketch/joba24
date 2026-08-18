@@ -67,37 +67,37 @@ export default function HomeFeed() {
   const { user: me, isAuthenticated } = useAuth();
 
 
-  // My published tasks — polled every 20s as safety net for WS misses
+  // My published tasks — WS handles real-time; polling is safety net only
   const { data: myTasks = [], isLoading: myTasksLoading } = useQuery({
     queryKey: ['myTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id }, '-created_date', 20),
     enabled: !!me?.id,
-    staleTime: 20000,
-    refetchInterval: 20000,
+    staleTime: 60000,
+    refetchInterval: 60000,
     refetchOnWindowFocus: false,
   });
 
-  // Active task I'm working on as a worker — refetchInterval: safety-net polling (15s)
+  // Active task I'm working on as a worker — WS primary, 30s safety-net polling
   const { data: activeWorkerTask } = useQuery({
     queryKey: ['activeWorkerTask', me?.id],
     queryFn: () => base44.entities.Task.filter({ worker_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id,
-    staleTime: 10000,
+    staleTime: 30000,
     gcTime: 300000,
     placeholderData: (prev) => prev,
-    refetchInterval: 15000,
+    refetchInterval: 30000,
     refetchOnWindowFocus: false,
   });
 
-  // Active task I published that is currently TAKEN — independent query for instant live updates
+  // Active task I published that is currently TAKEN — WS primary, 30s safety-net polling
   const { data: activeClientTask } = useQuery({
     queryKey: ['activeClientTask', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'TAKEN' }, '-created_date', 1).then(r => r?.[0] || null),
     enabled: !!me?.id,
-    staleTime: 10000,
+    staleTime: 30000,
     gcTime: 300000,
     placeholderData: (prev) => prev,
-    refetchInterval: 15000,
+    refetchInterval: 30000,
     refetchOnWindowFocus: false,
   });
 
@@ -147,7 +147,7 @@ export default function HomeFeed() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['allTasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 200),
+    queryFn: () => base44.entities.Task.filter({ status: 'OPEN' }, '-created_date', 100),
     staleTime: 60000,
     gcTime: 300000,
     refetchOnWindowFocus: false,

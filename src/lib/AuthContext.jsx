@@ -161,7 +161,7 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      // Fallback polling: refresh user data every 60 seconds to catch changes
+      // Fallback polling: refresh user data every 120 seconds to catch changes
       // (e.g. admin KYC approval/rejection) that realtime might miss for cross-user updates
       const pollInterval = setInterval(async () => {
         try {
@@ -178,7 +178,7 @@ export const AuthProvider = ({ children }) => {
             return prev;
           });
         } catch {}
-      }, 60000);
+      }, 120000);
 
       // Also refresh immediately when the tab becomes visible again (user returns to app)
       const handleVisibility = () => {
