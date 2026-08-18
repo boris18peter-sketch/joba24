@@ -81,6 +81,24 @@ Deno.serve(async (req) => {
     ]);
 
     console.log(`✅ Boost applied to task ${taskId} by user ${user.id} (${BOOST_COST} credits)`);
+
+    // ── Re-surface the task: notify matching workers (push + smart popups) ──
+    // Reuses notifyNewMatchingTask which finds workers matching the task's
+    // category/city/proximity and routes a notification through NotificationManager.
+    try {
+      const freshTask = {
+        ...task,
+        last_boost_at: new Date().toISOString(),
+        boost_count: (task.boost_count || 0) + 1,
+      };
+      await base44.asServiceRole.functions.invoke('notifyNewMatchingTask', {
+        data: freshTask,
+        event: 'update',
+      });
+    } catch (notifErr) {
+      console.warn('⚠️ Boost notification failed (non-fatal):', notifErr.message);
+    }
+
     return Response.json({ success: true, credits_remaining: newBalance, cost: BOOST_COST });
 
   } catch (error) {

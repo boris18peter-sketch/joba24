@@ -269,9 +269,6 @@ export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategor
             </motion.div>
           ) : (
             <motion.div key="scanner" onClick={e => e.stopPropagation()} initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-              <button onClick={handleDismiss} style={{ position: 'absolute', top: 0, left: 16, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '7px 14px', color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, zIndex: 10 }}>
-                <X size={14} /> {t('boost_close')}
-              </button>
               <BoostScanner taskId={taskId} taskTitle={taskTitle} taskPrice={taskPrice} taskCategory={taskCategory} onNavigate={onDismiss} />
             </motion.div>
           )}

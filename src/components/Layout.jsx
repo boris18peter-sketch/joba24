@@ -592,11 +592,16 @@ export default function Layout() {
                 );
               })}
             </div>
-            {isNonRootTab && (
-              <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: 'calc(88px + max(6px, env(safe-area-inset-bottom)))', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
-                <Outlet />
-              </div>
-            )}
+            {isNonRootTab && (() => {
+              // Bottom nav is hidden on these non-root paths — don't reserve its 88px padding
+              const hideNavOnPath = ['/create-task', '/support'].includes(location.pathname) || location.pathname.startsWith('/task/') || location.pathname.startsWith('/chat/');
+              const scrollPad = hideNavOnPath ? 'max(6px, env(safe-area-inset-bottom))' : 'calc(88px + max(6px, env(safe-area-inset-bottom)))';
+              return (
+                <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+                  <Outlet />
+                </div>
+              );
+            })()}
           </>
         );
       })()}
