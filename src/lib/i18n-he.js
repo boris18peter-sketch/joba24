@@ -1125,6 +1125,12 @@ export const he = {
     pcb_body: "פרופיל מלא עוזר לנו להתאים לך משימות רלוונטיות יותר, ומגדיל את הסיכוי שמפרסמים יסמכו עליך ויבחרו בך מהר יותר.",
     pcb_cta_bonus: "🎁 השלם פרופיל עובד וקבל בונוס {n} ג'ובות",
     pcb_cta: '🎁 השלם פרופיל עובד',
+    // Unified home CTA banners (single-button, branded)
+    cta_verify: 'אמת פרופיל וקבל ווי ירוק',
+    cta_social: 'חבר רשת חברתית וקבל ווי זהב',
+    cta_profile_bonus: "השלם פרופיל עובד וקבל {n} ג'ובות בונוס",
+    cta_profile: 'השלם פרופיל עובד',
+    catp_car: 'נהגים',
     status_in_work: 'בעבודה',
     status_completed: 'הושלם',
     status_cancelled: 'בוטל',
