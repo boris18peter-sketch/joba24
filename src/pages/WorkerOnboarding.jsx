@@ -38,6 +38,7 @@ export default function WorkerOnboarding() {
   const [step, setStep] = useState(-1); // -1 = welcome, 0..N-1 = steps, N = done
   const [direction, setDirection] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [grantedBonus, setGrantedBonus] = useState(0);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [data, setData] = useState({
     profession: '',
@@ -142,6 +143,7 @@ export default function WorkerOnboarding() {
                 note: t('wo_bonus_note'),
                 balance_after: currentCredits + profileBonus,
               });
+              setGrantedBonus(profileBonus);
               queryClient.invalidateQueries({ queryKey: ['me'] });
             }
             // Mark locally so we skip the server check next time
@@ -296,6 +298,12 @@ export default function WorkerOnboarding() {
         <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
           {me?.full_name ? `${me.full_name}, ` : ''}{t('wo_done_body')}
         </p>
+        {grantedBonus > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 18px', marginBottom: 20, alignSelf: 'stretch', maxWidth: 320 }}>
+            <span style={{ fontSize: 22 }}>🎁</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: '#92400e' }}>{t('wo_bonus_received').replace('{n}', grantedBonus)}</span>
+          </div>
+        )}
         <button
           onClick={handleGoToApp}
           style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}

@@ -57,12 +57,17 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
 // ── Fast embed/oEmbed fetch — tries platform embed endpoints ──
 async function checkBioFast(platform, username, code) {
   const endpoints = [];
+  const isMobile = platform === 'tiktok'; // TikTok is more lenient with mobile UA
+  const ua = isMobile
+    ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+    : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
   if (platform === 'instagram') {
     endpoints.push(`https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`);
     endpoints.push(`https://www.instagram.com/${username}/embed/`);
     endpoints.push(`https://www.instagram.com/${username}/?__a=1&__d=dis`);
   } else if (platform === 'tiktok') {
     endpoints.push(`https://www.tiktok.com/@${username}?lang=en`);
+    endpoints.push(`https://m.tiktok.com/@${username}`);
   } else if (platform === 'facebook') {
     endpoints.push(`https://www.facebook.com/${username}/`);
   }
@@ -71,13 +76,14 @@ async function checkBioFast(platform, username, code) {
     try {
       const res = await fetchWithTimeout(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'User-Agent': ua,
           'Accept': 'text/html,application/xhtml+xml,application/json,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
-          'x-ig-app-id': '936619743392459',
+          ...(platform === 'tiktok' ? { 'Referer': 'https://www.tiktok.com/' } : {}),
+          ...(platform === 'instagram' ? { 'x-ig-app-id': '936619743392459' } : {}),
         },
         redirect: 'follow',
-      }, 6000);
+      }, platform === 'tiktok' ? 8000 : 6000);
       const text = await res.text().catch(() => '');
       if (text && text.length > 100) {
         const decoded = decodeEntities(text);
@@ -96,12 +102,16 @@ async function checkBioFast(platform, username, code) {
 // ── Direct HTML fetch — search for code in page HTML/meta tags ──
 async function checkBioDirect(platform, username, code) {
   const profileUrl = PLATFORM_CONFIG[platform].profileUrl(username);
+  const isMobile = platform === 'tiktok';
   try {
     const res = await fetchWithTimeout(profileUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'User-Agent': isMobile
+          ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
+        ...(platform === 'tiktok' ? { 'Referer': 'https://www.tiktok.com/' } : {}),
       },
       redirect: 'follow',
     }, 8000);
@@ -133,7 +143,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
       },
     });
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout (30s)')), 30000)
+      setTimeout(() => reject(new Error('LLM timeout (20s)')), 20000)
     );
     const result = await Promise.race([llmPromise, timeoutPromise]);
     console.log(`verifyInstagram: LLM result: found=${result?.found}, bio="${(result?.bio || '').substring(0, 100)}"`);
