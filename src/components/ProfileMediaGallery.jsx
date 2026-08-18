@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Trash2, Loader2, Video, X } from 'lucide-react';
+import { Plus, Trash2, Loader2, Video } from 'lucide-react';
 import { toast } from 'sonner';
+import MediaLightbox from '@/components/MediaLightbox';
 
 export default function ProfileMediaGallery({ media = [], isEditing, onChange, subtitle }) {
   const inputRef = useRef(null);
@@ -49,12 +50,12 @@ export default function ProfileMediaGallery({ media = [], isEditing, onChange, s
             {uploading ? <Loader2 size={20} className="animate-spin" /> : <><Plus size={22} /><span style={{ fontSize: 12, fontWeight: 700 }}>הוסף מדיה</span></>}
           </button>
         )}
-        {allMedia.map(item => (
+        {allMedia.map((item, idx) => (
           <div key={item.url} style={{ position: 'relative', flexShrink: 0, width: 130, height: 130, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-1)', background: '#000' }}>
             {item.type === 'video' ? (
-              <video src={item.url} onClick={() => !isEditing && setLightbox(item)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: isEditing ? 'default' : 'pointer' }} />
+              <video src={item.url} onClick={() => !isEditing && setLightbox(idx)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: isEditing ? 'default' : 'pointer' }} />
             ) : (
-              <img src={item.url} alt="" onClick={() => !isEditing && setLightbox(item)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: isEditing ? 'default' : 'pointer' }} />
+              <img src={item.url} alt="" onClick={() => !isEditing && setLightbox(idx)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: isEditing ? 'default' : 'pointer' }} />
             )}
             {isEditing && (
               <button onClick={() => removeItem(item.url)} style={{ position: 'absolute', top: 6, left: 6, width: 26, height: 26, borderRadius: 8, background: 'rgba(0,0,0,0.6)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -70,18 +71,12 @@ export default function ProfileMediaGallery({ media = [], isEditing, onChange, s
         ))}
       </div>
       <input ref={inputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleUpload} />
-      {lightbox && (
-        <div onClick={() => setLightbox(null)} style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <button onClick={(e) => { e.stopPropagation(); setLightbox(null); }} style={{ position: 'absolute', top: 16, left: 16, width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.15)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <X size={20} color="white" />
-          </button>
-          {lightbox.type === 'video' ? (
-            <video src={lightbox.url} controls autoPlay onClick={e => e.stopPropagation()} style={{ maxWidth: '95%', maxHeight: '90vh' }} />
-          ) : (
-            <img src={lightbox.url} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: '95%', maxHeight: '90vh', objectFit: 'contain' }} />
-          )}
-        </div>
-      )}
+      <MediaLightbox
+        isOpen={lightbox !== null}
+        items={allMedia}
+        initialIndex={lightbox ?? 0}
+        onClose={() => setLightbox(null)}
+      />
     </>
   );
 }

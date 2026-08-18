@@ -101,6 +101,16 @@ export default function HomeFeed() {
     refetchOnWindowFocus: false,
   });
 
+  // Fetch the approved worker's user record so the owner's ActiveTaskBanner can
+  // show a direct-dial phone button (workerUser.phone) right after approval.
+  const { data: activeWorkerUser } = useQuery({
+    queryKey: ['publicUser', activeClientTask?.worker_id],
+    queryFn: async () => { const u = await base44.entities.User.filter({ id: activeClientTask.worker_id }); return u[0] || null; },
+    enabled: !!me?.id && !!activeClientTask?.worker_id,
+    staleTime: 120000,
+    refetchOnWindowFocus: false,
+  });
+
   // Auto-switch default tab — runs once, before the user manually picks a tab.
   // Has open/in-progress published tasks → "משימות שפרסמתי".
   // Otherwise → "כל המשימות" (so users with nothing active land on the feed).
@@ -616,12 +626,12 @@ export default function HomeFeed() {
       {/* Active Task Banner — below segmented control */}
       {activeTab === 'available' && activeWorkerTask && (
         <div style={{ padding: '10px 16px 0' }}>
-          <ActiveTaskBanner tasks={[{ ...activeWorkerTask, _roleHint: 'worker' }]} roleHint="worker" />
+          <ActiveTaskBanner tasks={[{ ...activeWorkerTask, _roleHint: 'worker' }]} roleHint="worker" extraInfo={{ contactPhone: activeWorkerTask.contactPhone }} />
         </div>
       )}
       {activeTab === 'my_published' && activeClientTask && (
         <div style={{ padding: '10px 16px 0' }}>
-          <ActiveTaskBanner tasks={[{ ...activeClientTask, _roleHint: 'client' }]} roleHint="client" />
+          <ActiveTaskBanner tasks={[{ ...activeClientTask, _roleHint: 'client' }]} roleHint="client" extraInfo={{ workerUser: activeWorkerUser }} />
         </div>
       )}
 

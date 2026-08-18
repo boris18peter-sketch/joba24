@@ -127,13 +127,21 @@ export default function useRealtimeSync({
       });
 
       // COMPLETED → refresh me + show rating (only for real-time transitions, NOT historical re-broadcasts)
+      // NOTE: completeTask patches only { status, client_confirmed, completed_at } — the WS event
+      // data is a PARTIAL patch without worker_id/client_id. Look up the full task from the caches
+      // (just synced above) to recover ownership so the rating modal actually fires.
       if (event.type === 'update' && t_data.status === 'COMPLETED') {
-        if (t_data.worker_id === me.id || t_data.client_id === me.id) {
+        const pubTasks = queryClient.getQueryData(['myPublishedTasks', me.id]) || [];
+        const wTasks = queryClient.getQueryData(['workerTasksLayout', me.id]) || [];
+        const fullTask = pubTasks.find(t => t.id === event.id) || wTasks.find(t => t.id === event.id) || {};
+        const ownerId = fullTask.client_id || t_data.client_id;
+        const workerId = fullTask.worker_id || t_data.worker_id;
+        if (ownerId === me.id || workerId === me.id) {
           queryClient.invalidateQueries({ queryKey: ['me'] });
           // Only show rating modal if this is a genuine status change (not a re-broadcast of an already-COMPLETED task)
-          const prev = prevTasksRef.current[t_data.id];
+          const prev = prevTasksRef.current[event.id];
           if (!prev || prev.status !== 'COMPLETED') {
-            maybeShowRating(t_data);
+            maybeShowRating({ ...fullTask, ...t_data, client_id: ownerId, worker_id: workerId });
           }
         }
       }

@@ -5,6 +5,11 @@ import { createPortal } from 'react-dom';
 export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, onClose }) {
   const [index, setIndex] = useState(initialIndex);
 
+  // Sync to the requested initial index whenever the lightbox (re)opens on a different item
+  useEffect(() => {
+    if (isOpen) setIndex(initialIndex);
+  }, [isOpen, initialIndex]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
