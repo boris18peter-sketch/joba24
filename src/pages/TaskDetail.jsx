@@ -311,6 +311,13 @@ export default function TaskDetail(props) {
       }
       if (patch.status === 'COMPLETED') {
         queryClient.invalidateQueries({ queryKey: ['myReview', id, currentMeId] });
+        // Reliable rating trigger for both owner and worker — dispatches with the
+        // full cached task (now COMPLETED). Dedup in maybeShowRating (shownRatingRef
+        // + localStorage) prevents double-popups if Layout's WebSocket handler also fires.
+        const fullTask = queryClient.getQueryData(['task', id]);
+        if (fullTask && (fullTask.client_id === currentMeId || fullTask.worker_id === currentMeId)) {
+          window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task: fullTask } }));
+        }
       }
     });
 

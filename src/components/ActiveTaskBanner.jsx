@@ -175,8 +175,10 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
       toast.success(t('task_completed') || 'Task completed! 🎉');
-      // Dispatch rating popup event
-      window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task } }));
+      // Dispatch rating popup event — pass COMPLETED status so maybeShowRating
+      // (which requires status === 'COMPLETED') actually fires. The local `task`
+      // still holds the pre-completion status.
+      window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task: { ...task, status: 'COMPLETED' } } }));
     } catch (err) {
       toast.error((t('error_colon') || 'Error: ') + err.message);
     } finally {
@@ -207,7 +209,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
           // Nav button → show only when on_the_way. After arrived → show chat.
           const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;
-          const showChatBtn = tIsWorker && tStepIdx >= 1;
+          const showChatBtn = tIsWorker;
 
           // Phone numbers for action buttons
           const workerPhone = tIsWorker && extraInfo?.contactPhone ? extraInfo.contactPhone : null;
@@ -359,7 +361,10 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                       const wazeUrl = `https://waze.com/ul?q=${dst}&navigate=yes`;
                       const mapsUrl = task.lat && task.lng ? `https://maps.google.com/maps?daddr=${task.lat},${task.lng}` : `https://maps.google.com/maps?q=${encodeURIComponent(task.location_name)}`;
                       const choice = window.confirm(t('navigate_choice') || 'Navigate with Waze?\nClick cancel for Google Maps');
-                      window.open(choice ? wazeUrl : mapsUrl, '_blank');
+                      // Use location.href (not window.open) — in native WebView apps,
+                      // window.open('_blank') is often blocked and silently fails.
+                      // location.href triggers the universal link → opens Waze/Maps natively.
+                      window.location.href = choice ? wazeUrl : mapsUrl;
                     }}
                     style={{ flex: 1, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.3)', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
