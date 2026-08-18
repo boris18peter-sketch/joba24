@@ -216,9 +216,9 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
               <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', border: '2px solid #ddd6fe' }}>
                 <Zap size={30} color="#a855f7" strokeWidth={2} />
               </div>
-              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('boost_cooldown_title') || 'הבוסט נטען'}</div>
+              <div style={{ fontSize: 19, fontWeight: 900, color: '#0f1e40', marginBottom: 8 }}>{t('boost_cooldown_title', 'הבוסט בטעינה')}</div>
               <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 18 }}>
-                {t('boost_cooldown_body') || 'הבוסט מתמלא פעם בשעה. נשאר:'}
+                {t('boost_cooldown_body', 'הבוסט מתמלא פעם בשעה. זמן שנותר:')}
               </div>
               {/* Countdown timer */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
@@ -226,20 +226,20 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
                   <div style={{ fontSize: 36, fontWeight: 900, fontFamily: 'monospace', letterSpacing: 1, lineHeight: 1 }}>
                     {String(Math.floor(remainingMs / 60000)).padStart(2, '0')}:{String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}
                   </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 700, marginTop: 4 }}>{t('minutes_seconds') || 'דקות:שניות'}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 700, marginTop: 4 }}>{t('minutes_seconds', 'דקות:שניות')}</div>
                 </div>
               </div>
               {/* Progress ring mirroring the pill fill */}
               <div style={{ height: 6, background: '#ede9fe', borderRadius: 99, overflow: 'hidden', marginBottom: 6 }}>
                 <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#c084fc,#7c3aed)', borderRadius: 99, transition: 'width 1s linear' }} />
               </div>
-              <div style={{ fontSize: 11, color: '#a855f7', fontWeight: 700 }}>{pct}% {t('boost_charged') || 'טעון'}</div>
+              <div style={{ fontSize: 11, color: '#a855f7', fontWeight: 700 }}>{pct}% {t('boost_charged', 'טעון')}</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 8 }}>
               <button
                 onClick={() => setShowCooldown(false)}
                 style={{ width: '100%', height: 48, borderRadius: 16, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: 'white', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 16px rgba(124,58,237,0.3)' }}>
-                {t('boost_close_btn') || 'הבנתי'}
+                {t('boost_close_btn', 'הבנתי')}
               </button>
             </div>
           </div>
