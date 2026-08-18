@@ -10,6 +10,7 @@ import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowU
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useTaskTranslation } from '@/hooks/useTaskTranslation';
 import FilterSheet from '@/components/FilterSheet';
 
 const CENTER = { longitude: 34.7818, latitude: 32.0853 };
@@ -117,6 +118,9 @@ export default function MapView() {
   const [navMode, setNavMode] = useState(false);
   const [navLoading, setNavLoading] = useState(false);
   const [routeMeta, setRouteMeta] = useState(null); // { totalDist (m), totalTime (s) }
+
+  // Auto-translate the selected task bubble to the user's UI language
+  const { translatedTask: translatedSelectedTask } = useTaskTranslation(selectedTask);
 
   const [viewState, setViewState] = useState({
     longitude: CENTER.longitude, latitude: CENTER.latitude,
@@ -411,13 +415,15 @@ export default function MapView() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
               {/* Category button */}
               <button
-                onClick={() => setShowCategoryDropdown(v => !v)}
+                onClick={() => { if (displayTasks.length > 0) setShowCategoryDropdown(v => !v); }}
+                disabled={displayTasks.length === 0}
                 style={{
                   flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                   borderRadius: 10, border: `1px solid ${filters.category ? '#93c5fd' : '#e8edf5'}`,
                   background: filters.category ? '#eff6ff' : 'var(--surface-2)',
                   color: filters.category ? '#1a6fd4' : '#64748b',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, cursor: displayTasks.length > 0 ? 'pointer' : 'not-allowed',
+                  opacity: displayTasks.length > 0 ? 1 : 0.4,
                 }}
               >
                 {filters.category ? getCategoryLabel(filters.category, t) : t('category')}
@@ -625,10 +631,10 @@ export default function MapView() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-1)', marginBottom: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                  {selectedTask.title}
+                  {translatedSelectedTask?.title || selectedTask.title}
                 </div>
                 <div style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  {selectedTask.location_name && <><MapPin size={10} /><span>{selectedTask.location_name}</span></>}
+                  {selectedTask.location_name && <><MapPin size={10} /><span>{translatedSelectedTask?.location_name || selectedTask.location_name}</span></>}
                   {selectedTask.estimated_time && <><Clock size={10} /><span>{selectedTask.estimated_time}</span></>}
                   <span style={{ background: '#f1f5f9', borderRadius: 10, padding: '1px 7px', fontSize: 10 }}>{getCategoryLabel(selectedTask.category, t)}</span>
                 </div>

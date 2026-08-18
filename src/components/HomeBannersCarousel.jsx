@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
 import VerificationStatusBanner from '@/components/VerificationStatusBanner';
 import ProfileCompletionBanner from '@/components/ProfileCompletionBanner';
 import { isUserVerified } from '@/lib/utils';
@@ -13,8 +15,12 @@ import { isUserVerified } from '@/lib/utils';
  */
 const ROTATE_MS = 6000;
 
-export default function HomeBannersCarousel({ me }) {
+export default function HomeBannersCarousel({ me: meProp }) {
   const [idx, setIdx] = useState(0);
+  // Fetch me directly from the query cache so the banners react instantly
+  // when profile/verification changes (AuthContext.user may lag behind).
+  const { data: meQuery } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me(), staleTime: 0 });
+  const me = meQuery || meProp;
 
   const showVerify = !!me && !isUserVerified(me);
   const showProfile = !!me && !(me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0);
@@ -42,15 +48,20 @@ export default function HomeBannersCarousel({ me }) {
 
   return (
     <div style={{ marginBottom: 14 }}>
-      {/* Only the active banner is mounted, so the container always shrinks
-          to the visible banner's height — no empty space from a taller
-          off-screen banner. */}
-      <div
-        key={banners[current].key}
-        style={{ animation: 'fadeIn 0.4s ease-out' }}
-      >
-        {banners[current].node}
-      </div>
+      {/* All banners are mounted but only the active one is visible.
+          This prevents popups (e.g. VerifyModal) from closing when the
+          carousel auto-rotates — the banner stays mounted, its modal stays open. */}
+      {banners.map((b, i) => (
+        <div
+          key={b.key}
+          style={{
+            display: i === current ? 'block' : 'none',
+            animation: i === current ? 'fadeIn 0.4s ease-out' : 'none',
+          }}
+        >
+          {b.node}
+        </div>
+      ))}
 
       {/* Pagination dots — small, elegant pills. Inline min-height/min-width
           override the global `button { min-height: 44px }` tap-target rule,

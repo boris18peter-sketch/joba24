@@ -260,8 +260,8 @@ export default function BoostOverlay({ taskId, taskTitle, taskPrice, taskCategor
   const handleDismiss = () => { onDismiss?.(); };
 
   return createPortal(
-    <div onClick={handleDismiss} dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 'max(20px, env(safe-area-inset-top))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+    <div onClick={handleDismiss} dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 9999998, background: 'linear-gradient(160deg, #1a0535 0%, #2d0a5e 55%, #3b0d78 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
         <AnimatePresence mode="wait">
           {step === 'launch' ? (
             <motion.div key="launch" onClick={e => e.stopPropagation()} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: 30 }} transition={{ duration: 0.32 }} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>

@@ -1051,7 +1051,7 @@ export default function CreateTask() {
         );
       })()}
 
-      <div className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(48px, env(safe-area-inset-bottom))' }}>
+      <div className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
         {/* Draft restore indicator */}
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1661,7 +1661,7 @@ export default function CreateTask() {
         {(() => {
           const isReady = !!(form.description && form.price && form.location_name && addressConfirmed && form.payment_method);
           return (
-            <div style={{ marginTop: 8, paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
+            <div style={{ marginTop: 8, paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={handleSubmit}
                 disabled={loading || !!checkingModeration}

@@ -1012,7 +1012,7 @@ export default function TaskDetail(props) {
             <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
                 <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{t('your_app_approved')}</div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => gate(() => takeMutation.mutate())} disabled={takeMutation.isPending}
+                  <button onClick={() => takeMutation.mutate()} disabled={takeMutation.isPending}
                 style={{ flex: 1, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.25)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   
                     {takeMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : t('go_now_action')}
@@ -1027,7 +1027,7 @@ export default function TaskDetail(props) {
             {/* Apply button */}
             {canApplyManual && !showApplyForm &&
             <button
-              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } gate(() => setShowApplyForm(true));}}
+              onClick={() => {if (!isAuthenticated) {setShowLoginPrompt(true);return;} if (task.verification_required && !isUserVerified(verifyUser)) { if (verifyUser?.kyc_status === 'pending') { setShowVerificationPending(true); } else { setShowVerificationRequired(true); } return; } setShowApplyForm(true);}}
               style={{ width: '100%', height: 46, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, backdropFilter: 'blur(4px)' }}>
               
                 <Send size={15} strokeWidth={1.8} />

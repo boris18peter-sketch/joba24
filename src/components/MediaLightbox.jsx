@@ -39,13 +39,13 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
         onClick={onClose}
         style={{
           position: 'absolute',
-          top: 16,
+          top: 'max(54px, env(safe-area-inset-top))',
           left: 16,
           width: 40,
           height: 40,
           borderRadius: 10,
-          background: 'rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          background: 'rgba(255, 255, 255, 0.15)',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

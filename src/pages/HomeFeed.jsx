@@ -674,13 +674,17 @@ export default function HomeFeed() {
                 <div style={{ width: 1, height: 24, background: 'var(--border-1)', flexShrink: 0 }} />
 
                 {/* Category button */}
-                <button onClick={() => setShowCategoryDropdown(v => !v)} style={{
+                <button
+                  onClick={() => { if (tasks.some(t => t.status === 'OPEN')) setShowCategoryDropdown(v => !v); }}
+                  disabled={!tasks.some(t => t.status === 'OPEN')}
+                  style={{
                   display: 'flex', alignItems: 'center', gap: 3,
                   padding: '0 10px', height: '100%',
                   background: filters.categories?.length > 0 ? '#eff6ff' : 'transparent',
-                  border: 'none', cursor: 'pointer', flexShrink: 0,
+                  border: 'none', cursor: tasks.some(t => t.status === 'OPEN') ? 'pointer' : 'not-allowed', flexShrink: 0,
                   fontSize: 12, color: filters.categories?.length > 0 ? '#1a6fd4' : 'var(--text-2)',
                   fontWeight: 600, whiteSpace: 'nowrap',
+                  opacity: tasks.some(t => t.status === 'OPEN') ? 1 : 0.4,
                 }}>
                   {filters.categories?.length > 0
                     ? <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>

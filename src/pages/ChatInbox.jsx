@@ -31,6 +31,29 @@ export default function ChatInbox() {
     refetchOnWindowFocus: false,
   });
 
+  // Tasks the worker applied to (but isn't approved yet) — so conversations
+  // started via QuickChatDrawer before approval still appear in the inbox.
+  const { data: myApplications = [] } = useQuery({
+    queryKey: ['myApplicationsFeed', me?.id],
+    queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
+    enabled: !!me?.id,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: appliedTasks = [] } = useQuery({
+    queryKey: ['appliedTasks', me?.id],
+    queryFn: async () => {
+      if (!myApplications.length) return [];
+      const taskIds = [...new Set(myApplications.map(a => a.task_id))];
+      const tasks = await base44.entities.Task.filter({ id: { $in: taskIds } });
+      return tasks;
+    },
+    enabled: !!me?.id && myApplications.length > 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+
   const { data: supportMsgs = [] } = useQuery({
     queryKey: ['supportMsgs', me?.id],
     queryFn: () => base44.entities.SupportMessage.filter({ user_id: me.id }, '-created_date', 50),
@@ -42,24 +65,26 @@ export default function ChatInbox() {
   // Layout's useRealtimeSync already updates workerTasksLayout & myPublishedTasks caches via WebSocket.
   // No need for a duplicate subscription here.
 
-  // Merge and deduplicate
+  // Merge and deduplicate — includes tasks the worker applied to (not yet approved)
   const allTasks = useMemo(() => {
     const map = {};
-    [...workerTasks, ...clientTasks].forEach(t => { map[t.id] = t; });
+    [...workerTasks, ...clientTasks, ...appliedTasks].forEach(t => { map[t.id] = t; });
     return Object.values(map).sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
-  }, [workerTasks, clientTasks]);
+  }, [workerTasks, clientTasks, appliedTasks]);
 
-  // Visible = tasks with active engagement (worker assigned)
-  const visibleTasks = useMemo(() => {
-    return allTasks.filter(t => ACTIVE_STATUSES.includes(t.status));
-  }, [allTasks]);
-
-  // Stable dependency string — only re-fetch when task set changes
-  const taskIdString = useMemo(() => visibleTasks.map(t => t.id).sort().join(','), [visibleTasks]);
+  // Fetch messages for ALL tasks (not just active ones) — so pre-approval
+  // conversations (task still OPEN) are included in the message fetch.
+  const taskIdString = useMemo(() => allTasks.map(t => t.id).sort().join(','), [allTasks]);
 
   // Fetch last messages + unread counts
   const [lastMessages, setLastMessages] = useState({});
   const [unreadCounts, setUnreadCounts] = useState({});
+
+  // Visible = tasks with active engagement OR tasks that have chat messages
+  // (covers pre-approval conversations where the task is still OPEN).
+  const visibleTasks = useMemo(() => {
+    return allTasks.filter(t => ACTIVE_STATUSES.includes(t.status) || lastMessages[t.id]);
+  }, [allTasks, lastMessages]);
 
   useEffect(() => {
     if (!taskIdString || !me?.id) return;
