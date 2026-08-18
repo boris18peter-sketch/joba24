@@ -65,7 +65,7 @@ function Stars({ rating, size = 14 }) {
  * Each task is a clickable card that opens the task detail. Reviews are shown
  * inline (Trustpilot-style) with a clear role badge for the profile owner.
  */
-export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) {
+export default function TaskReviewHistory({ tasks = [], reviews = [], userId, clickable = true, onTaskClick, hidePrices = false }) {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
 
@@ -106,13 +106,13 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
           return (
             <div
               key={`t-${item.task.id}`}
-              onClick={() => navigate(`/task/${item.task.id}`)}
+              onClick={clickable ? () => (onTaskClick ? onTaskClick(item.task.id) : navigate(`/task/${item.task.id}`)) : undefined}
               style={{
                 background: 'var(--surface-2)',
                 border: '1px solid var(--border-1)',
                 borderRadius: 16,
                 padding: '14px 16px',
-                cursor: 'pointer',
+                cursor: clickable ? 'pointer' : 'default',
                 transition: 'box-shadow 0.15s, border-color 0.15s',
               }}
             >
@@ -137,7 +137,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId }) 
                     {getCategoryLabel(item.task.category, t)}
                   </span>
                 )}
-                {item.task.price > 0 && (
+                {item.task.price > 0 && !hidePrices && (
                   <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 700 }}>₪{item.task.price}</span>
                 )}
               </div>

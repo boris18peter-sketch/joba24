@@ -23,10 +23,14 @@ const PAD = 10; // spotlight padding around the target element
 
 // ── Step definitions ──────────────────────────────────────────────────────
 // Each step targets a real DOM element by id and only runs if that element exists.
-function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral }) {
-  const totalBonus = (signupBonus || 0) + (hasReferral ? (referralBonus || 0) : 0);
+function buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, actualBonus }) {
+  // Prefer the ACTUAL bonus the user received (summed from their real credit
+  // transactions) over a settings-based estimate — each user may receive a
+  // different amount depending on referrals, profile completion, etc.
+  const settingsEstimate = (signupBonus || 0) + (hasReferral ? (referralBonus || 0) : 0);
+  const bonus = (isAuthenticated && actualBonus > 0) ? actualBonus : settingsEstimate;
   const jobasTitle = isAuthenticated
-    ? `קיבלתם ${totalBonus} ג'ובות במתנה!`
+    ? `קיבלתם ${bonus} ג'ובות במתנה!`
     : "קבלו ג'ובות במתנה בהרשמה!";
 
   return [
@@ -106,10 +110,23 @@ export default function WelcomeTutorial() {
   const referralBonus = settings?.referral_signup_bonus ?? 40;
   const hasReferral = !!(me?.referred_by_agent_code) || !!localStorage.getItem('joba24_ref_code');
 
+  // Sum the ACTUAL signup/referral bonus the user received from their real
+  // credit transactions — this is the true amount credited, not a settings guess.
+  const { data: actualBonus = 0 } = useQuery({
+    queryKey: ['signupBonusTotal', me?.id],
+    queryFn: async () => {
+      if (!me?.id) return 0;
+      const txns = await base44.entities.CreditTransaction.filter({ user_id: me.id, type: 'Signup_Bonus' }, '-created_date', 20);
+      return txns.filter(t => (t.amount || 0) > 0).reduce((s, t) => s + t.amount, 0);
+    },
+    enabled: !!me?.id,
+    staleTime: 60000,
+  });
+
   // Detect available steps once (after a short delay for layout to settle)
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
-    const candidates = buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral });
+    const candidates = buildSteps({ isAuthenticated, signupBonus, referralBonus, hasReferral, actualBonus });
 
     const startedAt = Date.now();
     const MAX_WAIT = 60000; // keep waiting while a popup/sheet covers the screen
@@ -131,7 +148,7 @@ export default function WelcomeTutorial() {
     const t = setTimeout(detect, 600);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, signupBonus, referralBonus]);
+  }, [isAuthenticated, signupBonus, referralBonus, actualBonus]);
 
   const currentStep = steps[stepIdx];
 

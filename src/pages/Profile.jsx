@@ -15,6 +15,7 @@ import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { getCityLabel } from '@/lib/cityLabels';
@@ -59,6 +60,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { t, isRTL, lang } = useLanguage();
   const { user: authUser, refreshUser } = useAuth();
+  const { openTaskSheet } = useTaskSheet();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
@@ -356,7 +358,7 @@ export default function Profile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir="rtl">
-              <TaskReviewHistory tasks={[...workerTasks, ...postedTasks]} reviews={reviews} userId={me.id} />
+              <TaskReviewHistory tasks={[...workerTasks, ...postedTasks]} reviews={reviews} userId={me.id} onTaskClick={openTaskSheet} />
             </div>
           </div>
         </div>,

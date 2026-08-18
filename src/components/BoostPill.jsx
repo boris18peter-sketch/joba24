@@ -223,10 +223,10 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
               {/* Countdown timer */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
                 <div style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: 'white', borderRadius: 16, padding: '14px 20px', minWidth: 140, boxShadow: '0 6px 20px rgba(124,58,237,0.3)' }}>
-                  <div style={{ fontSize: 36, fontWeight: 900, fontFamily: 'monospace', letterSpacing: 1, lineHeight: 1 }}>
+                  <div style={{ fontSize: 36, fontWeight: 900, letterSpacing: 1, lineHeight: 1 }}>
                     {String(Math.floor(remainingMs / 60000)).padStart(2, '0')}:{String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, '0')}
                   </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 700, marginTop: 4 }}>{t('minutes_seconds', 'דקות:שניות')}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)', fontWeight: 600, marginTop: 8, lineHeight: 1.5 }}>{t('boost_desc_long')}</div>
                 </div>
               </div>
               {/* Progress ring mirroring the pill fill */}
