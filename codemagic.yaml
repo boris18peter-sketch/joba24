@@ -8,6 +8,9 @@ workflows:
     environment:
       groups:
         - ios_signing
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.base69e6bdb4986a04a256653a23.app
       vars:
         BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
@@ -24,11 +27,6 @@ workflows:
       - name: Sync Capacitor iOS project
         script: |
           ./node_modules/.bin/cap sync ios
-      - name: Fetch signing files from App Store Connect
-        script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
@@ -36,8 +34,7 @@ workflows:
         script: |
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME" \
-            --archive-xcargs "CODE_SIGN_IDENTITY='iOS Distribution'"
+            --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
