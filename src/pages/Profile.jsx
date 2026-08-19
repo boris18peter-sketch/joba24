@@ -171,10 +171,7 @@ export default function Profile() {
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 0' }}>
           <span style={{ fontSize: 17, fontWeight: 800, color: 'white' }}>{t('profile_title')}</span>
           <button
-            onClick={() => {
-              const joinCompleted = categories.length > 0 && cities.length > 0;
-              navigate(joinCompleted ? '/worker-profile' : '/join');
-            }}
+            onClick={() => navigate('/worker-profile')}
             style={{ height: 34, paddingInline: 16, borderRadius: 20, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(6px)' }}
           >
             <Pencil size={13} color="white" /> {t('pr_edit')}

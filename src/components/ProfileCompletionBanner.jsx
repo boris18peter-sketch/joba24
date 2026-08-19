@@ -17,7 +17,7 @@ export default function ProfileCompletionBanner({ me }) {
   if (isComplete) return null;
   const label = profileBonus > 0 ? t('cta_profile_bonus').replace('{n}', profileBonus) : t('cta_profile');
   return (
-    <Link to="/join" id="onboarding-profile-banner" style={{ textDecoration: 'none', display: 'block' }}>
+    <Link to="/worker-profile" id="onboarding-profile-banner" style={{ textDecoration: 'none', display: 'block' }}>
       <HomeCtaBanner theme="blue" icon={Gift} label={label} sublabel={t('cta_profile_sub')} />
     </Link>
   );
