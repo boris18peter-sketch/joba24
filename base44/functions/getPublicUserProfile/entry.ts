@@ -26,6 +26,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Compute rating + completed-task count from LIVE data (service role) so the
+    // public profile never depends on denormalized User fields that can drift
+    // (e.g. wiped by the new-user simulator). Falls back to stored values.
+    const reviews = await base44.asServiceRole.entities.Review.filter({ reviewee_id: userId }, '-created_date', 200);
+    const reviewRatings = reviews.map(r => r.rating).filter(r => typeof r === 'number' && r > 0);
+    const computedRating = reviewRatings.length > 0
+      ? reviewRatings.reduce((a, b) => a + b, 0) / reviewRatings.length
+      : (targetUser.rating || 0);
+    const computedRatingCount = reviews.length || targetUser.rating_count || 0;
+    const completedTasks = await base44.asServiceRole.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 200);
+    const computedTasksCompleted = completedTasks.length || targetUser.tasks_completed || 0;
+
     return Response.json({
       user: {
         id: targetUser.id,
@@ -34,9 +46,9 @@ Deno.serve(async (req) => {
         is_verified: targetUser.is_verified,
         is_phone_verified: targetUser.is_phone_verified,
         kyc_status: targetUser.kyc_status,
-        rating: targetUser.rating,
-        rating_count: targetUser.rating_count,
-        tasks_completed: targetUser.tasks_completed,
+        rating: computedRating,
+        rating_count: computedRatingCount,
+        tasks_completed: computedTasksCompleted,
         bio: targetUser.bio,
         intro_video_url: targetUser.intro_video_url,
         phone: revealPhone ? targetUser.phone : undefined,

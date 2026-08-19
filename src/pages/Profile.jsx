@@ -147,7 +147,10 @@ export default function Profile() {
 
   const completedCount = workerTasks.length;
   const postedCount = postedTasks.length;
-  const rating = me?.rating || 0;
+  // Prefer the denormalized rating, but fall back to the actual reviews so the
+  // rating shows even when the User field is stale/wiped (e.g. by the simulator).
+  const reviewsAvg = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+  const rating = (me?.rating && me.rating > 0) ? me.rating : reviewsAvg;
   const avgRating = rating > 0 ? rating.toFixed(1) : '—';
   const initials = me?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const cities = me?.preferred_cities || [];

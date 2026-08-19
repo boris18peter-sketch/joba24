@@ -93,7 +93,14 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
   const completedCount = getCompletedCount(tasks, user);
   const verified = isUserVerified(user);
 
-  const rating = user?.rating || 0;
+  // Prefer the denormalized rating, but fall back to the actual reviews so the
+  // breakdown matches the meter even when the User fields are stale/wiped.
+  let rating = user?.rating;
+  if ((!rating || rating <= 0) && Array.isArray(reviews) && reviews.length > 0) {
+    const valid = reviews.map(r => r.rating).filter(r => typeof r === 'number' && r > 0);
+    if (valid.length) rating = valid.reduce((a, b) => a + b, 0) / valid.length;
+  }
+  rating = rating || 0;
   const ratingCount = user?.rating_count || (Array.isArray(reviews) ? reviews.length : 0);
   const ratingPoints = (rating > 0 && ratingCount >= 1) ? Math.round((rating / 5) * 30) : 0;
   const taskPoints = Math.min(Math.round(completedCount * 1.5), 30);

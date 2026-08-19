@@ -14,6 +14,7 @@ import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCityLabel } from '@/lib/cityLabels';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 const INITIAL_CITIES_COUNT = 12;
 
@@ -53,6 +54,7 @@ export default function WorkerProfile() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, isRTL, lang } = useLanguage();
+  const { refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   const viewUserId = searchParams.get('id');
   const taskId = searchParams.get('taskId');
@@ -148,8 +150,12 @@ export default function WorkerProfile() {
 
   const saveMutation = useMutation({
     mutationFn: () => base44.auth.updateMe(form),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
+      // Refresh AuthContext's user so Profile.jsx (which reads authUser) shows
+      // newly-saved certificate_files / media immediately, without waiting for
+      // the 120s polling cycle.
+      await refreshUser();
       toast.success(t('wp_profile_updated'));
       navigate('/profile');
     },

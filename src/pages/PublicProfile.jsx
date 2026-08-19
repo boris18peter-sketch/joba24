@@ -102,9 +102,12 @@ export default function PublicProfile() {
     </div>
   );
 
-  const avgRating = allReviews.length > 0
-    ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length).toFixed(1)
-    : '—';
+  // Prefer the live rating/count returned by getPublicUserProfile (computed from
+  // actual reviews via service role) so the rating shows even when the app-user
+  // client can't read another user's reviews (Review RLS).
+  const liveRating = user?.rating || 0;
+  const liveRatingCount = user?.rating_count || 0;
+  const avgRating = liveRating > 0 ? liveRating.toFixed(1) : '—';
   const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   // Compute trust score from LIVE data (reviews + completed tasks) so the meter
   // always reflects the user's real, current state — never stale User fields.
@@ -152,7 +155,7 @@ export default function PublicProfile() {
           {[
             { value: completedTasks.length, label: t('pr_jobs_done') },
             { value: postedTasks.length, label: t('pr_jobs_posted') },
-            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: t('pr_rating'), sub: allReviews.length > 0 ? `${allReviews.length} ${t('pp_reviews')}` : null },
+            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: t('pr_rating'), sub: liveRatingCount > 0 ? `${liveRatingCount} ${t('pp_reviews')}` : null },
           ].map((s, i, arr) => (
             <div key={i} style={{ flex: 1, padding: '12px 6px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
               <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>{s.value}</div>
