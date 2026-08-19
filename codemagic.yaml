@@ -60,7 +60,9 @@ workflows:
             -destination "generic/platform=iOS" \
             DEVELOPMENT_TEAM=322DV2PB9V \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            MARKETING_VERSION=2.130298.0 \
+            CURRENT_PROJECT_VERSION=2
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
