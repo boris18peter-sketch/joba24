@@ -50,7 +50,7 @@ workflows:
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || echo "Directory does not exist or is empty"
       - name: Set up code signing settings on Xcode project
         script: |
-          xcode-project use-profiles
+          xcode-project use-profiles --verbose
       - name: Archive the app
         script: |
           xcodebuild archive \
@@ -62,7 +62,7 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION=2.130298.0 \
-            CURRENT_PROJECT_VERSION=4
+            CURRENT_PROJECT_VERSION=5
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
