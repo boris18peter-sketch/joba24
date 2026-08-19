@@ -652,6 +652,13 @@ export default function TaskDetail(props) {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', paddingBottom: sheetMode ? 'max(24px, env(safe-area-inset-bottom))' : 'calc(80px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
+      {sheetMode && (
+        <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '6px 12px 4px' }}>
+          <button onClick={onSheetClose} aria-label="Close" className="j-icon-btn" style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)' }}>
+            <X size={18} />
+          </button>
+        </div>
+      )}
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(
         <LoginPromptModal
@@ -829,15 +836,6 @@ export default function TaskDetail(props) {
                   style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
                   <Share size={15} />
                 </button>
-                {sheetMode && (
-                  <button
-                    className="j-icon-btn"
-                    onClick={onSheetClose}
-                    aria-label="Close"
-                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
-                    <X size={15} />
-                  </button>
-                )}
               </div>
             </div>
 

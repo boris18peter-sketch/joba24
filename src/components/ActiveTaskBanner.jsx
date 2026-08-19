@@ -203,25 +203,43 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
           const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
-          // ── Prominent status hero (coordinated for worker & owner) ──
+          // ── Category-aware status hero (coordinated for worker & owner) ──
           // The status is the LARGEST, most prominent element on the banner.
-          // Replaces the old tiny grey label + live-badge noise.
-          const STATUS_HERO = {
-            owner: {
-              '-1': { text: 'ממתין לעדכון העובד', sub: 'העובד יעדכן את הסטטוס בקרוב' },
-              0: { text: 'העובד בדרך אליך', sub: 'תקבל/י עדכון כשיגיע' },
-              1: { text: 'העובד הגיע ומבצע', sub: 'העבודה בעיצומה' },
-              2: { text: 'העובד סיים — אשר/י סיום', sub: 'לחץ/י על אישור הסיום' },
-            },
-            worker: {
-              '-1': { text: 'יצאת לדרך', sub: 'עדכן/י את הסטטוס שלך' },
-              0: { text: 'אתה בדרך למשימה', sub: 'לחץ/י "הגעתי" כשתגיע' },
-              1: { text: 'הגעת למקום', sub: 'לחץ/י "סיימתי" בסיום העבודה' },
-              2: { text: 'סיימת — ממתין לאישור', sub: 'המפרסם יאשר/י את הסיום' },
-            },
-          };
-          const heroKey = tIsOwner ? 'owner' : 'worker';
-          const hero = STATUS_HERO[heroKey][String(tStepIdx)] || STATUS_HERO[heroKey]['-1'];
+          // Texts adapt to the task's category (statusMap labels) and the worker
+          // subtext references the ACTUAL next-action button label (e.g. "התחלתי
+          // טיפול" for care, "הגעתי" for onsite) so it always matches the button.
+          const cfgStatusLabel = tIsOwner ? tStatusInfo?.ownerLabel : tStatusInfo?.label;
+          const nextBtnLabel = quickAction?.label;
+          let hero, heroSub;
+          if (tIsWorker) {
+            if (tStepIdx < 0) {
+              hero = 'יצאת לדרך';
+              heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" כדי להתחיל` : 'עדכן/י את הסטטוס שלך';
+            } else if (tStepIdx === 0) {
+              hero = 'אתה בדרך למשימה';
+              heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" כשתגיע` : 'המשך/י בדרך';
+            } else if (tStepIdx === 1) {
+              hero = cfgStatusLabel || 'בעבודה';
+              heroSub = nextBtnLabel ? `לחץ/י "${nextBtnLabel}" בסיום` : 'העבודה בעיצומה';
+            } else {
+              hero = cfgStatusLabel || 'סיימת — ממתין לאישור';
+              heroSub = 'המפרסם יאשר/י את הסיום';
+            }
+          } else {
+            if (tStepIdx < 0) {
+              hero = 'ממתין לעדכון העובד';
+              heroSub = 'העובד יעדכן את הסטטוס בקרוב';
+            } else if (tStepIdx === 0) {
+              hero = cfgStatusLabel || 'העובד בדרך אליך';
+              heroSub = 'תקבל/י עדכון כשיגיע';
+            } else if (tStepIdx === 1) {
+              hero = cfgStatusLabel || 'העובד הגיע ומבצע';
+              heroSub = 'העבודה בעיצומה';
+            } else {
+              hero = cfgStatusLabel || 'העובד סיים — אשר/י סיום';
+              heroSub = 'לחץ/י על אישור הסיום';
+            }
+          }
           const heroDone = tStepIdx === 2;
           const HeroIcon = heroDone ? CheckCircle : (ICON_MAP[catConfig.steps[Math.min(Math.max(tStepIdx, 0), catConfig.steps.length - 1)].icon] || Navigation);
 
@@ -257,8 +275,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                   <HeroIcon size={22} color="white" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>{hero.text}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginTop: 2, fontWeight: 500 }}>{hero.sub}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>{hero}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginTop: 2, fontWeight: 500 }}>{heroSub}</div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '6px 12px', flexShrink: 0 }}>
                   <span style={{ color: 'white', fontWeight: 900, fontSize: 19 }}>₪{task.price}</span>
