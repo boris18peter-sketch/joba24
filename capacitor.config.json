@@ -3,6 +3,8 @@
   "appName": "Joba24",
   "webDir": "dist",
   "server": {
+    "url": "https://joba24.com/",
+    "cleartext": false,
     "androidScheme": "https"
   }
 }
