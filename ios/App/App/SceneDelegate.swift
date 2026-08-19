@@ -19,6 +19,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        // Handle Universal Links (e.g. returning from Safari after Google/Apple/Facebook sign-in)
+        // by loading the URL directly into the app's webview — this works regardless of
+        // whether the live website's own JS listens for Capacitor's appUrlOpen event.
+        if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL,
+           let bridgeVC = window?.rootViewController as? CAPBridgeViewController {
+            bridgeVC.bridge?.webView?.load(URLRequest(url: url))
+        }
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
     }
 }
