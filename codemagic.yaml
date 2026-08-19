@@ -33,11 +33,16 @@ workflows:
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --p12-password "$CERTIFICATE_P12_PASSWORD"
+            --p12-password "$CERTIFICATE_P12_PASSWORD" \
+            --certificates-dir "$HOME/Library/MobileDevice/Certificates"
       - name: Set up signing certificate
         script: |
           keychain add-certificates \
+            --certificate "$HOME/Library/MobileDevice/Certificates/*.p12" \
             --certificate-password "$CERTIFICATE_P12_PASSWORD"
+      - name: Verify certificate is in keychain
+        script: |
+          security find-identity -v -p codesigning
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
