@@ -34,7 +34,8 @@ workflows:
             --type IOS_APP_STORE \
             --create \
             --p12-password "$CERTIFICATE_P12_PASSWORD" \
-            --certificates-dir "$HOME/Library/MobileDevice/Certificates"
+            --certificates-dir "$HOME/Library/MobileDevice/Certificates" \
+            --profiles-dir "$HOME/Library/MobileDevice/Provisioning Profiles"
       - name: Set up signing certificate
         script: |
           keychain add-certificates \
@@ -43,6 +44,10 @@ workflows:
       - name: Verify certificate is in keychain
         script: |
           security find-identity -v -p codesigning
+      - name: List downloaded provisioning profiles
+        script: |
+          echo "Contents of profiles directory:"
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/" || echo "Directory does not exist or is empty"
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
@@ -58,7 +63,17 @@ workflows:
             CODE_SIGN_IDENTITY="Apple Distribution"
       - name: Export ipa
         script: |
-          PROFILE_NAME=$(security cms -D -i "$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app/embedded.mobileprovision" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin)
+          PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
+          if [ -z "$PROFILE_PATH" ]; then
+            echo "ERROR: No .mobileprovision file found in Provisioning Profiles directory"
+            exit 1
+          fi
+          echo "Profile file: $PROFILE_PATH"
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin)
+          if [ -z "$PROFILE_NAME" ]; then
+            echo "ERROR: Could not extract profile name from $PROFILE_PATH"
+            exit 1
+          fi
           echo "Using provisioning profile: $PROFILE_NAME"
           cat > "$CM_BUILD_DIR/export_options.plist" << EOF
           <?xml version="1.0" encoding="UTF-8"?>
