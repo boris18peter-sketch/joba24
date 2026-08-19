@@ -72,16 +72,14 @@ workflows:
           echo "File details:"
           ls -la "$PROFILE_PATH"
           file "$PROFILE_PATH"
-          echo "--- Trying security cms extraction ---"
-          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" 2>/tmp/cms_error.log | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin 2>/dev/null)
+          echo "--- Extracting profile name ---"
+          security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
+          echo "Decoded plist contents saved. First 500 chars:"
+          head -c 500 /tmp/profile.plist
+          echo ""
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist)
           if [ -z "$PROFILE_NAME" ]; then
-            echo "security cms method failed, error was:"
-            cat /tmp/cms_error.log
-            echo "--- Trying grep fallback extraction ---"
-            PROFILE_NAME=$(grep -a -A1 '<key>Name</key>' "$PROFILE_PATH" | tail -1 | sed -E 's/.*<string>(.*)<\/string>.*/\1/')
-          fi
-          if [ -z "$PROFILE_NAME" ]; then
-            echo "ERROR: Could not extract profile name from $PROFILE_PATH using either method"
+            echo "ERROR: Could not extract profile name from decoded plist"
             exit 1
           fi
           echo "Using provisioning profile: $PROFILE_NAME"
