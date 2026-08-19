@@ -12,6 +12,7 @@ workflows:
         BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
+        CERTIFICATE_P12_PASSWORD: "Joba24SigningPass1"
       node: latest
       xcode: latest
     scripts:
@@ -31,10 +32,12 @@ workflows:
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --p12-password "$CERTIFICATE_P12_PASSWORD"
       - name: Set up signing certificate
         script: |
-          keychain add-certificates
+          keychain add-certificates \
+            --certificate-password "$CERTIFICATE_P12_PASSWORD"
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
