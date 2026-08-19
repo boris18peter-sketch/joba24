@@ -10,6 +10,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.base69e6bdb4986a04a256653a23.app
       vars:
+        BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
       node: latest
@@ -28,6 +29,11 @@ workflows:
       - name: Install CocoaPods dependencies
         script: |
           cd ios/App && pod install
+      - name: Fetch signing files from App Store Connect
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
