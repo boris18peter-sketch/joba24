@@ -1,0 +1,8 @@
+{
+  "appId": "com.base69e6bdb4986a04a256653a23.app",
+  "appName": "Joba24",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
