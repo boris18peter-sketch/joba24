@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { lazy, Suspense } from 'react';
 
@@ -106,9 +106,17 @@ export default function TaskDetailSheet() {
         }}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
-        {/* Drag handle */}
-        <div style={{ flexShrink: 0, paddingTop: 10, paddingBottom: 6, background: 'var(--surface-1)' }}>
+        {/* Drag handle + persistent close button */}
+        <div style={{ flexShrink: 0, paddingTop: 10, paddingBottom: 6, background: 'var(--surface-1)', position: 'relative' }}>
           <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '0 auto' }} />
+          <button
+            onClick={closeTaskSheet}
+            aria-label="Close"
+            className="j-icon-btn"
+            style={{ position: 'absolute', top: 6, left: 12, width: 32, height: 32, borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)', zIndex: 2 }}
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Scrollable content */}

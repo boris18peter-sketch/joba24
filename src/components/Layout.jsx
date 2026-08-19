@@ -297,11 +297,21 @@ export default function Layout() {
     if (me.id !== task.client_id && me.id !== task.worker_id) return;
     const key = `rated_${task.id}_${me.id}`;
     if (localStorage.getItem(key) || shownRatingRef.current.has(task.id)) return;
-    // Check if review already exists — don't show rating modal for already-reviewed tasks
+    // Check if a review already exists — don't show the modal for already-reviewed tasks.
+    // NOTE: getQueryData returns the RAW queryFn result (an array), NOT the
+    // `select`-transformed value. When TaskDetail is open, its myReview query
+    // holds [] for unreviewed tasks — an empty array is truthy, so a naive
+    // `if (existingReview) return` blocked the modal from ever showing. Check
+    // length / object identity instead.
     const existingReview = queryClient.getQueryData(['myReview', task.id, me.id]);
-    if (existingReview) return;
+    const hasReview = Array.isArray(existingReview)
+      ? existingReview.length > 0
+      : !!existingReview?.id;
+    if (hasReview) return;
     shownRatingRef.current.add(task.id);
-    localStorage.setItem(key, '1');
+    // Don't persist the localStorage key yet — only when the user actually
+    // closes the modal (onClose below). Otherwise a navigation that unmounts
+    // Layout before the 800ms timeout would mark the task "rated" forever.
     setTimeout(() => setRatingTask(task), 800);
   }, [me?.id, queryClient]);
 

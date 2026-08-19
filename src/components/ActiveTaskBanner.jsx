@@ -203,9 +203,27 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
           const gradient = 'linear-gradient(135deg, #1a6fd4 0%, #0a52b0 100%)';
 
-          const statusText = tIsOwner
-            ? tStatusInfo?.ownerLabel || t('waiting_worker_update')
-            : tStatusInfo?.label || catConfig.actions.start.label;
+          // ── Prominent status hero (coordinated for worker & owner) ──
+          // The status is the LARGEST, most prominent element on the banner.
+          // Replaces the old tiny grey label + live-badge noise.
+          const STATUS_HERO = {
+            owner: {
+              '-1': { text: 'ממתין לעדכון העובד', sub: 'העובד יעדכן את הסטטוס בקרוב' },
+              0: { text: 'העובד בדרך אליך', sub: 'תקבל/י עדכון כשיגיע' },
+              1: { text: 'העובד הגיע ומבצע', sub: 'העבודה בעיצומה' },
+              2: { text: 'העובד סיים — אשר/י סיום', sub: 'לחץ/י על אישור הסיום' },
+            },
+            worker: {
+              '-1': { text: 'יצאת לדרך', sub: 'עדכן/י את הסטטוס שלך' },
+              0: { text: 'אתה בדרך למשימה', sub: 'לחץ/י "הגעתי" כשתגיע' },
+              1: { text: 'הגעת למקום', sub: 'לחץ/י "סיימתי" בסיום העבודה' },
+              2: { text: 'סיימת — ממתין לאישור', sub: 'המפרסם יאשר/י את הסיום' },
+            },
+          };
+          const heroKey = tIsOwner ? 'owner' : 'worker';
+          const hero = STATUS_HERO[heroKey][String(tStepIdx)] || STATUS_HERO[heroKey]['-1'];
+          const heroDone = tStepIdx === 2;
+          const HeroIcon = heroDone ? CheckCircle : (ICON_MAP[catConfig.steps[Math.min(Math.max(tStepIdx, 0), catConfig.steps.length - 1)].icon] || Navigation);
 
           // Nav button → show only when on_the_way. After arrived → show chat.
           const showNavBtn  = tIsWorker && tStepIdx === 0 && task.location_name;
@@ -233,27 +251,22 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               <div style={{ position: 'absolute', bottom: -30, left: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
               <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
-              {/* ── Row 1: Live badge + Price ── */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8, flexShrink: 0 }}>
-                    <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(255,255,255,0.5)', animation: 'livePing 1.5s ease-in-out infinite' }} />
-                    <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: 'white' }} />
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600 }}>
-                    {tIsWorker ? t('active_task_label') : t('in_progress')}
-                  </span>
+              {/* ── Status hero — the most prominent element ── */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <HeroIcon size={22} color="white" />
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '5px 12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'white', lineHeight: 1.2 }}>{hero.text}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', marginTop: 2, fontWeight: 500 }}>{hero.sub}</div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '6px 12px', flexShrink: 0 }}>
                   <span style={{ color: 'white', fontWeight: 900, fontSize: 19 }}>₪{task.price}</span>
                 </div>
               </div>
 
-              {/* ── Row 2: Title + status label ── */}
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 600, marginBottom: 2, letterSpacing: 0.2 }}>{statusText}</div>
-                <div style={{ color: 'white', fontWeight: 800, fontSize: 16, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
-              </div>
+              {/* ── Title ── */}
+              <div style={{ color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: 15, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 12 }}>{task.title}</div>
 
               {/* ── Row 3: Person pill ── */}
               {personName && (
