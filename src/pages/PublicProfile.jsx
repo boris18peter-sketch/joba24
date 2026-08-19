@@ -212,8 +212,8 @@ export default function PublicProfile() {
           </SectionCard>
         )}
 
-        {/* Certificates — תעודות מקצוע */}
-        {(user.certificates?.length > 0 || user.certificate_files?.length > 0) && (
+        {/* Certificates — תעודות מקצוע (uploaded documents only; legacy text `certificates` array not shown) */}
+        {(user.certificate_files?.length > 0) && (
           <SectionCard title={t('pr_certs')}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(user.certificate_files || []).map(doc => (
@@ -224,15 +224,6 @@ export default function PublicProfile() {
                   <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
                 </a>
               ))}
-              {user.certificates?.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {user.certificates.map(cert => (
-                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
-                      ✅ {cert}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </SectionCard>
         )}

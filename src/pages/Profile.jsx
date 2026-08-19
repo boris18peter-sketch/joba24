@@ -286,8 +286,10 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Certificates — תעודות מקצוע */}
-        {(me?.certificate_files?.length > 0 || me?.certificates?.length > 0) && (
+        {/* Certificates — תעודות מקצוע (uploaded documents only).
+            The legacy text `certificates` array is intentionally NOT rendered —
+            it's not editable in profile settings, so showing it was misleading. */}
+        {(me?.certificate_files?.length > 0) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
               <FileText size={12} /> {t('pr_certs')}
@@ -300,13 +302,6 @@ export default function Profile() {
                   <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
                 </a>
               ))}
-              {me?.certificates?.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {me.certificates.map(cert => (
-                    <span key={cert} style={{ fontSize: 13, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>✅ {cert}</span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}
