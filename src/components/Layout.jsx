@@ -448,7 +448,7 @@ export default function Layout() {
   const isApprovedUser = isBlocked
     ? false
     : preLaunchGateActive
-      ? ((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin' || me?.role === 'agent')
+      ? ((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin')
       : true;
   if (isAuthenticated && me && !isApprovedUser) {
     return <PreLaunchWaitingPage me={me} />;
