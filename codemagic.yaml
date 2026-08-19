@@ -6,9 +6,6 @@ workflows:
     integrations:
       app_store_connect: Joba24
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.base69e6bdb4986a04a256653a23.app
       vars:
         BUNDLE_ID: "com.base69e6bdb4986a04a256653a23.app"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
