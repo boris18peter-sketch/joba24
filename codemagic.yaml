@@ -27,11 +27,44 @@ workflows:
       - name: Sync Capacitor iOS project
         script: |
           ./node_modules/.bin/cap sync ios
-      - name: Build ipa for distribution
+      - name: Fetch signing files from App Store Connect
         script: |
-          xcode-project build-ipa \
-            --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Archive the app
+        script: |
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
+            -destination "generic/platform=iOS" \
+            DEVELOPMENT_TEAM=322DV2PB9V \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="iOS Distribution"
+      - name: Export ipa
+        script: |
+          cat > "$CM_BUILD_DIR/export_options.plist" << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>322DV2PB9V</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
+            -exportPath "$CM_BUILD_DIR/build/ios/ipa" \
+            -exportOptionsPlist "$CM_BUILD_DIR/export_options.plist"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
