@@ -82,6 +82,7 @@ function TaskInfoPopup({ task, onClose }) {
 export default function QuickChatDrawer({ task, me, onClose }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const viewportHeight = useViewportHeight();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
