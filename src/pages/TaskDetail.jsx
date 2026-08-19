@@ -652,13 +652,6 @@ export default function TaskDetail(props) {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ background: 'var(--surface-1)', paddingBottom: sheetMode ? 'max(24px, env(safe-area-inset-bottom))' : 'calc(80px + env(safe-area-inset-bottom))' }}>
       <TaskTakenConfetti trigger={confetti} />
-      {sheetMode && (
-        <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '6px 12px 4px' }}>
-          <button onClick={onSheetClose} aria-label="Close" className="j-icon-btn" style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-2)' }}>
-            <X size={18} />
-          </button>
-        </div>
-      )}
       {showVerify && createPortal(<VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />, document.body)}
       {showLoginPrompt && createPortal(
         <LoginPromptModal
@@ -740,6 +733,7 @@ export default function TaskDetail(props) {
             isOwner,
             onOwnerMenu: () => setShowOwnerMenu(v => !v),
             onQuickChat: () => setShowQuickChat(true),
+            onSheetClose,
           }}
         />
       )}
@@ -836,6 +830,15 @@ export default function TaskDetail(props) {
                   style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
                   <Share size={15} />
                 </button>
+                {sheetMode && (
+                  <button
+                    className="j-icon-btn"
+                    onClick={onSheetClose}
+                    aria-label="Close"
+                    style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                    <X size={15} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1087,73 +1090,6 @@ export default function TaskDetail(props) {
           </div>
           <style>{`@keyframes livePing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(2.5);opacity:0}}@keyframes scanRing{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.35);opacity:0}}@keyframes scanSweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
-
-        {/* Completion media section — for worker: always shown with add/edit; for owner: only when proof exists */}
-        {task.status === 'TAKEN' && (isWorker || (isOwner && (task.completion_photos?.length > 0 || task.completion_video_url))) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 20, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', letterSpacing: 0.5 }}>{t('td_proof_title')}</div>
-              {isWorker && !editingCompletion && (
-                <button onClick={() => { setEditPhotos([...(task.completion_photos || [])]); setEditVideo(task.completion_video_url || ''); setEditingCompletion(true); }}
-                  style={{ fontSize: 11, fontWeight: 700, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '3px 10px', cursor: 'pointer' }}>
-                  {task.completion_photos?.length > 0 || task.completion_video_url ? t('td_edit') : t('td_add')}
-                </button>
-              )}
-            </div>
-            {isWorker && editingCompletion ? (
-              <>
-                <WorkerCompletionPhoto
-                  photos={editPhotos}
-                  videoUrl={editVideo}
-                  onPhotosChange={setEditPhotos}
-                  onVideoChange={setEditVideo}
-                />
-                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                  <button onClick={async () => {
-                    setSavingCompletion(true);
-                    await base44.entities.Task.update(id, { completion_photos: editPhotos, completion_video_url: editVideo || null });
-                    queryClient.setQueryData(['task', id], old => old ? { ...old, completion_photos: editPhotos, completion_video_url: editVideo || null } : old);
-                    queryClient.invalidateQueries({ queryKey: ['task', id] });
-                    // Notify task owner in real-time that proof was submitted
-                    if (task.client_id && task.client_id !== me?.id) {
-                      base44.functions.invoke('sendPushNotification', {
-                        user_ids: [task.client_id],
-                        title: t('td_proof_uploaded_title'),
-                        body: t('td_proof_uploaded_body').replace('{title}', task.title),
-                        url: `/task/${id}`,
-                        tag: `completion_${id}`,
-                      }).catch(() => {});
-                    }
-                    setSavingCompletion(false);
-                    setEditingCompletion(false);
-                    toast.success(t('td_proof_sent'));
-                  }} disabled={savingCompletion} style={{ flex: 1, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 800, fontSize: 13, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {savingCompletion ? <Loader2 size={16} className="animate-spin" /> : t('td_send')}
-                  </button>
-                  <button onClick={() => setEditingCompletion(false)} style={{ height: 44, padding: '0 16px', borderRadius: 12, background: '#f1f5f9', border: 'none', color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>{t('cancel_btn')}</button>
-                </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {(task.completion_photos || []).map((url, i) => (
-                  <button key={i} onClick={() => { setCompletionLightboxIndex(i); setCompletionLightboxOpen(true); }}
-                    style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000' }}>
-                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                  </button>
-                ))}
-                {task.completion_video_url && (
-                  <button onClick={() => { setCompletionLightboxIndex(task.completion_photos?.length || 0); setCompletionLightboxOpen(true); }}
-                    style={{ width: 80, height: 80, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-1)', padding: 0, cursor: 'pointer', background: '#000', position: 'relative' }}>
-                    <video src={task.completion_video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
-                      <Play size={22} color="white" fill="white" />
-                    </div>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Applicants for owner — show when OPEN or TAKEN before worker started */}
         {isOwner && (task.status === 'OPEN' || (task.status === 'TAKEN' && !task.worker_status)) &&

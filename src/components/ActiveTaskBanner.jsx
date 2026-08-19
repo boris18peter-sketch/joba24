@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen } from 'lucide-react';
+import { MessageCircle, MapPin, Navigation, CheckCircle, Loader2, Camera, FileText, Phone, MoreVertical, Clock, Eye, MousePointerClick, Users, Package, Truck, Heart, BookOpen, X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { getCategoryConfig } from '@/lib/categoryConfig';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -269,6 +269,15 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               <div style={{ position: 'absolute', bottom: -30, left: -30, width: 130, height: 130, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
               <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
 
+              {/* Close — persistent at the top of the active banner (sheet context only) */}
+              {extraInfo?.onSheetClose && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }} onClick={e => e.stopPropagation()}>
+                  <button onClick={() => extraInfo.onSheetClose()} aria-label="Close" className="j-icon-btn" style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0 }}>
+                    <X size={15} />
+                  </button>
+                </div>
+              )}
+
               {/* ── Status hero — the most prominent element ── */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <div style={{ width: 42, height: 42, borderRadius: 13, background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -337,8 +346,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 })}
               </div>
 
-              {/* ── Completion proof preview — shown to owner when worker marked done ── */}
-              {tIsOwner && task.worker_status === 'done' && (task.completion_photos?.length > 0 || task.completion_video_url) && (
+              {/* ── Completion proof preview — shown to owner whenever the worker uploaded proof ── */}
+              {tIsOwner && (task.completion_photos?.length > 0 || task.completion_video_url) && (
                 <div style={{ marginTop: 6, marginBottom: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.18)' }} onClick={e => e.stopPropagation()}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>{t('proof_from_worker')}</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -462,8 +471,8 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 </div>
               )}
 
-              {/* ── Row 8: Worker secondary actions ── */}
-              {tIsWorker && (
+              {/* ── Row 8: Worker proof — only after the worker arrived/started (step >= 1) ── */}
+              {tIsWorker && tStepIdx >= 1 && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }} onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => { setMediaTask(task); setMediaPhotos([...(task.completion_photos || [])]); setMediaVideo(task.completion_video_url || ''); }}
