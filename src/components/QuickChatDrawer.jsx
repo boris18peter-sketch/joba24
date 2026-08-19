@@ -13,6 +13,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -272,7 +273,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   const showGreenBadge = isUserVerified(otherUserObj) && !hasSocialVerified(otherUserObj);
 
   return createPortal(
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-1)', zIndex: 999999, position: 'fixed', inset: 0, overflow: 'hidden' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: viewportHeight, background: 'var(--surface-1)', zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, overflow: 'hidden' }} dir="rtl">
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
       {/* Header — identical to Chat.jsx */}
