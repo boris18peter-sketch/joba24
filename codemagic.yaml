@@ -58,6 +58,8 @@ workflows:
             CODE_SIGN_IDENTITY="Apple Distribution"
       - name: Export ipa
         script: |
+          PROFILE_NAME=$(security cms -D -i "$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app/embedded.mobileprovision" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin)
+          echo "Using provisioning profile: $PROFILE_NAME"
           cat > "$CM_BUILD_DIR/export_options.plist" << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -69,6 +71,13 @@ workflows:
             <string>322DV2PB9V</string>
             <key>signingStyle</key>
             <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROFILE_NAME</string>
+            </dict>
           </dict>
           </plist>
           EOF
