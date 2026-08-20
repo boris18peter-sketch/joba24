@@ -20,6 +20,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
+import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 
 // Add page imports here
@@ -70,7 +71,6 @@ if (typeof window !== 'undefined') {
 // All other pages — lazy loaded, fetched only when user navigates there
 const Landing = lazyRetry(() => import('@/pages/Landing'));
 const CreateTask = lazyRetry(() => import('@/pages/CreateTask'));
-const TaskDetail = lazyRetry(() => import('@/pages/TaskDetail'));
 const Chat = lazyRetry(() => import('@/pages/Chat'));
 const SupportChat = lazyRetry(() => import('@/pages/SupportChat'));
 const Wallet = lazyRetry(() => import('@/pages/Wallet'));
@@ -209,7 +209,7 @@ const AuthenticatedApp = () => {
             <Route element={<Layout />}>
               <Route path="/" element={<HomeFeed />} />
               <Route path="/map" element={<MapView />} />
-              <Route path="/task/:id" element={<TaskDetail />} />
+              <Route path="/task/:id" element={<TaskDetailRedirect />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/earnings" element={<EarningsDashboard />} />
               <Route path="/faq" element={<FAQ />} />

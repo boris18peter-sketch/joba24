@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken, onForegroundMessage } from '@/lib/fcm';
+import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 // Module-level singleton: ensures token init runs ONCE across all hook instances
 let globalInitDone = false;
@@ -16,6 +17,7 @@ export default function usePushNotifications() {
   const [foregroundMsg, setForegroundMsg] = useState(null);
   const tokenRef = useRef(null);
   const navigate = useNavigate();
+  const { openTaskSheet } = useTaskSheet();
 
   // Save token to backend using auth.updateMe (user-scoped, not admin)
   const saveToken = useCallback(async (fcmToken) => {
@@ -130,14 +132,18 @@ export default function usePushNotifications() {
         listenerHandle = await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
           try {
             const data = event?.notification?.data || {};
-            let url = data.url || data.click_action || data.deep_link || '';
+            const url = data.url || data.click_action || data.deep_link || '';
             if (!url) return;
-            // Legacy/edge: an explicit open_task param opens the task sheet
-            const match = String(url).match(/[?&]open_task=([^&]+)/);
-            if (match) {
-              url = `/?open_task=${match[1]}`;
+            // Task deep-links ("/task/{id}") open the global TaskDetailSheet — the
+            // same destination the in-app notification popup (LiveNotificationPopup)
+            // and the /task/:id route use. Everything else (chat, profile, wallet,
+            // agent-dashboard, …) navigates to its route.
+            const taskMatch = String(url).match(/\/task\/([^/?]+)/);
+            if (taskMatch) {
+              openTaskSheet(taskMatch[1]);
+            } else {
+              navigate(url);
             }
-            navigate(url);
           } catch (err) {
             console.error('[usePushNotifications][Native] tap navigation failed:', err?.message);
           }
@@ -151,7 +157,7 @@ export default function usePushNotifications() {
       cancelled = true;
       if (listenerHandle?.remove) listenerHandle.remove();
     };
-  }, [navigate]);
+  }, [navigate, openTaskSheet]);
 
   // Clear foreground message
   const clearMessage = useCallback(() => setForegroundMsg(null), []);
