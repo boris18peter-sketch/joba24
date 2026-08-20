@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken, onForegroundMessage } from '@/lib/fcm';
 
@@ -14,6 +15,7 @@ export default function usePushNotifications() {
   });
   const [foregroundMsg, setForegroundMsg] = useState(null);
   const tokenRef = useRef(null);
+  const navigate = useNavigate();
 
   // Save token to backend using auth.updateMe (user-scoped, not admin)
   const saveToken = useCallback(async (fcmToken) => {
@@ -111,6 +113,45 @@ export default function usePushNotifications() {
     });
     return () => { if (unsub) unsub(); };
   }, []);
+
+  // Native only — handle notification TAP (notificationActionPerformed).
+  // On iOS native, taps do NOT go through the service worker (firebase-messaging-sw.js)
+  // used by the web/PWA path — they come through this Capacitor listener instead.
+  // The server sends the deep-link in the `url` field of the notification data
+  // (e.g. "/task/{id}", "/chat/{id}", "/profile"), so we navigate to it via react-router.
+  useEffect(() => {
+    const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+    if (!isNative) return;
+    let listenerHandle;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        listenerHandle = await FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+          try {
+            const data = event?.notification?.data || {};
+            let url = data.url || data.click_action || data.deep_link || '';
+            if (!url) return;
+            // Legacy/edge: an explicit open_task param opens the task sheet
+            const match = String(url).match(/[?&]open_task=([^&]+)/);
+            if (match) {
+              url = `/?open_task=${match[1]}`;
+            }
+            navigate(url);
+          } catch (err) {
+            console.error('[usePushNotifications][Native] tap navigation failed:', err?.message);
+          }
+        });
+        if (cancelled && listenerHandle?.remove) listenerHandle.remove();
+      } catch (err) {
+        console.error('[usePushNotifications][Native] notificationActionPerformed listener failed:', err?.message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (listenerHandle?.remove) listenerHandle.remove();
+    };
+  }, [navigate]);
 
   // Clear foreground message
   const clearMessage = useCallback(() => setForegroundMsg(null), []);
