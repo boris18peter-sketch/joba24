@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { getCategoryLabel } from '@/lib/categories';
@@ -252,7 +253,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
     base44.entities.Task.update(task.id, { clicks_count: newClicks }).catch(() => {}); // eslint-disable-line
   };
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 bg-black flex items-center justify-center"
       style={{ zIndex: 100000, userSelect: 'none', touchAction: 'pan-y' }}
@@ -361,7 +362,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
 
 export default function StoriesBar({ filterCategory = null, currentUserId = null }) {
