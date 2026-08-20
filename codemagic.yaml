@@ -25,6 +25,9 @@ workflows:
       - name: Sync Capacitor iOS project
         script: |
           ./node_modules/.bin/cap sync ios
+      - name: Validate Xcode project file syntax
+        script: |
+          ruby -e 'require "xcodeproj"; Xcodeproj::Project.open("ios/App/App.xcodeproj")' && echo "project.pbxproj is valid" || (echo "ERROR: project.pbxproj has a syntax error - it was likely corrupted during copy-paste. Re-copy the full file carefully." && exit 1)
       - name: Set up keychain for code signing
         script: |
           keychain initialize
@@ -62,7 +65,7 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION=2.130298.0 \
-            CURRENT_PROJECT_VERSION=5
+            CURRENT_PROJECT_VERSION=3
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
