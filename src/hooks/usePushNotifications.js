@@ -8,7 +8,10 @@ let globalInitPromise = null;
 
 export default function usePushNotifications() {
   const [token, setToken] = useState(null);
-  const [permission, setPermission] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
+  const [permission, setPermission] = useState(() => {
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) return 'prompt';
+    return typeof Notification !== 'undefined' ? Notification.permission : 'denied';
+  });
   const [foregroundMsg, setForegroundMsg] = useState(null);
   const tokenRef = useRef(null);
 
@@ -58,6 +61,28 @@ export default function usePushNotifications() {
     }
 
     globalInitPromise = (async () => {
+      // Native Capacitor path — check current permission (no prompt), get token if granted
+      if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+        try {
+          const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+          const { receive } = await FirebaseMessaging.checkPermissions();
+          const perm = receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : 'prompt';
+          setPermission(perm);
+          if (perm !== 'granted') return null;
+          const fcmToken = await getFCMToken();
+          if (fcmToken) {
+            setToken(fcmToken);
+            await saveToken(fcmToken);
+            globalInitDone = true;
+            return fcmToken;
+          }
+        } catch (err) {
+          console.error('[usePushNotifications][Native] init failed:', err.message);
+        }
+        return null;
+      }
+
+      // Web path
       if (typeof Notification === 'undefined') {
         setPermission('denied');
         return null;

@@ -12,6 +12,9 @@ const FIREBASE_CONFIG = {
 
 const VAPID_KEY = "BMGA4Y0BwTCSY44y0Q1y4dkPklK4vBLMboxjxPUpGQQS7NBNXvYAvtEdsbl0uOaRsJADoXDTjffFsp3sr2dvcCw";
 
+// Detect native Capacitor wrapper (real iOS app) — uses @capacitor-firebase/messaging (APNs)
+const isNativePlatform = () => typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+
 // Early check: if Notifications API is not supported, bail out entirely
 const isNotificationsSupported = () => {
   return typeof Notification !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
@@ -111,6 +114,20 @@ async function ensureSW() {
 }
 
 export async function requestNotificationPermission() {
+  // Native Capacitor path (real APNs)
+  if (isNativePlatform()) {
+    try {
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      const result = await FirebaseMessaging.requestPermissions();
+      const perm = result.receive === 'granted' ? 'granted' : 'denied';
+      console.log('[FCM][Native] Permission request result:', perm);
+      return perm;
+    } catch (err) {
+      console.error('[FCM][Native] Permission request failed:', err.message);
+      return 'denied';
+    }
+  }
+
   if (typeof Notification === 'undefined') {
     console.warn('[FCM] Notification API not supported');
     return 'denied';
@@ -133,6 +150,19 @@ export async function requestNotificationPermission() {
 }
 
 export async function getFCMToken() {
+  // Native Capacitor path — real APNs device token
+  if (isNativePlatform()) {
+    try {
+      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+      const { token } = await FirebaseMessaging.getToken();
+      console.log('[FCM][Native] ✅ Token obtained');
+      return token || null;
+    } catch (err) {
+      console.error('[FCM][Native] ❌ Token generation failed:', err.message);
+      return null;
+    }
+  }
+
   const messaging = await ensureFirebase();
   if (!messaging) {
     console.warn('[FCM] Firebase messaging not available');
@@ -182,6 +212,20 @@ const foregroundCallbacks = new Set();
 export function onForegroundMessage(callback) {
   foregroundCallbacks.add(callback);
 
+  // Native Capacitor path — register native listener once, broadcast to callbacks
+  if (isNativePlatform()) {
+    if (!foregroundListenerRegistered) {
+      foregroundListenerRegistered = true;
+      import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {
+        FirebaseMessaging.addListener('notificationReceived', (event) => {
+          foregroundCallbacks.forEach(cb => cb(event?.notification || event));
+        });
+      }).catch(() => {});
+    }
+    return () => { foregroundCallbacks.delete(callback); };
+  }
+
+  // Web path
   if (!foregroundListenerRegistered) {
     foregroundListenerRegistered = true;
     ensureFirebase().then((messaging) => {
