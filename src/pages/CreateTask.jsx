@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -206,7 +205,6 @@ const TIME_OPTIONS = [
 
 export default function CreateTask() {
   const navigate = useNavigate();
-  const { openTaskSheet } = useTaskSheet();
   const [searchParams] = useSearchParams();
   const { t, isRTL } = useLanguage();
   const { isAuthenticated, login } = useAuth();
@@ -350,7 +348,9 @@ export default function CreateTask() {
       hours: editTask.category_details?.hours ? String(editTask.category_details.hours) : '',
     });
     setCategoryDetails(editTask.category_details || {});
-    setAddressConfirmed(!!(editTask.lat && editTask.lng));
+    // An existing task already has a usable address — pre-confirm it so the user
+    // isn't forced to re-select the address from the autocomplete list on every edit.
+    setAddressConfirmed(!!editTask.location_name);
   }, [editTask?.id]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
@@ -657,7 +657,9 @@ export default function CreateTask() {
       setLoading(false);
       submittingRef.current = false;
       toast.success(isRepostMode ? t('ct_repost_ok') : t('ct_edit_ok'));
-      openTaskSheet(editId);
+      // Navigate to the main feed with the task card highlighted (same highlight
+      // animation used after publishing a new task) — no scanning popups on edit.
+      navigate('/?newTaskId=' + editId);
       } catch (err) {
         setLoading(false);
         submittingRef.current = false;
@@ -853,7 +855,7 @@ export default function CreateTask() {
         setLoading(false);
         submittingRef.current = false;
         toast.success(isRepostMode ? t('ct_repost_ok') : t('ct_edit_ok'));
-        navigate('/task/' + editId);
+        navigate('/?newTaskId=' + editId);
         return;
       }
 

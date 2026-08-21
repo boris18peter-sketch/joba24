@@ -460,7 +460,12 @@ export default function Layout() {
     : preLaunchGateActive
       ? ((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin')
       : true;
-  if (isAuthenticated && me && !isApprovedUser) {
+  // While the DB approval status is still loading, don't flash the pre-launch
+  // waiting page for users whose JWT may be stale (approved in DB but not yet in
+  // token) — fall through to the app. Once the DB status arrives, genuinely
+  // unapproved users are redirected to the waiting page on the next poll.
+  const approvalLoading = approvalStatus === undefined;
+  if (isAuthenticated && me && !isApprovedUser && !approvalLoading) {
     return <PreLaunchWaitingPage me={me} />;
   }
 

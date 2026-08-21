@@ -43,7 +43,9 @@ export default function HomeFeed() {
   const [userLocation, setUserLocation] = useState(null);
   const [dismissedTasks, setDismissedTasks] = useState(new Set());
   const [newTaskIds, setNewTaskIds] = useState(new Set()); // for live pulse animation
-  const [activeTab, setActiveTabRaw] = useState(() => sessionStorage.getItem('homeTab') || 'available');
+  const [activeTab, setActiveTabRaw] = useState(() =>
+    sessionStorage.getItem('homeTabChosen') === '1' ? (sessionStorage.getItem('homeTab') || 'available') : null
+  );
   const setActiveTab = (tab) => { sessionStorage.setItem('homeTab', tab); sessionStorage.setItem('homeTabChosen', '1'); setActiveTabRaw(tab); };
 
 
@@ -589,6 +591,19 @@ export default function HomeFeed() {
       return updated;
     });
   };
+
+  // While the default tab hasn't been decided yet (waiting on myTasks to load),
+  // show a neutral skeleton instead of "All tasks" so users with active published
+  // tasks never see a visible jump from "All tasks" → "My published tasks".
+  if (activeTab === null) {
+    return (
+      <div style={{ background: 'var(--surface-1)', minHeight: '100%' }} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <TaskCardSkeleton count={4} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: 'var(--surface-1)', minHeight: '100%' }} dir={isRTL ? 'rtl' : 'ltr'}>

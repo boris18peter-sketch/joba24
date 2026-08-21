@@ -12,6 +12,7 @@ import GoldBadge from '@/components/GoldBadge';
 import { hasSocialVerified } from '@/lib/utils';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 import InvoiceModal from '@/components/InvoiceModal';
+import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -106,6 +107,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
   const [mediaVideo, setMediaVideo] = useState('');
   const [savingMedia, setSavingMedia] = useState(false);
   const [invoiceTask, setInvoiceTask] = useState(null); // task for invoice modal
+  const [proofLightbox, setProofLightbox] = useState({ open: false, items: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
   // No local state — read directly from props (which come from React Query cache via Layout/HomeFeed)
@@ -347,26 +349,29 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
               </div>
 
               {/* ── Completion proof preview — shown to owner whenever the worker uploaded proof ── */}
-              {tIsOwner && (task.completion_photos?.length > 0 || task.completion_video_url) && (
+              {tIsOwner && (task.completion_photos?.length > 0 || task.completion_video_url) && (() => {
+                const proofItems = [
+                  ...(task.completion_photos || []).map(u => ({ type: 'image', url: u })),
+                  ...(task.completion_video_url ? [{ type: 'video', url: task.completion_video_url }] : []),
+                ];
+                return (
                 <div style={{ marginTop: 6, marginBottom: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.18)' }} onClick={e => e.stopPropagation()}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>{t('proof_from_worker')}</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {(task.completion_photos || []).map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block' }}>
-                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                      </a>
+                    {proofItems.map((item, i) => (
+                      <button key={i} onClick={() => setProofLightbox({ open: true, items: proofItems, index: i })} style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block', padding: 0, cursor: 'pointer', position: 'relative', background: item.type === 'video' ? '#000' : 'transparent' }}>
+                        {item.type === 'video' ? (<>
+                          <video src={item.url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.7 }} />
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Camera size={18} color="white" /></div>
+                        </>) : (
+                          <img src={item.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        )}
+                      </button>
                     ))}
-                    {task.completion_video_url && (
-                      <a href={task.completion_video_url} target="_blank" rel="noopener noreferrer" style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.3)', display: 'block', position: 'relative', background: '#000' }}>
-                        <video src={task.completion_video_url} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.7 }} />
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Camera size={18} color="white" />
-                        </div>
-                      </a>
-                    )}
                   </div>
                 </div>
-              )}
+                );
+              })()}
 
               {/* ── Row 6: Primary action buttons ── */}
               <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
@@ -557,6 +562,16 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
       {invoiceTask && me && createPortal(
         <InvoiceModal task={invoiceTask} me={me} onClose={() => setInvoiceTask(null)} />,
         document.body
+      )}
+
+      {/* In-app proof media viewer (photos + video, with close + swipe) */}
+      {proofLightbox.open && (
+        <MediaLightbox
+          isOpen
+          items={proofLightbox.items}
+          initialIndex={proofLightbox.index}
+          onClose={() => setProofLightbox(p => ({ ...p, open: false }))}
+        />
       )}
 
       <style>{`
