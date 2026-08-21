@@ -30,6 +30,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
     worker_left_task:      { emoji: '🚪', title: (n) => `${n.workerName || ''} ${t('notif_worker_left')}`, body: (n) => n.taskTitle ? `"${n.taskTitle}"` : '',            link: (n) => n.taskId ? `/task/${n.taskId}` : null },
     no_show_reported:      { emoji: '⚠️', title: ()  => t('notif_no_show'),                                body: (n) => n.taskTitle ? `"${n.taskTitle}"` : t('notif_trust_updated'), link: () => null },
     boost_available:       { emoji: '⚡', title: ()  => t('notif_boost_available'),                        body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_boost_sub')}` : t('notif_boost_amplify'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
+    task_completed_celebration: { emoji: '🎉', title: () => 'המשימה הושלמה! 🎉', body: (n) => n.taskTitle || n.task?.title || '', link: (n) => n.role === 'worker' ? '/earnings' : (n.taskId ? `/task/${n.taskId}` : null) },
   };
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
 
   const cfg = TYPES[notification.type] || TYPES.application_received;
   const link = cfg.link?.(notification);
+  const isCelebration = notification.type === 'task_completed_celebration';
 
   const dismiss = () => { setVisible(false); onClose?.(); };
   const handleClick = () => {
@@ -88,46 +90,49 @@ export default function LiveNotificationPopup({ notification, onClose }) {
       <div
         onClick={handleClick}
         style={{
-          background: 'var(--surface-2)',
+          background: isCelebration ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : 'var(--surface-2)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(0,0,0,0.09)',
+          border: isCelebration ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(0,0,0,0.09)',
           borderRadius: 22,
           overflow: 'hidden',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.16)',
+          boxShadow: isCelebration ? '0 12px 40px rgba(5,150,105,0.42)' : '0 12px 40px rgba(0,0,0,0.16)',
           animation: 'notifSlide 0.38s cubic-bezier(0.34, 1.4, 0.64, 1)',
           cursor: link ? 'pointer' : 'default',
         }}
       >
-        <div style={{ height: 3, background: 'rgba(0,0,0,0.06)' }}>
-          <div style={{ height: '100%', background: '#1a6fd4', width: `${progress}%`, transition: 'width 0.05s linear' }} />
+        <div style={{ height: 3, background: isCelebration ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.06)' }}>
+          <div style={{ height: '100%', background: isCelebration ? 'rgba(255,255,255,0.85)' : '#1a6fd4', width: `${progress}%`, transition: 'width 0.05s linear' }} />
         </div>
 
         <div style={{ padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 46, height: 46, borderRadius: 14,
-            background: '#f4f7fb',
+            background: isCelebration ? 'rgba(255,255,255,0.2)' : '#f4f7fb',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 24, flexShrink: 0,
           }}>
-            {cfg.emoji}
+            {isCelebration ? '🎉' : cfg.emoji}
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 900, fontSize: 15, color: '#0f1e40', marginBottom: 3, lineHeight: 1.25 }}>
+            <div style={{ fontWeight: 900, fontSize: 15, color: isCelebration ? 'white' : '#0f1e40', marginBottom: 3, lineHeight: 1.25 }}>
               {cfg.title(notification)}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
-              {cfg.body(notification)}
+            <div style={{ fontSize: 13, fontWeight: 500, color: isCelebration ? 'rgba(255,255,255,0.88)' : '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cfg.body(notification)}</span>
+              {isCelebration && notification.role === 'worker' && (
+                <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: 'white', background: 'rgba(255,255,255,0.22)', padding: '2px 8px', borderRadius: 99, whiteSpace: 'nowrap' }}>ראה בדשבורד רווחים ←</span>
+              )}
             </div>
           </div>
 
           <button
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
             className="j-icon-btn"
-            style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+            style={{ width: 34, height: 34, borderRadius: 10, background: isCelebration ? 'rgba(255,255,255,0.2)' : 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
-            <X size={15} color="var(--text-3)" />
+            <X size={15} color={isCelebration ? 'white' : 'var(--text-3)'} />
           </button>
         </div>
       </div>

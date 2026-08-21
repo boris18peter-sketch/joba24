@@ -58,18 +58,10 @@ Deno.serve(async (req) => {
 
     const newBalance = currentCredits - creditsRequired;
 
-    // If auto_bump enabled and this is the FIRST active applicant → freeze price (before deduct, no side effects)
-    if (task.auto_bump_enabled && task.base_price && task.max_price) {
-      const allApps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-      const activeApps = allApps.filter(a => a.status === 'pending' || a.status === 'approved');
-      if (activeApps.length === 0) {
-        const elapsedHours = (Date.now() - new Date(task.created_date).getTime()) / (1000 * 60 * 60);
-        const progress = Math.min(elapsedHours / 24, 1);
-        const frozenPrice = Math.round(task.base_price + (task.max_price - task.base_price) * progress);
-        await base44.asServiceRole.entities.Task.update(taskId, { price: frozenPrice });
-        console.log(`🔒 Auto-bump price frozen at ₪${frozenPrice} for task ${taskId}`);
-      }
-    }
+    // NOTE: price is NOT changed here. The auto-bump cron is the single source of
+    // truth — it skips tasks that already have active applications (price frozen at
+    // whatever it was bumped to). Recalculating the price on apply would discard
+    // the increases already earned (bug: price used to drop to a time-based value).
 
     // Create application FIRST — if this fails, no credits are deducted
     const newApp = await base44.asServiceRole.entities.TaskApplication.create({

@@ -57,6 +57,9 @@ function StepRow({ index, icon: Icon, title, subtitle, state, action, badge }) {
 
 export default function PreLaunchWaitingPage({ me }) {
   const { refreshUser } = useAuth();
+  // Hide "download the app" CTAs when the user is already inside the app
+  // (native Capacitor iOS/Android shell, or installed PWA).
+  const inApp = isStandaloneApp || (typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.());
   const [notifPerm, setNotifPerm] = useState('default');
   const [locPerm, setLocPerm] = useState('default');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -171,8 +174,8 @@ export default function PreLaunchWaitingPage({ me }) {
           </p>
         </div>
 
-        {/* ── Store download — strategic, visible without scroll ── */}
-        {!isStandaloneApp && (
+        {/* ── Store download — only for users NOT already inside the app (native or PWA) ── */}
+        {!inApp && (
           <div style={{
             background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
             border: '1.5px solid rgba(251,191,36,0.3)', borderRadius: 16,

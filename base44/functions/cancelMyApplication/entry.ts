@@ -63,15 +63,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If this was the only pending applicant and task has auto_bump, unfreeze price
-    if (task?.auto_bump_enabled && task?.base_price) {
-      const remaining = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId });
-      const activeRemaining = remaining.filter(a => a.status === 'pending' || a.status === 'approved');
-      if (activeRemaining.length === 0) {
-        await base44.asServiceRole.entities.Task.update(taskId, { price: task.base_price });
-        console.log(`🔓 Auto-bump price reset to base price ₪${task.base_price} for task ${taskId}`);
-      }
-    }
+    // NOTE: price is NOT reset here. The auto-bump cron resumes bumping from the
+    // current price once no active applications remain (it skips tasks with active
+    // apps). Resetting to base_price would discard the price increases already earned.
 
     return Response.json({ success: true, refunded: creditsToRefund });
 

@@ -75,11 +75,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Reuse activeAppsAfter (already queried above) for auto-bump check
-    if (activeAppsAfter.length === 0 && task.auto_bump_enabled && task.base_price) {
-      // Reset price back to base_price so auto-bump can continue
-      await base44.asServiceRole.entities.Task.update(taskId, { price: task.base_price });
-    }
+    // NOTE: price is NOT reset here. The auto-bump cron resumes bumping from the
+    // current price once no active applications remain (it skips tasks with active
+    // apps). Resetting to base_price would discard the price increases already earned.
 
     return Response.json({
       success: true,

@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase, Download } from 'lucide-react';
+import { Users, TrendingUp, Loader2, Copy, CheckCircle2, Clock, LogIn, Briefcase, Download, Zap, ChevronLeft } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-import { copyToClipboard, getPublicBaseUrl } from '@/lib/utils';
+import { copyToClipboard, getPublicBaseUrl, isUserVerified } from '@/lib/utils';
+import VerifiedBadge from '@/components/VerifiedBadge';
+import GoldBadge from '@/components/GoldBadge';
+import { getCategoryLabel } from '@/lib/categories';
 
 function WorkerLinkCopy({ link }) {
   const [copied, setCopied] = useState(false);
@@ -27,9 +31,12 @@ function WorkerLinkCopy({ link }) {
     </div>
   );
 }
+
 export default function AgentDashboard() {
   const { user: me } = useAuth();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('all');
 
   // Fetch all agent referral data via backend function (service-role).
   // Agents can't list other users directly — built-in security blocks it.
@@ -44,6 +51,7 @@ export default function AgentDashboard() {
   const workerTasks = referralData?.data?.workerTasks || [];
   const clientTasks = referralData?.data?.clientTasks || [];
   const referralEvents = referralData?.data?.referralEvents || [];
+  const creditsUsedByUser = referralData?.data?.creditsUsedByUser || {};
   const workerIds = allUsers.map(u => u.id);
   const referralClicks = referralData?.data?.referral_clicks || 0;
   const totalCreditsUsed = referralData?.data?.totalCreditsUsed || 0;
@@ -82,26 +90,23 @@ export default function AgentDashboard() {
 
   const isLoading = isLoadingReferrals;
 
-  // Count active users (logged in within last 7 days)
   const now = Date.now();
   const activeUsersCount = allUsers.filter(u => {
     if (!u.last_active_at) return false;
-    const d = new Date(u.last_active_at);
-    return (now - d.getTime()) < 7 * 24 * 60 * 60 * 1000;
+    return (now - new Date(u.last_active_at).getTime()) < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
   const stats = [
     { label: 'הורדות אפליקציה', value: totalDownloads, color: '#7c3aed' },
     { label: 'נרשמו', value: registeredDownloads, color: '#059669' },
-    { label: 'לחיצות על לינק', value: referralClicks, color: '#d97706' },
-    { label: 'מחיר משימות', value: `₪${Math.round(totalTurnover).toLocaleString()}`, color: '#059669' },
+    { label: 'משתמשים פעילים', value: activeUsersCount, color: '#d97706' },
+    { label: 'ג׳ובות שנוצלו', value: Math.round(totalCreditsUsed), color: '#1a6fd4' },
   ];
 
   const formatLastActive = (dateStr) => {
     if (!dateStr) return 'מעולם לא התחבר';
     try {
-      const d = new Date(dateStr);
-      return formatDistanceToNow(d, { addSuffix: true, locale: he });
+      return formatDistanceToNow(new Date(dateStr), { addSuffix: true, locale: he });
     } catch {
       return '—';
     }
@@ -111,6 +116,24 @@ export default function AgentDashboard() {
     if (!dateStr) return false;
     return (now - new Date(dateStr).getTime()) < 24 * 60 * 60 * 1000;
   };
+
+  // ── Group users by their primary preferred category ──
+  const groups = {};
+  allUsers.forEach(u => {
+    const cat = u.preferred_categories?.[0] || 'other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(u);
+  });
+  // All categories present (for the filter chips), ordered by user count, 'other' last
+  const categoryList = Object.keys(groups).sort((a, b) => {
+    if (a === 'other') return 1;
+    if (b === 'other') return -1;
+    return groups[b].length - groups[a].length;
+  });
+  const visibleCategories = activeCategory === 'all' ? categoryList : [activeCategory];
+  const visibleUsers = activeCategory === 'all'
+    ? allUsers
+    : allUsers.filter(u => (u.preferred_categories?.[0] || 'other') === activeCategory);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-1)' }} dir="rtl">
@@ -183,13 +206,14 @@ export default function AgentDashboard() {
           </div>
         )}
 
-        {/* Workers List */}
+        {/* Workers — grouped by category, with credits, badge & activity */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <Users size={15} color="#7c3aed" />
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>עובדים שגויסו</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>העובדים שלך</span>
             <span style={{ fontSize: 11, color: '#94a3b8', background: 'var(--surface-3)', padding: '1px 8px', borderRadius: 20 }}>{allUsers.length}</span>
           </div>
+
           {isLoading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: 30 }}><Loader2 size={22} className="animate-spin" color="#1a6fd4" /></div>
           ) : allUsers.length === 0 ? (
@@ -198,90 +222,108 @@ export default function AgentDashboard() {
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)' }}>אין עובדים עדיין</div>
               <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>שתף את הלינק שלך כדי להביא עובדים</div>
             </div>
-          ) : allUsers.map(user => {
-            const userWorkerTasks = workerTasks.filter(t => t.worker_id === user.id);
-            const userClientTasks = clientTasks.filter(t => t.client_id === user.id);
-            const userTurnover = userWorkerTasks.reduce((s, t) => s + (t.price || 0), 0);
-            const joinDate = user.created_date ? format(new Date(user.created_date), 'dd/MM/yy') : '';
-            const lastActive = formatLastActive(user.last_active_at);
-            const recentlyActive = isRecentlyActive(user.last_active_at);
-            return (
-              <div key={user.id} style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 16px', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
-                    {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>{user.full_name || user.email}</span>
-                      {recentlyActive && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '1px 6px' }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} /> אונליין
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <LogIn size={9} /> {lastActive}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: '#059669' }}>₪{Math.round(userTurnover).toLocaleString()}</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8' }}>מחזור</div>
-                  </div>
-                </div>
-                {/* Activity stats */}
-                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Briefcase size={10} color="#1a6fd4" />
-                    <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>{userWorkerTasks.length} כעובד</span>
-                  </div>
-                  <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Users size={10} color="#7c3aed" />
-                    <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>{userClientTasks.length} כלקוח</span>
-                  </div>
-                  <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Clock size={10} color="#94a3b8" />
-                    <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>הצטרף {joinDate}</span>
-                  </div>
-                </div>
-                {/* Full profile details from /join */}
-                {(user.phone || user.profession || user.preferred_cities?.length > 0 || user.bio) && (
-                  <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--surface-3)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11, color: 'var(--text-2)' }}>
-                    {user.phone && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>📱</span>
-                        <a href={`tel:${user.phone}`} style={{ color: '#1a6fd4', fontWeight: 600, textDecoration: 'none' }}>{user.phone}</a>
-                      </div>
-                    )}
-                    {user.profession && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>💼</span>
-                        <span>{user.profession}</span>
-                      </div>
-                    )}
-                    {user.preferred_cities?.length > 0 && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>📍</span>
-                        <span>{user.preferred_cities.join(', ')}</span>
-                      </div>
-                    )}
-                    {user.bio && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <span style={{ fontWeight: 700, color: 'var(--text-1)' }}>📝</span>
-                        <span style={{ lineHeight: 1.4 }}>{user.bio}</span>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <span>{user.is_approved ? '✅' : '⏳'}</span>
-                      <span style={{ fontWeight: 600, color: user.is_approved ? '#059669' : '#d97706' }}>
-                        {user.is_approved ? 'גישה מאושרת' : 'ממתין לאישור'}
-                      </span>
-                    </div>
-                  </div>
-                )}
+          ) : (
+            <>
+              {/* Category filter chips */}
+              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 10, WebkitOverflowScrolling: 'touch' }}>
+                <button
+                  onClick={() => setActiveCategory('all')}
+                  style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1px solid ${activeCategory === 'all' ? '#7c3aed' : 'var(--border-1)'}`, background: activeCategory === 'all' ? '#7c3aed' : 'var(--surface-2)', color: activeCategory === 'all' ? 'white' : 'var(--text-2)' }}
+                >
+                  הכל ({allUsers.length})
+                </button>
+                {categoryList.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 99, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1px solid ${activeCategory === cat ? '#7c3aed' : 'var(--border-1)'}`, background: activeCategory === cat ? '#7c3aed' : 'var(--surface-2)', color: activeCategory === cat ? 'white' : 'var(--text-2)' }}
+                  >
+                    {getCategoryLabel(cat)} ({groups[cat].length})
+                  </button>
+                ))}
               </div>
-            );
-          })}
+
+              {/* Grouped sections */}
+              {visibleCategories.map(cat => (
+                <div key={cat} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-1)' }}>{getCategoryLabel(cat)}</span>
+                    <span style={{ fontSize: 10.5, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', padding: '1px 8px', borderRadius: 20, fontWeight: 700 }}>{groups[cat].length}</span>
+                  </div>
+                  {groups[cat].map(user => {
+                    const userWorkerTasks = workerTasks.filter(t => t.worker_id === user.id);
+                    const userClientTasks = clientTasks.filter(t => t.client_id === user.id);
+                    const usedJobas = creditsUsedByUser[user.id] || 0;
+                    const joinDate = user.created_date ? format(new Date(user.created_date), 'dd/MM/yy') : '';
+                    const lastActive = formatLastActive(user.last_active_at);
+                    const recentlyActive = isRecentlyActive(user.last_active_at);
+                    const verified = isUserVerified(user);
+                    const hasSocial = !!(user.instagram_verified || user.facebook_verified || user.tiktok_verified);
+                    return (
+                      <div
+                        key={user.id}
+                        onClick={() => navigate(`/public-profile?id=${user.id}`)}
+                        style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '12px 14px', marginBottom: 8, cursor: 'pointer', transition: 'box-shadow 0.15s, border-color 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.1)'; e.currentTarget.style.borderColor = '#ddd6fe'; }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border-1)'; }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 15, flexShrink: 0, overflow: 'hidden' }}>
+                            {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <span style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.full_name || user.email}</span>
+                              {verified && (hasSocial ? <GoldBadge size="sm" /> : <VerifiedBadge size="sm" />)}
+                              {recentlyActive && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, color: '#059669', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 20, padding: '1px 6px' }}>
+                                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#22c55e' }} /> אונליין
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                              <LogIn size={9} /> {lastActive}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'left', flexShrink: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 900, color: '#059669' }}>{Math.round(user.worker_credits || 0)} ג׳ובות</div>
+                            <div style={{ fontSize: 9.5, color: '#94a3b8' }}>יתרה</div>
+                          </div>
+                          <ChevronLeft size={14} color="var(--text-3)" style={{ flexShrink: 0 }} />
+                        </div>
+
+                        {/* Activity + usage */}
+                        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                          <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Briefcase size={10} color="#1a6fd4" />
+                            <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>{userWorkerTasks.length} כעובד</span>
+                          </div>
+                          <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Users size={10} color="#7c3aed" />
+                            <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>{userClientTasks.length} כלקוח</span>
+                          </div>
+                          <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Zap size={10} color="#d97706" />
+                            <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>ניצל {Math.round(usedJobas)}</span>
+                          </div>
+                        </div>
+
+                        {/* Categories chips + join date */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 7, alignItems: 'center' }}>
+                          {(user.preferred_categories || []).slice(0, 3).map(c => (
+                            <span key={c} style={{ fontSize: 9.5, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '1px 7px', borderRadius: 99, fontWeight: 600 }}>{getCategoryLabel(c)}</span>
+                          ))}
+                          <span style={{ fontSize: 9.5, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 3, marginInlineStart: 'auto' }}>
+                            <Clock size={9} /> {joinDate}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Completed Tasks */}

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
+import { base44 } from '@/api/base44Client';
 
 /**
  * useVerificationCelebration — detects when the current user becomes verified
- * (green or gold) and triggers the VerificationApprovedPopup once per user.
+ * (green or gold) and triggers the VerificationApprovedPopup ONCE per user.
  *
- * Reliable in-app fallback: works even if the push notification was missed
- * (no FCM token, app closed, etc.). The user sees the celebration the next
- * time they open the app while verified.
+ * The "shown" guard is persisted BOTH client-side (localStorage — fast, prevents
+ * double-fire within a session) AND server-side on the User entity
+ * (`verified_celebration_shown` — survives logout, storage wipes and device
+ * switches). The server flag is the source of truth: once true, the popup
+ * never repeats, even after the user logs out and back in.
  *
- * Trigger logic: show once per user when `is_verified === true` and the
- * per-user localStorage flag isn't set. Set the flag after showing so it
- * never repeats.
+ * Trigger: show once, in the first session after `kyc_status === 'approved'`.
  *
  * Returns: { celebration: 'green' | 'gold' | null, clearCelebration }
  */
@@ -21,23 +22,33 @@ export function useVerificationCelebration(user) {
     if (!user?.id) return;
 
     // Only celebrate an explicit staff approval (kyc_status === 'approved').
-    // `is_verified` alone can be auto-granted without staff review, which used to
-    // fire the popup for unverified users. Now the popup only fires once per user,
-    // in the first session after the staff actually approves verification.
     const isApproved = user.kyc_status === 'approved';
     if (!isApproved) return;
 
+    // Server-side flag — source of truth, survives logout/storage clears.
+    if (user.verified_celebration_shown) return;
+
+    // Client-side guard — prevents double-fire within the same session before
+    // the server update propagates back to the user object.
     const flagKey = `joba24_verified_celebration_${user.id}`;
-    if (localStorage.getItem(flagKey)) return; // already celebrated for this user
+    if (localStorage.getItem(flagKey)) return;
 
     // Determine gold vs green
     const hasSocial = !!(user.instagram_verified || user.facebook_verified || user.tiktok_verified);
     const variant = hasSocial ? 'gold' : 'green';
 
     setCelebration(variant);
-    // Persist synchronously so a rapid second effect run doesn't double-fire
+    // Persist immediately (both stores) so a rapid second effect run can't re-fire.
     localStorage.setItem(flagKey, '1');
-  }, [user?.id, user?.is_verified, user?.instagram_verified, user?.facebook_verified, user?.tiktok_verified]);
+    base44.auth.updateMe({ verified_celebration_shown: true }).catch(() => {});
+  }, [
+    user?.id,
+    user?.kyc_status,
+    user?.verified_celebration_shown,
+    user?.instagram_verified,
+    user?.facebook_verified,
+    user?.tiktok_verified,
+  ]);
 
   const clearCelebration = () => setCelebration(null);
   return { celebration, clearCelebration };

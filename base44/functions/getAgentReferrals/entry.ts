@@ -40,6 +40,7 @@ export default async function(req) {
     let workerTasks = [];
     let clientTasks = [];
     let totalCreditsUsed = 0;
+    const creditsUsedByUser = {};
 
     if (userIds.length > 0) {
       workerTasks = await base44.asServiceRole.entities.Task.filter({
@@ -56,6 +57,12 @@ export default async function(req) {
         user_id: { $in: userIds },
       }, '-created_date', 500);
 
+      // Build per-user credits spent from the same transactions (no extra query)
+      creditTxs.forEach((tx) => {
+        if (tx.amount < 0) {
+          creditsUsedByUser[tx.user_id] = (creditsUsedByUser[tx.user_id] || 0) + Math.abs(tx.amount);
+        }
+      });
       totalCreditsUsed = creditTxs
         .filter((tx) => tx.amount < 0)
         .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
@@ -69,6 +76,7 @@ export default async function(req) {
       commissionRate: user.commission_rate || 0,
       referral_clicks,
       totalCreditsUsed,
+      creditsUsedByUser,
     });
   } catch (error) {
     console.error('getAgentReferrals error:', error);

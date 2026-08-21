@@ -43,7 +43,6 @@ import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
 import CancelSuccessPopup from '@/components/CancelSuccessPopup';
 import RatingModal from '@/components/RatingModal';
-import TaskCompletedCelebration from '@/components/TaskCompletedCelebration';
 import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 
 import { useAuth } from '@/lib/AuthContext';
@@ -290,7 +289,6 @@ export default function Layout() {
 
   // Rating modal
   const [ratingTask, setRatingTask] = useState(null);
-  const [celebrationTask, setCelebrationTask] = useState(null);
   const shownRatingRef = useRef(new Set());
   const maybeShowRating = useCallback((task) => {
     if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
@@ -507,17 +505,18 @@ export default function Layout() {
       {ratingTask && me && createPortal(
         <RatingModal task={ratingTask} me={me} onClose={() => {
           localStorage.setItem(`rated_${ratingTask.id}_${me.id}`, '1');
-          setCelebrationTask(ratingTask);
+          // Task-completed celebration now flows through the shared notification
+          // queue (notificationStore) so it never overlaps other popups — it shows
+          // in order, styled green. Worker → tap navigates to earnings dashboard.
+          addNotification({
+            type: 'task_completed_celebration',
+            taskTitle: ratingTask.title,
+            taskId: ratingTask.id,
+            task: ratingTask,
+            role: me.id === ratingTask.worker_id ? 'worker' : 'client',
+          });
           setRatingTask(null);
         }} />,
-        document.body
-      )}
-      {celebrationTask && createPortal(
-        <div style={{ position: 'fixed', top: 'max(56px, env(safe-area-inset-top))', left: 0, right: 0, zIndex: 99999, padding: '0 16px', pointerEvents: 'none' }}>
-          <div style={{ pointerEvents: 'auto' }}>
-            <TaskCompletedCelebration task={celebrationTask} onDismiss={() => setCelebrationTask(null)} />
-          </div>
-        </div>,
         document.body
       )}
 
@@ -583,7 +582,7 @@ export default function Layout() {
                     style={{
                       flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
                       overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',
-                      paddingBottom: tabPath === '/map' ? 0 : 'calc(88px + max(6px, env(safe-area-inset-bottom)))',
+                      paddingBottom: tabPath === '/map' ? 0 : 'calc(64px + max(6px, env(safe-area-inset-bottom)))',
                       WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
                       height: isActive ? '100%' : 0,
                       }}>
@@ -610,7 +609,7 @@ export default function Layout() {
             {isNonRootTab && (() => {
               // Bottom nav is hidden on these non-root paths — don't reserve its 88px padding
               const hideNavOnPath = ['/create-task', '/support'].includes(location.pathname) || location.pathname.startsWith('/task/') || location.pathname.startsWith('/chat/');
-              const scrollPad = hideNavOnPath ? 'max(6px, env(safe-area-inset-bottom))' : 'calc(88px + max(6px, env(safe-area-inset-bottom)))';
+              const scrollPad = hideNavOnPath ? 'max(6px, env(safe-area-inset-bottom))' : 'calc(64px + max(6px, env(safe-area-inset-bottom)))';
               return (
                 <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
                   <Outlet />

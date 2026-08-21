@@ -157,7 +157,7 @@ export default function Profile() {
   const categories = me?.preferred_categories || [];
 
   return (
-    <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* ── Hero: gradient header + avatar + name + stats ── */}
       <div style={{
         background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
@@ -338,8 +338,6 @@ export default function Profile() {
           <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => base44.auth.logout()} chevronColor="#fca5a5" />
           <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
         </div>
-
-        <div style={{ height: 20 }} />
       </div>
 
       {/* Unified History & Reviews Sheet */}
