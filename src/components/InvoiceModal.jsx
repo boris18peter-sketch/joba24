@@ -59,6 +59,17 @@ export default function InvoiceModal({ task, me, onClose }) {
       // Save invoice HTML on the task — both parties can view & download from TaskDetail
       await base44.entities.Task.update(task.id, { invoice_html: invoiceHtml });
 
+      // Notify the task publisher (client) that an invoice was generated
+      if (task.client_id && task.client_id !== me?.id) {
+        base44.functions.invoke('sendPushNotification', {
+          user_ids: [task.client_id],
+          title: 'הופקה חשבונית 📄',
+          body: `הופקה חשבונית עבור "${task.title}" — לחץ לצפייה והורדה`,
+          url: `/task/${task.id}`,
+          tag: `invoice_${task.id}`,
+        }).catch(() => {});
+      }
+
       setDone(true);
       setTimeout(() => onClose(), 2400);
     } catch {

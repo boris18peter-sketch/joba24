@@ -40,11 +40,17 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
   const [showCooldown, setShowCooldown] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Local override: right after a successful boost the server's last_boost_at may
+  // not have propagated to this component's `task` prop yet. We keep a local
+  // timestamp so the pill immediately empties instead of staying "charged" until
+  // the next refetch / page change.
+  const [boostedAt, setBoostedAt] = useState(null);
   const calcState = () => {
     // Reference: last boost if exists, else task creation date
-    const refMs = task.last_boost_at
+    const baseMs = task.last_boost_at
       ? toUTCMs(task.last_boost_at)
       : toUTCMs(task.created_date);
+    const refMs = boostedAt && (!baseMs || baseMs < boostedAt) ? boostedAt : baseMs;
 
     if (!refMs || isNaN(refMs)) return { pct: 100, charged: true, remainingMs: 0 };
 
@@ -68,7 +74,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task.id, task.last_boost_at, task.created_date, showCooldown]);
+  }, [task.id, task.last_boost_at, task.created_date, showCooldown, boostedAt]);
 
   const handleBoost = async () => {
     if (loading) return;
@@ -99,6 +105,7 @@ export default function BoostPill({ task, size = 'sm', onBoostDone, onSheetClose
       // Reset pill immediately — will re-sync from server on next render
       setPct(0);
       setCharged(false);
+      setBoostedAt(Date.now());
       queryClient.invalidateQueries({ queryKey: ['me'] });
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

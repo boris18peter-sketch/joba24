@@ -111,6 +111,7 @@ export async function copyToClipboard(text) {
  */
 export async function downloadHtmlInvoice(filename, html) {
   const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/></head><body>${html}</body></html>`;
+  // 1) Web Share API with a File — works in iOS Safari/WKWebView (native share sheet → Save to Files)
   if (typeof navigator !== 'undefined' && navigator.canShare) {
     try {
       const file = new File([fullHtml], filename, { type: 'text/html' });
@@ -122,6 +123,7 @@ export async function downloadHtmlInvoice(filename, html) {
       if (e?.name === 'AbortError') return true;
     }
   }
+  // 2) Blob download link — works in desktop browsers & Android Chrome
   try {
     const url = URL.createObjectURL(new Blob([fullHtml], { type: 'text/html' }));
     const a = document.createElement('a');
@@ -130,7 +132,14 @@ export async function downloadHtmlInvoice(filename, html) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return true;
+  } catch {}
+  // 3) Last resort — open the invoice HTML in a new tab so the browser can save it
+  try {
+    const url = URL.createObjectURL(new Blob([fullHtml], { type: 'text/html' }));
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
     return true;
   } catch {}
   return false;

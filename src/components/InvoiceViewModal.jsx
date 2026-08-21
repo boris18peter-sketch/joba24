@@ -1,14 +1,16 @@
 import { createPortal } from 'react-dom';
 import { X, Download, Loader2, Share } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { downloadHtmlInvoice } from '@/lib/utils';
 
 export default function InvoiceViewModal({ invoiceHtml, onClose }) {
   const [downloading, setDownloading] = useState(false);
   const handleDownload = async () => {
     setDownloading(true);
-    await downloadHtmlInvoice('חשבונית.html', invoiceHtml);
+    const ok = await downloadHtmlInvoice('חשבונית.html', invoiceHtml);
     setDownloading(false);
+    if (!ok) toast.error('לא ניתן לשמור את החשבונית בסביבה זו — ניתן לצלם מסך או לפתוח בדפדפן');
   };
 
   return createPortal(
