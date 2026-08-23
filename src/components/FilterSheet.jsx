@@ -85,7 +85,7 @@ export default function FilterSheet({ open, onClose, filters, onApply, hasForYou
 
   const handleApply = () => { onApply(local); onClose(); };
   const handleReset = () => {
-    const reset = { minPrice: '', maxPrice: '', city: '', approvalMode: '', sortBy: '', category: '', urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false };
+    const reset = { minPrice: '', maxPrice: '', city: '', approvalMode: '', sortBy: '', categories: [], urgency_tag: '', payment_method: '', forYou: false, requires_invoice: false };
     setLocal(reset); onApply(reset); onClose();
   };
 

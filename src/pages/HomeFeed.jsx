@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullToRefreshIndicator from '@/components/PullToRefreshIndicator';
 
@@ -740,8 +740,13 @@ export default function HomeFeed() {
               {showCategoryDropdown && (
                 <>
                   <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
-                  <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 220, overflowY: 'auto' }}>
-                    {(filters.categories?.length > 0) &&                    <button onClick={() => { setFilters(f => ({ ...f, categories: [] })); setShowCategoryDropdown(false); }} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>{t('clear_categories')}</button>}
+                  <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border-1)', boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 280, overflowY: 'auto' }}>
+                    <div style={{ position: 'sticky', top: 0, background: 'var(--surface-2)', padding: '8px 10px', borderBottom: '1px solid var(--border-1)', display: 'flex', justifyContent: 'flex-end', zIndex: 5 }}>
+                      <button className="j-icon-btn" onClick={() => setShowCategoryDropdown(false)} style={{ height: 32, paddingInline: 14, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
+                        <Check size={15} strokeWidth={3} />
+                      </button>
+                    </div>
+                    {(filters.categories?.length > 0) &&                    <button onClick={() => setFilters(f => ({ ...f, categories: [] }))} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>{t('clear_categories')}</button>}
                     {[...CATEGORIES].sort((a, b) => tasks.filter(t => t.category === b.value && t.status === 'OPEN').length - tasks.filter(t => t.category === a.value && t.status === 'OPEN').length).map(c => {
                      const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
                       if (count === 0) return null;

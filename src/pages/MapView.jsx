@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { getCategoryLabel, CATEGORIES } from '@/lib/categories';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -103,7 +102,7 @@ export default function MapView() {
   const [mapToken, setMapToken] = useState('');
 
   // Filters
-  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', category: '', approvalMode: '', sortBy: '', urgency_tag: '' });
+  const [filters, setFilters] = useState({ minPrice: '', maxPrice: '', time: '', city: '', categories: [], approvalMode: '', sortBy: '', urgency_tag: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
@@ -167,7 +166,7 @@ export default function MapView() {
     if (filters.maxPrice && t.price > Number(filters.maxPrice)) return false;
     if (filters.time && t.estimated_time !== filters.time) return false;
     if (filters.city && !t.city?.includes(filters.city) && !t.location_name?.includes(filters.city)) return false;
-    if (filters.category && t.category !== filters.category) return false;
+    if (filters.categories?.length > 0 && !filters.categories.includes(t.category)) return false;
     if (filters.approvalMode && t.approval_mode !== filters.approvalMode) return false;
     if (filters.urgency_tag && t.urgency_tag !== filters.urgency_tag) return false;
     return true;
@@ -415,18 +414,21 @@ export default function MapView() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
               {/* Category button */}
               <button
-                onClick={() => { if (displayTasks.length > 0) setShowCategoryDropdown(v => !v); }}
-                disabled={displayTasks.length === 0}
+                onClick={() => { if (tasks.some(t => t.status === 'OPEN')) setShowCategoryDropdown(v => !v); }}
+                disabled={!tasks.some(t => t.status === 'OPEN')}
                 style={{
                   flex: 1, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                  borderRadius: 10, border: `1px solid ${filters.category ? '#93c5fd' : '#e8edf5'}`,
-                  background: filters.category ? '#eff6ff' : 'var(--surface-2)',
-                  color: filters.category ? '#1a6fd4' : '#64748b',
-                  fontSize: 13, fontWeight: 600, cursor: displayTasks.length > 0 ? 'pointer' : 'not-allowed',
-                  opacity: displayTasks.length > 0 ? 1 : 0.4,
+                  borderRadius: 10, border: `1px solid ${filters.categories?.length > 0 ? '#93c5fd' : '#e8edf5'}`,
+                  background: filters.categories?.length > 0 ? '#eff6ff' : 'var(--surface-2)',
+                  color: filters.categories?.length > 0 ? '#1a6fd4' : '#64748b',
+                  fontSize: 13, fontWeight: 600, cursor: tasks.some(t => t.status === 'OPEN') ? 'pointer' : 'not-allowed',
+                  opacity: tasks.some(t => t.status === 'OPEN') ? 1 : 0.4,
                 }}
               >
-                {filters.category ? getCategoryLabel(filters.category, t) : t('category')}
+                {filters.categories?.length > 0
+                  ? <span style={{ background: '#1a6fd4', color: 'white', borderRadius: 5, padding: '1px 6px', fontSize: 11, fontWeight: 800 }}>{filters.categories.length}</span>
+                  : null}
+                {filters.categories?.length === 1 ? getCategoryLabel(filters.categories[0], t) : t('category')}
                 {showCategoryDropdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
 
@@ -445,27 +447,34 @@ export default function MapView() {
                 {hasSheetFilters && <span style={{ position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
               </button>
 
-              {/* Category dropdown */}
+              {/* Category dropdown — multi-select + confirm (וי) button */}
               {showCategoryDropdown && (
                 <>
-                  {createPortal(<div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'transparent' }} />, document.body)}
+                  <div onClick={() => setShowCategoryDropdown(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
                   <div style={{
                     position: 'absolute', top: 42, right: 0, left: 0,
                     background: 'var(--card-bg)', borderRadius: 10, border: '1px solid var(--border-1)',
                     boxShadow: '0 6px 20px rgba(0,0,0,0.1)', zIndex: 100,
-                    maxHeight: 220, overflowY: 'auto',
+                    maxHeight: 280, overflowY: 'auto',
                   }}>
-                    <button onClick={() => { setFilters(f => ({ ...f, category: '' })); setShowCategoryDropdown(false); }}
-                      style={{ width: '100%', padding: '8px 14px', background: !filters.category ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: !filters.category ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', fontWeight: !filters.category ? 700 : 500 }}>
-                      {t('all_filter') || 'הכל'}
-                    </button>
+                    <div style={{ position: 'sticky', top: 0, background: 'var(--card-bg)', padding: '8px 10px', borderBottom: '1px solid var(--border-1)', display: 'flex', justifyContent: 'flex-end', zIndex: 5 }}>
+                      <button className="j-icon-btn" onClick={() => setShowCategoryDropdown(false)} style={{ height: 32, paddingInline: 14, borderRadius: 16, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 8px rgba(26,111,212,0.3)' }}>
+                        <Check size={15} strokeWidth={3} />
+                      </button>
+                    </div>
+                    {(filters.categories?.length > 0) && (
+                      <button onClick={() => setFilters(f => ({ ...f, categories: [] }))} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', textAlign: 'right', fontSize: 12, color: '#dc2626', cursor: 'pointer', fontWeight: 700 }}>
+                        {t('clear_categories')}
+                      </button>
+                    )}
                     {CATEGORIES.map(c => {
                       const count = tasks.filter(t => t.category === c.value && t.status === 'OPEN').length;
                       if (count === 0) return null;
+                      const isSelected = (filters.categories || []).includes(c.value);
                       return (
-                        <button key={c.value} onClick={() => { setFilters(f => ({ ...f, category: f.category === c.value ? '' : c.value })); setShowCategoryDropdown(false); }}
-                          style={{ width: '100%', padding: '8px 14px', background: filters.category === c.value ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: filters.category === c.value ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: filters.category === c.value ? 700 : 500 }}>
-                          <span>{getCategoryLabel(c.value, t)}</span>
+                        <button key={c.value} onClick={() => setFilters(f => { const cats = f.categories || []; return { ...f, categories: isSelected ? cats.filter(x => x !== c.value) : [...cats, c.value] }; })}
+                          style={{ width: '100%', padding: '8px 14px', background: isSelected ? '#eff6ff' : 'none', border: 'none', textAlign: 'right', fontSize: 12, color: isSelected ? '#1a6fd4' : 'var(--text-1)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: isSelected ? 700 : 500 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{isSelected && <span style={{ fontSize: 9, color: '#1a6fd4' }}>✓</span>}{getCategoryLabel(c.value, t)}</span>
                           <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 20, padding: '1px 6px' }}>{count}</span>
                         </button>
                       );
