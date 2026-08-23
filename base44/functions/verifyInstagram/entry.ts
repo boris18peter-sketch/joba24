@@ -54,6 +54,43 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   }
 }
 
+// ── TikTok bio extraction — parse embedded JSON (universal data / SIGI_STATE) ──
+// TikTok profile pages embed the user's bio inside a JSON blob. Scraping the
+// raw HTML rarely contains the bio as plain text, so we parse the structured
+// data that TikTok ships for rehydration.
+function extractTikTokBio(html) {
+  if (!html) return '';
+  // Newer layout: __UNIVERSAL_DATA_FOR_REHYDRATION__
+  const m1 = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/i);
+  if (m1) {
+    try {
+      const data = JSON.parse(m1[1]);
+      const scopes = data?.__DEFAULT_SCOPE__ || {};
+      const detail = scopes['web.user-detail'] || scopes['web.user.profile'] || {};
+      const userInfo = detail?.userInfo || detail?.itemList?.userInfo || {};
+      const bio = userInfo?.user?.signature || userInfo?.signature || '';
+      if (bio) return bio;
+    } catch (e) { /* ignore parse error */ }
+  }
+  // Older layout: SIGI_STATE
+  const m2 = html.match(/<script id="SIGI_STATE"[^>]*>([\s\S]*?)<\/script>/i);
+  if (m2) {
+    try {
+      const data = JSON.parse(m2[1]);
+      const users = data?.UserModule?.users || {};
+      const firstKey = Object.keys(users)[0];
+      const bio = users[firstKey]?.signature || '';
+      if (bio) return bio;
+    } catch (e) { /* ignore parse error */ }
+  }
+  // Last resort: some pages embed the bio in a <meta> or JSON-LD
+  const m3 = html.match(/"signature"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (m3) {
+    try { return JSON.parse('"' + m3[1] + '"'); } catch (e) { return m3[1]; }
+  }
+  return '';
+}
+
 // ── Fast embed/oEmbed fetch — tries platform embed endpoints ──
 async function checkBioFast(platform, username, code) {
   const endpoints = [];
@@ -91,6 +128,17 @@ async function checkBioFast(platform, username, code) {
           console.log(`✅ Code found via fast endpoint: ${url}`);
           return { found: true, method: 'fast-embed' };
         }
+        // TikTok: the bio is inside an embedded JSON blob, not plain text — parse it
+        if (platform === 'tiktok') {
+          const bio = extractTikTokBio(text);
+          if (bio) {
+            const bioDecoded = decodeEntities(bio);
+            if (bioDecoded.includes(code)) {
+              console.log(`✅ Code found via TikTok JSON bio: ${url}`);
+              return { found: true, method: 'tiktok-json' };
+            }
+          }
+        }
       }
     } catch (e) {
       console.log(`verifyInstagram: fast endpoint failed (${url}): ${e?.message || e}`);
@@ -121,6 +169,14 @@ async function checkBioDirect(platform, username, code) {
       if (decoded.includes(code)) {
         console.log('✅ Code found via direct HTML');
         return { found: true, method: 'direct' };
+      }
+      // TikTok: parse the embedded JSON bio (not present as plain text)
+      if (platform === 'tiktok') {
+        const bio = extractTikTokBio(html);
+        if (bio && decodeEntities(bio).includes(code)) {
+          console.log('✅ Code found via TikTok JSON bio (direct)');
+          return { found: true, method: 'tiktok-json-direct' };
+        }
       }
     }
   } catch (e) {

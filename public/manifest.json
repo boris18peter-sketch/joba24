@@ -1,16 +1,15 @@
 {
   "name": "Joba24 — משימות מהירות",
   "short_name": "Joba24",
-  "description": "פלטפורמה למשימות מהירות ושירותים מקומיים — חבר בין לקוחות לעובדים במהירות ובקלות.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "dir": "rtl",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "lang": "he",
-  "theme_color": "#0f2b6b",
-  "background_color": "#f4f7fb",
-  "categories": ["business", "lifestyle", "productivity"],
+  "dir": "rtl",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
@@ -23,12 +22,6 @@
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any"
-    },
-    {
-      "src": "https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "maskable"
     }
   ]
 }
