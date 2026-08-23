@@ -573,8 +573,11 @@ export default function Layout() {
               style={{ flex: isNonRootTab ? 0 : 1, display: isNonRootTab ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}
             >
               {ROOT_TAB_PATHS.map((tabPath) => {
-                if (!visitedTabs.has(tabPath)) return null;
                 const isActive = location.pathname === tabPath;
+                // Render the active tab immediately even on first visit (before
+                // the visitedTabs effect runs) — otherwise the first navigation
+                // to a root tab shows a blank frame for one render.
+                if (!visitedTabs.has(tabPath) && !isActive) return null;
                 const needsAuth = !isAuthenticated && (tabPath === '/chats' || tabPath === '/profile');
                 const TabComponent = tabPath === '/' ? HomeFeed : tabPath === '/map' ? MapView : tabPath === '/chats' ? ChatInbox : Profile;
                 return (
@@ -612,7 +615,9 @@ export default function Layout() {
               const scrollPad = hideNavOnPath ? 'max(6px, env(safe-area-inset-bottom))' : 'calc(58px + max(6px, env(safe-area-inset-bottom)))';
               return (
                 <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
-                  <Outlet />
+                  <Suspense fallback={<TabSkeleton />}>
+                    <Outlet />
+                  </Suspense>
                 </div>
               );
             })()}

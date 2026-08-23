@@ -56,15 +56,26 @@ const Profile = lazyRetry(() => import('@/pages/Profile'));
 // Preload remaining tab pages after initial render is complete (idle callback)
 // so they don't compete with the critical path (HomeFeed) on slow connections
 if (typeof window !== 'undefined') {
-  const preloadTabs = () => {
+  const preloadPages = () => {
+    // Root tabs (keep-alive) + most-visited non-root pages — preloading the
+    // chunks means navigation never hits the Suspense full-screen spinner.
     import('@/pages/MapView');
     import('@/pages/ChatInbox');
     import('@/pages/Profile');
+    import('@/pages/CreateTask');
+    import('@/pages/Wallet');
+    import('@/pages/MyTasks');
+    import('@/pages/WorkerProfile');
+    import('@/pages/EarningsDashboard');
+    import('@/pages/Notifications');
+    import('@/pages/Chat');
+    import('@/pages/SupportChat');
+    import('@/pages/AgentDashboard');
   };
   if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(preloadTabs, { timeout: 3000 });
+    window.requestIdleCallback(preloadPages, { timeout: 4000 });
   } else {
-    setTimeout(preloadTabs, 1500);
+    setTimeout(preloadPages, 1500);
   }
 }
 
@@ -136,10 +147,19 @@ function CaptureRefCode() {
   return null;
 }
 
-const ROOT_TABS = new Set(['/', '/map', '/chats', '/profile', '/wallet']);
+// Routes rendered INSIDE Layout all share one animKey ('app') so the Layout
+// itself (header, bottom nav, keep-alive tabs, realtime subscriptions, scroll
+// positions) NEVER remounts when navigating between them. That remount was the
+// #1 cause of the "intermediate screen" flash — Layout fading out then a fresh
+// Layout fading back in on every page-to-page navigation. Only truly standalone
+// screens (chat thread, landing, onboarding, reset-password, referral redirect,
+// support) get their own key and animate (slide) in/out.
+const STANDALONE = (p) =>
+  p === '/lp' || p === '/presentation' || p === '/reset-password' || p === '/join' ||
+  p === '/support' || p.startsWith('/chat/') || p.startsWith('/r/');
 function getDepth(pathname) {
-  if (ROOT_TABS.has(pathname)) return 0;
-  if (pathname.startsWith('/task/') || pathname.startsWith('/chat/') || pathname.startsWith('/edit-task/')) return 2;
+  if (!STANDALONE(pathname)) return 0;
+  if (pathname.startsWith('/chat/')) return 2;
   return 1;
 }
 
@@ -167,14 +187,14 @@ const AuthenticatedApp = () => {
   const slideDir = curDepth >= prevDepthRef.current ? 1 : -1;
   useEffect(() => { prevDepthRef.current = curDepth; }, [location.pathname]);
 
-  const isRootTab = ROOT_TABS.has(location.pathname);
-  const animKey = isRootTab ? 'root' : location.pathname;
+  const isStandalone = STANDALONE(location.pathname);
+  const animKey = isStandalone ? location.pathname : 'app';
 
 
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#f4f7fb' }}>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#ffffff' }}>
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     );
@@ -192,14 +212,14 @@ const AuthenticatedApp = () => {
         <motion.div
           key={animKey}
           custom={slideDir}
-          variants={isRootTab ? undefined : PUSH_VARIANTS}
-          initial={isRootTab ? { opacity: 0 } : 'enter'}
-          animate={isRootTab ? { opacity: 1 } : 'center'}
-          exit={isRootTab ? { opacity: 0 } : 'exit'}
+          variants={isStandalone ? PUSH_VARIANTS : undefined}
+          initial={isStandalone ? 'enter' : false}
+          animate={isStandalone ? 'center' : { opacity: 1 }}
+          exit={isStandalone ? 'exit' : { opacity: 0 }}
           transition={
-            isRootTab
-              ? { duration: 0.12, ease: 'easeOut' }
-              : { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.22 }
+            isStandalone
+              ? { type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.22 }
+              : { duration: 0.14, ease: 'easeOut' }
           }
           style={{ position: 'absolute', inset: 0 }}
         >
