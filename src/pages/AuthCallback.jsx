@@ -41,14 +41,21 @@ export default function AuthCallback() {
         // then finds the token via the "most recent record" poll fallback.
         await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
         setStatus('done');
-        // iOS: bounce to the custom scheme for an instant return to the app.
-        // Android: no-op (no registered handler) — the app polls the handshake.
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        if (isIOS) {
-          try {
+        // Bounce back to the app for an instant return.
+        // iOS: joba24:// is registered in Info.plist → appUrlOpen fires.
+        // Android: intent:// launches the app IF the joba24:// intent-filter is
+        //   in AndroidManifest.xml; otherwise Chrome opens the fallback URL (this
+        //   done screen) and the user returns manually (app polls on resume). No
+        //   "page not found" error either way.
+        try {
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          if (isIOS) {
             window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`);
-          } catch {}
-        }
+          } else {
+            const fallback = encodeURIComponent(`${window.location.origin}/auth-callback`);
+            window.location.replace(`intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=com.base69e6bdb4986a04a256653a23.app;S.browser_fallback_url=${fallback};end`);
+          }
+        } catch {}
       } catch (e) {
         setStatus('error');
         setErrorMsg((e && e.message) || 'שגיאה בשמירת הטוקן.');

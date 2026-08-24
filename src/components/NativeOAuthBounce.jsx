@@ -24,14 +24,19 @@ export default function NativeOAuthBounce() {
       try {
         await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
       } catch {}
-      // iOS fast-path: the joba24:// scheme is registered in Info.plist, so try
-      // an instant return. If SFSafariViewController blocks it, the app still
-      // returns via the handshake poll (NativeAuthListener) within ~1.5s.
-      if (isIOS) {
-        try {
+      // Bounce back to the app for an instant return.
+      // iOS: joba24:// (Info.plist) → appUrlOpen. Android: intent:// launches the
+      // app if the joba24:// intent-filter is in the manifest, else Chrome opens
+      // the fallback URL (this page) — the app then polls on resume. Either way
+      // no "page not found" error.
+      try {
+        if (isIOS) {
           window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`);
-        } catch {}
-      }
+        } else {
+          const fallback = encodeURIComponent(window.location.href);
+          window.location.replace(`intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=com.base69e6bdb4986a04a256653a23.app;S.browser_fallback_url=${fallback};end`);
+        }
+      } catch {}
     })();
   }, []);
   return null;
