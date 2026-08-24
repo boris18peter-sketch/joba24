@@ -5,7 +5,19 @@
   "server": {
     "url": "https://joba24.com/",
     "cleartext": false,
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": [
+      "base44.app",
+      "*.base44.app",
+      "accounts.google.com",
+      "www.google.com",
+      "google.com",
+      "appleid.apple.com",
+      "*.apple.com",
+      "www.facebook.com",
+      "m.facebook.com",
+      "facebook.com"
+    ]
   },
   "plugins": {
     "SplashScreen": {
