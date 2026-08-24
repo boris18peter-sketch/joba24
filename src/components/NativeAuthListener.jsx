@@ -30,12 +30,20 @@ export default function NativeAuthListener() {
     let appUrlListener;
     let stateListener;
 
-    const applyToken = (token) => {
+    const applyToken = async (token) => {
       if (!token) return;
       localStorage.setItem('base44_access_token', token);
       localStorage.setItem('token', token);
       localStorage.removeItem('joba24_auth_sid');
-      try { Browser.close(); } catch {}
+      // Dismiss the in-app browser sheet (SFSafariViewController / Chrome Custom
+      // Tab) BEFORE reloading. Without awaiting, window.location.reload() unloads
+      // the page before Browser.close() finishes dismissing the sheet, leaving
+      // the browser open on top of the (now-logged-in) app until the user
+      // manually taps "Done"/"Open". Race against a timeout so a hung close()
+      // never blocks the reload.
+      try {
+        await Promise.race([Browser.close(), new Promise((r) => setTimeout(r, 1000))]);
+      } catch {}
       window.location.reload();
     };
 
