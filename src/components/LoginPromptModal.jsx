@@ -287,7 +287,10 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   // the same window.location.href redirect the SDK used.
   const openOAuth = (provider) => {
     const isNative = Capacitor.isNativePlatform();
-    const redirectUrl = getRedirectUrl();
+    // On native, the OAuth from_url is a joba24.com page that bounces to the
+    // `joba24://` custom scheme — that opens the native app (with the
+    // access_token) instead of leaving the user stuck in the external browser.
+    const redirectUrl = isNative ? `${PROD_BASE_URL}/auth-callback` : getRedirectUrl();
     const providerPath = provider === 'google' ? '' : `/${provider}`;
     // On native: use the hardcoded PROD_BASE_URL (window.location.origin is
     // "null" in WKWebView, and appParams.appBaseUrl is also null there).

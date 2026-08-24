@@ -20,6 +20,7 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
+import NativeAuthListener from '@/components/NativeAuthListener';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 
@@ -101,6 +102,7 @@ const QADashboard = lazyRetry(() => import('@/pages/QADashboard'));
 const Terms = lazyRetry(() => import('@/pages/Terms'));
 const Privacy = lazyRetry(() => import('@/pages/Privacy'));
 const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
+const AuthCallback = lazyRetry(() => import('@/pages/AuthCallback'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -225,6 +227,7 @@ const AuthenticatedApp = () => {
         >
           <Routes location={location}>
             <Route path="/r/:code" element={<ReferralRedirect />} />
+            <Route path="/auth-callback" element={<AuthCallback />} />
             <Route path="/lp" element={<Landing />} />
             <Route element={<Layout />}>
               <Route path="/" element={<HomeFeed />} />
@@ -290,6 +293,7 @@ function App() {
                 <CaptureRefCode />
                 <ScrollToTop />
                 <DeepLinkHandler />
+                <NativeAuthListener />
                 <AuthenticatedApp />
                 <TaskDetailSheet />
                 <DemoModeExitBanner />
