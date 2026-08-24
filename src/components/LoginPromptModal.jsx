@@ -287,18 +287,19 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
   const openOAuth = (provider) => {
     const isNative = Capacitor.isNativePlatform();
+    const platform = isNative ? (Capacitor.getPlatform?.() || 'web') : 'web';
     const providerPath = provider === 'google' ? '' : `/${provider}`;
     const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
     const resolver = isNative ? PROD_BASE_URL : window.location.origin;
 
-    // Native (iOS + Android): open the OAuth provider in the system browser
-    // (SFSafariViewController / Chrome Custom Tab) via @capacitor/browser. After
-    // auth the backend redirects to /auth-callback, which stores the token in a
-    // server handshake keyed by `sid` (nativeAuthHandshake). NativeAuthListener
-    // polls for it and completes the login. On iOS, AuthCallback also bounces to
-    // the joba24:// custom scheme (registered in Info.plist) so appUrlOpen fires
-    // for an instant auto-return — no need to manually close the browser.
-    if (isNative) {
+    // ── iOS native ── open the OAuth provider in the system browser
+    // (SFSafariViewController) via @capacitor/browser — App Store compliant.
+    // After auth the backend redirects to /auth-callback, which stores the
+    // token in a server handshake keyed by `sid`. NativeAuthListener polls for
+    // it, and the joba24:// scheme registered in Info.plist fires appUrlOpen
+    // for an instant auto-return. UNCHANGED — iOS keeps working exactly as
+    // before.
+    if (platform === 'ios') {
       const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
       localStorage.setItem('joba24_auth_sid', sid);
       const fromUrl = `${PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
@@ -318,8 +319,15 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       return;
     }
 
-    // Web / PWA: standard OAuth redirect within the same browser tab — the
-    // Base44 SDK picks up access_token from the URL on return. Seamless.
+    // ── Android native + web/PWA ── navigate the WebView itself to the OAuth
+    // URL. On Android the Capacitor WebView (androidScheme:https + the
+    // allowNavigation entries for accounts.google.com / facebook.com in
+    // capacitor.config.json) follows the redirect to the provider and back to
+    // the app with the access_token, reloading the app authenticated — a single
+    // continuous in-app flow. No external Chrome Custom Tab, no AndroidManifest
+    // intent-filter, no server handshake. This is the smooth Android experience
+    // (the Base44 SDK picks up access_token from the URL on return, same as PWA).
+    // iOS keeps the external-browser path above for App Store compliance.
     const redirectUrl = getRedirectUrl();
     const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
     window.location.href = loginUrl;
