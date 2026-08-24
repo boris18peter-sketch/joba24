@@ -287,14 +287,20 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   // the same window.location.href redirect the SDK used.
   const openOAuth = (provider) => {
     const isNative = Capacitor.isNativePlatform();
-    // On native, the OAuth from_url is a joba24.com page that bounces to the
-    // `joba24://` custom scheme — that opens the native app (with the
-    // access_token) instead of leaving the user stuck in the external browser.
-    const redirectUrl = isNative ? `${PROD_BASE_URL}/auth-callback` : getRedirectUrl();
+    // On native, OAuth opens in the system browser. After auth the backend
+    // redirects to /auth-callback, which stores the access_token in a server
+    // handshake keyed by `sid` so the app can poll for it. This works on
+    // Android where the joba24:// custom scheme isn't registered in the
+    // manifest — the token is transferred via the server, not a scheme URL.
+    let redirectUrl;
+    if (isNative) {
+      const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+      localStorage.setItem('joba24_auth_sid', sid);
+      redirectUrl = `${PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
+    } else {
+      redirectUrl = getRedirectUrl();
+    }
     const providerPath = provider === 'google' ? '' : `/${provider}`;
-    // On native: use the hardcoded PROD_BASE_URL (window.location.origin is
-    // "null" in WKWebView, and appParams.appBaseUrl is also null there).
-    // On web: mirror the SDK — relative path resolved against the origin.
     const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
     const resolver = isNative ? PROD_BASE_URL : window.location.origin;
     const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
@@ -303,10 +309,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         try {
           await Browser.open({ url: loginUrl });
         } catch (err) {
-          const msg = (err && (err.message || err.toString())) || 'unknown error';
           console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
-          // DEBUG (זמני): מציג את השגיאה על המסך כדי שנוכל לאבחן בלי מחשב
-          alert('DEBUG Browser.open: ' + msg + '\n\nURL: ' + loginUrl);
         }
       })();
     } else {
