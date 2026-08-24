@@ -24,14 +24,7 @@ import { base44 } from '@/api/base44Client';
 // whenever a sid appears. The app's WKWebView keeps running JS timers while
 // the in-app Safari sheet is open, so the token is picked up shortly after
 // /auth-callback stores it, and Browser.close() auto-dismisses the sheet.
-// Guards against a double-fire of applyToken on iOS (the joba24:// bounce via
-// appUrlOpen AND the handshake poll can BOTH deliver the token for the same
-// login). Two concurrent applyToken → window.location.reload() calls race, and
-// the second reload tears down the page before the first Browser.close()
-// finishes — leaving @capacitor/browser's SFSafariViewController reference
-// stuck, so the NEXT login's Browser.open is a silent no-op. One apply per
-// page load; the flag resets on reload (module re-evaluates).
-let authApplied = false;
+// (applyToken guards against double-fire using the pending sid — see below)
 
 export default function NativeAuthListener() {
   useEffect(() => {
@@ -41,21 +34,42 @@ export default function NativeAuthListener() {
     let stateListener;
 
     const applyToken = async (token) => {
-      if (!token || authApplied) return;
-      authApplied = true;
+      if (!token) return;
+      // Only apply while a login is pending (a sid was set by LoginPromptModal
+      // right before Browser.open). Clear it immediately so a second delivery
+      // for the SAME login (appUrlOpen + poll both firing) is a no-op — no double
+      // reload. A NEW login sets a fresh sid, so it is never blocked by a previous
+      // login. (A module-level flag gets stuck "true" when logout does only an
+      // in-app navigation instead of a full reload, silently breaking every
+      // subsequent login — the "works once, then stays in the browser" bug. This
+      // sid-based guard resets with each new login on BOTH iOS and Android.)
+      const pendingSid = localStorage.getItem('joba24_auth_sid');
+      if (pendingSid === null) return;
+      localStorage.removeItem('joba24_auth_sid');
       localStorage.setItem('base44_access_token', token);
       localStorage.setItem('token', token);
-      localStorage.removeItem('joba24_auth_sid');
-      // Dismiss the in-app browser sheet (SFSafariViewController / Chrome Custom
-      // Tab) BEFORE reloading. Without awaiting, window.location.reload() unloads
-      // the page before Browser.close() finishes dismissing the sheet, leaving
-      // the browser open on top of the (now-logged-in) app until the user
-      // manually taps "Done"/"Open". Race against a timeout so a hung close()
-      // never blocks the reload.
+      // Mask the stale login modal with a "connecting" screen so the user never
+      // sees the login page flash during the ~1s the reload takes to paint the
+      // authenticated app.
+      try {
+        if (!document.getElementById('joba24_auth_spin')) {
+          const s = document.createElement('style');
+          s.id = 'joba24_auth_spin';
+          s.textContent = '@keyframes joba24_auth_spin{to{transform:rotate(360deg)}}';
+          document.head.appendChild(s);
+        }
+        const ov = document.createElement('div');
+        ov.id = 'joba24_auth_overlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#ffffff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;';
+        ov.innerHTML = '<div style="width:34px;height:34px;border:4px solid rgba(26,111,212,0.2);border-top-color:#1a6fd4;border-radius:50%;animation:joba24_auth_spin 0.8s linear infinite"></div><div style="font-size:15px;font-weight:700;color:#1a6fd4">מתחבר…</div>';
+        document.body.appendChild(ov);
+      } catch {}
+      // Dismiss the in-app browser (SFSafariViewController / Chrome Custom Tab)
+      // before reloading; race against a timeout so a hung close() never blocks.
       try {
         await Promise.race([
           Promise.all([Browser.close(), InAppBrowser.close().catch(() => {})]),
-          new Promise((r) => setTimeout(r, 1000))
+          new Promise((r) => setTimeout(r, 1200))
         ]);
       } catch {}
       window.location.reload();
