@@ -254,6 +254,13 @@ function EmailForm({ onBack, onSuccess }) {
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
 
+  // Cancelling the login modal aborts any in-flight OAuth handshake so the
+  // background poller (NativeAuthListener) stops polling for a token.
+  const handleClose = () => {
+    localStorage.removeItem('joba24_auth_sid');
+    onClose();
+  };
+
   // Production base URL — the Base44 backend auth endpoint lives here
   // (joba24.com proxies /api → Base44). Hardcoded because on native (Capacitor
   // WKWebView) window.location.origin returns the string "null" and
@@ -329,7 +336,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         backdropFilter: 'blur(8px)',
         touchAction: 'none',
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
       onPointerDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
     >
@@ -349,7 +356,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         {/* Close */}
         <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               width: 34, height: 34, borderRadius: 11, background: 'var(--surface-3)',
               border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',

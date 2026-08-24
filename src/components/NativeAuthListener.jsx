@@ -6,25 +6,29 @@ import { base44 } from '@/api/base44Client';
 
 // Native OAuth callback receiver.
 //
-// On mobile, OAuth opens in the system browser (Browser.open). After auth the
-// backend redirects to /auth-callback, which stores the access_token in a
-// server handshake (nativeAuthHandshake). This component retrieves it:
+// On mobile, OAuth opens in the system browser (Browser.open → SFSafariViewController
+// on iOS, Chrome Custom Tab on Android). After auth the backend redirects to
+// /auth-callback, which stores the access_token in a server handshake
+// (nativeAuthHandshake). This component retrieves it.
 //
-//  1. iOS: the joba24:// custom scheme is registered in Info.plist, so
-//     /auth-callback bounces to it and Capacitor's `appUrlOpen` event fires with
-//     the token — instant return.
-//  2. Android (and iOS fallback): the joba24:// scheme is NOT registered in
-//     the manifest (Base44 builds Android, manifest not editable), so we poll
-//     the server handshake for the token instead. Works without any scheme.
+//  1. iOS (when the scheme works): the joba24:// custom scheme is registered in
+//     Info.plist, so appUrlOpen fires with the token — instant return.
+//  2. iOS/Android fallback: SFSafariViewController does NOT reliably fire
+//     appUrlOpen for custom schemes (known iOS limitation), and Android's
+//     manifest has no joba24:// scheme at all. So we poll the server handshake.
 //
-// Once the token is captured, we store it where appParams reads it on reload
-// (localStorage `base44_access_token`), close the external browser, and reload
-// so AuthContext authenticates the user.
+// IMPORTANT: the `sid` is written to localStorage by LoginPromptModal right
+// BEFORE Browser.open — i.e. AFTER this component already mounted. So we cannot
+// read it once on mount; the interval below keeps re-checking and polls
+// whenever a sid appears. The app's WKWebView keeps running JS timers while
+// the in-app Safari sheet is open, so the token is picked up shortly after
+// /auth-callback stores it, and Browser.close() auto-dismisses the sheet.
 export default function NativeAuthListener() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    let listener;
     let stopped = false;
+    let appUrlListener;
+    let stateListener;
 
     const applyToken = (token) => {
       if (!token) return;
@@ -35,10 +39,25 @@ export default function NativeAuthListener() {
       window.location.reload();
     };
 
+    // Poll the server handshake once (no-op if no sid is present yet).
+    const pollOnce = async () => {
+      if (stopped) return;
+      const sid = localStorage.getItem('joba24_auth_sid');
+      if (!sid) return;
+      try {
+        const res = await base44.functions.invoke('nativeAuthHandshake', { action: 'poll', sid });
+        const token = res?.data?.token ?? res?.token ?? null;
+        if (token) {
+          applyToken(token);
+          return;
+        }
+      } catch {}
+    };
+
     // 1) iOS: appUrlOpen fires when the joba24:// scheme opens the app.
     (async () => {
       try {
-        listener = await App.addListener('appUrlOpen', ({ url }) => {
+        appUrlListener = await App.addListener('appUrlOpen', ({ url }) => {
           if (!url || !url.startsWith('joba24://auth-callback')) return;
           let token = null;
           try {
@@ -52,34 +71,30 @@ export default function NativeAuthListener() {
       }
     })();
 
-    // 2) Poll the server handshake for the token (Android + iOS fallback).
-    const sid = localStorage.getItem('joba24_auth_sid');
-    if (sid) {
-      let attempts = 0;
-      const poll = async () => {
-        if (stopped) return;
-        attempts++;
-        if (attempts > 200) return; // ~5 min at 1.5s intervals
-        try {
-          const res = await base44.functions.invoke('nativeAuthHandshake', { action: 'poll', sid });
-          const token = res?.data?.token ?? res?.token ?? null;
-          if (token) {
-            applyToken(token);
-            return;
-          }
-        } catch {}
-        setTimeout(poll, 1500);
-      };
-      setTimeout(poll, 1500);
-    }
+    // 2) Keep polling while a handshake is pending. Re-checks the sid on every
+    //    tick so a login started after mount is still picked up.
+    const pollTimer = setInterval(pollOnce, 1500);
+    pollOnce();
+
+    // 3) When the app returns to the foreground (user dismissed the in-app
+    //    Safari sheet manually), poll immediately for a snappier return.
+    (async () => {
+      try {
+        stateListener = await App.addListener('appStateChange', ({ isActive }) => {
+          if (isActive) pollOnce();
+        });
+      } catch {}
+    })();
 
     return () => {
       stopped = true;
-      if (listener && typeof listener.remove === 'function') {
-        listener.remove();
-      } else if (listener && typeof listener.then === 'function') {
-        listener.then((l) => l && l.remove && l.remove());
-      }
+      clearInterval(pollTimer);
+      const removeListener = (l) => {
+        if (l && typeof l.remove === 'function') l.remove();
+        else if (l && typeof l.then === 'function') l.then((x) => x && x.remove && x.remove());
+      };
+      removeListener(appUrlListener);
+      removeListener(stateListener);
     };
   }, []);
 

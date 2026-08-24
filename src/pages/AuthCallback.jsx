@@ -77,7 +77,7 @@ export default function AuthCallback() {
             התחברת בהצלחה!
           </div>
           <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
-            חזור לאפליקציית Joba24 כדי להמשיך.
+            מתחבר חזרה ל-Joba24 אוטומטית… אם זה לא קרה, לחץ 'סגור' (X) למעלה.
           </div>
         </div>
       )}
