@@ -56,7 +56,7 @@ import BoostOverlay from '@/components/BoostOverlay';
 const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
 
 // Pages accessible without authentication — render with minimal layout (no nav/header)
-const PUBLIC_PAGES = ['/terms', '/privacy'];
+const PUBLIC_PAGES = ['/terms', '/privacy', '/faq'];
 
 export default function Layout() {
   const { t } = useLanguage();
@@ -463,6 +463,20 @@ export default function Layout() {
   // token) — fall through to the app. Once the DB status arrives, genuinely
   // unapproved users are redirected to the waiting page on the next poll.
   const approvalLoading = approvalStatus === undefined;
+  // Authenticated but not-yet-approved users can still read Terms / Privacy / FAQ
+  // (rendered with the same minimal layout as unauthenticated visitors). Without
+  // this, the pre-launch gate below would trap them on the waiting page and the
+  // Terms/Privacy/FAQ links from the waiting page would be unusable.
+  if (isAuthenticated && me && !isApprovedUser && !approvalLoading && PUBLIC_PAGES.includes(location.pathname)) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
+        <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
+          <Outlet />
+        </div>
+      </div>
+    );
+  }
+
   if (isAuthenticated && me && !isApprovedUser && !approvalLoading) {
     return <PreLaunchWaitingPage me={me} />;
   }

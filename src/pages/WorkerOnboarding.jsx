@@ -264,6 +264,8 @@ export default function WorkerOnboarding() {
             <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
             <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
             <Link to="/privacy" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
+            <Link to="/faq" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('faq_title')}</Link>
           </div>
         </div>
       </div>

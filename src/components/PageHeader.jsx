@@ -13,7 +13,13 @@ export default function PageHeader({ title, right, backTo }) {
       position: 'sticky', top: 0, zIndex: 50,
       background: 'var(--header-bg)',
       backdropFilter: 'blur(8px)',
-      padding: '7px 12px 6px',
+      // Respect the device safe area (notch / status bar) so the back button is
+      // always tappable even on pages with no upper header (Terms/Privacy opened
+      // from the login / waiting pages).
+      paddingTop: 'max(7px, env(safe-area-inset-top))',
+      paddingRight: 12,
+      paddingBottom: 6,
+      paddingLeft: 12,
       borderBottom: '1px solid var(--border-1)',
       display: 'flex', alignItems: 'center', gap: 12
     }}>

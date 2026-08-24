@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download } from 'lucide-react';
+import { useLanguage } from '@/lib/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { useAuth } from '@/lib/AuthContext';
@@ -57,6 +59,7 @@ function StepRow({ index, icon: Icon, title, subtitle, state, action, badge }) {
 
 export default function PreLaunchWaitingPage({ me }) {
   const { refreshUser } = useAuth();
+  const { t } = useLanguage();
   // Hide "download the app" CTAs when the user is already inside the app
   // (native Capacitor iOS/Android shell, or installed PWA).
   const inApp = isStandaloneApp || (typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.());
@@ -289,6 +292,15 @@ export default function PreLaunchWaitingPage({ me }) {
             <Clock size={12} color="#fbbf24" />
             <span style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24' }}>ממתין לאישור · השקה בקרוב</span>
           </div>
+        </div>
+
+        {/* Footer links — Terms / Privacy / FAQ */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 18, flexWrap: 'nowrap' }}>
+          <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
+          <Link to="/privacy" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>
+          <Link to="/faq" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('faq_title')}</Link>
         </div>
       </div>
 
