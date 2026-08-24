@@ -254,9 +254,23 @@ function EmailForm({ onBack, onSuccess }) {
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
 
+  // Production base URL — the Base44 backend auth endpoint lives here
+  // (joba24.com proxies /api → Base44). Hardcoded because on native (Capacitor
+  // WKWebView) window.location.origin returns the string "null" and
+  // appParams.appBaseUrl is also null/undefined, so any runtime detection
+  // builds a broken "null/api/..." URL. This constant is the single source
+  // of truth for the native OAuth base.
+  const PROD_BASE_URL = 'https://joba24.com';
+
   // Ensure the ref code survives the OAuth redirect even if the user navigated away from the original referral URL
   const getRedirectUrl = () => {
-    let url = window.location.href;
+    const isNative = Capacitor.isNativePlatform();
+    // On native, build the redirect URL from the hardcoded base + current
+    // pathname + hash (window.location.pathname is a relative path string and
+    // is reliable even when .origin is null). On web, use the full href.
+    let url = isNative
+      ? `${PROD_BASE_URL}${window.location.pathname}${window.location.hash}`
+      : window.location.href;
     const refCode = localStorage.getItem('joba24_ref_code');
     if (refCode && !url.includes('ref=')) {
       url += (url.includes('?') ? '&' : '?') + `ref=${refCode}`;
@@ -272,17 +286,15 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   // the access_token, which AuthContext then picks up. On web we fall back to
   // the same window.location.href redirect the SDK used.
   const openOAuth = (provider) => {
-    const redirectUrl = new URL(getRedirectUrl(), window.location.origin).toString();
+    const isNative = Capacitor.isNativePlatform();
+    const redirectUrl = getRedirectUrl();
     const providerPath = provider === 'google' ? '' : `/${provider}`;
-    // appParams.appBaseUrl may be null/undefined on native (no URL param /
-    // localStorage / VITE env). Normalize to "" like the SDK does, then resolve
-    // the (possibly relative) path against window.location.origin to get an
-    // absolute URL — Browser.open requires an absolute URL. On native the
-    // origin is https://joba24.com (the capacitor server.url), which proxies
-    // /api to the Base44 backend, so this matches exactly what the SDK does
-    // on web (relative URL resolved against the origin).
-    const base = appParams.appBaseUrl || '';
-    const loginUrl = new URL(`${base}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, window.location.origin).toString();
+    // On native: use the hardcoded PROD_BASE_URL (window.location.origin is
+    // "null" in WKWebView, and appParams.appBaseUrl is also null there).
+    // On web: mirror the SDK — relative path resolved against the origin.
+    const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
+    const resolver = isNative ? PROD_BASE_URL : window.location.origin;
+    const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
     if (Capacitor.isNativePlatform()) {
       (async () => {
         try {
