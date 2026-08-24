@@ -276,13 +276,16 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     const providerPath = provider === 'google' ? '' : `/${provider}`;
     const loginUrl = `${appParams.appBaseUrl}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`;
     if (Capacitor.isNativePlatform()) {
-      Browser.open({ url: loginUrl }).catch((err) => {
-        console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
-        // Fallback to in-webview navigation so at least something happens
-        // (diagnostic — on native this may still hit 403 disallowed_useragent,
-        // which confirms the plugin/wiring issue rather than a silent no-op).
-        window.location.href = loginUrl;
-      });
+      (async () => {
+        try {
+          await Browser.open({ url: loginUrl });
+        } catch (err) {
+          const msg = (err && (err.message || err.toString())) || 'unknown error';
+          console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
+          // DEBUG (זמני): מציג את השגיאה על המסך כדי שנוכל לאבחן בלי מחשב
+          alert('DEBUG Browser.open: ' + msg + '\n\nURL: ' + loginUrl);
+        }
+      })();
     } else {
       window.location.href = loginUrl;
     }
