@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
+import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 import { base44 } from '@/api/base44Client';
 
 // Native OAuth callback receiver.
@@ -42,7 +43,10 @@ export default function NativeAuthListener() {
       // manually taps "Done"/"Open". Race against a timeout so a hung close()
       // never blocks the reload.
       try {
-        await Promise.race([Browser.close(), new Promise((r) => setTimeout(r, 1000))]);
+        await Promise.race([
+          Promise.all([Browser.close(), InAppBrowser.close().catch(() => {})]),
+          new Promise((r) => setTimeout(r, 1000))
+        ]);
       } catch {}
       window.location.reload();
     };

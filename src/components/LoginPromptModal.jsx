@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 import { appParams } from '@/lib/app-params';
 
@@ -286,13 +285,10 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     return url;
   };
 
-  // On native (iOS/Android), open the OAuth provider in the system browser
-  // (SFSafariViewController / Chrome Custom Tab) via @capacitor/browser.
-  // This avoids Google's "403 disallowed_useragent" error that WKWebView
-  // throws when OAuth pages load inside the app's WebView. The auth completes
-  // out-of-app and Universal Links / the redirect URL bring the user back with
-  // the access_token, which AuthContext then picks up. On web we fall back to
-  // the same window.location.href redirect the SDK used.
+  // applyTokenAndReload — stores the Base44 access token locally and reloads so
+  // AuthContext picks up the authenticated session. Used by the native
+  // openSecureWindow paths (iOS + Android) which receive the token directly
+  // from the plugin's auto-return.
   const applyTokenAndReload = (token) => {
     if (!token) return;
     localStorage.setItem('base44_access_token', token);
@@ -332,31 +328,49 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       return;
     }
 
-    // Android: the joba24:// scheme can't be registered (Base44 build has no
-    // editable AndroidManifest), so use the server-handshake path — the
-    // backend redirects to an https AuthCallback page that stores the token
-    // keyed by `sid`, and the app polls for it (NativeAuthListener) then
-    // closes the Chrome Custom Tab.
-    let redirectUrl;
-    if (isNative) {
-      const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      localStorage.setItem('joba24_auth_sid', sid);
-      redirectUrl = `${PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
-    } else {
-      redirectUrl = getRedirectUrl();
-    }
-    const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
-    if (isNative) {
-      (async () => {
-        try {
-          await Browser.open({ url: loginUrl });
-        } catch (err) {
-          console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
-        }
-      })();
-    } else {
+    // Web / PWA: standard OAuth redirect within the same browser tab — the
+    // Base44 SDK picks up access_token from the URL on return. Seamless.
+    if (!isNative) {
+      const redirectUrl = getRedirectUrl();
+      const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
       window.location.href = loginUrl;
+      return;
     }
+
+    // Android native: openSecureWindow opens a Chrome Custom Tab and watches
+    // its navigation from native code. When the OAuth redirect hits the
+    // redirectUri (https://joba24.com/auth-callback) the plugin AUTO-CLOSES
+    // the tab and resolves with the redirected URL — even while the app is
+    // backgrounded (native navigation events fire regardless of JS state), so
+    // the app returns to the foreground automatically. This does NOT require
+    // the joba24:// scheme in the AndroidManifest (the plugin matches the https
+    // redirectUri by navigation events, not system scheme routing).
+    //
+    // A `sid` is also written so the server-handshake polling (NativeAuthListener)
+    // acts as a guaranteed fallback: if the plugin can't auto-detect the redirect
+    // on a given device, the AuthCallback page still stores the token keyed by
+    // sid, and the polling completes the login as soon as the app returns to the
+    // foreground. So login always works — auto-return when the plugin supports
+    // it, one-tap return otherwise. No regression vs. the previous flow.
+    const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    localStorage.setItem('joba24_auth_sid', sid);
+    const fromUrl = `${PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
+    const redirectUri = `${PROD_BASE_URL}/auth-callback`;
+    const loginUrl = `${PROD_BASE_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
+    (async () => {
+      try {
+        const { redirectedUri } = await InAppBrowser.openSecureWindow({ url: loginUrl, redirectUri });
+        let token = null;
+        try { token = new URL(redirectedUri).searchParams.get('access_token'); } catch {}
+        if (token) applyTokenAndReload(token);
+      } catch (err) {
+        // openSecureWindow rejected (user dismissed the tab before finishing).
+        // If the user had already authenticated, AuthCallback stored the token to
+        // the handshake and NativeAuthListener's polling will complete the login
+        // automatically when the app returns to the foreground.
+        console.warn('[LoginPromptModal] openSecureWindow did not return a token; handshake polling will complete login if auth finished', err);
+      }
+    })();
   };
   const handleGoogle = () => openOAuth('google');
   const handleApple = () => openOAuth('apple');
