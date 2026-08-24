@@ -7,25 +7,18 @@
     "cleartext": false,
     "androidScheme": "https",
     "allowNavigation": [
-      "base44.app",
-      "*.base44.app",
       "accounts.google.com",
-      "www.google.com",
-      "google.com",
       "appleid.apple.com",
-      "*.apple.com",
       "www.facebook.com",
-      "m.facebook.com",
-      "facebook.com"
+      "*.base44.app"
     ]
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 0,
+      "launchShowDuration": 500,
       "launchAutoHide": true,
-      "backgroundColor": "#ffffffff",
-      "showSpinner": false,
-      "androidScaleType": "CENTER_CROP"
+      "backgroundColor": "#03040A",
+      "showSpinner": false
     }
   }
 }
