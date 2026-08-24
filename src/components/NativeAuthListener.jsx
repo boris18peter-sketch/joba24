@@ -24,6 +24,15 @@ import { base44 } from '@/api/base44Client';
 // whenever a sid appears. The app's WKWebView keeps running JS timers while
 // the in-app Safari sheet is open, so the token is picked up shortly after
 // /auth-callback stores it, and Browser.close() auto-dismisses the sheet.
+// Guards against a double-fire of applyToken on iOS (the joba24:// bounce via
+// appUrlOpen AND the handshake poll can BOTH deliver the token for the same
+// login). Two concurrent applyToken → window.location.reload() calls race, and
+// the second reload tears down the page before the first Browser.close()
+// finishes — leaving @capacitor/browser's SFSafariViewController reference
+// stuck, so the NEXT login's Browser.open is a silent no-op. One apply per
+// page load; the flag resets on reload (module re-evaluates).
+let authApplied = false;
+
 export default function NativeAuthListener() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -32,7 +41,8 @@ export default function NativeAuthListener() {
     let stateListener;
 
     const applyToken = async (token) => {
-      if (!token) return;
+      if (!token || authApplied) return;
+      authApplied = true;
       localStorage.setItem('base44_access_token', token);
       localStorage.setItem('token', token);
       localStorage.removeItem('joba24_auth_sid');

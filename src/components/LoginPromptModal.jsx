@@ -305,6 +305,11 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       const loginUrl = `${PROD_BASE_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
       (async () => {
         try {
+          // Dismiss any stale browser from a previous/aborted login first. iOS
+          // keeps a presented SFSafariViewController reference if a prior close
+          // didn't finish before the page reloaded, which makes the next
+          // Browser.open a silent no-op — so always close before opening.
+          try { await Browser.close(); } catch {}
           await Browser.open({ url: loginUrl });
         } catch (err) {
           console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
