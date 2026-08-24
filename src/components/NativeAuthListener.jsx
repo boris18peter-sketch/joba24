@@ -32,6 +32,7 @@ export default function NativeAuthListener() {
     let stopped = false;
     let appUrlListener;
     let stateListener;
+    let browserFinishedListener;
 
     const applyToken = async (token) => {
       if (!token) return;
@@ -122,6 +123,18 @@ export default function NativeAuthListener() {
       } catch {}
     })();
 
+    // 4) Android: @capacitor/browser fires `browserFinished` when the Chrome
+    //    Custom Tab is dismissed (back / close). Poll immediately for an instant
+    //    return-to-app — this works WITHOUT any AndroidManifest intent-filter,
+    //    so the native OAuth return works even when the manifest isn't customized.
+    (async () => {
+      try {
+        browserFinishedListener = await Browser.addListener('browserFinished', () => {
+          pollOnce();
+        });
+      } catch {}
+    })();
+
     return () => {
       stopped = true;
       clearInterval(pollTimer);
@@ -131,6 +144,7 @@ export default function NativeAuthListener() {
       };
       removeListener(appUrlListener);
       removeListener(stateListener);
+      removeListener(browserFinishedListener);
     };
   }, []);
 

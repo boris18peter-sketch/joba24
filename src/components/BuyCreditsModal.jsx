@@ -162,16 +162,18 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           width: '100%',
           maxWidth: 480,
           maxHeight: '92vh',
-          overflowY: 'auto',
-          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           boxShadow: '0 -16px 60px rgba(0,0,0,0.25)',
           paddingBottom: step === 'success' ? 'max(32px, env(safe-area-inset-bottom))' : 0,
           boxSizing: 'border-box',
         }}
       >
-        {/* Header — only on browse step */}
+        {/* Header — only on browse step. Pinned by the flex column (not sticky)
+            so it never scrolls and package cards never clip behind it. */}
         {step === 'browse' && (
-          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--sheet-bg)' }}>
+          <div style={{ flexShrink: 0, background: 'var(--sheet-bg)', position: 'relative', zIndex: 10 }}>
             {/* Compact header — title + balance inline, close button */}
             <div style={{
               background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
@@ -284,6 +286,8 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           </div>
         )}
 
+        {/* Scrollable body — scrolls independently under the pinned header */}
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
         {/* Step: Browse packages */}
         {step === 'browse' && (
           <>
@@ -381,6 +385,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             onDone={handleClose}
           />
         )}
+        </div>
       </div>
 
     </div>,
