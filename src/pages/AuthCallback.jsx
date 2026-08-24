@@ -22,8 +22,11 @@ export default function AuthCallback() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('access_token') || '';
-    const sid = params.get('sid') || '';
+    // The inline script in index.html captures these from the URL BEFORE the
+    // app module strips the token (appParams removes access_token at import),
+    // so prefer sessionStorage. Fall back to URL params for the plain web path.
+    const token = sessionStorage.getItem('joba24_oauth_token') || params.get('access_token') || '';
+    const sid = sessionStorage.getItem('joba24_oauth_sid') || params.get('sid') || '';
 
     if (!token) {
       setStatus('error');

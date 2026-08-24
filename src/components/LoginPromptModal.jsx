@@ -4,6 +4,7 @@ import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 import { appParams } from '@/lib/app-params';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
@@ -292,13 +293,50 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   // out-of-app and Universal Links / the redirect URL bring the user back with
   // the access_token, which AuthContext then picks up. On web we fall back to
   // the same window.location.href redirect the SDK used.
+  const applyTokenAndReload = (token) => {
+    if (!token) return;
+    localStorage.setItem('base44_access_token', token);
+    localStorage.setItem('token', token);
+    localStorage.removeItem('joba24_auth_sid');
+    onLogin?.();
+    window.location.reload();
+  };
+
   const openOAuth = (provider) => {
+    const platform = Capacitor.getPlatform();
     const isNative = Capacitor.isNativePlatform();
-    // On native, OAuth opens in the system browser. After auth the backend
-    // redirects to /auth-callback, which stores the access_token in a server
-    // handshake keyed by `sid` so the app can poll for it. This works on
-    // Android where the joba24:// custom scheme isn't registered in the
-    // manifest — the token is transferred via the server, not a scheme URL.
+    const providerPath = provider === 'google' ? '' : `/${provider}`;
+    const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
+    const resolver = isNative ? PROD_BASE_URL : window.location.origin;
+
+    // iOS: ASWebAuthenticationSession opens the OAuth URL in Apple's secure
+    // authentication context and AUTO-RETURNS when the AuthCallback page
+    // redirects to the joba24:// custom scheme — no SFSafariViewController
+    // staying open, no manual "Open" tap. This is Apple's recommended OAuth
+    // UI (App Store Guideline 4 compliant). The joba24:// scheme is already
+    // registered in Info.plist.
+    if (platform === 'ios') {
+      const redirectUri = 'joba24://auth-callback';
+      const fromUrl = `${PROD_BASE_URL}/auth-callback`;
+      const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`, resolver).toString();
+      (async () => {
+        try {
+          const { redirectedUri } = await InAppBrowser.openSecureWindow({ url: loginUrl, redirectUri });
+          let token = null;
+          try { token = new URL(redirectedUri).searchParams.get('access_token'); } catch {}
+          applyTokenAndReload(token);
+        } catch (err) {
+          console.error('[LoginPromptModal] openSecureWindow failed', err);
+        }
+      })();
+      return;
+    }
+
+    // Android: the joba24:// scheme can't be registered (Base44 build has no
+    // editable AndroidManifest), so use the server-handshake path — the
+    // backend redirects to an https AuthCallback page that stores the token
+    // keyed by `sid`, and the app polls for it (NativeAuthListener) then
+    // closes the Chrome Custom Tab.
     let redirectUrl;
     if (isNative) {
       const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
@@ -307,11 +345,8 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     } else {
       redirectUrl = getRedirectUrl();
     }
-    const providerPath = provider === 'google' ? '' : `/${provider}`;
-    const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
-    const resolver = isNative ? PROD_BASE_URL : window.location.origin;
     const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
-    if (Capacitor.isNativePlatform()) {
+    if (isNative) {
       (async () => {
         try {
           await Browser.open({ url: loginUrl });
