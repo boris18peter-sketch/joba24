@@ -171,7 +171,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
       >
         {/* Header — only on browse step */}
         {step === 'browse' && (
-          <>
+          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--sheet-bg)' }}>
             {/* Compact header — title + balance inline, close button */}
             <div style={{
               background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
@@ -281,7 +281,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
             <div style={{ padding: '10px 16px 0' }}>
               <SubscriptionManager />
             </div>
-          </>
+          </div>
         )}
 
         {/* Step: Browse packages */}
