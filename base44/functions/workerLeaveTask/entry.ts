@@ -20,6 +20,14 @@ Deno.serve(async (req) => {
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
     if (task.worker_id !== user.id) return Response.json({ error: 'Forbidden — you are not the worker' }, { status: 403 });
 
+    // Once the worker has marked the work as done (or the task is already
+    // COMPLETED), they can no longer leave / get the commitment fee refunded —
+    // the fee is the "work opportunity" cost and is consumed when the work is
+    // delivered. Closes the "release after completion" loophole.
+    if (task.status === 'COMPLETED' || task.worker_status === 'done') {
+      return Response.json({ error: 'cannot_leave_after_completion', code: 'already_done' }, { status: 409 });
+    }
+
     // Find the worker's approved/pending application
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ task_id: taskId, worker_id: user.id });
     const activeApps = apps.filter(a => a.status === 'approved' || a.status === 'pending');

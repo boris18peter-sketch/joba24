@@ -23,6 +23,15 @@ Deno.serve(async (req) => {
     if (app.status === 'cancelled' || app.status === 'rejected') {
       return Response.json({ success: true, note: 'Already cancelled' });
     }
+    // Only PENDING applications can be cancelled/refunded by the worker. An
+    // application that was already APPROVED (worker assigned to the task) must
+    // not be cancellable here — that would refund the commitment fee AFTER the
+    // worker already took the job. The fee is the "work opportunity" cost and is
+    // consumed once the worker is selected. (To back out before starting the
+    // work, the worker uses workerLeaveTask, which itself blocks after completion.)
+    if (app.status !== 'pending') {
+      return Response.json({ error: 'only_pending_cancellable', code: 'already_assigned' }, { status: 409 });
+    }
 
     const creditsToRefund = app.credits_charged || 0;
 
