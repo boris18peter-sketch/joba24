@@ -26,6 +26,7 @@ export default function NotificationsPermissionPrompt() {
     if (isNative) {
       let cancelled = false;
       let gestureHandler = null;
+      let mountTimer = null;
       (async () => {
         try {
           const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
@@ -42,18 +43,21 @@ export default function NotificationsPermissionPrompt() {
             window.dispatchEvent(new Event('notif_permission_changed'));
             return;
           }
-          // Denied → user must re-enable via iOS settings; nothing to do here
+          // Denied → user must re-enable via OS settings; nothing to do here
           if (receive === 'denied') return;
-          // 'prompt' (not determined) → request on first user gesture (iOS HIG best practice)
-          gestureHandler = async () => {
+          // 'prompt' (not determined) → request the system permission.
+          // iOS requires a user gesture for the APNs dialog (HIG). Android does
+          // NOT require a gesture, so on Android we request on mount (short delay
+          // to let the WebView settle) — this is why iOS showed the dialog but
+          // Android silently never did.
+          const platform = window.Capacitor?.getPlatform?.() || '';
+          const requestNow = async () => {
             if (cancelled) return;
-            document.removeEventListener('click', gestureHandler);
-            document.removeEventListener('touchend', gestureHandler);
             try {
               const perm = await requestNotificationPermission();
               if (perm !== 'granted') return;
               const token = await getFCMToken();
-              if (!token) return;
+              if (!token || cancelled) return;
               const me = await base44.auth.me();
               if (!me) return;
               const existing = me.fcm_tokens || [];
@@ -63,14 +67,20 @@ export default function NotificationsPermissionPrompt() {
               console.error('[Notif][Native] Auto-request failed:', err?.message);
             }
           };
-          document.addEventListener('click', gestureHandler, { once: false });
-          document.addEventListener('touchend', gestureHandler, { once: false });
+          if (platform === 'android') {
+            mountTimer = setTimeout(requestNow, 600);
+          } else {
+            gestureHandler = requestNow;
+            document.addEventListener('click', gestureHandler, { once: false });
+            document.addEventListener('touchend', gestureHandler, { once: false });
+          }
         } catch (err) {
           console.error('[Notif][Native] init failed:', err?.message);
         }
       })();
       return () => {
         cancelled = true;
+        if (mountTimer) clearTimeout(mountTimer);
         if (gestureHandler) {
           document.removeEventListener('click', gestureHandler);
           document.removeEventListener('touchend', gestureHandler);

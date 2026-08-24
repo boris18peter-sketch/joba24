@@ -50,11 +50,17 @@ export default function AuthCallback() {
         try {
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
           if (isIOS) {
+            // iOS: joba24:// is registered in Info.plist → appUrlOpen fires → instant return.
             window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`);
-          } else {
-            const fallback = encodeURIComponent(`${window.location.origin}/auth-callback`);
-            window.location.replace(`intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=com.base69e6bdb4986a04a256653a23.app;S.browser_fallback_url=${fallback};end`);
           }
+          // Android: Base44's auto-generated AndroidManifest can't include a
+          // joba24:// intent-filter, so an intent:// bounce would fail to open
+          // the app and strand the user in the browser. Instead we stay on this
+          // done screen. The native app polls the handshake (NativeAuthListener)
+          // and the moment it picks up the token it calls Browser.close() — which
+          // dismisses this Chrome Custom Tab automatically and reloads the app
+          // into the authenticated state. No manual action needed beyond
+          // returning to the app (back / app-switcher).
         } catch {}
       } catch (e) {
         setStatus('error');
@@ -87,7 +93,7 @@ export default function AuthCallback() {
             התחברת בהצלחה!
           </div>
           <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
-            מתחבר חזרה ל-Joba24 אוטומטית… אם זה לא קרה, לחץ 'סגור' (X) למעלה.
+            חוזר ל-Joba24 אוטומטית… אם זה לא קרה, סגור/י את החלון הזה (X למעלה או כפתור חזרה) כדי לחזור לאפליקציה.
           </div>
         </div>
       )}

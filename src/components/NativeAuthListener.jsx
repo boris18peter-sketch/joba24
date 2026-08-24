@@ -91,6 +91,23 @@ export default function NativeAuthListener() {
       } catch {}
     };
 
+    // Burst-poll: retry rapidly a few times. Used on mount and whenever the app
+    // returns to the foreground / the browser tab is dismissed — the token may
+    // not be stored yet (race with /auth-callback's store call), so we retry
+    // until it appears. Stops as soon as applyToken fires (it clears the sid).
+    const pollBurst = () => {
+      if (stopped) return;
+      let attempts = 0;
+      const tick = async () => {
+        if (stopped || attempts++ > 8) return;
+        await pollOnce();
+        if (!stopped && localStorage.getItem('joba24_auth_sid')) {
+          setTimeout(tick, 350);
+        }
+      };
+      tick();
+    };
+
     // 1) iOS: appUrlOpen fires when the joba24:// scheme opens the app.
     (async () => {
       try {
@@ -110,15 +127,15 @@ export default function NativeAuthListener() {
 
     // 2) Keep polling while a handshake is pending. Re-checks the sid on every
     //    tick so a login started after mount is still picked up.
-    const pollTimer = setInterval(pollOnce, 1500);
-    pollOnce();
+    const pollTimer = setInterval(pollOnce, 1000);
+    pollBurst();
 
     // 3) When the app returns to the foreground (user dismissed the in-app
     //    Safari sheet manually), poll immediately for a snappier return.
     (async () => {
       try {
         stateListener = await App.addListener('appStateChange', ({ isActive }) => {
-          if (isActive) pollOnce();
+          if (isActive) pollBurst();
         });
       } catch {}
     })();
@@ -130,7 +147,7 @@ export default function NativeAuthListener() {
     (async () => {
       try {
         browserFinishedListener = await Browser.addListener('browserFinished', () => {
-          pollOnce();
+          pollBurst();
         });
       } catch {}
     })();
