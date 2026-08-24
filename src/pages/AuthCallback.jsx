@@ -37,9 +37,9 @@ export default function AuthCallback() {
     (async () => {
       try {
         // Store the token on the server so the native app can poll for it.
-        if (sid) {
-          await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid, token });
-        }
+        // sid may be null when the backend drops it from from_url — the app
+        // then finds the token via the "most recent record" poll fallback.
+        await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
         setStatus('done');
         // iOS: bounce to the custom scheme for an instant return to the app.
         // Android: no-op (no registered handler) — the app polls the handshake.

@@ -16,13 +16,13 @@ export default function NativeOAuthBounce() {
     if (Capacitor.isNativePlatform()) return; // only in the external browser
     const token = sessionStorage.getItem('joba24_oauth_token');
     const sid = sessionStorage.getItem('joba24_oauth_sid');
-    if (!token || !sid) return;
+    if (!token) return;
     sessionStorage.removeItem('joba24_oauth_token');
     sessionStorage.removeItem('joba24_oauth_sid');
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     (async () => {
       try {
-        await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid, token });
+        await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
       } catch {}
       // iOS fast-path: the joba24:// scheme is registered in Info.plist, so try
       // an instant return. If SFSafariViewController blocks it, the app still

@@ -17,10 +17,11 @@ export default async function(req: Request): Promise<Response> {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
     const { action, sid, token } = body || {};
-
-    if (!sid || typeof sid !== 'string' || sid.length < 8) {
-      return Response.json({ error: 'invalid sid' }, { status: 400 });
-    }
+    // sid is optional: the backend redirect sometimes drops the sid query
+    // param from from_url, so the auth-callback page may store a token with
+    // sid=null. When polling we match by sid first, then fall back to the most
+    // recent record (single-device login assumption).
+    const sidStr = typeof sid === 'string' && sid.length >= 8 ? sid : null;
 
     if (action === 'store') {
       if (!token || typeof token !== 'string') {
@@ -32,18 +33,37 @@ export default async function(req: Request): Promise<Response> {
         await base44.asServiceRole.entities.OAuthHandshake.deleteMany({ created_date: { $lt: tenMinAgo } });
       } catch {}
       // Replace any existing record for this sid (idempotent retries).
-      try {
-        await base44.asServiceRole.entities.OAuthHandshake.deleteMany({ sid });
-      } catch {}
-      await base44.asServiceRole.entities.OAuthHandshake.create({ sid, token });
+      if (sidStr) {
+        try {
+          await base44.asServiceRole.entities.OAuthHandshake.deleteMany({ sid: sidStr });
+        } catch {}
+      }
+      await base44.asServiceRole.entities.OAuthHandshake.create({ sid: sidStr, token });
       return Response.json({ ok: true });
     }
 
     if (action === 'poll') {
-      const records = await base44.asServiceRole.entities.OAuthHandshake.filter({ sid }, '-created_date', 1);
-      const rec = records && records[0];
+      // 1) Race-free match by sid (when the backend preserved it in from_url).
+      if (sidStr) {
+        const bySid = await base44.asServiceRole.entities.OAuthHandshake.filter({ sid: sidStr }, '-created_date', 1);
+        const rec = bySid && bySid[0];
+        if (rec) {
+          try { await base44.asServiceRole.entities.OAuthHandshake.delete(rec.id); } catch {}
+          return Response.json({ token: rec.token });
+        }
+      }
+      // 2) Fallback: most recent record from the last 3 minutes. Covers the
+      //    case where the backend dropped the sid — the auth-callback page
+      //    stored the token with sid=null.
+      // Fallback: latest record with sid=null (the backend dropped the sid
+      // from from_url). Verify recency server-side so a stale record from a
+      // previous cancelled login isn't returned (created_date $gte filtering
+      // is unreliable via the SDK, so we check age here instead).
+      const recent = await base44.asServiceRole.entities.OAuthHandshake.filter({ sid: null }, '-created_date', 1);
+      const rec = recent && recent[0];
       if (!rec) return Response.json({ token: null });
-      // Consume (delete) so the token can only be read once.
+      const ageMs = Date.now() - new Date(rec.created_date).getTime();
+      if (Number.isNaN(ageMs) || ageMs > 90 * 1000) return Response.json({ token: null });
       try { await base44.asServiceRole.entities.OAuthHandshake.delete(rec.id); } catch {}
       return Response.json({ token: rec.token });
     }
