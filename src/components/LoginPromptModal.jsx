@@ -274,7 +274,15 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const openOAuth = (provider) => {
     const redirectUrl = new URL(getRedirectUrl(), window.location.origin).toString();
     const providerPath = provider === 'google' ? '' : `/${provider}`;
-    const loginUrl = `${appParams.appBaseUrl}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`;
+    // appParams.appBaseUrl may be null/undefined on native (no URL param /
+    // localStorage / VITE env). Normalize to "" like the SDK does, then resolve
+    // the (possibly relative) path against window.location.origin to get an
+    // absolute URL — Browser.open requires an absolute URL. On native the
+    // origin is https://joba24.com (the capacitor server.url), which proxies
+    // /api to the Base44 backend, so this matches exactly what the SDK does
+    // on web (relative URL resolved against the origin).
+    const base = appParams.appBaseUrl || '';
+    const loginUrl = new URL(`${base}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, window.location.origin).toString();
     if (Capacitor.isNativePlatform()) {
       (async () => {
         try {
