@@ -2,6 +2,9 @@ import { createPortal } from 'react-dom';
 import { useState } from 'react';
 import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { appParams } from '@/lib/app-params';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
   return (
@@ -261,9 +264,26 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     return url;
   };
 
-  const handleGoogle = () => base44.auth.loginWithProvider('google', getRedirectUrl());
-  const handleApple = () => base44.auth.loginWithProvider('apple', getRedirectUrl());
-  const handleFacebook = () => base44.auth.loginWithProvider('facebook', getRedirectUrl());
+  // On native (iOS/Android), open the OAuth provider in the system browser
+  // (SFSafariViewController / Chrome Custom Tab) via @capacitor/browser.
+  // This avoids Google's "403 disallowed_useragent" error that WKWebView
+  // throws when OAuth pages load inside the app's WebView. The auth completes
+  // out-of-app and Universal Links / the redirect URL bring the user back with
+  // the access_token, which AuthContext then picks up. On web we fall back to
+  // the same window.location.href redirect the SDK used.
+  const openOAuth = (provider) => {
+    const redirectUrl = new URL(getRedirectUrl(), window.location.origin).toString();
+    const providerPath = provider === 'google' ? '' : `/${provider}`;
+    const loginUrl = `${appParams.appBaseUrl}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`;
+    if (Capacitor.isNativePlatform()) {
+      Browser.open({ url: loginUrl });
+    } else {
+      window.location.href = loginUrl;
+    }
+  };
+  const handleGoogle = () => openOAuth('google');
+  const handleApple = () => openOAuth('apple');
+  const handleFacebook = () => openOAuth('facebook');
 
   const modal = (
     <div
