@@ -21,6 +21,7 @@ import GlobalPopups from '@/components/GlobalPopups';
 import TaskDetailSheet from '@/components/TaskDetailSheet';
 import DeepLinkHandler from '@/components/DeepLinkHandler';
 import NativeAuthListener from '@/components/NativeAuthListener';
+import NativeOAuthBounce from '@/components/NativeOAuthBounce';
 import TaskDetailRedirect from '@/components/TaskDetailRedirect';
 import { DemoModeExitBanner } from '@/components/NewUserSimulator';
 
@@ -294,6 +295,7 @@ function App() {
                 <ScrollToTop />
                 <DeepLinkHandler />
                 <NativeAuthListener />
+                <NativeOAuthBounce />
                 <AuthenticatedApp />
                 <TaskDetailSheet />
                 <DemoModeExitBanner />

@@ -15,6 +15,21 @@
     <link rel="apple-touch-icon" href="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg" />
     <link rel="manifest" href="/manifest.json" />
     <title>Joba24 — משימות מהירות</title>
+    <script>
+      // Capture OAuth callback token+sid from the URL BEFORE the app module
+      // loads and strips the token. Runs in the external in-app browser
+      // (SFSafariViewController / Chrome Custom Tab) after Google/Apple/Facebook
+      // redirect back to joba24.com. NativeOAuthBounce relays it to the app.
+      (function () {
+        try {
+          var p = new URLSearchParams(window.location.search);
+          var t = p.get('access_token');
+          var s = p.get('sid');
+          if (t) sessionStorage.setItem('joba24_oauth_token', t);
+          if (s) sessionStorage.setItem('joba24_oauth_sid', s);
+        } catch (e) {}
+      })();
+    </script>
     <style>
       html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #ffffff; }
       body { padding-top: max(0px, env(safe-area-inset-top)); padding-bottom: 0; padding-left: max(0px, env(safe-area-inset-left)); padding-right: max(0px, env(safe-area-inset-right)); }
