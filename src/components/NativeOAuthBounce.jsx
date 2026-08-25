@@ -44,9 +44,19 @@ export default function NativeOAuthBounce() {
     sessionStorage.removeItem('joba24_oauth_token');
     sessionStorage.removeItem('joba24_oauth_sid');
     (async () => {
-      try {
-        await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
-      } catch {}
+      const storeWithRetry = async (attempt) => {
+        try {
+          await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
+          console.log('[NativeOAuthBounce] ✅ token stored in handshake (attempt ' + attempt + ')');
+        } catch (err) {
+          console.error('[NativeOAuthBounce] store attempt ' + attempt + ' failed:', err?.message);
+          if (attempt < 3) {
+            await new Promise(r => setTimeout(r, 500));
+            return storeWithRetry(attempt + 1);
+          }
+        }
+      };
+      storeWithRetry(1);
     })();
 
     if (isNativeFlow) {

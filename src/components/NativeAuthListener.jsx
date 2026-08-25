@@ -85,10 +85,13 @@ export default function NativeAuthListener() {
         const res = await base44.functions.invoke('nativeAuthHandshake', { action: 'poll', sid });
         const token = res?.data?.token ?? res?.token ?? null;
         if (token) {
+          console.log('[NativeAuthListener] ✅ token found via poll');
           applyToken(token);
           return;
         }
-      } catch {}
+      } catch (err) {
+        console.warn('[NativeAuthListener] poll error:', err?.message);
+      }
     };
 
     // Burst-poll: retry rapidly a few times. Used on mount and whenever the app
@@ -97,12 +100,13 @@ export default function NativeAuthListener() {
     // until it appears. Stops as soon as applyToken fires (it clears the sid).
     const pollBurst = () => {
       if (stopped) return;
+      console.log('[NativeAuthListener] pollBurst started');
       let attempts = 0;
       const tick = async () => {
-        if (stopped || attempts++ > 8) return;
+        if (stopped || attempts++ > 30) return;
         await pollOnce();
         if (!stopped && localStorage.getItem('joba24_auth_sid')) {
-          setTimeout(tick, 350);
+          setTimeout(tick, 200);
         }
       };
       tick();

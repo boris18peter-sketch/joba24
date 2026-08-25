@@ -28,6 +28,12 @@
           var p = new URLSearchParams(window.location.search);
           var t = p.get('access_token');
           var s = p.get('sid');
+          // Also check the hash fragment (some OAuth flows use #access_token=...)
+          if (!t && window.location.hash) {
+            var h = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            t = h.get('access_token') || t;
+            if (!s) s = h.get('sid') || s;
+          }
           if (t) sessionStorage.setItem('joba24_oauth_token', t);
           if (s) sessionStorage.setItem('joba24_oauth_sid', s);
         } catch (e) {}

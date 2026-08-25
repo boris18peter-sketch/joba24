@@ -112,6 +112,9 @@ export default function usePushNotifications() {
   useEffect(() => {
     const unsub = onForegroundMessage((payload) => {
       setForegroundMsg(payload);
+      // Notify AuthContext to refresh the user — real-time updates (e.g. verification
+      // approval) need the user object to update for the celebration popup to fire.
+      window.dispatchEvent(new CustomEvent('joba24:push-received', { detail: payload }));
     });
     return () => { if (unsub) unsub(); };
   }, []);

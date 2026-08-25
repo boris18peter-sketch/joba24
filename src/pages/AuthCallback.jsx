@@ -44,9 +44,19 @@ export default function AuthCallback() {
       sessionStorage.removeItem('joba24_oauth_sid');
       sessionStorage.setItem(RETURN_FLAG, '1');
       (async () => {
-        try {
-          await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
-        } catch {}
+        const storeWithRetry = async (attempt) => {
+          try {
+            await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
+            console.log('[AuthCallback] ✅ token stored in handshake (attempt ' + attempt + ')');
+          } catch (err) {
+            console.error('[AuthCallback] store attempt ' + attempt + ' failed:', err?.message);
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, 500));
+              return storeWithRetry(attempt + 1);
+            }
+          }
+        };
+        storeWithRetry(1);
       })();
       if (ios) {
         try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}

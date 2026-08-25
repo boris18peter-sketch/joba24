@@ -30,6 +30,30 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
+  // Refresh the user when a push notification is received (e.g. verification approval).
+  // The celebration popup depends on the user object updating — the WS subscription
+  // may miss asServiceRole updates, so this push-triggered refresh is the reliable
+  // path that fires the instant the admin approves the user.
+  useEffect(() => {
+    const handlePushReceived = async () => {
+      try {
+        const freshUser = await base44.auth.me();
+        setUser(prev => {
+          if (!prev) return freshUser;
+          if (prev.is_verified !== freshUser.is_verified ||
+              prev.kyc_status !== freshUser.kyc_status ||
+              prev.worker_credits !== freshUser.worker_credits) {
+            queryClientInstance.invalidateQueries({ queryKey: ['me'] });
+            return freshUser;
+          }
+          return prev;
+        });
+      } catch {}
+    };
+    window.addEventListener('joba24:push-received', handlePushReceived);
+    return () => window.removeEventListener('joba24:push-received', handlePushReceived);
+  }, []);
+
   // Credits are kept up-to-date via the CreditTransaction WS subscription in checkUserAuth.
   // No polling needed — removing the 15s interval to reduce unnecessary API calls.
 

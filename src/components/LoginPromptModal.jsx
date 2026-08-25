@@ -251,8 +251,36 @@ function EmailForm({ onBack, onSuccess }) {
   );
 }
 
+function WaitingForAuthScreen({ onCancel }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
+      <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} />
+      <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>מתחבר ל-Joba24...</div>
+      <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
+        סיים את ההתחברות בדפדפן. האפליקציה תזהה את ההתחברות אוטומטית ותחזור אליך.
+      </div>
+      <button
+        onClick={onCancel}
+        style={{
+          background: 'none', border: 'none', color: '#94a3b8',
+          fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 16px',
+        }}
+      >
+        ביטול
+      </button>
+    </div>
+  );
+}
+
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
+  const [waitingForAuth, setWaitingForAuth] = useState(false);
+
+  // Cancel the waiting state — clears the sid so the background poller stops.
+  const handleCancelAuth = () => {
+    localStorage.removeItem('joba24_auth_sid');
+    setWaitingForAuth(false);
+  };
 
   // Cancelling the login modal aborts any in-flight OAuth handshake so the
   // background poller (NativeAuthListener) stops polling for a token.
@@ -323,6 +351,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
           // Browser.open a silent no-op — so always close before opening.
           try { await Browser.close(); } catch {}
           await Browser.open({ url: loginUrl });
+          setWaitingForAuth(true); // Show "connecting" state while user is in the browser
         } catch (err) {
           console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
         }
@@ -382,7 +411,9 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         </div>
 
         <div style={{ padding: '12px 20px 0' }}>
-          {showEmail ? (
+          {waitingForAuth ? (
+            <WaitingForAuthScreen onCancel={handleCancelAuth} />
+          ) : showEmail ? (
             <EmailForm onBack={() => setShowEmail(false)} onSuccess={() => { onLogin?.(); window.location.reload(); }} />
           ) : (
             <>
