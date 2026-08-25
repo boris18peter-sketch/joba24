@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 
 // OAuth landing page — loaded in the EXTERNAL browser (SFSafariViewController /
 // Chrome Custom Tab) after the provider redirects back with the access_token.
@@ -8,7 +8,16 @@ import { CheckCircle2 } from 'lucide-react';
 // The Capacitor bridge is NOT available in the external browser. We persist
 // the token to a server handshake (keyed by `sid`) so the native app can poll
 // for it — this works on Android where the joba24:// custom scheme isn't
-// registered. On iOS we ALSO bounce to joba24:// for an instant return.
+// registered in the auto-build. On iOS we ALSO bounce to joba24:// for an
+// instant return.
+//
+// Android fallback flow:
+//   1st load (?access_token=...): store token server-side, fire intent:// to
+//     try opening the app. If the joba24:// intent-filter is registered (custom
+//     AAB), the app opens instantly. If not (Base44 auto-build), Chrome opens
+//     the fallback URL /auth-callback?done=1.
+//   2nd load (?done=1): the token is already stored — just show the manual
+//     "return to app" screen and try window.close().
 export default function AuthCallback() {
   const [status, setStatus] = useState('loading'); // loading | done | error
   const [errorMsg, setErrorMsg] = useState('');
@@ -22,9 +31,24 @@ export default function AuthCallback() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    // The inline script in index.html captures these from the URL BEFORE the
-    // app module strips the token (appParams removes access_token at import),
-    // so prefer sessionStorage. Fall back to URL params for the plain web path.
+
+    // Fallback landing after a failed intent:// (no joba24:// intent-filter in
+    // the Android auto-build). Token was already stored server-side on the
+    // first load — just present the return screen.
+    if (params.get('done') === '1') {
+      setStatus('done');
+      try {
+        sessionStorage.removeItem('joba24_oauth_token');
+        sessionStorage.removeItem('joba24_oauth_sid');
+      } catch {}
+      // Some Chrome Custom Tab configurations honor window.close().
+      try { window.close(); } catch {}
+      return;
+    }
+
+    // The inline script in index.html captures the token from the URL BEFORE
+    // the app module strips it (appParams removes access_token at import), so
+    // prefer sessionStorage. Fall back to URL params for the plain web path.
     const token = sessionStorage.getItem('joba24_oauth_token') || params.get('access_token') || '';
     const sid = sessionStorage.getItem('joba24_oauth_sid') || params.get('sid') || '';
 
@@ -41,12 +65,10 @@ export default function AuthCallback() {
         // then finds the token via the "most recent record" poll fallback.
         await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
         setStatus('done');
-        // Bounce back to the app for an instant return.
-        // iOS: joba24:// is registered in Info.plist → appUrlOpen fires.
-        // Android: intent:// launches the app IF the joba24:// intent-filter is
-        //   in AndroidManifest.xml; otherwise Chrome opens the fallback URL (this
-        //   done screen) and the user returns manually (app polls on resume). No
-        //   "page not found" error either way.
+        try {
+          sessionStorage.removeItem('joba24_oauth_token');
+          sessionStorage.removeItem('joba24_oauth_sid');
+        } catch {}
         try {
           const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
           if (isIOS) {
@@ -54,22 +76,31 @@ export default function AuthCallback() {
             window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`);
           } else {
             // Android: bounce via intent:// with a fallback. If the app is installed
-            // WITH a joba24:// intent-filter in AndroidManifest.xml (the self-built
-            // Android project), Chrome opens the app instantly and appUrlOpen
-            // fires → instant return. If the intent-filter is absent (Base44's
-            // auto-generated build), Chrome opens the fallback URL (this done
-            // screen) and the native app completes login via handshake polling
+            // WITH a joba24:// intent-filter in AndroidManifest.xml (custom AAB build),
+            // Chrome opens the app instantly and appUrlOpen fires → instant return.
+            // If the intent-filter is absent (Base44 auto-build), Chrome opens the
+            // fallback URL (/auth-callback?done=1) which shows the manual return
+            // screen below; the native app completes login via handshake polling
             // when the user returns to it.
-            const fallback = encodeURIComponent(`${window.location.origin}/auth-callback`);
+            const fallback = encodeURIComponent(`${window.location.origin}/auth-callback?done=1`);
             window.location.replace(`intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=com.base69e6bdb4986a04a256653a23.app;S.browser_fallback_url=${fallback};end`);
           }
         } catch {}
+        // Nudge the browser to close — works in some Chrome Custom Tab setups.
+        try { window.close(); } catch {}
       } catch (e) {
         setStatus('error');
         setErrorMsg((e && e.message) || 'שגיאה בשמירת הטוקן.');
       }
     })();
   }, []);
+
+  const handleReturn = () => {
+    try { window.close(); } catch {}
+    // If window.close() didn't work (most Custom Tabs), the user just stays on
+    // this screen and taps the system back button — the app then polls and
+    // completes login.
+  };
 
   return (
     <div
@@ -89,13 +120,37 @@ export default function AuthCallback() {
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
       )}
       {status === 'done' && (
-        <div>
-          <CheckCircle2 size={56} color="#16a34a" style={{ margin: '0 auto 12px' }} />
-          <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
-            התחברת בהצלחה!
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 360 }}>
+          <div style={{
+            width: 76, height: 76, borderRadius: '50%',
+            background: 'var(--color-success-bg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <CheckCircle2 size={44} color="#16a34a" strokeWidth={2.5} />
           </div>
-          <div style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
-            חוזר ל-Joba24 אוטומטית… אם זה לא קרה, סגור/י את החלון הזה (X למעלה או כפתור חזרה) כדי לחזור לאפליקציה.
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', marginBottom: 8 }}>
+              התחברת בהצלחה!
+            </div>
+            <div style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.6 }}>
+              לחצ/י על הכפתור למטה כדי לחזור ל-Joba24.
+            </div>
+          </div>
+          <button
+            onClick={handleReturn}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', height: 56, borderRadius: 16,
+              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+              color: 'white', fontWeight: 800, fontSize: 17, border: 'none',
+              cursor: 'pointer', boxShadow: '0 6px 20px rgba(26,111,212,0.35)',
+            }}
+          >
+            <ArrowRight size={20} style={{ transform: 'scaleX(-1)' }} />
+            חזור ל-Joba24
+          </button>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>
+            לא קרה כלום? סגור/י את הדפדפן עם כפתור ה"חזור" של הטלפון (← למטה) — האפליקציה תמשיך אוטומטית.
           </div>
         </div>
       )}
