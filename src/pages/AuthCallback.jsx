@@ -75,8 +75,10 @@ export default function AuthCallback() {
         return;
       } catch {}
     }
+    // No intent-filter / scheme not handled — do NOT navigate back (that would
+    // send the user to the OAuth provider). Login completes via NativeAuthListener's
+    // browserFinished when the user dismisses the Custom Tab with the system back/close.
     try { window.close(); } catch {}
-    try { history.back(); } catch {}
   };
 
   return (
