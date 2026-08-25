@@ -23,6 +23,7 @@ const RETURN_FLAG = 'joba24_auth_return';
 
 export default function AuthCallback() {
   const [showReturn, setShowReturn] = useState(false);
+  const [returnToken, setReturnToken] = useState(null);
 
   useEffect(() => {
     // Inside the native app's own WebView this route shouldn't render — bail.
@@ -52,8 +53,8 @@ export default function AuthCallback() {
         return;
       }
       if (android) {
+        setReturnToken(token);
         setShowReturn(true);
-        try { window.close(); } catch {}
         return;
       }
     } else if (android && sessionStorage.getItem(RETURN_FLAG) === '1') {
@@ -65,6 +66,15 @@ export default function AuthCallback() {
   if (!showReturn) return null;
 
   const handleReturn = () => {
+    // Fire the joba24:// custom scheme — the Android intent-filter
+    // (scripts/patch-android-manifest.py) opens the app instantly; NativeAuthListener's
+    // appUrlOpen completes the login. window.close/history.back are fallbacks.
+    if (returnToken) {
+      try {
+        window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(returnToken)}`);
+        return;
+      } catch {}
+    }
     try { window.close(); } catch {}
     try { history.back(); } catch {}
   };

@@ -16,6 +16,7 @@ const RETURN_FLAG = 'joba24_auth_return';
 
 export default function NativeOAuthBounce() {
   const [showOverlay, setShowOverlay] = useState(false);
+  const [returnToken, setReturnToken] = useState(null);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) return; // only in the external browser
@@ -50,14 +51,23 @@ export default function NativeOAuthBounce() {
 
     if (isNativeFlow) {
       sessionStorage.setItem(RETURN_FLAG, '1');
+      setReturnToken(token);
       setShowOverlay(true);
-      try { window.close(); } catch {}
     }
   }, []);
 
   if (!showOverlay) return null;
 
   const handleReturn = () => {
+    // Fire the joba24:// custom scheme — the Android intent-filter opens the
+    // app instantly; NativeAuthListener's appUrlOpen completes the login.
+    // window.close/history.back are fallbacks for builds without the intent-filter.
+    if (returnToken) {
+      try {
+        window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(returnToken)}`);
+        return;
+      } catch {}
+    }
     try { window.close(); } catch {}
     try { history.back(); } catch {}
   };
