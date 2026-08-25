@@ -306,7 +306,15 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
       localStorage.setItem('joba24_auth_sid', sid);
       const fromUrl = `${PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
-      const loginUrl = `${PROD_BASE_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
+      // Send the login request directly to the app's canonical base URL
+      // (app_base_url, e.g. joba24.base44.app) — NOT via the joba24.com /api
+      // proxy, which strips the from_url and makes the backend fall back to a
+      // base44.app redirect (landing the user on the unbranded dashboard with
+      // no return screen). The from_url itself stays on the branded domain so
+      // the post-auth redirect lands on joba24.com/auth-callback (AuthCallback
+      // shows the "Continue in app" screen).
+      const loginHost = appParams.appBaseUrl || PROD_BASE_URL;
+      const loginUrl = `${loginHost}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
       (async () => {
         try {
           // Dismiss any stale browser from a previous/aborted login first. iOS
