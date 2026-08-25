@@ -26,10 +26,15 @@ export default function NativeOAuthBounce() {
 
     const token = sessionStorage.getItem('joba24_oauth_token');
     const sid = sessionStorage.getItem('joba24_oauth_sid');
-    const isNativeFlow = !!sid;
+    // The Base44 OAuth backend often ignores from_url and redirects to the
+    // app's canonical base44.app domain (dropping the sid). Landing there with
+    // a fresh token is the native-flow signature on Android — the web/PWA flow
+    // returns to the branded custom domain (joba24.com), not base44.app.
+    const isBase44Domain = window.location.hostname.includes('base44.app');
+    const isNativeFlow = !!sid || isBase44Domain;
 
     if (!token) {
-      if (sessionStorage.getItem(RETURN_FLAG) === '1') setShowOverlay(true);
+      if (isNativeFlow && sessionStorage.getItem(RETURN_FLAG) === '1') setShowOverlay(true);
       return;
     }
 
