@@ -62,7 +62,7 @@ export default function NativeAuthListener() {
         const ov = document.createElement('div');
         ov.id = 'joba24_auth_overlay';
         ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#ffffff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;';
-        ov.innerHTML = '<div style="width:34px;height:34px;border:4px solid rgba(26,111,212,0.2);border-top-color:#1a6fd4;border-radius:50%;animation:joba24_auth_spin 0.8s linear infinite"></div><div style="font-size:15px;font-weight:700;color:#1a6fd4">מתחבר…</div>';
+        ov.innerHTML = '<div style="width:36px;height:36px;border:3px solid #e8edf5;border-top-color:#1a6fd4;border-radius:50%;animation:joba24_auth_spin 0.8s linear infinite"></div><div style="font-size:14px;font-weight:500;color:#94a3b8;margin-top:6px">טוען...</div>';
         document.body.appendChild(ov);
       } catch {}
       // Dismiss the in-app browser (SFSafariViewController / Chrome Custom Tab)

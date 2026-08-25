@@ -436,9 +436,23 @@ function KycButtons({ user, kycStatus }) {
   const handleAction = async (updates, successMsg) => {
     setLoading(true);
     try {
-      await base44.entities.User.update(user.id, updates);
+      // Route through the adminUpdateVerification function so a push notification
+      // is sent to the user — their device updates instantly instead of waiting
+      // for the 30s poll. The function also writes the User entity (WS fires too).
+      const isVerified = updates.is_verified ?? false;
+      const kycStatus = updates.kyc_status || 'approved';
+      if (isVerified || kycStatus === 'rejected') {
+        await base44.functions.invoke('adminUpdateVerification', {
+          userId: user.id,
+          isVerified,
+          kycStatus,
+        });
+      } else {
+        // "Pending" — no push needed, direct update
+        await base44.entities.User.update(user.id, updates);
+      }
       queryClient.setQueryData(['adminUsers'], (old = []) =>
-        old.map(u => u.id === user.id ? { ...u, ...updates } : u)
+        old.map(u => u.id === user.id ? { ...u, is_verified: isVerified, kyc_status: kycStatus } : u)
       );
       toast.success(successMsg);
     } catch (e) {

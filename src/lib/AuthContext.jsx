@@ -178,7 +178,7 @@ export const AuthProvider = ({ children }) => {
             return prev;
           });
         } catch {}
-      }, 120000);
+      }, 30000);
 
       // Also refresh immediately when the tab becomes visible again (user returns to app)
       const handleVisibility = () => {

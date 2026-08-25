@@ -120,7 +120,7 @@ async function checkBioFast(platform, username, code) {
           ...(platform === 'instagram' ? { 'x-ig-app-id': '936619743392459' } : {}),
         },
         redirect: 'follow',
-      }, platform === 'tiktok' ? 8000 : 6000);
+      }, platform === 'tiktok' ? 6000 : 4500);
       const text = await res.text().catch(() => '');
       if (text && text.length > 100) {
         const decoded = decodeEntities(text);
@@ -162,7 +162,7 @@ async function checkBioDirect(platform, username, code) {
         ...(platform === 'tiktok' ? { 'Referer': 'https://www.tiktok.com/' } : {}),
       },
       redirect: 'follow',
-    }, 8000);
+    }, 6000);
     const html = await res.text().catch(() => '');
     if (html && html.length > 200) {
       const decoded = decodeEntities(html);
@@ -199,7 +199,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
       },
     });
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout (20s)')), 20000)
+      setTimeout(() => reject(new Error('LLM timeout (15s)')), 15000)
     );
     const result = await Promise.race([llmPromise, timeoutPromise]);
     console.log(`verifyInstagram: LLM result: found=${result?.found}, bio="${(result?.bio || '').substring(0, 100)}"`);

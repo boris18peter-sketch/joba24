@@ -274,7 +274,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   const showGreenBadge = isUserVerified(otherUserObj) && !hasSocialVerified(otherUserObj);
 
   return createPortal(
-    <div style={{ display: 'flex', flexDirection: 'column', height: viewportHeight, background: 'var(--surface-1)', zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, overflow: 'hidden' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: viewportHeight || '100dvh', background: 'var(--surface-1)', zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }} dir="rtl">
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
       {/* Header — identical to Chat.jsx */}

@@ -97,8 +97,11 @@ export default function NativeOAuthBounce() {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#0d1e40', marginBottom: 10, lineHeight: 1.2 }}>
             התחברת בהצלחה! 🎉
           </div>
-          <div style={{ fontSize: 16, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
-            החיבור הושלם. לחצ/י על הכפתור כדי לחזור לאפליקציה.
+          <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
+            כדי לחזור לאפליקציה, לחץ על כפתור ה<strong>חזור ◄</strong> או ה<strong>X</strong> בדפדפן. ההתחברות תושלם אוטומטית.
+          </div>
+          <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 6 }}>
+            או לחץ על הכפתור למטה כדי לנסות לפתוח את האפליקציה ישירות.
           </div>
         </div>
         <button

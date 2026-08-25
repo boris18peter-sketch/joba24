@@ -198,7 +198,7 @@ const AuthenticatedApp = () => {
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#ffffff' }}>
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} className="animate-spin" />
       </div>
     );
   }
@@ -210,7 +210,7 @@ const AuthenticatedApp = () => {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <GlobalPopups />
-      <Suspense fallback={<div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>}>
+      <Suspense fallback={<div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ffffff' }}><div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} className="animate-spin" /></div>}>
       <AnimatePresence mode="wait" custom={slideDir} initial={false}>
         <motion.div
           key={animKey}
