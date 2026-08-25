@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  Loader2, X, ShieldCheck, ArrowRight, Edit3, Copy, CheckCircle, ExternalLink,
+  Loader2, X, ShieldCheck, ArrowRight, Edit3, Copy, Check, CheckCircle, ExternalLink,
   Instagram, Facebook, Music2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { isUserVerified } from '@/lib/utils';
+import { isUserVerified, copyToClipboard } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -60,6 +60,7 @@ export default function SocialConnectSheet({ user, onClose }) {
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verifyAttempt, setVerifyAttempt] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const p = PLATFORMS.find(pl => pl.key === selected);
   const existingUsername = selected ? user?.[`${selected}_username`] : null;
@@ -297,9 +298,9 @@ export default function SocialConnectSheet({ user, onClose }) {
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>{t('sl_your_code')}</div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                       <code style={{ fontSize: 28, fontWeight: 900, color: '#1a6fd4', letterSpacing: 4 }}>{code || existingCode}</code>
-                      <button onClick={() => { navigator.clipboard.writeText(code || existingCode); toast.success(t('sl_code_copied')); }}
-                        style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: '1.5px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                        <Copy size={16} color="#1a6fd4" />
+                      <button onClick={async (e) => { e.stopPropagation(); const ok = await copyToClipboard(code || existingCode); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
+                        style={{ width: 40, height: 40, borderRadius: 10, background: 'white', border: `1.5px solid ${copied ? '#16a34a' : '#bfdbfe'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}>
+                        {copied ? <Check size={16} color="#16a34a" /> : <Copy size={16} color="#1a6fd4" />}
                       </button>
                     </div>
                   </div>

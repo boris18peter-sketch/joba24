@@ -20,6 +20,7 @@ import { CheckCircle2, ArrowRight } from 'lucide-react';
 //     login. The screen persists across reloads via the RETURN_FLAG.
 
 const RETURN_FLAG = 'joba24_auth_return';
+const ANDROID_PACKAGE = 'com.base69e6bdb4986a04a256653a23.app';
 
 export default function AuthCallback() {
   const [showReturn, setShowReturn] = useState(false);
@@ -76,12 +77,16 @@ export default function AuthCallback() {
   if (!showReturn) return null;
 
   const handleReturn = () => {
-    // Fire the joba24:// custom scheme — the Android intent-filter
-    // (scripts/patch-android-manifest.py) opens the app instantly; NativeAuthListener's
-    // appUrlOpen completes the login. window.close/history.back are fallbacks.
     if (returnToken) {
       try {
-        window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(returnToken)}`);
+        // intent:// URL — the Android-standard way to open an app from a web page.
+        // Chrome Custom Tabs handle this reliably (unlike a bare joba24:// scheme
+        // navigation, which Chrome often ignores). Requires the joba24://
+        // intent-filter injected by scripts/patch-android-manifest.py (runs in the
+        // Codemagic build). Opens the app instantly; NativeAuthListener's
+        // appUrlOpen completes the login.
+        const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;package=${ANDROID_PACKAGE};end`;
+        window.location.href = intentUrl;
         return;
       } catch {}
     }
