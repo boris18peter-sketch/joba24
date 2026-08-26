@@ -35,11 +35,17 @@ export async function pollHandshakeToken(sid) {
 // sets a fresh sid, so it is never blocked by a previous one.
 export async function completeNativeAuth(token) {
   if (!token) return false;
+  try { alert('🔵 DEBUG CALLING COMPLETE AUTH\ntoken len=' + (token?.length || 0)); } catch {}
   const pendingSid = localStorage.getItem('joba24_auth_sid');
-  if (pendingSid === null) return false; // already consumed / no login pending
+  if (pendingSid === null) {
+    try { alert('🔵 DEBUG COMPLETE ABORTED\nno pending sid'); } catch {}
+    return false; // already consumed / no login pending
+  }
   localStorage.removeItem('joba24_auth_sid');
   localStorage.setItem('base44_access_token', token);
   localStorage.setItem('token', token);
+  // Flag so AuthContext (after reload) reports the me() result to the user.
+  try { sessionStorage.setItem('joba24_just_authed', '1'); } catch {}
 
   // Overlay so the user never sees the login page flash during the ~1s reload.
   try {
@@ -66,6 +72,7 @@ export async function completeNativeAuth(token) {
     ]);
   } catch {}
 
+  try { alert('🔵 DEBUG RELOADING NOW\n(base44_access_token saved in localStorage)'); } catch {}
   window.location.reload();
   return true;
 }

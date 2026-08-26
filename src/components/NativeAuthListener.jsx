@@ -35,14 +35,19 @@ export default function NativeAuthListener() {
 
     const applyToken = (token) => completeNativeAuth(token);
 
+    let pollAlerted = false;
     // Poll the server handshake once (no-op if no sid is present yet).
     const pollOnce = async () => {
       if (stopped) return;
       const sid = localStorage.getItem('joba24_auth_sid');
       if (!sid) return;
+      if (!pollAlerted) {
+        pollAlerted = true;
+        try { alert('🔵 DEBUG POLL START\nsid=' + sid + '\nlen=' + sid.length); } catch {}
+      }
       const token = await pollHandshakeToken(sid);
       if (token) {
-        console.log('[NativeAuthListener] ✅ token found via poll');
+        try { alert('🔵 DEBUG TOKEN FOUND\nlen=' + (token?.length || 0)); } catch {}
         applyToken(token);
       }
     };
@@ -51,16 +56,17 @@ export default function NativeAuthListener() {
     // returns to the foreground / the browser tab is dismissed — the token may
     // not be stored yet (race with /auth-callback's store call, which has
     // retries and network latency), so we retry until it appears. Stops as soon
-    // as applyToken fires (it clears the sid). 80 attempts × 200ms = 16 seconds,
+    // as applyToken fires (it clears the sid). 120 attempts × 300ms = 36 seconds,
     // enough to cover slow networks and the async handshake store retries.
     let burstRunning = false;
     const pollBurst = () => {
       if (stopped || burstRunning) return;
       burstRunning = true;
+      try { alert('🔵 DEBUG EVENT: BURST STARTED'); } catch {}
       console.log('[NativeAuthListener] pollBurst started');
       let attempts = 0;
       const tick = async () => {
-        if (stopped || attempts++ > 80) { burstRunning = false; return; }
+        if (stopped || attempts++ > 120) { burstRunning = false; return; }
         await pollOnce();
         if (!stopped && localStorage.getItem('joba24_auth_sid')) {
           setTimeout(tick, 200);
@@ -75,6 +81,7 @@ export default function NativeAuthListener() {
     (async () => {
       try {
         appUrlListener = await App.addListener('appUrlOpen', ({ url }) => {
+          try { alert('🔵 DEBUG EVENT: appUrlOpen\nurl=' + (url || '')); } catch {}
           if (!url || !url.startsWith('joba24://auth-callback')) return;
           let token = null;
           try {
@@ -98,6 +105,7 @@ export default function NativeAuthListener() {
     (async () => {
       try {
         stateListener = await App.addListener('appStateChange', ({ isActive }) => {
+          try { alert('🔵 DEBUG EVENT: appStateChange\nisActive=' + isActive); } catch {}
           if (isActive) pollBurst();
         });
       } catch {}
@@ -110,6 +118,7 @@ export default function NativeAuthListener() {
     (async () => {
       try {
         browserFinishedListener = await Browser.addListener('browserFinished', () => {
+          try { alert('🔵 DEBUG EVENT: browserFinished'); } catch {}
           pollBurst();
         });
       } catch {}
@@ -121,6 +130,7 @@ export default function NativeAuthListener() {
     //    flips to 'visible' immediately — this is the fastest signal we get
     //    that the user is back. Start a burst poll right away.
     const onVisibility = () => {
+      try { alert('🔵 DEBUG EVENT: visibilitychange\nstate=' + document.visibilityState); } catch {}
       if (document.visibilityState === 'visible') pollBurst();
     };
     document.addEventListener('visibilitychange', onVisibility);
