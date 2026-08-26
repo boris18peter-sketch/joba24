@@ -40,33 +40,39 @@ export default function AuthCallback() {
     const sid = sessionStorage.getItem('joba24_oauth_sid');
 
     if (token) {
-      sessionStorage.removeItem('joba24_oauth_token');
-      sessionStorage.removeItem('joba24_oauth_sid');
       sessionStorage.setItem(RETURN_FLAG, '1');
-      (async () => {
-        const storeWithRetry = async (attempt) => {
-          try {
-            await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
-            console.log('[AuthCallback] ✅ token stored in handshake (attempt ' + attempt + ')');
-          } catch (err) {
-            console.error('[AuthCallback] store attempt ' + attempt + ' failed:', err?.message);
-            if (attempt < 3) {
-              await new Promise(r => setTimeout(r, 500));
-              return storeWithRetry(attempt + 1);
-            }
+      // Store the handshake SYNCHRONOUSLY before showing the return screen.
+      // The native app's pollBurst may start the instant the user presses back;
+      // if the store is still in-flight (async IIFE), the poll finds nothing and
+      // the token is lost. Awaiting here guarantees the token is in the DB before
+      // the user can dismiss the Custom Tab.
+      const storeWithRetry = async (attempt) => {
+        try {
+          await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
+          console.log('[AuthCallback] ✅ token stored in handshake (attempt ' + attempt + ')');
+          sessionStorage.removeItem('joba24_oauth_token');
+          sessionStorage.removeItem('joba24_oauth_sid');
+        } catch (err) {
+          console.error('[AuthCallback] store attempt ' + attempt + ' failed:', err?.message);
+          if (attempt < 5) {
+            await new Promise(r => setTimeout(r, 400));
+            return storeWithRetry(attempt + 1);
           }
-        };
-        storeWithRetry(1);
+          // Keep the token in sessionStorage so a page reload can retry the store.
+        }
+      };
+      (async () => {
+        await storeWithRetry(1);
+        if (ios) {
+          try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
+          return;
+        }
+        if (android) {
+          setReturnToken(token);
+          setShowReturn(true);
+          return;
+        }
       })();
-      if (ios) {
-        try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
-        return;
-      }
-      if (android) {
-        setReturnToken(token);
-        setShowReturn(true);
-        return;
-      }
     } else if (android && sessionStorage.getItem(RETURN_FLAG) === '1') {
       // Reload / intent fallback — keep the return screen visible.
       setShowReturn(true);

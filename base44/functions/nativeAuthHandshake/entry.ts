@@ -63,7 +63,7 @@ export default async function(req: Request): Promise<Response> {
       const rec = recent && recent[0];
       if (!rec) return Response.json({ token: null });
       const ageMs = Date.now() - new Date(rec.created_date).getTime();
-      if (Number.isNaN(ageMs) || ageMs > 90 * 1000) return Response.json({ token: null });
+      if (Number.isNaN(ageMs) || ageMs > 300 * 1000) return Response.json({ token: null });
       try { await base44.asServiceRole.entities.OAuthHandshake.delete(rec.id); } catch {}
       return Response.json({ token: rec.token });
     }

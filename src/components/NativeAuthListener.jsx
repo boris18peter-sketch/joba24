@@ -94,19 +94,25 @@ export default function NativeAuthListener() {
       }
     };
 
-    // Burst-poll: retry rapidly a few times. Used on mount and whenever the app
+    // Burst-poll: retry rapidly many times. Used on mount and whenever the app
     // returns to the foreground / the browser tab is dismissed — the token may
-    // not be stored yet (race with /auth-callback's store call), so we retry
-    // until it appears. Stops as soon as applyToken fires (it clears the sid).
+    // not be stored yet (race with /auth-callback's store call, which has
+    // retries and network latency), so we retry until it appears. Stops as soon
+    // as applyToken fires (it clears the sid). 80 attempts × 200ms = 16 seconds,
+    // enough to cover slow networks and the async handshake store retries.
+    let burstRunning = false;
     const pollBurst = () => {
-      if (stopped) return;
+      if (stopped || burstRunning) return;
+      burstRunning = true;
       console.log('[NativeAuthListener] pollBurst started');
       let attempts = 0;
       const tick = async () => {
-        if (stopped || attempts++ > 30) return;
+        if (stopped || attempts++ > 80) { burstRunning = false; return; }
         await pollOnce();
         if (!stopped && localStorage.getItem('joba24_auth_sid')) {
           setTimeout(tick, 200);
+        } else {
+          burstRunning = false;
         }
       };
       tick();
@@ -156,6 +162,16 @@ export default function NativeAuthListener() {
       } catch {}
     })();
 
+    // 5) document.visibilitychange — fires the INSTANT the WebView regains
+    //    focus, before the Capacitor appStateChange event. On Android, when the
+    //    user presses back to dismiss the Custom Tab, the WebView's visibility
+    //    flips to 'visible' immediately — this is the fastest signal we get
+    //    that the user is back. Start a burst poll right away.
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') pollBurst();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
       stopped = true;
       clearInterval(pollTimer);
@@ -166,6 +182,7 @@ export default function NativeAuthListener() {
       removeListener(appUrlListener);
       removeListener(stateListener);
       removeListener(browserFinishedListener);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 

@@ -39,31 +39,31 @@ export default function NativeOAuthBounce() {
       return;
     }
 
-    // Token present — store the handshake (always) so the native poll fallback
-    // retrieves it even if the redirect dropped the sid.
-    sessionStorage.removeItem('joba24_oauth_token');
-    sessionStorage.removeItem('joba24_oauth_sid');
+    // Token present — store the handshake SYNCHRONOUSLY before showing the
+    // overlay. The native app's pollBurst may start the instant the user
+    // presses back; if the store is still in-flight, the poll finds nothing.
+    if (isNativeFlow) sessionStorage.setItem(RETURN_FLAG, '1');
     (async () => {
       const storeWithRetry = async (attempt) => {
         try {
           await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
           console.log('[NativeOAuthBounce] ✅ token stored in handshake (attempt ' + attempt + ')');
+          sessionStorage.removeItem('joba24_oauth_token');
+          sessionStorage.removeItem('joba24_oauth_sid');
         } catch (err) {
           console.error('[NativeOAuthBounce] store attempt ' + attempt + ' failed:', err?.message);
-          if (attempt < 3) {
-            await new Promise(r => setTimeout(r, 500));
+          if (attempt < 5) {
+            await new Promise(r => setTimeout(r, 400));
             return storeWithRetry(attempt + 1);
           }
         }
       };
-      storeWithRetry(1);
+      await storeWithRetry(1);
+      if (isNativeFlow) {
+        setReturnToken(token);
+        setShowOverlay(true);
+      }
     })();
-
-    if (isNativeFlow) {
-      sessionStorage.setItem(RETURN_FLAG, '1');
-      setReturnToken(token);
-      setShowOverlay(true);
-    }
   }, []);
 
   if (!showOverlay) return null;
