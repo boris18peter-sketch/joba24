@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { completeNativeAuth } from '@/lib/nativeAuthComplete';
+import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { appParams } from '@/lib/app-params';
@@ -264,11 +264,8 @@ function WaitingForAuthScreen({ onCancel }) {
       if (stopped) return;
       const sid = localStorage.getItem('joba24_auth_sid');
       if (!sid) return;
-      try {
-        const res = await base44.functions.invoke('nativeAuthHandshake', { action: 'poll', sid });
-        const token = res?.data?.token ?? res?.token ?? null;
-        if (token) { completeNativeAuth(token); return; }
-      } catch {}
+      const token = await pollHandshakeToken(sid);
+      if (token) { completeNativeAuth(token); return; }
       if (!stopped) setTimeout(poll, 500);
     };
     poll();

@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
-import { base44 } from '@/api/base44Client';
-import { completeNativeAuth } from '@/lib/nativeAuthComplete';
+import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 
 // Native OAuth callback receiver.
 //
@@ -41,16 +40,10 @@ export default function NativeAuthListener() {
       if (stopped) return;
       const sid = localStorage.getItem('joba24_auth_sid');
       if (!sid) return;
-      try {
-        const res = await base44.functions.invoke('nativeAuthHandshake', { action: 'poll', sid });
-        const token = res?.data?.token ?? res?.token ?? null;
-        if (token) {
-          console.log('[NativeAuthListener] ✅ token found via poll');
-          applyToken(token);
-          return;
-        }
-      } catch (err) {
-        console.warn('[NativeAuthListener] poll error:', err?.message);
+      const token = await pollHandshakeToken(sid);
+      if (token) {
+        console.log('[NativeAuthListener] ✅ token found via poll');
+        applyToken(token);
       }
     };
 

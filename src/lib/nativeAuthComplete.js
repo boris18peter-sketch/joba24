@@ -1,6 +1,28 @@
 import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 
+// Poll the nativeAuthHandshake function via a raw fetch (NOT the SDK).
+// The SDK's functions.invoke wrapper has shown inconsistent behavior in the
+// native WebView (unauthenticated first-login context), whereas a direct POST
+// to /api/functions/nativeAuthHandshake reliably returns { token } with no auth
+// required. Using raw fetch eliminates SDK auth-header / response-parsing
+// variables and exactly mirrors the request that works.
+export async function pollHandshakeToken(sid) {
+  if (!sid) return null;
+  try {
+    const r = await fetch('/api/functions/nativeAuthHandshake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'poll', sid }),
+    });
+    if (!r.ok) return null;
+    const data = await r.json().catch(() => ({}));
+    return data?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Completes a native OAuth login from a retrieved access_token.
 //
 // Shared by NativeAuthListener (event-driven poll) and LoginPromptModal's
