@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
-import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 import { base44 } from '@/api/base44Client';
 import { completeNativeAuth } from '@/lib/nativeAuthComplete';
 
