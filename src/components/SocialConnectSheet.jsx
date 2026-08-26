@@ -303,6 +303,11 @@ export default function SocialConnectSheet({ user, onClose }) {
                         {copied ? <Check size={16} color="#16a34a" /> : <Copy size={16} color="#1a6fd4" />}
                       </button>
                     </div>
+                    {copied && (
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#16a34a', marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <Check size={14} /> קוד הועתק!
+                      </div>
+                    )}
                   </div>
 
                   {/* Step-by-step instructions */}

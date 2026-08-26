@@ -13,7 +13,6 @@ import { CheckCircle2, ArrowRight } from 'lucide-react';
 // `sid` so the web/PWA flow (which never sets a sid) is never affected.
 
 const RETURN_FLAG = 'joba24_auth_return';
-const ANDROID_PACKAGE = 'com.base69e6bdb4986a04a256653a23.app';
 
 export default function NativeOAuthBounce() {
   const [showOverlay, setShowOverlay] = useState(false);
@@ -72,13 +71,12 @@ export default function NativeOAuthBounce() {
   const handleReturn = () => {
     if (returnToken) {
       try {
-        // intent:// URL — the Android-standard way to open an app from a web page.
-        // Chrome Custom Tabs handle this reliably (unlike a bare joba24:// scheme
-        // navigation, which Chrome often ignores). Requires the joba24://
-        // intent-filter injected by scripts/patch-android-manifest.py (runs in the
-        // Codemagic build). Opens the app instantly; NativeAuthListener's
-        // appUrlOpen completes the login.
-        const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;package=${ANDROID_PACKAGE};end`;
+        // intent:// URL WITHOUT package= — prevents Chrome from redirecting to the
+        // Play Store when the intent can't be resolved. If the joba24://
+        // intent-filter is present, the app opens instantly. If not, Chrome stays
+        // on this page — the user presses the system back button and the polling
+        // completes the login.
+        const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;end`;
         window.location.href = intentUrl;
         return;
       } catch {}
