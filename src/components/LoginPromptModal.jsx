@@ -1,7 +1,8 @@
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { completeNativeAuth } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { appParams } from '@/lib/app-params';
@@ -252,6 +253,27 @@ function EmailForm({ onBack, onSuccess }) {
 }
 
 function WaitingForAuthScreen({ onCancel }) {
+  // Poll the server handshake directly from the modal. NativeAuthListener also
+  // polls, but its event listeners (browserFinished / appStateChange) do not
+  // fire reliably on every Android WebView. This user-visible poll guarantees
+  // the login completes the instant the user returns from the Custom Tab and
+  // React resumes — the screen is on-screen, so its timers run.
+  useEffect(() => {
+    let stopped = false;
+    const poll = async () => {
+      if (stopped) return;
+      const sid = localStorage.getItem('joba24_auth_sid');
+      if (!sid) return;
+      try {
+        const res = await base44.functions.invoke('nativeAuthHandshake', { action: 'poll', sid });
+        const token = res?.data?.token ?? res?.token ?? null;
+        if (token) { completeNativeAuth(token); return; }
+      } catch {}
+      if (!stopped) setTimeout(poll, 500);
+    };
+    poll();
+    return () => { stopped = true; };
+  }, []);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
       <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} />

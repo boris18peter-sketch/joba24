@@ -4,6 +4,7 @@ import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 import { base44 } from '@/api/base44Client';
+import { completeNativeAuth } from '@/lib/nativeAuthComplete';
 
 // Native OAuth callback receiver.
 //
@@ -34,47 +35,7 @@ export default function NativeAuthListener() {
     let stateListener;
     let browserFinishedListener;
 
-    const applyToken = async (token) => {
-      if (!token) return;
-      // Only apply while a login is pending (a sid was set by LoginPromptModal
-      // right before Browser.open). Clear it immediately so a second delivery
-      // for the SAME login (appUrlOpen + poll both firing) is a no-op — no double
-      // reload. A NEW login sets a fresh sid, so it is never blocked by a previous
-      // login. (A module-level flag gets stuck "true" when logout does only an
-      // in-app navigation instead of a full reload, silently breaking every
-      // subsequent login — the "works once, then stays in the browser" bug. This
-      // sid-based guard resets with each new login on BOTH iOS and Android.)
-      const pendingSid = localStorage.getItem('joba24_auth_sid');
-      if (pendingSid === null) return;
-      localStorage.removeItem('joba24_auth_sid');
-      localStorage.setItem('base44_access_token', token);
-      localStorage.setItem('token', token);
-      // Mask the stale login modal with a "connecting" screen so the user never
-      // sees the login page flash during the ~1s the reload takes to paint the
-      // authenticated app.
-      try {
-        if (!document.getElementById('joba24_auth_spin')) {
-          const s = document.createElement('style');
-          s.id = 'joba24_auth_spin';
-          s.textContent = '@keyframes joba24_auth_spin{to{transform:rotate(360deg)}}';
-          document.head.appendChild(s);
-        }
-        const ov = document.createElement('div');
-        ov.id = 'joba24_auth_overlay';
-        ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#ffffff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:Inter,system-ui,sans-serif;';
-        ov.innerHTML = '<div style="width:36px;height:36px;border:3px solid #e8edf5;border-top-color:#1a6fd4;border-radius:50%;animation:joba24_auth_spin 0.8s linear infinite"></div><div style="font-size:14px;font-weight:500;color:#94a3b8;margin-top:6px">טוען...</div>';
-        document.body.appendChild(ov);
-      } catch {}
-      // Dismiss the in-app browser (SFSafariViewController / Chrome Custom Tab)
-      // before reloading; race against a timeout so a hung close() never blocks.
-      try {
-        await Promise.race([
-          Promise.all([Browser.close(), InAppBrowser.close().catch(() => {})]),
-          new Promise((r) => setTimeout(r, 1200))
-        ]);
-      } catch {}
-      window.location.reload();
-    };
+    const applyToken = (token) => completeNativeAuth(token);
 
     // Poll the server handshake once (no-op if no sid is present yet).
     const pollOnce = async () => {
