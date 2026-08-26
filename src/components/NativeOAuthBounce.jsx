@@ -66,6 +66,27 @@ export default function NativeOAuthBounce() {
     })();
   }, []);
 
+  // Android back-button TRAP (same rationale as AuthCallback.jsx): prevent the
+  // system back button from navigating the Custom Tab back to the Google sign-in
+  // page, which would leave the tab open and browserFinished would never fire.
+  // Each back press is swallowed (re-push guard) and retries the intent return.
+  useEffect(() => {
+    if (!showOverlay || !returnToken) return;
+    const guard = () => {
+      try { window.history.pushState({ jguard: 1 }, '', window.location.href); } catch {}
+    };
+    guard();
+    const onPop = () => {
+      guard();
+      try {
+        const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;end`;
+        window.location.href = intentUrl;
+      } catch {}
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [showOverlay, returnToken]);
+
   if (!showOverlay) return null;
 
   const handleReturn = () => {
@@ -74,17 +95,12 @@ export default function NativeOAuthBounce() {
         // intent:// URL WITHOUT package= — prevents Chrome from redirecting to the
         // Play Store when the intent can't be resolved. If the joba24://
         // intent-filter is present, the app opens instantly. If not, Chrome stays
-        // on this page — the user presses the system back button and the polling
+        // on this page — the user presses the ✕ button and the polling
         // completes the login.
         const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;end`;
         window.location.href = intentUrl;
-        return;
       } catch {}
     }
-    // No intent-filter / scheme not handled — do NOT navigate back (that would
-    // send the user to the OAuth provider). Login completes via NativeAuthListener's
-    // browserFinished when the user dismisses the Custom Tab with the system back/close.
-    try { window.close(); } catch {}
   };
 
   return (
@@ -111,10 +127,10 @@ export default function NativeOAuthBounce() {
             התחברת בהצלחה! 🎉
           </div>
           <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
-            כדי לחזור לאפליקציה, לחץ על כפתור ה<strong>חזור ◄</strong> או ה<strong>X</strong> בדפדפן. ההתחברות תושלם אוטומטית.
+            לחץ על הכפתור למטה כדי לחזור לאפליקציה. אם כלום לא קורה, לחץ על ה<strong>✕</strong> בפינה השמאלית-עליונה של הדפדפן — ההתחברות תושלם אוטומטית.
           </div>
           <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 6 }}>
-            או לחץ על הכפתור למטה כדי לנסות לפתוח את האפליקציה ישירות.
+            אין צורך ללחוץ "חזור" — ההתחברות תושלם מעצמה ברגע שתסגור את הדפדפן.
           </div>
         </div>
         <button

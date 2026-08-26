@@ -79,6 +79,33 @@ export default function AuthCallback() {
     }
   }, []);
 
+  // Android back-button TRAP. Without this, pressing the system back button on
+  // /auth-callback navigates the Custom Tab back through its history to the
+  // Google sign-in page (the previous entry) — leaving the user stuck on Google,
+  // the tab still open, so browserFinished never fires and the polling that
+  // completes the login never starts. We intercept back via pushState/popstate:
+  // each back press is swallowed (we re-push a guard entry so we never leave
+  // /auth-callback) and we retry the intent return. The login completes the
+  // moment the Custom Tab is actually dismissed (✕ toolbar button or a
+  // successful intent), which fires browserFinished → NativeAuthListener polls
+  // the handshake → reloads the authenticated app.
+  useEffect(() => {
+    if (!showReturn || !returnToken) return;
+    const guard = () => {
+      try { window.history.pushState({ jguard: 1 }, '', window.location.href); } catch {}
+    };
+    guard(); // add a guard entry on top of /auth-callback
+    const onPop = () => {
+      guard(); // re-push so back can NEVER reach the Google page
+      try {
+        const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;end`;
+        window.location.href = intentUrl;
+      } catch {}
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [showReturn, returnToken]);
+
   if (!showReturn) return null;
 
   const handleReturn = () => {
@@ -89,17 +116,12 @@ export default function AuthCallback() {
         // redirecting to the Play Store when the intent can't be resolved. If the
         // joba24:// intent-filter is present (injected by
         // scripts/patch-android-manifest.py in the Codemagic build), the app opens
-        // instantly. If not, Chrome stays on this page — the user presses the
-        // system back button and NativeAuthListener's polling completes the login.
+        // instantly. If not, Chrome stays on this page — the user presses the ✕
+        // button in the toolbar and NativeAuthListener's polling completes the login.
         const intentUrl = `intent://auth-callback?access_token=${encodeURIComponent(returnToken)}#Intent;scheme=joba24;end`;
         window.location.href = intentUrl;
-        return;
       } catch {}
     }
-    // No intent-filter / scheme not handled — do NOT navigate back (that would
-    // send the user to the OAuth provider). Login completes via NativeAuthListener's
-    // browserFinished when the user dismisses the Custom Tab with the system back/close.
-    try { window.close(); } catch {}
   };
 
   return (
@@ -126,10 +148,10 @@ export default function AuthCallback() {
             התחברת בהצלחה! 🎉
           </div>
           <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
-            כדי לחזור לאפליקציה, לחץ על כפתור ה<strong>חזור ◄</strong> או ה<strong>X</strong> בדפדפן. ההתחברות תושלם אוטומטית.
+            לחץ על הכפתור למטה כדי לחזור לאפליקציה. אם כלום לא קורה, לחץ על ה<strong>✕</strong> בפינה השמאלית-עליונה של הדפדפן — ההתחברות תושלם אוטומטית.
           </div>
           <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 6 }}>
-            או לחץ על הכפתור למטה כדי לנסות לפתוח את האפליקציה ישירות.
+            אין צורך ללחוץ "חזור" — ההתחברות תושלם מעצמה ברגע שתסגור את הדפדפן.
           </div>
         </div>
         <button
