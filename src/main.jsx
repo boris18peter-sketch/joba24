@@ -21,9 +21,7 @@ window.alert = function (msg) {
     el.appendChild(line);
     el.scrollTop = el.scrollHeight;
   } catch (e) {}
-  try { if (__origAlert) __origAlert(msg); } catch (e) {}
 };
-setTimeout(function () { alert('BLUE APP LOADED v3'); }, 0);
 
 // Protective handler: the vite plugin's unhandled-rejection handler accesses
 // event.reason.stack.match(...), which crashes when a promise rejects with a
