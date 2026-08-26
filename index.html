@@ -74,6 +74,35 @@
       // Ensure body isn't white even if CSS fails entirely
       document.body.style.backgroundColor = '#ffffff';
     </script>
+    <!-- Self-heal: Android's WebView caches index.html aggressively and keeps
+         serving a STALE version after a new deploy — so the app runs old code
+         (the root cause of "my fix isn't showing on Android" + the OAuth loop).
+         This fetches the LIVE index.html with a cache-buster, compares the
+         main-module src (Vite hashes it per build → changes every publish),
+         and force-reloads fresh if they differ. iOS doesn't cache this way. -->
+    <script>
+      (function () {
+        try {
+          // Mid-OAuth: the URL carries an access_token — never interrupt with a reload.
+          if (new URLSearchParams(window.location.search).get('access_token')) return;
+          var cur = document.querySelector('script[type="module"][src]');
+          var curSrc = cur ? cur.getAttribute('src') : '';
+          if (curSrc && sessionStorage.getItem('joba24_selfheal') === '1') { sessionStorage.removeItem('joba24_selfheal'); return; }
+          fetch('/index.html?cb=' + Date.now(), { cache: 'no-store' })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+              var m = html.match(/<script\s+type="module"\s+src="([^"]+)"/);
+              var freshSrc = m ? m[1] : '';
+              if (freshSrc && curSrc && freshSrc !== curSrc) {
+                sessionStorage.setItem('joba24_selfheal', '1');
+                // Preserve the pathname so /auth-callback etc. keep working.
+                window.location.replace(window.location.pathname + '?cb=' + Date.now() + window.location.hash);
+              }
+            })
+            .catch(function () {});
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
