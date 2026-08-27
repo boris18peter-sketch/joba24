@@ -20,6 +20,25 @@ export async function pollHandshakeToken(sid) {
   }
 }
 
+// Store the OAuth handshake token via a raw fetch (NOT the SDK).
+// base44.functions.invoke can hang in the external Chrome Custom Tab
+// (no auth headers available), which blocks the return screen from ever
+// rendering → blank screen. index.html already does a fire-and-forget store
+// on page load; this is the React-side backup.
+export async function storeHandshakeToken(sid, token) {
+  if (!token) return false;
+  try {
+    const r = await fetch('/api/functions/nativeAuthHandshake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'store', sid: sid || null, token }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 // Completes a native OAuth login from a retrieved access_token.
 //
 // Guarded by `joba24_auth_sid`: a login is "pending" while that key is set

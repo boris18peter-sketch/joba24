@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { base44 } from '@/api/base44Client';
+import { storeHandshakeToken } from '@/lib/nativeAuthComplete';
 import { NativeReturnScreen } from '@/components/NativeReturnScreen';
 
 // Fallback return screen for the native OAuth flow when the backend redirect
@@ -39,31 +39,19 @@ export default function NativeOAuthBounce() {
       return;
     }
 
-    // Token present — store the handshake SYNCHRONOUSLY before showing the
-    // overlay. The native app's pollBurst may start the instant the user
-    // presses back; if the store is still in-flight, the poll finds nothing.
+    // Token present — show the return screen immediately, then store the
+    // handshake in the background. Awaiting base44.functions.invoke hangs in
+    // the Chrome Custom Tab (no auth headers) → blank screen. index.html
+    // already did a fire-and-forget store on page load; this is a backup.
     if (isNativeFlow) sessionStorage.setItem(RETURN_FLAG, '1');
-    (async () => {
-      const storeWithRetry = async (attempt) => {
-        try {
-          await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
-          console.log('[NativeOAuthBounce] ✅ token stored in handshake (attempt ' + attempt + ')');
-          sessionStorage.removeItem('joba24_oauth_token');
-          sessionStorage.removeItem('joba24_oauth_sid');
-        } catch (err) {
-          console.error('[NativeOAuthBounce] store attempt ' + attempt + ' failed:', err?.message);
-          if (attempt < 5) {
-            await new Promise(r => setTimeout(r, 400));
-            return storeWithRetry(attempt + 1);
-          }
-        }
-      };
-      await storeWithRetry(1);
-      if (isNativeFlow) {
-        setReturnToken(token);
-        setShowOverlay(true);
-      }
-    })();
+    if (isNativeFlow) {
+      setReturnToken(token);
+      setShowOverlay(true);
+    }
+    storeHandshakeToken(sid, token).then(() => {
+      sessionStorage.removeItem('joba24_oauth_token');
+      sessionStorage.removeItem('joba24_oauth_sid');
+    }).catch(() => {});
   }, []);
 
   if (!showOverlay) return null;

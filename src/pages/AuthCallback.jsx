@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { base44 } from '@/api/base44Client';
+import { storeHandshakeToken } from '@/lib/nativeAuthComplete';
 import { NativeReturnScreen } from '@/components/NativeReturnScreen';
 
 // The native OAuth callback route (/auth-callback). The native LoginPromptModal
@@ -41,41 +41,27 @@ export default function AuthCallback() {
 
     if (token) {
       sessionStorage.setItem(RETURN_FLAG, '1');
-      // Store the handshake SYNCHRONOUSLY before showing the return screen.
-      // The native app's pollBurst may start the instant the user presses back;
-      // if the store is still in-flight (async IIFE), the poll finds nothing and
-      // the token is lost. Awaiting here guarantees the token is in the DB before
-      // the user can dismiss the Custom Tab.
-      const storeWithRetry = async (attempt) => {
-        try {
-          await base44.functions.invoke('nativeAuthHandshake', { action: 'store', sid: sid || null, token });
-          console.log('[AuthCallback] ✅ token stored in handshake (attempt ' + attempt + ')');
-          sessionStorage.removeItem('joba24_oauth_token');
-          sessionStorage.removeItem('joba24_oauth_sid');
-        } catch (err) {
-          console.error('[AuthCallback] store attempt ' + attempt + ' failed:', err?.message);
-          if (attempt < 5) {
-            await new Promise(r => setTimeout(r, 400));
-            return storeWithRetry(attempt + 1);
-          }
-          // Keep the token in sessionStorage so a page reload can retry the store.
-        }
-      };
-      (async () => {
-        await storeWithRetry(1);
-        if (ios) {
-          // index.html already fires the joba24:// scheme the instant the token
-          // is captured (before React mounts), so the app opens near-instantly.
-          // Re-fire here as a backup in case the inline script failed.
-          try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
-          return;
-        }
-        if (android) {
-          setReturnToken(token);
-          setShowReturn(true);
-          return;
-        }
-      })();
+      // Background store of the handshake via direct fetch. index.html already
+      // did a fire-and-forget store on page load; this is a backup. We do NOT
+      // await it — awaiting the SDK (base44.functions.invoke) hangs in the
+      // Chrome Custom Tab (no auth headers), which blocks the return screen
+      // from rendering → blank screen. Fire-and-forget keeps the UI instant.
+      storeHandshakeToken(sid || null, token).then(() => {
+        sessionStorage.removeItem('joba24_oauth_token');
+        sessionStorage.removeItem('joba24_oauth_sid');
+      }).catch(() => {});
+      if (ios) {
+        // index.html already fires the joba24:// scheme the instant the token
+        // is captured (before React mounts), so the app opens near-instantly.
+        // Re-fire here as a backup in case the inline script failed.
+        try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
+        return;
+      }
+      if (android) {
+        setReturnToken(token);
+        setShowReturn(true);
+        return;
+      }
     } else if (android && sessionStorage.getItem(RETURN_FLAG) === '1') {
       // Reload / intent fallback — keep the return screen visible.
       setShowReturn(true);
