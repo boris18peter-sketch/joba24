@@ -35,25 +35,11 @@ export function useNativeBackTrap(active) {
   }, [active]);
 }
 
-// Full-screen "return to app" overlay shown in the external browser
-// (SFSafariViewController on iOS, Chrome Custom Tab on Android) after a
-// successful native OAuth.
-//
-//   • iOS: SFSafariViewController does NOT auto-open custom schemes from JS
-//     navigation — it shows a passive banner and leaves the page blank. So we
-//     render an explicit "Open in app" button (an <a> to the joba24:// scheme).
-//     User-initiated navigation DOES open the app. As a fallback, dismissing
-//     the browser returns to the app, where NativeAuthListener's foreground
-//     poll picks up the handshake token and completes the login.
-//   • Android: no joba24:// intent-filter in the auto-build, so the user closes
-//     the Custom Tab (✕); browserFinished → poll → complete.
+// Full-screen "close the browser" return overlay shown in the external Custom
+// Tab after a successful native OAuth on Android. `returnToken` is accepted for
+// caller compatibility but intentionally unused — no intent is fired.
 export function NativeReturnScreen({ returnToken }) {
   useNativeBackTrap(true);
-
-  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const schemeUrl = returnToken
-    ? `joba24://auth-callback?access_token=${encodeURIComponent(returnToken)}`
-    : null;
 
   return (
     <div
@@ -78,39 +64,12 @@ export function NativeReturnScreen({ returnToken }) {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#0d1e40', marginBottom: 10, lineHeight: 1.2 }}>
             התחברת בהצלחה! 🎉
           </div>
-          {ios ? (
-            <>
-              <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
-                לחץ על הכפתור כדי לחזור לאפליקציה.
-              </div>
-              {schemeUrl && (
-                <a
-                  href={schemeUrl}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    marginTop: 16, padding: '14px 28px', borderRadius: 14,
-                    background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: '#fff',
-                    fontSize: 17, fontWeight: 800, textDecoration: 'none',
-                    boxShadow: '0 6px 20px rgba(26,111,212,0.35)', minHeight: 52,
-                  }}
-                >
-                  פתיחה באפליקציה
-                </a>
-              )}
-              <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 10 }}>
-                או סגור את הדפדפן — ההתחברות תושלם אוטומטית.
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
-                סגור את הדפדפן — לחץ על ה<strong>✕</strong> בפינה השמאלית-עליונה — כדי לחזור לאפליקציה.
-              </div>
-              <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 6 }}>
-                ההתחברות תושלם אוטומטית ברגע שתסגור את הדפדפן.
-              </div>
-            </>
-          )}
+          <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
+            סגור את הדפדפן — לחץ על ה<strong>✕</strong> בפינה השמאלית-עליונה — כדי לחזור לאפליקציה.
+          </div>
+          <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 6 }}>
+            ההתחברות תושלם אוטומטית ברגע שתסגור את הדפדפן.
+          </div>
         </div>
       </div>
     </div>

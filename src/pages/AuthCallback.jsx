@@ -64,13 +64,9 @@ export default function AuthCallback() {
       (async () => {
         await storeWithRetry(1);
         if (ios) {
-          // SFSafariViewController does NOT auto-open custom schemes from JS
-          // navigation — it only shows a passive "Open in App" banner and leaves
-          // the page blank. So show an explicit return screen with a tappable
-          // button (user-initiated scheme navigation DOES open the app), and
-          // also best-effort fire the scheme once on mount.
-          setReturnToken(token);
-          setShowReturn(true);
+          // index.html already fires the joba24:// scheme the instant the token
+          // is captured (before React mounts), so the app opens near-instantly.
+          // Re-fire here as a backup in case the inline script failed.
           try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
           return;
         }
@@ -80,7 +76,7 @@ export default function AuthCallback() {
           return;
         }
       })();
-    } else if ((android || ios) && sessionStorage.getItem(RETURN_FLAG) === '1') {
+    } else if (android && sessionStorage.getItem(RETURN_FLAG) === '1') {
       // Reload / intent fallback — keep the return screen visible.
       setShowReturn(true);
     }

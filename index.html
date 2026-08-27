@@ -34,8 +34,23 @@
             t = h.get('access_token') || t;
             if (!s) s = h.get('sid') || s;
           }
-          if (t) sessionStorage.setItem('joba24_oauth_token', t);
-          if (s) sessionStorage.setItem('joba24_oauth_sid', s);
+          if (t) {
+            sessionStorage.setItem('joba24_oauth_token', t);
+            if (s) sessionStorage.setItem('joba24_oauth_sid', s);
+            // Store the handshake (fallback for the native poll) — fire-and-forget.
+            try {
+              fetch('/api/functions/nativeAuthHandshake', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'store', sid: s || null, token: t })
+              }).catch(function () {});
+            } catch (e) {}
+            // Instantly return to the native app via the joba24:// scheme.
+            // Firing it here (in <head>, before React loads) makes the return
+            // near-instant instead of waiting for the SPA to mount + a network
+            // round-trip. SFSafariViewController opens the app from this navigation.
+            try { window.location.replace('joba24://auth-callback?access_token=' + encodeURIComponent(t)); } catch (e) {}
+          }
         } catch (e) {}
       })();
     </script>
