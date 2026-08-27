@@ -260,18 +260,12 @@ function WaitingForAuthScreen({ onCancel }) {
   // React resumes — the screen is on-screen, so its timers run.
   useEffect(() => {
     let stopped = false;
-    let alerted = false;
     const poll = async () => {
       if (stopped) return;
       const sid = localStorage.getItem('joba24_auth_sid');
       if (!sid) return;
-      if (!alerted) {
-        alerted = true;
-        try { alert('🔵 DEBUG WAIT-SCREEN POLL START\nsid=' + sid); } catch {}
-      }
       const token = await pollHandshakeToken(sid);
       if (token) {
-        try { alert('🔵 DEBUG WAIT-SCREEN TOKEN FOUND\nlen=' + (token?.length || 0)); } catch {}
         completeNativeAuth(token);
         return;
       }

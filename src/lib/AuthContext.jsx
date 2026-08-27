@@ -105,20 +105,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const checkUserAuth = async () => {
-    const justAuthed = sessionStorage.getItem('joba24_just_authed') === '1';
     try {
       // Now check if the user is authenticated
-      console.log('[Joba24] Auth: checkUserAuth — calling base44.auth.me()...');
       setIsLoadingAuth(true);
-      if (justAuthed) {
-        try { alert('🔵 DEBUG AUTH.ME START\ntoken=' + (appParams.token || '').slice(0, 30) + '...'); } catch {}
-      }
       const currentUser = await base44.auth.me();
-      console.log('[Joba24] Auth: auth.me() returned', currentUser ? `user=${currentUser.id}` : 'null');
-      if (justAuthed) {
-        try { alert('🔵 DEBUG AUTH.ME RESULT\nuser=' + (currentUser?.id || 'null') + '\nemail=' + (currentUser?.email || 'null')); } catch {}
-        sessionStorage.removeItem('joba24_just_authed');
-      }
       // Cache in React Query so Layout's useQuery(['me']) doesn't make a duplicate API call
       queryClientInstance.setQueryData(['me'], currentUser);
       setUser(currentUser);
@@ -240,10 +230,6 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (error) {
       console.error('[Joba24] Auth: checkUserAuth failed:', error.message, error.status);
-      if (justAuthed) {
-        try { alert('🔴 DEBUG AUTH.ME ERROR\n' + (error?.message || 'unknown') + '\nstatus=' + (error?.status || 'none')); } catch {}
-        sessionStorage.removeItem('joba24_just_authed');
-      }
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);

@@ -2,11 +2,8 @@ import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 
 // Poll the nativeAuthHandshake function via a raw fetch (NOT the SDK).
-// The SDK's functions.invoke wrapper has shown inconsistent behavior in the
-// native WebView (unauthenticated first-login context), whereas a direct POST
-// to /api/functions/nativeAuthHandshake reliably returns { token } with no auth
-// required. Using raw fetch eliminates SDK auth-header / response-parsing
-// variables and exactly mirrors the request that works.
+// A direct POST to /api/functions/nativeAuthHandshake reliably returns
+// { token } with no auth required.
 export async function pollHandshakeToken(sid) {
   if (!sid) return null;
   try {
@@ -25,29 +22,20 @@ export async function pollHandshakeToken(sid) {
 
 // Completes a native OAuth login from a retrieved access_token.
 //
-// Shared by NativeAuthListener (event-driven poll) and LoginPromptModal's
-// WaitingForAuthScreen (user-visible poll) so both use identical logic.
-//
 // Guarded by `joba24_auth_sid`: a login is "pending" while that key is set
 // (LoginPromptModal sets it right before opening the system browser). The
 // first poll to find a token clears the sid and reloads; any second delivery
-// (the two polls can both fire) is a no-op — no double reload. A NEW login
-// sets a fresh sid, so it is never blocked by a previous one.
+// is a no-op. A NEW login sets a fresh sid, so it is never blocked.
 export async function completeNativeAuth(token) {
   if (!token) return false;
-  try { alert('🔵 DEBUG CALLING COMPLETE AUTH\ntoken len=' + (token?.length || 0)); } catch {}
   const pendingSid = localStorage.getItem('joba24_auth_sid');
-  if (pendingSid === null) {
-    try { alert('🔵 DEBUG COMPLETE ABORTED\nno pending sid'); } catch {}
-    return false; // already consumed / no login pending
-  }
+  if (pendingSid === null) return false; // already consumed / no login pending
+
   localStorage.removeItem('joba24_auth_sid');
   localStorage.setItem('base44_access_token', token);
   localStorage.setItem('token', token);
-  // Flag so AuthContext (after reload) reports the me() result to the user.
-  try { sessionStorage.setItem('joba24_just_authed', '1'); } catch {}
 
-  // Overlay so the user never sees the login page flash during the ~1s reload.
+  // Overlay so the user never sees the login page flash during the reload.
   try {
     if (!document.getElementById('joba24_auth_spin')) {
       const s = document.createElement('style');
@@ -72,7 +60,6 @@ export async function completeNativeAuth(token) {
     ]);
   } catch {}
 
-  try { alert('🔵 DEBUG RELOADING NOW\n(base44_access_token saved in localStorage)'); } catch {}
   window.location.reload();
   return true;
 }
