@@ -37,9 +37,18 @@
           if (t) {
             sessionStorage.setItem('joba24_oauth_token', t);
             if (s) sessionStorage.setItem('joba24_oauth_sid', s);
+            var ua = navigator.userAgent || '';
+            var isIOS = /iPad|iPhone|iPod/.test(ua) && !/Windows Phone/.test(ua);
+            var isAndroid = /android/i.test(ua);
             // Store the handshake (fallback for the native poll) — fire-and-forget.
+            // iOS keeps the relative URL (joba24.com /api proxy works there).
+            // Android bypasses the proxy and calls base44.app directly (the proxy
+            // can drop the function POST on Android → login never completes).
+            var hsUrl = isAndroid
+              ? 'https://joba24.base44.app/api/functions/nativeAuthHandshake'
+              : '/api/functions/nativeAuthHandshake';
             try {
-              fetch('https://joba24.base44.app/api/functions/nativeAuthHandshake', {
+              fetch(hsUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'store', sid: s || null, token: t })
@@ -51,8 +60,6 @@
             // Android, React mounts and AuthCallback shows the "close browser"
             // return screen; the handshake above is already stored so the poll
             // completes the login the instant the user closes the tab.
-            var ua = navigator.userAgent || '';
-            var isIOS = /iPad|iPhone|iPod/.test(ua) && !/Windows Phone/.test(ua);
             if (isIOS) {
               try { window.location.replace('joba24://auth-callback?access_token=' + encodeURIComponent(t)); } catch (e) {}
             }

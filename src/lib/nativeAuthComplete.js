@@ -1,15 +1,25 @@
 import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
+import { Capacitor } from '@capacitor/core';
 
-// Poll the nativeAuthHandshake function via a raw fetch (NOT the SDK).
-// We use the ABSOLUTE base44.app URL (not a relative '/api/...') so the store
-// (in the external browser) and the poll (in the native app, whose WebView
-// origin is joba24.com) hit the EXACT same backend endpoint directly —
-// bypassing the joba24.com /api proxy, which can drop function POSTs and
-// cause the login to silently never complete (close browser → back to login).
-// CORS is fine: the Base44 SDK already calls base44.app cross-origin from
-// joba24.com.
-const HANDSHAKE_URL = 'https://joba24.base44.app/api/functions/nativeAuthHandshake';
+// Poll/store the nativeAuthHandshake token via a raw fetch (NOT the SDK).
+//
+// PLATFORM-GATED: iOS already completes the handshake reliably through the
+// joba24.com /api proxy (relative URL) — we keep that path on iOS to avoid any
+// regression. Android's WebView/proxy combo has historically failed to
+// complete the handshake via the proxy (close browser → back to login), so on
+// Android we bypass the proxy and call base44.app directly. The Base44 SDK
+// already calls base44.app cross-origin from joba24.com, so CORS is fine.
+function isAndroidContext() {
+  try {
+    if (Capacitor.isNativePlatform()) return Capacitor.getPlatform() === 'android';
+  } catch {}
+  // External browser (AuthCallback / NativeOAuthBounce run here, not native)
+  return typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+}
+const HANDSHAKE_URL = isAndroidContext()
+  ? 'https://joba24.base44.app/api/functions/nativeAuthHandshake'
+  : '/api/functions/nativeAuthHandshake';
 export async function pollHandshakeToken(sid) {
   if (!sid) return null;
   try {
