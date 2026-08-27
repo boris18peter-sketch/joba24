@@ -355,7 +355,17 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     if (isNative) {
       const sid = 'hs_' + Date.now() + '_' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
       localStorage.setItem('joba24_auth_sid', sid);
-      const fromUrl = `${PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
+      // from_url MUST be on the Base44 canonical domain (appBaseUrl = joba24.base44.app),
+      // NOT on the joba24.com custom domain. The Base44 OAuth backend only honors
+      // same-domain from_url values — a joba24.com from_url is rejected and the
+      // backend falls back to a base44.app redirect that DROPS the sid query param.
+      // Without the sid, the native poll can't match the handshake by sid and falls
+      // back to "most-recent record", which can return a stale token → me() fails
+      // after reload → the user is sent straight back to the login modal.
+      // Keeping from_url on base44.app preserves the sid so the poll matches
+      // exactly. iOS is unaffected: it returns via the joba24:// scheme, which
+      // carries the access_token directly regardless of the from_url host.
+      const fromUrl = `${appParams.appBaseUrl || PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
       // Send the login request directly to the app's canonical base URL
       // (app_base_url, e.g. joba24.base44.app) — NOT via the joba24.com /api
       // proxy, which strips the from_url and makes the backend fall back to a

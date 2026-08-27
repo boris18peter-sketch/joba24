@@ -39,16 +39,13 @@
             if (s) sessionStorage.setItem('joba24_oauth_sid', s);
             var ua = navigator.userAgent || '';
             var isIOS = /iPad|iPhone|iPod/.test(ua) && !/Windows Phone/.test(ua);
-            var isAndroid = /android/i.test(ua);
             // Store the handshake (fallback for the native poll) — fire-and-forget.
-            // iOS keeps the relative URL (joba24.com /api proxy works there).
-            // Android bypasses the proxy and calls base44.app directly (the proxy
-            // can drop the function POST on Android → login never completes).
-            var hsUrl = isAndroid
-              ? 'https://joba24.base44.app/api/functions/nativeAuthHandshake'
-              : '/api/functions/nativeAuthHandshake';
+            // Relative path resolves to this page's own origin (base44.app on the
+            // /auth-callback page, joba24.com elsewhere), same Base44 backend the
+            // native poll reads from. The sid is preserved via the base44.app
+            // from_url (set in LoginPromptModal), so the poll matches by sid.
             try {
-              fetch(hsUrl, {
+              fetch('/api/functions/nativeAuthHandshake', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'store', sid: s || null, token: t })
