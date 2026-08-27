@@ -2,12 +2,18 @@ import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 
 // Poll the nativeAuthHandshake function via a raw fetch (NOT the SDK).
-// A direct POST to /api/functions/nativeAuthHandshake reliably returns
-// { token } with no auth required.
+// We use the ABSOLUTE base44.app URL (not a relative '/api/...') so the store
+// (in the external browser) and the poll (in the native app, whose WebView
+// origin is joba24.com) hit the EXACT same backend endpoint directly —
+// bypassing the joba24.com /api proxy, which can drop function POSTs and
+// cause the login to silently never complete (close browser → back to login).
+// CORS is fine: the Base44 SDK already calls base44.app cross-origin from
+// joba24.com.
+const HANDSHAKE_URL = 'https://joba24.base44.app/api/functions/nativeAuthHandshake';
 export async function pollHandshakeToken(sid) {
   if (!sid) return null;
   try {
-    const r = await fetch('/api/functions/nativeAuthHandshake', {
+    const r = await fetch(HANDSHAKE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'poll', sid }),
@@ -28,7 +34,7 @@ export async function pollHandshakeToken(sid) {
 export async function storeHandshakeToken(sid, token) {
   if (!token) return false;
   try {
-    const r = await fetch('/api/functions/nativeAuthHandshake', {
+    const r = await fetch(HANDSHAKE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'store', sid: sid || null, token }),

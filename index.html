@@ -39,7 +39,7 @@
             if (s) sessionStorage.setItem('joba24_oauth_sid', s);
             // Store the handshake (fallback for the native poll) — fire-and-forget.
             try {
-              fetch('/api/functions/nativeAuthHandshake', {
+              fetch('https://joba24.base44.app/api/functions/nativeAuthHandshake', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'store', sid: s || null, token: t })
