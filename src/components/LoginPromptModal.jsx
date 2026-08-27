@@ -298,6 +298,10 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
   const [waitingForAuth, setWaitingForAuth] = useState(false);
 
+  // Apple Sign-In only works on Apple devices/browsers. On Android (native app
+  // or Android browser) the button is useless and misleading — hide it there.
+  const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
   // Cancel the waiting state — clears the sid so the background poller stops.
   const handleCancelAuth = () => {
     localStorage.removeItem('joba24_auth_sid');
@@ -484,13 +488,15 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                   <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
                 </div>
 
-                <ProviderButton
-                  onClick={handleApple}
-                  bg="#000"
-                  color="white"
-                  border="#000"
-                  label="המשך עם Apple"
-                />
+                {isAndroid ? null : (
+                  <ProviderButton
+                    onClick={handleApple}
+                    bg="#000"
+                    color="white"
+                    border="#000"
+                    label="המשך עם Apple"
+                  />
+                )}
 
                 <ProviderButton
                   onClick={handleFacebook}
