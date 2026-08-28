@@ -81,9 +81,9 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 הכללים:
 - קרא את כל התיאור בעיון. אם מוזכרות מספר עבודות נפרדות (למשל פירוק ארון + התקנת מכונת כביסה + תיקון מגירות + תליית מנורה), המחיר הוא סכום כל העבודות יחד, לא מחיר של עבודה אחת.
 - אל תתעלם מאף עבודה שמוזכרת בתיאור. ככל שיש יותר עבודות או שהן מורכבות יותר, המחיר עולה בהתאם.
-- min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות
-- min תמיד קטן מ-max
-- הטווח לא יעלה על ${isHourly ? '20' : '120'} ₪ הפרש
+- min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות.
+- min תמיד קטן מ-max בפער משמעותי — לפחות 15% מהמחיר (ולא פחות מ-${isHourly ? '10' : '50'} ₪). אסור ש-min יהיה שווה ל-max.
+- הטה את ההמלצה לכיוון העליון של הטווח הריאלי כדי שהמשימה תהיה אטרקטיבית לעובדים — עדיף להמליץ על מחיר גבוה יותר שימשוך יותר עובדים מקצועיים.
 - מחיר המינימום: ₪${configRange.min} ${isHourly ? 'לשעה' : ''}
 - ${isHourly ? 'המחיר הוא לשעה אחת בלבד, לא לכל המשימה' : `כשיש מספר עבודות נפרדות, המחיר יכול לעלות משמעותית על ₪${configRange.max} — הערך כל עבודה בנפרד וסכום אותן`}
 - בסס את ההמלצה על מחירי שוק ריאליים בישראל לשנת 2025 לתחום ${category}
@@ -111,8 +111,15 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
               : configRange.max;
           const clampedMin = clampToRange(Math.round(result.min / 10) * 10, minFloor, maxCeiling);
           const clampedMax = clampToRange(Math.round(result.max / 10) * 10, minFloor, maxCeiling);
-          const finalMin = Math.min(clampedMin, clampedMax);
-          const finalMax = Math.max(clampedMin, clampedMax);
+          let finalMin = Math.min(clampedMin, clampedMax);
+          let finalMax = Math.max(clampedMin, clampedMax);
+          // Guarantee a meaningful spread so we NEVER show a collapsed range
+          // like "400–400". Enforce ≥15% (or the hourly minimum) between the two.
+          const minSpread = Math.max(isHourly ? 10 : 50, Math.round(finalMax * 0.15));
+          if (finalMax - finalMin < minSpread) {
+            finalMin = Math.max(minFloor, finalMax - minSpread);
+            if (finalMax - finalMin < minSpread) finalMax = finalMin + minSpread;
+          }
           setRange({ min: finalMin, max: finalMax, reason: result.reason });
         }
       } catch (e) {
@@ -141,7 +148,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 
   return (
     <button
-      onClick={() => onAccept(Math.round((range.min + range.max) / 2))}
+      onClick={() => onAccept(Math.round((range.min + (range.max - range.min) * 0.7) / 10) * 10)}
       style={{
         display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left', cursor: 'pointer',
         background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
@@ -168,8 +175,8 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
                 {t('ps_based_on_desc')}
               </span>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b', letterSpacing: -0.5 }}>
-              ₪{range.min}–{range.max}{isHourly ? t('ps_hourly_suffix') : ''}
+            <div dir="ltr" style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b', letterSpacing: -0.5, unicodeBidi: 'isolate' }}>
+              ₪{range.min}–₪{range.max}{isHourly ? t('ps_hourly_suffix') : ''}
             </div>
           </div>
         </div>
