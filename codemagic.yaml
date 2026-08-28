@@ -131,7 +131,7 @@ workflows:
         ANDROID_VERSION_CODE: 1
         ANDROID_VERSION_NAME: "1.0.0"
       node: latest
-      java: 17
+      java: 21
     scripts:
       - name: Install npm dependencies
         script: |
@@ -219,9 +219,14 @@ workflows:
           npx cap sync android
       - name: Build signed AAB
         script: |
+          echo "Available Java versions:"
+          /usr/libexec/java_home -V 2>&1 || true
+          export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+          echo "Using JAVA_HOME: $JAVA_HOME"
+          java -version
           cd android
           chmod +x ./gradlew
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease -Dorg.gradle.java.home="$JAVA_HOME"
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
