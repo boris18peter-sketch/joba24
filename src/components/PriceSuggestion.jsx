@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Wand2 } from 'lucide-react';
 import { getCategoryPriceRange } from '@/lib/taskFlowConfig';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -27,8 +27,24 @@ function getRateRange(category, isHourly) {
   return getCategoryPriceRange(category);
 }
 
-function clampToRange(value, range) {
-  return Math.max(range.min, Math.min(value, range.max));
+function clampToRange(value, min, max) {
+  return Math.max(min, Math.min(value, max));
+}
+
+// Estimate how many distinct tasks the description contains.
+// Multi-task bundles (e.g. a Facebook-style post listing several jobs) should
+// be priced as the SUM of the individual tasks, not a single task.
+function countDistinctTasks(description) {
+  if (!description) return 1;
+  const text = description.trim();
+  if (!text) return 1;
+  // Split into lines, drop greetings / filler / time-only lines
+  const filler = /^(היי|שלום|מחפש|מחפשת|דחוף|אשמח|תודה|שעה|שעות|בוקר|ערב|לילה|0?\d{1,2}:\d{2}|יום|ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)/i;
+  const lines = text.split(/\n+/).map(l => l.trim()).filter(l => l.length > 4 && !filler.test(l));
+  // Also count action-phrase fragments separated by commas / bullets
+  const fragments = text.split(/[,\u2022\u05be\u00b7;]/).map(s => s.trim()).filter(s => s.length > 5);
+  const estimate = Math.max(lines.length, fragments.length);
+  return Math.max(1, Math.min(estimate, 8));
 }
 
 export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, onAccept }) {
@@ -42,6 +58,8 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     const timer = setTimeout(async () => {
       setLoading(true);
       const configRange = getRateRange(category, isHourly);
+      const taskCount = countDistinctTasks(description);
+      const isMultiTask = !isHourly && taskCount >= 2;
       try {
         const unit = isHourly ? 'לשעה אחת' : 'לכל המשימה המלאה';
         const langName = LANG_NAMES[lang] || 'English';
@@ -61,11 +79,13 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 {"min": <מספר>, "max": <מספר>, "reason": "<משפט קצר עד 8 מילים מדוע>"}
 
 הכללים:
+- קרא את כל התיאור בעיון. אם מוזכרות מספר עבודות נפרדות (למשל פירוק ארון + התקנת מכונת כביסה + תיקון מגירות + תליית מנורה), המחיר הוא סכום כל העבודות יחד, לא מחיר של עבודה אחת.
+- אל תתעלם מאף עבודה שמוזכרת בתיאור. ככל שיש יותר עבודות או שהן מורכבות יותר, המחיר עולה בהתאם.
 - min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות
 - min תמיד קטן מ-max
-- הטווח לא יעלה על ${isHourly ? '20' : '80'} ₪ הפרש
-- המחירים חייבים להיות בתוך הטווח ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''} — אל תחרוג ממנו
-- ${isHourly ? 'המחיר הוא לשעה אחת בלבד, לא לכל המשימה' : 'המחיר הוא לכל המשימה'}
+- הטווח לא יעלה על ${isHourly ? '20' : '120'} ₪ הפרש
+- מחיר המינימום: ₪${configRange.min} ${isHourly ? 'לשעה' : ''}
+- ${isHourly ? 'המחיר הוא לשעה אחת בלבד, לא לכל המשימה' : `כשיש מספר עבודות נפרדות, המחיר יכול לעלות משמעותית על ₪${configRange.max} — הערך כל עבודה בנפרד וסכום אותן`}
 - בסס את ההמלצה על מחירי שוק ריאליים בישראל לשנת 2025 לתחום ${category}
 - שדה ה-reason חייב להיות כתוב בשפה הבאה: ${langName}
 `;
@@ -81,9 +101,16 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
           },
         });
         if (!cancelled && result?.min && result?.max) {
-          // Clamp LLM response to the realistic market range
-          const clampedMin = clampToRange(Math.round(result.min / 10) * 10, configRange);
-          const clampedMax = clampToRange(Math.round(result.max / 10) * 10, configRange);
+          // For non-hourly multi-task bundles, allow the upper bound to scale up
+          // (the market range is per single task; a bundle sums several tasks).
+          const minFloor = configRange.min;
+          const maxCeiling = isHourly
+            ? configRange.max
+            : isMultiTask
+              ? Math.min(configRange.max * Math.min(taskCount + 1, 5), 3000)
+              : configRange.max;
+          const clampedMin = clampToRange(Math.round(result.min / 10) * 10, minFloor, maxCeiling);
+          const clampedMax = clampToRange(Math.round(result.max / 10) * 10, minFloor, maxCeiling);
           const finalMin = Math.min(clampedMin, clampedMax);
           const finalMax = Math.max(clampedMin, clampedMax);
           setRange({ min: finalMin, max: finalMax, reason: result.reason });
@@ -131,10 +158,15 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Sparkles size={16} color="#1a6fd4" />
+          <Wand2 size={16} color="#1a6fd4" />
           <div>
-            <div style={{ fontSize: 11, color: '#1e40af', fontWeight: 600, marginBottom: 1 }}>
-              {t('ps_recommended')}{isHourly ? ` ${t('ps_per_hour')}` : ''}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
+              <span style={{ fontSize: 12, color: '#1e40af', fontWeight: 800 }}>
+                {t('ps_recommended')}
+              </span>
+              <span style={{ fontSize: 10, color: '#1a6fd4', fontWeight: 700, background: '#dbeafe', borderRadius: 6, padding: '1px 6px' }}>
+                {t('ps_based_on_desc')}
+              </span>
             </div>
             <div style={{ fontSize: 22, fontWeight: 900, color: '#0f2b6b', letterSpacing: -0.5 }}>
               ₪{range.min}–{range.max}{isHourly ? t('ps_hourly_suffix') : ''}
@@ -148,9 +180,13 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
           {t('ps_use')}
         </div>
       </div>
-      <div style={{ fontSize: 10, color: '#3b82f6', marginTop: 6 }}>
+      <div style={{ fontSize: 10, color: '#3b82f6', marginTop: 6, lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+        <Sparkles size={11} style={{ flexShrink: 0 }} />
         {range.reason && <span>{range.reason} · </span>}
         {t('ps_market_based')}
+      </div>
+      <div style={{ fontSize: 10, color: '#64748b', marginTop: 4, fontWeight: 600 }}>
+        {t('ps_disclaimer')}
       </div>
     </button>
   );

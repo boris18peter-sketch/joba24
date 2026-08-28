@@ -18,6 +18,7 @@ import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'sonner';
 import PriceSuggestion from '@/components/PriceSuggestion';
+import { generateTaskTitle, autoGenerateTitle as heuristicTitle } from '@/lib/generateTaskTitle';
 
 import { CATEGORIES, getCategoryLabel, isHourlyCategory } from '@/lib/categories';
 import { autoDetectCategory as configAutoDetect, matchesCategory, getCategoryKeywords, formatCategoryDetails, getSuggestedExtras, getCategoryExtraFields } from '@/lib/taskFlowConfig';
@@ -509,18 +510,30 @@ export default function CreateTask() {
     return bestScore >= 1 ? bestCategory : null;
   };
 
-  // Auto-generate title from description (first sentence or ~60 chars)
-  const autoGenerateTitle = (description) => {
-    if (!description) return '';
-    const clean = description.trim();
-    // Take first sentence (up to .!?\n or first 60 chars)
-    const firstSentence = clean.split(/[.!?\n]/)[0].trim();
-    if (firstSentence.length <= 60) return firstSentence;
-    // Truncate at word boundary
-    const truncated = firstSentence.substring(0, 60);
-    const lastSpace = truncated.lastIndexOf(' ');
-    return (lastSpace > 0 ? truncated.substring(0, lastSpace) : truncated) + '...';
-  };
+  // Suggested title generated in the background from the full description.
+  // The LLM reads the ENTIRE description and returns a concise title that
+  // captures all the requested work — so a multi-task post (e.g. a Facebook
+  // post listing several jobs) isn't truncated to just its first line.
+  const [suggestedTitle, setSuggestedTitle] = useState('');
+  const titleTimerRef = useRef(null);
+  useEffect(() => {
+    if (isEditMode || isRepost) return;
+    clearTimeout(titleTimerRef.current);
+    if (!form.description || form.description.trim().length < 8) {
+      setSuggestedTitle('');
+      return;
+    }
+    // Clear any stale title from a previous description so a quick submit
+    // never uses a title that no longer matches the (now richer) description.
+    setSuggestedTitle('');
+    let cancelled = false;
+    const currentDesc = form.description;
+    titleTimerRef.current = setTimeout(async () => {
+      const title = await generateTaskTitle(currentDesc);
+      if (!cancelled) setSuggestedTitle(title);
+    }, 1200);
+    return () => { cancelled = true; clearTimeout(titleTimerRef.current); };
+  }, [form.description, isEditMode, isRepost]);
 
   // Check if the combined title+description matches the selected category
   // Returns error string if mismatch, null if ok
@@ -708,8 +721,10 @@ export default function CreateTask() {
       return;
     }
 
-    // Auto-generated fields
-    const autoTitle = autoGenerateTitle(form.description);
+    // Title is generated in the background from the full description (captures
+    // the whole scope of work, not just the first line). Fall back to the
+    // heuristic if the background generation hasn't finished yet.
+    const autoTitle = suggestedTitle || heuristicTitle(form.description);
     // Respect user's explicit category choice — do NOT auto-detect on submit
     const finalCategory = form.category || 'other';
 
