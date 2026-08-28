@@ -3,51 +3,21 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Star, MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, ExternalLink } from 'lucide-react';
+import { MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, Link2 } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
+import ProfileReputationCard from '@/components/profile/ProfileReputationCard';
+import ProfileWhyTrust from '@/components/profile/ProfileWhyTrust';
+import ProfileActivityStats from '@/components/profile/ProfileActivityStats';
+import ProfileReviewsPreview from '@/components/profile/ProfileReviewsPreview';
 import { getCategoryLabel } from '@/lib/categories';
 import { getCityLabel } from '@/lib/cityLabels';
-import { calculateTrustScore, getTrustLevel } from '@/lib/trustScore';
+import { calculateTrustScore } from '@/lib/trustScore';
 import { isUserVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
-
-function ReviewChips({ review }) {
-  const { t } = useLanguage();
-  const chips = [
-    review.arrived_on_time && { label: t('arrived_on_time'), color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-    review.professional && { label: t('professional'), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-    review.good_communication && { label: t('rc_communication'), color: '#1a6fd4', bg: '#eff6ff', border: '#bfdbfe' },
-    review.fair_pricing && { label: t('fair_pricing'), color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-    review.would_hire_again && { label: t('recommended'), color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
-  ].filter(Boolean);
-  if (!chips.length) return null;
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-      {chips.map(c => (
-        <span key={c.label} style={{ fontSize: 10, fontWeight: 700, color: c.color, background: c.bg, border: `1px solid ${c.border}`, borderRadius: 99, padding: '2px 8px' }}>
-          {c.label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function SectionCard({ title, children }) {
-  return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
-      {title && (
-        <div style={{ padding: '14px 16px 10px' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.5, textTransform: 'uppercase' }}>{title}</div>
-        </div>
-      )}
-      <div style={{ padding: title ? '0 16px 16px' : '16px' }}>{children}</div>
-    </div>
-  );
-}
 
 export default function PublicProfile() {
   const navigate = useNavigate();
@@ -73,16 +43,9 @@ export default function PublicProfile() {
     queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 20),
     enabled: !!userId,
   });
-
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['publicPostedTasks', userId],
     queryFn: () => base44.entities.Task.filter({ client_id: userId, status: 'COMPLETED' }, '-created_date', 20),
-    enabled: !!userId,
-  });
-
-  const { data: allReviews = [] } = useQuery({
-    queryKey: ['publicAllReviews', userId],
-    queryFn: () => base44.entities.Review.filter({ reviewee_id: userId }, '-created_date', 20),
     enabled: !!userId,
   });
 
@@ -102,73 +65,85 @@ export default function PublicProfile() {
     </div>
   );
 
-  // Prefer the live rating/count returned by getPublicUserProfile (computed from
-  // actual reviews via service role) so the rating shows even when the app-user
-  // client can't read another user's reviews (Review RLS).
-  const liveRating = user?.rating || 0;
-  const liveRatingCount = user?.rating_count || 0;
-  const avgRating = liveRating > 0 ? liveRating.toFixed(1) : '—';
-  const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
-  // Compute trust score from LIVE data (reviews + completed tasks) so the meter
-  // always reflects the user's real, current state — never stale User fields.
+  const liveRating = user.rating || 0;
+  const liveRatingCount = user.rating_count || 0;
+  const completedCount = user.tasks_completed || 0;
+  const postedCount = user.tasks_posted || 0;
+  const reviews = user.reviews || [];
+  const social = !!(user.instagram_verified || user.facebook_verified || user.tiktok_verified);
+  const verified = isUserVerified(user);
+
   const liveUser = {
     ...user,
-    rating: allReviews.length > 0 ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length) : (user.rating || 0),
-    rating_count: allReviews.length || user.rating_count || 0,
+    rating: reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) : liveRating,
+    rating_count: reviews.length || liveRatingCount || 0,
   };
-  const trustScore = calculateTrustScore(liveUser, { tasks: completedTasks, reviews: allReviews });
-  const trustLevel = getTrustLevel(trustScore);
+  const trustScore = calculateTrustScore(liveUser, { reviews });
+
+  const cities = user.preferred_cities || [];
+  const categories = user.preferred_categories || [];
+  const initials = user.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
   return (
     <div style={{ background: 'var(--surface-1)', paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ── Header ── */}
-      <div style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)', padding: '14px 20px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => navigate(-1)} style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--surface-3)', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <ChevronLeft size={18} color="var(--text-2)" style={{ transform: 'rotate(180deg)' }} />
+      {/* ── Back bar ── */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(10,82,176,0.97)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, backdropFilter: 'blur(8px)' }}>
+        <button onClick={() => navigate(-1)} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <ChevronLeft size={17} color="white" style={{ transform: 'rotate(180deg)' }} />
         </button>
-        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-1)' }}>{t('pp_user_profile')}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>{t('pp_user_profile')}</span>
       </div>
 
-      {/* ── Avatar + Name ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 20px 24px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
-        <div style={{
-          width: 88, height: 88, borderRadius: '50%',
-          background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 30, fontWeight: 900, color: 'white',
-          overflow: 'hidden', marginBottom: 16,
-          boxShadow: '0 4px 20px rgba(26,111,212,0.3)',
-        }}>
-          {user.profile_photo
-            ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : initials}
-        </div>
+      {/* ── SECTION 1 — IDENTITY ── */}
+      <div style={{
+        background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 55%, #2563eb 100%)',
+        paddingBottom: 18, position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+        <div style={{ position: 'absolute', bottom: -40, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{user.full_name}</span>
-          {isUserVerified(user) && (user.instagram_verified || user.facebook_verified || user.tiktok_verified)
-            ? <GoldBadge size="md" />
-            : isUserVerified(user) && <VerifiedBadge size="md" />}
-        </div>
-        {/* Stats */}
-        <div style={{ display: 'flex', gap: 0, marginTop: 20, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 340 }}>
-          {[
-            { value: completedTasks.length, label: t('pr_jobs_done') },
-            { value: postedTasks.length, label: t('pr_jobs_posted') },
-            { value: avgRating + (avgRating !== '—' ? '★' : ''), label: t('pr_rating'), sub: liveRatingCount > 0 ? `${liveRatingCount} ${t('pp_reviews')}` : null },
-          ].map((s, i, arr) => (
-            <div key={i} style={{ flex: 1, padding: '12px 6px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
-              <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-1)' }}>{s.value}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.3 }}>{s.label}</div>
-              {s.sub && <div style={{ fontSize: 9, color: 'var(--text-3)' }}>{s.sub}</div>}
-            </div>
-          ))}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 20px 0' }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)',
+            border: '3px solid rgba(255,255,255,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, fontWeight: 900, color: 'white',
+            overflow: 'hidden', marginBottom: 8,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+          }}>
+            {user.profile_photo
+              ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initials}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{user.full_name}</span>
+            {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+            {verified && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(255,255,255,0.22)' }}>
+                <ShieldCheck size={11} color="#4ade80" /> {t('pr_identity_verified')}
+              </span>
+            )}
+            {social && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(251,191,36,0.22)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(251,191,36,0.4)' }}>
+                <Link2 size={11} color="#fbbf24" /> {t('pr_social_connected')}
+              </span>
+            )}
+            {cities.length > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <MapPin size={11} /> {getCityLabel(cities[0], lang)}{cities.length > 1 ? ` +${cities.length - 1}` : ''}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-        {/* Phone — revealed only for approved worker on caller's task */}
+      <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Phone — revealed only for approved worker */}
         {user.phone && (
           <a href={`tel:${user.phone}`} dir="ltr"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 14, background: 'linear-gradient(135deg,#059669,#047857)', color: 'white', fontWeight: 800, fontSize: 15, textDecoration: 'none', boxShadow: '0 4px 14px rgba(5,150,105,0.3)' }}>
@@ -176,74 +151,120 @@ export default function PublicProfile() {
           </a>
         )}
 
-        {/* Trust bar — computed from live reviews + completed tasks. Public mode hides improvement guidance. */}
-        <TrustCard user={liveUser} reviews={allReviews} tasks={completedTasks} isPublic />
+        {/* SECTION 2 — REPUTATION */}
+        <ProfileReputationCard rating={liveRating} reviewCount={liveRatingCount} />
 
-        {/* Bio */}
+        {/* SECTION 2b — Reliability */}
+        <TrustCard user={liveUser} reviews={reviews} tasks={[]} isPublic />
+
+        {/* SECTION 3 — WHY TRUST */}
+        <ProfileWhyTrust
+          isVerified={verified}
+          hasSocial={social}
+          rating={liveRating}
+          reviewCount={liveRatingCount}
+          reliabilityPct={trustScore}
+          completedCount={completedCount}
+        />
+
+        {/* SECTION 4 — ACTIVITY */}
+        <ProfileActivityStats completedCount={completedCount} postedCount={postedCount} />
+
+        {/* SECTION 5 — REVIEWS preview */}
+        <ProfileReviewsPreview
+          reviews={reviews}
+          rating={liveRating}
+          onViewAll={() => setShowUnifiedHistory(true)}
+        />
+
+        {/* About */}
         {user.bio && (
-          <SectionCard title={t('pr_about')}>
-            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.65, margin: 0 }}>{user.bio}</p>
-          </SectionCard>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>{t('pr_about')}</div>
+            <p className="selectable-text" style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{user.bio}</p>
+          </div>
         )}
 
-        {/* Categories — תחומי עיסוק */}
-        {user.preferred_categories?.length > 0 && (
-          <SectionCard title={t('pr_professions')}>
+        {/* SECTION 6 — ABOUT ME */}
+        {(user.profile_media?.length > 0 || user.intro_video_url) && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <span style={{ fontSize: 14 }}>👋</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
+            </div>
+            <ProfileMediaGallery
+              media={[
+                ...(user.intro_video_url ? [{ type: 'video', url: user.intro_video_url }] : []),
+                ...(user.profile_media || []),
+              ]}
+              isEditing={false}
+            />
+          </div>
+        )}
+
+        {/* SECTION 7 — PROFESSIONAL AREAS */}
+        {categories.length > 0 && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <span style={{ fontSize: 13 }}>🔧</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_professions')}</span>
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.preferred_categories.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', border: '1px solid #bfdbfe', padding: '5px 14px', borderRadius: 20, fontWeight: 600 }}>
+              {categories.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#eff6ff', color: '#1a6fd4', padding: '5px 14px', borderRadius: 20, fontWeight: 600, border: '1px solid #bfdbfe' }}>
                   {getCategoryLabel(c, t)}
                 </span>
               ))}
             </div>
-          </SectionCard>
+          </div>
         )}
 
-        {/* Cities — אזורי פעילות */}
-        {user.preferred_cities?.length > 0 && (
-          <SectionCard title={t('pr_areas')}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {user.preferred_cities.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {getCityLabel(c, lang)}
-                </span>
-              ))}
-            </div>
-          </SectionCard>
-        )}
-
-        {/* Certificates — תעודות מקצוע (uploaded documents only; legacy text `certificates` array not shown) */}
+        {/* Certificates */}
         {(user.certificate_files?.length > 0) && (
-          <SectionCard title={t('pr_certs')}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <FileText size={12} color="var(--text-3)" />
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_certs')}</span>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(user.certificate_files || []).map(doc => (
-                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
-                  <FileText size={16} color="#16a34a" />
+                <a key={doc.url} href={doc.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', textDecoration: 'none' }}>
+                  <FileText size={16} color="#16a34a" style={{ flexShrink: 0 }} />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name}</span>
                   <span style={{ fontSize: 11, color: '#86efac' }}>{t('pr_view')}</span>
                 </a>
               ))}
             </div>
-          </SectionCard>
+          </div>
         )}
 
-        {/* Media Gallery */}
-        {(user.profile_media?.length > 0 || user.intro_video_url) && (
-          <SectionCard title={t('pr_media_gallery')}>
-            <ProfileMediaGallery
-              media={[
-                ...(user.intro_video_url ? [{ type: 'video', url: user.intro_video_url }] : []),
-                ...(user.profile_media || [])
-              ]}
-              isEditing={false}
-            />
-          </SectionCard>
+        {/* SECTION 8 — SERVICE AREAS */}
+        {cities.length > 0 && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <span style={{ fontSize: 13 }}>📍</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_areas')}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginRight: 'auto' }}>
+                {t('pr_active_in_areas', { n: cities.length })}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {cities.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={11} /> {getCityLabel(c, lang)}
+                </span>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* Social Links — only VERIFIED platforms are shown as links */}
-        {(user.instagram_verified || user.facebook_verified || user.tiktok_verified) && (
-          <SectionCard title={t('pp_social_networks')}>
+        {/* SECTION 9 — SOCIAL NETWORKS (verified only) */}
+        {social && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
+              <span style={{ fontSize: 13 }}>🔗</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pp_social_networks')}</span>
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               {[
                 { key: 'instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
@@ -260,32 +281,32 @@ export default function PublicProfile() {
                 </a>
               ))}
             </div>
-          </SectionCard>
+          </div>
         )}
 
-        {/* Unified History & Reviews button */}
-        {(completedTasks.length > 0 || allReviews.length > 0) && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 18, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
+        {/* Unified history button */}
+        {(completedCount > 0 || postedCount > 0 || reviews.length > 0) && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', overflow: 'hidden' }}>
             <button onClick={() => setShowUnifiedHistory(true)}
-              style={{ all: 'unset', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', cursor: 'pointer' }}
+              style={{ all: 'unset', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '13px 14px', cursor: 'pointer' }}
               onPointerDown={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
               onPointerUp={e => { e.currentTarget.style.background = ''; }}
               onPointerLeave={e => { e.currentTarget.style.background = ''; }}
             >
-              <div style={{ width: 42, height: 42, borderRadius: 13, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Clock size={18} color="#7c3aed" />
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Clock size={17} color="#7c3aed" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{completedTasks.length + postedTasks.length} {t('tasks')} · {allReviews.length} {t('pp_reviews')} · {avgRating !== '—' ? `${avgRating}★ ${t('pp_history_avg')}` : ''}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{t('pr_history_reviews')}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{completedCount + postedCount} {t('tasks')} · {reviews.length} {t('pp_reviews')}</div>
               </div>
-              <ChevronLeft size={16} color="var(--text-3)" />
+              <ChevronLeft size={15} color="var(--text-3)" />
             </button>
           </div>
         )}
 
         {/* Empty */}
-        {!user.bio && !user.preferred_categories?.length && completedTasks.length === 0 && allReviews.length === 0 && (
+        {!user.bio && !categories.length && completedCount === 0 && reviews.length === 0 && !social && (
           <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--text-3)' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
             <div style={{ fontSize: 15, fontWeight: 700 }}>{t('pp_user_no_profile')}</div>
@@ -295,7 +316,7 @@ export default function PublicProfile() {
         <div style={{ height: 16 }} />
       </div>
 
-      {/* ── Unified History & Reviews Sheet ── */}
+      {/* Unified History Sheet */}
       {showUnifiedHistory && createPortal(
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setShowUnifiedHistory(false)}>
           <div style={{ background: 'var(--surface-2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, maxHeight: '82vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
@@ -306,7 +327,7 @@ export default function PublicProfile() {
               </button>
             </div>
             <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }} dir={isRTL ? 'rtl' : 'ltr'}>
-              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={allReviews} userId={userId} clickable={false} hidePrices />
+              <TaskReviewHistory tasks={[...completedTasks, ...postedTasks]} reviews={reviews} userId={userId} clickable={false} hidePrices />
             </div>
           </div>
         </div>,

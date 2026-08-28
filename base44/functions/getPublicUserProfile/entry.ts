@@ -37,6 +37,8 @@ Deno.serve(async (req) => {
     const computedRatingCount = reviews.length || targetUser.rating_count || 0;
     const completedTasks = await base44.asServiceRole.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 200);
     const computedTasksCompleted = completedTasks.length || targetUser.tasks_completed || 0;
+    const postedTasks = await base44.asServiceRole.entities.Task.filter({ client_id: userId, status: 'COMPLETED' }, '-created_date', 200);
+    const computedTasksPosted = postedTasks.length || 0;
 
     return Response.json({
       user: {
@@ -49,6 +51,19 @@ Deno.serve(async (req) => {
         rating: computedRating,
         rating_count: computedRatingCount,
         tasks_completed: computedTasksCompleted,
+        tasks_posted: computedTasksPosted,
+        reviews: reviews.map(r => ({
+          id: r.id,
+          rating: r.rating,
+          comment: r.comment,
+          role: r.role,
+          created_date: r.created_date,
+          arrived_on_time: r.arrived_on_time,
+          professional: r.professional,
+          good_communication: r.good_communication,
+          fair_pricing: r.fair_pricing,
+          would_hire_again: r.would_hire_again,
+        })),
         bio: targetUser.bio,
         intro_video_url: targetUser.intro_video_url,
         phone: revealPhone ? targetUser.phone : undefined,
