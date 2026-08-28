@@ -65,7 +65,7 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION=2.130298.0 \
-            CURRENT_PROJECT_VERSION=9
+            CURRENT_PROJECT_VERSION=6
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
@@ -120,20 +120,21 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+
   android-workflow:
     name: Joba24 Android Workflow
-    max_build_duration: 120
-    instance_type: mac_mini_m2
+    max_build_duration: 60
+    instance_type: linux_x2
     integrations:
       google_play: Joba24
     environment:
       groups:
         - android_signing
       vars:
-        PACKAGE_NAME: "com.base69e6bdb4986a04a256653a23.app"
-        ANDROID_VERSION_NAME: "1.0"
-        ANDROID_VERSION_CODE: "1"
+        ANDROID_VERSION_CODE: 1
+        ANDROID_VERSION_NAME: "1.0.0"
       node: latest
+      java: 17
     scripts:
       - name: Install npm dependencies
         script: |
@@ -141,33 +142,94 @@ workflows:
       - name: Build web app
         script: |
           npm run build
-      - name: Generate Capacitor Android project
+      - name: Add Android platform
         script: |
-          ./node_modules/.bin/cap add android
-      - name: Inject joba24:// deep-link intent-filter
+          npx cap add android
+      - name: Patch AndroidManifest.xml with joba24:// intent-filter
         script: |
-          python3 scripts/patch-android-manifest.py
-      - name: Configure release signing & version
+          python3 << 'PYEOF'
+          manifest_path = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest_path, "r") as f:
+              content = f.read()
+
+          intent_filter_block = '''
+                      <intent-filter android:autoVerify="false">
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="joba24" />
+                      </intent-filter>
+          '''
+
+          count = content.count("</activity>")
+          if count != 1:
+              raise SystemExit(f"ERROR: expected exactly 1 </activity> tag, found {count} - manifest structure changed, review the patch script")
+
+          content = content.replace("</activity>", intent_filter_block + "        </activity>", 1)
+
+          with open(manifest_path, "w") as f:
+              f.write(content)
+
+          print("Manifest patched successfully")
+          print(content)
+          PYEOF
+      - name: Patch build.gradle with signing config and version
         script: |
-          python3 scripts/configure-android-signing.py
+          python3 << 'PYEOF'
+          import os
+
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, "r") as f:
+              content = f.read()
+
+          anchor = 'compileSdk = rootProject.ext.compileSdkVersion'
+          if content.count(anchor) != 1:
+              raise SystemExit(f"ERROR: expected exactly 1 occurrence of compileSdk anchor, found {content.count(anchor)}")
+
+          signing_block = anchor + '''
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }'''
+          content = content.replace(anchor, signing_block, 1)
+
+          release_anchor = "release {\n            minifyEnabled false"
+          if content.count(release_anchor) != 1:
+              raise SystemExit(f"ERROR: expected exactly 1 occurrence of release buildType anchor, found {content.count(release_anchor)}")
+          content = content.replace(
+              release_anchor,
+              "release {\n            signingConfig signingConfigs.release\n            minifyEnabled false",
+              1
+          )
+
+          version_code = os.environ["ANDROID_VERSION_CODE"]
+          version_name = os.environ["ANDROID_VERSION_NAME"]
+          content = content.replace("versionCode 1", f"versionCode {version_code}", 1)
+          content = content.replace('versionName "1.0"', f'versionName "{version_name}"', 1)
+
+          with open(gradle_path, "w") as f:
+              f.write(content)
+
+          print("build.gradle patched successfully")
+          print(content)
+          PYEOF
       - name: Sync Capacitor Android project
         script: |
-          ./node_modules/.bin/cap sync android
+          npx cap sync android
       - name: Build signed AAB
         script: |
           cd android
+          chmod +x ./gradlew
           ./gradlew bundleRelease
-      - name: Copy AAB to artifacts dir
-        script: |
-          mkdir -p build/android
-          cp android/app/build/outputs/bundle/release/*.aab build/android/ || true
     artifacts:
-      - build/android/*.aab
-      - /tmp/gradle-*/**/*.log
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
     publishing:
       google_play:
-        credentials: $GP_SERVICE_ACCOUNT_KEY
-        track: production
-        skip_upload_metadata: true
-        skip_upload_images: true
-        skip_upload_screenshots: true
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
