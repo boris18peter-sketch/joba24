@@ -148,7 +148,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 
   return (
     <button
-      onClick={() => onAccept(Math.round((range.min + (range.max - range.min) * 0.7) / 10) * 10)}
+      onClick={() => onAccept(Math.round((range.min + range.max) / 2 / 10) * 10)}
       style={{
         display: 'block', width: '100%', textAlign: isRTL ? 'right' : 'left', cursor: 'pointer',
         background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',

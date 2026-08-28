@@ -129,7 +129,9 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{t('tc_trust_meter')}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Shield size={17} color={mainColor} /> {t('tc_how_calculated')}
+            </div>
             <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>{t('tc_what_builds')}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -242,18 +244,37 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
         onClick={() => setOpen(true)}
-        style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 14px', cursor: 'pointer', userSelect: 'none' }}
+        style={{
+          background: 'var(--surface-2)',
+          border: `1.5px solid ${barColor}40`,
+          borderRadius: 18,
+          padding: '16px 16px 14px',
+          cursor: 'pointer', userSelect: 'none',
+          boxShadow: 'var(--shadow-xs)',
+          transition: 'box-shadow 0.15s, transform 0.1s',
+        }}
+        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.99)'; }}
+        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 18, fontWeight: 900, color: barColor, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: `${barColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Shield size={22} color={barColor} />
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>{t('tc_trust_meter')}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('pr_reliability')}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
+              <span style={{ fontSize: 30, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: barColor, transition: 'color 0.15s' }}>✨ {getTrustLevelLabel(trustLevel, t)}</span>
+            </div>
+          </div>
         </div>
-        <div style={{ height: 10, background: '#e8f5e9', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
+        <div style={{ height: 8, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden', marginBottom: 10 }}>
           <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, boxShadow: `0 0 10px ${barColor}80`, transition: 'background-color 0.1s, box-shadow 0.1s' }} />
         </div>
-        <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: barColor, transition: 'color 0.15s' }}>✨ {getTrustLevelLabel(trustLevel, t)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: barColor, opacity: 0.85 }}>
+          <span>👆</span> {t('pr_reliability_hint')}
+        </div>
       </div>
 
       {open && (

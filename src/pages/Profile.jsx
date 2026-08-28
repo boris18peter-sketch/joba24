@@ -3,10 +3,9 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
-  Star, LogOut, Briefcase, CreditCard, ChevronLeft, Camera, Loader2,
-  X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, Award,
+  LogOut, Briefcase, CreditCard, ChevronLeft, Camera, Loader2,
+  X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, ShieldCheck, Link2,
 } from 'lucide-react';
-import TaskCard from '@/components/TaskCard';
 import VerificationStatusBanner from '@/components/VerificationStatusBanner';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
@@ -15,14 +14,19 @@ import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
+import ProfileReputationCard from '@/components/profile/ProfileReputationCard';
+import ProfileWhyTrust from '@/components/profile/ProfileWhyTrust';
+import ProfileActivityStats from '@/components/profile/ProfileActivityStats';
+import ProfileReviewsPreview from '@/components/profile/ProfileReviewsPreview';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
 import { getCityLabel } from '@/lib/cityLabels';
 import { computeLockedJobas } from '@/lib/jobaBalance';
+import { calculateTrustScore } from '@/lib/trustScore';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { isUserVerified } from '@/lib/utils';
+import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 
 function MenuRow({ icon: Icon, iconBg, iconColor, label, sub, onClick, to, danger, last }) {
   const inner = (
@@ -72,10 +76,8 @@ export default function Profile() {
     try {
       await base44.auth.deleteAccount();
     } catch (e) {
-      // Fallback: mark account as deleted via updateMe
       try { await base44.auth.updateMe({ account_deleted: true }); } catch {}
     }
-    // Log out and redirect to welcome page
     await base44.auth.logout('/');
     setDeleteLoading(false);
   };
@@ -90,9 +92,6 @@ export default function Profile() {
     setUploadingPhoto(false);
   };
 
-  // Use the real-time synced user from AuthContext — this ensures is_verified,
-  // kyc_status, worker_credits etc. update immediately when the admin changes them
-  // (via WebSocket subscription + 45s polling fallback in AuthContext).
   const me = authUser;
   const isLoading = !me;
 
@@ -120,7 +119,6 @@ export default function Profile() {
     staleTime: 30000,
   });
 
-  // Tasks the user posted as a client (completed) — for the "posted" stat
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['postedTasks', me?.id],
     queryFn: () => base44.entities.Task.filter({ client_id: me.id, status: 'COMPLETED' }, '-created_date', 50),
@@ -128,7 +126,6 @@ export default function Profile() {
     staleTime: 30000,
   });
 
-  // Pending applications — for locked (committed) balance display next to credits
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myLockedJobas', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id, status: 'pending' }, '-created_date', 50),
@@ -147,23 +144,23 @@ export default function Profile() {
 
   const completedCount = workerTasks.length;
   const postedCount = postedTasks.length;
-  // Prefer the denormalized rating, but fall back to the actual reviews so the
-  // rating shows even when the User field is stale/wiped (e.g. by the simulator).
   const reviewsAvg = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const rating = (me?.rating && me.rating > 0) ? me.rating : reviewsAvg;
   const avgRating = rating > 0 ? rating.toFixed(1) : '—';
   const initials = me?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   const cities = me?.preferred_cities || [];
   const categories = me?.preferred_categories || [];
+  const verified = isUserVerified(me);
+  const social = hasSocialVerified(me);
+  const trustScore = calculateTrustScore(me, { tasks: workerTasks, reviews });
 
   return (
     <div style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* ── Hero: gradient header + avatar + name + stats ── */}
+      {/* ── SECTION 1 — IDENTITY (compact hero) ── */}
       <div style={{
-        background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
-        paddingBottom: 20, position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(160deg, #0a52b0 0%, #1a6fd4 55%, #2563eb 100%)',
+        paddingBottom: 16, position: 'relative', overflow: 'hidden',
       }}>
-        {/* Decorative circles */}
         <div style={{ position: 'absolute', top: -30, left: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
         <div style={{ position: 'absolute', bottom: -40, right: -10, width: 80, height: 80, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
 
@@ -178,17 +175,17 @@ export default function Profile() {
           </button>
         </div>
 
-        {/* Avatar + Name */}
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 20px 0' }}>
-          <div style={{ position: 'relative', marginBottom: 12 }}>
+        {/* Avatar + Name + badges — tighter, identity-first */}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 20px 0' }}>
+          <div style={{ position: 'relative', marginBottom: 8 }}>
             <div
               onClick={() => photoInputRef.current?.click()}
               style={{
-                width: 84, height: 84, borderRadius: '50%',
+                width: 76, height: 76, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.15)',
                 border: '3px solid rgba(255,255,255,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, fontWeight: 900, color: 'white',
+                fontSize: 26, fontWeight: 900, color: 'white',
                 overflow: 'hidden', cursor: 'pointer',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
               }}
@@ -208,54 +205,93 @@ export default function Profile() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
-            {isUserVerified(me) && (me?.instagram_verified || me?.facebook_verified || me?.tiktok_verified)
-              ? <GoldBadge size="md" />
-              : isUserVerified(me) && <VerifiedBadge size="md" />}
+            {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
           </div>
-        </div>
 
-        {/* Stats — inline, connected */}
-        <div style={{
-          position: 'relative', display: 'flex', margin: '14px 18px 0',
-          background: 'rgba(255,255,255,0.1)', borderRadius: 14,
-          border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
-        }}>
-          {[
-            { value: completedCount, label: t('pr_jobs_done') },
-            { value: postedCount, label: t('pr_jobs_posted') },
-            { value: avgRating + (rating > 0 ? '★' : ''), label: t('pr_rating'), sub: reviews.length > 0 ? t('pr_reviews_count', { n: reviews.length }) : null },
-          ].map((s, i, arr) => (
-            <div key={i} style={{ flex: 1, padding: '10px 8px', textAlign: 'center', borderLeft: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}>
-              <div style={{ fontSize: 17, fontWeight: 900, color: 'white' }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 1, lineHeight: 1.3 }}>{s.label}</div>
-              {s.sub && <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>{s.sub}</div>}
-            </div>
-          ))}
+          {/* Verification + location chips */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+            {verified && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(255,255,255,0.22)' }}>
+                <ShieldCheck size={11} color="#4ade80" /> {t('pr_identity_verified')}
+              </span>
+            )}
+            {social && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(251,191,36,0.22)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(251,191,36,0.4)' }}>
+                <Link2 size={11} color="#fbbf24" /> {t('pr_social_connected')}
+              </span>
+            )}
+            {cities.length > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <MapPin size={11} /> {getCityLabel(cities[0], lang)}{cities.length > 1 ? ` +${cities.length - 1}` : ''}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Content: connected sections with minimal spacing ── */}
+      {/* ── Content: trust hierarchy ── */}
       <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* Verify CTA — unified, status-aware (same banner as Home feed) */}
-        <VerificationStatusBanner me={me} />
+        {/* SECTION 2 — REPUTATION (dominant rating) */}
+        <ProfileReputationCard rating={rating} reviewCount={reviews.length} />
 
-        {/* Trust Bar — opens a popup with "how to improve" guide */}
+        {/* SECTION 2b — Reliability score (prominent, clickable → existing modal) */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
+
+        {/* SECTION 3 — WHY TRUST */}
+        <ProfileWhyTrust
+          isVerified={verified}
+          hasSocial={social}
+          rating={rating}
+          reviewCount={reviews.length}
+          reliabilityPct={trustScore}
+          completedCount={completedCount}
+        />
+
+        {/* SECTION 4 — JOBA24 ACTIVITY */}
+        <ProfileActivityStats completedCount={completedCount} postedCount={postedCount} />
+
+        {/* SECTION 5 — REVIEWS preview */}
+        <ProfileReviewsPreview
+          reviews={reviews}
+          rating={rating}
+          onViewAll={() => setShowUnifiedHistory(true)}
+        />
+
+        {/* Verify CTA — status-aware */}
+        <VerificationStatusBanner me={me} />
 
         {/* About */}
         {me?.bio && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 6 }}>{t('pr_about')}</div>
-            <p style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
+            <p className="selectable-text" style={{ fontSize: 14, color: 'var(--text-1)', lineHeight: 1.6, margin: 0 }}>{me.bio}</p>
           </div>
         )}
 
-        {/* Categories — תחומי עיסוק (matches public profile wording) */}
+        {/* SECTION 6 — ABOUT ME (personal gallery, renamed) */}
+        {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+              <span style={{ fontSize: 14 }}>👋</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
+            </div>
+            <ProfileMediaGallery
+              media={[
+                ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
+                ...(me?.profile_media || []),
+              ]}
+              isEditing={false}
+            />
+          </div>
+        )}
+
+        {/* SECTION 7 — PROFESSIONAL AREAS */}
         {categories.length > 0 && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Award size={12} /> {t('pr_professions')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <span style={{ fontSize: 13 }}>🔧</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_professions')}</span>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {categories.map(c => (
@@ -267,29 +303,12 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Cities — אזורי פעילות (matches public profile wording) */}
-        {cities.length > 0 && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <MapPin size={12} /> {t('pr_areas')}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {cities.map(c => (
-                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} /> {getCityLabel(c, lang)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Certificates — תעודות מקצוע (uploaded documents only).
-            The legacy text `certificates` array is intentionally NOT rendered —
-            it's not editable in profile settings, so showing it was misleading. */}
+        {/* Certificates — professional documents */}
         {(me?.certificate_files?.length > 0) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <FileText size={12} /> {t('pr_certs')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <FileText size={12} color="var(--text-3)" />
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_certs')}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(me?.certificate_files || []).map(doc => (
@@ -303,24 +322,27 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Media Gallery */}
-        {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
-         <div style={{
-           background: 'var(--surface-2)', borderRadius: 14,
-           border: '1px solid var(--border-1)', padding: 14,
-         }}>
-           <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', marginBottom: 10 }}>{t('pr_media_gallery')}</div>
-           <ProfileMediaGallery
-             media={[
-               ...(me?.intro_video_url ? [{ type: 'video', url: me.intro_video_url }] : []),
-               ...(me?.profile_media || []),
-             ]}
-             isEditing={false}
-           />
-         </div>
+        {/* SECTION 8 — SERVICE AREAS */}
+        {cities.length > 0 && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+              <span style={{ fontSize: 13 }}>📍</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_areas')}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600, marginRight: 'auto' }}>
+                {t('pr_active_in_areas', { n: cities.length })}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {cities.map(c => (
+                <span key={c} style={{ fontSize: 13, background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', padding: '5px 14px', borderRadius: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MapPin size={11} /> {getCityLabel(c, lang)}
+                </span>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* Social Links */}
+        {/* SECTION 9 — SOCIAL NETWORKS */}
         <SocialLinksSection user={me} />
 
         {/* Subscriptions */}
