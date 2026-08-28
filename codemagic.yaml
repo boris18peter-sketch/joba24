@@ -128,8 +128,8 @@ workflows:
     integrations:
       google_play: Joba24
     environment:
-      groups:
-        - android_signing
+      android_signing:
+        - joba24_android_upload
       vars:
         ANDROID_VERSION_CODE: 1
         ANDROID_VERSION_NAME: "1.0.0"
@@ -189,10 +189,10 @@ workflows:
           signing_block = anchor + '''
               signingConfigs {
                   release {
-                      storeFile file(System.getenv("ANDROID_KEYSTORE_PATH"))
-                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
-                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                      storeFile file(System.getenv("CM_KEYSTORE_PATH"))
+                      storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("CM_KEY_ALIAS")
+                      keyPassword System.getenv("CM_KEY_PASSWORD")
                   }
               }'''
           content = content.replace(anchor, signing_block, 1)
