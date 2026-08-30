@@ -51,14 +51,27 @@
                 body: JSON.stringify({ action: 'store', sid: s || null, token: t })
               }).catch(function () {});
             } catch (e) {}
+            // Normalize to the canonical base44.app domain. The native app's
+            // LoginPromptModal builds from_url; an older app build still points it
+            // at joba24.com/auth-callback, and the Custom Tab can serve a STALE
+            // cached build for that origin (→ old "press ✕" screen, no button, no
+            // handshake store → login loop). base44.app always serves the current
+            // build, so redirect any /auth-callback landing on a different origin
+            // to base44.app (token + sid preserved, cache-buster appended). On
+            // base44.app itself this is a no-op (no redirect, no loop).
+            try {
+              if (window.location.pathname === '/auth-callback' &&
+                  window.location.origin !== 'https://joba24.base44.app') {
+                var rp = new URLSearchParams();
+                rp.set('access_token', t);
+                if (s) rp.set('sid', s);
+                rp.set('cb', String(Date.now()));
+                window.location.replace('https://joba24.base44.app/auth-callback?' + rp.toString());
+                return;
+              }
+            } catch (e) {}
             // Instantly return to the native app via the joba24:// scheme —
-            // iOS ONLY. iOS returns near-instantly via CFBundleURLTypes. Android
-            // does NOT fire the raw scheme here: a joba24:// window.location
-            // navigation blanks the Chrome Custom Tab (Chrome can't render the
-            // scheme as a webpage). Android's automatic return is handled in
-            // AuthCallback via an intent:// URL (Custom Tab-safe). The handshake
-            // store above runs for BOTH platforms so the native poll finds the
-            // token regardless of which return path is taken.
+            // iOS ONLY. (On base44.app origin after the normalize above.)
             if (isIOS) {
               try { window.location.replace('joba24://auth-callback?access_token=' + encodeURIComponent(t)); } catch (e) {}
             }
