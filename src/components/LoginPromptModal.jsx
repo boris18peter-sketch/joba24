@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
-import { isNativeLike, openExternalBrowser, buildIntentUri } from '@/lib/nativeEnv';
+import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
@@ -283,11 +283,6 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
     return () => { stopped = true; clearTimeout(t); };
   }, []);
 
-  let intentUri = null;
-  if (loginUrl) {
-    try { intentUri = buildIntentUri(loginUrl); } catch {}
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
       <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} />
@@ -295,9 +290,11 @@ function WaitingForAuthScreen({ onCancel, loginUrl }) {
       <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
         סיים את ההתחברות בדפדפן. האפליקציה תזהה את ההתחברות אוטומטית ותחזור אליך.
       </div>
-      {showManual && intentUri && (
+      {showManual && loginUrl && (
         <a
-          href={intentUri}
+          href={loginUrl}
+          target="_blank"
+          rel="noopener"
           style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             width: '100%', height: 48, borderRadius: 14, textDecoration: 'none',

@@ -43,11 +43,17 @@ export async function openExternalBrowser(url) {
     await Browser.open({ url });
     return;
   }
-  // Android WebView, no Capacitor JS bridge → launch Chrome via intent. This
-  // is a best-effort auto-fire from the user gesture; the WebView swallows it
-  // intermittently, so WaitingForAuthScreen also renders a tappable <a> fallback.
+  // Android WebView, no Capacitor JS bridge → open the SYSTEM browser via
+  // window.open(_blank). Capacitor's NATIVE WebChromeClient.onCreateWindow
+  // intercepts the new-window request and launches the URL in Chrome — this
+  // works WITHOUT the JS bridge because onCreateWindow is a native callback
+  // (unlike intent://, which the WebView swallows without the bridge). The
+  // loginUrl is on joba24.base44.app (NOT the server.url origin joba24.com), so
+  // Capacitor routes the new window to the external browser. WaitingForAuthScreen
+  // also renders a tappable <a target=_blank> fallback in case window.open is
+  // blocked.
   try {
-    window.location.href = buildIntentUri(url);
+    window.open(url, '_blank');
   } catch {
     window.location.href = url;
   }
