@@ -51,16 +51,15 @@
                 body: JSON.stringify({ action: 'store', sid: s || null, token: t })
               }).catch(function () {});
             } catch (e) {}
-            // Instantly return to the native app via the joba24:// scheme.
-            // iOS: registered via CFBundleURLTypes. Android: the custom Codemagic
-            // build registers a joba24:// intent-filter (same as iOS), so the
-            // scheme opens the app and NativeAuthListener's appUrlOpen listener
-            // completes the login. If the app isn't installed / no intent-filter
-            // (old auto-build), the scheme silently fails and React mounts →
-            // AuthCallback shows the "close browser" fallback screen; the
-            // handshake above is already stored so polling completes the login.
-            var isAndroid = /android/i.test(ua);
-            if (isIOS || isAndroid) {
+            // Instantly return to the native app via the joba24:// scheme —
+            // iOS ONLY. iOS returns near-instantly via CFBundleURLTypes. Android
+            // does NOT fire the raw scheme here: a joba24:// window.location
+            // navigation blanks the Chrome Custom Tab (Chrome can't render the
+            // scheme as a webpage). Android's automatic return is handled in
+            // AuthCallback via an intent:// URL (Custom Tab-safe). The handshake
+            // store above runs for BOTH platforms so the native poll finds the
+            // token regardless of which return path is taken.
+            if (isIOS) {
               try { window.location.replace('joba24://auth-callback?access_token=' + encodeURIComponent(t)); } catch (e) {}
             }
           }

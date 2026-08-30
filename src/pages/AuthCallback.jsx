@@ -14,11 +14,12 @@ import { NativeReturnScreen } from '@/components/NativeReturnScreen';
 //
 //   • Stores the server handshake (the native app polls it to retrieve the token).
 //   • iOS: fires the registered joba24:// scheme for an instant return.
-//   • Android (custom Codemagic build with a joba24:// intent-filter): fires the
-//     scheme for an automatic app return, then shows the "Continue in app" return
-//     screen as a fallback. If the scheme resolves, the app opens and login
-//     completes via appUrlOpen; if not, the user closes the tab and the existing
-//     handshake poll (browserFinished → NativeAuthListener) completes login.
+//   • Android (custom Codemagic build with a joba24:// intent-filter): fires an
+//     intent:// URL (Chrome Custom-Tab-safe) for an automatic app return, then
+//     shows the "Continue in app" return screen as a fallback. If the intent
+//     resolves, the app opens and login completes via appUrlOpen; if not, Chrome
+//     falls back to /auth-callback?done=1 (RETURN_FLAG set) → NativeReturnScreen,
+//     and the handshake poll (browserFinished → NativeAuthListener) completes login.
 
 const RETURN_FLAG = 'joba24_auth_return';
 
@@ -42,15 +43,17 @@ export default function AuthCallback() {
 
     if (token) {
       sessionStorage.setItem(RETURN_FLAG, '1');
+      // Clear the captured token NOW (synchronously) so any reload / intent
+      // fallback can't re-enter this branch and re-fire the scheme (infinite
+      // loop). The handshake store below still receives the token via its arg.
+      sessionStorage.removeItem('joba24_oauth_token');
+      sessionStorage.removeItem('joba24_oauth_sid');
       // Background store of the handshake via direct fetch. index.html already
       // did a fire-and-forget store on page load; this is a backup. We do NOT
       // await it — awaiting the SDK (base44.functions.invoke) hangs in the
       // Chrome Custom Tab (no auth headers), which blocks the return screen
       // from rendering → blank screen. Fire-and-forget keeps the UI instant.
-      storeHandshakeToken(sid || null, token).then(() => {
-        sessionStorage.removeItem('joba24_oauth_token');
-        sessionStorage.removeItem('joba24_oauth_sid');
-      }).catch(() => {});
+      storeHandshakeToken(sid || null, token).catch(() => {});
       if (ios) {
         // index.html already fires the joba24:// scheme the instant the token
         // is captured (before React mounts), so the app opens near-instantly.
@@ -59,13 +62,23 @@ export default function AuthCallback() {
         return;
       }
       if (android) {
-        // The custom Codemagic Android build registers a joba24:// intent-filter
-        // (same as iOS), so fire the scheme to trigger an automatic app return —
-        // NativeAuthListener's appUrlOpen listener completes the login. The
-        // return screen below stays as a fallback: if the scheme didn't resolve
-        // (old auto-build / app not installed), the user sees the "close browser"
-        // instructions and the existing handshake poll completes on browserFinished.
-        try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
+        // The custom Codemagic Android build registers a joba24:// intent-filter.
+        // Fire an intent:// URL — the Chrome Custom-Tab-safe way to launch a
+        // custom scheme — so the app opens automatically and NativeAuthListener's
+        // appUrlOpen completes the login. A RAW joba24:// navigation via
+        // window.location blanks the Custom Tab (Chrome can't render the scheme
+        // as a webpage), so we wrap it: intent://...#Intent;scheme=joba24;...;end
+        // launches joba24://auth-callback?access_token=…, and S.browser_fallback_url
+        // sends Chrome to a clean page if the app/intent-filter is absent (instead
+        // of a blank ERR_UNKNOWN_URL_SCHEME). The fallback is /auth-callback?done=1
+        // (no token); on it, RETURN_FLAG is already set and the token is gone from
+        // sessionStorage, so AuthCallback renders NativeReturnScreen (below) and
+        // the existing handshake poll finishes the login when the tab closes.
+        try {
+          const fallback = `${window.location.origin}/auth-callback?done=1`;
+          const intent = `intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+          window.location.href = intent;
+        } catch {}
         setReturnToken(token);
         setShowReturn(true);
         return;
