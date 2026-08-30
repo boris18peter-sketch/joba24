@@ -25,19 +25,29 @@ export function isNativeLike() {
 // no JS bridge, fires an intent:// that launches Chrome directly. Capacitor's
 // native WebViewClient handles intent:// via shouldOverrideUrlLoading regardless
 // of the JS bridge, so this works even when the bridge is missing.
+// Build an Android intent:// URI that launches Chrome to an https URL. Used by
+// openExternalBrowser (best-effort auto-fire) and by the WaitingForAuthScreen
+// fallback button (a real user-tapped <a href=intent://> — the most reliable
+// way to launch an intent from an embedded WebView).
+export function buildIntentUri(url) {
+  const u = new URL(url);
+  return (
+    `intent://${u.host}${u.pathname}${u.search}` +
+    `#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end`
+  );
+}
+
 export async function openExternalBrowser(url) {
   if (Capacitor.isNativePlatform()) {
     try { await Browser.close(); } catch {}
     await Browser.open({ url });
     return;
   }
-  // Android WebView, no Capacitor JS bridge → launch Chrome via intent.
+  // Android WebView, no Capacitor JS bridge → launch Chrome via intent. This
+  // is a best-effort auto-fire from the user gesture; the WebView swallows it
+  // intermittently, so WaitingForAuthScreen also renders a tappable <a> fallback.
   try {
-    const u = new URL(url);
-    const intent =
-      `intent://${u.host}${u.pathname}${u.search}` +
-      `#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end`;
-    window.location.href = intent;
+    window.location.href = buildIntentUri(url);
   } catch {
     window.location.href = url;
   }

@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
-import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
+import { isNativeLike, openExternalBrowser, buildIntentUri } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
@@ -253,11 +253,12 @@ function EmailForm({ onBack, onSuccess }) {
   );
 }
 
-function WaitingForAuthScreen({ onCancel }) {
+function WaitingForAuthScreen({ onCancel, loginUrl }) {
+  const [showManual, setShowManual] = useState(false);
   // Poll the server handshake directly from the modal. NativeAuthListener also
   // polls, but its event listeners (browserFinished / appStateChange) do not
   // fire reliably on every Android WebView. This user-visible poll guarantees
-  // the login completes the instant the user returns from the Custom Tab and
+  // the login completes the instant the user returns from the browser and
   // React resumes — the screen is on-screen, so its timers run.
   useEffect(() => {
     let stopped = false;
@@ -273,8 +274,20 @@ function WaitingForAuthScreen({ onCancel }) {
       if (!stopped) setTimeout(poll, 500);
     };
     poll();
-    return () => { stopped = true; };
+    // If the auto-fired intent:// didn't open Chrome (the WebView swallows it
+    // intermittently), surface a tappable "open browser" button after 1.5s. A
+    // real user TAP on an <a href=intent://> is the gesture the WebView most
+    // reliably launches an intent from — far more reliable than the programmatic
+    // window.location.href auto-fire.
+    const t = setTimeout(() => { if (!stopped) setShowManual(true); }, 1500);
+    return () => { stopped = true; clearTimeout(t); };
   }, []);
+
+  let intentUri = null;
+  if (loginUrl) {
+    try { intentUri = buildIntentUri(loginUrl); } catch {}
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '24px 0 12px' }}>
       <div className="animate-spin" style={{ width: 44, height: 44, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} />
@@ -282,6 +295,19 @@ function WaitingForAuthScreen({ onCancel }) {
       <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
         סיים את ההתחברות בדפדפן. האפליקציה תזהה את ההתחברות אוטומטית ותחזור אליך.
       </div>
+      {showManual && intentUri && (
+        <a
+          href={intentUri}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            width: '100%', height: 48, borderRadius: 14, textDecoration: 'none',
+            background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: '#fff',
+            fontWeight: 700, fontSize: 15, boxShadow: '0 4px 14px rgba(26,111,212,0.3)',
+          }}
+        >
+          לא נפתח? לחץ לפתיחת הדפדפן
+        </a>
+      )}
       <button
         onClick={onCancel}
         style={{
@@ -298,6 +324,7 @@ function WaitingForAuthScreen({ onCancel }) {
 export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
   const [waitingForAuth, setWaitingForAuth] = useState(false);
+  const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
 
   // Apple Sign-In only works on Apple devices/browsers. On Android (native app
   // or Android browser) the button is useless and misleading — hide it there.
@@ -382,6 +409,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       const APP_BASE44_URL = 'https://joba24.base44.app';
       const fromUrl = `${APP_BASE44_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
       const loginUrl = `${APP_BASE44_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
+      setPendingLoginUrl(loginUrl);
       openExternalBrowser(loginUrl)
         .then(() => setWaitingForAuth(true))
         .catch((err) => console.error('[LoginPromptModal] openExternalBrowser failed', err, loginUrl));
@@ -441,7 +469,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
         <div style={{ padding: '12px 20px 0' }}>
           {waitingForAuth ? (
-            <WaitingForAuthScreen onCancel={handleCancelAuth} />
+            <WaitingForAuthScreen onCancel={handleCancelAuth} loginUrl={pendingLoginUrl} />
           ) : showEmail ? (
             <EmailForm onBack={() => setShowEmail(false)} onSuccess={() => { onLogin?.(); window.location.reload(); }} />
           ) : (
