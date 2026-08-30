@@ -62,33 +62,31 @@ export default function AuthCallback() {
         return;
       }
       if (android) {
-        // The custom Codemagic Android build registers a joba24:// intent-filter.
-        // Fire an intent:// URL — the Chrome Custom-Tab-safe way to launch a
-        // custom scheme — so the app opens automatically and NativeAuthListener's
-        // appUrlOpen completes the login. A RAW joba24:// navigation via
-        // window.location blanks the Custom Tab (Chrome can't render the scheme
-        // as a webpage), so we wrap it: intent://...#Intent;scheme=joba24;...;end
-        // launches joba24://auth-callback?access_token=…, and S.browser_fallback_url
-        // sends Chrome to a clean page if the app/intent-filter is absent (instead
-        // of a blank ERR_UNKNOWN_URL_SCHEME). The fallback is /auth-callback?done=1
-        // (no token); on it, RETURN_FLAG is already set and the token is gone from
-        // sessionStorage, so AuthCallback renders NativeReturnScreen (below) and
-        // the existing handshake poll finishes the login when the tab closes.
+        // Build the intent:// URI. package= matches the Capacitor appId
+        // (capacitor.config.json) and the AndroidManifest intent-filter package;
+        // action/category mirror the manifest (VIEW + DEFAULT + BROWSABLE) so the
+        // filter resolves. When the app opens, NativeAuthListener's appUrlOpen
+        // parses access_token straight from joba24://auth-callback?access_token=…
+        // → completeNativeAuth → login finishes WITHOUT polling (token is in URI).
+        let intentUri = '';
         try {
           const fallback = `${window.location.origin}/auth-callback?done=1`;
-          // package= must match the Capacitor appId (capacitor.config.json) and the
-          // AndroidManifest intent-filter's package. WITHOUT it, Chrome Custom
-          // Tabs won't launch the app directly and silently falls back to the
-          // fallback URL — which is exactly the "app never opens" symptom. action
-          // + category mirror the manifest (action VIEW, categories DEFAULT +
-          // BROWSABLE) so the intent-filter resolves. When the app opens,
-          // NativeAuthListener's appUrlOpen parses access_token straight from the
-          // joba24://auth-callback?access_token=… URL → completeNativeAuth runs →
-          // login finishes WITHOUT polling (the token is embedded in the URI).
           const pkg = 'com.base69e6bdb4986a04a256653a23.app';
-          const intent = `intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=${pkg};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;category=android.intent.category.DEFAULT;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
-          window.location.href = intent;
+          intentUri = `intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=${pkg};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;category=android.intent.category.DEFAULT;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+          // Persist so NativeReturnScreen can render a tappable <a> on the
+          // fallback (?done=1) page too (after Chrome navigates there).
+          sessionStorage.setItem('joba24_return_intent', intentUri);
         } catch {}
+        // TEMP diagnostic (remove after verifying on device): show the exact URI.
+        try { alert('Intent URI עומד להישלח:\n\n' + intentUri); } catch {}
+        // Best-effort auto-fire. Chrome handles PROGRAMMATIC intent://
+        // (window.location.href, NO user gesture) inconsistently — it often falls
+        // back instead of launching the app, which is the symptom you're seeing.
+        // NativeReturnScreen therefore also renders a real <a href=intentUri>
+        // button: a genuine user TAP is the gesture Chrome reliably launches
+        // intent:// from. If the auto-fire falls back to ?done=1, the button is
+        // re-rendered there from sessionStorage for the user to tap.
+        try { if (intentUri) window.location.href = intentUri; } catch {}
         setReturnToken(token);
         setShowReturn(true);
         return;
