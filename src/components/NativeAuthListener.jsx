@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
+import { isNativeLike } from '@/lib/nativeEnv';
 
 // Native OAuth callback receiver.
 //
@@ -18,7 +19,8 @@ import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete
 
 export default function NativeAuthListener() {
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!isNativeLike()) return;
+    const nativeBridge = Capacitor.isNativePlatform(); // true on iOS, false on Android (no bridge)
     let stopped = false;
     let appUrlListener;
     let stateListener;
@@ -56,43 +58,53 @@ export default function NativeAuthListener() {
     };
 
     // 1) iOS: appUrlOpen fires when the joba24:// scheme opens the app.
-    (async () => {
-      try {
-        appUrlListener = await App.addListener('appUrlOpen', ({ url }) => {
-          if (!url || !url.startsWith('joba24://auth-callback')) return;
-          let token = null;
-          try {
-            const u = new URL(url);
-            token = u.searchParams.get('access_token');
-          } catch {}
-          if (token) applyToken(token);
-        });
-      } catch (err) {
-        console.error('[NativeAuthListener] appUrlOpen listener failed', err);
-      }
-    })();
+    //    Capacitor bridge only (iOS). On Android (no bridge) the joba24://
+    //    intent opens the app but this JS listener can't fire — the
+    //    visibilitychange + setInterval poll below completes login instead.
+    if (nativeBridge) {
+      (async () => {
+        try {
+          appUrlListener = await App.addListener('appUrlOpen', ({ url }) => {
+            if (!url || !url.startsWith('joba24://auth-callback')) return;
+            let token = null;
+            try {
+              const u = new URL(url);
+              token = u.searchParams.get('access_token');
+            } catch {}
+            if (token) applyToken(token);
+          });
+        } catch (err) {
+          console.error('[NativeAuthListener] appUrlOpen listener failed', err);
+        }
+      })();
+    }
 
     // 2) Keep polling while a handshake is pending.
     const pollTimer = setInterval(pollOnce, 1000);
     pollBurst();
 
-    // 3) App returns to foreground → poll immediately.
-    (async () => {
-      try {
-        stateListener = await App.addListener('appStateChange', ({ isActive }) => {
-          if (isActive) pollBurst();
-        });
-      } catch {}
-    })();
+    // 3) App returns to foreground → poll immediately. (Capacitor bridge only.)
+    if (nativeBridge) {
+      (async () => {
+        try {
+          stateListener = await App.addListener('appStateChange', ({ isActive }) => {
+            if (isActive) pollBurst();
+          });
+        } catch {}
+      })();
+    }
 
     // 4) Android: browserFinished fires when the Chrome Custom Tab is dismissed.
-    (async () => {
-      try {
-        browserFinishedListener = await Browser.addListener('browserFinished', () => {
-          pollBurst();
-        });
-      } catch {}
-    })();
+    //    (Capacitor Browser plugin only — absent on Android with no bridge.)
+    if (nativeBridge) {
+      (async () => {
+        try {
+          browserFinishedListener = await Browser.addListener('browserFinished', () => {
+            pollBurst();
+          });
+        } catch {}
+      })();
+    }
 
     // 5) document.visibilitychange — fastest signal that the user is back.
     const onVisibility = () => {

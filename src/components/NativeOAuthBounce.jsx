@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { isNativeLike } from '@/lib/nativeEnv';
 import { storeHandshakeToken } from '@/lib/nativeAuthComplete';
 import { NativeReturnScreen } from '@/components/NativeReturnScreen';
 
@@ -19,7 +20,7 @@ export default function NativeOAuthBounce() {
   const [returnToken, setReturnToken] = useState(null);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) return; // only in the external browser
+    if (isNativeLike()) return; // only in the external browser (skip the native WebView)
     if (window.location.pathname === '/auth-callback') return; // AuthCallback handles it
 
     const android = /android/i.test(navigator.userAgent);

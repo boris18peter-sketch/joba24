@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
@@ -340,7 +341,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   };
 
   const openOAuth = (provider) => {
-    const isNative = Capacitor.isNativePlatform();
+    const isNative = isNativeLike();
     const providerPath = provider === 'google' ? '' : `/${provider}`;
     const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
     const resolver = isNative ? PROD_BASE_URL : window.location.origin;
@@ -381,19 +382,9 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       const APP_BASE44_URL = 'https://joba24.base44.app';
       const fromUrl = `${APP_BASE44_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
       const loginUrl = `${APP_BASE44_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
-      (async () => {
-        try {
-          // Dismiss any stale browser from a previous/aborted login first. iOS
-          // keeps a presented SFSafariViewController reference if a prior close
-          // didn't finish before the page reloaded, which makes the next
-          // Browser.open a silent no-op — so always close before opening.
-          try { await Browser.close(); } catch {}
-          await Browser.open({ url: loginUrl });
-          setWaitingForAuth(true); // Show "connecting" state while user is in the browser
-        } catch (err) {
-          console.error('[LoginPromptModal] Browser.open failed', err, loginUrl);
-        }
-      })();
+      openExternalBrowser(loginUrl)
+        .then(() => setWaitingForAuth(true))
+        .catch((err) => console.error('[LoginPromptModal] openExternalBrowser failed', err, loginUrl));
       return;
     }
 
@@ -467,7 +458,8 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                     running the fixed LoginPromptModal (joba24.base44.app), not a
                     stale one (joba24.com). Remove after confirming. */}
                 {(() => {
-                  const isNative = Capacitor.isNativePlatform();
+                  const isNative = isNativeLike();
+                  const capIsNative = Capacitor.isNativePlatform();
                   const APP_BASE44_URL = 'https://joba24.base44.app';
                   const providerPath = '';
                   const authBase = isNative ? APP_BASE44_URL : (appParams.appBaseUrl || '');
@@ -488,7 +480,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                       color: '#9a3412', textAlign: 'left', wordBreak: 'break-all', marginBottom: 4,
                     }}>
                       <div style={{ fontWeight: 700, marginBottom: 2 }}>AUTH DIAG (LoginPromptModal):</div>
-                      <div>isNative={String(isNative)}  isAndroidWV={String(isAndroidWV)}</div>
+                      <div>isNativeLike={String(isNative)}  capNative={String(capIsNative)}  isAndroidWV={String(isAndroidWV)}</div>
                       <div>origin={window.location.origin}</div>
                       <div>appBaseUrl={appParams.appBaseUrl || '(empty)'}</div>
                       <div>authBase={authBase || '(empty)'}</div>

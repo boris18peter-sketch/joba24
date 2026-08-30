@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { isNativeLike } from '@/lib/nativeEnv';
 import { storeHandshakeToken } from '@/lib/nativeAuthComplete';
 import { NativeReturnScreen } from '@/components/NativeReturnScreen';
 
@@ -33,7 +34,7 @@ export default function AuthCallback() {
 
   useEffect(() => {
     // Inside the native app's own WebView this route shouldn't render — bail.
-    if (Capacitor.isNativePlatform()) {
+    if (isNativeLike()) {
       window.location.replace('/');
       return;
     }
