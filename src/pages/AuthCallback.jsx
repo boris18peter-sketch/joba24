@@ -76,7 +76,17 @@ export default function AuthCallback() {
         // the existing handshake poll finishes the login when the tab closes.
         try {
           const fallback = `${window.location.origin}/auth-callback?done=1`;
-          const intent = `intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+          // package= must match the Capacitor appId (capacitor.config.json) and the
+          // AndroidManifest intent-filter's package. WITHOUT it, Chrome Custom
+          // Tabs won't launch the app directly and silently falls back to the
+          // fallback URL — which is exactly the "app never opens" symptom. action
+          // + category mirror the manifest (action VIEW, categories DEFAULT +
+          // BROWSABLE) so the intent-filter resolves. When the app opens,
+          // NativeAuthListener's appUrlOpen parses access_token straight from the
+          // joba24://auth-callback?access_token=… URL → completeNativeAuth runs →
+          // login finishes WITHOUT polling (the token is embedded in the URI).
+          const pkg = 'com.base69e6bdb4986a04a256653a23.app';
+          const intent = `intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=${pkg};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;category=android.intent.category.DEFAULT;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
           window.location.href = intent;
         } catch {}
         setReturnToken(token);
