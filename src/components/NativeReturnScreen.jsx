@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { CheckCircle2, LogIn } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 // Shared "Continue in app" return screen + Android back-button guard for the
 // native OAuth flow. Used by AuthCallback.jsx and NativeOAuthBounce.jsx.
@@ -37,11 +37,11 @@ export function NativeReturnScreen({ returnToken, intentUri: intentUriProp }) {
   useNativeBackTrap(true);
 
   // The token was already postMessaged to the app and stored in the handshake.
-  // The app completes login in the background. This screen just needs to get the
-  // user back to the app: the button calls window.close() (this tab was opened by
-  // the app via window.open, so it is script-closable). If window.close() is
-  // blocked, the footer instructs a manual close (✕) — closing the tab returns to
-  // the already-logged-in app behind it.
+  // The app completes login in the background (reload deferred until it returns to
+  // the foreground). The reliable way back to the app is closing this browser tab
+  // with the system ✕ — window.close() is blocked because the tab was opened by
+  // the system (Capacitor onCreateWindow), not by a script, so we don't show a
+  // (non-functional) button; we just instruct the user to press ✕.
 
   return (
     <div
@@ -66,22 +66,12 @@ export function NativeReturnScreen({ returnToken, intentUri: intentUriProp }) {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#0d1e40', marginBottom: 10, lineHeight: 1.2 }}>
             התחברת בהצלחה! 🎉
           </div>
-          <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500, marginBottom: 18 }}>
-            לחץ כדי לחזור לאפליקציית Joba24
+          <div style={{ fontSize: 16, color: '#4b6083', lineHeight: 1.7, fontWeight: 600, marginBottom: 14 }}>
+            ההתחברות הושלמה!<br />
+            לחץ על <span style={{ color: '#dc2626', fontWeight: 800 }}>✕</span> בפינה למעלה כדי לחזור לאפליקציה.
           </div>
-          <button
-            onClick={() => { try { window.close(); } catch (e) {} }}
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer',
-              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: '#fff',
-              fontWeight: 800, fontSize: 17, boxShadow: '0 6px 20px rgba(26,111,212,0.35)',
-            }}
-          >
-            <LogIn size={20} /> חזור לאפליקציה
-          </button>
-          <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 14 }}>
-            אם האפליקציה לא נפתחת, סגור את הדפדפן (✕ בפינה) וההתחברות תושלם אוטומטית.
+          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600 }}>
+            האפליקציה תיכנס אוטומטית ברגע שתסגור את הדפדפן.
           </div>
         </div>
       </div>
