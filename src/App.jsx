@@ -211,7 +211,7 @@ const AuthenticatedApp = () => {
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       <GlobalPopups />
       <Suspense fallback={<div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ffffff' }}><div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #e8edf5', borderTopColor: '#1a6fd4' }} className="animate-spin" /></div>}>
-      <AnimatePresence mode="wait" custom={slideDir} initial={false}>
+      <AnimatePresence custom={slideDir} initial={false}>
         <motion.div
           key={animKey}
           custom={slideDir}

@@ -66,12 +66,8 @@ export function NativeReturnScreen({ returnToken, intentUri: intentUriProp }) {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#0d1e40', marginBottom: 10, lineHeight: 1.2 }}>
             התחברת בהצלחה! 🎉
           </div>
-          <div style={{ fontSize: 16, color: '#4b6083', lineHeight: 1.7, fontWeight: 600, marginBottom: 14 }}>
-            ההתחברות הושלמה!<br />
-            לחץ על <span style={{ color: '#dc2626', fontWeight: 800 }}>✕</span> בפינה למעלה כדי לחזור לאפליקציה.
-          </div>
-          <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600 }}>
-            האפליקציה תיכנס אוטומטית ברגע שתסגור את הדפדפן.
+          <div style={{ fontSize: 17, color: '#4b6083', lineHeight: 1.6, fontWeight: 700 }}>
+            לחץ על <span style={{ color: '#dc2626', fontWeight: 800 }}>✕</span> למעלה כדי להמשיך לאפליקציה
           </div>
         </div>
       </div>

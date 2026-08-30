@@ -1,21 +1,37 @@
 import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 
-export default function ImageUploader({ images = [], onChange }) {
+// Two explicit entry points — a dedicated "צלם" (camera) button using the
+// `capture` attribute (opens the device camera directly on both iOS and
+// Android) and a "גלריה" button for picking existing photos.
+//
+// Why two buttons: a bare <input accept="image/*"> on some Android WebViews
+// only shows gallery apps and omits the camera option. The `capture` attribute
+// guarantees a camera entry on Android, and on iOS it opens the camera
+// directly. The camera permission (NSCameraUsageDescription) is declared in
+// Info.plist so iOS no longer crashes when the camera is invoked.
+export default function ImageUploader({ images = [], onChange, max = 4 }) {
   const [uploading, setUploading] = useState(false);
-  const inputRef = useRef();
+  const galleryRef = useRef();
+  const cameraRef = useRef();
 
   const handleFiles = async (files) => {
     if (!files?.length) return;
     setUploading(true);
-    const uploaded = [];
-    for (const file of Array.from(files).slice(0, 4 - images.length)) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      uploaded.push(file_url);
+    try {
+      const uploaded = [];
+      for (const file of Array.from(files).slice(0, max - images.length)) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        uploaded.push(file_url);
+      }
+      onChange([...images, ...uploaded]);
+    } finally {
+      setUploading(false);
+      // reset so the same file can be selected/shot again
+      if (cameraRef.current) cameraRef.current.value = '';
+      if (galleryRef.current) galleryRef.current.value = '';
     }
-    onChange([...images, ...uploaded]);
-    setUploading(false);
   };
 
   const remove = (url) => onChange(images.filter(i => i !== url));
@@ -34,26 +50,53 @@ export default function ImageUploader({ images = [], onChange }) {
             </button>
           </div>
         ))}
-        {images.length < 4 && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading}
-            className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors bg-gray-50"
-          >
-            {uploading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <Camera className="w-5 h-5" />
-                <span className="text-[10px] font-medium">הוסף תמונה</span>
-              </>
-            )}
-          </button>
+        {images.length < max && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              disabled={uploading}
+              className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors bg-gray-50 disabled:opacity-60"
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Camera className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">צלם</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => galleryRef.current?.click()}
+              disabled={uploading}
+              className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors bg-gray-50 disabled:opacity-60"
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <ImageIcon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium">גלריה</span>
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
+      {/* Camera — opens the device camera directly (capture attribute) */}
       <input
-        ref={inputRef}
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={e => handleFiles(e.target.files)}
+      />
+      {/* Gallery — pick one or more existing photos */}
+      <input
+        ref={galleryRef}
         type="file"
         accept="image/*"
         multiple

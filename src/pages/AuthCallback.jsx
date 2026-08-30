@@ -27,11 +27,6 @@ const RETURN_FLAG = 'joba24_auth_return';
 export default function AuthCallback() {
   const [showReturn, setShowReturn] = useState(false);
   const [returnToken, setReturnToken] = useState(null);
-  // TEMP diagnostic — rendered as a fixed overlay so the detection values can
-  // be read off the screen on the Android Custom Tab (where a blocking alert is
-  // often lost to the auto-fire navigation). Remove after diagnosing.
-  const [diag, setDiag] = useState(null);
-
   useEffect(() => {
     // Inside the native app's own WebView this route shouldn't render — bail.
     if (isNativeLike()) {
@@ -42,16 +37,6 @@ export default function AuthCallback() {
     const ua = navigator.userAgent;
     const ios = /iPad|iPhone|iPod/.test(ua);
     const android = /android/i.test(ua);
-
-    // TEMP diagnostic snapshot (see diag overlay below). Captured BEFORE the
-    // token is cleared so hasToken reflects the real callback state.
-    setDiag({
-      ua: (ua || '').slice(0, 200),
-      ios, android,
-      hasToken: !!sessionStorage.getItem('joba24_oauth_token'),
-      returnFlag: sessionStorage.getItem(RETURN_FLAG) === '1',
-      intentStored: !!sessionStorage.getItem('joba24_return_intent'),
-    });
 
     const token = sessionStorage.getItem('joba24_oauth_token');
     const sid = sessionStorage.getItem('joba24_oauth_sid');
@@ -110,19 +95,6 @@ export default function AuthCallback() {
   return (
     <>
       {showReturn && <NativeReturnScreen returnToken={returnToken} />}
-      {diag && (
-        <div style={{
-          position: 'fixed', top: 8, left: 8, right: 8, zIndex: 2147483646,
-          background: '#fff3cd', color: '#664d03', border: '1px solid #ffecb5',
-          borderRadius: 10, padding: '10px 12px', fontFamily: 'monospace',
-          fontSize: 11, lineHeight: 1.5, whiteSpace: 'pre-wrap', direction: 'ltr',
-          textAlign: 'left', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        }}>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>AUTH DIAG (temp):</div>
-          <div>ios={String(diag.ios)}  android={String(diag.android)}  hasToken={String(diag.hasToken)}  returnFlag={String(diag.returnFlag)}  intentStored={String(diag.intentStored)}</div>
-          <div style={{ marginTop: 6, wordBreak: 'break-all' }}>UA: {diag.ua}</div>
-        </div>
-      )}
     </>
   );
 }

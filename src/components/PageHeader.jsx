@@ -13,10 +13,12 @@ export default function PageHeader({ title, right, backTo }) {
       position: 'sticky', top: 0, zIndex: 50,
       background: 'var(--header-bg)',
       backdropFilter: 'blur(8px)',
-      // Respect the device safe area (notch / status bar) so the back button is
-      // always tappable even on pages with no upper header (Terms/Privacy opened
-      // from the login / waiting pages).
-      paddingTop: 'max(7px, env(safe-area-inset-top))',
+      // Small fixed top padding. Safe-area (notch) is handled by the Layout
+      // wrapper on public pages that render WITHOUT AppHeader (Terms/Privacy/FAQ
+      // opened from the login / waiting pages), so the back button clears the
+      // notch. Inner pages render below AppHeader, which already provides the
+      // top spacing — adding env() here caused a large gap below the AppHeader.
+      paddingTop: 8,
       paddingRight: 12,
       paddingBottom: 6,
       paddingLeft: 12,

@@ -28,6 +28,14 @@
 	<string>ג'ובה 24 משתמשת במיקום שלך כדי להציג לך משימות בקרבתך</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ג'ובה 24 משתמשת במיקום שלך כדי להציג לך משימות בקרבתך</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ג'ובה 24 זקוקה למצלמה כדי שתוכל לצלם תמונות וסרטונים למשימות שלך</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ג'ובה 24 זקוקה למיקרופון כדי שתוכל לצלם סרטונים למשימות שלך</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ג'ובה 24 זקוקה לגישה לגלריה כדי שתוכל לצרף תמונות למשימות שלך</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ג'ובה 24 זקוקה לגישה לגלריה כדי לשמור תמונות</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

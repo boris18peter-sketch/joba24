@@ -436,7 +436,7 @@ export default function Layout() {
     // Public pages: render with minimal layout (no header, no bottom nav, no side menu)
     if (PUBLIC_PAGES.includes(location.pathname)) {
       return (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
           <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
             <Outlet />
           </div>
@@ -469,7 +469,7 @@ export default function Layout() {
   // Terms/Privacy/FAQ links from the waiting page would be unusable.
   if (isAuthenticated && me && !isApprovedUser && !approvalLoading && PUBLIC_PAGES.includes(location.pathname)) {
     return (
-      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
         <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
           <Outlet />
         </div>
@@ -599,7 +599,7 @@ export default function Layout() {
                     style={{
                       flex: isActive ? 1 : undefined, display: isActive ? 'block' : 'none',
                       overflowY: tabPath === '/map' ? 'hidden' : 'auto', overflowX: 'hidden',
-                      paddingBottom: tabPath === '/map' ? 0 : 'calc(58px + max(6px, env(safe-area-inset-bottom)))',
+                      paddingBottom: tabPath === '/map' ? 0 : 'calc(58px + env(safe-area-inset-bottom))',
                       WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
                       height: isActive ? '100%' : 0,
                       }}>
@@ -626,7 +626,7 @@ export default function Layout() {
             {isNonRootTab && (() => {
               // Bottom nav is hidden on these non-root paths — don't reserve its 88px padding
               const hideNavOnPath = ['/create-task', '/support'].includes(location.pathname) || location.pathname.startsWith('/task/') || location.pathname.startsWith('/chat/');
-              const scrollPad = hideNavOnPath ? 'max(6px, env(safe-area-inset-bottom))' : 'calc(58px + max(6px, env(safe-area-inset-bottom)))';
+              const scrollPad = hideNavOnPath ? 'env(safe-area-inset-bottom)' : 'calc(58px + env(safe-area-inset-bottom))';
               return (
                 <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', paddingBottom: scrollPad, WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
                   <Suspense fallback={<TabSkeleton />}>
@@ -641,7 +641,7 @@ export default function Layout() {
 
       {/* Bottom Nav */}
       {!navHiddenByModal && !['/map', '/create-task', '/support'].includes(window.location.pathname) && !window.location.pathname.startsWith('/task/') && !window.location.pathname.startsWith('/chat/') && createPortal(
-        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
+        <div className="j-bottom-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 30, background: 'var(--nav-bg)', borderTop: '1px solid var(--border-2)', boxShadow: '0 -2px 20px rgba(10,90,190,0.08)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto 1fr 1fr', alignItems: 'center', padding: '4px 4px 2px', position: 'relative' }}>
             {navItems.map(({ to, icon: Icon, label, primary, badge }) => {
               const active = location.pathname === to;
