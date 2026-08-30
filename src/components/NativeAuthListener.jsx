@@ -112,6 +112,18 @@ export default function NativeAuthListener() {
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    // 6) postMessage from the external browser's /auth-callback tab. The
+    //    AuthCallback page (opened via window.open) postMessages the token
+    //    directly to window.opener (this app window) — the fastest, most
+    //    reliable completion path (no polling). Backup: the handshake poll.
+    const onMessage = (event) => {
+      const data = event?.data;
+      if (data && data.type === 'joba24_native_token' && data.token) {
+        applyToken(data.token);
+      }
+    };
+    window.addEventListener('message', onMessage);
+
     return () => {
       stopped = true;
       clearInterval(pollTimer);
@@ -123,6 +135,7 @@ export default function NativeAuthListener() {
       removeListener(stateListener);
       removeListener(browserFinishedListener);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('message', onMessage);
     };
   }, []);
 

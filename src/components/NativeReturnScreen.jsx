@@ -36,14 +36,12 @@ export function useNativeBackTrap(active) {
 export function NativeReturnScreen({ returnToken, intentUri: intentUriProp }) {
   useNativeBackTrap(true);
 
-  // AuthCallback builds the intent:// URI and stores it in sessionStorage
-  // (joba24_return_intent). Passed as a prop on the initial render; read from
-  // sessionStorage on the fallback (?done=1) page Chrome navigates to when the
-  // auto-fire didn't resolve. A real <a href> TAP is the gesture Chrome
-  // reliably launches intent:// from (programmatic window.location.href is not).
-  const intentUri = intentUriProp || (typeof sessionStorage !== 'undefined'
-    ? sessionStorage.getItem('joba24_return_intent')
-    : null);
+  // The token was already postMessaged to the app and stored in the handshake.
+  // The app completes login in the background. This screen just needs to get the
+  // user back to the app: the button calls window.close() (this tab was opened by
+  // the app via window.open, so it is script-closable). If window.close() is
+  // blocked, the footer instructs a manual close (✕) — closing the tab returns to
+  // the already-logged-in app behind it.
 
   return (
     <div
@@ -68,36 +66,23 @@ export function NativeReturnScreen({ returnToken, intentUri: intentUriProp }) {
           <div style={{ fontSize: 26, fontWeight: 900, color: '#0d1e40', marginBottom: 10, lineHeight: 1.2 }}>
             התחברת בהצלחה! 🎉
           </div>
-          {intentUri ? (
-            <>
-              <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500, marginBottom: 18 }}>
-                לחץ כדי לחזור לאפליקציית Joba24
-              </div>
-              <a
-                href={intentUri}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', height: 56, borderRadius: 16, textDecoration: 'none',
-                  background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: '#fff',
-                  fontWeight: 800, fontSize: 17, boxShadow: '0 6px 20px rgba(26,111,212,0.35)',
-                }}
-              >
-                <LogIn size={20} /> חזור לאפליקציה
-              </a>
-              <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 14 }}>
-                אם האפליקציה לא נפתחת, סגור את הדפדפן (✕ בפינה) וההתחברות תושלם אוטומטית.
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500 }}>
-                סגור את הדפדפן — לחץ על ה<strong>✕</strong> בפינה השמאלית-עליונה — כדי לחזור לאפליקציה.
-              </div>
-              <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 6 }}>
-                ההתחברות תושלם אוטומטית ברגע שתסגור את הדפדפן.
-              </div>
-            </>
-          )}
+          <div style={{ fontSize: 15, color: '#4b6083', lineHeight: 1.6, fontWeight: 500, marginBottom: 18 }}>
+            לחץ כדי לחזור לאפליקציית Joba24
+          </div>
+          <button
+            onClick={() => { try { window.close(); } catch (e) {} }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%', height: 56, borderRadius: 16, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: '#fff',
+              fontWeight: 800, fontSize: 17, boxShadow: '0 6px 20px rgba(26,111,212,0.35)',
+            }}
+          >
+            <LogIn size={20} /> חזור לאפליקציה
+          </button>
+          <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.6, fontWeight: 600, marginTop: 14 }}>
+            אם האפליקציה לא נפתחת, סגור את הדפדפן (✕ בפינה) וההתחברות תושלם אוטומטית.
+          </div>
         </div>
       </div>
     </div>

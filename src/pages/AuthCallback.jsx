@@ -69,6 +69,11 @@ export default function AuthCallback() {
       // Chrome Custom Tab (no auth headers), which blocks the return screen
       // from rendering → blank screen. Fire-and-forget keeps the UI instant.
       storeHandshakeToken(sid || null, token).catch(() => {});
+      // Best-effort: postMessage the token directly to the app's window (window.opener).
+      // If the app opened this tab via window.open (Android), opener is set and the
+      // app's NativeAuthListener receives it → instant completion (no poll). On iOS
+      // (SFSafariViewController) opener is null, so the joba24:// scheme / poll handle it.
+      try { window.opener && window.opener.postMessage({ type: 'joba24_native_token', token }, '*'); } catch {}
       if (ios) {
         // index.html already fires the joba24:// scheme the instant the token
         // is captured (before React mounts), so the app opens near-instantly.
@@ -77,29 +82,14 @@ export default function AuthCallback() {
         return;
       }
       if (android) {
-        // Build the intent:// URI. package= matches the Capacitor appId
-        // (capacitor.config.json) and the AndroidManifest intent-filter package;
-        // action/category mirror the manifest (VIEW + DEFAULT + BROWSABLE) so the
-        // filter resolves. When the app opens, NativeAuthListener's appUrlOpen
-        // parses access_token straight from joba24://auth-callback?access_token=…
-        // → completeNativeAuth → login finishes WITHOUT polling (token is in URI).
-        let intentUri = '';
-        try {
-          const fallback = `${window.location.origin}/auth-callback?done=1`;
-          const pkg = 'com.base69e6bdb4986a04a256653a23.app';
-          intentUri = `intent://auth-callback?access_token=${encodeURIComponent(token)}#Intent;scheme=joba24;package=${pkg};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;category=android.intent.category.DEFAULT;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
-          // Persist so NativeReturnScreen can render a tappable <a> on the
-          // fallback (?done=1) page too (after Chrome navigates there).
-          sessionStorage.setItem('joba24_return_intent', intentUri);
-        } catch {}
-        // Best-effort auto-fire. Chrome handles PROGRAMMATIC intent://
-        // (window.location.href, NO user gesture) inconsistently — it often falls
-        // back instead of launching the app, which is the symptom you're seeing.
-        // NativeReturnScreen therefore also renders a real <a href=intentUri>
-        // button: a genuine user TAP is the gesture Chrome reliably launches
-        // intent:// from. If the auto-fire falls back to ?done=1, the button is
-        // re-rendered there from sessionStorage for the user to tap.
-        try { if (intentUri) window.location.href = intentUri; } catch {}
+        // The token was already postMessaged to the app (above) and stored in the
+        // handshake. The app completes login in the background (NativeAuthListener
+        // receives the postMessage, or the handshake poll picks it up). We just
+        // show the return screen; the "חזור לאפליקציה" button calls window.close()
+        // (this tab was opened by the app via window.open, so it's script-closable)
+        // → the user returns to the already-logged-in app. No intent:// (unreliable
+        // without the bridge / manifest filter, and causes the "loads and stays"
+        // stuck state).
         setReturnToken(token);
         setShowReturn(true);
         return;
