@@ -14,10 +14,11 @@ import { NativeReturnScreen } from '@/components/NativeReturnScreen';
 //
 //   • Stores the server handshake (the native app polls it to retrieve the token).
 //   • iOS: fires the registered joba24:// scheme for an instant return.
-//   • Android (no joba24:// intent-filter in the auto-build): shows a full-screen
-//     "Continue in app" return screen. The user presses the system back / X button,
-//     NativeAuthListener fires browserFinished → polls the handshake → completes
-//     login. The screen persists across reloads via the RETURN_FLAG.
+//   • Android (custom Codemagic build with a joba24:// intent-filter): fires the
+//     scheme for an automatic app return, then shows the "Continue in app" return
+//     screen as a fallback. If the scheme resolves, the app opens and login
+//     completes via appUrlOpen; if not, the user closes the tab and the existing
+//     handshake poll (browserFinished → NativeAuthListener) completes login.
 
 const RETURN_FLAG = 'joba24_auth_return';
 
@@ -58,6 +59,13 @@ export default function AuthCallback() {
         return;
       }
       if (android) {
+        // The custom Codemagic Android build registers a joba24:// intent-filter
+        // (same as iOS), so fire the scheme to trigger an automatic app return —
+        // NativeAuthListener's appUrlOpen listener completes the login. The
+        // return screen below stays as a fallback: if the scheme didn't resolve
+        // (old auto-build / app not installed), the user sees the "close browser"
+        // instructions and the existing handshake poll completes on browserFinished.
+        try { window.location.replace(`joba24://auth-callback?access_token=${encodeURIComponent(token)}`); } catch {}
         setReturnToken(token);
         setShowReturn(true);
         return;

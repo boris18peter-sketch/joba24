@@ -4,19 +4,16 @@ import { CheckCircle2 } from 'lucide-react';
 // Shared "Continue in app" return screen + Android back-button guard for the
 // native OAuth flow. Used by AuthCallback.jsx and NativeOAuthBounce.jsx.
 //
-// iOS never renders this (it returns via the joba24:// scheme), so this is
-// Android-only by construction (both callers gate on showReturn/showOverlay,
-// which is only set on Android).
+// iOS never renders this (it returns via the joba24:// scheme).
 //
-// Per Base44 support (Aug 2026): on the generated Android build, custom URL
-// schemes and intent-filters are NOT editable — so intent:// / joba24://
-// CANNOT open the app. The ONLY reliable return path is: the user closes the
-// Custom Tab (✕ button), which fires browserFinished → NativeAuthListener and
-// the WaitingForAuthScreen poll retrieve the token from the server handshake
-// and reload the app authenticated. This screen is purely informational — it
-// tells the user to close the browser, and absorbs the system back button so
-// it doesn't navigate back to the Google sign-in page (no broken intent is
-// fired).
+// Android: AuthCallback now fires the joba24:// scheme FIRST (the custom
+// Codemagic build registers a joba24:// intent-filter). This screen is the
+// FALLBACK — shown only if the scheme did not auto-open the app (old auto-build
+// / app not installed). The user closes the Custom Tab (✕ button) →
+// browserFinished → NativeAuthListener / WaitingForAuthScreen poll retrieve the
+// token from the server handshake and reload the app authenticated. It also
+// absorbs the system back button so it doesn't navigate back to the Google
+// sign-in page.
 
 // Android back-button guard: intercept back via pushState/popstate so the user
 // stays on this page instead of navigating back to the Google sign-in page.
