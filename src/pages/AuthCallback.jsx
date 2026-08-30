@@ -91,8 +91,6 @@ export default function AuthCallback() {
           // fallback (?done=1) page too (after Chrome navigates there).
           sessionStorage.setItem('joba24_return_intent', intentUri);
         } catch {}
-        // TEMP diagnostic (remove after verifying on device): show the exact URI.
-        try { alert('Intent URI עומד להישלח:\n\n' + intentUri); } catch {}
         // Best-effort auto-fire. Chrome handles PROGRAMMATIC intent://
         // (window.location.href, NO user gesture) inconsistently — it often falls
         // back instead of launching the app, which is the symptom you're seeing.

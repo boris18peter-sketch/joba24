@@ -110,8 +110,6 @@
     <script>
       (function () {
         try {
-          // Mid-OAuth: the URL carries an access_token — never interrupt with a reload.
-          if (new URLSearchParams(window.location.search).get('access_token')) return;
           var cur = document.querySelector('script[type="module"][src]');
           var curSrc = cur ? cur.getAttribute('src') : '';
           if (curSrc && sessionStorage.getItem('joba24_selfheal') === '1') { sessionStorage.removeItem('joba24_selfheal'); return; }
@@ -122,8 +120,13 @@
               var freshSrc = m ? m[1] : '';
               if (freshSrc && curSrc && freshSrc !== curSrc) {
                 sessionStorage.setItem('joba24_selfheal', '1');
-                // Preserve the pathname so /auth-callback etc. keep working.
-                window.location.replace(window.location.pathname + '?cb=' + Date.now() + window.location.hash);
+                // Preserve the FULL query string (access_token, sid, ref, …) so the
+                // /auth-callback OAuth callback keeps its token after the fresh
+                // reload (index.html re-captures it on the next load). Previously
+                // the self-heal SKIPPED on access_token — which left a stale
+                // /auth-callback build stuck forever in the Chrome Custom Tab.
+                var sep = window.location.search ? '&' : '?';
+                window.location.replace(window.location.pathname + window.location.search + sep + 'cb=' + Date.now() + window.location.hash);
               }
             })
             .catch(function () {});
