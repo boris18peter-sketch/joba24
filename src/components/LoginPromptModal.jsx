@@ -369,16 +369,18 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       // Keeping from_url on base44.app preserves the sid so the poll matches
       // exactly. iOS is unaffected: it returns via the joba24:// scheme, which
       // carries the access_token directly regardless of the from_url host.
-      const fromUrl = `${appParams.appBaseUrl || PROD_BASE_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
-      // Send the login request directly to the app's canonical base URL
-      // (app_base_url, e.g. joba24.base44.app) — NOT via the joba24.com /api
-      // proxy, which strips the from_url and makes the backend fall back to a
-      // base44.app redirect (landing the user on the unbranded dashboard with
-      // no return screen). The from_url itself stays on the branded domain so
-      // the post-auth redirect lands on joba24.com/auth-callback (AuthCallback
-      // shows the "Continue in app" screen).
-      const loginHost = appParams.appBaseUrl || PROD_BASE_URL;
-      const loginUrl = `${loginHost}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
+      // HARD-CODE the canonical Base44 app domain for BOTH the login endpoint and
+      // from_url. appParams.appBaseUrl resolves from VITE_BASE44_APP_BASE_URL,
+      // which is NOT reliably set at runtime — when null it falls back to
+      // PROD_BASE_URL (joba24.com), and the Base44 OAuth backend REJECTS a
+      // joba24.com from_url as cross-domain → falls back to a base44.app redirect
+      // that drops the sid → the user lands on the app root (/join "Worker
+      // Onboarding") instead of /auth-callback, so the "חזור לאפליקציה" button
+      // never renders. Pinning to the canonical base44.app domain (the published
+      // app URL) makes the backend honor from_url and land on /auth-callback.
+      const APP_BASE44_URL = 'https://joba24.base44.app';
+      const fromUrl = `${APP_BASE44_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
+      const loginUrl = `${APP_BASE44_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
       (async () => {
         try {
           // Dismiss any stale browser from a previous/aborted login first. iOS
