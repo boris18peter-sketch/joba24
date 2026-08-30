@@ -462,6 +462,34 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
               {/* Login buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                {/* TEMP diagnostic — shows the exact from_url + login base that the
+                    Google button will use, so we can verify the main app screen is
+                    running the fixed LoginPromptModal (joba24.base44.app), not a
+                    stale one (joba24.com). Remove after confirming. */}
+                {(() => {
+                  const isNative = Capacitor.isNativePlatform();
+                  const APP_BASE44_URL = 'https://joba24.base44.app';
+                  const providerPath = '';
+                  const authBase = isNative ? APP_BASE44_URL : (appParams.appBaseUrl || '');
+                  const resolver = isNative ? APP_BASE44_URL : window.location.origin;
+                  const fromUrl = isNative
+                    ? `${APP_BASE44_URL}/auth-callback?sid=<SID>`
+                    : getRedirectUrl();
+                  const sampleLoginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`, resolver).toString();
+                  return (
+                    <div dir="ltr" style={{
+                      background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10,
+                      padding: '8px 10px', fontFamily: 'monospace', fontSize: 10, lineHeight: 1.5,
+                      color: '#9a3412', textAlign: 'left', wordBreak: 'break-all', marginBottom: 4,
+                    }}>
+                      <div style={{ fontWeight: 700, marginBottom: 2 }}>AUTH DIAG (LoginPromptModal):</div>
+                      <div>isNative={String(isNative)}</div>
+                      <div>authBase={authBase || '(empty)'}</div>
+                      <div>from_url={fromUrl}</div>
+                      <div style={{ marginTop: 2 }}>loginUrl={sampleLoginUrl}</div>
+                    </div>
+                  );
+                })()}
                 <ProviderButton
                   onClick={handleGoogle}
                   border="#dadce0"
