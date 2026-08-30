@@ -78,6 +78,7 @@ export async function completeNativeAuth(token) {
   } catch {}
 
   // Dismiss the in-app browser (SFSafariViewController / Chrome Custom Tab).
+  // On Android the Capacitor bridge is unavailable, so this is a fast no-op there.
   try {
     await Promise.race([
       Promise.all([Browser.close(), InAppBrowser.close().catch(() => {})]),
@@ -85,6 +86,27 @@ export async function completeNativeAuth(token) {
     ]);
   } catch {}
 
-  window.location.reload();
+  // If the app is in the background (the external browser is foreground), a
+  // background window.location.reload() can abort with a WebView error page
+  // (net::ERR_ABORTED) because background navigation is throttled — the user
+  // then sees "An error occurred while loading the screen" when returning to
+  // the app. Defer the reload until the app is visible again (user closes /
+  // returns from the browser), so the reload runs in the foreground and
+  // succeeds. The token is already in localStorage, so the reloaded app
+  // authenticates immediately.
+  const doReload = () => { try { window.location.reload(); } catch (e) {} };
+  if (typeof document !== 'undefined' && document.hidden) {
+    const onVis = () => {
+      if (!document.hidden) {
+        document.removeEventListener('visibilitychange', onVis);
+        doReload();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    // Safety fallback in case visibilitychange never fires.
+    setTimeout(doReload, 10000);
+  } else {
+    doReload();
+  }
   return true;
 }
