@@ -91,8 +91,15 @@ export default function AuthCallback() {
         setShowReturn(true);
         return;
       }
-    } else if (android && sessionStorage.getItem(RETURN_FLAG) === '1') {
-      // Reload / intent fallback — keep the return screen visible.
+      // Desktop / web / other platforms. /auth-callback is only hit in the
+      // native OAuth flow, but if a regular browser lands here (manual visit,
+      // misconfigured from_url, or a diagnostic test like ?access_token=test),
+      // show the return screen instead of rendering null → blank page. This
+      // ALSO gives a visible signal on ANY browser that the build is live.
+      setShowReturn(true);
+      return;
+    } else if (sessionStorage.getItem(RETURN_FLAG) === '1') {
+      // Reload / intent fallback — keep the return screen visible (any platform).
       setShowReturn(true);
     }
   }, []);
