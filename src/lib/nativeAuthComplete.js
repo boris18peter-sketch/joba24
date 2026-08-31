@@ -2,14 +2,17 @@ import { Browser } from '@capacitor/browser';
 import { InAppBrowser } from '@capgo/capacitor-inappbrowser';
 
 // Poll/store the nativeAuthHandshake token via a raw fetch (NOT the SDK).
-// A direct POST to the relative /api/functions/nativeAuthHandshake path
-// reliably returns { token } with no auth required. The relative path resolves
-// to the app's own origin (joba24.com /api proxy in the native WebView,
-// base44.app on the /auth-callback page), so the store and the poll always hit
-// the SAME Base44 backend. The real fix for the Android login loop is in
-// LoginPromptModal: from_url is on base44.app so the backend preserves the
-// sid, letting the poll match the handshake exactly (no flaky fallback).
-const HANDSHAKE_URL = '/api/functions/nativeAuthHandshake';
+// A direct POST returns { token } with no auth required. The URL is ABSOLUTE
+// (https://joba24.base44.app) because the poll runs INSIDE the native app's
+// WebView, whose origin is NOT base44.app:
+//   • iOS remote (server.url) → origin "null" (WKWebView)
+//   • Android LOCAL build → origin http(s)://localhost (Capacitor bundle)
+// A relative "/api/..." path would resolve to localhost/null and the poll
+// would 404 → the OAuth token is never retrieved → login hangs. The ABSOLUTE
+// URL hits the Base44 backend from every context (app WebView, external
+// Chrome Custom Tab, /auth-callback page). The store side (called from the
+// external browser) also works with the absolute URL (same-origin there).
+const HANDSHAKE_URL = 'https://joba24.base44.app/api/functions/nativeAuthHandshake';
 export async function pollHandshakeToken(sid) {
   if (!sid) return null;
   try {
