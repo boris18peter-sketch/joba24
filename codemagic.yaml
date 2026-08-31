@@ -128,8 +128,10 @@ workflows:
       android_signing:
         - joba24_android_upload
       vars:
-        ANDROID_VERSION_CODE: 1
+        ANDROID_VERSION_CODE: 2
         ANDROID_VERSION_NAME: "1.0.0"
+        VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
+        VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
       node: latest
       java: 21
     scripts:
@@ -139,9 +141,49 @@ workflows:
       - name: Build web app
         script: |
           npm run build
+      - name: Verify Base44 config was injected into build
+        script: |
+          if grep -r "69e6bdb4986a04a256653a23" dist/ > /dev/null 2>&1; then
+            echo "App ID found in build output - good"
+          else
+            echo "ERROR: App ID not found in dist/ - VITE_BASE44_APP_ID may not have been injected correctly"
+            exit 1
+          fi
+          if grep -r "joba24.base44.app" dist/ > /dev/null 2>&1; then
+            echo "App base URL found in build output - good"
+          else
+            echo "ERROR: joba24.base44.app not found in dist/ - VITE_BASE44_APP_BASE_URL may not have been injected correctly"
+            exit 1
+          fi
+      - name: Remove remote server URL for local Android build
+        script: |
+          python3 << 'PYEOF'
+          import json
+
+          with open("capacitor.config.json", "r") as f:
+              config = json.load(f)
+
+          if "server" in config:
+              del config["server"]
+
+          with open("capacitor.config.json", "w") as f:
+              json.dump(config, f, indent=2)
+
+          print("Updated capacitor.config.json for local Android build:")
+          print(json.dumps(config, indent=2))
+          PYEOF
       - name: Add Android platform
         script: |
           npx cap add android
+      - name: Copy Firebase google-services.json
+        script: |
+          if [ -f "android-config/google-services.json" ]; then
+            cp android-config/google-services.json android/app/google-services.json
+            echo "google-services.json copied successfully"
+          else
+            echo "ERROR: android-config/google-services.json not found in repo"
+            exit 1
+          fi
       - name: Patch AndroidManifest.xml with joba24:// intent-filter
         script: |
           python3 << 'PYEOF'
