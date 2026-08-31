@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "79738163466",
+    "project_id": "joba24",
+    "storage_bucket": "joba24.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79738163466:android:3d841aff700213f5bfeaf3",
+        "android_client_info": {
+          "package_name": "com.base69e6bdb4986a04a256653a23.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "79738163466-3q8hbj7a95jv2vs2427ap45e1kh4ts1d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU7k8ZprrkgEwUXJcJr1KOdIf8h8qDsHw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "79738163466-3q8hbj7a95jv2vs2427ap45e1kh4ts1d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79738163466:android:732f9c382bdb92c6bfeaf3",
+        "android_client_info": {
+          "package_name": "com.joba24.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "79738163466-3q8hbj7a95jv2vs2427ap45e1kh4ts1d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU7k8ZprrkgEwUXJcJr1KOdIf8h8qDsHw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "79738163466-3q8hbj7a95jv2vs2427ap45e1kh4ts1d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
