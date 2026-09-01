@@ -266,10 +266,19 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('joba24_notifications');
     localStorage.removeItem('joba24_draft_task');
 
+    // Clear the auth token locally. base44.auth.logout() redirects to
+    // ${appBaseUrl}/api/apps/auth/logout — on Android native that external URL
+    // escapes the WebView (opens the system browser) and exposes the raw
+    // joba24.base44.app domain. Clearing the localStorage token + reloading the
+    // app root logs the user out cleanly in-app on every platform.
+    try {
+      localStorage.removeItem('base44_access_token');
+      localStorage.removeItem('token');
+    } catch {}
+    localStorage.removeItem('joba24_guest_mode');
+    setIsGuest(false);
     if (shouldRedirect) {
-      base44.auth.logout(window.location.href);
-    } else {
-      base44.auth.logout();
+      window.location.replace('/');
     }
   };
 

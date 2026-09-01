@@ -461,7 +461,7 @@ export default function Layout() {
     if (!isAuthenticated && !isPublicPage) {
       if (effectiveGuest) {
         if (location.pathname !== '/') {
-          setGuestBlock({ label: GUEST_BLOCK_LABELS[location.pathname] || 'לדף זה' });
+          login();
           navigate('/', { replace: true });
         }
         return;
@@ -694,7 +694,7 @@ export default function Layout() {
               const active = location.pathname === to;
               if (primary) {
                 return (
-                  <button id="onboarding-create-btn" key={to} onClick={() => { if (effectiveGuest) { setGuestBlock({ label: 'פרסום משימה' }); return; } if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
+                  <button id="onboarding-create-btn" key={to} onClick={() => { if (effectiveGuest) { login(); return; } if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                       <Icon size={24} color="white" />
@@ -704,7 +704,7 @@ export default function Layout() {
                 );
               }
               return (
-                <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); setGuestBlock({ label: GUEST_NAV_LABELS[to] || 'לדף זה' }); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
+                <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); login(); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Icon size={21} color={active ? '#1a6fd4' : '#9bb3d4'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
                     {badge > 0 && (
@@ -729,10 +729,7 @@ export default function Layout() {
         />,
         document.body
       )}
-      {guestBlock && createPortal(
-        <GuestBlockPopup areaLabel={guestBlock.label} onClose={() => setGuestBlock(null)} />,
-        document.body
-      )}
+      {/* Guests now get the direct login modal (login()) instead of a blocker popup */}
     </div>
   );
 }

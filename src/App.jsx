@@ -286,8 +286,8 @@ function App() {
 
   return (
     <AppErrorBoundary>
-      <AuthProvider>
-        <LanguageProvider>
+      <LanguageProvider>
+        <AuthProvider>
           <QueryClientProvider client={queryClientInstance}>
             <Router>
               <TaskSheetProvider>
@@ -303,8 +303,8 @@ function App() {
             </Router>
             <Toaster />
           </QueryClientProvider>
-        </LanguageProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </AppErrorBoundary>
   )
 }

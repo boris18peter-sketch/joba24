@@ -281,7 +281,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
-        padding: '48px 12px 12px',
+        padding: 'max(12px, env(safe-area-inset-top)) 12px 12px',
         display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0, zIndex: 40,

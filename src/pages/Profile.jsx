@@ -63,7 +63,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { t, isRTL, lang } = useLanguage();
-  const { user: authUser, refreshUser } = useAuth();
+  const { user: authUser, refreshUser, logout } = useAuth();
   const { openTaskSheet } = useTaskSheet();
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -196,9 +196,9 @@ export default function Profile() {
             </div>
             <button
               onClick={() => photoInputRef.current?.click()}
-              style={{ position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: 'white', border: '2px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
+              style={{ position: 'absolute', bottom: -3, right: -3, width: 20, height: 20, borderRadius: '50%', background: 'white', border: '1.5px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
             >
-              {uploadingPhoto ? <Loader2 size={11} color="#1a6fd4" className="animate-spin" /> : <Camera size={11} color="#1a6fd4" />}
+              {uploadingPhoto ? <Loader2 size={9} color="#1a6fd4" className="animate-spin" /> : <Camera size={9} color="#1a6fd4" />}
             </button>
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
@@ -357,7 +357,7 @@ export default function Profile() {
           <MenuRow icon={CreditCard} iconBg="#f0fdf4" iconColor="#16a34a" label={t('credit_movement')} sub={t('balance_payments_history') || 'יתרה, תשלומים, היסטוריה'} to="/wallet" />
           <MenuRow icon={BarChart3} iconBg="#eff6ff" iconColor="#1a6fd4" label={t('earnings_dashboard') || 'דשבורד רווחים'} sub={t('earnings_summary_sub') || 'הכנסות לפי תקופות'} to="/earnings" />
           <MenuRow icon={Clock} iconBg="#f5f3ff" iconColor="#7c3aed" label={t('pr_history_reviews')} sub={t('pr_history_count', { n: completedCount + postedCount, m: reviews.length })} onClick={() => setShowUnifiedHistory(true)} />
-          <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => base44.auth.logout()} chevronColor="#fca5a5" />
+          <MenuRow icon={LogOut} iconBg="#fff1f2" iconColor="#dc2626" label={t('logout')} danger onClick={() => logout()} chevronColor="#fca5a5" />
           <MenuRow icon={Trash2} iconBg="#fee2e2" iconColor="#dc2626" label={t('delete_account')} onClick={() => setShowDeleteConfirm(true)} chevronColor="#fca5a5" last />
         </div>
       </div>

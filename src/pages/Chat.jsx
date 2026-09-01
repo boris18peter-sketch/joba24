@@ -319,15 +319,13 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return (
-    <div ref={outerRef} style={{ display: 'flex', flexDirection: 'column', height: viewportHeight, background: 'var(--surface-1)', zIndex: 9999, position: 'relative', overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Spacer for iOS safe area top (in case body padding doesn't apply) */}
-      <div style={{ height: 'env(safe-area-inset-top)', flexShrink: 0, background: 'var(--surface-2)' }} />
+    <div ref={outerRef} style={{ position: 'fixed', top: 0, left: 0, right: 0, display: 'flex', flexDirection: 'column', height: viewportHeight, background: 'var(--surface-1)', zIndex: 9999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header — fixed flex item, doesn't scroll */}
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
-        padding: '8px 12px 10px',
+        padding: 'max(8px, env(safe-area-inset-top)) 12px 10px',
         display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0, zIndex: 40,
