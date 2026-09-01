@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, ChevronLeft, Briefcase, User, MessageSquare } from 'lucide-react';
 import { getCategoryLabel } from '@/lib/categories';
@@ -61,25 +62,39 @@ function Stars({ rating, size = 14 }) {
 }
 
 /**
- * TaskReviewHistory — clean, card-based history of completed tasks and reviews.
- * Each task is a clickable card that opens the task detail. Reviews are shown
- * inline (Trustpilot-style) with a clear role badge for the profile owner.
+ * TaskReviewHistory — history of completed tasks and reviews, split into two
+ * clear tabs so the viewer can tell what they performed (as worker) vs what
+ * they posted (as client), and the reviews received in each role.
  */
 export default function TaskReviewHistory({ tasks = [], reviews = [], userId, clickable = true, onTaskClick, hidePrices = false }) {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const [tab, setTab] = useState('worker'); // 'worker' | 'client'
+
+  // Split tasks by the profile owner's role
+  const workerTasks = tasks.filter(t => t.worker_id === userId);
+  const clientTasks = tasks.filter(t => t.client_id === userId);
+
+  // Review.role = the REVIEWER's role. role='client' → reviewer was the client →
+  // reviewee is the worker. So reviews about me as a worker have role='client';
+  // reviews about me as a client have role='worker'.
+  const workerReviews = reviews.filter(r => r.role === 'client');
+  const clientReviews = reviews.filter(r => r.role === 'worker');
+
+  const activeTasks = tab === 'worker' ? workerTasks : clientTasks;
+  const activeReviews = tab === 'worker' ? workerReviews : clientReviews;
 
   const reviewsByTaskId = {};
   const unmatchedReviews = [];
-  reviews.forEach(r => {
-    if (r.task_id && tasks.some(t => t.id === r.task_id)) {
+  activeReviews.forEach(r => {
+    if (r.task_id && activeTasks.some(t => t.id === r.task_id)) {
       reviewsByTaskId[r.task_id] = r;
     } else {
       unmatchedReviews.push(r);
     }
   });
 
-  const sortedTasks = [...tasks].sort((a, b) =>
+  const sortedTasks = [...activeTasks].sort((a, b) =>
     new Date(b.completed_at || b.updated_date || b.created_date) - new Date(a.completed_at || a.updated_date || a.created_date)
   );
 
@@ -88,109 +103,134 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
     ...unmatchedReviews.map(r => ({ type: 'review', review: r })),
   ];
 
-  if (allItems.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '48px 0' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{t('no_history_yet')}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>{t('history_will_appear')}</div>
-      </div>
-    );
-  }
+  const TABS = [
+    { key: 'worker', label: t('hist_tab_as_worker'), count: workerTasks.length + workerReviews.length, emoji: '🛠️' },
+    { key: 'client', label: t('hist_tab_as_client'), count: clientTasks.length + clientReviews.length, emoji: '📋' },
+  ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {allItems.map((item, idx) => {
-        if (item.type === 'task') {
-          const hasReview = !!item.review;
+    <div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        {TABS.map(tb => {
+          const active = tab === tb.key;
           return (
-            <div
-              key={`t-${item.task.id}`}
-              onClick={clickable ? () => (onTaskClick ? onTaskClick(item.task.id) : navigate(`/task/${item.task.id}`)) : undefined}
+            <button key={tb.key} onClick={() => setTab(tb.key)}
               style={{
-                background: 'var(--surface-2)',
-                border: '1px solid var(--border-1)',
-                borderRadius: 16,
-                padding: '14px 16px',
-                cursor: clickable ? 'pointer' : 'default',
-                transition: 'box-shadow 0.15s, border-color 0.15s',
-              }}
-            >
-              {/* Header: role badge + date + chevron */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <RoleBadge userId={userId} task={item.task} t={t} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{formatDate(item.task.completed_at || item.task.updated_date, t, lang)}</span>
-                  <ChevronLeft size={14} color="var(--text-3)" />
-                </div>
-              </div>
-
-              {/* Title */}
-              <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.35 }}>
-                {item.task.title}
-              </div>
-
-              {/* Category + price */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
-                {item.task.category && (
-                  <span style={{ fontSize: 11, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 8, padding: '2px 8px', fontWeight: 600 }}>
-                    {getCategoryLabel(item.task.category, t)}
-                  </span>
-                )}
-                {item.task.price > 0 && !hidePrices && (
-                  <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 700 }}>₪{item.task.price}</span>
-                )}
-              </div>
-
-              {/* Inline review */}
-              {hasReview && (
-                <div style={{
-                  marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <Stars rating={item.review.rating} size={13} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>
-                      {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')}
-                    </span>
-                  </div>
-                  {item.review.comment && (
-                    <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
-                      "{item.review.comment}"
-                    </p>
-                  )}
-                  <ReviewChips review={item.review} t={t} />
-                </div>
+                flex: 1, height: 42, borderRadius: 12, fontSize: 12.5, fontWeight: 800,
+                border: '1px solid', cursor: 'pointer', transition: 'all 0.15s',
+                background: active ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-2)',
+                color: active ? 'white' : 'var(--text-2)',
+                borderColor: active ? '#1a6fd4' : 'var(--border-1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                boxShadow: active ? '0 2px 8px rgba(26,111,212,0.25)' : 'none',
+              }}>
+              <span>{tb.emoji}</span>
+              {tb.label}
+              {tb.count > 0 && (
+                <span style={{ fontSize: 10, background: active ? 'rgba(255,255,255,0.25)' : 'var(--surface-3)', color: active ? 'white' : 'var(--text-3)', padding: '1px 6px', borderRadius: 8 }}>
+                  {tb.count}
+                </span>
               )}
-            </div>
+            </button>
           );
-        }
+        })}
+      </div>
 
-        // Standalone review (no matching task in the list)
-        return (
-          <div
-            key={`r-${item.review.id}-${idx}`}
-            style={{
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border-1)',
-              borderRadius: 16,
-              padding: '14px 16px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <Stars rating={item.review.rating} size={13} />
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <MessageSquare size={10} /> {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')} · {formatDate(item.review.created_date, t, lang)}
-              </span>
-            </div>
-            {item.review.comment && (
-              <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
-                "{item.review.comment}"
-              </p>
-            )}
-            <ReviewChips review={item.review} t={t} />
-          </div>
-        );
-      })}
+      {allItems.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>{tab === 'worker' ? '🛠️' : '📋'}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{tab === 'worker' ? t('hist_no_worker') : t('hist_no_client')}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>{t('history_will_appear')}</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {allItems.map((item, idx) => {
+            if (item.type === 'task') {
+              const hasReview = !!item.review;
+              return (
+                <div
+                  key={`t-${item.task.id}`}
+                  onClick={clickable ? () => (onTaskClick ? onTaskClick(item.task.id) : navigate(`/task/${item.task.id}`)) : undefined}
+                  style={{
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border-1)',
+                    borderRadius: 16,
+                    padding: '14px 16px',
+                    cursor: clickable ? 'pointer' : 'default',
+                    transition: 'box-shadow 0.15s, border-color 0.15s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <RoleBadge userId={userId} task={item.task} t={t} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{formatDate(item.task.completed_at || item.task.updated_date, t, lang)}</span>
+                      {clickable && <ChevronLeft size={14} color="var(--text-3)" />}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.35 }}>
+                    {item.task.title}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 5 }}>
+                    {item.task.category && (
+                      <span style={{ fontSize: 11, color: 'var(--text-2)', background: 'var(--surface-3)', borderRadius: 8, padding: '2px 8px', fontWeight: 600 }}>
+                        {getCategoryLabel(item.task.category, t)}
+                      </span>
+                    )}
+                    {item.task.price > 0 && !hidePrices && (
+                      <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 700 }}>₪{item.task.price}</span>
+                    )}
+                  </div>
+
+                  {hasReview && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <Stars rating={item.review.rating} size={13} />
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>
+                          {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')}
+                        </span>
+                      </div>
+                      {item.review.comment && (
+                        <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+                          "{item.review.comment}"
+                        </p>
+                      )}
+                      <ReviewChips review={item.review} t={t} />
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={`r-${item.review.id}-${idx}`}
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-1)',
+                  borderRadius: 16,
+                  padding: '14px 16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Stars rating={item.review.rating} size={13} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <MessageSquare size={10} /> {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')} · {formatDate(item.review.created_date, t, lang)}
+                  </span>
+                </div>
+                {item.review.comment && (
+                  <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+                    "{item.review.comment}"
+                  </p>
+                )}
+                <ReviewChips review={item.review} t={t} />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -358,6 +358,24 @@ export default function TaskDetail(props) {
     return () => { unsubTask(); unsubApp(); };
   }, [id, queryClient]); // ← stable deps only — me?.id read via ref, no re-subscribe on auth load
 
+  // Trigger the rating modal when opening an ALREADY-completed task — e.g. a user
+  // who was outside the app (WebSocket missed the COMPLETED event) taps the push
+  // notification, deep-links into the task sheet, and the rating popup never
+  // appeared. Fires once the task + myReview query have resolved.
+  const ratingTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (ratingTriggeredRef.current) return;
+    if (!me?.id || !task?.id || task.status !== 'COMPLETED') return;
+    if (me.id !== task.client_id && me.id !== task.worker_id) return;
+    if (myReview === undefined) return; // still loading
+    if (myReview && myReview.id) return; // already reviewed
+    ratingTriggeredRef.current = true;
+    const t = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task } }));
+    }, 900);
+    return () => clearTimeout(t);
+  }, [task?.id, task?.status, me?.id, myReview]);
+
   // Central update: write to DB — WebSocket event will propagate to Layout (single broadcaster)
   // which updates all shared caches. We only need to update the local ['task', id] cache optimistically.
   const handleWorkerUpdate = async (data) => {

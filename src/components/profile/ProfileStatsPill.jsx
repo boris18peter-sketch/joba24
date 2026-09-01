@@ -27,10 +27,11 @@ export default function ProfileStatsPill({ rating, reviewCount, postedCount, com
       display: 'flex', alignItems: 'stretch',
     }}>
       <div style={colStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Star size={15} color="#fbbf24" fill="#fbbf24" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Star size={14} color="#fbbf24" fill="#fbbf24" />
           <span style={valueStyle('#d97706')}>{hasRating ? r.toFixed(1) : '—'}</span>
         </div>
+        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)' }}>{t('pr_rating')}</span>
         <span style={labelStyle}>{reviews > 0 ? t('pr_reviews_count', { n: reviews }) : t('pr_no_reviews_yet')}</span>
       </div>
       <div style={dividerStyle} />

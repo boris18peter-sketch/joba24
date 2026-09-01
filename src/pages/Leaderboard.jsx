@@ -5,71 +5,61 @@ import { Trophy, Star } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import { useNavigate } from 'react-router-dom';
-import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import { useLanguage } from '@/lib/LanguageContext';
-import { getProfessionLabel } from '@/lib/professions';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
 
-  // Real-time sync — refresh leaderboard immediately when tasks complete or reviews are added
+  // Real-time sync — the authoritative tasks_completed counter lives on the
+  // User record (maintained by the backend on task completion), so we refresh
+  // the users list whenever a user or task changes.
   useEffect(() => {
+    const unsubUser = base44.entities.User.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    });
     const unsubTask = base44.entities.Task.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['all-tasks-lb'] });
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
     });
     const unsubReview = base44.entities.Review.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['all-reviews'] });
     });
-    const unsubUser = base44.entities.User.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['all-users'] });
-    });
-    return () => { unsubTask(); unsubReview(); unsubUser(); };
+    return () => { unsubUser(); unsubTask(); unsubReview(); };
   }, [queryClient]);
-
-  // Fetch COMPLETED tasks specifically (more accurate than listing all tasks) with a
-  // higher limit so a user's completed-task count matches what the Profile shows.
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['all-tasks-lb'],
-    queryFn: () => base44.entities.Task.filter({ status: 'COMPLETED' }, '-created_date', 500),
-  });
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['all-reviews'],
     queryFn: () => base44.entities.Review.list('-created_date', 300),
   });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ['all-users'],
     queryFn: () => base44.entities.User.list(),
   });
 
-  const usersMap = {};
-  users.forEach(u => { usersMap[u.id] = u; });
-
-  // Build leaderboard from completed tasks as worker
+  // Build leaderboard from the authoritative tasks_completed counter on each
+  // user record. Counting from a fetched tasks list was capped (500) and drifted
+  // from the Profile; the user field is the single source of truth and stays
+  // accurate in real time.
   const board = {};
-  tasks.forEach(t => {
-    if (t.status !== 'COMPLETED' || !t.worker_id) return;
-    if (!board[t.worker_id]) {
-      const userRecord = usersMap[t.worker_id];
-      board[t.worker_id] = {
-        user_id: t.worker_id,
-        name: userRecord?.full_name || t.worker_name || t('anonymous'),
-        avatar: userRecord?.full_name?.[0]?.toUpperCase() || '?',
-        profile_photo: userRecord?.profile_photo || null,
-        is_verified: userRecord?.is_verified || false,
-        social_verified: !!(userRecord?.instagram_verified || userRecord?.facebook_verified || userRecord?.tiktok_verified),
-        profession: userRecord?.profession || '',
-        count: 0,
-        ratings: [],
-      };
-    }
-    board[t.worker_id].count += 1;
+  users.forEach(u => {
+    const completed = u.tasks_completed || 0;
+    if (completed <= 0) return;
+    board[u.id] = {
+      user_id: u.id,
+      name: u.full_name || t('anonymous'),
+      avatar: u.full_name?.[0]?.toUpperCase() || '?',
+      profile_photo: u.profile_photo || null,
+      is_verified: u.is_verified || false,
+      social_verified: !!(u.instagram_verified || u.facebook_verified || u.tiktok_verified),
+      count: completed,
+      ratings: [],
+    };
   });
 
+  // role='client' → reviewer was the client → reviewee is the worker
   reviews.forEach(r => {
     if (r.role === 'client' && board[r.reviewee_id]) {
       board[r.reviewee_id].ratings.push(r.rating);
@@ -166,11 +156,10 @@ export default function Leaderboard() {
                   : user.avatar}
               </div>
               <div className="flex-1 min-w-0">
-              <div className="font-bold text-sm truncate flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
+                <div className="font-bold text-sm truncate flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
                   {user.name}{user.is_verified && (user.social_verified ? <GoldBadge size="sm" /> : <VerifiedBadge size="sm" />)}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {user.profession && <span className="text-xs" style={{ color: '#1a6fd4' }}>{getProfessionLabel(user.profession, t)}</span>}
                   <span className="text-xs text-gray-400">{user.count} {t('tasks')}</span>
                   {user.avg > 0 && (
                     <span className="flex items-center gap-0.5 text-xs text-yellow-600">

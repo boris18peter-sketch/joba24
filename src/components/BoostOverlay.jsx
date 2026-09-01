@@ -58,7 +58,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', width: '100%', padding: '0 0 24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28, height: '100%', width: '100%', padding: 'max(28px, env(safe-area-inset-top)) 0 max(28px, env(safe-area-inset-bottom))' }}>
       {/* Stars */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
         {Array.from({ length: 24 }).map((_, i) => (
@@ -74,7 +74,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
       </div>
 
       {/* Logo + orbits */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <motion.div initial={{ scale: 0, rotate: -18 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 8, stiffness: 140 }} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* Orbit 1 */}
           <div style={{ position: 'absolute', inset: -22, borderRadius: '50%', border: '1.5px dashed rgba(168,85,247,.45)', animation: 'boostOrbit1 3s linear infinite', pointerEvents: 'none' }}>
@@ -110,7 +110,7 @@ function LaunchScene({ taskTitle, taskPrice, onContinue }) {
       {/* Text block */}
       <AnimatePresence>
         {phase === 'reveal' && (
-          <motion.div key="text" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', damping: 14, stiffness: 150 }} style={{ textAlign: 'center', padding: '0 28px', width: '100%', marginBottom: 16 }}>
+          <motion.div key="text" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', damping: 14, stiffness: 150 }} style={{ textAlign: 'center', padding: '0 28px', width: '100%' }}>
             <div style={{ fontSize: 28, fontWeight: 900, color: '#ffffff', letterSpacing: -0.5, lineHeight: 1.25, marginBottom: 12, textShadow: '0 0 24px rgba(168,85,247,.7)' }}>
               {t('boost_launched')}
             </div>
@@ -197,9 +197,9 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
   const dotY = (a, d) => 50 + d * Math.sin((a * Math.PI) / 180);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', width: '100%', padding: '0 0 24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', height: '100%', width: '100%', padding: 'max(20px, env(safe-area-inset-top)) 0 24px' }}>
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ textAlign: 'center', padding: '12px 24px 0', width: '100%' }}>
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ textAlign: 'center', padding: '0 24px', width: '100%' }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginBottom: 5, letterSpacing: 1, fontWeight: 600, textTransform: 'uppercase' }}>Boost · Joba24</div>
         <div style={{ fontSize: 22, fontWeight: 900, color: '#ffffff', lineHeight: 1.25, marginBottom: 6 }}>{t('boost_expanding')}</div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>

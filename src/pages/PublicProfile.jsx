@@ -64,8 +64,8 @@ export default function PublicProfile() {
 
   const liveRating = user.rating || 0;
   const liveRatingCount = user.rating_count || 0;
-  const completedCount = user.tasks_completed || 0;
-  const postedCount = user.tasks_posted || 0;
+  const completedCount = user.tasks_completed || completedTasks.length;
+  const postedCount = postedTasks.length;
   const reviews = user.reviews || [];
   const social = !!(user.instagram_verified || user.facebook_verified || user.tiktok_verified);
   const verified = isUserVerified(user);
