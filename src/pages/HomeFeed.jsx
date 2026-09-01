@@ -15,7 +15,6 @@ import InstantMatchPopup from '@/components/InstantMatchPopup';
 import StoriesBar from '@/components/StoriesBar';
 import MyTasksCarousel from '@/components/MyTasksCarousel';
 import ActiveTaskBanner from '@/components/ActiveTaskBanner';
-import LoginBannerCarousel from '@/components/LoginBannerCarousel';
 import { CATEGORIES, getCategoryLabel } from '@/lib/categories';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
@@ -608,8 +607,6 @@ export default function HomeFeed() {
   return (
     <div style={{ background: 'var(--surface-1)', minHeight: '100%' }} dir={isRTL ? 'rtl' : 'ltr'}>
       <PullToRefreshIndicator refreshing={refreshing} pullProgress={pullProgress} />
-      {/* Login Banner Carousel — color depends on active tab */}
-      {!isAuthenticated && <LoginBannerCarousel activeTab={activeTab} />}
 
       {/* Segmented Control Tabs */}
       {(() => {

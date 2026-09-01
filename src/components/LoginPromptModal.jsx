@@ -8,7 +8,6 @@ import { Browser } from '@capacitor/browser';
 import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
 import { useAuth } from '@/lib/AuthContext';
-import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
   return (
@@ -325,8 +324,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
   const { enterGuestMode } = useAuth();
-  const { settings: jobaSettings } = useJobaSettings();
-  const guestEnabled = jobaSettings.guest_access_enabled !== false;
 
   const handleGuest = () => {
     enterGuestMode();
@@ -538,21 +535,19 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                 />
               </div>
 
-              {guestEnabled && (
-                <button
-                  onClick={handleGuest}
-                  style={{
-                    width: '100%', height: 48, borderRadius: 14, marginTop: 6,
-                    background: 'transparent', color: 'var(--text-2)',
-                    border: '1.5px dashed var(--border-2)',
-                    fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  }}
-                >
-                  <Eye size={16} color="var(--text-2)" />
-                  המשך בתור אורח
-                </button>
-              )}
+              <button
+                onClick={handleGuest}
+                style={{
+                  width: '100%', height: 48, borderRadius: 14, marginTop: 6,
+                  background: 'transparent', color: 'var(--text-2)',
+                  border: '1.5px dashed var(--border-2)',
+                  fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Eye size={16} color="var(--text-2)" />
+                המשך בתור אורח
+              </button>
 
               <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.8, fontWeight: 500, marginBottom: 4 }}>
                 בחינם לחלוטין — ללא חיוב
