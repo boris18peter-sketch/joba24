@@ -48,6 +48,8 @@ import WorkerCancelledPopup from '@/components/WorkerCancelledPopup';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import usePushNotifications from '@/hooks/usePushNotifications';
+import GuestBlockPopup from '@/components/GuestBlockPopup';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 import useRealtimeSync from '@/hooks/useRealtimeSync';
 import PreLaunchWaitingPage from '@/pages/PreLaunchWaitingPage';
 import BoostOverlay from '@/components/BoostOverlay';
@@ -58,12 +60,42 @@ const ROOT_TAB_PATHS = ['/', '/map', '/chats', '/profile'];
 // Pages accessible without authentication — render with minimal layout (no nav/header)
 const PUBLIC_PAGES = ['/terms', '/privacy', '/faq'];
 
+// Friendly Hebrew labels for the guest-block popup (where the guest tried to go)
+const GUEST_BLOCK_LABELS = {
+  '/map': 'מפת המשימות',
+  '/create-task': 'פרסום משימה',
+  '/chats': 'הצ\'אטים',
+  '/profile': 'הפרופיל',
+  '/wallet': 'הארנק',
+  '/my-tasks': 'המשימות שלי',
+  '/notifications': 'ההתראות',
+  '/leaderboard': 'טבלת המובילים',
+  '/earnings': 'דוח הרווחים',
+  '/daily-goal': 'היעד היומי',
+  '/agent-dashboard': 'דשבורד הסוכן',
+  '/admin': 'דשבורד המנהל',
+};
+const GUEST_NAV_LABELS = {
+  '/map': 'מפת המשימות',
+  '/create-task': 'פרסום משימה',
+  '/chats': 'הצ\'אטים',
+  '/profile': 'הפרופיל',
+};
+
 export default function Layout() {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, isGuest, exitGuestMode } = useAuth();
+  const { settings: jobaSettings } = useJobaSettings();
+  const guestAccessEnabled = jobaSettings.guest_access_enabled !== false;
+  const effectiveGuest = isGuest && guestAccessEnabled;
   const queryClient = useQueryClient();
+
+  // Auto-exit guest mode if the admin disables the feature while a guest is browsing
+  useEffect(() => {
+    if (isGuest && !guestAccessEnabled) exitGuestMode();
+  }, [isGuest, guestAccessEnabled, exitGuestMode]);
 
   // ── GLOBAL HARD RULE: hide bottom nav whenever any modal/sheet/popup is open ──
   // Watches document.body for portaled overlays (z-index ≥ 9999). When one appears,
@@ -88,6 +120,7 @@ export default function Layout() {
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [navHiddenByModal, setNavHiddenByModal] = useState(false);
   const [boostOverlayData, setBoostOverlayData] = useState(null);
+  const [guestBlock, setGuestBlock] = useState(null);
 
   // Swipe between tabs — WhatsApp style horizontal swipe
   const SWIPE_TABS = ['/', '/map', '/chats', '/profile'];
@@ -426,9 +459,16 @@ export default function Layout() {
   useEffect(() => {
     const isPublicPage = PUBLIC_PAGES.includes(location.pathname);
     if (!isAuthenticated && !isPublicPage) {
+      if (effectiveGuest) {
+        if (location.pathname !== '/') {
+          setGuestBlock({ label: GUEST_BLOCK_LABELS[location.pathname] || 'לדף זה' });
+          navigate('/', { replace: true });
+        }
+        return;
+      }
       navigate('/join');
     }
-  }, [isAuthenticated, navigate, location.pathname]);
+  }, [isAuthenticated, effectiveGuest, navigate, location.pathname]);
 
   // Pre-launch gate: show waiting page for unapproved users (admins and agents always pass)
   // Placed AFTER all hooks to comply with Rules of Hooks
@@ -443,7 +483,14 @@ export default function Layout() {
         </div>
       );
     }
-    return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+    if (!effectiveGuest) {
+      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+    }
+    // Guest: only home is allowed. If not on home yet, wait for the redirect to fire.
+    if (location.pathname !== '/') {
+      return <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}><Loader2 size={32} color="#1a6fd4" className="animate-spin" /></div>;
+    }
+    // Guest on home: fall through to the full layout (feed browsing only)
   }
 
   const isBlocked = approvalStatus?.data?.is_blocked;
@@ -647,7 +694,7 @@ export default function Layout() {
               const active = location.pathname === to;
               if (primary) {
                 return (
-                  <button id="onboarding-create-btn" key={to} onClick={() => { if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
+                  <button id="onboarding-create-btn" key={to} onClick={() => { if (effectiveGuest) { setGuestBlock({ label: 'פרסום משימה' }); return; } if (!isAuthenticated) { navigate(to); return; } navigate(to); }}
                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -22, background: 'none', border: 'none', cursor: 'pointer', padding: 0, WebkitTapHighlightColor: 'transparent', justifySelf: 'center' }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 18px rgba(26,111,212,0.4)' }}>
                       <Icon size={24} color="white" />
@@ -657,7 +704,7 @@ export default function Layout() {
                 );
               }
               return (
-                <Link key={to} to={to} onClick={(e) => { if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
+                <Link key={to} to={to} onClick={(e) => { if (effectiveGuest && to !== '/') { e.preventDefault(); setGuestBlock({ label: GUEST_NAV_LABELS[to] || 'לדף זה' }); return; } if (active) { e.preventDefault(); const el = document.getElementById('main-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); } }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '8px 4px 6px', textDecoration: 'none', position: 'relative', height: 52, WebkitTapHighlightColor: 'transparent' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Icon size={21} color={active ? '#1a6fd4' : '#9bb3d4'} strokeWidth={active ? 2.4 : 2} style={{ transition: 'color 0.2s' }} />
                     {badge > 0 && (
@@ -680,6 +727,10 @@ export default function Layout() {
           taskCategory={boostOverlayData.taskCategory}
           onDismiss={() => setBoostOverlayData(null)}
         />,
+        document.body
+      )}
+      {guestBlock && createPortal(
+        <GuestBlockPopup areaLabel={guestBlock.label} onClose={() => setGuestBlock(null)} />,
         document.body
       )}
     </div>

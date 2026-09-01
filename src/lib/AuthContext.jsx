@@ -17,6 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
   const [showLoginModal, setShowLoginModal] = useState(false);
+  // Guest mode — lets unauthenticated users browse the main feed only (Apple Guideline 5.1.1).
+  const [isGuest, setIsGuest] = useState(() => localStorage.getItem('joba24_guest_mode') === '1');
   // Refs to store unsubscribe functions — prevents leaked subscriptions on re-auth
   const unsubUserRef = useRef(null);
   const unsubCreditRef = useRef(null);
@@ -115,6 +117,9 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      // Logging in exits guest mode
+      localStorage.removeItem('joba24_guest_mode');
+      setIsGuest(false);
 
       // Referral: if user arrived via ?ref=AGENT_CODE, save it to their profile BEFORE
       // granting the signup bonus, so grantSignupBonus can detect the referral and add
@@ -272,6 +277,16 @@ export const AuthProvider = ({ children }) => {
     setShowLoginModal(true);
   };
 
+  const enterGuestMode = () => {
+    localStorage.setItem('joba24_guest_mode', '1');
+    setIsGuest(true);
+  };
+
+  const exitGuestMode = () => {
+    localStorage.removeItem('joba24_guest_mode');
+    setIsGuest(false);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -284,6 +299,9 @@ export const AuthProvider = ({ children }) => {
       logout,
       login,
       navigateToLogin,
+      enterGuestMode,
+      exitGuestMode,
+      isGuest,
       checkUserAuth,
       checkAppState,
       refreshUser,

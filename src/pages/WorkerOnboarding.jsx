@@ -31,7 +31,7 @@ function getSteps(t) {
 export default function WorkerOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const { isAuthenticated, isLoadingAuth, enterGuestMode } = useAuth();
   const { t, isRTL, lang } = useLanguage();
   const STEPS = getSteps(t);
   const [showLogin, setShowLogin] = useState(false);
@@ -65,6 +65,7 @@ export default function WorkerOnboarding() {
   // Default 0 — only grants a bonus if the admin explicitly sets a value.
   const { settings: jobaSettings } = useJobaSettings();
   const profileBonus = jobaSettings.profile_completion_bonus ?? 0;
+  const guestEnabled = jobaSettings.guest_access_enabled !== false;
 
   // Pre-fill from existing profile
   useEffect(() => {
@@ -260,6 +261,14 @@ export default function WorkerOnboarding() {
           <div style={{ marginTop: 14, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
             {t('wo_setup_note')}
           </div>
+          {guestEnabled && (
+            <button
+              onClick={() => { enterGuestMode(); navigate('/'); }}
+              style={{ width: '100%', marginTop: 14, padding: '14px 0', borderRadius: 16, background: 'rgba(255,255,255,0.1)', color: 'white', fontSize: 16, fontWeight: 800, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+            >
+              להמשיך כאורח
+            </button>
+          )}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, flexWrap: 'nowrap' }}>
             <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
             <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11 }}>|</span>

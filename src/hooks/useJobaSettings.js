@@ -20,6 +20,7 @@ export const DEFAULT_JOBA_SETTINGS = {
   app_store_url: '',
   google_play_url: '',
   store_buttons_enabled: true,
+  guest_access_enabled: true,
 };
 
 /**

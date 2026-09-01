@@ -107,6 +107,7 @@ const DEFAULTS = {
   app_store_url: '',
   google_play_url: '',
   store_buttons_enabled: true,
+  guest_access_enabled: true,
 };
 
 function SettingRow({ field, value, onChange }) {
@@ -177,6 +178,7 @@ export default function JobaSettingsTab() {
       merged.app_store_url = settingsRecord.app_store_url || '';
       merged.google_play_url = settingsRecord.google_play_url || '';
       merged.store_buttons_enabled = settingsRecord.store_buttons_enabled !== false;
+      merged.guest_access_enabled = settingsRecord.guest_access_enabled !== false;
       setDraft(merged);
       setHasChanges(false);
     }
@@ -204,6 +206,7 @@ export default function JobaSettingsTab() {
         app_store_url: String(draft.app_store_url || ''),
         google_play_url: String(draft.google_play_url || ''),
         store_buttons_enabled: draft.store_buttons_enabled !== false,
+        guest_access_enabled: draft.guest_access_enabled !== false,
         updated_by: me?.full_name || 'admin',
       };
       if (settingsRecord?.id) {
@@ -328,6 +331,31 @@ export default function JobaSettingsTab() {
             style={{ width: '100%', height: 40, borderRadius: 10, border: '1.5px solid var(--border-1)', background: 'var(--surface-3)', color: 'var(--text-1)', fontSize: 13, padding: '0 12px', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
           />
         </div>
+      </div>
+
+      {/* Guest access toggle — lets unauthenticated users browse the feed (Apple 5.1.1) */}
+      <div style={{
+        background: draft.guest_access_enabled ? '#eff6ff' : 'var(--surface-2)',
+        border: `1.5px solid ${draft.guest_access_enabled ? '#bfdbfe' : 'var(--border-1)'}`,
+        borderRadius: 14, padding: '14px', marginBottom: 12,
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+          background: draft.guest_access_enabled ? 'rgba(26,111,212,0.12)' : 'var(--surface-3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Eye size={18} color={draft.guest_access_enabled ? '#1a6fd4' : 'var(--text-3)'} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)' }}>כניסת אורח</div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>
+            {draft.guest_access_enabled
+              ? 'דלוק — משתמשים יכולים לגלוש בלוח המשימות ללא הרשמה (נדרש ל-Apple).'
+              : 'כבוי — נדרשת התחברות מלאה כדי להיכנס לאפליקציה.'}
+          </div>
+        </div>
+        <Switch checked={draft.guest_access_enabled} onCheckedChange={(c) => handleChange('guest_access_enabled', c)} />
       </div>
 
       {/* Settings rows */}

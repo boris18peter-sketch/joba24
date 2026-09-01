@@ -1,12 +1,15 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
-import { X, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { X, Mail, ArrowLeft, Loader2, Eye } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { completeNativeAuth, pollHandshakeToken } from '@/lib/nativeAuthComplete';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
+import { useJobaSettings } from '@/hooks/useJobaSettings';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
   return (
@@ -322,6 +325,16 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
+  const navigate = useNavigate();
+  const { enterGuestMode } = useAuth();
+  const { settings: jobaSettings } = useJobaSettings();
+  const guestEnabled = jobaSettings.guest_access_enabled !== false;
+
+  const handleGuest = () => {
+    enterGuestMode();
+    onClose();
+    navigate('/');
+  };
 
   // Apple Sign-In only works on Apple devices/browsers. On Android (native app
   // or Android browser) the button is useless and misleading — hide it there.
@@ -524,6 +537,22 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                   label="המשך עם Facebook"
                 />
               </div>
+
+              {guestEnabled && (
+                <button
+                  onClick={handleGuest}
+                  style={{
+                    width: '100%', height: 48, borderRadius: 14, marginTop: 6,
+                    background: 'transparent', color: 'var(--text-2)',
+                    border: '1.5px dashed var(--border-2)',
+                    fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  }}
+                >
+                  <Eye size={16} color="var(--text-2)" />
+                  המשך בתור אורח
+                </button>
+              )}
 
               <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.8, fontWeight: 500, marginBottom: 4 }}>
                 בחינם לחלוטין — ללא חיוב
