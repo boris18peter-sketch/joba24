@@ -128,7 +128,7 @@ workflows:
       android_signing:
         - joba24_android_upload
       vars:
-        ANDROID_VERSION_CODE: 10
+        ANDROID_VERSION_CODE: 11
         ANDROID_VERSION_NAME: "1.0.0"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
@@ -184,6 +184,28 @@ workflows:
             echo "ERROR: android-config/google-services.json not found in repo"
             exit 1
           fi
+      - name: Copy custom app icon and splash screen
+        script: |
+          RES_DIR="android/app/src/main/res"
+
+          if [ ! -d "android-config/icons" ] || [ ! -f "android-config/splash.png" ]; then
+            echo "ERROR: android-config/icons/ or android-config/splash.png not found in repo"
+            exit 1
+          fi
+
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp "android-config/icons/mipmap-$density/ic_launcher.png" "$RES_DIR/mipmap-$density/ic_launcher.png"
+            cp "android-config/icons/mipmap-$density/ic_launcher_round.png" "$RES_DIR/mipmap-$density/ic_launcher_round.png"
+            cp "android-config/icons/mipmap-$density/ic_launcher_foreground.png" "$RES_DIR/mipmap-$density/ic_launcher_foreground.png"
+          done
+          echo "App icon replaced in all densities"
+
+          cp "android-config/splash.png" "$RES_DIR/drawable/splash.png"
+          for density in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp "android-config/splash.png" "$RES_DIR/drawable-land-$density/splash.png"
+            cp "android-config/splash.png" "$RES_DIR/drawable-port-$density/splash.png"
+          done
+          echo "Splash screen replaced in all densities and orientations"
       - name: Patch AndroidManifest.xml with joba24:// intent-filter
         script: |
           python3 << 'PYEOF'
