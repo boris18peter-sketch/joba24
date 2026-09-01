@@ -14,10 +14,7 @@ import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
-import ProfileReputationCard from '@/components/profile/ProfileReputationCard';
-import ProfileWhyTrust from '@/components/profile/ProfileWhyTrust';
-import ProfileActivityStats from '@/components/profile/ProfileActivityStats';
-import ProfileReviewsPreview from '@/components/profile/ProfileReviewsPreview';
+import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -232,31 +229,11 @@ export default function Profile() {
       {/* ── Content: trust hierarchy ── */}
       <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* SECTION 2 — REPUTATION (dominant rating) */}
-        <ProfileReputationCard rating={rating} reviewCount={reviews.length} />
+        {/* SECTION 2 — STATS PILL (rating · posted · completed) */}
+        <ProfileStatsPill rating={rating} reviewCount={reviews.length} postedCount={postedCount} completedCount={completedCount} />
 
         {/* SECTION 2b — Reliability score (prominent, clickable → existing modal) */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
-
-        {/* SECTION 3 — WHY TRUST */}
-        <ProfileWhyTrust
-          isVerified={verified}
-          hasSocial={social}
-          rating={rating}
-          reviewCount={reviews.length}
-          reliabilityPct={trustScore}
-          completedCount={completedCount}
-        />
-
-        {/* SECTION 4 — JOBA24 ACTIVITY */}
-        <ProfileActivityStats completedCount={completedCount} postedCount={postedCount} />
-
-        {/* SECTION 5 — REVIEWS preview */}
-        <ProfileReviewsPreview
-          reviews={reviews}
-          rating={rating}
-          onViewAll={() => setShowUnifiedHistory(true)}
-        />
 
         {/* Verify CTA — status-aware */}
         <VerificationStatusBanner me={me} />

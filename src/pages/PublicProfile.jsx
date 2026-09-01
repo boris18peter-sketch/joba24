@@ -9,10 +9,7 @@ import GoldBadge from '@/components/GoldBadge';
 import TrustCard from '@/components/TrustCard';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
-import ProfileReputationCard from '@/components/profile/ProfileReputationCard';
-import ProfileWhyTrust from '@/components/profile/ProfileWhyTrust';
-import ProfileActivityStats from '@/components/profile/ProfileActivityStats';
-import ProfileReviewsPreview from '@/components/profile/ProfileReviewsPreview';
+import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import { getCategoryLabel } from '@/lib/categories';
 import { getCityLabel } from '@/lib/cityLabels';
 import { calculateTrustScore } from '@/lib/trustScore';
@@ -151,31 +148,11 @@ export default function PublicProfile() {
           </a>
         )}
 
-        {/* SECTION 2 — REPUTATION */}
-        <ProfileReputationCard rating={liveRating} reviewCount={liveRatingCount} />
+        {/* SECTION 2 — STATS PILL (rating · posted · completed) */}
+        <ProfileStatsPill rating={liveRating} reviewCount={liveRatingCount} postedCount={postedCount} completedCount={completedCount} />
 
         {/* SECTION 2b — Reliability */}
         <TrustCard user={liveUser} reviews={reviews} tasks={[]} isPublic />
-
-        {/* SECTION 3 — WHY TRUST */}
-        <ProfileWhyTrust
-          isVerified={verified}
-          hasSocial={social}
-          rating={liveRating}
-          reviewCount={liveRatingCount}
-          reliabilityPct={trustScore}
-          completedCount={completedCount}
-        />
-
-        {/* SECTION 4 — ACTIVITY */}
-        <ProfileActivityStats completedCount={completedCount} postedCount={postedCount} />
-
-        {/* SECTION 5 — REVIEWS preview */}
-        <ProfileReviewsPreview
-          reviews={reviews}
-          rating={liveRating}
-          onViewAll={() => setShowUnifiedHistory(true)}
-        />
 
         {/* About */}
         {user.bio && (
