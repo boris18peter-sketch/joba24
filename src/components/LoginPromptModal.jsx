@@ -7,7 +7,6 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 
@@ -325,7 +324,6 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [showEmail, setShowEmail] = useState(false);
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
-  const navigate = useNavigate();
   const { enterGuestMode } = useAuth();
   const { settings: jobaSettings } = useJobaSettings();
   const guestEnabled = jobaSettings.guest_access_enabled !== false;
@@ -333,7 +331,9 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const handleGuest = () => {
     enterGuestMode();
     onClose();
-    navigate('/');
+    // Layout's guest redirect effect routes to "/" automatically (guests are
+    // constrained to the home feed), so we don't need useNavigate here — and
+    // can't use it: AuthContext renders this modal OUTSIDE <Router>.
   };
 
   // Apple Sign-In only works on Apple devices/browsers. On Android (native app
