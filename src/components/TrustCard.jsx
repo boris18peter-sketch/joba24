@@ -247,8 +247,8 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
         style={{
           background: 'var(--surface-2)',
           border: `1.5px solid ${barColor}40`,
-          borderRadius: 18,
-          padding: '16px 16px 14px',
+          borderRadius: 14,
+          padding: '12px 14px 10px',
           cursor: 'pointer', userSelect: 'none',
           boxShadow: 'var(--shadow-xs)',
           transition: 'box-shadow 0.15s, transform 0.1s',
@@ -257,23 +257,20 @@ export default function TrustCard({ user, reviews = [], tasks = [], isPublic = f
         onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <div style={{ width: 42, height: 42, borderRadius: 13, background: `${barColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield size={22} color={barColor} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: `${barColor}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Shield size={17} color={barColor} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('pr_reliability')}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
-              <span style={{ fontSize: 30, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
-              <span style={{ fontSize: 12, fontWeight: 800, color: barColor, transition: 'color 0.15s' }}>✨ {getTrustLevelLabel(trustLevel, t)}</span>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)', letterSpacing: 0.3 }}>{t('pr_reliability')}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 1 }}>
+              <span style={{ fontSize: 21, fontWeight: 900, color: barColor, lineHeight: 1, letterSpacing: -0.5, transition: 'color 0.15s' }}>{displayWidth}%</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: barColor, transition: 'color 0.15s' }}>✨ {getTrustLevelLabel(trustLevel, t)}</span>
             </div>
           </div>
         </div>
-        <div style={{ height: 8, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden', marginBottom: 10 }}>
-          <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, boxShadow: `0 0 10px ${barColor}80`, transition: 'background-color 0.1s, box-shadow 0.1s' }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: barColor, opacity: 0.85 }}>
-          <span>👆</span> {t('pr_reliability_hint')}
+        <div style={{ height: 6, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${displayWidth}%`, borderRadius: 99, background: barColor, boxShadow: `0 0 8px ${barColor}80`, transition: 'background-color 0.1s, box-shadow 0.1s' }} />
         </div>
       </div>
 

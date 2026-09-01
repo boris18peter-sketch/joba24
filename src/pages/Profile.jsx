@@ -195,7 +195,7 @@ export default function Profile() {
               onClick={() => photoInputRef.current?.click()}
               style={{ position: 'absolute', bottom: -1, right: -1, width: 14, height: 14, borderRadius: '50%', background: 'white', border: '1px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
             >
-              {uploadingPhoto ? <Loader2 size={6} color="#1a6fd4" className="animate-spin" /> : <Camera size={7} color="#1a6fd4" />}
+              {uploadingPhoto ? <Loader2 size={7} color="#1a6fd4" className="animate-spin" /> : <Camera size={9} color="#1a6fd4" />}
             </button>
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
@@ -205,34 +205,18 @@ export default function Profile() {
             {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
           </div>
 
-          {/* Verification + location chips */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-            {verified && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(255,255,255,0.18)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(255,255,255,0.22)' }}>
-                <ShieldCheck size={11} color="#4ade80" /> {t('pr_identity_verified')}
-              </span>
-            )}
-            {social && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'white', background: 'rgba(251,191,36,0.22)', borderRadius: 20, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, border: '1px solid rgba(251,191,36,0.4)' }}>
-                <Link2 size={11} color="#fbbf24" /> {t('pr_social_connected')}
-              </span>
-            )}
-            {cities.length > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                <MapPin size={11} /> {getCityLabel(cities[0], lang)}{cities.length > 1 ? ` +${cities.length - 1}` : ''}
-              </span>
-            )}
-          </div>
+        </div>
+
+        {/* Stats pill — 3 cubes directly under the name (legacy layout) */}
+        <div style={{ padding: '12px 16px 0' }}>
+          <ProfileStatsPill rating={rating} reviewCount={reviews.length} postedCount={postedCount} completedCount={completedCount} />
         </div>
       </div>
 
       {/* ── Content: trust hierarchy ── */}
       <div style={{ padding: '12px 14px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-        {/* SECTION 2 — STATS PILL (rating · posted · completed) */}
-        <ProfileStatsPill rating={rating} reviewCount={reviews.length} postedCount={postedCount} completedCount={completedCount} />
-
-        {/* SECTION 2b — Reliability score (prominent, clickable → existing modal) */}
+        {/* SECTION 2b — Reliability score (compact, clickable → existing modal) */}
         <TrustCard user={me} reviews={reviews} tasks={workerTasks} />
 
         {/* Verify CTA — status-aware */}
