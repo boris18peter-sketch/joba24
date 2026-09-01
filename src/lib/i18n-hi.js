@@ -1377,4 +1377,13 @@ export const hi = {
   ps_market_fallback: 'बाज़ार दरों पर आधारित',
   share_task: 'कार्य साझा करें',
   share_link_copied: 'लिंक कॉपी हो गया',
+  // ── Login modal & guest ──
+  login_modal_title: 'हजारों लोगों के साथ जुड़ें जो कार्य पोस्ट करते और पूरे करते हैं',
+  continue_with_google: 'Google के साथ जारी रखें',
+  continue_with_email: 'Email के साथ जारी रखें',
+  or_separator: 'या',
+  continue_with_apple: 'Apple के साथ जारी रखें',
+  continue_with_facebook: 'Facebook के साथ जारी रखें',
+  continue_as_guest: 'अतिथि के रूप में जारी रखें',
+  completely_free: 'पूरी तरह निःशुल्क — कोई शुल्क नहीं',
 };

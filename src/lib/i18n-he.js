@@ -1432,4 +1432,13 @@ export const he = {
   ps_market_fallback: 'מבוסס על מחירי שוק',
   share_task: 'שתף משימה',
   share_link_copied: 'הקישור הועתק',
+  // ── Login modal & guest ──
+  login_modal_title: 'הצטרפו לאלפי אנשים שמפרסמים ומבצעים משימות',
+  continue_with_google: 'המשך עם Google',
+  continue_with_email: 'המשך עם אימייל',
+  or_separator: 'או',
+  continue_with_apple: 'המשך עם Apple',
+  continue_with_facebook: 'המשך עם Facebook',
+  continue_as_guest: 'המשך בתור אורח',
+  completely_free: 'בחינם לחלוטין — ללא חיוב',
   };

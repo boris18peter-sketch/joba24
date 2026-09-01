@@ -1377,4 +1377,13 @@ export const zh = {
   ps_market_fallback: '基于市场价格',
   share_task: '分享任务',
   share_link_copied: '链接已复制',
+  // ── Login modal & guest ──
+  login_modal_title: '加入数以千计发布和完成任务的用户',
+  continue_with_google: '使用 Google 继续',
+  continue_with_email: '使用邮箱继续',
+  or_separator: '或',
+  continue_with_apple: '使用 Apple 继续',
+  continue_with_facebook: '使用 Facebook 继续',
+  continue_as_guest: '以访客身份继续',
+  completely_free: '完全免费 — 不收任何费用',
 };

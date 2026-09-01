@@ -1363,4 +1363,13 @@ export const fr = {
   ps_market_fallback: 'Basé sur les prix du marché',
     share_task: 'Partager la tâche',
   share_link_copied: 'Lien copié',
+  // ── Login modal & guest ──
+  login_modal_title: 'Rejoignez des milliers de personnes qui publient et accomplissent des tâches',
+  continue_with_google: 'Continuer avec Google',
+  continue_with_email: 'Continuer avec Email',
+  or_separator: 'ou',
+  continue_with_apple: 'Continuer avec Apple',
+  continue_with_facebook: 'Continuer avec Facebook',
+  continue_as_guest: "Continuer en tant qu'invité",
+  completely_free: 'Entièrement gratuit — sans frais',
 };

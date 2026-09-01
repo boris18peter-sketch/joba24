@@ -1401,4 +1401,13 @@ export const es = {
   ps_market_fallback: 'Basado en precios de mercado',
     share_task: 'Compartir tarea',
   share_link_copied: 'Enlace copiado',
+  // ── Login modal & guest ──
+  login_modal_title: 'Únete a miles de personas que publican y realizan tareas',
+  continue_with_google: 'Continuar con Google',
+  continue_with_email: 'Continuar con Email',
+  or_separator: 'o',
+  continue_with_apple: 'Continuar con Apple',
+  continue_with_facebook: 'Continuar con Facebook',
+  continue_as_guest: 'Continuar como invitado',
+  completely_free: 'Completamente gratis — sin cargo',
 };

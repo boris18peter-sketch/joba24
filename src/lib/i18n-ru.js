@@ -1366,4 +1366,13 @@ export const ru = {
   ps_market_fallback: 'На основе рыночных цен',
     share_task: 'Поделиться задачей',
   share_link_copied: 'Ссылка скопирована',
+  // ── Login modal & guest ──
+  login_modal_title: 'Присоединяйтесь к тысячам людей, которые публикуют и выполняют задания',
+  continue_with_google: 'Продолжить с Google',
+  continue_with_email: 'Продолжить с Email',
+  or_separator: 'или',
+  continue_with_apple: 'Продолжить с Apple',
+  continue_with_facebook: 'Продолжить с Facebook',
+  continue_as_guest: 'Продолжить как гость',
+  completely_free: 'Полностью бесплатно — без оплаты',
 };

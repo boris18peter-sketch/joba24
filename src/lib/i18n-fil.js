@@ -1377,4 +1377,13 @@ export const fil = {
   ps_market_fallback: 'Batay sa presyo ng merkado',
   share_task: 'Ibahagi ang gawain',
   share_link_copied: 'Nakopya ang link',
+  // ── Login modal & guest ──
+  login_modal_title: 'Sumali sa libo-libong taong nagpo-post at nagtatapos ng mga gawain',
+  continue_with_google: 'Magpatuloy sa Google',
+  continue_with_email: 'Magpatuloy sa Email',
+  or_separator: 'o',
+  continue_with_apple: 'Magpatuloy sa Apple',
+  continue_with_facebook: 'Magpatuloy sa Facebook',
+  continue_as_guest: 'Magpatuloy bilang bisita',
+  completely_free: 'Libreng walang bayad — walang singil',
 };

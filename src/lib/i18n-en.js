@@ -1407,4 +1407,13 @@ export const en = {
   ps_market_fallback: 'Based on market rates',
   share_task: 'Share Task',
   share_link_copied: 'Link copied',
+  // ── Login modal & guest ──
+  login_modal_title: 'Join thousands of people posting and completing tasks',
+  continue_with_google: 'Continue with Google',
+  continue_with_email: 'Continue with Email',
+  or_separator: 'or',
+  continue_with_apple: 'Continue with Apple',
+  continue_with_facebook: 'Continue with Facebook',
+  continue_as_guest: 'Continue as guest',
+  completely_free: 'Completely free — no charge',
   };

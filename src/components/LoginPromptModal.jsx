@@ -8,6 +8,7 @@ import { Browser } from '@capacitor/browser';
 import { isNativeLike, openExternalBrowser } from '@/lib/nativeEnv';
 import { appParams } from '@/lib/app-params';
 import { useAuth } from '@/lib/AuthContext';
+import { useLanguage } from '@/lib/LanguageContext';
 
 function ProviderButton({ icon, label, onClick, bg, color, border }) {
   return (
@@ -324,6 +325,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
   const [waitingForAuth, setWaitingForAuth] = useState(false);
   const [pendingLoginUrl, setPendingLoginUrl] = useState(null);
   const { enterGuestMode } = useAuth();
+  const { t } = useLanguage();
 
   const handleGuest = () => {
     enterGuestMode();
@@ -483,7 +485,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
             <>
               {/* Title */}
               <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', lineHeight: 1.5, textAlign: 'center', marginBottom: 24 }}>
-                הצטרפו לאלפי אנשים שמפרסמים ומבצעים משימות
+                {t('login_modal_title')}
               </div>
 
               {/* Login buttons */}
@@ -499,12 +501,12 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                       <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                     </svg>
                   }
-                  label="המשך עם Google"
+                  label={t('continue_with_google')}
                 />
 
                 <ProviderButton
                   onClick={() => setShowEmail(true)}
-                  label="המשך עם אימייל"
+                  label={t('continue_with_email')}
                   border="#bfdbfe"
                   color="#1a6fd4"
                   icon={<Mail size={16} color="#1a6fd4" />}
@@ -512,7 +514,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
-                  <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>או</span>
+                  <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{t('or_separator')}</span>
                   <div style={{ flex: 1, height: 1, background: '#e8edf5' }} />
                 </div>
 
@@ -522,8 +524,8 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                     bg="#000"
                     color="white"
                     border="#000"
-                    label="המשך עם Apple"
-                  />
+                    label={t('continue_with_apple')}
+                    />
                 )}
 
                 <ProviderButton
@@ -531,7 +533,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                   bg="#1877F2"
                   color="white"
                   border="#1877F2"
-                  label="המשך עם Facebook"
+                  label={t('continue_with_facebook')}
                 />
               </div>
 
@@ -546,11 +548,11 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
                 }}
               >
                 <Eye size={16} color="var(--text-2)" />
-                המשך בתור אורח
+                {t('continue_as_guest')}
               </button>
 
               <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', lineHeight: 1.8, fontWeight: 500, marginBottom: 4 }}>
-                בחינם לחלוטין — ללא חיוב
+                {t('completely_free')}
               </div>
             </>
           )}

@@ -1404,4 +1404,13 @@ export const ar = {
   ps_market_fallback: 'مبني على أسعار السوق',
     share_task: 'مشاركة المهمة',
   share_link_copied: 'تم نسخ الرابط',
+  // ── Login modal & guest ──
+  login_modal_title: 'انضم إلى آلاف الأشخاص الذين ينشرون وينفذون المهام',
+  continue_with_google: 'المتابعة عبر Google',
+  continue_with_email: 'المتابعة عبر البريد الإلكتروني',
+  or_separator: 'أو',
+  continue_with_apple: 'المتابعة عبر Apple',
+  continue_with_facebook: 'المتابعة عبر Facebook',
+  continue_as_guest: 'المتابعة كضيف',
+  completely_free: 'مجاني تماماً — بدون رسوم',
 };

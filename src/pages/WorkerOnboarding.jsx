@@ -266,7 +266,7 @@ export default function WorkerOnboarding() {
               onClick={() => { enterGuestMode(); navigate('/'); }}
               style={{ width: '100%', marginTop: 14, padding: '14px 0', borderRadius: 16, background: 'rgba(255,255,255,0.1)', color: 'white', fontSize: 16, fontWeight: 800, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
             >
-              להמשיך כאורח
+              {t('continue_as_guest')}
             </button>
           )}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, flexWrap: 'nowrap' }}>
