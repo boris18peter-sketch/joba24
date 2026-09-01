@@ -193,9 +193,9 @@ export default function Profile() {
             </div>
             <button
               onClick={() => photoInputRef.current?.click()}
-              style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: 'white', border: '1px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
+              style={{ position: 'absolute', bottom: -1, right: -1, width: 14, height: 14, borderRadius: '50%', background: 'white', border: '1px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
             >
-              {uploadingPhoto ? <Loader2 size={7} color="#1a6fd4" className="animate-spin" /> : <Camera size={8} color="#1a6fd4" />}
+              {uploadingPhoto ? <Loader2 size={6} color="#1a6fd4" className="animate-spin" /> : <Camera size={7} color="#1a6fd4" />}
             </button>
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>

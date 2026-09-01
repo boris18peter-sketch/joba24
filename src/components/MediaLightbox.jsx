@@ -49,13 +49,15 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
           width: 40,
           height: 40,
           borderRadius: 10,
-          background: 'rgba(255, 255, 255, 0.15)',
-          border: '1px solid rgba(255, 255, 255, 0.25)',
+          background: 'rgba(15, 23, 42, 0.55)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.18)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           color: 'white',
+          filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
           zIndex: 10,
         }}
       >
@@ -112,13 +114,15 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
               width: 40,
               height: 40,
               borderRadius: 10,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'rgba(15, 23, 42, 0.55)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: 'white',
+              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
             }}
           >
             <ChevronLeft size={20} />
@@ -134,13 +138,15 @@ export default function MediaLightbox({ isOpen, items = [], initialIndex = 0, on
               width: 40,
               height: 40,
               borderRadius: 10,
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'rgba(15, 23, 42, 0.55)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: 'white',
+              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))',
             }}
           >
             <ChevronRight size={20} />

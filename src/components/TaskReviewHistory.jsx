@@ -75,11 +75,23 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
   const workerTasks = tasks.filter(t => t.worker_id === userId);
   const clientTasks = tasks.filter(t => t.client_id === userId);
 
-  // Review.role = the REVIEWER's role. role='client' → reviewer was the client →
-  // reviewee is the worker. So reviews about me as a worker have role='client';
-  // reviews about me as a client have role='worker'.
-  const workerReviews = reviews.filter(r => r.role === 'client');
-  const clientReviews = reviews.filter(r => r.role === 'worker');
+  // Classify each review as "about me as worker" or "about me as client".
+  // Prefer the task relationship (robust for public-profile reviews that lack
+  // task_id); fall back to the review's `role` field (the reviewer's role).
+  // role='client' → reviewer was the client → reviewee is the worker.
+  const workerTaskIds = new Set(workerTasks.map(t => t.id));
+  const clientTaskIds = new Set(clientTasks.map(t => t.id));
+  const classifyReview = (r) => {
+    if (r.task_id) {
+      if (workerTaskIds.has(r.task_id)) return 'worker';
+      if (clientTaskIds.has(r.task_id)) return 'client';
+    }
+    if (r.role === 'client') return 'worker';
+    if (r.role === 'worker') return 'client';
+    return null;
+  };
+  const workerReviews = reviews.filter(r => classifyReview(r) === 'worker');
+  const clientReviews = reviews.filter(r => classifyReview(r) === 'client');
 
   const activeTasks = tab === 'worker' ? workerTasks : clientTasks;
   const activeReviews = tab === 'worker' ? workerReviews : clientReviews;
@@ -144,7 +156,7 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>{t('history_will_appear')}</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div key={tab} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {allItems.map((item, idx) => {
             if (item.type === 'task') {
               const hasReview = !!item.review;

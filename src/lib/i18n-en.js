@@ -720,6 +720,8 @@ export const en = {
     pr_jobs_done: 'Jobas done',
     pr_jobs_posted: 'Jobas posted',
     pr_rating: 'Rating',
+    pr_tasks_posted_long: 'Jobs Posted',
+    pr_tasks_done_long: 'Jobs Completed',
     pr_reviews_count: '{n} reviews',
     pr_verify_pending: 'Verification under review',
     pr_verify_rejected: 'Verification rejected',
