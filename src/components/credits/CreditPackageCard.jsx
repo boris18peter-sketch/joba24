@@ -6,7 +6,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 /**
  * CreditPackageCard — large, readable, attractive package tile (2-column grid friendly).
  */
-export default function CreditPackageCard({ pkg, selected, onSelect, isSubscription }) {
+export default function CreditPackageCard({ pkg, selected, onSelect, isSubscription, priceLabel }) {
   const { t } = useLanguage();
   const isPopular = pkg.badge === 'popular';
   const isBest = pkg.badge === 'best';
@@ -127,7 +127,7 @@ export default function CreditPackageCard({ pkg, selected, onSelect, isSubscript
           color: selected ? 'white' : 'var(--brand-primary-dark)',
           letterSpacing: -0.3, lineHeight: 1.1,
         }}>
-          ₪{pkg.price.toFixed(2)}
+          {priceLabel === undefined ? `₪${pkg.price.toFixed(2)}` : (priceLabel || '…')}
         </div>
         {isSubscription && (
           <div style={{

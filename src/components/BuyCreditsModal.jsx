@@ -11,6 +11,8 @@ import PaymentConfirm from '@/components/credits/PaymentConfirm';
 import PurchaseSuccess from '@/components/credits/PurchaseSuccess';
 import TranzilaIframe from '@/components/credits/TranzilaIframe';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
+import IosPurchaseConfirm from '@/components/credits/IosPurchaseConfirm';
+import { isIosNative, getIosProducts, IOS_IAP_PRODUCT_IDS, recoverUnfinishedIosPurchases } from '@/lib/iosIap';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -80,6 +82,21 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const [step, setStep] = useState('browse');
   const [loading, setLoading] = useState(false);
   const [tranzilaData, setTranzilaData] = useState(null);
+
+  // Apple In-App Purchase (iOS native only) — App Store Guideline 3.1.1.
+  // On iOS, credits are purchased via Apple's In-App Purchase; Tranzila is
+  // used everywhere else (web + Android) and is untouched.
+  const iosIap = isIosNative();
+  const [iosProducts, setIosProducts] = useState(null); // null = still loading
+  useEffect(() => {
+    if (!iosIap) return;
+    // Recovery: verify purchased-but-unfinished transactions from a previous session
+    recoverUnfinishedIosPurchases().catch(() => {});
+    getIosProducts()
+      .then((list) => setIosProducts(Object.fromEntries(list.map((p) => [p.productId, p]))))
+      .catch(() => setIosProducts({}));
+  }, [iosIap]);
+
   useEffect(() => {
     const id = 'buy-credits-styles';
     if (!document.getElementById(id)) {
@@ -107,8 +124,10 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     return () => clearInterval(iv);
   }, [step, tab]);
 
-  const packages = tab === 'oneTime' ? ONE_TIME_PACKAGES : SUBSCRIPTION_PACKAGES;
-  const isSubscription = tab === 'subscription';
+  // On iOS native only one-time packages are offered — subscriptions require
+  // their own auto-renewable IAP products and are not purchasable in the iOS app.
+  const packages = (iosIap || tab === 'oneTime') ? ONE_TIME_PACKAGES : SUBSCRIPTION_PACKAGES;
+  const isSubscription = !iosIap && tab === 'subscription';
 
   const handleSelectPkg = (pkg) => {
     setSelectedPkg(pkg);
@@ -262,20 +281,22 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 >
                   {t('buy_tab_onetime')}
                 </button>
-                <button
-                  onClick={() => setTab('subscription')}
-                  style={{
-                    flex: 1, height: 40, borderRadius: 'var(--r-sm)',
-                    border: 'none', cursor: 'pointer',
-                    background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
-                    boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
-                    fontSize: 13, fontWeight: tab === 'subscription' ? 800 : 600,
-                    color: tab === 'subscription' ? 'var(--brand-primary)' : 'var(--text-2)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {t('buy_tab_subscription')}
-                </button>
+                {!iosIap && (
+                  <button
+                    onClick={() => setTab('subscription')}
+                    style={{
+                      flex: 1, height: 40, borderRadius: 'var(--r-sm)',
+                      border: 'none', cursor: 'pointer',
+                      background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
+                      boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
+                      fontSize: 13, fontWeight: tab === 'subscription' ? 800 : 600,
+                      color: tab === 'subscription' ? 'var(--brand-primary)' : 'var(--text-2)',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {t('buy_tab_subscription')}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -299,6 +320,16 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 {t('buy_options', { n: packages.length })}
               </span>
             </div>
+
+            {iosIap && iosProducts && Object.keys(iosProducts).length === 0 && (
+              <div style={{
+                margin: '12px 16px 0', padding: '10px 12px',
+                background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)',
+                borderRadius: 'var(--r-md)', fontSize: 12, color: 'var(--color-warning)', fontWeight: 700,
+              }}>
+                {t('buy_ios_products_empty')}
+              </div>
+            )}
             <div style={{
               padding: '12px 16px 0',
               display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
@@ -310,6 +341,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   selected={false}
                   onSelect={handleSelectPkg}
                   isSubscription={isSubscription}
+                  priceLabel={iosIap ? (iosProducts ? (iosProducts[IOS_IAP_PRODUCT_IDS[pkg.id]]?.displayPrice || '—') : null) : undefined}
                 />
               ))}
             </div>
@@ -346,20 +378,29 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               color: 'var(--text-3)', fontSize: 10, fontWeight: 600,
             }}>
               <Shield size={11} color="var(--text-3)" />
-              {t('buy_secure_footer')}
+              {iosIap ? t('buy_secure_footer_apple') : t('buy_secure_footer')}
             </div>
           </>
         )}
 
-        {/* Step: Payment confirmation */}
+        {/* Step: Payment confirmation — Apple IAP on iOS, Tranzila everywhere else */}
         {step === 'confirm' && selectedPkg && (
-          <PaymentConfirm
-            pkg={selectedPkg}
-            isSubscription={isSubscription}
-            onBack={() => setStep('browse')}
-            onConfirm={handleConfirm}
-            loading={loading}
-          />
+          iosIap ? (
+            <IosPurchaseConfirm
+              pkg={selectedPkg}
+              priceLabel={iosProducts?.[IOS_IAP_PRODUCT_IDS[selectedPkg.id]]?.displayPrice}
+              onBack={() => setStep('browse')}
+              onDone={() => setStep('success')}
+            />
+          ) : (
+            <PaymentConfirm
+              pkg={selectedPkg}
+              isSubscription={isSubscription}
+              onBack={() => setStep('browse')}
+              onConfirm={handleConfirm}
+              loading={loading}
+            />
+          )
         )}
 
         {/* Step: Tranzila iframe */}
