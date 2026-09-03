@@ -37,20 +37,20 @@ const SHIMMER_STYLE = `
 `;
 
 const ONE_TIME_PACKAGES = [
-  { id: 'ot1', credits: 5,   price: 9.99,   badge: null,      coins: 1 },
-  { id: 'ot2', credits: 14,  price: 24.99,  badge: null,      coins: 1 },
-  { id: 'ot3', credits: 29,  price: 49.99,  badge: 'popular', coins: 2 },
-  { id: 'ot4', credits: 60,  price: 99.99,  badge: null,      coins: 3 },
-  { id: 'ot5', credits: 100, price: 149.99, badge: null,      coins: 4 },
-  { id: 'ot6', credits: 135, price: 199.99, badge: 'best',    coins: 5 },
+  { id: 'ot1', credits: 5,   price: 9.9,   badge: null,      coins: 1 },
+  { id: 'ot2', credits: 14,  price: 24.9,  badge: null,      coins: 1 },
+  { id: 'ot3', credits: 29,  price: 49.9,  badge: 'popular', coins: 2 },
+  { id: 'ot4', credits: 60,  price: 99.9,  badge: null,      coins: 3 },
+  { id: 'ot5', credits: 100, price: 149.9, badge: null,      coins: 4 },
+  { id: 'ot6', credits: 135, price: 199.9, badge: 'best',    coins: 5 },
 ];
 
 const SUBSCRIPTION_PACKAGES = [
-  { id: 'sub1', credits: 20,  price: 24.99,  badge: null,      coins: 1 },
-  { id: 'sub2', credits: 45,  price: 49.99,  badge: 'popular', coins: 2 },
-  { id: 'sub3', credits: 95,  price: 99.99,  badge: null,      coins: 3 },
-  { id: 'sub4', credits: 145, price: 149.99, badge: null,     coins: 4 },
-  { id: 'sub5', credits: 190, price: 199.99, badge: 'best',    coins: 5 },
+  { id: 'sub1', credits: 20,  price: 24.9,  badge: null,      coins: 1 },
+  { id: 'sub2', credits: 45,  price: 49.9,  badge: 'popular', coins: 2 },
+  { id: 'sub3', credits: 95,  price: 99.9,  badge: null,      coins: 3 },
+  { id: 'sub4', credits: 145, price: 149.9, badge: null,     coins: 4 },
+  { id: 'sub5', credits: 190, price: 199.9, badge: 'best',    coins: 5 },
 ];
 
 function useTrustFeatures(t) {
