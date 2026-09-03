@@ -21,15 +21,22 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // "Apple Root CA - G3" — per Apple's trusted root certificates list.
 const APPLE_ROOT_CA_G3_SHA256_HEX = '63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179';
 
-// Consumable IAP product ids — must match the products created in
-// App Store Connect EXACTLY. Value = Jobas credits granted per purchase.
-const IAP_PRODUCTS = {
+// IAP product ids — must match the products created in App Store Connect
+// EXACTLY. Values = Jobas credits granted per purchase / per renewal month.
+const IAP_CONSUMABLES = {
   'com.joba24.jobas5': 5,
   'com.joba24.jobas14': 14,
   'com.joba24.jobas29': 29,
   'com.joba24.jobas60': 60,
   'com.joba24.jobas100': 100,
   'com.joba24.jobas135': 135,
+};
+const IAP_SUBSCRIPTIONS = {
+  'com.joba24.sub20': 20,
+  'com.joba24.sub45': 45,
+  'com.joba24.sub95': 95,
+  'com.joba24.sub145': 145,
+  'com.joba24.sub190': 190,
 };
 
 // ── Minimal ASN.1 DER helpers ────────────────────────────────────────────────
@@ -85,7 +92,12 @@ function toHex(buf) {
 function b64ToBytes(b64) {
   const normalized = b64.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-  const bin = atob(padded);
+  let bin;
+  try {
+    bin = atob(padded);
+  } catch {
+    throw new Error('Malformed JWS');
+  }
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
@@ -232,12 +244,14 @@ Deno.serve(async (req) => {
     const tx = await verifySignedTransaction(jws);
 
     const productId = tx.productId;
-    const creditsPerPurchase = IAP_PRODUCTS[productId];
-    if (!creditsPerPurchase) {
+    const isConsumable = productId in IAP_CONSUMABLES;
+    const isSubscription = productId in IAP_SUBSCRIPTIONS;
+    if (!isConsumable && !isSubscription) {
       return Response.json({ success: false, error: 'Unknown product' }, { status: 400 });
     }
-    if (tx.type && tx.type !== 'Consumable') {
-      return Response.json({ success: false, error: 'Not a consumable purchase' }, { status: 400 });
+    const expectedType = isSubscription ? 'Auto-Renewable Subscription' : 'Consumable';
+    if (tx.type && tx.type !== expectedType) {
+      return Response.json({ success: false, error: `Expected a ${expectedType} purchase` }, { status: 400 });
     }
     if (tx.revocationDate) {
       return Response.json({ success: false, error: 'Transaction was revoked' }, { status: 400 });
@@ -260,8 +274,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const quantity = Math.max(1, Number(tx.quantity) || 1);
-    const credits = creditsPerPurchase * quantity;
+    // Subscriptions always grant a single monthly allowance; consumables
+    // honor the purchased quantity.
+    const quantity = isSubscription ? 1 : Math.max(1, Number(tx.quantity) || 1);
+    const credits = (isSubscription ? IAP_SUBSCRIPTIONS[productId] : IAP_CONSUMABLES[productId]) * quantity;
     const newBalance = (user.worker_credits ?? 0) + credits;
 
     await base44.asServiceRole.entities.User.update(user.id, { worker_credits: newBalance });
@@ -271,7 +287,9 @@ Deno.serve(async (req) => {
       amount: credits,
       type: 'Purchase',
       balance_after: newBalance,
-      note: `טעינת ${credits} ג'ובות — Apple In-App Purchase (${environment})`,
+      note: isSubscription
+        ? `מנוי חודשי — ${credits} ג'ובות לחודש · Apple IAP (${environment})`
+        : `טעינת ${credits} ג'ובות — Apple In-App Purchase (${environment})`,
     });
 
     await base44.asServiceRole.entities.IosPurchase.create({
@@ -282,6 +300,7 @@ Deno.serve(async (req) => {
       original_transaction_id: String(tx.originalTransactionId || ''),
       environment,
       purchase_date: tx.purchaseDate ? new Date(tx.purchaseDate).toISOString() : new Date().toISOString(),
+      expiration_date: (isSubscription && tx.expiresDate) ? new Date(tx.expiresDate).toISOString() : null,
       status: 'verified',
     });
 

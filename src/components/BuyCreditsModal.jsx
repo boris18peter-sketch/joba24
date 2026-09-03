@@ -12,7 +12,7 @@ import PurchaseSuccess from '@/components/credits/PurchaseSuccess';
 import TranzilaIframe from '@/components/credits/TranzilaIframe';
 import SubscriptionManager from '@/components/credits/SubscriptionManager';
 import IosPurchaseConfirm from '@/components/credits/IosPurchaseConfirm';
-import { isIosNative, getIosProducts, IOS_IAP_PRODUCT_IDS, recoverUnfinishedIosPurchases } from '@/lib/iosIap';
+import { isIosNative, getIosProducts, IOS_IAP_ALL, recoverUnfinishedIosPurchases, recoverIosSubscriptionCredits } from '@/lib/iosIap';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -90,8 +90,10 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   const [iosProducts, setIosProducts] = useState(null); // null = still loading
   useEffect(() => {
     if (!iosIap) return;
-    // Recovery: verify purchased-but-unfinished transactions from a previous session
+    // Recovery: verify purchased-but-unfinished transactions from a previous
+    // session, and credit any Apple subscription renewals not granted yet.
     recoverUnfinishedIosPurchases().catch(() => {});
+    recoverIosSubscriptionCredits().catch(() => {});
     getIosProducts()
       .then((list) => setIosProducts(Object.fromEntries(list.map((p) => [p.productId, p]))))
       .catch(() => setIosProducts({}));
@@ -124,10 +126,8 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     return () => clearInterval(iv);
   }, [step, tab]);
 
-  // On iOS native only one-time packages are offered — subscriptions require
-  // their own auto-renewable IAP products and are not purchasable in the iOS app.
-  const packages = (iosIap || tab === 'oneTime') ? ONE_TIME_PACKAGES : SUBSCRIPTION_PACKAGES;
-  const isSubscription = !iosIap && tab === 'subscription';
+  const packages = tab === 'oneTime' ? ONE_TIME_PACKAGES : SUBSCRIPTION_PACKAGES;
+  const isSubscription = tab === 'subscription';
 
   const handleSelectPkg = (pkg) => {
     setSelectedPkg(pkg);
@@ -281,22 +281,20 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                 >
                   {t('buy_tab_onetime')}
                 </button>
-                {!iosIap && (
-                  <button
-                    onClick={() => setTab('subscription')}
-                    style={{
-                      flex: 1, height: 40, borderRadius: 'var(--r-sm)',
-                      border: 'none', cursor: 'pointer',
-                      background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
-                      boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
-                      fontSize: 13, fontWeight: tab === 'subscription' ? 800 : 600,
-                      color: tab === 'subscription' ? 'var(--brand-primary)' : 'var(--text-2)',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {t('buy_tab_subscription')}
-                  </button>
-                )}
+                <button
+                  onClick={() => setTab('subscription')}
+                  style={{
+                    flex: 1, height: 40, borderRadius: 'var(--r-sm)',
+                    border: 'none', cursor: 'pointer',
+                    background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
+                    boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
+                    fontSize: 13, fontWeight: tab === 'subscription' ? 800 : 600,
+                    color: tab === 'subscription' ? 'var(--brand-primary)' : 'var(--text-2)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {t('buy_tab_subscription')}
+                </button>
               </div>
             </div>
 
@@ -341,7 +339,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
                   selected={false}
                   onSelect={handleSelectPkg}
                   isSubscription={isSubscription}
-                  priceLabel={iosIap ? (iosProducts ? (iosProducts[IOS_IAP_PRODUCT_IDS[pkg.id]]?.displayPrice || '—') : null) : undefined}
+                  priceLabel={iosIap ? (iosProducts ? (iosProducts[IOS_IAP_ALL[pkg.id]]?.displayPrice || '—') : null) : undefined}
                 />
               ))}
             </div>
@@ -388,7 +386,8 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           iosIap ? (
             <IosPurchaseConfirm
               pkg={selectedPkg}
-              priceLabel={iosProducts?.[IOS_IAP_PRODUCT_IDS[selectedPkg.id]]?.displayPrice}
+              isSubscription={isSubscription}
+              priceLabel={iosProducts?.[IOS_IAP_ALL[selectedPkg.id]]?.displayPrice}
               onBack={() => setStep('browse')}
               onDone={() => setStep('success')}
             />

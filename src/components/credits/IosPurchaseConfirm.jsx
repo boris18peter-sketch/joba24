@@ -16,7 +16,7 @@ import { purchaseIosProduct, finishIosTransaction, IOS_IAP_PRODUCT_IDS } from '@
  *   3. Only after the credits were granted, the transaction is finished so
  *      StoreKit stops re-delivering it.
  */
-export default function IosPurchaseConfirm({ pkg, priceLabel, onBack, onDone }) {
+export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, onBack, onDone }) {
   const { t } = useLanguage();
   const [phase, setPhase] = useState('idle'); // idle | purchasing | verifying
 
@@ -79,7 +79,7 @@ export default function IosPurchaseConfirm({ pkg, priceLabel, onBack, onDone }) 
           fontSize: 12, fontWeight: 700, color: 'var(--text-3)',
           textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
         }}>
-          {t('buy_selected_pkg')}
+          {isSubscription ? t('buy_selected_sub') : t('buy_selected_pkg')}
         </div>
         <div style={{
           fontSize: 36, fontWeight: 900, color: 'var(--brand-primary)',
@@ -90,7 +90,7 @@ export default function IosPurchaseConfirm({ pkg, priceLabel, onBack, onDone }) 
           <CreditIcon size={24} />
         </div>
         <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16 }}>
-          {t('buy_jobs_added_balance')}
+          {isSubscription ? t('buy_jobs_added_monthly') : t('buy_jobs_added_balance')}
         </div>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -99,10 +99,11 @@ export default function IosPurchaseConfirm({ pkg, priceLabel, onBack, onDone }) 
         }}>
           <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('buy_final_price')}</span>
           <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-1)' }}>{displayPrice}</span>
+          {isSubscription && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('buy_month_slash')}</span>}
         </div>
       </div>
 
-      {/* Apple payment note */}
+      {/* Apple payment note — auto-renew disclosure for subscriptions */}
       <div style={{
         background: 'var(--brand-primary-light)',
         border: '1px solid #bfdbfe',
@@ -111,7 +112,7 @@ export default function IosPurchaseConfirm({ pkg, priceLabel, onBack, onDone }) 
         marginBottom: 18,
         fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6,
       }}>
-        {t('buy_ios_note')}
+        {isSubscription ? t('buy_ios_sub_note') : t('buy_ios_note')}
       </div>
 
       {/* Purchase button — Apple style (black) */}

@@ -64,6 +64,8 @@ public class IosIapPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "finish", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getUnfinished", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getActiveSubscriptions", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getSubscriptionHistory", returnType: CAPPluginReturnPromise),
     ]
 
     // StoreKit products fetched from the App Store (keyed by product id)
@@ -156,6 +158,44 @@ public class IosIapPlugin: CAPPlugin, CAPBridgedPlugin {
                         "productId": tx.productID,
                     ])
                 }
+            }
+            call.resolve(["transactions": items])
+        }
+    }
+
+    // Active auto-renewable subscriptions (current entitlements of the user's
+    // Apple Account) — used to display the active subscription + next renewal.
+    @objc public func getActiveSubscriptions(_ call: CAPPluginCall) {
+        Task {
+            var items: [[String: Any]] = []
+            for await result in Transaction.currentEntitlements {
+                guard case .verified(let tx) = result else { continue }
+                guard tx.productType == .autoRenewable else { continue }
+                items.append([
+                    "jws": result.jwsRepresentation,
+                    "transactionId": String(tx.id),
+                    "productId": tx.productID,
+                    "expiresDate": tx.expirationDate.map { $0.timeIntervalSince1970 * 1000 } ?? 0,
+                ])
+            }
+            call.resolve(["subscriptions": items])
+        }
+    }
+
+    // Every auto-renewable subscription transaction ever made — each renewal
+    // is a new transaction. The backend dedupes by transaction id, so verifying
+    // this list grants the monthly Jobas for any renewal not credited yet.
+    @objc public func getSubscriptionHistory(_ call: CAPPluginCall) {
+        Task {
+            var items: [[String: Any]] = []
+            for await result in Transaction.all {
+                guard case .verified(let tx) = result else { continue }
+                guard tx.productType == .autoRenewable else { continue }
+                items.append([
+                    "jws": result.jwsRepresentation,
+                    "transactionId": String(tx.id),
+                    "productId": tx.productID,
+                ])
             }
             call.resolve(["transactions": items])
         }

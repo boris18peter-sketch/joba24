@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { RefreshCw, X, AlertTriangle, CheckCircle2, Calendar } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useLanguage } from '@/lib/LanguageContext';
+import { isIosNative, getIosActiveSubscriptions } from '@/lib/iosIap';
 
 /**
  * SubscriptionManager — shows active subscriptions with cancel option.
@@ -30,6 +31,19 @@ export default function SubscriptionManager() {
     enabled: !!me?.id,
   });
 
+  // iOS native: the user's active Apple subscription (In-App Purchase).
+  // Tranzila subscriptions don't exist on iOS (App Store Guideline 3.1.1).
+  const iosNative = isIosNative();
+  const { data: appleSub } = useQuery({
+    queryKey: ['iosActiveSubscription'],
+    queryFn: async () => {
+      const subs = await getIosActiveSubscriptions();
+      return subs.length > 0 ? subs[subs.length - 1] : null;
+    },
+    enabled: iosNative,
+    staleTime: 60000,
+  });
+
   const handleCancel = async () => {
     if (!showCancel) return;
     setCancelling(true);
@@ -49,10 +63,59 @@ export default function SubscriptionManager() {
     }
   };
 
-  if (!subscriptions || subscriptions.length === 0) return null;
+  const showAppleSub = iosNative && !!appleSub;
+  if ((!subscriptions || subscriptions.length === 0) && !showAppleSub) return null;
 
   return (
     <>
+      {/* Active Apple subscription (iOS native only) */}
+      {showAppleSub && (
+        <div style={{
+          background: 'var(--surface-2)',
+          borderRadius: 16,
+          border: '1px solid var(--border-1)',
+          overflow: 'hidden',
+          marginBottom: subscriptions && subscriptions.length > 0 ? 10 : 0,
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border-1)',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <RefreshCw size={15} color="var(--brand-primary)" />
+            <span style={{ fontWeight: 800, fontSize: 14, color: 'var(--text-1)' }}>
+              {t('buy_my_subs')}
+            </span>
+            <span style={{
+              background: 'var(--color-success-bg)',
+              color: 'var(--color-success)',
+              fontSize: 10, fontWeight: 800,
+              padding: '2px 8px', borderRadius: 99,
+              border: '1px solid var(--color-success-border)',
+            }}>
+              {t('buy_sub_active')}
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-3)', marginRight: 'auto' }}>Apple</span>
+          </div>
+          <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CreditIcon size={22} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
+                {t('buy_sub_jobs_month').replace('{n}', appleSub.credits)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Calendar size={10} /> {t('buy_apple_sub_next')}{' '}
+                {appleSub.expiresDate ? moment(appleSub.expiresDate).format('DD/MM/YYYY') : '—'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4, lineHeight: 1.5 }}>
+                {t('buy_apple_sub_cancel_note')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(subscriptions && subscriptions.length > 0) && (
       <div style={{
         background: 'var(--surface-2)',
         borderRadius: 16,
@@ -121,6 +184,7 @@ export default function SubscriptionManager() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Cancel confirmation modal */}
       {showCancel && (

@@ -24,6 +24,7 @@ import WelcomeTutorial from '@/components/WelcomeTutorial';
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import HomeBannersCarousel from '@/components/HomeBannersCarousel';
 import { useLanguage } from '@/lib/LanguageContext';
+import { recoverIosSubscriptionCredits } from '@/lib/iosIap';
 
 export default function HomeFeed() {
   const navigate = useNavigate();
@@ -66,6 +67,14 @@ export default function HomeFeed() {
   const queryClient = useQueryClient();
 
   const { user: me, isAuthenticated } = useAuth();
+
+  // iOS native: credit Apple subscription renewals that haven't been granted
+  // yet (each renewal = a new transaction; the backend grants once per
+  // renewal, deduped by transaction id). No-op on web and Android.
+  useEffect(() => {
+    if (!me?.id) return;
+    recoverIosSubscriptionCredits().catch(() => {});
+  }, [me?.id]);
 
 
   // My published tasks — WS handles real-time; polling is safety net only
