@@ -36,7 +36,15 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'No device tokens' });
     }
 
-    const preview = data.content.length > 80 ? data.content.substring(0, 80) + '...' : data.content;
+    // Friendly preview for media messages instead of raw file URLs
+    let preview = data.content || '';
+    if (preview.startsWith('[img]')) {
+      preview = 'נשלחה תמונה';
+    } else if (preview.startsWith('[audio]')) {
+      preview = 'נשלחה הודעה קולית';
+    } else if (preview.length > 80) {
+      preview = preview.substring(0, 80) + '...';
+    }
 
     // ── Route through NotificationManager ──
     const result = await base44.asServiceRole.functions.invoke('notificationManager', {

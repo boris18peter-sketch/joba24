@@ -415,11 +415,28 @@ export default function TaskDetail(props) {
         return;
       }
       setTaskTaken(true);
+      // Sync all caches so the UI transitions from "go now" to the active
+      // worker flow (WorkerStatusUpdater / ActiveTaskBanner) — the "go now"
+      // and "יצאתי לדרך" buttons stay synchronized.
       queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['activeWorkerTask', me?.id] });
+      queryClient.invalidateQueries({ queryKey: ['applications', id] });
+      queryClient.invalidateQueries({ queryKey: ['applications-pulse', id] });
       setConfetti(true);
       setTimeout(() => setConfetti(false), 100);
       toast.success(t('task_taken_toast'));
-    }
+    },
+    onError: (err) => {
+      const errData = err?.response?.data || err?.data;
+      if (errData?.error === 'already_assigned') {
+        // Already taken (likely by this worker after a cache desync) — sync UI
+        queryClient.invalidateQueries({ queryKey: ['task', id] });
+        queryClient.invalidateQueries({ queryKey: ['myApp', id, me?.id] });
+        return;
+      }
+      toast.error(errData?.error || t('error_taking_task'));
+    },
   });
 
   const cancelMutation = useMutation({

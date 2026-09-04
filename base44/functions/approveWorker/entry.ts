@@ -25,21 +25,46 @@ Deno.serve(async (req) => {
     const task = tasks[0];
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
 
-    // Verify caller is the task owner
-    if (task.client_id !== user.id) {
-      return Response.json({ error: 'Forbidden — not task owner' }, { status: 403 });
+    // Allow either the task owner (approving an applicant) OR the worker
+    // themselves confirming "go now" (their own approved/pending application).
+    const isOwnerCall = task.client_id === user.id;
+    const isWorkerSelfConfirm = workerId === user.id;
+    if (!isOwnerCall && !isWorkerSelfConfirm) {
+      return Response.json({ error: 'Forbidden — not authorized' }, { status: 403 });
     }
 
-    // Concurrency guard: task must still be OPEN with no worker assigned
-    if (task.status !== 'OPEN' || task.worker_id) {
-      return Response.json({ error: 'already_assigned', note: 'Task is no longer open' }, { status: 409 });
-    }
-
-    // Verify application is still pending
+    // Fetch the application (used by both paths)
     const apps = await base44.asServiceRole.entities.TaskApplication.filter({ id: applicationId });
     const app = apps[0];
-    if (!app || app.status !== 'pending') {
-      return Response.json({ error: 'Application no longer pending' }, { status: 409 });
+    if (!app) {
+      return Response.json({ error: 'Application not found' }, { status: 404 });
+    }
+
+    if (isWorkerSelfConfirm) {
+      // Worker may only confirm their OWN application
+      if (app.worker_id !== user.id) {
+        return Response.json({ error: 'Forbidden — not your application' }, { status: 403 });
+      }
+      if (app.status !== 'approved' && app.status !== 'pending') {
+        return Response.json({ error: 'Application no longer valid' }, { status: 409 });
+      }
+    } else {
+      // Owner path: application must still be pending
+      if (app.status !== 'pending') {
+        return Response.json({ error: 'Application no longer pending' }, { status: 409 });
+      }
+    }
+
+    // Idempotent: if the task is already taken by THIS worker (e.g. re-tap after
+    // a client cache desync), return success without re-mutating.
+    if (task.status === 'TAKEN' && task.worker_id === workerId) {
+      const freshTaken = await base44.asServiceRole.entities.Task.filter({ id: taskId });
+      return Response.json({ success: true, task: freshTaken[0], already_assigned: true });
+    }
+
+    // Concurrency guard: taken by someone else or not open
+    if (task.status !== 'OPEN' || (task.worker_id && task.worker_id !== workerId)) {
+      return Response.json({ error: 'already_assigned', note: 'Task is no longer open' }, { status: 409 });
     }
 
     // Resolve worker name server-side — the client may pass an empty string
