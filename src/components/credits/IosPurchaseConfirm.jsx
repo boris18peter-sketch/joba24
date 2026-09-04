@@ -4,7 +4,7 @@ import CreditIcon from '@/components/CreditIcon';
 import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
-import { purchaseIosProduct, finishIosTransaction, IOS_IAP_PRODUCT_IDS } from '@/lib/iosIap';
+import { purchaseIosProduct, finishIosTransaction, IOS_IAP_ALL } from '@/lib/iosIap';
 
 /**
  * IosPurchaseConfirm — Apple In-App Purchase confirm step (iOS native only).
@@ -25,7 +25,7 @@ export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, on
     setPhase('purchasing');
     try {
       // 1. Native StoreKit purchase sheet → signed JWS receipt
-      const purchase = await purchaseIosProduct(IOS_IAP_PRODUCT_IDS[pkg.id]);
+      const purchase = await purchaseIosProduct(IOS_IAP_ALL[pkg.id]);
       // 2. Server-side verification + credit grant
       setPhase('verifying');
       const verify = await base44.functions.invoke('verifyIosPurchase', { jws: purchase.jws });
@@ -34,15 +34,15 @@ export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, on
         await finishIosTransaction(purchase.transactionId);
         onDone();
       } else {
-        toast.error(t('buy_ios_error'));
+        toast.error(verify.data?.error || t('buy_ios_error'));
         setPhase('idle');
       }
     } catch (err) {
-      const msg = String(err?.message || err || '');
-      if (/cancel/i.test(msg)) {
+      const msg = String(err?.message || err?.data?.error || err || '');
+      if (/cancel/i.test(msg) || /userCancelled/i.test(msg)) {
         toast.error(t('buy_ios_cancelled'));
       } else {
-        toast.error(t('buy_ios_error'));
+        toast.error(msg || t('buy_ios_error'));
       }
       setPhase('idle');
     }
