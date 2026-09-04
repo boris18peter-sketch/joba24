@@ -73,35 +73,39 @@ export default function SocialLinksSection({ user }) {
         </div>
 
         {isConnected && (
-          <div style={{ padding: '0 16px 10px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {verifiedPlatforms.map(p => {
               const username = user[`${p.key}_username`];
               const isConfirming = confirmDisconnect === p.key;
               if (isConfirming) {
                 return (
-                  <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fef2f2', borderRadius: 12, padding: '4px 6px 4px 10px', border: '1px solid #fecaca' }}>
+                  <div key={p.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#fef2f2', borderRadius: 12, padding: '6px 8px 6px 12px', border: '1px solid #fecaca' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626' }}>{t('sl_disconnect_q')}</span>
-                    <button onClick={() => handleDisconnect(p.key)} disabled={loading}
-                      style={{ height: 26, padding: '0 10px', borderRadius: 8, background: '#dc2626', border: 'none', color: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-                      {loading ? <Loader2 size={11} className="animate-spin" /> : t('sl_yes')}
-                    </button>
-                    <button onClick={() => setConfirmDisconnect(null)} style={{ height: 26, width: 26, borderRadius: 8, background: 'white', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>×</button>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button onClick={() => handleDisconnect(p.key)} disabled={loading}
+                        style={{ height: 28, padding: '0 12px', borderRadius: 8, background: '#dc2626', border: 'none', color: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                        {loading ? <Loader2 size={11} className="animate-spin" /> : t('sl_yes')}
+                      </button>
+                      <button onClick={() => setConfirmDisconnect(null)} style={{ height: 28, width: 28, borderRadius: 8, background: 'white', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>×</button>
+                    </div>
                   </div>
                 );
               }
               return (
-                <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fffbeb', borderRadius: 12, padding: '5px 5px 5px 12px', border: '1px solid #fde68a' }}>
-                  <a href={p.url(username)} target="_blank" rel="noreferrer"
-                     style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
-                    <span style={{ width: 22, height: 22, borderRadius: 6, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <p.icon size={13} color="white" />
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)' }}>{username}</span>
-                    <ShieldCheck size={12} color="#d97706" />
-                  </a>
+                <div key={p.key} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-4)', borderRadius: 12, padding: '8px 10px', border: '1px solid var(--border-1)' }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 10, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
+                    <p.icon size={17} color="white" />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{username}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginTop: 1 }}>{p.label}</div>
+                  </div>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
+                    <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
+                  </span>
                   <button onClick={() => setConfirmDisconnect(p.key)} disabled={loading}
-                    style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(220,38,38,0.08)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-                    <X size={11} color="#dc2626" />
+                    style={{ width: 26, height: 26, borderRadius: 8, background: 'transparent', border: '1px solid var(--border-1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                    <X size={12} color="var(--text-3)" />
                   </button>
                 </div>
               );

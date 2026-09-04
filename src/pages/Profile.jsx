@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
-  LogOut, Briefcase, CreditCard, ChevronLeft, Camera, Loader2,
+  LogOut, Briefcase, CreditCard, ChevronLeft, Loader2,
   X, Trash2, Clock, BarChart3, Pencil, FileText, MapPin, ShieldCheck, Link2,
 } from 'lucide-react';
 import VerificationStatusBanner from '@/components/VerificationStatusBanner';
@@ -62,7 +62,6 @@ export default function Profile() {
   const { t, isRTL, lang } = useLanguage();
   const { user: authUser, refreshUser, logout } = useAuth();
   const { openTaskSheet } = useTaskSheet();
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -82,11 +81,9 @@ export default function Profile() {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingPhoto(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     await base44.auth.updateMe({ profile_photo: file_url });
     await refreshUser();
-    setUploadingPhoto(false);
   };
 
   const me = authUser;
@@ -191,12 +188,6 @@ export default function Profile() {
                 ? <img src={me.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : initials}
             </div>
-            <button
-              onClick={() => photoInputRef.current?.click()}
-              style={{ position: 'absolute', bottom: -1, right: -1, width: 14, height: 14, borderRadius: '50%', background: 'white', border: '1px solid #1a6fd4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}
-            >
-              {uploadingPhoto ? <Loader2 size={7} color="#1a6fd4" className="animate-spin" /> : <Camera size={9} color="#1a6fd4" />}
-            </button>
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
 
@@ -234,7 +225,6 @@ export default function Profile() {
         {(me?.profile_media?.length > 0 || me?.intro_video_url) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 14 }}>👋</span>
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
             </div>
             <ProfileMediaGallery

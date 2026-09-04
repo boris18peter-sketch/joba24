@@ -136,6 +136,9 @@ export default function PublicProfile() {
               </span>
             )}
           </div>
+          <div style={{ width: '100%', padding: '4px 16px 0' }}>
+            <ProfileStatsPill rating={liveRating} reviewCount={liveRatingCount} postedCount={postedCount} completedCount={completedCount} />
+          </div>
         </div>
       </div>
 
@@ -147,9 +150,6 @@ export default function PublicProfile() {
             <Phone size={18} color="white" /> {user.phone}
           </a>
         )}
-
-        {/* SECTION 2 — STATS PILL (rating · posted · completed) */}
-        <ProfileStatsPill rating={liveRating} reviewCount={liveRatingCount} postedCount={postedCount} completedCount={completedCount} />
 
         {/* SECTION 2b — Reliability */}
         <TrustCard user={liveUser} reviews={reviews} tasks={[]} isPublic />
@@ -166,7 +166,6 @@ export default function PublicProfile() {
         {(user.profile_media?.length > 0 || user.intro_video_url) && (
           <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 14 }}>👋</span>
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-3)' }}>{t('pr_about_me')}</span>
             </div>
             <ProfileMediaGallery
@@ -242,19 +241,24 @@ export default function PublicProfile() {
               <span style={{ fontSize: 13 }}>🔗</span>
               <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-3)' }}>{t('pp_social_networks')}</span>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { key: 'instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
-                { key: 'facebook', username: user.facebook_username, verified: user.facebook_verified, url: `https://facebook.com/${user.facebook_username}`, icon: Facebook, color: '#1877F2' },
-                { key: 'tiktok', username: user.tiktok_username, verified: user.tiktok_verified, url: `https://tiktok.com/@${user.tiktok_username}`, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
+                { key: 'instagram', label: 'Instagram', username: user.instagram_username, verified: user.instagram_verified, url: `https://instagram.com/${user.instagram_username}`, icon: Instagram, color: 'linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' },
+                { key: 'facebook', label: 'Facebook', username: user.facebook_username, verified: user.facebook_verified, url: `https://facebook.com/${user.facebook_username}`, icon: Facebook, color: '#1877F2' },
+                { key: 'tiktok', label: 'TikTok', username: user.tiktok_username, verified: user.tiktok_verified, url: `https://tiktok.com/@${user.tiktok_username}`, icon: Music2, color: 'linear-gradient(135deg, #25F4EE, #000000, #FE2C55)' },
               ].filter(p => p.username && p.verified).map(p => (
                 <a key={p.key} href={p.url} target="_blank" rel="noopener noreferrer"
-                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '10px 4px', borderRadius: 14, textDecoration: 'none', border: '1px solid #fde68a', background: '#fffbeb' }}>
-                  <div style={{ position: 'relative', width: 36, height: 36, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <p.icon size={18} color="white" />
-                    <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#d97706', border: '2px solid var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={9} color="white" /></span>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-4)', border: '1px solid var(--border-1)', borderRadius: 12, padding: '8px 10px', textDecoration: 'none' }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 10, background: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
+                    <p.icon size={17} color="white" />
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{p.username}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', marginTop: 1 }}>{p.label}</div>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#d97706' }}>{t('pp_verified')}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#fffbeb', border: '1px solid #fde68a', color: '#d97706', fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 99, flexShrink: 0 }}>
+                    <ShieldCheck size={11} color="#d97706" /> {t('pp_verified')}
+                  </span>
                 </a>
               ))}
             </div>
