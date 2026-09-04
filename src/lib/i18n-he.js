@@ -1012,6 +1012,8 @@ export const he = {
     chat_recording: 'מקליט...',
     chat_cancel: 'ביטול',
     chat_type_msg: 'הקלד הודעה...',
+    chat_sent_image: '📷 נשלחה תמונה',
+    chat_sent_voice: '🎤 נשלחה הודעה קולית',
     wo_step_cat_title: 'איזה סוגי עבודות תרצה לראות?',
     wo_step_cat_sub: 'בחר קטגוריות — הפיד שלך יתאים את עצמו בהתאם 🎯',
     wo_step_city_title: 'באילו ערים אתה עובד?',

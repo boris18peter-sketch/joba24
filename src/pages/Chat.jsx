@@ -319,8 +319,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return (
-    <div ref={outerRef} style={{ position: 'fixed', inset: 0, background: 'var(--surface-1)', zIndex: 9999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: viewportHeight, position: 'relative' }}>
+    <div ref={outerRef} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: viewportHeight || '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', zIndex: 9999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header — fixed flex item, doesn't scroll */}
       <div style={{
@@ -571,8 +570,6 @@ export default function Chat() {
           </button>
         )}
       </div>
-      </div>
-
       <style>{`
         @keyframes typingBounce {
           0%, 100% { transform: translateY(0); opacity: 0.5; }

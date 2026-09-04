@@ -987,6 +987,8 @@ export const en = {
     chat_recording: 'Recording...',
     chat_cancel: 'Cancel',
     chat_type_msg: 'Type a message...',
+    chat_sent_image: '📷 Photo',
+    chat_sent_voice: '🎤 Voice message',
     wo_step_cat_title: 'What types of jobs would you like to see?',
     wo_step_cat_sub: 'Choose categories — your feed will adapt accordingly 🎯',
     wo_step_city_title: 'Which cities do you work in?',

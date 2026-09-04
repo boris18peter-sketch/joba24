@@ -8,6 +8,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { chatMessagePreview } from '@/lib/chatPreview';
 
 const TERMINAL_STATUSES = ['CANCELLED', 'COMPLETED', 'EXPIRED'];
 const ACTIVE_WORKER_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS'];
@@ -213,7 +214,7 @@ export default function useRealtimeSync({
       const task = allTasks.find((t) => t.id === msg.task_id);
       if (!task) return;
       setUnreadMessages((prev) => prev + 1);
-      notify({ type: 'new_message', senderName: msg.sender_name, preview: msg.content?.slice(0, 60), taskId: msg.task_id, actorId: msg.sender_id });
+      notify({ type: 'new_message', senderName: msg.sender_name, preview: chatMessagePreview(msg.content, t), taskId: msg.task_id, actorId: msg.sender_id });
     });
 
     return unsub;

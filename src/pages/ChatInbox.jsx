@@ -6,6 +6,7 @@ import { MessageCircle, Loader2, LifeBuoy } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { formatDistanceToNow } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
+import { chatMessagePreview } from '@/lib/chatPreview';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
 
@@ -295,7 +296,7 @@ export default function ChatInbox() {
                         </div>
                         {lastMsg && (
                           <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                            {lastMsg.sender_id === me?.id ? (isRTL ? '← ' : '→ ') : ''}{lastMsg.content}
+                            {lastMsg.sender_id === me?.id ? (isRTL ? '← ' : '→ ') : ''}{chatMessagePreview(lastMsg.content, t)}
                           </div>
                         )}
                       </div>
