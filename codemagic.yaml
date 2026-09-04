@@ -65,7 +65,7 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION=2.130298.0 \
-            CURRENT_PROJECT_VERSION=10
+            CURRENT_PROJECT_VERSION=12
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
@@ -128,7 +128,7 @@ workflows:
       android_signing:
         - joba24_android_upload
       vars:
-        ANDROID_VERSION_CODE: 11
+        ANDROID_VERSION_CODE: 12
         ANDROID_VERSION_NAME: "1.0.0"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
