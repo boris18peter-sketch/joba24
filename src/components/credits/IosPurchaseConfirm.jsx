@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Loader2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -17,7 +16,7 @@ import { purchaseIosProduct, finishIosTransaction, IOS_IAP_ALL } from '@/lib/ios
  *   3. Only after the credits were granted, the transaction is finished so
  *      StoreKit stops re-delivering it.
  */
-export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, onBack, onDone }) {
+export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, onBack, onDone, onNavigateLegal }) {
   const { t } = useLanguage();
   const [phase, setPhase] = useState('idle'); // idle | purchasing | verifying
 
@@ -121,15 +120,15 @@ export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, on
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
         marginBottom: 14, fontSize: 12, flexWrap: 'wrap',
       }}>
-        <Link to="/terms"
-           style={{ color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline' }}>
+        <button onClick={() => onNavigateLegal('/terms')}
+           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline', fontSize: 12 }}>
           {t('terms_title')}
-        </Link>
+        </button>
         <span style={{ color: 'var(--text-3)' }}>·</span>
-        <Link to="/privacy"
-           style={{ color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline' }}>
+        <button onClick={() => onNavigateLegal('/privacy')}
+           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline', fontSize: 12 }}>
           {t('privacy_title')}
-        </Link>
+        </button>
       </div>
 
       {/* Purchase button — Apple style (black) */}

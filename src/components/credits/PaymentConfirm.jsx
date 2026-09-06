@@ -40,7 +40,7 @@ function MethodIcon({ type, t }) {
   }
 }
 
-export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm, loading }) {
+export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm, loading, onNavigateLegal }) {
   const { t } = useLanguage();
   const [payMethod, setPayMethod] = useState('card');
 
@@ -210,10 +210,26 @@ export default function PaymentConfirm({ pkg, isSubscription, onBack, onConfirm,
       {/* Trust line */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        fontSize: 11, color: 'var(--text-3)', marginBottom: 8,
+        fontSize: 11, color: 'var(--text-3)', marginBottom: 10,
       }}>
         <Lock size={11} />
         {t('buy_ssl_secure')}
+      </div>
+
+      {/* Legal links — Terms & Privacy (web / Android) */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
+        marginBottom: 14, fontSize: 12, flexWrap: 'wrap',
+      }}>
+        <button onClick={() => onNavigateLegal('/terms')}
+           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline', fontSize: 12 }}>
+          {t('terms_title')}
+        </button>
+        <span style={{ color: 'var(--text-3)' }}>·</span>
+        <button onClick={() => onNavigateLegal('/privacy')}
+           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline', fontSize: 12 }}>
+          {t('privacy_title')}
+        </button>
       </div>
 
       <div style={{

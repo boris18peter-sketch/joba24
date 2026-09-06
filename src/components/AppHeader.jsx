@@ -6,11 +6,12 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import CreditBalancePill from '@/components/CreditBalancePill';
 import LockedCreditsPopup from '@/components/LockedCreditsPopup';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { useLanguage } from '@/lib/LanguageContext';
 import { computeLockedJobas } from '@/lib/jobaBalance';
+import { peekBuyFlow, clearBuyFlow } from '@/lib/buyFlowState';
 
 export default function AppHeader({ onOpenMenu }) {
   const location = useLocation();
@@ -19,7 +20,27 @@ export default function AppHeader({ onOpenMenu }) {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [showLocked, setShowLocked] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [restoreState, setRestoreState] = useState(null);
+  const prevPath = useRef(location.pathname);
   const { t, isRTL } = useLanguage();
+
+  // Restore the buy-credits flow when returning from a legal page (Terms /
+  // Privacy) opened from inside the purchase step — so "back" lands the user
+  // back in the exact purchase step they were on.
+  useEffect(() => {
+    const LEGAL = ['/terms', '/privacy', '/faq'];
+    const wasLegal = LEGAL.includes(prevPath.current);
+    const isLegal = LEGAL.includes(location.pathname);
+    if (wasLegal && !isLegal) {
+      const saved = peekBuyFlow();
+      if (saved) {
+        setRestoreState(saved);
+        setShowBuyCredits(true);
+        clearBuyFlow();
+      }
+    }
+    prevPath.current = location.pathname;
+  }, [location.pathname]);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -108,8 +129,9 @@ export default function AppHeader({ onOpenMenu }) {
 
       {showBuyCredits && (
         <BuyCreditsModal
-          onClose={() => setShowBuyCredits(false)}
+          onClose={() => { setShowBuyCredits(false); setRestoreState(null); }}
           onSelect={() => setShowBuyCredits(false)}
+          initialState={restoreState}
         />
       )}
       {showLocked && (

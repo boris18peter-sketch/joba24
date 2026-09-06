@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { X, Zap, Shield, RotateCcw, CreditCard, RefreshCw, AlertTriangle, CheckCircle2, Lock } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
@@ -15,6 +16,7 @@ import IosPurchaseConfirm from '@/components/credits/IosPurchaseConfirm';
 import { isIosNative, getIosProducts, IOS_IAP_ALL, recoverUnfinishedIosPurchases, recoverIosSubscriptionCredits } from '@/lib/iosIap';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/lib/LanguageContext';
+import { saveBuyFlow } from '@/lib/buyFlowState';
 
 const SHIMMER_STYLE = `
   @keyframes shimmerWipe {
@@ -61,9 +63,10 @@ function useTrustFeatures(t) {
   ];
 }
 
-export default function BuyCreditsModal({ onClose, creditsNeeded }) {
+export default function BuyCreditsModal({ onClose, creditsNeeded, initialState }) {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const animatedCredits = useCountUp(me?.worker_credits ?? 0);
   const TRUST_FEATURES = useTrustFeatures(t);
@@ -77,9 +80,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
   });
   const lockedJobas = computeLockedJobas(myApplications);
 
-  const [tab, setTab] = useState('oneTime');
-  const [selectedPkg, setSelectedPkg] = useState(null);
-  const [step, setStep] = useState('browse');
+  const [tab, setTab] = useState(initialState?.tab || 'oneTime');
+  const [selectedPkg, setSelectedPkg] = useState(initialState?.selectedPkg ?? null);
+  const [step, setStep] = useState(initialState?.step || 'browse');
   const [loading, setLoading] = useState(false);
   const [tranzilaData, setTranzilaData] = useState(null);
 
@@ -134,6 +137,15 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     setStep('confirm');
   };
 
+  // Open an in-app legal page (Terms / Privacy) from the purchase flow.
+  // Save the current flow state so pressing "back" on the legal page returns
+  // the user straight back into the same purchase step (restored by AppHeader).
+  const handleOpenLegal = (path) => {
+    saveBuyFlow({ tab, selectedPkg, step });
+    onClose();
+    navigate(path);
+  };
+
   const handleConfirm = async (payMethod) => {
     setLoading(true);
     try {
@@ -176,6 +188,7 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
     >
       <div
         style={{
+          position: 'relative',
           background: 'var(--sheet-bg)',
           borderRadius: '28px 28px 0 0',
           width: '100%',
@@ -189,126 +202,124 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
           boxSizing: 'border-box',
         }}
       >
-        {/* Header — only on browse step. Pinned by the flex column (not sticky)
-            so it never scrolls and package cards never clip behind it. */}
-        {step === 'browse' && (
-          <div style={{ flexShrink: 0, background: 'var(--sheet-bg)', position: 'relative', zIndex: 10 }}>
-            {/* Compact header — title + balance inline, close button */}
-            <div style={{
-              background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
-              padding: '12px 18px 14px',
-              borderRadius: '0 0 24px 24px',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', top: -26, left: -16, width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-              <div style={{ position: 'absolute', bottom: -32, right: -8, width: 70, height: 70, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
+        {/* Header — browse step. Kept mounted in every step so the packages
+            page stays behind the purchase overlay (state + scroll preserved). */}
+        <div style={{ flexShrink: 0, background: 'var(--sheet-bg)', position: 'relative', zIndex: 10 }}>
+          {/* Compact header — title + balance inline, close button */}
+          <div style={{
+            background: 'linear-gradient(135deg, #0a52b0 0%, #1a6fd4 50%, #2563eb 100%)',
+            padding: '12px 18px 14px',
+            borderRadius: '0 0 24px 24px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            <div style={{ position: 'absolute', top: -26, left: -16, width: 110, height: 110, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ position: 'absolute', bottom: -32, right: -8, width: 70, height: 70, borderRadius: '50%', background: 'rgba(251,191,36,0.1)' }} />
 
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: 10,
-                    background: 'rgba(255,255,255,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    border: '1px solid rgba(255,255,255,0.2)',
-                  }}>
-                    <CreditIcon size={20} />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3, lineHeight: 1.1 }}>
-                      {t('buy_header_title')}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
-                      <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', letterSpacing: -0.3, lineHeight: 1 }}>
-                        {animatedCredits}
-                      </span>
-                      <CreditIcon size={13} />
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>{t('buy_balance_label')}</span>
-                      {lockedJobas > 0 && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginRight: 4, background: 'rgba(217,119,6,0.25)', borderRadius: 99, padding: '1px 7px', border: '1px solid rgba(217,119,6,0.45)' }}>
-                          <Lock size={10} color="#fbbf24" strokeWidth={2.5} />
-                          <span style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24' }}>{lockedJobas}</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={handleClose}
-                  style={{
-                    width: 32, height: 32, borderRadius: 10,
-                    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', flexShrink: 0,
-                  }}
-                >
-                  <X size={15} color="white" />
-                </button>
-              </div>
-
-              {creditsNeeded && (
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                 <div style={{
-                  marginTop: 10, background: 'rgba(251,191,36,0.15)',
-                  border: '1px solid rgba(251,191,36,0.3)', borderRadius: 10,
-                  padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
-                  position: 'relative',
+                  width: 34, height: 34, borderRadius: 10,
+                  background: 'rgba(255,255,255,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  border: '1px solid rgba(255,255,255,0.2)',
                 }}>
-                  <Zap size={13} color="#fbbf24" fill="#fbbf24" />
-                  <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {t('buy_credits_needed', { n: creditsNeeded })} <CreditIcon size={12} />
-                  </span>
+                  <CreditIcon size={20} />
                 </div>
-              )}
-            </div>
-
-            {/* Tabs — moved up to where balance row was */}
-            <div style={{ padding: '12px 16px 0' }}>
-              <div style={{
-                display: 'flex', background: 'var(--surface-3)',
-                borderRadius: 'var(--r-md)', padding: 4, gap: 4,
-              }}>
-                <button
-                  onClick={() => setTab('oneTime')}
-                  style={{
-                    flex: 1, height: 40, borderRadius: 'var(--r-sm)',
-                    border: 'none', cursor: 'pointer',
-                    background: tab === 'oneTime' ? 'var(--surface-2)' : 'transparent',
-                    boxShadow: tab === 'oneTime' ? 'var(--shadow-xs)' : 'none',
-                    fontSize: 13, fontWeight: tab === 'oneTime' ? 800 : 600,
-                    color: tab === 'oneTime' ? 'var(--brand-primary)' : 'var(--text-2)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {t('buy_tab_onetime')}
-                </button>
-                <button
-                  onClick={() => setTab('subscription')}
-                  style={{
-                    flex: 1, height: 40, borderRadius: 'var(--r-sm)',
-                    border: 'none', cursor: 'pointer',
-                    background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
-                    boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
-                    fontSize: 13, fontWeight: tab === 'subscription' ? 800 : 600,
-                    color: tab === 'subscription' ? 'var(--brand-primary)' : 'var(--text-2)',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {t('buy_tab_subscription')}
-                </button>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: 'white', letterSpacing: -0.3, lineHeight: 1.1 }}>
+                    {t('buy_header_title')}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 }}>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', letterSpacing: -0.3, lineHeight: 1 }}>
+                      {animatedCredits}
+                    </span>
+                    <CreditIcon size={13} />
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>{t('buy_balance_label')}</span>
+                    {lockedJobas > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginRight: 4, background: 'rgba(217,119,6,0.25)', borderRadius: 99, padding: '1px 7px', border: '1px solid rgba(217,119,6,0.45)' }}>
+                        <Lock size={10} color="#fbbf24" strokeWidth={2.5} />
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24' }}>{lockedJobas}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+              <button
+                onClick={handleClose}
+                style={{
+                  width: 32, height: 32, borderRadius: 10,
+                  background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', flexShrink: 0,
+                }}
+              >
+                <X size={15} color="white" />
+              </button>
             </div>
 
-            {/* Active subscriptions — only renders if user has one */}
-            <div style={{ padding: '10px 16px 0' }}>
-              <SubscriptionManager />
+            {creditsNeeded && (
+              <div style={{
+                marginTop: 10, background: 'rgba(251,191,36,0.15)',
+                border: '1px solid rgba(251,191,36,0.3)', borderRadius: 10,
+                padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8,
+                position: 'relative',
+              }}>
+                <Zap size={13} color="#fbbf24" fill="#fbbf24" />
+                <span style={{ fontSize: 12, color: '#fbbf24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {t('buy_credits_needed', { n: creditsNeeded })} <CreditIcon size={12} />
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Tabs — moved up to where balance row was */}
+          <div style={{ padding: '12px 16px 0' }}>
+            <div style={{
+              display: 'flex', background: 'var(--surface-3)',
+              borderRadius: 'var(--r-md)', padding: 4, gap: 4,
+            }}>
+              <button
+                onClick={() => setTab('oneTime')}
+                style={{
+                  flex: 1, height: 40, borderRadius: 'var(--r-sm)',
+                  border: 'none', cursor: 'pointer',
+                  background: tab === 'oneTime' ? 'var(--surface-2)' : 'transparent',
+                  boxShadow: tab === 'oneTime' ? 'var(--shadow-xs)' : 'none',
+                  fontSize: 13, fontWeight: tab === 'oneTime' ? 800 : 600,
+                  color: tab === 'oneTime' ? 'var(--brand-primary)' : 'var(--text-2)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {t('buy_tab_onetime')}
+              </button>
+              <button
+                onClick={() => setTab('subscription')}
+                style={{
+                  flex: 1, height: 40, borderRadius: 'var(--r-sm)',
+                  border: 'none', cursor: 'pointer',
+                  background: tab === 'subscription' ? 'var(--surface-2)' : 'transparent',
+                  boxShadow: tab === 'subscription' ? 'var(--shadow-xs)' : 'none',
+                  fontSize: 13, fontWeight: tab === 'subscription' ? 800 : 600,
+                  color: tab === 'subscription' ? 'var(--brand-primary)' : 'var(--text-2)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {t('buy_tab_subscription')}
+              </button>
             </div>
           </div>
-        )}
 
-        {/* Scrollable body — scrolls independently under the pinned header */}
+          {/* Active subscriptions — only renders if user has one */}
+          <div style={{ padding: '10px 16px 0' }}>
+            <SubscriptionManager />
+          </div>
+        </div>
+
+        {/* Scrollable body — scrolls independently under the pinned header.
+            Always mounted so the packages page stays behind the purchase overlay. */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
-        {/* Step: Browse packages */}
-        {step === 'browse' && (
+          {/* Browse packages */}
           <>
             <div style={{ padding: '8px 16px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>
@@ -379,53 +390,86 @@ export default function BuyCreditsModal({ onClose, creditsNeeded }) {
               {iosIap ? t('buy_secure_footer_apple') : t('buy_secure_footer')}
             </div>
           </>
-        )}
-
-        {/* Step: Payment confirmation — Apple IAP on iOS, Tranzila everywhere else */}
-        {step === 'confirm' && selectedPkg && (
-          iosIap ? (
-            <IosPurchaseConfirm
-              pkg={selectedPkg}
-              isSubscription={isSubscription}
-              priceLabel={iosProducts?.[IOS_IAP_ALL[selectedPkg.id]]?.displayPrice}
-              onBack={() => setStep('browse')}
-              onDone={() => setStep('success')}
-            />
-          ) : (
-            <PaymentConfirm
-              pkg={selectedPkg}
-              isSubscription={isSubscription}
-              onBack={() => setStep('browse')}
-              onConfirm={handleConfirm}
-              loading={loading}
-            />
-          )
-        )}
-
-        {/* Step: Tranzila iframe */}
-        {step === 'iframe' && tranzilaData && (
-          <TranzilaIframe
-            supplier={tranzilaData.supplier}
-            sum={tranzilaData.sum}
-            paymentId={tranzilaData.payment_id}
-            isSubscription={isSubscription}
-            pkg={selectedPkg}
-            payMethod={tranzilaData.payMethod}
-            thtk={tranzilaData.thtk}
-            onClose={() => { setStep('browse'); setTranzilaData(null); }}
-            onSuccess={() => setStep('success')}
-          />
-        )}
-
-        {/* Step: Success */}
-        {step === 'success' && selectedPkg && (
-          <PurchaseSuccess
-            pkg={selectedPkg}
-            isSubscription={isSubscription}
-            onDone={handleClose}
-          />
-        )}
         </div>
+
+        {/* Purchase overlay — renders ON TOP of the packages page (which stays
+            mounted behind). The packages never "close"; the purchase step is a
+            focused sheet above them, so the buying experience stays in context. */}
+        {step !== 'browse' && (
+          <div
+            style={{
+              position: 'absolute', inset: 0, zIndex: 30,
+              background: 'rgba(5,15,40,0.5)',
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+              animation: 'fadeIn 0.18s ease both',
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget && step === 'confirm') setStep('browse'); }}
+          >
+            <div
+              style={{
+                background: 'var(--sheet-bg)',
+                borderRadius: '24px 24px 0 0',
+                width: '100%',
+                maxWidth: 480,
+                maxHeight: '92vh',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                boxShadow: '0 -12px 50px rgba(0,0,0,0.35)',
+                boxSizing: 'border-box',
+                animation: 'sheetSlideUp 0.24s cubic-bezier(0.32,1.2,0.64,1) both',
+              }}
+            >
+              {/* Step: Payment confirmation — Apple IAP on iOS, Tranzila everywhere else */}
+              {step === 'confirm' && selectedPkg && (
+                iosIap ? (
+                  <IosPurchaseConfirm
+                    pkg={selectedPkg}
+                    isSubscription={isSubscription}
+                    priceLabel={iosProducts?.[IOS_IAP_ALL[selectedPkg.id]]?.displayPrice}
+                    onBack={() => setStep('browse')}
+                    onDone={() => setStep('success')}
+                    onNavigateLegal={handleOpenLegal}
+                  />
+                ) : (
+                  <PaymentConfirm
+                    pkg={selectedPkg}
+                    isSubscription={isSubscription}
+                    onBack={() => setStep('browse')}
+                    onConfirm={handleConfirm}
+                    loading={loading}
+                    onNavigateLegal={handleOpenLegal}
+                  />
+                )
+              )}
+
+              {/* Step: Tranzila iframe */}
+              {step === 'iframe' && tranzilaData && (
+                <TranzilaIframe
+                  supplier={tranzilaData.supplier}
+                  sum={tranzilaData.sum}
+                  paymentId={tranzilaData.payment_id}
+                  isSubscription={isSubscription}
+                  pkg={selectedPkg}
+                  payMethod={tranzilaData.payMethod}
+                  thtk={tranzilaData.thtk}
+                  onClose={() => { setStep('browse'); setTranzilaData(null); }}
+                  onSuccess={() => setStep('success')}
+                />
+              )}
+
+              {/* Step: Success */}
+              {step === 'success' && selectedPkg && (
+                <PurchaseSuccess
+                  pkg={selectedPkg}
+                  isSubscription={isSubscription}
+                  onDone={handleClose}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
     </div>,
