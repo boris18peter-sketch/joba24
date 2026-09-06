@@ -281,6 +281,10 @@ export default function CreateTask() {
         urgency_tag: searchParams.get('urgency_tag') || '',
       };
     }
+    // Edit / repost mode: start clean — the editTask useEffect populates all
+    // fields from the server.  Never load a stale draft here, it would
+    // momentarily show wrong data and can race with the server load.
+    if (isEditMode) return { ...DEFAULT_FORM };
     // Try to load saved draft
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
@@ -352,11 +356,23 @@ export default function CreateTask() {
     // An existing task already has a usable address — pre-confirm it so the user
     // isn't forced to re-select the address from the autocomplete list on every edit.
     setAddressConfirmed(!!editTask.location_name);
-  }, [editTask?.id]);
+  }, [editTask]);
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
   const setReq = (key, val) => setForm(p => ({ ...p, requirements: { ...p.requirements, [key]: val } }));
   const isHourly = isHourlyCategory(form.category);
+  // Distance between origin and destination for moving/delivery/transportation —
+  // passed to PriceSuggestion so the AI can factor in fuel + travel time.
+  const moveDistance = (() => {
+    const oLat = form.lat, oLng = form.lng;
+    const dLat = categoryDetails?.to_address_lat, dLng = categoryDetails?.to_address_lng;
+    if (!oLat || !oLng || !dLat || !dLng) return null;
+    const R = 6371;
+    const dLatRad = (dLat - oLat) * Math.PI / 180;
+    const dLngRad = (dLng - oLng) * Math.PI / 180;
+    const a = Math.sin(dLatRad / 2) ** 2 + Math.cos(oLat * Math.PI / 180) * Math.cos(dLat * Math.PI / 180) * Math.sin(dLngRad / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  })();
   const updateHourly = (field, val) => {
     setForm(p => {
       const next = { ...p, [field]: val };
@@ -1276,7 +1292,7 @@ export default function CreateTask() {
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             {t('ct_price_note')}
           </div>
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} distance={moveDistance} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}

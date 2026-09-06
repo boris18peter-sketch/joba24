@@ -65,7 +65,7 @@ export default function MyTasks() {
   const openTaskIds = tasks.filter(t => t.status === 'OPEN').map(t => t.id);
 
   const { data: allApps = [] } = useQuery({
-    queryKey: ['allMyTaskApps', me?.id, openTaskIds.join(',')],
+    queryKey: ['allMyTaskApps', me?.id],
     queryFn: async () => {
       if (!openTaskIds.length) return [];
       return base44.entities.TaskApplication.filter({ task_id: { $in: openTaskIds }, status: 'pending' });
@@ -75,7 +75,15 @@ export default function MyTasks() {
     refetchOnWindowFocus: false,
   });
 
-  // Real-time sync for applications
+  // Refetch when the set of open task IDs changes (e.g. a task gets taken / cancelled)
+  useEffect(() => {
+    if (openTaskIds.length > 0) {
+      queryClient.invalidateQueries({ queryKey: ['allMyTaskApps', me?.id] });
+    }
+  }, [openTaskIds.join(','), me?.id, queryClient]);
+
+  // Real-time sync for applications — updates the SAME stable query key the
+  // component reads from, so new applications appear instantly without a refetch.
   useEffect(() => {
     if (!me?.id) return;
     const unsub = base44.entities.TaskApplication.subscribe((event) => {

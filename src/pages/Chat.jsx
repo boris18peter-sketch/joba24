@@ -222,7 +222,7 @@ export default function Chat() {
   // WhatsApp-style keyboard: the chat container shrinks to the VisualViewport
   // height so the input bar sits right above the keyboard without the whole
   // screen being pushed up by the browser's scroll-into-view behavior.
-  const viewportHeight = useViewportHeight();
+  const { height: viewportHeight, offsetTop: viewportOffsetTop } = useViewportHeight();
 
   const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
     gate(() => sendMessage(content, mediaUrl, mediaType));
@@ -319,7 +319,7 @@ export default function Chat() {
   const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return (
-    <div ref={outerRef} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: viewportHeight || '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', zIndex: 9999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div ref={outerRef} style={{ position: 'absolute', top: viewportOffsetTop || 0, left: 0, right: 0, height: viewportHeight || '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', zIndex: 9999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header — fixed flex item, doesn't scroll */}
       <div style={{

@@ -99,13 +99,7 @@ export default function TaskDetailsRows({ task, compact = false }) {
   // ── "פרטים נוספים" rows ──
   const extraRows = [];
 
-  // Moving / delivery / transportation: show destination address as a detail row
-  const toAddress = task.category_details?.to_address;
-  if (toAddress && typeof toAddress === 'string') {
-    extraRows.push({ icon: '📍', iconBg: '#eff6ff', label: t('tdr_to_address'), value: toAddress, multiline: true });
-  }
-
-  // Full address details (origin)
+  // Full address details
   if (task.location_name || task.address_building || task.address_floor || task.address_apartment || task.address_notes) {
     const parts = [
       task.location_name,

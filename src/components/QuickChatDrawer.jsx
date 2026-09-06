@@ -82,7 +82,7 @@ function TaskInfoPopup({ task, onClose }) {
 export default function QuickChatDrawer({ task, me, onClose }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const viewportHeight = useViewportHeight();
+  const { height: viewportHeight, offsetTop: viewportOffsetTop } = useViewportHeight();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -274,7 +274,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   const showGreenBadge = isUserVerified(otherUserObj) && !hasSocialVerified(otherUserObj);
 
   return createPortal(
-    <div style={{ display: 'flex', flexDirection: 'column', height: viewportHeight || '100dvh', background: 'var(--surface-1)', zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, overflow: 'hidden' }} dir="rtl">
+    <div style={{ display: 'flex', flexDirection: 'column', height: viewportHeight || '100dvh', background: 'var(--surface-1)', zIndex: 999999, position: 'fixed', top: viewportOffsetTop || 0, left: 0, right: 0, overflow: 'hidden' }} dir="rtl">
       {showTaskInfo && task && <TaskInfoPopup task={task} onClose={() => setShowTaskInfo(false)} />}
 
       {/* Header — identical to Chat.jsx */}

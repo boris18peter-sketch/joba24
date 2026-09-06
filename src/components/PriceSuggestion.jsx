@@ -47,7 +47,7 @@ function countDistinctTasks(description) {
   return Math.max(1, Math.min(estimate, 8));
 }
 
-export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, onAccept }) {
+export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, distance, onAccept }) {
   const { t, isRTL, lang } = useLanguage();
   const [range, setRange] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -63,6 +63,9 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       try {
         const unit = isHourly ? 'לשעה אחת' : 'לכל המשימה המלאה';
         const langName = LANG_NAMES[lang] || 'English';
+        const distanceLine = distance != null
+          ? `מרחק בין מוצא ליעד: ${distance < 1 ? `${Math.round(distance * 1000)} מטר` : `${distance.toFixed(1)} ק"מ`}\nעלות דלק וזמן נסיעה: יש להוסיף למחיר כ-${Math.max(2, Math.round(distance * 2.5))}–${Math.max(4, Math.round(distance * 4))} ₪ עבור דלק ובלאי`
+          : '';
         const prompt = `
 אתה מומחה תמחור לפלטפורמת עבודות קטנות בישראל (דומה ל-TaskRabbit / Fixlers).
 תן המלצת מחיר ריאלית לג'ובה הבאה. המחיר הוא ${unit}.
@@ -72,7 +75,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
 ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: לא צוין'}
 תיאור: ${description || 'לא צוין'}
 מיקום: ${location || 'לא צוין'}
-
+${distanceLine}
 טווח מחירים ריאלי לפי מחירי שוק בישראל 2025: ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''}
 
 השב בלבד עם JSON תקין בפורמט:
@@ -81,7 +84,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
 הכללים:
 - קרא את כל התיאור בעיון. אם מוזכרות מספר עבודות נפרדות (למשל פירוק ארון + התקנת מכונת כביסה + תיקון מגירות + תליית מנורה), המחיר הוא סכום כל העבודות יחד, לא מחיר של עבודה אחת.
 - אל תתעלם מאף עבודה שמוזכרת בתיאור. ככל שיש יותר עבודות או שהן מורכבות יותר, המחיר עולה בהתאם.
-- min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות.
+${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר: דלק, בלאי רכב וזמן נסיעה. ככל שהמרחק גדול יותר, המחיר עולה בהתאם.\n` : ''}- min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות.
 - min תמיד קטן מ-max בפער משמעותי — לפחות 15% מהמחיר (ולא פחות מ-${isHourly ? '10' : '50'} ₪). אסור ש-min יהיה שווה ל-max.
 - הטה את ההמלצה לכיוון העליון של הטווח הריאלי כדי שהמשימה תהיה אטרקטיבית לעובדים — עדיף להמליץ על מחיר גבוה יותר שימשוך יותר עובדים מקצועיים.
 - מחיר המינימום: ₪${configRange.min} ${isHourly ? 'לשעה' : ''}
@@ -133,7 +136,7 @@ ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: ל
     }, 600);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [category, estimatedTime, description, location, isHourly, lang, t]);
+  }, [category, estimatedTime, description, location, isHourly, distance, lang, t]);
 
   if (loading) {
     return (
