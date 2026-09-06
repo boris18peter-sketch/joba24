@@ -1410,4 +1410,11 @@ export const es = {
   continue_with_facebook: 'Continuar con Facebook',
   continue_as_guest: 'Continuar como invitado',
   completely_free: 'Completamente gratis — sin cargo',
+  worker_avail_live: 'Disponible ahora',
+  worker_avail_professionals: 'profesionales conectados',
+  worker_avail_connected: 'conectados',
+  worker_avail_in_city: 'en {city}',
+  worker_avail_trust_msg: 'Publica una tarea y recibe ofertas en minutos',
+  worker_avail_select_city: 'Selecciona una ciudad para ver disponibilidad local',
+  worker_avail_publish_hint: 'Publica ahora — serán notificados',
 };

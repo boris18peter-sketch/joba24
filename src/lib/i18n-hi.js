@@ -1386,4 +1386,11 @@ export const hi = {
   continue_with_facebook: 'Facebook के साथ जारी रखें',
   continue_as_guest: 'अतिथि के रूप में जारी रखें',
   completely_free: 'पूरी तरह निःशुल्क — कोई शुल्क नहीं',
+  worker_avail_live: 'अभी उपलब्ध',
+  worker_avail_professionals: 'पेशेवर जुड़े हुए',
+  worker_avail_connected: 'जुड़े हुए',
+  worker_avail_in_city: '{city} में',
+  worker_avail_trust_msg: 'कार्य पोस्ट करें और मिनटों में ऑफर पाएं',
+  worker_avail_select_city: 'स्थानीय उपलब्धता देखने के लिए शहर चुनें',
+  worker_avail_publish_hint: 'अभी प्रकाशित करें — उन्हें सूचित किया जाएगा',
 };

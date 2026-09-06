@@ -1432,4 +1432,11 @@ export const en = {
   continue_with_facebook: 'Continue with Facebook',
   continue_as_guest: 'Continue as guest',
   completely_free: 'Completely free — no charge',
+  worker_avail_live: 'Available now',
+  worker_avail_professionals: 'professionals connected',
+  worker_avail_connected: 'connected',
+  worker_avail_in_city: 'in {city}',
+  worker_avail_trust_msg: 'Post a task and get offers within minutes',
+  worker_avail_select_city: 'Select a city to see local availability',
+  worker_avail_publish_hint: "Publish now — they'll get notified",
   };

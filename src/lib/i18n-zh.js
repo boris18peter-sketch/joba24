@@ -1386,4 +1386,11 @@ export const zh = {
   continue_with_facebook: '使用 Facebook 继续',
   continue_as_guest: '以访客身份继续',
   completely_free: '完全免费 — 不收任何费用',
+  worker_avail_live: '现在可用',
+  worker_avail_professionals: '已连接的专业人士',
+  worker_avail_connected: '已连接',
+  worker_avail_in_city: '在{city}',
+  worker_avail_trust_msg: '发布任务并在几分钟内获得报价',
+  worker_avail_select_city: '选择城市以查看本地可用性',
+  worker_avail_publish_hint: '立即发布 — 他们将收到通知',
 };

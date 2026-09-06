@@ -1386,4 +1386,11 @@ export const fil = {
   continue_with_facebook: 'Magpatuloy sa Facebook',
   continue_as_guest: 'Magpatuloy bilang bisita',
   completely_free: 'Libreng walang bayad — walang singil',
+  worker_avail_live: 'Available ngayon',
+  worker_avail_professionals: 'mga propesyonal na konektado',
+  worker_avail_connected: 'konektado',
+  worker_avail_in_city: 'sa {city}',
+  worker_avail_trust_msg: 'Mag-post ng gawain at makakuha ng mga alok sa loob ng ilang minuto',
+  worker_avail_select_city: 'Pumili ng lungsod para makita ang lokal na availability',
+  worker_avail_publish_hint: 'I-publish na — sila ay mapapaalalahanan',
 };

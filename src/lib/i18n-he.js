@@ -1459,4 +1459,11 @@ export const he = {
   continue_with_facebook: 'המשך עם Facebook',
   continue_as_guest: 'המשך בתור אורח',
   completely_free: 'בחינם לחלוטין — ללא חיוב',
+  worker_avail_live: 'עובדים זמינים כעת',
+  worker_avail_professionals: 'בעלי מקצוע מחוברים',
+  worker_avail_connected: 'מחוברים',
+  worker_avail_in_city: 'ב{city}',
+  worker_avail_trust_msg: 'פרסם משימה וקבל הצעות תוך דקות',
+  worker_avail_select_city: 'בחר עיר לראות כמה זמינים באזורך',
+  worker_avail_publish_hint: 'פרסם עכשיו — הם יקבלו הודעה',
   };

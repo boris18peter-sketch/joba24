@@ -1375,4 +1375,11 @@ export const ru = {
   continue_with_facebook: 'Продолжить с Facebook',
   continue_as_guest: 'Продолжить как гость',
   completely_free: 'Полностью бесплатно — без оплаты',
+  worker_avail_live: 'Доступны сейчас',
+  worker_avail_professionals: 'профессионалов подключено',
+  worker_avail_connected: 'подключено',
+  worker_avail_in_city: 'в {city}',
+  worker_avail_trust_msg: 'Опубликуйте задание и получите предложения за минуты',
+  worker_avail_select_city: 'Выберите город, чтобы увидеть местную доступность',
+  worker_avail_publish_hint: 'Опубликовать сейчас — они получат уведомление',
 };

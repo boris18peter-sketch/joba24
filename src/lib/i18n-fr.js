@@ -1372,4 +1372,11 @@ export const fr = {
   continue_with_facebook: 'Continuer avec Facebook',
   continue_as_guest: "Continuer en tant qu'invité",
   completely_free: 'Entièrement gratuit — sans frais',
+  worker_avail_live: 'Disponible maintenant',
+  worker_avail_professionals: 'professionnels connectés',
+  worker_avail_connected: 'connectés',
+  worker_avail_in_city: 'à {city}',
+  worker_avail_trust_msg: 'Publiez une tâche et recevez des offres en quelques minutes',
+  worker_avail_select_city: 'Sélectionnez une ville pour voir la disponibilité locale',
+  worker_avail_publish_hint: 'Publier maintenant — ils seront notifiés',
 };

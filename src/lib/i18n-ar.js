@@ -1413,4 +1413,11 @@ export const ar = {
   continue_with_facebook: 'المتابعة عبر Facebook',
   continue_as_guest: 'المتابعة كضيف',
   completely_free: 'مجاني تماماً — بدون رسوم',
+  worker_avail_live: 'متاح الآن',
+  worker_avail_professionals: 'محترفون متصلون',
+  worker_avail_connected: 'متصلون',
+  worker_avail_in_city: 'في {city}',
+  worker_avail_trust_msg: 'انشر مهمة واحصل على عروض خلال دقائق',
+  worker_avail_select_city: 'اختر مدينة لمعرفة التوفر المحلي',
+  worker_avail_publish_hint: 'انشر الآن — سيتم إخطارهم',
 };
