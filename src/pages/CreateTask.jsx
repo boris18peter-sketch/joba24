@@ -1215,109 +1215,6 @@ export default function CreateTask() {
           <MediaUploader images={form.images} videoUrl={form.video_url} onImagesChange={imgs => set('images', imgs)} onVideoChange={url => set('video_url', url)} t={t} />
         </SectionCard>
 
-        {/* Price */}
-        <div ref={fieldRefs.price}>
-        <SectionCard>
-          {isHourly ? (
-            <>
-              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_price_hour')}</Label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                <div>
-                  <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="50"
-                    value={form.hourly_rate}
-                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); updateHourly('hourly_rate', v); setErrors(p => ({...p, price: false})); }}
-                    disabled={hasActiveApplications}
-                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
-                  />
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{t('ct_per_hour')}</p>
-                </div>
-                <div>
-                  {scheduleDriven ? (
-                    <div style={{ height: 48, borderRadius: 12, border: '1.5px solid #bbf7d0', background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#166534' }}>
-                      {formatDuration(scheduleMinutes)}
-                    </div>
-                  ) : (
-                    <Input type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="3"
-                      value={form.hours}
-                      onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
-                      disabled={hasActiveApplications}
-                      style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
-                    />
-                  )}
-                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{scheduleDriven ? t('ct_from_schedule') : t('ct_num_hours')}</p>
-                </div>
-              </div>
-              {form.hourly_rate && form.hours ? (
-                scheduleDriven ? (
-                  <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>{t('ct_auto_calc')}</span>
-                      <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>{scheduleMinutes < 60 ? formatDuration(scheduleMinutes) : `₪${form.hourly_rate} לשעה · ${formatDuration(scheduleMinutes)}`}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #bbf7d0' }}>
-                      <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>{t('ct_total')}</span>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>{t('ct_total')}</span>
-                    <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
-                  </div>
-                )
-              ) : (
-                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600 }}>
-                  {scheduleDriven ? t('ct_enter_rate') : t('ct_enter_rate_hours')}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
-              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
-                value={form.price}
-                onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
-                disabled={hasActiveApplications}
-                style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
-              />
-            </>
-          )}
-          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{t('ct_price_locked')}</p>}
-          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>{t('ct_required')}</p>}
-          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
-            {t('ct_price_note')}
-          </div>
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} distance={moveDistance} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
-
-          {/* Auto bump */}
-          <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
-            style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : 'var(--surface-3)', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : 'var(--border-1)'}` }}
-          >
-            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{t('ct_bump_title')}</div>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>{t('ct_bump_desc')}</div>
-            </div>
-          </button>
-          {form.auto_bump_enabled && (
-            <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
-              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>{isHourly ? t('ct_max_price_total') : t('ct_max_price')}</Label>
-              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{isHourly ? t('ct_bump_help_hourly', { price: form.price || '?' }) : t('ct_bump_help', { price: form.price || '?' })}</div>
-              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
-                value={form.max_price}
-                onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
-                style={{ background: 'white', border: `1px solid ${form.max_price && Number(form.max_price) <= Number(form.price) ? '#ef4444' : '#fcd34d'}`, borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
-              />
-              {form.max_price && Number(form.max_price) <= Number(form.price) && (
-                <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_bump_err', { price: form.price })}</p>
-              )}
-            </div>
-          )}
-        </SectionCard>
-
-        </div>
         {/* Expiry + Urgency */}
         <SectionCard>
           <Label className="text-sm font-bold mb-2 flex items-center gap-1" style={{ color: 'var(--text-1)' }}>
@@ -1640,6 +1537,110 @@ export default function CreateTask() {
             </div>
           )}
         </SectionCard>
+
+        {/* Price — moved here from above, just before payment */}
+        <div ref={fieldRefs.price}>
+        <SectionCard>
+          {isHourly ? (
+            <>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_price_hour')}</Label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                <div>
+                  <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="50"
+                    value={form.hourly_rate}
+                    onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); updateHourly('hourly_rate', v); setErrors(p => ({...p, price: false})); }}
+                    disabled={hasActiveApplications}
+                    style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                  />
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{t('ct_per_hour')}</p>
+                </div>
+                <div>
+                  {scheduleDriven ? (
+                    <div style={{ height: 48, borderRadius: 12, border: '1.5px solid #bbf7d0', background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: '#166534' }}>
+                      {formatDuration(scheduleMinutes)}
+                    </div>
+                  ) : (
+                    <Input type="text" inputMode="decimal" pattern="[0-9.]*" placeholder="3"
+                      value={form.hours}
+                      onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9.]/g, ''); updateHourly('hours', v); setErrors(p => ({...p, price: false})); }}
+                      disabled={hasActiveApplications}
+                      style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, opacity: hasActiveApplications ? 0.5 : 1 }}
+                    />
+                  )}
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 4, fontWeight: 600 }}>{scheduleDriven ? t('ct_from_schedule') : t('ct_num_hours')}</p>
+                </div>
+              </div>
+              {form.hourly_rate && form.hours ? (
+                scheduleDriven ? (
+                  <div style={{ background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>{t('ct_auto_calc')}</span>
+                      <span style={{ fontSize: 11, color: '#166534', fontWeight: 600 }}>{scheduleMinutes < 60 ? formatDuration(scheduleMinutes) : `₪${form.hourly_rate} לשעה · ${formatDuration(scheduleMinutes)}`}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid #bbf7d0' }}>
+                      <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>{t('ct_total')}</span>
+                      <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: '#166534', fontWeight: 700 }}>{t('ct_total')}</span>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: '#059669' }}>₪{Math.round((Number(form.hourly_rate) || 0) * (parseFloat(form.hours) || 0))}</span>
+                  </div>
+                )
+              ) : (
+                <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 14px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600 }}>
+                  {scheduleDriven ? t('ct_enter_rate') : t('ct_enter_rate_hours')}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('price_label')} (₪) *</Label>
+              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="100"
+                value={form.price}
+                onChange={e => { if (hasActiveApplications) return; const v = e.target.value.replace(/[^0-9]/g, ''); set('price', v); setErrors(p => ({...p, price: false})); }}
+                disabled={hasActiveApplications}
+                style={{ background: 'var(--input-bg)', border: `1.5px solid ${errors.price ? '#ef4444' : 'var(--border-1)'}`, borderRadius: 12, height: 48, fontSize: 18, fontWeight: 800, marginBottom: 8, opacity: hasActiveApplications ? 0.5 : 1 }}
+              />
+            </>
+          )}
+          {hasActiveApplications && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{t('ct_price_locked')}</p>}
+          {errors.price && <p style={{ fontSize: 11, color: '#ef4444', marginBottom: 6 }}>{t('ct_required')}</p>}
+          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
+            {t('ct_price_note')}
+          </div>
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} distance={moveDistance} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
+
+          {/* Auto bump */}
+          <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
+            style={{ marginTop: 12, width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, textAlign: 'right', cursor: 'pointer', background: form.auto_bump_enabled ? '#fffbeb' : 'var(--surface-3)', border: `1px solid ${form.auto_bump_enabled ? '#fcd34d' : 'var(--border-1)'}` }}
+          >
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${form.auto_bump_enabled ? '#f59e0b' : '#cbd5e1'}`, background: form.auto_bump_enabled ? '#f59e0b' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {form.auto_bump_enabled && <span style={{ color: 'white', fontSize: 11 }}>✓</span>}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{t('ct_bump_title')}</div>
+              <div style={{ fontSize: 11, color: '#888', marginTop: 2, lineHeight: 1.4 }}>{t('ct_bump_desc')}</div>
+            </div>
+          </button>
+          {form.auto_bump_enabled && (
+            <div style={{ marginTop: 10, padding: '12px 14px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 14 }}>
+              <Label className="text-sm font-semibold block" style={{ color: '#92400e', marginBottom: 4 }}>{isHourly ? t('ct_max_price_total') : t('ct_max_price')}</Label>
+              <div style={{ fontSize: 11, color: '#b45309', marginBottom: 8, lineHeight: 1.4 }}>{isHourly ? t('ct_bump_help_hourly', { price: form.price || '?' }) : t('ct_bump_help', { price: form.price || '?' })}</div>
+              <Input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="250"
+                value={form.max_price}
+                onChange={e => set('max_price', e.target.value.replace(/[^0-9]/g, ''))}
+                style={{ background: 'white', border: `1.5px solid ${form.max_price && Number(form.max_price) <= Number(form.price) ? '#ef4444' : '#fcd34d'}`, borderRadius: 12, height: 44, fontSize: 16, fontWeight: 700 }}
+              />
+              {form.max_price && Number(form.max_price) <= Number(form.price) && (
+                <p style={{ fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: 700 }}>{t('ct_bump_err', { price: form.price })}</p>
+              )}
+            </div>
+          )}
+        </SectionCard>
+
+        </div>
 
         {/* Payment Method */}
         <div ref={fieldRefs.payment_method}>

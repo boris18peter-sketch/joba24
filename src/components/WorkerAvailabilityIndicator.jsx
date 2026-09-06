@@ -7,14 +7,8 @@ import { useLanguage } from '@/lib/LanguageContext';
  * WorkerAvailabilityIndicator — compact, transparent indicator
  * designed to sit inside the CreateTask header (on dark blue background).
  *
- * Unifies three former components: the header progress context, the worker
- * availability bar, and the info banner — into one clean row.
- *
  * Shows a live count of available professionals that narrows as the user
- * selects a category and city:
- *   - No category:     "26 professionals connected" + detail tip
- *   - Category only:   "11 plumbing connected"     + "select a city" hint
- *   - Category + city:  "3 plumbing in Herzliya"   + "publish now" hint
+ * selects a category and city.
  */
 export default function WorkerAvailabilityIndicator({ category, city }) {
   const { t, isRTL } = useLanguage();
@@ -63,37 +57,41 @@ export default function WorkerAvailabilityIndicator({ category, city }) {
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '0 16px 10px',
+      display: 'flex', alignItems: 'center', gap: 8,
+      margin: '0 16px 10px',
+      padding: '8px 12px',
+      background: 'rgba(255,255,255,0.07)',
+      borderRadius: 12,
+      border: '1px solid rgba(255,255,255,0.08)',
     }}>
-      {/* Live dot */}
-      <div style={{
-        width: 8, height: 8, borderRadius: '50%',
+      {/* Live indicator dot */}
+      <span style={{
+        width: 7, height: 7, borderRadius: '50%',
         background: '#4ade80',
-        boxShadow: '0 0 0 0 rgba(74,222,128,0.7)',
-        animation: 'waiDotPulse 2s infinite',
+        boxShadow: '0 0 6px rgba(74,222,128,0.6)',
         flexShrink: 0,
+        animation: 'waiPulse 2s infinite',
       }} />
 
       {/* Count */}
-      <span style={{ color: 'white', fontSize: 22, fontWeight: 900, lineHeight: 1, flexShrink: 0 }}>
-        {displayCount.toLocaleString()}
+      <span style={{ color: 'white', fontSize: 16, fontWeight: 900, flexShrink: 0, lineHeight: 1 }}>
+        {displayCount}
       </span>
 
       {/* Label + hint */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: 'white', fontSize: 12.5, fontWeight: 800, lineHeight: 1.2 }}>
+        <div style={{ color: 'rgba(255,255,255,0.95)', fontSize: 12, fontWeight: 700, lineHeight: 1.2 }}>
           {mainLabel}
         </div>
-        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10.5, fontWeight: 500, marginTop: 1, lineHeight: 1.3 }}>
+        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 500, marginTop: 1, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {hint}
         </div>
       </div>
 
       <style>{`
-        @keyframes waiDotPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.7); }
-          50% { box-shadow: 0 0 0 4px rgba(74,222,128,0); }
+        @keyframes waiPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.8); }
         }
       `}</style>
     </div>

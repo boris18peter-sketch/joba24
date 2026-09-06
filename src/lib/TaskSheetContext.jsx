@@ -8,6 +8,10 @@ export function TaskSheetProvider({ children }) {
   // Ref mirror of sheetTaskId so hideTaskSheet can read it synchronously
   // without nesting a setter inside another setter's updater.
   const sheetTaskIdRef = useRef(null);
+  // Flag — set when closeTaskSheet is called so the popstate handler doesn't
+  // re-open the sheet (which it would if the previous history entry also has
+  // a { taskSheet } state).
+  const closingRef = useRef(false);
 
   // Opens the sheet and pushes a history entry (without URL change) so the
   // hardware back button / swipe-back closes the sheet.
@@ -29,12 +33,12 @@ export function TaskSheetProvider({ children }) {
   // Closes the sheet. If we pushed a history entry, go back to pop it
   // (the popstate listener will clear sheetTaskId).
   const closeTaskSheet = useCallback(() => {
+    closingRef.current = true;
     setHiddenTaskId(null);
     sheetTaskIdRef.current = null;
+    setSheetTaskId(null);
     if (window.history.state?.taskSheet) {
       window.history.back();
-    } else {
-      setSheetTaskId(null);
     }
   }, []);
 
@@ -58,6 +62,11 @@ export function TaskSheetProvider({ children }) {
   // Listen for popstate (hardware back button, swipe-back) to close or restore the sheet
   useEffect(() => {
     const handlePopState = () => {
+      if (closingRef.current) {
+        // This popstate was triggered by closeTaskSheet — don't re-open
+        closingRef.current = false;
+        return;
+      }
       if (window.history.state?.taskSheet) {
         // We're back at the task sheet entry — restore it
         sheetTaskIdRef.current = window.history.state.taskSheet;
