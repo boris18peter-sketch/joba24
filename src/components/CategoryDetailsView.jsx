@@ -58,6 +58,8 @@ export default function CategoryDetailsView({ task, compact = false }) {
   const skipKeys = new Set(['hourly_rate', 'hours', 'pricing_type', 'schedule']);
   for (const [key, v] of Object.entries(details)) {
     if (knownKeys.has(key) || skipKeys.has(key)) continue;
+    // Skip raw coordinate fields stored by address-type fields (e.g. to_address_lat)
+    if (key.endsWith('_lat') || key.endsWith('_lng')) continue;
     if (v === undefined || v === '' || v === null) continue;
     if (typeof v === 'boolean') {
       if (v) rows.push({ label: key, value: null, isToggle: true });
