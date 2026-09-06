@@ -120,12 +120,12 @@ export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, on
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
         marginBottom: 14, fontSize: 12, flexWrap: 'wrap',
       }}>
-        <a href="https://joba24.base44.app/terms" target="_blank" rel="noopener noreferrer"
+        <a href="https://joba24.com/terms" target="_blank" rel="noopener noreferrer"
            style={{ color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline' }}>
           {t('terms_title')}
         </a>
         <span style={{ color: 'var(--text-3)' }}>·</span>
-        <a href="https://joba24.base44.app/privacy" target="_blank" rel="noopener noreferrer"
+        <a href="https://joba24.com/privacy" target="_blank" rel="noopener noreferrer"
            style={{ color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline' }}>
           {t('privacy_title')}
         </a>
