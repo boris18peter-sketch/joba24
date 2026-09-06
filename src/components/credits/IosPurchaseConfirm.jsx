@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Loader2 } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -120,15 +121,15 @@ export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, on
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
         marginBottom: 14, fontSize: 12, flexWrap: 'wrap',
       }}>
-        <a href="https://joba24.com/terms" target="_blank" rel="noopener noreferrer"
+        <Link to="/terms"
            style={{ color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline' }}>
           {t('terms_title')}
-        </a>
+        </Link>
         <span style={{ color: 'var(--text-3)' }}>·</span>
-        <a href="https://joba24.com/privacy" target="_blank" rel="noopener noreferrer"
+        <Link to="/privacy"
            style={{ color: 'var(--brand-primary)', fontWeight: 600, textDecoration: 'underline' }}>
           {t('privacy_title')}
-        </a>
+        </Link>
       </div>
 
       {/* Purchase button — Apple style (black) */}
