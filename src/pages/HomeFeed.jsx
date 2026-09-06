@@ -20,6 +20,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
+import WorkerAvailabilityBar from '@/components/WorkerAvailabilityBar';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import HomeBannersCarousel from '@/components/HomeBannersCarousel';
@@ -765,6 +766,9 @@ export default function HomeFeed() {
             </div>
 
             </div>{/* end sticky search wrapper */}
+
+            {/* Worker availability — live count bar */}
+            <WorkerAvailabilityBar />
 
             {/* Verification + profile-completion banners — rotated side-by-side */}
             {isAuthenticated && me && <HomeBannersCarousel me={me} />}

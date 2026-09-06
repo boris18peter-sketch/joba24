@@ -29,7 +29,7 @@ function useOnlineStatus(userId) {
         const p = results[0];
         if (p?.last_seen) {
           const diff = Date.now() - new Date(p.last_seen).getTime();
-          setIsOnline(diff < 90000);
+          setIsOnline(diff < 180000);
         } else {
           setIsOnline(false);
         }
@@ -64,7 +64,7 @@ function usePingPresence(userId) {
       } catch {}
     };
     ping();
-    const interval = setInterval(ping, 60000);
+    const interval = setInterval(ping, 120000);
     return () => clearInterval(interval);
   }, [userId]);
 }

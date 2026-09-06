@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const countField = eventType === 'view' ? 'views_count' : 'clicks_count';
 
-    // Fetch current task to increment
+    // Fetch task for owner check
     const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
     const task = tasks[0];
     if (!task) return Response.json({ ok: false, error: 'task not found' });
@@ -23,14 +23,14 @@ Deno.serve(async (req) => {
     try {
       const user = await base44.auth.me();
       if (user && task.client_id && user.id === task.client_id) {
-        return Response.json({ ok: true, skipped: true, views_count: task.views_count, clicks_count: task.clicks_count });
+        return Response.json({ ok: true, skipped: true });
       }
     } catch (_) { /* unauthenticated users are fine — count them */ }
 
-    const newCount = (task[countField] || 0) + 1;
-    await base44.asServiceRole.entities.Task.update(taskId, { [countField]: newCount });
+    // Atomic increment — safe under concurrent access (no read-then-write race)
+    await base44.asServiceRole.entities.Task.updateMany({ id: taskId }, { $inc: { [countField]: 1 } });
 
-    return Response.json({ ok: true, [countField]: newCount, views_count: countField === 'views_count' ? newCount : task.views_count, clicks_count: countField === 'clicks_count' ? newCount : task.clicks_count });
+    return Response.json({ ok: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
