@@ -1071,6 +1071,8 @@ export default function CreateTask() {
               */}
               {draftSaved && <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '4px 8px', fontSize: 11, color: 'white', fontWeight: 700 }}><Save size={11} /> {t('draft_saved')}</div>}
             </div>
+            {/* Worker availability — unified into header */}
+            <WorkerAvailabilityIndicator category={form.category} city={form.city} />
             {/* Progress bar */}
             <div style={{ padding: '0 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -1086,9 +1088,6 @@ export default function CreateTask() {
       })()}
 
       <div className="px-4 py-4 space-y-4" style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
-        {/* Worker availability indicator — dynamic count based on category + city */}
-        <WorkerAvailabilityIndicator category={form.category} city={form.city} />
-
         {/* Draft restore indicator */}
         {!isRepost && !isEditMode && form.title && (
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1116,14 +1115,6 @@ export default function CreateTask() {
             <p style={{ fontSize: 13, color: '#dc2626', margin: 0, lineHeight: 1.6, fontWeight: 700 }}>🛡️ {moderationErrors.images}</p>
           </div>
         )}
-
-        {/* Info banner */}
-        <div style={{ background: 'linear-gradient(135deg,#eff6ff,#f0f7ff)', border: '1px solid #bfdbfe', borderRadius: 14, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Info size={15} color="#1a6fd4" style={{ flexShrink: 0 }} />
-          <p style={{ fontSize: 12, color: '#1e40af', margin: 0, lineHeight: 1.5, fontWeight: 600 }}>
-            {t('important_note_body')}
-          </p>
-        </div>
 
         {/* Category */}
         <SectionCard>

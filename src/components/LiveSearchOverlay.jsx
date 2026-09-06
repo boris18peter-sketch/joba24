@@ -7,12 +7,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { autoDetectCategory } from '@/lib/taskFlowConfig';
 import { getCategoryPluralLabel } from '@/lib/categories';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useWorkerStats } from '@/hooks/useWorkerStats';
 
 // ── Shared Logo ───────────────────────────────────────────────────────────────
 const LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -522,20 +522,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
     navigate(`/?newTaskId=${taskId}`);
   };
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['workerPool'],
-    queryFn: () => base44.entities.User.list('-last_active_at', 500),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const categoryWorkerCount = (() => {
-    if (!taskCategory || !allUsers.length) return 0;
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    return allUsers.filter(u =>
-      u.preferred_categories?.includes(taskCategory) &&
-      u.last_active_at && new Date(u.last_active_at) >= sevenDaysAgo
-    ).length;
-  })();
+  const { count: categoryWorkerCount } = useWorkerStats(taskCategory, null);
 
   useEffect(() => {
     if (!taskId) return;
@@ -700,7 +687,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
           }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', display: 'inline-block', animation: 'dotBlink2 1.2s .1s infinite' }} />
             <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80' }}>
-              {workerLabel} {t('lso_workers_update')}
+              <span style={{ fontSize: 15, fontWeight: 900 }}>{categoryWorkerCount}</span> {workerLabel} {t('lso_workers_update')}
             </span>
           </div>
         )}
