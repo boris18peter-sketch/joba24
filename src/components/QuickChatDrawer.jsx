@@ -14,6 +14,7 @@ import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
+import ChatImageBubble from '@/components/chat/ChatImageBubble';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -367,12 +368,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
                 )}
 
                 {isImage ? (
-                  <img
-                    src={imgUrl}
-                    alt="תמונה"
-                    style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, objectFit: 'cover', cursor: 'pointer', border: isMe ? 'none' : '1px solid #e2e8f0' }}
-                    onClick={() => window.open(imgUrl, '_blank')}
-                  />
+                  <ChatImageBubble url={imgUrl} isMe={isMe} />
                 ) : isAudio ? (
                   <audio src={audioUrl} controls style={{ maxWidth: 220, height: 36, outline: 'none' }} />
                 ) : (

@@ -346,7 +346,7 @@ function StoriesViewer({ stories, startIndex, onClose, userLocation, currentUser
             </div>
           )}
           <div
-            onClick={(e) => { handleTaskClick(e); openTaskSheet(task.id); }}
+            onClick={(e) => { handleTaskClick(e); onClose(); openTaskSheet(task.id); }}
             onMouseDown={e => e.stopPropagation()}
             onTouchStart={e => e.stopPropagation()}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', boxShadow: '0 4px 16px rgba(26,111,212,0.4)', fontWeight: 800, fontSize: 15, color: 'white', padding: '14px 20px', textDecoration: 'none', cursor: 'pointer' }}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +16,7 @@ import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
+import ChatImageBubble from '@/components/chat/ChatImageBubble';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -318,14 +320,14 @@ export default function Chat() {
   const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
   const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
-  return (
-    <div ref={outerRef} style={{ position: 'absolute', top: viewportOffsetTop || 0, left: 0, right: 0, height: viewportHeight || '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', zIndex: 9999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
+  return createPortal(
+    <div ref={outerRef} style={{ position: 'fixed', top: viewportOffsetTop || 0, left: 0, right: 0, height: viewportHeight || '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', zIndex: 999999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
       {/* Header — fixed flex item, doesn't scroll */}
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
-        padding: 'max(8px, env(safe-area-inset-top)) 12px 10px',
+        padding: 'max(12px, env(safe-area-inset-top)) 12px 12px',
         display: 'flex', alignItems: 'center', gap: 10,
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0, zIndex: 40,
@@ -410,12 +412,7 @@ export default function Chat() {
                 )}
 
                 {isImage ? (
-                  <img
-                    src={imgUrl}
-                    alt={t('chat_task_info')}
-                    style={{ maxWidth: 220, maxHeight: 200, borderRadius: 14, objectFit: 'cover', cursor: 'pointer', border: isMe ? 'none' : '1px solid #e2e8f0' }}
-                    onClick={() => window.open(imgUrl, '_blank')}
-                  />
+                  <ChatImageBubble url={imgUrl} isMe={isMe} />
                 ) : isAudio ? (
                   <audio src={audioUrl} controls style={{ maxWidth: 220, height: 36, outline: 'none' }} />
                 ) : (
@@ -576,6 +573,7 @@ export default function Chat() {
           50% { transform: translateY(-4px); opacity: 1; }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
