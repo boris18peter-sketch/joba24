@@ -128,7 +128,7 @@ workflows:
       android_signing:
         - joba24_android_upload
       vars:
-        ANDROID_VERSION_CODE: 13
+        ANDROID_VERSION_CODE: 12
         ANDROID_VERSION_NAME: "1.0.0"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
