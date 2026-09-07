@@ -228,9 +228,6 @@ workflows:
 
           content = content.replace("</activity>", intent_filter_block + "        </activity>", 1)
 
-          with open(manifest_path, "w") as f:
-              f.write(content)
-
           # Add location permissions if not already present
           if 'ACCESS_FINE_LOCATION' not in content:
               location_perms = '    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n'
@@ -239,8 +236,10 @@ workflows:
           else:
               print("Location permissions already present")
 
+          with open(manifest_path, "w") as f:
+              f.write(content)
+
           print("Manifest patched successfully")
-          print(content)
           PYEOF
       - name: Patch build.gradle with signing config and version
         script: |
