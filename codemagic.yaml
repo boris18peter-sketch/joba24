@@ -231,6 +231,16 @@ workflows:
           with open(manifest_path, "w") as f:
               f.write(content)
 
+          # Add location permissions if not already present
+          if 'ACCESS_FINE_LOCATION' not in content:
+              location_perms = '''    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+'''
+              content = content.replace('<application', location_perms + '<application', 1)
+              print("Location permissions added to manifest")
+          else:
+              print("Location permissions already present")
+
           print("Manifest patched successfully")
           print(content)
           PYEOF

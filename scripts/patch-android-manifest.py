@@ -29,6 +29,16 @@ def main():
 
     content = MANIFEST.read_text()
 
+    # Add location permissions if not already present
+    if 'ACCESS_FINE_LOCATION' not in content:
+        location_perms = """    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+"""
+        content = content.replace('<application', location_perms + '<application', 1)
+        print("[manifest] added ACCESS_FINE_LOCATION + ACCESS_COARSE_LOCATION permissions.")
+    else:
+        print("[manifest] location permissions already present — skipping.")
+
     if 'android:scheme="joba24"' in content:
         print("[manifest] joba24:// intent-filter already present — skipping.")
         return
