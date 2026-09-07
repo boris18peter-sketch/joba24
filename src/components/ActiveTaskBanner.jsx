@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
@@ -145,7 +146,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
     // Fire & forget geolocation + DB write in background
     try {
       if (action.nextKey === 'on_the_way' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      getCurrentPosition(
         pos => {
           base44.entities.Task.update(task.id, { ...update, worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude })
             .then(() => queryClient.invalidateQueries({ queryKey: ['task', task.id] }))

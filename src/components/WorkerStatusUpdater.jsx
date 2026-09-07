@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { Button } from '@/components/ui/button';
 import { Navigation, CheckCircle2, PartyPopper, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,7 +18,7 @@ export default function WorkerStatusUpdater({ task, isWorker, onUpdate }) {
       
       // Capture location when going on the way
       if (status === 'on_the_way' && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
+        getCurrentPosition(
           (pos) => {
             update.worker_lat = pos.coords.latitude;
             update.worker_lng = pos.coords.longitude;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { Navigation } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +33,7 @@ export default function ApprovedPopup({ task, onClose }) {
     const update = { status: 'TAKEN', worker_status: 'on_the_way', worker_id: me?.id, worker_name: me?.full_name, on_the_way_at: new Date().toISOString() };
     if (navigator.geolocation) {
       await new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
+        getCurrentPosition(
           (pos) => { update.worker_lat = pos.coords.latitude; update.worker_lng = pos.coords.longitude; resolve(); },
           () => resolve(), { timeout: 3000 }
         );

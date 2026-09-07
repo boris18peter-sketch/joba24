@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { MapPin, CheckCircle, Loader2, Locate, Clock } from 'lucide-react';
 
 const RECENT_KEY = 'joba24_recent_addresses';
@@ -38,7 +39,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
   // Try to get user location once for prioritization + reverse-geocoded city
   useEffect(() => {
     if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
+    getCurrentPosition(
       async pos => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
@@ -150,7 +151,7 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
   const locateMe = async () => {
     if (!navigator.geolocation) return;
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
+    getCurrentPosition(
       async pos => {
         try {
           const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=18&addressdetails=1&accept-language=he`);

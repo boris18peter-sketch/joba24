@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { MapPin, Navigation, CheckCircle2, Search, Loader2, PartyPopper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -35,7 +36,7 @@ function WorkerActions({ task, onUpdate }) {
         return;
       }
       if (workerStatus === 'on_the_way' && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
+        getCurrentPosition(async (pos) => {
           await onUpdate({ worker_status: workerStatus, worker_lat: pos.coords.latitude, worker_lng: pos.coords.longitude });
           setLoading(false);
           toast.success('יצאת לדרך! הלקוח קיבל עדכון 🚗');

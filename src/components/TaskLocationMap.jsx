@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { Maximize2, Minimize2, Navigation, X, FileText } from 'lucide-react';
 import Map, { Marker, NavigationControl } from 'react-map-gl';
@@ -214,7 +215,7 @@ export default function TaskLocationMap({ task, onGenerateInvoice }) {
     // Token uses global cache — instant on repeat visits
     getMapToken().then(token => { if (token) setMapToken(token); });
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      getCurrentPosition(
         pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => {}, { timeout: 6000 }
       );

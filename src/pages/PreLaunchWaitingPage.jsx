@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download } from 'lucide-react';
@@ -99,7 +100,7 @@ export default function PreLaunchWaitingPage({ me }) {
       setLocPerm('denied');
       return;
     }
-    navigator.geolocation.getCurrentPosition(
+    getCurrentPosition(
       () => setLocPerm('granted'),
       (err) => setLocPerm(err.code === err.PERMISSION_DENIED ? 'denied' : 'default'),
       { enableHighAccuracy: false, timeout: 10000 }

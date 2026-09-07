@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation, Filter } from 'lucide-react';
@@ -102,7 +103,7 @@ export default function DailyGoal() {
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
+      getCurrentPosition(pos => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       });
     }
