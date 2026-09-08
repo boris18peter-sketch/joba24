@@ -1,0 +1,37 @@
+{
+  "name": "Push: Worker Left Task",
+  "description": "\u05e9\u05d5\u05dc\u05d7 notification \u05db\u05e9\u05e2\u05d5\u05d1\u05d3 \u05e2\u05d6\u05d1 \u05de\u05e9\u05d9\u05de\u05d4 \u05e9\u05d4\u05d9\u05ea\u05d4 TAKEN",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "Task"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "push_worker_left_task",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyTaskWorkerLeft",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "notifyTaskWorkerLeft"
+  }
+}

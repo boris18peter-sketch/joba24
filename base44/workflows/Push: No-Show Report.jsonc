@@ -1,0 +1,37 @@
+{
+  "name": "Push: No-Show Report",
+  "description": "\u05e9\u05d5\u05dc\u05d7 notification \u05db\u05e9\u05d3\u05d5\u05d5\u05d7\u05d9\u05dd \u05e2\u05dc no-show \u05e9\u05dc \u05e2\u05d5\u05d1\u05d3",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Report"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "push_no_show_report",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyNoShowReport",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "notifyNoShowReport"
+  }
+}
