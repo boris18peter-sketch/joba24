@@ -26,12 +26,12 @@ const he = [
   {
     cat: 'publish',
     q: 'איך מפרסמים ג\'ובה?',
-    a: 'לחצו על "פרסם ג\'ובה" בתפריט. בחרו קטגוריה, מלאו כותרת ותיאור מפורטים, הגדירו מחיר, בחרו מיקום מהרשימה (חובה לבחור מהצעת האוטוקומפליט), הגדירו אפשרות אישור (מיידי / ידני), בחרו אמצעי תשלום (מזומן / Bit / PayBox) ולחצו על "פרסם". ניתן גם לצרף תמונות וסרטון. הג\'ובה תופיע בפיד ובמפה מיידית.',
+    a: 'לחצו על "פרסם ג\'ובה" בתפריט. בחרו קטגוריה, מלאו כותרת ותיאור מפורטים, הגדירו מחיר, בחרו מיקום מהרשימה (חובה לבחור מהצעת האוטוקומפליט), בחרו אמצעי תשלום (מזומן / Bit / PayBox) ולחצו על "פרסם". ניתן גם לצרף תמונות וסרטון. הג\'ובה תופיע בפיד ובמפה מיידית.',
   },
   {
     cat: 'publish',
-    q: 'מה ההבדל בין אישור "מיידי" לאישור "ידני"?',
-    a: 'אישור מיידי — העובד הראשון שמגיש מועמדות מקבל את הג\'ובה אוטומטית.\nאישור ידני — מספר עובדים מגישים מועמדויות עם הודעה אישית, ואתם בוחרים את המתאים ביותר. מומלץ למשימות שדורשות ניסיון ספציפי.',
+    q: 'איך בוחרים עובד לג\'ובה?',
+    a: 'כל ג\'ובה דורשת אישור ידני: מספר עובדים מגישים מועמדויות עם הודעה אישית, ואתם בוחרים את המתאים ביותר מתוך הרשימה. כך תוכלו לבחון ניסיון, דירוג והתאמה לפני הבחירה.',
   },
   {
     cat: 'publish',
@@ -53,7 +53,7 @@ const he = [
   {
     cat: 'worker',
     q: 'איך מגישים מועמדות לג\'ובה?',
-    a: 'לוחצים על "הגש מועמדות" בכרטיס המשימה. אם מדובר באישור ידני — כותבים הודעה קצרה למפרסם. הגשת בקשה מעבירה ג\'ובות להתחייבות (ראו סעיף ג\'ובות).',
+    a: 'לוחצים על "הגש מועמדות" בכרטיס המשימה וכותבים הודעה קצרה למפרסם. המפרסם בוחר את העובד המתאים ביותר מתוך כל המועמדויות. הגשת בקשה מעבירה ג\'ובות להתחייבות (ראו סעיף ג\'ובות).',
   },
   {
     cat: 'worker',
@@ -197,12 +197,12 @@ const en = [
   {
     cat: 'publish',
     q: 'How do I post a job?',
-    a: 'Tap "Post a Job" in the menu. Choose a category, fill in a detailed title and description, set a price, choose a location from the list (you must select from the autocomplete suggestions), set the approval mode (instant / manual), choose a payment method (cash / Bit / PayBox), and tap "Post". You can also attach photos and a video. The job will appear in the feed and on the map immediately.',
+    a: 'Tap "Post a Job" in the menu. Choose a category, fill in a detailed title and description, set a price, choose a location from the list (you must select from the autocomplete suggestions), choose a payment method (cash / Bit / PayBox), and tap "Post". You can also attach photos and a video. The job will appear in the feed and on the map immediately.',
   },
   {
     cat: 'publish',
-    q: 'What is the difference between "instant" and "manual" approval?',
-    a: 'Instant approval — the first worker to apply gets the job automatically.\nManual approval — several workers apply with a personal message, and you choose the most suitable one. Recommended for tasks that require specific experience.',
+    q: 'How do I choose a worker for my job?',
+    a: 'Every job requires manual approval: several workers apply with a personal message, and you choose the most suitable one from the list. This lets you review experience, rating, and fit before choosing.',
   },
   {
     cat: 'publish',
@@ -224,7 +224,7 @@ const en = [
   {
     cat: 'worker',
     q: 'How do I apply for a job?',
-    a: 'Tap "Apply" on the task card. If it\'s manual approval — write a short message to the poster. Submitting an application moves Jobas to commitment (see the Jobas section).',
+    a: 'Tap "Apply" on the task card and write a short message to the poster. The poster chooses the most suitable worker from all applications. Submitting an application moves Jobas to commitment (see the Jobas section).',
   },
   {
     cat: 'worker',

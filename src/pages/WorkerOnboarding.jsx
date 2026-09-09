@@ -52,6 +52,7 @@ export default function WorkerOnboarding() {
   const [showProfessionOther, setShowProfessionOther] = useState(false);
   const [showCityOther, setShowCityOther] = useState(false);
   const [customCity, setCustomCity] = useState('');
+  const isEdit = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('edit') === '1';
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -100,7 +101,7 @@ export default function WorkerOnboarding() {
     // Preview mode (e.g. from the Simulator) — skip the auto-redirect so
     // testers can view the onboarding even if their profile is already complete.
     const isPreview = new URLSearchParams(window.location.search).get('preview') === '1';
-    if (!isPreview && me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0) {
+    if (!isPreview && !isEdit && me.preferred_categories?.length > 0 && me.preferred_cities?.length > 0) {
       localStorage.setItem(JOIN_COMPLETED_KEY, '1');
       navigate('/');
       return;
@@ -293,34 +294,42 @@ export default function WorkerOnboarding() {
   // ── Done step — bonus already granted in handleNext ──
   if (step >= totalSteps) {
     const handleGoToApp = async () => {
-      // Force-refresh me so Layout gets fresh is_approved value
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       await queryClient.refetchQueries({ queryKey: ['me'] });
-      navigate('/');
+      // In edit mode, go back to the waiting page; otherwise enter the app
+      if (isEdit) {
+        navigate(-1);
+      } else {
+        navigate('/');
+      }
     };
 
     return (
-      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 24px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} style={{ minHeight: '100dvh', background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 'max(40px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom))', textAlign: 'center' }}>
         <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
-          <Check size={40} color="white" strokeWidth={3} />
+          style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
+          <Check size={44} color="white" strokeWidth={3} />
         </motion.div>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 8 }}>{t('wo_done_title')}</h1>
-        <p style={{ fontSize: 15, color: 'var(--text-2)', margin: 0, marginBottom: 20, lineHeight: 1.6 }}>
-          {me?.full_name ? `${me.full_name}, ` : ''}{t('wo_done_body')}
-        </p>
-        {grantedBonus > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1px solid #fde68a', borderRadius: 14, padding: '12px 18px', marginBottom: 20, alignSelf: 'stretch', maxWidth: 320 }}>
-            <span style={{ fontSize: 22 }}>🎁</span>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#92400e' }}>{t('wo_bonus_received').replace('{n}', grantedBonus)}</span>
-          </div>
-        )}
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 12 }}>{t('wo_done_title')}</h1>
+        <div style={{ maxWidth: 340 }}>
+          <p style={{ fontSize: 17, color: 'var(--text-2)', margin: 0, marginBottom: 10, lineHeight: 1.6 }}>
+            {me?.full_name ? `${me.full_name}, ` : ''}{t('wo_done_body')}
+          </p>
+          {grantedBonus > 0 && (
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#92400e', margin: 0, marginBottom: 10, lineHeight: 1.5 }}>
+              🎁 {t('wo_bonus_received').replace('{n}', grantedBonus)}
+            </p>
+          )}
+          <p style={{ fontSize: 15, color: 'var(--text-3)', margin: 0, lineHeight: 1.6 }}>
+            בקרוב תקבל התראות להצעות לעבודות התואמות את התחומים והאזור שלך.
+          </p>
+        </div>
         <button
           onClick={handleGoToApp}
-          style={{ width: '100%', maxWidth: 320, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 17, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)' }}
+          style={{ width: '100%', maxWidth: 340, padding: '18px 0', borderRadius: 18, background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)', color: 'white', fontSize: 19, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 8px 24px rgba(26,111,212,0.3)', marginTop: 28 }}
         >
           {t('wo_go_to_app')}
-          </button>
+        </button>
       </div>
     );
   }
