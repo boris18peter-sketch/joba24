@@ -90,29 +90,26 @@ export default function SocialConnectSheet({ user, onClose }) {
 
   const handleVerify = async (platform) => {
     setLoading(true);
-    const maxAttempts = 2;
     let success = false;
-    for (let attempt = 1; attempt <= maxAttempts && !success; attempt++) {
-      setVerifyAttempt(attempt);
-      try {
-        const res = await base44.functions.invoke('verifyInstagram', {
-          action: 'verify_code', platform,
-        });
-        if (res.data?.error) { toast.error(res.data.error); break; }
-        if (res.data?.verified) {
-          toast.success(t('sl_verified_success', { platform: platformLabel(platform) }));
-          await refresh();
-          success = true;
-        } else if (attempt < maxAttempts) {
-          toast.message(t('sl_code_not_found_retry', { n: attempt + 1, total: maxAttempts }), { duration: 3500 });
-          await new Promise(r => setTimeout(r, 2500));
-        }
-      } catch (e) {
-        toast.error(t('sl_error_verify'));
-        break;
+    setVerifyAttempt(1);
+    try {
+      const res = await base44.functions.invoke('verifyInstagram', {
+        action: 'verify_code', platform,
+      });
+      if (res.data?.error) {
+        toast.error(res.data.error);
+      } else if (res.data?.verified) {
+        toast.success(t('sl_verified_success', { platform: platformLabel(platform) }));
+        await refresh();
+        success = true;
+      } else if (res.data?.note) {
+        toast.error(res.data.note, { duration: 6000 });
+      } else {
+        toast.error(t('sl_code_not_found'));
       }
+    } catch (e) {
+      toast.error(t('sl_error_verify'));
     }
-    if (!success) toast.error(t('sl_code_not_found'));
     setVerifyAttempt(0);
     setLoading(false);
     return success;

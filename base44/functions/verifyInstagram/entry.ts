@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.48';
 
 /**
  * verifyInstagram — Social media bio-code verification.
@@ -186,11 +186,15 @@ async function checkBioDirect(platform, username, code) {
 }
 
 // ── LLM with web search — reads the bio from the profile page ──
+// This is the PRIMARY method. Instagram/Facebook/TikTok block server-side
+// scraping, but Gemini with web search can read public profiles via Google.
+// Two attempts: first a direct page read, then a Google search fallback.
 async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) {
+  // Attempt 1: Ask Gemini to read the profile page directly
   try {
-    console.log(`verifyInstagram: LLM scan for ${platformLabel} / @${username} / code=${code}`);
-    const llmPromise = base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Go to this ${platformLabel} profile page: ${profileUrl}. Read the bio/description text in the profile. Does the 6-digit number "${code}" appear anywhere in the bio or profile text? Answer with a JSON object: {"found": true/false, "bio": "the bio text you found"}.`,
+    console.log(`verifyInstagram: LLM scan (attempt 1) for ${platformLabel} / @${username} / code=${code}`);
+    const llmPromise1 = base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `Visit the ${platformLabel} profile page at this URL: ${profileUrl}. Look at the bio/description text shown on the profile. Does the 6-digit number "${code}" appear anywhere in the bio, description, or any visible text on the profile page? Respond with JSON: {"found": true/false, "bio": "the bio text you found, or empty string if you could not access the page"}.`,
       add_context_from_internet: true,
       model: 'gemini_3_flash',
       response_json_schema: {
@@ -198,14 +202,36 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
         properties: { found: { type: 'boolean' }, bio: { type: 'string' } },
       },
     });
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout (15s)')), 15000)
+    const timeoutPromise1 = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('LLM timeout (25s)')), 25000)
     );
-    const result = await Promise.race([llmPromise, timeoutPromise]);
-    console.log(`verifyInstagram: LLM result: found=${result?.found}, bio="${(result?.bio || '').substring(0, 100)}"`);
-    return { found: result?.found === true, method: 'llm' };
+    const result1 = await Promise.race([llmPromise1, timeoutPromise1]);
+    console.log(`verifyInstagram: LLM attempt 1 result: found=${result1?.found}, bio="${(result1?.bio || '').substring(0, 100)}"`);
+    if (result1?.found === true) return { found: true, method: 'llm' };
   } catch (e) {
-    console.log(`verifyInstagram: LLM failed: ${e?.message || e}`);
+    console.log(`verifyInstagram: LLM attempt 1 failed: ${e?.message || e}`);
+  }
+
+  // Attempt 2: Google search for the profile + code
+  try {
+    console.log(`verifyInstagram: LLM scan (attempt 2 - Google search) for ${platformLabel} / @${username} / code=${code}`);
+    const llmPromise2 = base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `Search Google for: site:${platformLabel.toLowerCase()}.com "${username}" bio. Also search for: "${username}" "${code}" ${platformLabel}. Check if the ${platformLabel} user "${username}" has the number "${code}" visible anywhere on their public profile, bio, or in any search results about them. Respond with JSON: {"found": true/false, "bio": "any relevant text found"}.`,
+      add_context_from_internet: true,
+      model: 'gemini_3_flash',
+      response_json_schema: {
+        type: 'object',
+        properties: { found: { type: 'boolean' }, bio: { type: 'string' } },
+      },
+    });
+    const timeoutPromise2 = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('LLM timeout (25s)')), 25000)
+    );
+    const result2 = await Promise.race([llmPromise2, timeoutPromise2]);
+    console.log(`verifyInstagram: LLM attempt 2 result: found=${result2?.found}, bio="${(result2?.bio || '').substring(0, 100)}"`);
+    return { found: result2?.found === true, method: 'llm-search' };
+  } catch (e) {
+    console.log(`verifyInstagram: LLM attempt 2 failed: ${e?.message || e}`);
     return { found: false, method: 'not-found' };
   }
 }

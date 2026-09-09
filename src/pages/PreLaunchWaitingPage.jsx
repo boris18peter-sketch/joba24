@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getCurrentPosition, checkLocationPermission } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, MapPin, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil } from 'lucide-react';
+import { Bell, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, MapPin } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
@@ -171,7 +170,6 @@ export default function PreLaunchWaitingPage({ me }) {
   const { t } = useLanguage();
   const inApp = isStandaloneApp || (typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.());
   const [notifPerm, setNotifPerm] = useState('default');
-  const [locPerm, setLocPerm] = useState('default');
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showSocialConnect, setShowSocialConnect] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
@@ -180,10 +178,6 @@ export default function PreLaunchWaitingPage({ me }) {
     if (typeof Notification !== 'undefined') {
       setNotifPerm(Notification.permission);
     }
-    // Check actual location permission status on mount — the OS may have
-    // already granted it in a previous session, so we detect that here
-    // instead of showing the button as "not done".
-    checkLocationPermission().then(state => setLocPerm(state));
   }, []);
 
   const handleEnableNotifications = async () => {
@@ -201,29 +195,6 @@ export default function PreLaunchWaitingPage({ me }) {
         } catch {}
       }
     }
-  };
-
-  const handleEnableLocation = async () => {
-    // Try to get current position first — if permission is already granted,
-    // this succeeds silently and we mark it done
-    getCurrentPosition(
-      () => setLocPerm('granted'),
-      async (err) => {
-        if (err?.code === 1) {
-          // Permission denied — open the app's settings page so the user can
-          // toggle location permission directly in the OS settings
-          setLocPerm('denied');
-          try {
-            const { App } = await import('@capacitor/app');
-            await App.openUrl({ url: 'app-settings:' });
-            return;
-          } catch {}
-          // Web fallback — can't open native settings, just mark as denied
-        }
-        setLocPerm('default');
-      },
-      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-    );
   };
 
   const notifSupported = typeof Notification !== 'undefined';
@@ -255,16 +226,14 @@ export default function PreLaunchWaitingPage({ me }) {
 
   // ── Step states ──
   const notifDone = notifPerm === 'granted';
-  const locDone = locPerm === 'granted';
   const kycDone = isKycVerified;
   const socialDone = isSocialConnected && isKycVerified;
 
   const notifState = notifDone ? 'done' : 'default';
-  const locState = locDone ? 'done' : 'default';
   const kycStepState = kycDone ? 'done' : kycStatus === 'pending' ? 'pending' : 'default';
   const socialStepState = socialDone ? 'done' : isSocialConnected ? 'pending' : 'default';
 
-  const allDone = notifDone && locDone && kycDone && socialDone;
+  const allDone = notifDone && kycDone && socialDone;
 
   return (
     <div dir="rtl" style={{
@@ -320,7 +289,7 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         )}
 
-        {/* ═══ COMPLETION STATE — all 4 steps done ═══ */}
+        {/* ═══ COMPLETION STATE — all steps done ═══ */}
         {allDone ? (
           <>
             <div style={{ textAlign: 'center', marginBottom: 18 }}>
@@ -338,7 +307,6 @@ export default function PreLaunchWaitingPage({ me }) {
               <CompletionItem icon={<GreenBadgeIcon size={20} />} label="זהות מאומתת" />
               <CompletionItem icon={<GoldBadgeIcon size={20} />} label="רשת חברתית מחוברת" />
               <CompletionItem icon={<Bell size={16} color="#34d399" />} label="התראות פעילות" />
-              <CompletionItem icon={<MapPin size={16} color="#34d399" />} label="מיקום פעיל" />
             </div>
 
             <div style={{
@@ -369,7 +337,7 @@ export default function PreLaunchWaitingPage({ me }) {
               icon={Bell}
               state={notifState}
               title={notifDone ? 'התראות פעילות' : 'התראות'}
-              subtitle={notifDone ? null : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24' : 'קבל עדכון מיד על משימה מתאימה.'}
+              subtitle={notifDone ? 'מומלץ גם להפעיל מיקום בהגדרות למשימות קרובות.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24. מומלץ גם להפעיל מיקום.' : 'קבל עדכון מיד על משימה מתאימה. מומלץ גם להפעיל מיקום בהגדרות.'}
               action={!notifDone && notifSupported && notifPerm === 'default' ? (
                 <button onClick={handleEnableNotifications} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
                   אפשר <ChevronLeft size={13} />
@@ -377,20 +345,7 @@ export default function PreLaunchWaitingPage({ me }) {
               ) : null}
             />
 
-            {/* Step 2: Location */}
-            <StepRow
-              icon={MapPin}
-              state={locState}
-              title={locDone ? 'מיקום פעיל' : 'מיקום'}
-              subtitle={locDone ? null : locPerm === 'denied' ? 'הפעל מיקום מהגדרות הטלפון → Joba24' : 'קבל משימות רלוונטיות באזור שלך.'}
-              action={!locDone ? (
-                <button onClick={handleEnableLocation} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
-                  אפשר <ChevronLeft size={13} />
-                </button>
-              ) : null}
-            />
-
-            {/* Step 3: KYC */}
+            {/* Step 2: KYC */}
             <StepRow
               icon={ShieldCheck}
               customIcon={<GreenBadgeIcon />}
@@ -405,7 +360,7 @@ export default function PreLaunchWaitingPage({ me }) {
               ) : null}
             />
 
-            {/* Step 4: Social */}
+            {/* Step 3: Social */}
             <StepRow
               icon={isSocialConnected && isKycVerified ? Award : Sparkles}
               customIcon={<GoldBadgeIcon />}
@@ -453,33 +408,41 @@ export default function PreLaunchWaitingPage({ me }) {
 
             {/* "מה קורה עכשיו?" — replaces old "פרופיל פעיל" card */}
             <div style={{
-              background: 'rgba(96,165,250,0.08)',
-              border: '1px solid rgba(96,165,250,0.2)',
-              borderRadius: 16, padding: '14px 18px', marginBottom: 12,
+              background: 'rgba(96,165,250,0.1)',
+              border: '1.5px solid rgba(96,165,250,0.25)',
+              borderRadius: 20, padding: '20px 20px', marginBottom: 12,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Bell size={16} color="#60a5fa" />
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#60a5fa' }}>מה קורה עכשיו?</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Bell size={20} color="#60a5fa" />
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#60a5fa' }}>מה קורה עכשיו?</span>
               </div>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.68)', margin: '0 0 6px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 8px', lineHeight: 1.5 }}>
                 אנחנו מתחילים להכניס משימות בימים הקרובים.
               </p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.68)', margin: '0 0 10px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 14px', lineHeight: 1.5 }}>
                 כשמתפרסמת משימה שמתאימה לך — נשלח לך התראה מיד.
               </p>
               {/* Flow */}
               <div style={{
-                textAlign: 'center', fontSize: 12, fontWeight: 700,
-                color: 'rgba(255,255,255,0.5)', lineHeight: 1.6,
-                background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '8px 10px',
+                textAlign: 'center', fontSize: 14, fontWeight: 700,
+                color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
+                background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '12px 14px',
               }}>
                 משימה מתאימה ← 🔔 התראה ← הגשת מועמדות
               </div>
-              {(!notifDone || !locDone) && (
-                <p style={{ fontSize: 12, color: 'rgba(251,191,36,0.7)', margin: '8px 0 0', lineHeight: 1.4, fontWeight: 600 }}>
-                  ודא שההתראות והמיקום פעילים כדי שלא תפספס הזדמנות.
-                </p>
-              )}
+              {/* Emphasized reminder — always visible */}
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8,
+                marginTop: 14, padding: '12px 14px',
+                background: 'rgba(251,191,36,0.12)',
+                border: '1px solid rgba(251,191,36,0.3)',
+                borderRadius: 12,
+              }}>
+                <MapPin size={16} color="#fbbf24" style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: 14, color: '#fbbf24', lineHeight: 1.5, fontWeight: 700 }}>
+                  ודא שההתראות והמיקום פעילים בהגדרות הטלפון כדי שלא תפסס הזדמנות.
+                </span>
+              </div>
             </div>
           </>
         )}
