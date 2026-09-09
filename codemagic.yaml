@@ -288,6 +288,44 @@ workflows:
       - name: Sync Capacitor Android project
         script: |
           npx cap sync android
+      - name: Verify location permissions survived cap sync
+        script: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          echo "=== AndroidManifest.xml contents ==="
+          cat "$MANIFEST"
+          echo ""
+          echo "=== Checking for location permissions ==="
+          if grep -q "ACCESS_FINE_LOCATION" "$MANIFEST"; then
+            echo "✓ ACCESS_FINE_LOCATION found in manifest"
+          else
+            echo "✗ ERROR: ACCESS_FINE_LOCATION NOT in manifest after cap sync — patch was lost!"
+            exit 1
+          fi
+          if grep -q "ACCESS_COARSE_LOCATION" "$MANIFEST"; then
+            echo "✓ ACCESS_COARSE_LOCATION found in manifest"
+          else
+            echo "✗ ERROR: ACCESS_COARSE_LOCATION NOT in manifest after cap sync — patch was lost!"
+            exit 1
+          fi
+      - name: Verify capacitor.config.json has no server.url
+        script: |
+          if python3 -c "import json; c=json.load(open('capacitor.config.json')); exit(0 if 'server' not in c else 1)"; then
+            echo "✓ server.url removed — app will use LOCAL bundle (Capacitor bridge available)"
+          else
+            echo "✗ ERROR: server.url still present — app would load remote content, Capacitor bridge would NOT be injected, native plugins would fail!"
+            cat capacitor.config.json
+            exit 1
+          fi
+      - name: Verify @capacitor/geolocation plugin is in Gradle
+        script: |
+          if grep -q "geolocation" android/app/capacitor.build.gradle 2>/dev/null || \
+             grep -q "geolocation" android/app/src/main/java/AndroidManifest.xml 2>/dev/null || \
+             find android -name "*.java" -path "*geolocation*" 2>/dev/null | head -1 | grep -q .; then
+            echo "✓ @capacitor/geolocation plugin native code found"
+          else
+            echo "⚠ WARNING: @capacitor/geolocation not found in native project — checking dependencies..."
+            grep -r "geolocation" android/app/build.gradle android/app/capacitor.build.gradle 2>/dev/null || echo "Plugin not in gradle files!"
+          fi
       - name: Build signed AAB
         script: |
           echo "Available Java versions:"
@@ -298,6 +336,46 @@ workflows:
           cd android
           chmod +x ./gradlew
           ./gradlew bundleRelease -Dorg.gradle.java.home="$JAVA_HOME"
+      - name: Verify final merged manifest has location permissions
+        script: |
+          echo "=== Checking MERGED manifest (what actually goes into the APK/AAB) ==="
+          MERGED="android/app/build/intermediates/merged_manifests/release/AndroidManifest.xml"
+          if [ ! -f "$MERGED" ]; then
+            MERGED="android/app/build/intermediates/merged_manifest/release/AndroidManifest.xml"
+          fi
+          if [ ! -f "$MERGED" ]; then
+            echo "WARNING: merged manifest not found at expected path — searching..."
+            MERGED=$(find android/app/build -name "AndroidManifest.xml" -path "*merged*" 2>/dev/null | head -1)
+          fi
+          if [ -z "$MERGED" ] || [ ! -f "$MERGED" ]; then
+            echo "✗ ERROR: Could not find merged manifest in build output!"
+            find android/app/build -name "AndroidManifest.xml" 2>/dev/null
+            exit 1
+          fi
+          echo "Using merged manifest: $MERGED"
+          echo ""
+          echo "=== Location permissions in final merged manifest ==="
+          if grep -q "ACCESS_FINE_LOCATION" "$MERGED"; then
+            echo "✓ ACCESS_FINE_LOCATION — present in final APK manifest"
+          else
+            echo "✗ CRITICAL: ACCESS_FINE_LOCATION missing from final APK manifest!"
+            echo "=== Full merged manifest ==="
+            cat "$MERGED"
+            exit 1
+          fi
+          if grep -q "ACCESS_COARSE_LOCATION" "$MERGED"; then
+            echo "✓ ACCESS_COARSE_LOCATION — present in final APK manifest"
+          else
+            echo "✗ CRITICAL: ACCESS_COARSE_LOCATION missing from final APK manifest!"
+            exit 1
+          fi
+          echo ""
+          echo "=== Geolocation plugin in final manifest ==="
+          if grep -q "geolocation\|Geolocation" "$MERGED"; then
+            echo "✓ Geolocation references found"
+          else
+            echo "ℹ (no geolocation references in manifest — plugin may use different registration)"
+          fi
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/*.apk
