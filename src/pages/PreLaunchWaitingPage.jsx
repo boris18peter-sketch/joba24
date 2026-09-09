@@ -39,18 +39,45 @@ const GoldBadgeIcon = ({ size = 24 }) => (
   </div>
 );
 
-// ── Registration counter — live, increments 1-3 every 5 min ──
+// ── Registration counter — persistent, only increases, survives reloads ──
+const STORAGE_KEY = 'joba24_worker_count';
+const START_COUNT = 648;
+const BASE_DATE = new Date('2026-09-09T00:00:00').getTime();
+
+function getExpectedCount() {
+  // Time-based growth: ~2 workers per hour since launch day, never decreases
+  const hoursSinceBase = (Date.now() - BASE_DATE) / 3600000;
+  const growth = Math.max(0, Math.floor(hoursSinceBase * 2.3));
+  return START_COUNT + growth;
+}
+
 function RegistrationCounter() {
-  const [count, setCount] = useState(648);
+  const [count, setCount] = useState(() => {
+    const stored = Number(localStorage.getItem(STORAGE_KEY));
+    const expected = getExpectedCount();
+    // Use whichever is higher — never go backwards
+    return Math.max(stored, expected);
+  });
   const [justChanged, setJustChanged] = useState(false);
 
   const bump = () => {
-    setCount(c => c + Math.floor(Math.random() * 3) + 1);
+    setCount(c => {
+      const next = c + Math.floor(Math.random() * 3) + 1;
+      localStorage.setItem(STORAGE_KEY, String(next));
+      return next;
+    });
     setJustChanged(true);
     setTimeout(() => setJustChanged(false), 2000);
   };
 
   useEffect(() => {
+    // Sync with expected count on mount (in case time passed since last visit)
+    const expected = getExpectedCount();
+    setCount(c => {
+      const next = Math.max(c, expected);
+      localStorage.setItem(STORAGE_KEY, String(next));
+      return next;
+    });
     const firstBump = setTimeout(bump, 10000);
     const interval = setInterval(bump, 300000);
     return () => { clearTimeout(firstBump); clearInterval(interval); };
@@ -177,11 +204,24 @@ export default function PreLaunchWaitingPage({ me }) {
   };
 
   const handleEnableLocation = async () => {
-    // Reset to default so the button stays tappable on retry after a previous denial
-    setLocPerm('default');
+    // Try to get current position first — if permission is already granted,
+    // this succeeds silently and we mark it done
     getCurrentPosition(
       () => setLocPerm('granted'),
-      (err) => setLocPerm(err?.code === 1 ? 'denied' : 'default'),
+      async (err) => {
+        if (err?.code === 1) {
+          // Permission denied — open the app's settings page so the user can
+          // toggle location permission directly in the OS settings
+          setLocPerm('denied');
+          try {
+            const { App } = await import('@capacitor/app');
+            await App.openUrl({ url: 'app-settings:' });
+            return;
+          } catch {}
+          // Web fallback — can't open native settings, just mark as denied
+        }
+        setLocPerm('default');
+      },
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
     );
   };
