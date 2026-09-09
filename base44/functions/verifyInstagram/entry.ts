@@ -44,6 +44,20 @@ function decodeEntities(str) {
     .replace(/\\u0022/g, '"').replace(/\\u0027/g, "'").replace(/\\n/g, ' ');
 }
 
+// ── Extract <meta property="og:description" content="..."> from HTML ──
+// Facebook profile pages embed the bio in og:description, which is often
+// accessible even when the page body requires login.
+function extractMetaTag(html, property) {
+  if (!html) return '';
+  const regex = new RegExp(`<meta[^>]*property=["']${property}["'][^>]*content=["']([^"']*)["']`, 'i');
+  const match = html.match(regex);
+  if (match) return decodeEntities(match[1]);
+  // Try content before property (attribute order varies)
+  const regex2 = new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*property=["']${property}["']`, 'i');
+  const match2 = html.match(regex2);
+  return match2 ? decodeEntities(match2[1]) : '';
+}
+
 async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -107,6 +121,8 @@ async function checkBioFast(platform, username, code) {
     endpoints.push(`https://m.tiktok.com/@${username}`);
   } else if (platform === 'facebook') {
     endpoints.push(`https://www.facebook.com/${username}/`);
+    endpoints.push(`https://m.facebook.com/${username}/`);
+    endpoints.push(`https://m.facebook.com/public/${username}`);
   }
 
   for (const url of endpoints) {
@@ -137,6 +153,14 @@ async function checkBioFast(platform, username, code) {
               console.log(`✅ Code found via TikTok JSON bio: ${url}`);
               return { found: true, method: 'tiktok-json' };
             }
+          }
+        }
+        // Facebook: parse og:description meta tag
+        if (platform === 'facebook') {
+          const ogDesc = extractMetaTag(text, 'og:description');
+          if (ogDesc && ogDesc.includes(code)) {
+            console.log(`✅ Code found via Facebook og:description: ${url}`);
+            return { found: true, method: 'facebook-og' };
           }
         }
       }
@@ -176,6 +200,23 @@ async function checkBioDirect(platform, username, code) {
         if (bio && decodeEntities(bio).includes(code)) {
           console.log('✅ Code found via TikTok JSON bio (direct)');
           return { found: true, method: 'tiktok-json-direct' };
+        }
+      }
+      // Facebook: parse og:description meta tag (bio is embedded there)
+      if (platform === 'facebook') {
+        const ogDesc = extractMetaTag(html, 'og:description');
+        if (ogDesc) {
+          console.log(`verifyInstagram: Facebook og:description = "${ogDesc.substring(0, 100)}"`);
+          if (ogDesc.includes(code)) {
+            console.log('✅ Code found via Facebook og:description');
+            return { found: true, method: 'facebook-og' };
+          }
+        }
+        // Also try description meta tag
+        const descMeta = extractMetaTag(html, 'description');
+        if (descMeta && descMeta.includes(code)) {
+          console.log('✅ Code found via Facebook meta description');
+          return { found: true, method: 'facebook-meta' };
         }
       }
     }
@@ -339,6 +380,48 @@ export default async function(req) {
         method: result.method,
         note: `הקוד ${code} לא נמצא בפרופיל ה${p.label}. ודא ש: (1) העתקת את הקוד לביו, (2) הפרופיל ציבורי, (3) שמרת את השינויים. נסה שוב.`,
       });
+    }
+
+    // ── OAuth verification — for Instagram (Business/Creator accounts) ──
+    // Uses the workspace Instagram connector (APP_USER mode). The user
+    // authorizes via OAuth in the frontend; this action reads their token
+    // and fetches the username from the Instagram Graph API.
+    if (action === 'oauth_verify') {
+      if (platform !== 'instagram') {
+        return Response.json({ error: 'OAuth זמין רק עבור Instagram' }, { status: 400 });
+      }
+
+      const INSTAGRAM_CONNECTOR_ID = '6a461cba44174744ca6f4c1c';
+
+      try {
+        const { accessToken } = await base44.asServiceRole.connectors.getCurrentAppUserConnection(INSTAGRAM_CONNECTOR_ID);
+
+        // Instagram Graph API: access_token goes as query param (NOT Authorization header)
+        const apiUrl = `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`;
+        const response = await fetchWithTimeout(apiUrl, {}, 8000);
+        const data = await response.json().catch(() => ({}));
+
+        if (data?.username) {
+          const cleanUsername = String(data.username).toLowerCase();
+          await base44.asServiceRole.entities.User.update(user.id, {
+            [usernameField]: cleanUsername,
+            [verifiedField]: true,
+            [codeField]: '',
+          });
+          console.log(`✅ Instagram OAuth verified for ${user.id}: @${cleanUsername}`);
+          return Response.json({ success: true, verified: true, username: cleanUsername, method: 'oauth' });
+        }
+
+        console.log(`verifyInstagram: OAuth response missing username: ${JSON.stringify(data)}`);
+        return Response.json({
+          error: 'לא הצלחנו לקבל את שם המשתמש מ-Instagram. ודא שהחשבון שלך הוא חשבון עסקי או יוצר (Creator).',
+        }, { status: 400 });
+      } catch (e) {
+        console.log(`verifyInstagram: OAuth failed: ${e?.message || e}`);
+        return Response.json({
+          error: 'חיבור Instagram לא פעיל. נסה להתחבר מחדש.',
+        }, { status: 400 });
+      }
     }
 
     // ── Disconnect ──

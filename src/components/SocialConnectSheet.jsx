@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Loader2, X, ShieldCheck, ArrowRight, Edit3, Copy, Check, CheckCircle, ExternalLink,
-  Instagram, Facebook, Music2,
+  Instagram, Facebook, Music2, AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { isUserVerified, copyToClipboard } from '@/lib/utils';
@@ -43,6 +43,10 @@ function platformLabel(key) {
   return p ? p.label : key;
 }
 
+// Instagram uses OAuth (via workspace connector) instead of bio-code scraping,
+// because Instagram blocks all server-side profile scraping.
+const INSTAGRAM_CONNECTOR_ID = '6a461cba44174744ca6f4c1c';
+
 /**
  * SocialConnectSheet — self-contained social bio-code connect/verify flow.
  * Used by both the Profile (SocialLinksSection) and the Home feed banner,
@@ -53,7 +57,7 @@ export default function SocialConnectSheet({ user, onClose }) {
   const { refreshUser } = useAuth();
   const { t, isRTL } = useLanguage();
 
-  const [step, setStep] = useState('choose'); // 'choose' | 'username' | 'code'
+  const [step, setStep] = useState('choose'); // 'choose' | 'username' | 'code' | 'oauth'
   const [selected, setSelected] = useState(null);
   const [usernameInput, setUsernameInput] = useState('');
   const [code, setCode] = useState('');
@@ -61,6 +65,8 @@ export default function SocialConnectSheet({ user, onClose }) {
   const [loading, setLoading] = useState(false);
   const [verifyAttempt, setVerifyAttempt] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [oauthError, setOauthError] = useState('');
+  const popupRef = useRef(null);
 
   const p = PLATFORMS.find(pl => pl.key === selected);
   const existingUsername = selected ? user?.[`${selected}_username`] : null;
@@ -117,18 +123,86 @@ export default function SocialConnectSheet({ user, onClose }) {
 
   const handleSelectPlatform = (key) => {
     setSelected(key);
+    setOauthError('');
     const u = user?.[`${key}_username`];
     const c = user?.[`${key}_verify_code`];
-    if (u && c && !user?.[`${key}_verified`]) {
+    const isVerified = user?.[`${key}_verified`];
+
+    // Instagram uses OAuth — route to the 'oauth' step unless already verified
+    if (key === 'instagram') {
+      if (isVerified && u) {
+        setUsernameInput(u);
+        setVerified(true);
+        setStep('code');
+      } else {
+        setStep('oauth');
+      }
+      return;
+    }
+
+    if (u && c && !isVerified) {
       setUsernameInput(u);
       setCode(c);
       setStep('code');
-    } else if (u && user?.[`${key}_verified`]) {
+    } else if (u && isVerified) {
       setUsernameInput(u);
       setVerified(true);
       setStep('code');
     } else {
       setStep('username');
+    }
+  };
+
+  // ── Instagram OAuth flow — opens Instagram consent in a popup, then ──
+  // calls the backend to read the username from the Graph API and mark
+  // the user as verified. No bio-code needed.
+  const handleInstagramOAuth = async () => {
+    setOauthError('');
+    setLoading(true);
+    try {
+      // 1. Get the OAuth consent URL from the platform
+      const url = await base44.connectors.connectAppUser(INSTAGRAM_CONNECTOR_ID);
+      if (!url) {
+        setOauthError('לא הצלחנו לפתוח את חיבור ה-Instagram. נסה שוב.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Open the OAuth consent page in a popup
+      const popup = window.open(url, '_blank', 'width=500,height=700');
+      popupRef.current = popup;
+
+      // 3. Poll until the popup closes (user finished or cancelled)
+      const pollClose = setInterval(async () => {
+        if (!popup || popup.closed) {
+          clearInterval(pollClose);
+          popupRef.current = null;
+
+          // 4. Call backend to verify the OAuth connection
+          try {
+            const res = await base44.functions.invoke('verifyInstagram', {
+              action: 'oauth_verify', platform: 'instagram',
+            });
+            if (res.data?.verified) {
+              toast.success(t('sl_verified_success', { platform: 'Instagram' }));
+              await refresh();
+              setUsernameInput(res.data.username || '');
+              setVerified(true);
+              setStep('code');
+            } else if (res.data?.error) {
+              setOauthError(res.data.error);
+            } else {
+              setOauthError('החיבור עם Instagram לא הושלם. נסה שוב.');
+            }
+          } catch (e) {
+            setOauthError('החיבור עם Instagram נכשל. ודא שיש לך חשבון עסקי או יוצר (Creator) ב-Instagram.');
+          }
+          setLoading(false);
+        }
+      }, 600);
+    } catch (e) {
+      setOauthError('שגיאה בפתיחת חיבור Instagram. נסה שוב.');
+      setLoading(false);
     }
   };
 
@@ -148,11 +222,15 @@ export default function SocialConnectSheet({ user, onClose }) {
   };
 
   const handleClose = () => {
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.close();
+    }
     setStep('choose');
     setSelected(null);
     setUsernameInput('');
     setCode('');
     setVerified(false);
+    setOauthError('');
     onClose();
   };
 
@@ -253,6 +331,66 @@ export default function SocialConnectSheet({ user, onClose }) {
             </div>
           )}
 
+          {/* ── Step 2b: Instagram OAuth ── */}
+          {step === 'oauth' && p && (
+            <div>
+              <button onClick={() => setStep('choose')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 0 12px' }}>
+                <ArrowRight size={14} style={backIconStyle} /> {t('sl_back')}
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <span style={{ width: 40, height: 40, borderRadius: 10, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <p.icon size={20} color="white" />
+                </span>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{p.label}</div>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--surface-3)', borderRadius: 14, padding: '16px', marginBottom: 16, textAlign: 'center' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)', marginBottom: 6 }}>
+                  התחבר עם Instagram
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                  לחץ על הכפתור ואשר את החיבור עם Instagram.
+                  האימות מיידי — אין צורך בהעתקת קוד לביו.
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.4 }}>
+                  נדרש חשבון עסקי או יוצר (Creator) ב-Instagram.
+                </div>
+              </div>
+
+              {oauthError && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 14px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 12, marginBottom: 14 }}>
+                  <AlertCircle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 13, color: '#dc2626', lineHeight: 1.5, fontWeight: 600 }}>{oauthError}</span>
+                </div>
+              )}
+
+              <button
+                onClick={handleInstagramOAuth}
+                disabled={loading}
+                style={{
+                  width: '100%', height: 50, borderRadius: 12,
+                  background: loading ? '#93c5fd' : p.brandSolid,
+                  color: 'white', border: 'none', fontWeight: 800, fontSize: 15,
+                  cursor: loading ? 'wait' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  boxShadow: `0 3px 12px ${p.brandSolid}40`,
+                }}
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : <Instagram size={18} />}
+                {loading ? 'מתחבר...' : 'התחבר עם Instagram'}
+              </button>
+
+              {!loading && !oauthError && (
+                <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-3)', textAlign: 'center', lineHeight: 1.5 }}>
+                  חלון חיבור ייפתח. אשר את ההרשאות והאימות יושלם אוטומטית.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Step 3: Code instructions ── */}
           {step === 'code' && p && (
             <div>
@@ -268,7 +406,7 @@ export default function SocialConnectSheet({ user, onClose }) {
                   <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{p.label}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-3)' }}>@{existingUsername || usernameInput}</div>
                 </div>
-                <button onClick={() => { setStep('username'); setVerified(false); }}
+                <button onClick={() => { setStep(selected === 'instagram' ? 'oauth' : 'username'); setVerified(false); setOauthError(''); }}
                   style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, background: 'var(--surface-3)', border: '1px solid var(--border-1)', borderRadius: 10, padding: '7px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', cursor: 'pointer' }}>
                   <Edit3 size={13} /> {t('sl_edit')}
                 </button>
