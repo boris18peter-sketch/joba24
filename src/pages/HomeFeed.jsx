@@ -21,6 +21,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import PublishTaskOnboarding from '@/components/PublishTaskOnboarding';
 import EmptyMyTasksState from '@/components/EmptyMyTasksState';
 import WelcomeTutorial from '@/components/WelcomeTutorial';
+import SignupGiftModal from '@/components/SignupGiftModal';
 
 import { rankFeedTasks, buildSmartSections, buildBehavioralProfile } from '@/lib/feedRanker';
 import HomeBannersCarousel from '@/components/HomeBannersCarousel';
@@ -57,6 +58,7 @@ export default function HomeFeed() {
     new URLSearchParams(window.location.search).get('newTaskId') || null
   );
   const [tapHintTaskId, setTapHintTaskId] = useState(null);
+  const [showGiftModal, setShowGiftModal] = useState(false);
 
   const { t, isRTL } = useLanguage();
 
@@ -76,6 +78,18 @@ export default function HomeFeed() {
     if (!me?.id) return;
     recoverIosSubscriptionCredits().catch(() => {});
   }, [me?.id]);
+
+  // Signup gift celebration — shown once when the user first enters the app
+  // with credits (the signup bonus is granted silently by AuthContext at login;
+  // this modal is the visual celebration the user actually sees).
+  useEffect(() => {
+    if (!me?.id) return;
+    if (localStorage.getItem('joba24_gift_claimed')) return;
+    if (me?.worker_credits == null) return;
+    // Delay so the page settles before the full-screen gift overlay appears
+    const t = setTimeout(() => setShowGiftModal(true), 800);
+    return () => clearTimeout(t);
+  }, [me?.id, me?.worker_credits]);
 
 
   // My published tasks — WS handles real-time; polling is safety net only
@@ -895,6 +909,14 @@ export default function HomeFeed() {
 
 
       <InstantMatchPopup userLocation={userLocation} currentUserId={me?.id} activeCategory={filters.categories?.[0] || null} />
+
+      {/* Signup gift celebration — shows once on first app entry (before tutorial) */}
+      {showGiftModal && (
+        <SignupGiftModal onClose={() => {
+          localStorage.setItem('joba24_gift_claimed', '1');
+          setShowGiftModal(false);
+        }} />
+      )}
 
       {/* First-visit welcome tutorial — self-gated by localStorage, no impact on existing flows */}
       <WelcomeTutorial />

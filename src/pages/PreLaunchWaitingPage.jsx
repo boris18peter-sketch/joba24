@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, MapPin, CheckCircle2, Clock, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil } from 'lucide-react';
+import { Bell, MapPin, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
@@ -12,7 +12,7 @@ import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
 import GoldBadge from '@/components/GoldBadge';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import { isUserVerified, hasSocialVerified, isStandaloneApp } from '@/lib/utils';
+import { hasSocialVerified, isStandaloneApp } from '@/lib/utils';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
@@ -39,29 +39,53 @@ const GoldBadgeIcon = ({ size = 26 }) => (
   </div>
 );
 
-// ── Registration counter with live increments ──
+// ── Registration counter — increments 1-3 every 5 minutes ──
 function RegistrationCounter() {
   const [count, setCount] = useState(648);
+  const [justChanged, setJustChanged] = useState(false);
+
+  const bump = () => {
+    setCount(c => c + Math.floor(Math.random() * 3) + 1);
+    setJustChanged(true);
+    setTimeout(() => setJustChanged(false), 2000);
+  };
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCount(c => c + Math.floor(Math.random() * 4) + 1);
-    }, 60000);
-    return () => clearInterval(interval);
+    // First bump after 10s so the user immediately sees it's live
+    const firstBump = setTimeout(bump, 10000);
+    // Then every 5 minutes
+    const interval = setInterval(bump, 300000);
+    return () => { clearTimeout(firstBump); clearInterval(interval); };
   }, []);
+
+  const isMilestone = count >= 1000;
+
   return (
     <div style={{ textAlign: 'center', marginBottom: 14 }}>
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 99, padding: '8px 18px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-        <Users size={16} color="rgba(255,255,255,0.7)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
-          כבר נרשמו <span style={{ color: '#fbbf24', fontSize: 17, fontWeight: 900 }}>{count.toLocaleString()}</span> אנשים
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        background: isMilestone ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.08)',
+        border: `1px solid ${isMilestone ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.15)'}`,
+        borderRadius: 99, padding: '10px 20px',
+        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+      }}>
+        {isMilestone ? <span style={{ fontSize: 16 }}>🔥</span> : <Users size={16} color="rgba(255,255,255,0.7)" />}
+        <span style={{
+          fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
+          transition: 'transform 0.3s ease',
+          transform: justChanged ? 'scale(1.12)' : 'scale(1)',
+          display: 'inline-flex', alignItems: 'baseline', gap: 4,
+        }}>
+          <span style={{ color: '#fbbf24', fontSize: 17, fontWeight: 900 }}>{count.toLocaleString()}</span>
+          {isMilestone ? 'עובדים כבר בפנים' : 'עובדים כבר מוכנים לקבל משימות'}
         </span>
       </div>
     </div>
   );
 }
 
-// ── Enlarged numbered step row ──
-function StepRow({ index, icon: Icon, title, subtitle, state, action, badge, customIcon }) {
+// ── Enlarged step row ──
+function StepRow({ icon: Icon, title, subtitle, state, action, badge, customIcon }) {
   const done = state === 'done';
   const pending = state === 'pending';
   const border = done ? 'rgba(52,211,153,0.4)' : pending ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.12)';
@@ -76,7 +100,6 @@ function StepRow({ index, icon: Icon, title, subtitle, state, action, badge, cus
 
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.45)', marginBottom: 5 }}>צעד {index}</div>
       <div style={{
         background: bg, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         border: `1.5px solid ${border}`, borderRadius: 16, padding: '14px 16px',
@@ -119,7 +142,6 @@ export default function PreLaunchWaitingPage({ me }) {
     }
   }, []);
 
-  // ── Notification permission — triggers native OS dialog ──
   const handleEnableNotifications = async () => {
     const perm = await requestNotificationPermission();
     setNotifPerm(perm);
@@ -137,14 +159,10 @@ export default function PreLaunchWaitingPage({ me }) {
     }
   };
 
-  // ── Location permission — triggers native OS dialog via @capacitor/geolocation ──
   const handleEnableLocation = () => {
     getCurrentPosition(
       () => setLocPerm('granted'),
-      (err) => {
-        // code 1 = PERMISSION_DENIED (works for both Web API and our native wrapper)
-        setLocPerm(err?.code === 1 ? 'denied' : 'default');
-      },
+      (err) => setLocPerm(err?.code === 1 ? 'denied' : 'default'),
       { enableHighAccuracy: false, timeout: 10000 }
     );
   };
@@ -153,7 +171,6 @@ export default function PreLaunchWaitingPage({ me }) {
 
   const kycStatus = me?.kyc_status;
   const isKycVerified = kycStatus === 'approved';
-  const hasSocial = hasSocialVerified(me);
 
   const handleVerifySuccess = async () => {
     setShowVerifyModal(false);
@@ -165,7 +182,6 @@ export default function PreLaunchWaitingPage({ me }) {
     await refreshUser();
   };
 
-  // ── Social: connected platforms ──
   const connectedPlatforms = PLATFORMS.filter(p => me?.[`${p.key}_username`] && me?.[`${p.key}_verified`]);
   const isSocialConnected = connectedPlatforms.length > 0;
 
@@ -203,24 +219,8 @@ export default function PreLaunchWaitingPage({ me }) {
         position: 'relative', zIndex: 1,
       }}>
 
-        {/* Brand + Hero + Edit button */}
-        <div style={{ textAlign: 'center', marginBottom: 18, position: 'relative' }}>
-          <button
-            onClick={() => navigate('/join?edit=1&preview=1')}
-            style={{
-              position: 'absolute', top: 0, left: 0,
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '8px 14px', borderRadius: 12,
-              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-              color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              minHeight: 'unset', minWidth: 'unset',
-            }}
-          >
-            <Pencil size={14} color="white" />
-            ערוך פרטים
-          </button>
-
+        {/* Brand + Hero */}
+        <div style={{ textAlign: 'center', marginBottom: 18 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18, overflow: 'hidden',
             margin: '0 auto 12px', border: '2px solid rgba(255,255,255,0.2)',
@@ -229,14 +229,17 @@ export default function PreLaunchWaitingPage({ me }) {
             <img src={BRAND_LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.25 }}>
-            {me?.full_name ? `${me.full_name.split(' ')[0]}, אתה בפנים!` : 'אתה בפנים!'}
+            {me?.full_name ? `${me.full_name.split(' ')[0]}, הפרופיל שלך מוכן! 🎉` : 'הפרופיל שלך מוכן! 🎉'}
           </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', margin: '8px auto 0', lineHeight: 1.5, maxWidth: 300 }}>
-            נשלח לך התראה ברגע ש-Joba24 תיפתח באזורך.
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.78)', margin: '8px auto 4px', lineHeight: 1.5, maxWidth: 320 }}>
+            בימים הקרובים יתחילו להגיע משימות שמתאימות לך.
+          </p>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: '0 auto', lineHeight: 1.5, maxWidth: 320 }}>
+            נתאים לך משימות לפי המיקום, הקטגוריות והפרטים שבחרת בפרופיל.
           </p>
         </div>
 
-        {/* ── Store download — only for users NOT inside the app ── */}
+        {/* Store download — only for users NOT inside the app */}
         {!inApp && (
           <div style={{
             background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
@@ -251,19 +254,18 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         )}
 
-        {/* Readiness header */}
+        {/* Section header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <Zap size={18} color="#fbbf24" />
-          <span style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>התכונן להשקה ב-4 צעדים</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>כדי שלא תפספס משימה</span>
         </div>
 
         {/* Step 1: Notifications */}
         <StepRow
-          index={1}
           icon={Bell}
           state={notifState}
-          title="אפשר התראות"
-          subtitle={notifPerm === 'granted' ? 'מעולה! תקבל עדכון על כל עבודה חדשה.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24' : 'עדכון מיידי על כל עבודה חדשה.'}
+          title="התראות"
+          subtitle={notifPerm === 'granted' ? 'מעולה! תקבל עדכון על כל משימה חדשה.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24' : 'קבל עדכון מיד על משימה מתאימה.'}
           action={notifPerm !== 'granted' && notifSupported && notifPerm === 'default' ? (
             <button onClick={handleEnableNotifications} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
               אפשר <ChevronLeft size={14} />
@@ -273,11 +275,10 @@ export default function PreLaunchWaitingPage({ me }) {
 
         {/* Step 2: Location */}
         <StepRow
-          index={2}
           icon={MapPin}
           state={locState}
-          title="אפשר גישה למיקום"
-          subtitle={locPerm === 'granted' ? 'מעולה! נציג לך עבודות רלוונטיות באזורך.' : locPerm === 'denied' ? 'הפעל מיקום מהגדרות הטלפון → Joba24' : 'עבודות רלוונטיות באזורך.'}
+          title="מיקום"
+          subtitle={locPerm === 'granted' ? 'מעולה! נציג לך משימות רלוונטיות באזורך.' : locPerm === 'denied' ? 'הפעל מיקום מהגדרות הטלפון → Joba24' : 'קבל משימות רלוונטיות באזור שלך.'}
           action={locPerm !== 'granted' && locPerm === 'default' ? (
             <button onClick={handleEnableLocation} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
               אפשר <ChevronLeft size={14} />
@@ -287,32 +288,30 @@ export default function PreLaunchWaitingPage({ me }) {
 
         {/* Step 3: KYC — green badge icon */}
         <StepRow
-          index={3}
           icon={ShieldCheck}
           customIcon={<GreenBadgeIcon />}
           state={kycStepState}
-          title="אימות זהות (KYC)"
-          subtitle={isKycVerified ? 'מאומת עם ווי ירוק.' : kycStatus === 'pending' ? 'נשלח, ממתין לאישור.' : 'קבל ווי ירוק ובנה אמון.'}
+          title="אימות זהות"
+          subtitle={isKycVerified ? 'מאומת עם ווי ירוק.' : kycStatus === 'pending' ? 'נשלח, ממתין לאישור.' : 'קבל ווי ירוק וחזק את האמון בפרופיל.'}
           badge={isKycVerified ? <VerifiedBadge size="md" /> : null}
           action={!isKycVerified && kycStatus !== 'pending' ? (
             <button onClick={() => setShowVerifyModal(true)} style={{ ...ACTION_BTN, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)', color: '#34d399' }}>
-              אימות <ChevronLeft size={14} />
+              אמת <ChevronLeft size={14} />
             </button>
           ) : null}
         />
 
         {/* Step 4: Social — gold badge icon */}
         <StepRow
-          index={4}
           icon={isSocialConnected && isKycVerified ? Award : Sparkles}
           customIcon={<GoldBadgeIcon />}
           state={socialStepState}
-          title="רשתות חברתיות"
+          title="רשת חברתית"
           subtitle={isSocialConnected && isKycVerified
             ? `מחובר: ${connectedPlatforms.map(p => p.label).join(', ')} · ווי זהב פעיל`
             : isSocialConnected
               ? `מחובר: ${connectedPlatforms.map(p => p.label).join(', ')} · ווי זהב לאחר אימות זהות`
-              : 'חבר רשת חברתית. ווי זהב לאחר אימות זהות.'}
+              : 'קבל ווי זהב וחזק את הפרופיל.'}
           badge={isSocialConnected && isKycVerified ? <GoldBadge size="md" /> : null}
           action={
             <button
@@ -350,16 +349,54 @@ export default function PreLaunchWaitingPage({ me }) {
         {/* Registration counter — live */}
         <RegistrationCounter />
 
-        {/* Waiting status badge */}
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 99, padding: '8px 18px' }}>
-            <Clock size={15} color="#fbbf24" />
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#fbbf24' }}>ממתין לאישור · השקה בקרוב</span>
+        {/* Status section — "הפרופיל שלך פעיל" */}
+        <div style={{
+          textAlign: 'center',
+          background: 'rgba(52,211,153,0.08)',
+          border: '1px solid rgba(52,211,153,0.25)',
+          borderRadius: 16, padding: '14px 18px', marginBottom: 14,
+        }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <CheckCircle2 size={16} color="#34d399" />
+            <span style={{ fontSize: 15, fontWeight: 800, color: '#34d399' }}>הפרופיל שלך פעיל</span>
+          </div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)', lineHeight: 1.5 }}>
+            אנחנו מתחילים להכניס משימות בימים הקרובים.<br />
+            כשמשימה מתאימה לך - תקבל התראה.
           </div>
         </div>
 
+        {/* Flow explanation */}
+        <div style={{
+          textAlign: 'center', fontSize: 13, fontWeight: 600,
+          color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, marginBottom: 18, padding: '0 8px',
+        }}>
+          🔔 משימה מתאימה מתפרסמת ← תקבל התראה ← תוכל להגיש מועמדות
+        </div>
+
+        {/* Edit preferences — prominent at bottom */}
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginBottom: 8 }}>
+          רוצה לקבל עוד סוגי משימות? ניתן לשנות קטגוריות, אזור ופרטים בכל שלב.
+        </div>
+        <button
+          onClick={() => navigate('/join?edit=1&preview=1')}
+          style={{
+            width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '14px 18px', borderRadius: 14,
+            background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)',
+            color: 'white', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            minHeight: 'unset', minWidth: 'unset',
+            marginBottom: 18,
+          }}
+        >
+          עריכת העדפות עבודה
+          <ChevronLeft size={16} color="white" />
+        </button>
+
         {/* Footer links */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 20, flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'nowrap' }}>
           <Link to="/terms" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
           <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>|</span>
           <Link to="/privacy" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
