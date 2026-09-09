@@ -13,6 +13,31 @@ import { Geolocation } from '@capacitor/geolocation';
  * Usage is identical to navigator.geolocation.getCurrentPosition:
  *   getCurrentPosition(success, error, options)
  */
+/**
+ * Checks the current geolocation permission status WITHOUT prompting the user.
+ * Returns 'granted', 'denied', or 'default' (not yet asked).
+ */
+export function checkLocationPermission() {
+  return new Promise((resolve) => {
+    if (Capacitor.isNativePlatform()) {
+      Geolocation.checkPermissions()
+        .then((status) => {
+          const s = status.location; // 'granted' | 'denied' | 'prompt'
+          resolve(s === 'prompt' ? 'default' : s);
+        })
+        .catch(() => resolve('default'));
+    } else if (typeof navigator !== 'undefined' && navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((result) => {
+          resolve(result.state === 'prompt' ? 'default' : result.state);
+        })
+        .catch(() => resolve('default'));
+    } else {
+      resolve('default');
+    }
+  });
+}
+
 export function getCurrentPosition(successCallback, errorCallback, options) {
   if (Capacitor.isNativePlatform()) {
     Geolocation.requestPermissions()

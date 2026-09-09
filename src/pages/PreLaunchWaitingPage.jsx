@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCurrentPosition } from '@/lib/nativeGeolocation';
+import { getCurrentPosition, checkLocationPermission } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, MapPin, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil } from 'lucide-react';
@@ -153,6 +153,10 @@ export default function PreLaunchWaitingPage({ me }) {
     if (typeof Notification !== 'undefined') {
       setNotifPerm(Notification.permission);
     }
+    // Check actual location permission status on mount — the OS may have
+    // already granted it in a previous session, so we detect that here
+    // instead of showing the button as "not done".
+    checkLocationPermission().then(state => setLocPerm(state));
   }, []);
 
   const handleEnableNotifications = async () => {

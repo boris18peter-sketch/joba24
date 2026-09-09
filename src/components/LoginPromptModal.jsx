@@ -463,7 +463,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
         <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--border-1)', margin: '14px auto 0' }} />
 
         {/* Close */}
-        <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '12px 16px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px 0' }}>
           <button
             onClick={handleClose}
             style={{
