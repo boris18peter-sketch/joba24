@@ -170,6 +170,7 @@ export default function PreLaunchWaitingPage({ me }) {
   const { t } = useLanguage();
   const inApp = isStandaloneApp || (typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.());
   const [notifPerm, setNotifPerm] = useState('default');
+  const [hasFcmToken, setHasFcmToken] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showSocialConnect, setShowSocialConnect] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
@@ -178,7 +179,12 @@ export default function PreLaunchWaitingPage({ me }) {
     if (typeof Notification !== 'undefined') {
       setNotifPerm(Notification.permission);
     }
-  }, []);
+    // In native apps the web Notification API doesn't exist, so check for
+    // an FCM token instead — if the user has one, they can receive pushes.
+    if (me?.fcm_tokens?.length > 0) {
+      setHasFcmToken(true);
+    }
+  }, [me?.fcm_tokens]);
 
   const handleEnableNotifications = async () => {
     const perm = await requestNotificationPermission();
@@ -197,7 +203,7 @@ export default function PreLaunchWaitingPage({ me }) {
     }
   };
 
-  const notifSupported = typeof Notification !== 'undefined';
+  const notifSupported = inApp || typeof Notification !== 'undefined';
 
   const kycStatus = me?.kyc_status;
   const isKycVerified = kycStatus === 'approved';
@@ -225,7 +231,7 @@ export default function PreLaunchWaitingPage({ me }) {
   };
 
   // ── Step states ──
-  const notifDone = notifPerm === 'granted';
+  const notifDone = notifPerm === 'granted' || hasFcmToken;
   const kycDone = isKycVerified;
   const socialDone = isSocialConnected && isKycVerified;
 
@@ -338,7 +344,7 @@ export default function PreLaunchWaitingPage({ me }) {
               state={notifState}
               title={notifDone ? 'התראות פעילות' : 'התראות'}
               subtitle={notifDone ? 'מומלץ גם להפעיל מיקום בהגדרות למשימות קרובות.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24. מומלץ גם להפעיל מיקום.' : 'קבל עדכון מיד על משימה מתאימה. מומלץ גם להפעיל מיקום בהגדרות.'}
-              action={!notifDone && notifSupported && notifPerm === 'default' ? (
+              action={!notifDone && notifSupported && (inApp || notifPerm === 'default') ? (
                 <button onClick={handleEnableNotifications} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
                   אפשר <ChevronLeft size={13} />
                 </button>
