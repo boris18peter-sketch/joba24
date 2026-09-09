@@ -251,18 +251,42 @@ workflows:
 
           print("Manifest patched successfully")
           PYEOF
-      - name: Patch build.gradle with signing config and version
+      - name: Patch build.gradle with signing config, version, and Google Services plugin
         script: |
           python3 << 'PYEOF'
           import os
 
+          # ── 1. Patch PROJECT-level build.gradle (android/build.gradle) ──
+          # Add Google Services classpath for Firebase plugins
+          proj_gradle = "android/build.gradle"
+          with open(proj_gradle, "r") as f:
+            proj_content = f.read()
+
+          if "com.google.gms:google-services" not in proj_content:
+            # Insert into buildscript.dependencies block
+            if "dependencies {" in proj_content:
+              proj_content = proj_content.replace(
+                "dependencies {",
+                "dependencies {\n        classpath 'com.google.gms:google-services:4.4.2'",
+                1
+              )
+              print("[gradle] Added Google Services classpath to project build.gradle")
+            else:
+              raise SystemExit("ERROR: No dependencies block in android/build.gradle")
+          else:
+            print("[gradle] Google Services classpath already present in project build.gradle")
+
+          with open(proj_gradle, "w") as f:
+            f.write(proj_content)
+
+          # ── 2. Patch APP-level build.gradle (android/app/build.gradle) ──
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, "r") as f:
-              content = f.read()
+            content = f.read()
 
           anchor = 'compileSdk = rootProject.ext.compileSdkVersion'
           if content.count(anchor) != 1:
-              raise SystemExit(f"ERROR: expected exactly 1 occurrence of compileSdk anchor, found {content.count(anchor)}")
+            raise SystemExit(f"ERROR: expected exactly 1 occurrence of compileSdk anchor, found {content.count(anchor)}")
 
           signing_block = anchor + '''
               signingConfigs {
@@ -277,11 +301,11 @@ workflows:
 
           release_anchor = "release {\n            minifyEnabled false"
           if content.count(release_anchor) != 1:
-              raise SystemExit(f"ERROR: expected exactly 1 occurrence of release buildType anchor, found {content.count(release_anchor)}")
+            raise SystemExit(f"ERROR: expected exactly 1 occurrence of release buildType anchor, found {content.count(release_anchor)}")
           content = content.replace(
-              release_anchor,
-              "release {\n            signingConfig signingConfigs.release\n            minifyEnabled false",
-              1
+            release_anchor,
+            "release {\n            signingConfig signingConfigs.release\n            minifyEnabled false",
+            1
           )
 
           version_code = os.environ["ANDROID_VERSION_CODE"]
@@ -289,8 +313,15 @@ workflows:
           content = content.replace("versionCode 1", f"versionCode {version_code}", 1)
           content = content.replace('versionName "1.0"', f'versionName "{version_name}"', 1)
 
+          # Add Google Services plugin at the END of app build.gradle (required for Firebase)
+          if "com.google.gms.google-services" not in content:
+            content = content.rstrip() + "\n\napply plugin: 'com.google.gms.google-services'\n"
+            print("[gradle] Added Google Services plugin to app build.gradle")
+          else:
+            print("[gradle] Google Services plugin already present in app build.gradle")
+
           with open(gradle_path, "w") as f:
-              f.write(content)
+            f.write(content)
 
           print("build.gradle patched successfully")
           print(content)
@@ -341,6 +372,34 @@ workflows:
           else
             echo "⚠ WARNING: @capacitor/geolocation not found in native project — checking dependencies..."
             grep -r "geolocation" android/app/build.gradle android/app/capacitor.build.gradle 2>/dev/null || echo "Plugin not in gradle files!"
+          fi
+      - name: Verify Google Services plugin and Firebase messaging in Gradle
+        script: |
+          echo "=== Checking project-level build.gradle for Google Services classpath ==="
+          if grep -q "com.google.gms:google-services" android/build.gradle; then
+            echo "✓ Google Services classpath found in project build.gradle"
+          else
+            echo "✗ CRITICAL: Google Services classpath missing from android/build.gradle — Firebase plugins will NOT work!"
+            cat android/build.gradle
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking app-level build.gradle for Google Services plugin ==="
+          if grep -q "com.google.gms.google-services" android/app/build.gradle; then
+            echo "✓ Google Services plugin found in app build.gradle"
+          else
+            echo "✗ CRITICAL: Google Services plugin missing from android/app/build.gradle — Firebase will NOT initialize!"
+            cat android/app/build.gradle
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking Firebase messaging plugin sync ==="
+          if grep -q "firebase" android/app/capacitor.build.gradle 2>/dev/null || \
+             grep -q "firebase-messaging" android/app/build.gradle 2>/dev/null; then
+            echo "✓ Firebase messaging plugin found in gradle"
+          else
+            echo "⚠ WARNING: Firebase messaging not found in capacitor.build.gradle — checking..."
+            cat android/app/capacitor.build.gradle 2>/dev/null || echo "capacitor.build.gradle not found"
           fi
       - name: Build signed AAB
         script: |

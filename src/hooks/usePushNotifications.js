@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken, onForegroundMessage } from '@/lib/fcm';
+import { isNativeLike } from '@/lib/nativeEnv';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 
 // Module-level singleton: ensures token init runs ONCE across all hook instances
@@ -11,7 +12,7 @@ let globalInitPromise = null;
 export default function usePushNotifications() {
   const [token, setToken] = useState(null);
   const [permission, setPermission] = useState(() => {
-    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) return 'prompt';
+    if (isNativeLike()) return 'prompt';
     return typeof Notification !== 'undefined' ? Notification.permission : 'denied';
   });
   const [foregroundMsg, setForegroundMsg] = useState(null);
@@ -66,7 +67,7 @@ export default function usePushNotifications() {
 
     globalInitPromise = (async () => {
       // Native Capacitor path — check current permission (no prompt), get token if granted
-      if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      if (isNativeLike()) {
         try {
           const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
           const { receive } = await FirebaseMessaging.checkPermissions();
@@ -125,8 +126,7 @@ export default function usePushNotifications() {
   // The server sends the deep-link in the `url` field of the notification data
   // (e.g. "/task/{id}", "/chat/{id}", "/profile"), so we navigate to it via react-router.
   useEffect(() => {
-    const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
-    if (!isNative) return;
+    if (!isNativeLike()) return;
     let listenerHandle;
     let cancelled = false;
     (async () => {
