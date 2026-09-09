@@ -12,8 +12,17 @@ const FIREBASE_CONFIG = {
 
 const VAPID_KEY = "BMGA4Y0BwTCSY44y0Q1y4dkPklK4vBLMboxjxPUpGQQS7NBNXvYAvtEdsbl0uOaRsJADoXDTjffFsp3sr2dvcCw";
 
-// Detect native Capacitor wrapper (real iOS app) — uses @capacitor-firebase/messaging (APNs)
-const isNativePlatform = () => typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+// Detect native Capacitor wrapper (real iOS/Android app) — uses @capacitor-firebase/messaging (APNs)
+// Same issue as nativeGeolocation.js: Capacitor.isNativePlatform() returns false when
+// content loads from a remote server.url (bridge not injected). We check the bridge
+// directly AND the Android WebView UA marker so the native path is taken on both.
+import { isNativeLike } from '@/lib/nativeEnv';
+
+const hasCapacitorBridge = () =>
+  typeof window !== 'undefined' &&
+  (!!window.Capacitor?.isNativePlatform?.() || !!window.Capacitor?.Plugins?.FirebaseMessaging);
+
+const isNativePlatform = () => hasCapacitorBridge() || isNativeLike();
 
 // Early check: if Notifications API is not supported, bail out entirely
 const isNotificationsSupported = () => {

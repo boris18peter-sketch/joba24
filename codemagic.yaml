@@ -236,6 +236,16 @@ workflows:
           else:
               print("Location permissions already present")
 
+          # Add POST_NOTIFICATIONS permission (required since Android 13 / API 33)
+          # Without this, the system will NEVER show the notification permission popup,
+          # regardless of what the JS code calls.
+          if 'POST_NOTIFICATIONS' not in content:
+              notif_perm = '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n'
+              content = content.replace('<application', notif_perm + '<application', 1)
+              print("POST_NOTIFICATIONS permission added to manifest")
+          else:
+              print("POST_NOTIFICATIONS permission already present")
+
           with open(manifest_path, "w") as f:
               f.write(content)
 
@@ -307,6 +317,12 @@ workflows:
             echo "✗ ERROR: ACCESS_COARSE_LOCATION NOT in manifest after cap sync — patch was lost!"
             exit 1
           fi
+          if grep -q "POST_NOTIFICATIONS" "$MANIFEST"; then
+            echo "✓ POST_NOTIFICATIONS found in manifest"
+          else
+            echo "✗ ERROR: POST_NOTIFICATIONS NOT in manifest — notifications popup will NEVER appear on Android 13+!"
+            exit 1
+          fi
       - name: Verify capacitor.config.json has no server.url
         script: |
           if python3 -c "import json; c=json.load(open('capacitor.config.json')); exit(0 if 'server' not in c else 1)"; then
@@ -367,6 +383,12 @@ workflows:
             echo "✓ ACCESS_COARSE_LOCATION — present in final APK manifest"
           else
             echo "✗ CRITICAL: ACCESS_COARSE_LOCATION missing from final APK manifest!"
+            exit 1
+          fi
+          if grep -q "POST_NOTIFICATIONS" "$MERGED"; then
+            echo "✓ POST_NOTIFICATIONS — present in final APK manifest"
+          else
+            echo "✗ CRITICAL: POST_NOTIFICATIONS missing from final APK manifest — notifications will NOT work on Android 13+!"
             exit 1
           fi
           echo ""

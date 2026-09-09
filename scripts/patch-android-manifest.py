@@ -39,6 +39,16 @@ def main():
     else:
         print("[manifest] location permissions already present — skipping.")
 
+    # Add POST_NOTIFICATIONS permission (required since Android 13 / API 33)
+    # Without this declared in the manifest, the OS will NEVER show the notification
+    # permission popup, regardless of what the JS code calls.
+    if 'POST_NOTIFICATIONS' not in content:
+        notif_perm = '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n'
+        content = content.replace('<application', notif_perm + '<application', 1)
+        print("[manifest] added POST_NOTIFICATIONS permission.")
+    else:
+        print("[manifest] POST_NOTIFICATIONS permission already present — skipping.")
+
     if 'android:scheme="joba24"' in content:
         print("[manifest] joba24:// intent-filter already present — skipping.")
         return
