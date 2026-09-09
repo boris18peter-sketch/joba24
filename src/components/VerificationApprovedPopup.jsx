@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { Shield, Trophy, X, Sparkles, CheckCircle2, Star } from 'lucide-react';
+import { BadgeCheck, Trophy, X, Sparkles, CheckCircle2, Star } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 /**
@@ -19,7 +19,7 @@ const VARIANTS = {
     accent: '#10b981',
     soft: '#ecfdf5',
     border: '#a7f3d0',
-    Icon: Shield,
+    Icon: BadgeCheck,
     badgeBg: 'linear-gradient(135deg, #10b981, #059669)',
     title: 'הווי הירוק שלך הגיע! 🟢',
     subtitle: 'הזהות שלך אומתה בהצלחה',
@@ -146,7 +146,7 @@ export default function VerificationApprovedPopup({ variant = 'green', onClose }
               letterSpacing: 0.2,
             }}
           >
-            {variant === 'gold' ? <Star size={18} color="white" fill="white" /> : <Shield size={18} color="white" />}
+            {variant === 'gold' ? <Star size={18} color="white" fill="white" /> : <BadgeCheck size={18} color="white" />}
             {v.cta}
           </button>
         </div>
