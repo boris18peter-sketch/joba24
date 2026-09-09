@@ -172,11 +172,13 @@ export default function PreLaunchWaitingPage({ me }) {
     }
   };
 
-  const handleEnableLocation = () => {
+  const handleEnableLocation = async () => {
+    // Reset to default so the button stays tappable on retry after a previous denial
+    setLocPerm('default');
     getCurrentPosition(
       () => setLocPerm('granted'),
       (err) => setLocPerm(err?.code === 1 ? 'denied' : 'default'),
-      { enableHighAccuracy: false, timeout: 10000 }
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
     );
   };
 
@@ -301,11 +303,8 @@ export default function PreLaunchWaitingPage({ me }) {
               border: '1px solid rgba(52,211,153,0.2)',
               borderRadius: 16, padding: '16px 18px', marginBottom: 14,
             }}>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', margin: '0 0 6px', fontWeight: 600, lineHeight: 1.5 }}>
-                עכשיו רק נשאר לחכות למשימה הראשונה שלך.
-              </p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.5 }}>
-                כשמשימה מתאימה תתפרסם באזור שלך, נעדכן אותך מיד.
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.5 }}>
+                בימים הקרובים האפליקציה תיפתח במלואה ותתחיל לקבל משימות שמתאימות לך.
               </p>
             </div>
 
@@ -340,7 +339,7 @@ export default function PreLaunchWaitingPage({ me }) {
               state={locState}
               title={locDone ? 'מיקום פעיל' : 'מיקום'}
               subtitle={locDone ? null : locPerm === 'denied' ? 'הפעל מיקום מהגדרות הטלפון → Joba24' : 'קבל משימות רלוונטיות באזור שלך.'}
-              action={!locDone && locPerm === 'default' ? (
+              action={!locDone ? (
                 <button onClick={handleEnableLocation} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
                   אפשר <ChevronLeft size={13} />
                 </button>
