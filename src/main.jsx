@@ -14,18 +14,35 @@ import '@/index.css'
 // 10s, also unregistering stale service workers) so the user gets fresh assets
 // instead of a blank screen. lazyRetry already covers dynamic imports inside
 // App.jsx; this covers static imports + any rejections that escape that net.
+// Self-heal for stale module imports — covers BOTH unhandledrejection (dynamic
+// imports) and window 'error' events (static <script type="module"> load
+// failures that never become promise rejections).
+const STALE_IMPORT_RE = /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i;
+function healStaleImport() {
+  const KEY = 'joba24_main_reload_ts';
+  const last = Number(sessionStorage.getItem(KEY) || 0);
+  if (Date.now() - last <= 10000) return; // throttled — don't loop
+  sessionStorage.setItem(KEY, String(Date.now()));
+  // Unregister ALL service workers so the reload fetches fresh assets from the
+  // server instead of serving a stale cached index.html that points at
+  // non-existent hashed chunks.
+  try {
+    navigator.serviceWorker?.getRegistrations?.()
+      .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+      .then(() => { window.location.reload(); })
+      .catch(() => { window.location.reload(); });
+  } catch {
+    window.location.reload();
+  }
+}
+
+// Catch promise rejections from dynamic imports
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
   const msg = (typeof reason === 'string' ? reason : (reason?.message || '')) || '';
-  if (/Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i.test(msg)) {
-    const KEY = 'joba24_main_reload_ts';
-    const last = Number(sessionStorage.getItem(KEY) || 0);
-    if (Date.now() - last > 10000) {
-      sessionStorage.setItem(KEY, String(Date.now()));
-      try { navigator.serviceWorker?.getRegistrations?.().then((rs) => Promise.all(rs.map((r) => r.unregister()))).catch(() => {}); } catch {}
-      window.location.reload();
-      return;
-    }
+  if (STALE_IMPORT_RE.test(msg)) {
+    healStaleImport();
+    return;
   }
   const needsWrap =
     reason == null ||
@@ -52,6 +69,16 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('[Joba24] Unhandled rejection:', reason);
   }
 }, true); // capture phase — runs before the vite plugin's bubble-phase handler
+
+// Catch static module script load failures (these fire as 'error' events on
+// window, NOT as promise rejections — the unhandledrejection handler above
+// can't see them).
+window.addEventListener('error', (event) => {
+  const msg = event?.message || '';
+  if (STALE_IMPORT_RE.test(msg)) {
+    healStaleImport();
+  }
+}, true);
 
 console.log('[Joba24] App: React mounting...');
 ReactDOM.createRoot(document.getElementById('root')).render(
