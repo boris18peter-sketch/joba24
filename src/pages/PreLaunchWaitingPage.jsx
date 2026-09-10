@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, MapPin } from 'lucide-react';
+import { Bell, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, MapPin, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
@@ -12,6 +12,7 @@ import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
 import GoldBadge from '@/components/GoldBadge';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { isStandaloneApp } from '@/lib/utils';
+import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
@@ -174,6 +175,7 @@ export default function PreLaunchWaitingPage({ me }) {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showSocialConnect, setShowSocialConnect] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
+  const [showNotifSettings, setShowNotifSettings] = useState(false);
 
   useEffect(() => {
     if (typeof Notification !== 'undefined') {
@@ -187,6 +189,17 @@ export default function PreLaunchWaitingPage({ me }) {
   }, [me?.fcm_tokens]);
 
   const handleEnableNotifications = async () => {
+    // On Android WebView without Capacitor bridge (old server.url build),
+    // the web Notification API CANNOT trigger the native POST_NOTIFICATIONS
+    // dialog — the WebView doesn't support notification permission prompts
+    // (unlike geolocation). So we skip the doomed requestPermission() call
+    // and show a settings redirect modal with an intent:// button instead.
+    if (isAndroidWebView() && !hasCapacitorBridge()) {
+      setShowNotifSettings(true);
+      setNotifPerm('denied');
+      return;
+    }
+
     const perm = await requestNotificationPermission();
     setNotifPerm(perm);
     if (perm === 'granted') {
@@ -491,6 +504,92 @@ export default function PreLaunchWaitingPage({ me }) {
 
       {showSocialConnect && createPortal(
         <SocialConnectSheet user={me} onClose={handleSocialConnected} />,
+        document.body
+      )}
+
+      {showNotifSettings && createPortal(
+        <div
+          dir="rtl"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowNotifSettings(false); }}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100001,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20, background: 'rgba(5,15,40,0.7)', backdropFilter: 'blur(6px)',
+            animation: 'sheetFadeIn 0.2s ease both',
+          }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 360, borderRadius: 24,
+            background: 'var(--surface-2)', padding: '28px 24px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            animation: 'scaleIn 0.3s cubic-bezier(0.34,1.4,0.64,1) both',
+            position: 'relative',
+          }}>
+            <button
+              onClick={() => setShowNotifSettings(false)}
+              style={{
+                position: 'absolute', top: 16, left: 16,
+                background: 'none', border: 'none', cursor: 'pointer',
+                display: 'flex', color: 'var(--text-2)',
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16,
+                background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 14px',
+                boxShadow: '0 4px 16px rgba(26,111,212,0.3)',
+              }}>
+                <Bell size={26} color="white" />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)', margin: '0 0 8px' }}>
+                הפעלת התראות
+              </h3>
+              <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, margin: 0 }}>
+                כדי לקבל התראות על משימות מתאימות, יש לאפשר זאת בהגדרות המכשיר:
+              </p>
+            </div>
+
+            <div style={{
+              background: 'var(--surface-3)', borderRadius: 14, padding: '14px 16px',
+              marginBottom: 20, textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', lineHeight: 1.8 }}>
+                הגדרות ← אפליקציות ← Joba24<br />← התראות ← אפשר הכל
+              </div>
+            </div>
+
+            {/* intent:// opens the app's notification settings directly on Android */}
+            <a
+              href="intent://#Intent;action=android.settings.APP_NOTIFICATION_SETTINGS;S.android.app.extra.APP_PACKAGE=com.base69e6bdb4986a04a256653a23.app;end"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                width: '100%', height: 52, borderRadius: 16,
+                background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
+                color: 'white', textDecoration: 'none',
+                fontWeight: 900, fontSize: 15,
+                boxShadow: '0 4px 16px rgba(26,111,212,0.35)',
+              }}
+            >
+              <Bell size={18} />
+              פתח הגדרות התראות
+            </a>
+            <button
+              onClick={() => setShowNotifSettings(false)}
+              style={{
+                width: '100%', height: 48, borderRadius: 16, marginTop: 10,
+                background: 'var(--surface-3)', border: '1px solid var(--border-1)',
+                color: 'var(--text-1)', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              }}
+            >
+              אולי אחר כך
+            </button>
+          </div>
+        </div>,
         document.body
       )}
     </div>
