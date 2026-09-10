@@ -216,7 +216,7 @@ export default function PreLaunchWaitingPage({ me }) {
     }
   };
 
-  const notifSupported = inApp || typeof Notification !== 'undefined';
+  const notifSupported = inApp || isAndroidWebView() || typeof Notification !== 'undefined';
 
   const kycStatus = me?.kyc_status;
   const isKycVerified = kycStatus === 'approved';
@@ -357,7 +357,7 @@ export default function PreLaunchWaitingPage({ me }) {
               state={notifState}
               title={notifDone ? 'התראות פעילות' : 'התראות'}
               subtitle={notifDone ? 'מומלץ גם להפעיל מיקום בהגדרות למשימות קרובות.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24. מומלץ גם להפעיל מיקום.' : 'קבל עדכון מיד על משימה מתאימה. מומלץ גם להפעיל מיקום בהגדרות.'}
-              action={!notifDone && notifSupported && (inApp || notifPerm === 'default') ? (
+              action={!notifDone && notifSupported && (inApp || isAndroidWebView() || notifPerm === 'default') ? (
                 <button onClick={handleEnableNotifications} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
                   אפשר <ChevronLeft size={13} />
                 </button>
