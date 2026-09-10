@@ -16,13 +16,7 @@ const VAPID_KEY = "BMGA4Y0BwTCSY44y0Q1y4dkPklK4vBLMboxjxPUpGQQS7NBNXvYAvtEdsbl0u
 // Same issue as nativeGeolocation.js: Capacitor.isNativePlatform() returns false when
 // content loads from a remote server.url (bridge not injected). We check the bridge
 // directly AND the Android WebView UA marker so the native path is taken on both.
-import { isNativeLike } from '@/lib/nativeEnv';
-
-const hasCapacitorBridge = () =>
-  typeof window !== 'undefined' &&
-  (!!window.Capacitor?.isNativePlatform?.() || !!window.Capacitor?.Plugins?.FirebaseMessaging);
-
-const isNativePlatform = () => hasCapacitorBridge() || isNativeLike();
+import { hasCapacitorBridge } from '@/lib/nativeEnv';
 
 // Early check: if Notifications API is not supported, bail out entirely
 const isNotificationsSupported = () => {
@@ -123,8 +117,10 @@ async function ensureSW() {
 }
 
 export async function requestNotificationPermission() {
-  // Native Capacitor path (real APNs)
-  if (isNativePlatform()) {
+  // Native Capacitor path (real APNs) — only when the bridge is ACTUALLY available.
+  // On Android WebView without the bridge (old server.url build), falls through
+  // to the web API below, which triggers the WebView's native permission dialog.
+  if (hasCapacitorBridge()) {
     try {
       const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
       const result = await FirebaseMessaging.requestPermissions();
@@ -132,8 +128,9 @@ export async function requestNotificationPermission() {
       console.log('[FCM][Native] Permission request result:', perm);
       return perm;
     } catch (err) {
-      console.error('[FCM][Native] Permission request failed:', err.message);
-      return 'denied';
+      console.error('[FCM][Native] Permission request failed, falling back to web:', err.message);
+      // Fall through to web API — the native plugin may not be initialized
+      // (e.g. missing Google Services gradle plugin on Android)
     }
   }
 
@@ -159,16 +156,16 @@ export async function requestNotificationPermission() {
 }
 
 export async function getFCMToken() {
-  // Native Capacitor path — real APNs device token
-  if (isNativePlatform()) {
+  // Native Capacitor path — real APNs device token (only with bridge)
+  if (hasCapacitorBridge()) {
     try {
       const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
       const { token } = await FirebaseMessaging.getToken();
       console.log('[FCM][Native] ✅ Token obtained');
       return token || null;
     } catch (err) {
-      console.error('[FCM][Native] ❌ Token generation failed:', err.message);
-      return null;
+      console.error('[FCM][Native] ❌ Token generation failed, falling back to web:', err.message);
+      // Fall through to web path
     }
   }
 
@@ -222,7 +219,7 @@ export function onForegroundMessage(callback) {
   foregroundCallbacks.add(callback);
 
   // Native Capacitor path — register native listener once, broadcast to callbacks
-  if (isNativePlatform()) {
+  if (hasCapacitorBridge()) {
     if (!foregroundListenerRegistered) {
       foregroundListenerRegistered = true;
       import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {

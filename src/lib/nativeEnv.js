@@ -20,6 +20,16 @@ export function isNativeLike() {
   return Capacitor.isNativePlatform() || isAndroidWebView();
 }
 
+// True when the Capacitor JS bridge is ACTUALLY available — NOT just when
+// we're inside a native WebView. On Android with a remote server.url, the
+// bridge is NOT injected, so Capacitor.isNativePlatform() returns false and
+// window.Capacitor.Plugins is empty. Use this (not isNativeLike) to decide
+// whether to call native Capacitor plugins like FirebaseMessaging.
+export function hasCapacitorBridge() {
+  return Capacitor.isNativePlatform() ||
+    (typeof window !== 'undefined' && !!window.Capacitor?.Plugins?.FirebaseMessaging);
+}
+
 // Open a URL in the SYSTEM browser (not the embedded WebView). Uses the
 // Capacitor Browser plugin when the bridge is available (iOS); on Android with
 // no JS bridge, fires an intent:// that launches Chrome directly. Capacitor's
