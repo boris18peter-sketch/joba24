@@ -6,6 +6,16 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
 
+// IMPORTANT: This module owns the React context object. When Vite hot-reloads
+// this file, `createContext()` runs again and produces a NEW context object,
+// while consumers (DeepLinkHandler, etc.) that weren't re-evaluated still hold
+// the OLD context → useContext returns undefined → "useAuth must be used within
+// an AuthProvider". Declining HMR forces a clean full-page reload on change,
+// keeping a single context identity across the whole tree.
+if (import.meta.hot) {
+  import.meta.hot.decline();
+}
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
