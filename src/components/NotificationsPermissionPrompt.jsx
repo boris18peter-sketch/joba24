@@ -45,11 +45,8 @@ export default function NotificationsPermissionPrompt() {
       return;
     }
 
-    // Native Capacitor path (real iOS APNs) — only when the bridge is ACTUALLY available.
     // Native Capacitor (real iOS APNs) — the web Notification API does NOT exist in
-    // WKWebView, so we MUST branch here BEFORE the web guard. Otherwise the prompt
-    // bails out immediately on native and the OS permission dialog never fires
-    // (which is why the "Notifications" row never appears in iOS app settings).
+    // WKWebView, so we MUST branch here BEFORE the web guard.
     const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
     if (isNative) {
       let cancelled = false;

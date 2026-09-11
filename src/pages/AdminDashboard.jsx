@@ -236,7 +236,7 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
           </span>
         )}
         <button onClick={e => { e.stopPropagation(); setShowAgentModal(true); }} style={{
-          padding: '5px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700,
+          padding: '5px 10px', borderRadius: 10, cursor: 'pointer', fontSize: 11, fontWeight: 700,
           background: isAgent ? '#f5f3ff' : '#f0fdf4',
           color: isAgent ? '#7c3aed' : '#16a34a',
           display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,

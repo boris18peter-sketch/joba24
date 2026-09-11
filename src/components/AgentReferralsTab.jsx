@@ -67,6 +67,7 @@ export default function AgentReferralsTab() {
         registeredDownloads,
         pendingDownloads: downloads.length - registeredDownloads,
         referredUsers: referred,
+        downloadEvents: downloads.filter(e => !e.registered).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)),
       };
     })
     .sort((x, y) => y.downloads - x.downloads);
@@ -159,6 +160,35 @@ export default function AgentReferralsTab() {
 
               {isOpen && (
                 <div style={{ borderTop: '1px solid var(--border-1)', padding: '10px 14px 12px', background: 'var(--surface-1)' }}>
+                  {/* Pending downloads */}
+                  {r.downloadEvents.length > 0 && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                        <Smartphone size={12} color="#7c3aed" />
+                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)' }}>הורדות שטרם נרשמו ({r.downloadEvents.length})</span>
+                      </div>
+                      {r.downloadEvents.slice(0, 5).map(e => (
+                        <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--border-1)' }}>
+                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Smartphone size={12} color="#7c3aed" />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'monospace' }}>{e.device_id?.substring(0, 16)}…</span>
+                          </div>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{e.created_date ? formatDistanceToNow(new Date(e.created_date), { addSuffix: true, locale: he }) : ''}</span>
+                        </div>
+                      ))}
+                      {r.downloadEvents.length > 5 && (
+                        <div style={{ fontSize: 10, color: 'var(--text-3)', textAlign: 'center', padding: '4px 0 8px' }}>+{r.downloadEvents.length - 5} נוספים</div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Registered users */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: r.downloadEvents.length > 0 ? 10 : 0, marginBottom: 6 }}>
+                    <Users size={12} color="#059669" />
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)' }}>נרשמו ({r.referredUsers.length})</span>
+                  </div>
                   {r.referredUsers.length === 0 ? (
                     <div style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center', padding: '10px 0' }}>אין משתמשים שנרשמו דרך סוכן זה עדיין</div>
                   ) : (
