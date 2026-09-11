@@ -357,7 +357,7 @@ export default function PreLaunchWaitingPage({ me }) {
               state={notifState}
               title={notifDone ? 'התראות פעילות' : 'התראות'}
               subtitle={notifDone ? 'מומלץ גם להפעיל מיקום בהגדרות למשימות קרובות.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24. מומלץ גם להפעיל מיקום.' : 'קבל עדכון מיד על משימה מתאימה. מומלץ גם להפעיל מיקום בהגדרות.'}
-              action={!notifDone && notifSupported && (inApp || isAndroidWebView() || notifPerm === 'default') ? (
+              action={!notifDone ? (
                 <button onClick={handleEnableNotifications} style={{ ...ACTION_BTN, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', color: '#fbbf24' }}>
                   אפשר <ChevronLeft size={13} />
                 </button>

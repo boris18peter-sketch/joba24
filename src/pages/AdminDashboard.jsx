@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import GoldBadge from '@/components/GoldBadge';
@@ -12,7 +12,11 @@ import NotificationManagerTab from '@/components/NotificationManagerTab';
 import AgentReferralsTab from '@/components/AgentReferralsTab';
 import JobaSettingsTab from '@/components/JobaSettingsTab';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { getCategoryLabel } from '@/lib/categories';
+import { exportToCSV } from '@/lib/csvExport';
 import CopyableId from '@/components/CopyableId';
+import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
+import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import { toast } from 'sonner';
 
 const STATUS_COLORS = {
@@ -344,7 +348,16 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
 
           {user.bio && <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}><strong>אודות:</strong> {user.bio}</div>}
           {user.preferred_cities?.length > 0 && <div><strong>ערים:</strong> {user.preferred_cities.join(', ')}</div>}
-          {user.preferred_categories?.length > 0 && <div><strong>קטגוריות:</strong> {user.preferred_categories.join(', ')}</div>}
+          {user.preferred_categories?.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <strong>קטגוריות:</strong>
+              {user.preferred_categories.map(c => (
+                <span key={c} style={{ fontSize: 11, fontWeight: 600, color: '#1a6fd4', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '1px 7px', borderRadius: 99 }}>
+                  {getCategoryLabel(c)}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Credits + actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
@@ -559,6 +572,7 @@ export default function AdminDashboard() {
   const [selectedSupportUser, setSelectedSupportUser] = useState(null);
   const [supportReply, setSupportReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [kycLightbox, setKycLightbox] = useState(null);
 
   // KYC users = those with a KYC status OR submitted ID docs.
   // `is_verified` is the platform's email-verification flag (auto-set by Google/Apple/OTP),
@@ -731,6 +745,9 @@ export default function AdminDashboard() {
 
       {/* Tabs */}
       <div style={{ padding: '16px 16px 0', display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        <TabButton active={tab === 'analytics'} onClick={() => setTab('analytics')}>
+          <TrendingUp size={13} style={{ display: 'inline', marginLeft: 4 }} /> אנליטיקה
+        </TabButton>
         <TabButton active={tab === 'tasks'} onClick={() => setTab('tasks')}>
           <ClipboardList size={13} style={{ display: 'inline', marginLeft: 4 }} /> משימות
         </TabButton>
@@ -761,6 +778,11 @@ export default function AdminDashboard() {
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
+
+        {/* ANALYTICS TAB */}
+        {tab === 'analytics' && (
+          <AdminAnalyticsTab allUsers={allUsers} />
+        )}
 
         {/* TASKS TAB */}
         {tab === 'tasks' && (
@@ -807,6 +829,37 @@ export default function AdminDashboard() {
                   ✓ אשר הכל ({pendingApproval})
                 </button>
               )}
+              <button
+                onClick={() => {
+                  exportToCSV(filteredUsers, [
+                    { key: 'full_name', label: 'שם' },
+                    { key: 'email', label: 'אימייל' },
+                    { key: 'phone', label: 'טלפון' },
+                    { key: 'role', label: 'תפקיד' },
+                    { key: 'referred_by_agent_code', label: 'קוד סוכן' },
+                    { key: 'is_approved', label: 'מאושר' },
+                    { key: 'is_verified', label: 'מאומת (וי ירוק)' },
+                    { key: 'kyc_status', label: 'סטטוס KYC' },
+                    { key: 'id_number', label: 'ת.ז.' },
+                    { key: 'instagram_username', label: 'אינסטגרם' },
+                    { key: 'instagram_verified', label: 'אינסטגרם מאומת' },
+                    { key: 'facebook_username', label: 'פייסבוק' },
+                    { key: 'facebook_verified', label: 'פייסבוק מאומת' },
+                    { key: 'tiktok_username', label: 'טיקטוק' },
+                    { key: 'tiktok_verified', label: 'טיקטוק מאומת' },
+                    { key: 'preferred_categories', label: 'קטגוריות' },
+                    { key: 'preferred_cities', label: 'ערים' },
+                    { key: 'worker_credits', label: 'יתרת ג\'ובות' },
+                    { key: 'rating', label: 'דירוג' },
+                    { key: 'tasks_completed', label: 'משימות שהושלמו' },
+                    { key: 'fcm_tokens', label: 'התראות מופעלות' },
+                    { key: 'created_date', label: 'תאריך הרשמה' },
+                  ], 'joba24_users');
+                }}
+                style={{ height: 36, padding: '0 12px', borderRadius: 10, background: '#059669', color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Download size={13} /> ייצא Excel
+              </button>
             </div>
             {loadingUsers ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} className="animate-spin" color="#1a6fd4" /></div>
@@ -940,8 +993,16 @@ export default function AdminDashboard() {
                     )}
                     {user.id_photo_url && (
                       <div style={{ gridColumn: '1 / -1' }}>
-                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>📷 צילום תעודת זהות</div>
-                        <img src={user.id_photo_url} alt="ת.ז." style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff' }} />
+                        <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          📷 צילום תעודת זהות
+                          <span style={{ fontSize: 9, color: '#1a6fd4', fontWeight: 700 }}>(לחץ להגדלה)</span>
+                        </div>
+                        <img
+                          src={user.id_photo_url}
+                          alt="ת.ז."
+                          onClick={(e) => { e.stopPropagation(); setKycLightbox({ url: user.id_photo_url, name: user.full_name }); }}
+                          style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, border: '1px solid var(--border-1)', background: '#f8faff', cursor: 'pointer' }}
+                        />
                       </div>
                     )}
                     <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -1063,6 +1124,14 @@ export default function AdminDashboard() {
           <JobaSettingsTab />
         )}
       </div>
+
+      {kycLightbox && (
+        <KycImageLightbox
+          imageUrl={kycLightbox.url}
+          userName={kycLightbox.name}
+          onClose={() => setKycLightbox(null)}
+        />
+      )}
     </div>
   );
 }

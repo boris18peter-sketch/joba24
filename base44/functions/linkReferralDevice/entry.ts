@@ -60,6 +60,25 @@ export default async function(req) {
       }
     }
 
+    // ── Notify all admins about the new registration ──
+    try {
+      const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' }, '-created_date', 10);
+      const adminIds = admins.filter(a => a.fcm_tokens?.length > 0).map(a => a.id);
+      if (adminIds.length > 0) {
+        const regName = user.full_name || 'משתמש חדש';
+        await base44.asServiceRole.functions.invoke('sendPushNotification', {
+          user_ids: adminIds,
+          title: 'הרשמה חדשה ל-Joba24! 🎉',
+          body: `${regName} נרשם${agentCodes.length > 0 ? ` דרך סוכן ${agentCodes.join(', ')}` : ''}.`,
+          url: '/admin',
+          tag: `admin_new_register_${user.id}`,
+        });
+        console.log(`linkReferralDevice: notified ${adminIds.length} admin(s) about new registration`);
+      }
+    } catch (e) {
+      console.error('linkReferralDevice: failed to notify admins:', e);
+    }
+
     console.log(`linkReferralDevice: linked ${events.length} events to user ${user.id}`);
     return Response.json({ success: true, linked: events.length });
   } catch (error) {

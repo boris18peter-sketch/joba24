@@ -55,6 +55,7 @@ export default function AgentDashboard() {
   const workerIds = allUsers.map(u => u.id);
   const referralClicks = referralData?.data?.referral_clicks || 0;
   const totalCreditsUsed = referralData?.data?.totalCreditsUsed || 0;
+  const funnel = referralData?.data?.funnel || {};
 
   // Downloads = all referral events; registered = linked to a user; pending = not yet registered
   const totalDownloads = referralEvents.length;
@@ -99,8 +100,8 @@ export default function AgentDashboard() {
   const stats = [
     { label: 'הורדות אפליקציה', value: totalDownloads, color: '#7c3aed' },
     { label: 'נרשמו', value: registeredDownloads, color: '#059669' },
-    { label: 'משתמשים פעילים', value: activeUsersCount, color: '#d97706' },
-    { label: 'ג׳ובות שנוצלו', value: Math.round(totalCreditsUsed), color: '#1a6fd4' },
+    { label: 'מילאו פרופיל', value: funnel.profileCompleted || 0, color: '#1a6fd4' },
+    { label: 'אומתו', value: funnel.kycApproved || 0, color: '#d97706' },
   ];
 
   const formatLastActive = (dateStr) => {
@@ -117,12 +118,15 @@ export default function AgentDashboard() {
     return (now - new Date(dateStr).getTime()) < 24 * 60 * 60 * 1000;
   };
 
-  // ── Group users by their primary preferred category ──
+  // ── Group users by ALL their preferred categories (not just the first) ──
+  // A worker who selected plumbing + handyman appears in BOTH groups.
   const groups = {};
   allUsers.forEach(u => {
-    const cat = u.preferred_categories?.[0] || 'other';
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(u);
+    const cats = u.preferred_categories?.length > 0 ? u.preferred_categories : ['other'];
+    cats.forEach(cat => {
+      if (!groups[cat]) groups[cat] = [];
+      if (!groups[cat].find(x => x.id === u.id)) groups[cat].push(u);
+    });
   });
   // All categories present (for the filter chips), ordered by user count, 'other' last
   const categoryList = Object.keys(groups).sort((a, b) => {
@@ -133,7 +137,10 @@ export default function AgentDashboard() {
   const visibleCategories = activeCategory === 'all' ? categoryList : [activeCategory];
   const visibleUsers = activeCategory === 'all'
     ? allUsers
-    : allUsers.filter(u => (u.preferred_categories?.[0] || 'other') === activeCategory);
+    : allUsers.filter(u => {
+        const cats = u.preferred_categories?.length > 0 ? u.preferred_categories : ['other'];
+        return cats.includes(activeCategory);
+      });
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-1)' }} dir="rtl">
@@ -152,6 +159,48 @@ export default function AgentDashboard() {
       </div>
 
       <div style={{ padding: '16px 16px 80px' }}>
+
+        {/* Funnel — where your users are in the onboarding process */}
+        {funnel.registered !== undefined && (
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <TrendingUp size={15} color="#1a6fd4" />
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>משפך ההמרה</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[
+                { label: 'הורידו', value: funnel.downloads || 0, color: '#7c3aed' },
+                { label: 'נרשמו', value: funnel.registered || 0, color: '#1a6fd4' },
+                { label: 'מילאו פרופיל', value: funnel.profileCompleted || 0, color: '#059669' },
+                { label: 'הגישו KYC', value: funnel.kycSubmitted || 0, color: '#d97706' },
+                { label: 'אומתו', value: funnel.kycApproved || 0, color: '#16a34a' },
+                { label: 'חיברו רשת', value: funnel.socialConnected || 0, color: '#92400e' },
+                { label: 'הפעילו התראות', value: funnel.notificationsEnabled || 0, color: '#1d4ed8' },
+              ].map((step, i, arr) => {
+                const prev = i > 0 ? arr[i - 1].value : 0;
+                const conv = prev > 0 ? Math.round((step.value / prev) * 100) : null;
+                return (
+                  <div key={step.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 90, fontSize: 11, fontWeight: 700, color: 'var(--text-2)', flexShrink: 0 }}>{step.label}</div>
+                    <div style={{ flex: 1, height: 22, borderRadius: 6, background: 'var(--surface-3)', overflow: 'hidden', position: 'relative' }}>
+                      <div style={{
+                        height: '100%', borderRadius: 6, background: step.color,
+                        width: `${totalDownloads > 0 ? Math.max(3, (step.value / totalDownloads) * 100) : 0}%`,
+                        transition: 'width 0.4s ease',
+                      }} />
+                    </div>
+                    <div style={{ minWidth: 55, textAlign: 'left', flexShrink: 0 }}>
+                      <span style={{ fontSize: 13, fontWeight: 900, color: step.color }}>{step.value}</span>
+                      {conv !== null && i > 0 && (
+                        <span style={{ fontSize: 9, color: conv >= 50 ? '#16a34a' : '#d97706', fontWeight: 700, marginRight: 4 }}> ({conv}%)</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Referral Link */}
         <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px', marginBottom: 16 }}>

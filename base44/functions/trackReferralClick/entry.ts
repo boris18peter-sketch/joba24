@@ -44,6 +44,24 @@ export default async function(req) {
           registered: false,
         });
         console.log(`trackReferralClick: created ReferralEvent for agent=${agent_code} device=${device_id}`);
+
+        // ── Notify all admins about the new download ──
+        try {
+          const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' }, '-created_date', 10);
+          const adminIds = admins.filter(a => a.fcm_tokens?.length > 0).map(a => a.id);
+          if (adminIds.length > 0) {
+            await base44.asServiceRole.functions.invoke('sendPushNotification', {
+              user_ids: adminIds,
+              title: 'הורדה חדשה של האפליקציה! 📱',
+              body: `הורדה חדשה דרך סוכן ${agent_code}. סה"כ הורדות מצטברות.`,
+              url: '/admin',
+              tag: `admin_new_download_${device_id}`,
+            });
+            console.log(`trackReferralClick: notified ${adminIds.length} admin(s) about new download`);
+          }
+        } catch (e) {
+          console.error('trackReferralClick: failed to notify admins:', e);
+        }
       }
     }
 

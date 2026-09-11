@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Users, ShieldCheck, Loader2, Download, LogIn, TrendingUp, ChevronLeft } from 'lucide-react';
+import { Users, ShieldCheck, Loader2, Download, LogIn, TrendingUp, ChevronLeft, Smartphone } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -16,6 +16,14 @@ export default function AgentReferralsTab() {
   const { data: allUsers = [], isLoading } = useQuery({
     queryKey: ['adminAgentReferrals'],
     queryFn: () => base44.entities.User.list('-created_date', 500),
+    enabled: me?.role === 'admin',
+    staleTime: 60000,
+  });
+
+  // Fetch all referral events (downloads) to compute per-agent download counts
+  const { data: allEvents = [] } = useQuery({
+    queryKey: ['adminReferralEvents'],
+    queryFn: () => base44.entities.ReferralEvent.list('-created_date', 500),
     enabled: me?.role === 'admin',
     staleTime: 60000,
   });
@@ -39,39 +47,62 @@ export default function AgentReferralsTab() {
     byAgent[code].push(u);
   });
 
+  // Group referral events (downloads) by agent_code
+  const downloadsByAgent = {};
+  allEvents.forEach(e => {
+    if (!downloadsByAgent[e.agent_code]) downloadsByAgent[e.agent_code] = [];
+    downloadsByAgent[e.agent_code].push(e);
+  });
+
   const rows = agents
     .map(a => {
       const referred = byAgent[a.agent_code] || [];
-      return { agent: a, registered: referred.length, clicks: a.referral_clicks || 0, referredUsers: referred };
+      const downloads = downloadsByAgent[a.agent_code] || [];
+      const registeredDownloads = downloads.filter(e => e.registered).length;
+      return {
+        agent: a,
+        registered: referred.length,
+        clicks: a.referral_clicks || 0,
+        downloads: downloads.length,
+        registeredDownloads,
+        pendingDownloads: downloads.length - registeredDownloads,
+        referredUsers: referred,
+      };
     })
-    .sort((x, y) => y.registered - x.registered);
+    .sort((x, y) => y.downloads - x.downloads);
 
   const totalRegistered = rows.reduce((s, r) => s + r.registered, 0);
   const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
-  const conversion = totalClicks > 0 ? Math.round((totalRegistered / totalClicks) * 100) : 0;
+  const totalDownloads = rows.reduce((s, r) => s + r.downloads, 0);
+  const conversion = totalDownloads > 0 ? Math.round((totalRegistered / totalDownloads) * 100) : 0;
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Summary stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
+          <Smartphone size={16} color="#7c3aed" style={{ marginBottom: 4 }} />
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalDownloads}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>הורדות</div>
+        </div>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
           <Users size={16} color="#1a6fd4" style={{ marginBottom: 4 }} />
           <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalRegistered}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>נרשמו דרך סוכנים</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>נרשמו</div>
         </div>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
-          <TrendingUp size={16} color="#7c3aed" style={{ marginBottom: 4 }} />
+          <TrendingUp size={16} color="#059669" style={{ marginBottom: 4 }} />
           <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{agents.length}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>סוכנים פעילים</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>סוכנים</div>
         </div>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
           <Download size={16} color="#d97706" style={{ marginBottom: 4 }} />
           <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalClicks}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>לחיצות על לינק</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>לחיצות</div>
         </div>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 14 }}>
-        אחוז המרה: <strong style={{ color: 'var(--text-1)' }}>{conversion}%</strong> (נרשמו מתוך לחיצות)
+        אחוז המרה: <strong style={{ color: 'var(--text-1)' }}>{conversion}%</strong> (נרשמו מתוך הורדות)
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -100,7 +131,11 @@ export default function AgentReferralsTab() {
                   <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.agent.full_name || r.agent.email}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>קוד: {r.agent.agent_code}</div>
                 </div>
-                <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 50 }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: r.downloads > 0 ? '#7c3aed' : 'var(--text-3)' }}>{r.downloads}</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700 }}>הורדות</div>
+                </div>
+                <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 50 }}>
                   <div style={{ fontSize: 18, fontWeight: 900, color: r.registered > 0 ? '#059669' : 'var(--text-3)' }}>{r.registered}</div>
                   <div style={{ fontSize: 9, color: 'var(--text-3)', fontWeight: 700 }}>נרשמו</div>
                 </div>
@@ -109,12 +144,16 @@ export default function AgentReferralsTab() {
 
               <div style={{ display: 'flex', gap: 6, padding: '0 14px 10px' }}>
                 <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Smartphone size={11} color="#7c3aed" />
+                  <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700 }}>{r.downloads} הורדות</span>
+                </div>
+                <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Download size={11} color="#d97706" />
-                  <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700 }}>{r.clicks} לחיצות</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700 }}>{r.pendingDownloads} ממתינים</span>
                 </div>
                 <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 8, padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <TrendingUp size={11} color="#059669" />
-                  <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700 }}>{r.clicks > 0 ? Math.round((r.registered / r.clicks) * 100) : 0}% המרה</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-2)', fontWeight: 700 }}>{r.downloads > 0 ? Math.round((r.registered / r.downloads) * 100) : 0}% המרה</span>
                 </div>
               </div>
 

@@ -68,6 +68,21 @@ export default async function(req) {
         .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
     }
 
+    // ── Funnel stats: where users are in the onboarding process ──
+    const profileCompleted = referredUsers.filter(u =>
+      u.phone && u.preferred_categories?.length > 0
+    ).length;
+    const kycSubmitted = referredUsers.filter(u =>
+      u.kyc_status || u.id_number || u.id_photo_url
+    ).length;
+    const kycApproved = referredUsers.filter(u => u.is_verified).length;
+    const socialConnected = referredUsers.filter(u =>
+      u.instagram_verified || u.facebook_verified || u.tiktok_verified
+    ).length;
+    const notificationsEnabled = referredUsers.filter(u =>
+      u.fcm_tokens?.length > 0
+    ).length;
+
     return Response.json({
       users: referredUsers,
       referralEvents,
@@ -77,6 +92,15 @@ export default async function(req) {
       referral_clicks,
       totalCreditsUsed,
       creditsUsedByUser,
+      funnel: {
+        downloads: referralEvents.length,
+        registered: referredUsers.length,
+        profileCompleted,
+        kycSubmitted,
+        kycApproved,
+        socialConnected,
+        notificationsEnabled,
+      },
     });
   } catch (error) {
     console.error('getAgentReferrals error:', error);
