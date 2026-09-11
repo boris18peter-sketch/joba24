@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, MapPin, X } from 'lucide-react';
+import { Bell, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
@@ -23,19 +23,23 @@ const ACTION_BTN = {
 };
 
 // ── Badge icons for step circles ──
-const GreenBadgeIcon = ({ size = 24 }) => (
-  <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg,#16a34a,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(22,163,74,0.3)' }}>
-    <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 10 10" fill="none">
-      <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+const GreenBadgeIcon = ({ size = 24, done = false }) => (
+  <div style={{ width: size, height: size, borderRadius: '50%', background: done ? 'linear-gradient(135deg,#16a34a,#059669)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: done ? '0 2px 8px rgba(22,163,74,0.3)' : 'none', border: done ? 'none' : '1.5px solid rgba(255,255,255,0.2)', transition: 'all 0.3s ease' }}>
+    {done && (
+      <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 10 10" fill="none">
+        <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )}
   </div>
 );
 
-const GoldBadgeIcon = ({ size = 24 }) => (
-  <div style={{ width: size, height: size, borderRadius: '50%', background: 'linear-gradient(135deg,#fbbf24,#d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(217,119,6,0.3)' }}>
-    <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 10 10" fill="none">
-      <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+const GoldBadgeIcon = ({ size = 24, done = false }) => (
+  <div style={{ width: size, height: size, borderRadius: '50%', background: done ? 'linear-gradient(135deg,#fbbf24,#d97706)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: done ? '0 2px 8px rgba(217,119,6,0.3)' : 'none', border: done ? 'none' : '1.5px solid rgba(255,255,255,0.2)', transition: 'all 0.3s ease' }}>
+    {done && (
+      <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 10 10" fill="none">
+        <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    )}
   </div>
 );
 
@@ -109,7 +113,7 @@ function RegistrationCounter() {
 }
 
 // ── Compact step row — shows "✓ X פעיל" when done ──
-function StepRow({ icon: Icon, title, subtitle, state, action, badge, customIcon }) {
+function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
   const done = state === 'done';
   const pending = state === 'pending';
   const border = done ? 'rgba(52,211,153,0.35)' : pending ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)';
@@ -117,7 +121,7 @@ function StepRow({ icon: Icon, title, subtitle, state, action, badge, customIcon
   const iconBg = done ? 'rgba(52,211,153,0.15)' : pending ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.08)';
 
   const iconContent = customIcon
-    ? <div style={{ opacity: done ? 1 : 0.4, transition: 'opacity 0.3s' }}>{customIcon}</div>
+    ? React.cloneElement(customIcon, { done })
     : done
       ? <CheckCircle2 size={20} color="#34d399" strokeWidth={2.5} />
       : <Icon size={20} color="rgba(255,255,255,0.75)" />;
@@ -137,10 +141,8 @@ function StepRow({ icon: Icon, title, subtitle, state, action, badge, customIcon
           {iconContent}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: done ? 'rgba(255,255,255,0.95)' : 'white', display: 'flex', alignItems: 'center', gap: 5 }}>
-            {done && <CheckCircle2 size={13} color="#34d399" strokeWidth={3} style={{ flexShrink: 0 }} />}
+          <div style={{ fontSize: 15, fontWeight: 800, color: done ? 'rgba(255,255,255,0.95)' : 'white' }}>
             {title}
-            {badge}
           </div>
           {subtitle && (
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, marginTop: 1 }}>{subtitle}</div>
@@ -283,11 +285,8 @@ export default function PreLaunchWaitingPage({ me }) {
           <h1 style={{ fontSize: 25, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.25 }}>
             {me?.full_name ? `${me.full_name.split(' ')[0]}, הפרופיל שלך מוכן! 🎉` : 'הפרופיל שלך מוכן! 🎉'}
           </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.82)', margin: '8px auto 2px', lineHeight: 1.5, maxWidth: 320, fontWeight: 600 }}>
-            בימים הקרובים מתחילים.
-          </p>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.62)', margin: '0 auto', lineHeight: 1.5, maxWidth: 320 }}>
-            כשנמצא משימה שמתאימה למיקום ולהעדפות שלך — נעדכן אותך מיד.
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', margin: '10px auto 0', lineHeight: 1.6, maxWidth: 340 }}>
+            זהו מסך זמני לקראת הפתיחה! בימים הקרובים יתחילו לעלות ל־Joba24 המון משימות ועבודות חדשות שתוכל לראות, לבחור ולהגיש אליהן מועמדות ישירות מהאפליקציה.
           </p>
         </div>
 
@@ -306,38 +305,8 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         )}
 
-        {/* ═══ PROGRESS BAR + CHECKLIST — always shown ═══ */}
+        {/* ═══ CHECKLIST ═══ */}
         <>
-          {/* Progress indicator */}
-          {(() => {
-            const completed = [notifDone, kycDone, socialDone].filter(Boolean).length;
-            const pct = Math.round((completed / 3) * 100);
-            return (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.85)' }}>השלמת פרופיל</span>
-                  <span style={{ fontSize: 13, fontWeight: 900, color: completed === 3 ? '#34d399' : '#fbbf24' }}>{completed}/3</span>
-                </div>
-                <div style={{ height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', borderRadius: 99,
-                    background: completed === 3
-                      ? 'linear-gradient(90deg,#34d399,#059669)'
-                      : 'linear-gradient(90deg,#fbbf24,#d97706)',
-                    width: `${pct}%`,
-                    transition: 'width 0.5s cubic-bezier(0.32,1.2,0.64,1)',
-                    boxShadow: completed === 3 ? '0 0 12px rgba(52,211,153,0.5)' : '0 0 12px rgba(251,191,36,0.4)',
-                  }} />
-                </div>
-                {completed === 3 && (
-                  <div style={{ textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: 800, color: '#34d399' }}>
-                    ✨ הפרופיל שלך מושלם! משימות בדרך.
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
             {/* Section header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Zap size={18} color="#fbbf24" />
@@ -364,7 +333,6 @@ export default function PreLaunchWaitingPage({ me }) {
               state={kycStepState}
               title={kycDone ? 'זהות אומתה' : 'אימות זהות'}
               subtitle={kycDone ? null : kycStatus === 'pending' ? 'נשלח, ממתין לאישור.' : 'קבל וי ירוק וחזק את האמון בפרופיל.'}
-              badge={kycDone ? <VerifiedBadge size="md" /> : null}
               action={!kycDone && kycStatus !== 'pending' ? (
                 <button onClick={() => setShowVerifyModal(true)} style={{ ...ACTION_BTN, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)', color: '#34d399' }}>
                   אמת <ChevronLeft size={13} />
@@ -381,7 +349,6 @@ export default function PreLaunchWaitingPage({ me }) {
               subtitle={socialDone ? null : isSocialConnected
                 ? `מחובר: ${connectedPlatforms.map(p => p.label).join(', ')}`
                 : 'קבל וי זהב וחזק את הפרופיל.'}
-              badge={socialDone ? <GoldBadge size="md" /> : null}
               action={
                 <button
                   onClick={() => setShowSocialConnect(true)}
@@ -418,44 +385,6 @@ export default function PreLaunchWaitingPage({ me }) {
             {/* Live counter */}
             <RegistrationCounter />
 
-            {/* "מה קורה עכשיו?" — replaces old "פרופיל פעיל" card */}
-            <div style={{
-              background: 'rgba(96,165,250,0.1)',
-              border: '1.5px solid rgba(96,165,250,0.25)',
-              borderRadius: 20, padding: '20px 20px', marginBottom: 12,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <Bell size={20} color="#60a5fa" />
-                <span style={{ fontSize: 18, fontWeight: 800, color: '#60a5fa' }}>מה קורה עכשיו?</span>
-              </div>
-              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 8px', lineHeight: 1.5 }}>
-                אנחנו מתחילים להכניס משימות בימים הקרובים.
-              </p>
-              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 14px', lineHeight: 1.5 }}>
-                כשמתפרסמת משימה שמתאימה לך — נשלח לך התראה מיד.
-              </p>
-              {/* Flow */}
-              <div style={{
-                textAlign: 'center', fontSize: 14, fontWeight: 700,
-                color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
-                background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '12px 14px',
-              }}>
-                משימה מתאימה ← 🔔 התראה ← הגשת מועמדות
-              </div>
-              {/* Emphasized reminder — always visible */}
-              <div style={{
-                display: 'flex', alignItems: 'flex-start', gap: 8,
-                marginTop: 14, padding: '12px 14px',
-                background: 'rgba(251,191,36,0.12)',
-                border: '1px solid rgba(251,191,36,0.3)',
-                borderRadius: 12,
-              }}>
-                <MapPin size={16} color="#fbbf24" style={{ flexShrink: 0, marginTop: 1 }} />
-                <span style={{ fontSize: 14, color: '#fbbf24', lineHeight: 1.5, fontWeight: 700 }}>
-                  ודא שההתראות והמיקום פעילים בהגדרות הטלפון כדי שלא תפסס הזדמנות.
-                </span>
-              </div>
-            </div>
           </>
 
         {/* Edit preferences — secondary, smaller */}
