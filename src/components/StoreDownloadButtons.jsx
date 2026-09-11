@@ -21,8 +21,22 @@ export default function StoreDownloadButtons({
   if (isStandaloneApp || settings.store_buttons_enabled === false) return null;
 
   // Resolve URLs: explicit prop override → server setting → none
-  const resolvedApp = appStoreUrl || settings.app_store_url || '';
-  const resolvedPlay = playStoreUrl || settings.google_play_url || '';
+  // Append the agent ref code (if present) so attribution survives the app
+  // install — Google Play reads the `referrer` param via the Play Install
+  // Referrer API; App Store uses a `ref` query param read via deferred deep
+  // linking / Universal Links.
+  const refCode = typeof localStorage !== 'undefined'
+    ? localStorage.getItem('joba24_ref_code')
+    : null;
+  const appendRef = (url) => {
+    if (!url || !refCode) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    // Google Play uses `referrer`; App Store / generic uses `ref`
+    const key = url.includes('play.google.com') ? 'referrer' : 'ref';
+    return `${url}${sep}${key}=${encodeURIComponent(refCode)}`;
+  };
+  const resolvedApp = appendRef(appStoreUrl || settings.app_store_url || '');
+  const resolvedPlay = appendRef(playStoreUrl || settings.google_play_url || '');
 
   const sizes = {
     sm: { height: 42, padX: 14, gap: 9, icon: 20, text: 13 },
