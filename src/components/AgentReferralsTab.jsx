@@ -250,11 +250,15 @@ export default function AgentReferralsTab() {
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || u.email}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                             <LogIn size={9} /> {u.created_date ? formatDistanceToNow(new Date(u.created_date), { addSuffix: true, locale: he }) : '—'}
-                            {u.registration_source === 'web' && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(124,58,237,0.1)', color: '#7c3aed', padding: '1px 5px', borderRadius: 6, fontWeight: 700, fontSize: 9 }}>
-                                <Globe size={8} /> דפדפן
-                              </span>
-                            )}
+                            {(() => {
+                              const plat = u.registration_platform || (u.registration_source === 'native' ? 'native' : 'web');
+                              const labels = { ios: '🍎 iOS', android: '🤖 Android', native: '📱 Native', web: '🌐 דפדפן' };
+                              return (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(124,58,237,0.1)', color: '#7c3aed', padding: '1px 5px', borderRadius: 6, fontWeight: 700, fontSize: 9 }}>
+                                  {labels[plat] || labels.web}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
                         {u.created_date && <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>{format(new Date(u.created_date), 'dd/MM/yy')}</span>}

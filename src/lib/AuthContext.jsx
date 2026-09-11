@@ -2,6 +2,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
+import { isNativeLike } from '@/lib/nativeEnv';
+import { detectMobilePlatform } from '@/lib/utils';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -164,15 +166,20 @@ export const AuthProvider = ({ children }) => {
       // Track registration source + granular platform — only set once
       try {
         if (!currentUser.registration_source) {
-          const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
-          // Detect specific platform: ios, android, or web
-          let platform = 'web';
+          // isNativeLike() covers both iOS (Capacitor bridge) and Android
+          // (WebView "; wv)" UA marker) — more reliable than the old
+          // window.Capacitor?.isNativePlatform?.() check which returns false
+          // on Android remote server.url content.
+          const isNative = isNativeLike();
+          // detectMobilePlatform() returns 'ios' / 'android' / 'other' from
+          // the UA — works in both browser and native WebView contexts.
+          const mobilePlatform = detectMobilePlatform();
+          let platform;
           if (isNative) {
             const plat = window.Capacitor?.getPlatform?.();
             platform = plat === 'ios' ? 'ios' : plat === 'android' ? 'android' : 'native';
-          } else if (typeof navigator !== 'undefined') {
-            const ua = navigator.userAgent || '';
-            if (/Android/i.test(ua) && /;\s*wv\)/i.test(ua)) platform = 'android';
+          } else {
+            platform = mobilePlatform === 'other' ? 'web' : mobilePlatform;
           }
           await base44.auth.updateMe({
             registration_source: isNative ? 'native' : 'web',

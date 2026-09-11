@@ -18,6 +18,7 @@ import CopyableId from '@/components/CopyableId';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import { toast } from 'sonner';
+import ApproveAllModal from '@/components/ApproveAllModal';
 
 const STATUS_COLORS = {
   OPEN: { bg: '#dbeafe', text: '#1d4ed8', label: 'פתוח' },
@@ -190,7 +191,7 @@ function SendCreditsModal({ user, onClose, onSave }) {
   );
 }
 
-function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
+function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, onToggleSelect }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -217,6 +218,7 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
     <>
     <div style={{ background: user.is_blocked ? '#fef2f2' : isAgent ? '#f5f3ff' : 'var(--surface-2)', borderRadius: 14, border: `1px solid ${user.is_blocked ? '#fecaca' : isAgent ? '#ddd6fe' : 'var(--border-1)'}` , marginBottom: 8, overflow: 'hidden' }}>
       <div onClick={() => setOpen(v => !v)} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <input type="checkbox" checked={!!isSelected} onClick={e => e.stopPropagation()} onChange={onToggleSelect} style={{ width: 18, height: 18, cursor: 'pointer', flexShrink: 0, accentColor: '#1a6fd4' }} />
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: isAgent ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0, overflow: 'hidden' }}>
           {user.profile_photo ? <img src={user.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : user.full_name?.[0] || '?'}
         </div>
@@ -617,6 +619,9 @@ export default function AdminDashboard() {
   const [supportReply, setSupportReply] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [kycLightbox, setKycLightbox] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState(new Set());
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
 
   // KYC users = those with a KYC status OR submitted ID docs.
   // `is_verified` is the platform's email-verification flag (auto-set by Google/Apple/OTP),
@@ -700,6 +705,30 @@ export default function AdminDashboard() {
     queryClient.setQueryData(['adminUsers'], (old = []) =>
       old.map(u => u.id === user.id ? { ...u, ...updates } : u)
     );
+  };
+
+  const toggleSelectUser = (userId) => {
+    setSelectedUsers(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
+
+  const handleBulkApprove = async (approve) => {
+    const ids = Array.from(selectedUsers);
+    if (ids.length === 0) return;
+    try {
+      await base44.entities.User.bulkUpdate(ids.map(id => ({ id, is_approved: approve })));
+      queryClient.setQueryData(['adminUsers'], (old = []) =>
+        old.map(u => selectedUsers.has(u.id) ? { ...u, is_approved: approve } : u)
+      );
+      toast.success(`${ids.length} משתמשים ${approve ? 'אושרו' : 'בוטלה גישתם'}`);
+      setSelectedUsers(new Set());
+    } catch (e) {
+      toast.error('שגיאה: ' + (e.message || ''));
+    }
   };
 
   const handleReviewReport = async (report) => {
@@ -878,24 +907,7 @@ export default function AdminDashboard() {
               </div>
               {pendingApproval > 0 && (
                 <button
-                  onClick={async () => {
-                    const unapproved = allUsers.filter(u => !u.is_approved && u.role !== 'admin');
-                    if (unapproved.length === 0) return;
-                    try {
-                      // bulkUpdate sends a single batched request (up to 500) instead
-                      // of N sequential update calls, which would hit the platform
-                      // rate limit ("Rate limit exceeded") on large lists.
-                      await base44.entities.User.bulkUpdate(
-                        unapproved.map(u => ({ id: u.id, is_approved: true }))
-                      );
-                      queryClient.setQueryData(['adminUsers'], (old = []) =>
-                        old.map(u => u.is_approved || u.role === 'admin' ? u : { ...u, is_approved: true })
-                      );
-                      toast.success(`${unapproved.length} משתמשים אושרו`);
-                    } catch (e) {
-                      toast.error('שגיאה באישור מרוכז: ' + (e.message || ''));
-                    }
-                  }}
+                  onClick={() => setShowApproveModal(true)}
                   style={{ height: 36, padding: '0 12px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
                 >
                   ✓ אשר הכל ({pendingApproval})
@@ -982,14 +994,47 @@ export default function AdminDashboard() {
               )}
             </div>
 
+            {selectedUsers.size > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe' }}>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4', flexShrink: 0 }}>{selectedUsers.size} נבחרו</span>
+                <button onClick={() => setShowBulkApproveModal(true)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>אשר נבחרים</button>
+                <button onClick={() => handleBulkApprove(false)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>בטל גישה לנבחרים</button>
+                <button onClick={() => setSelectedUsers(new Set())} style={{ height: 32, padding: '0 10px', borderRadius: 8, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>ביטול</button>
+              </div>
+            )}
+
             {loadingUsers ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} className="animate-spin" color="#1a6fd4" /></div>
             ) : (
               <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{filteredUsers.length} משתמשים</div>
             )}
             {filteredUsers.map(user => (
-              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} />
+              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} />
             ))}
+            {showApproveModal && (
+              <ApproveAllModal
+                count={pendingApproval}
+                onClose={() => setShowApproveModal(false)}
+                onConfirm={async () => {
+                  const unapproved = allUsers.filter(u => !u.is_approved && u.role !== 'admin');
+                  if (unapproved.length === 0) return;
+                  await base44.entities.User.bulkUpdate(
+                    unapproved.map(u => ({ id: u.id, is_approved: true }))
+                  );
+                  queryClient.setQueryData(['adminUsers'], (old = []) =>
+                    old.map(u => u.is_approved || u.role === 'admin' ? u : { ...u, is_approved: true })
+                  );
+                  toast.success(`${unapproved.length} משתמשים אושרו`);
+                }}
+              />
+            )}
+            {showBulkApproveModal && (
+              <ApproveAllModal
+                selectedCount={selectedUsers.size}
+                onClose={() => setShowBulkApproveModal(false)}
+                onConfirm={async () => { await handleBulkApprove(true); }}
+              />
+            )}
           </>
         )}
 
