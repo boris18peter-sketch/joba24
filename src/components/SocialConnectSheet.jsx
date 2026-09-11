@@ -97,25 +97,45 @@ export default function SocialConnectSheet({ user, onClose }) {
   const handleVerify = async (platform) => {
     setLoading(true);
     let success = false;
-    setVerifyAttempt(1);
-    try {
-      const res = await base44.functions.invoke('verifyInstagram', {
-        action: 'verify_code', platform,
-      });
-      if (res.data?.error) {
-        toast.error(res.data.error);
-      } else if (res.data?.verified) {
-        toast.success(t('sl_verified_success', { platform: platformLabel(platform) }));
-        await refresh();
-        success = true;
-      } else if (res.data?.note) {
-        toast.error(res.data.note, { duration: 6000 });
-      } else {
-        toast.error(t('sl_code_not_found'));
+
+    const attempt = async (attemptNum) => {
+      setVerifyAttempt(attemptNum);
+      try {
+        // 30s timeout — prevents endless loading when scraping methods are slow
+        const res = await Promise.race([
+          base44.functions.invoke('verifyInstagram', { action: 'verify_code', platform }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000)),
+        ]);
+        if (res.data?.error) {
+          toast.error(res.data.error);
+          return false;
+        } else if (res.data?.verified) {
+          toast.success(t('sl_verified_success', { platform: platformLabel(platform) }));
+          await refresh();
+          return true;
+        }
+        return false; // not found — will retry
+      } catch (e) {
+        if (e?.message === 'timeout') {
+          return false; // timeout — will retry
+        }
+        toast.error(t('sl_error_verify'));
+        return false;
       }
-    } catch (e) {
-      toast.error(t('sl_error_verify'));
+    };
+
+    // Attempt 1
+    success = await attempt(1);
+
+    // Auto-retry once if not found (bio may need a few seconds to propagate)
+    if (!success) {
+      success = await attempt(2);
     }
+
+    if (!success) {
+      toast.error(t('sl_code_not_found'), { duration: 6000 });
+    }
+
     setVerifyAttempt(0);
     setLoading(false);
     return success;

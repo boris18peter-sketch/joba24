@@ -87,12 +87,12 @@ function RegistrationCounter() {
   }, []);
 
   return (
-    <div style={{ textAlign: 'center', marginBottom: 14 }}>
+    <div style={{ textAlign: 'center', marginBottom: 8 }}>
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
         background: 'rgba(255,255,255,0.08)',
         border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 99, padding: '8px 18px',
+        borderRadius: 99, padding: '7px 16px',
         backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       }}>
         <Users size={14} color="rgba(255,255,255,0.7)" />
@@ -129,10 +129,10 @@ function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
       : <Icon size={20} color="rgba(255,255,255,0.75)" />;
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div style={{ marginBottom: 5 }}>
       <div style={{
         background: bg, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        border: `1.5px solid ${border}`, borderRadius: 14, padding: '12px 14px',
+        border: `1.5px solid ${border}`, borderRadius: 14, padding: '11px 13px',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
         {/* When a custom badge is used, the box is transparent — only the badge shows.
@@ -149,11 +149,11 @@ function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
           {iconContent}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: done ? 'rgba(255,255,255,0.95)' : 'white' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: done ? 'rgba(255,255,255,0.95)' : 'white' }}>
             {title}
           </div>
           {subtitle && (
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, marginTop: 1 }}>{subtitle}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, marginTop: 2 }}>{subtitle}</div>
           )}
         </div>
         {action}
@@ -282,18 +282,18 @@ export default function PreLaunchWaitingPage({ me }) {
       }}>
 
         {/* ── Hero ── */}
-        <div style={{ textAlign: 'center', marginBottom: 18 }}>
+        <div style={{ textAlign: 'center', marginBottom: 10 }}>
           <div style={{
-            width: 60, height: 60, borderRadius: 18, overflow: 'hidden',
-            margin: '0 auto 10px', border: '2px solid rgba(255,255,255,0.2)',
+            width: 56, height: 56, borderRadius: 16, overflow: 'hidden',
+            margin: '0 auto 6px', border: '2px solid rgba(255,255,255,0.2)',
             boxShadow: '0 6px 22px rgba(0,0,0,0.3)',
           }}>
             <img src={BRAND_LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <h1 style={{ fontSize: 25, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.25 }}>
-            {me?.full_name ? `${me.full_name.split(' ')[0]}, הפרופיל שלך מוכן! 🎉` : 'הפרופיל שלך מוכן! 🎉'}
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.25 }}>
+            {me?.full_name ? `${me.full_name.split(' ')[0]}, הפרופיל שלך מוכן!` : 'הפרופיל שלך מוכן!'}
           </h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.72)', margin: '10px auto 0', lineHeight: 1.6, maxWidth: 340 }}>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.88)', margin: '8px auto 0', lineHeight: 1.55, maxWidth: 330, fontWeight: 500 }}>
             זהו מסך זמני לקראת הפתיחה! בימים הקרובים יתחילו לעלות ל־Joba24 המון משימות ועבודות חדשות שתוכל לראות, לבחור ולהגיש אליהן מועמדות ישירות מהאפליקציה.
           </p>
         </div>
@@ -303,7 +303,7 @@ export default function PreLaunchWaitingPage({ me }) {
           <div style={{
             background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
             border: '1.5px solid rgba(251,191,36,0.3)', borderRadius: 16,
-            padding: '14px 16px 16px', marginBottom: 20, textAlign: 'center',
+            padding: '12px 14px 14px', marginBottom: 12, textAlign: 'center',
           }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
               <Download size={15} color="#fbbf24" />
@@ -316,9 +316,9 @@ export default function PreLaunchWaitingPage({ me }) {
         {/* ═══ CHECKLIST ═══ */}
         <>
             {/* Section header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Zap size={18} color="#fbbf24" />
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'white' }}>כדי שלא תפספס משימה</span>
+              <span style={{ fontSize: 17, fontWeight: 800, color: 'white' }}>כדי שלא תפספס משימה</span>
             </div>
 
             {/* Step 1: Notifications */}
@@ -400,7 +400,7 @@ export default function PreLaunchWaitingPage({ me }) {
           onClick={() => navigate('/join?edit=1&preview=1')}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '10px 16px', borderRadius: 12, margin: '0 auto 4px',
+            padding: '9px 16px', borderRadius: 12, margin: '0 auto 2px',
             background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
             color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
             minHeight: 'unset', minWidth: 'unset',
@@ -409,7 +409,7 @@ export default function PreLaunchWaitingPage({ me }) {
           <Pencil size={13} color="rgba(255,255,255,0.6)" />
           שינוי קטגוריות והעדפות
         </button>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 18 }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 10 }}>
           ניתן לעדכן את ההעדפות בכל שלב.
         </div>
 

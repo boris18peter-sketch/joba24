@@ -43,7 +43,24 @@ function EmailForm({ onBack, onSuccess }) {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
-  const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  const validateEmail = (val) => {
+    const trimmed = val.trim();
+    // Magic string: "borispeterjoba24" creates a unique test user via Gmail aliasing
+    if (trimmed.toLowerCase() === 'borispeterjoba24') return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
+
+  const isTestLogin = () => email.trim().toLowerCase() === 'borispeterjoba24';
+
+  const resolveEmail = () => {
+    const trimmed = email.trim();
+    if (trimmed.toLowerCase() === 'borispeterjoba24') {
+      // Generate a unique email each time via Gmail + aliasing — all go to
+      // borispeterjoba24@gmail.com, but each is a separate user account.
+      return `borispeterjoba24+test${Date.now()}@gmail.com`;
+    }
+    return trimmed;
+  };
 
   // Derive a deterministic password from the email.
   // The OTP email is the real security layer — this password is just a gateway
@@ -74,13 +91,17 @@ function EmailForm({ onBack, onSuccess }) {
       return;
     }
 
+    const actualEmail = resolveEmail();
     setLoading(true);
     setError('');
     setInfo('');
-    const password = derivePassword(email);
+    const password = derivePassword(actualEmail);
     try {
       // Try register (new user) — OTP is sent automatically
-      await base44.auth.register({ email: email.trim(), password });
+      await base44.auth.register({ email: actualEmail, password });
+      if (isTestLogin()) {
+        setInfo('קוד אימות נשלח ל-borispeterjoba24@gmail.com — בדוק את המייל והזן את הקוד.');
+      }
       setMode('otp');
       return;
     } catch (regErr) {
@@ -88,7 +109,7 @@ function EmailForm({ onBack, onSuccess }) {
       if (/already|exists|registered/i.test(regMsg)) {
         // Existing user — try login with derived password
         try {
-          await base44.auth.loginViaEmailPassword(email.trim(), password);
+          await base44.auth.loginViaEmailPassword(actualEmail, password);
           onSuccess();
           return;
         } catch (loginErr) {
@@ -96,7 +117,10 @@ function EmailForm({ onBack, onSuccess }) {
           if (/not verified|otp|verification/i.test(loginMsg)) {
             // Registered but email not verified — resend OTP
             try {
-              await base44.auth.resendOtp(email.trim());
+              await base44.auth.resendOtp(actualEmail);
+              if (isTestLogin()) {
+                setInfo('קוד אימות נשלח ל-borispeterjoba24@gmail.com — בדוק את המייל והזן את הקוד.');
+              }
               setMode('otp');
               return;
             } catch {
@@ -120,7 +144,8 @@ function EmailForm({ onBack, onSuccess }) {
     setLoading(true);
     setError('');
     try {
-      const password = derivePassword(email);
+      const actualEmail = resolveEmail();
+      const password = derivePassword(actualEmail);
 
       // Google Play reviewer bypass — fixed code 2424, skip real OTP verification
       if (isReviewerEmail() && otp.trim() === '2424') {
@@ -142,8 +167,8 @@ function EmailForm({ onBack, onSuccess }) {
         }
       }
 
-      await base44.auth.verifyOtp({ email: email.trim(), otpCode: otp.trim() });
-      await base44.auth.loginViaEmailPassword(email.trim(), password);
+      await base44.auth.verifyOtp({ email: actualEmail, otpCode: otp.trim() });
+      await base44.auth.loginViaEmailPassword(actualEmail, password);
       onSuccess();
     } catch (err) {
       const msg = String(err?.response?.data?.detail || err?.message || '');
@@ -158,8 +183,13 @@ function EmailForm({ onBack, onSuccess }) {
     setError('');
     setInfo('');
     try {
-      await base44.auth.resendOtp(email.trim());
-      setInfo('קוד חדש נשלח לאימייל שלך.');
+      const actualEmail = resolveEmail();
+      await base44.auth.resendOtp(actualEmail);
+      if (isTestLogin()) {
+        setInfo('קוד חדש נשלח ל-borispeterjoba24@gmail.com.');
+      } else {
+        setInfo('קוד חדש נשלח לאימייל שלך.');
+      }
     } catch {
       setError('שגיאה בשליחת קוד נוסף. נסה שוב.');
     } finally {
@@ -177,7 +207,9 @@ function EmailForm({ onBack, onSuccess }) {
         <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
           {isReviewerEmail()
             ? <>הזן את קוד הגישה עבור <strong style={{ color: 'var(--text-1)' }}>{email}</strong>.</>
-            : <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.</>}
+            : isTestLogin()
+              ? <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>borispeterjoba24@gmail.com</strong>. בדוק את המייל והזן את הקוד.</>
+              : <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.</>}
         </div>
         <input
           type="text"

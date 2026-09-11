@@ -244,7 +244,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
       },
     });
     const timeoutPromise1 = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout (25s)')), 25000)
+      setTimeout(() => reject(new Error('LLM timeout (15s)')), 15000)
     );
     const result1 = await Promise.race([llmPromise1, timeoutPromise1]);
     console.log(`verifyInstagram: LLM attempt 1 result: found=${result1?.found}, bio="${(result1?.bio || '').substring(0, 100)}"`);
@@ -266,7 +266,7 @@ async function verifyWithLlm(platformLabel, username, code, profileUrl, base44) 
       },
     });
     const timeoutPromise2 = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('LLM timeout (25s)')), 25000)
+      setTimeout(() => reject(new Error('LLM timeout (15s)')), 15000)
     );
     const result2 = await Promise.race([llmPromise2, timeoutPromise2]);
     console.log(`verifyInstagram: LLM attempt 2 result: found=${result2?.found}, bio="${(result2?.bio || '').substring(0, 100)}"`);
