@@ -54,7 +54,7 @@ export default async function(req) {
               user_ids: adminIds,
               title: 'הורדה חדשה של האפליקציה! 📱',
               body: `הורדה חדשה דרך סוכן ${agent_code}. סה"כ הורדות מצטברות.`,
-              url: '/admin',
+              url: '/admin?tab=referrals',
               tag: `admin_new_download_${device_id}`,
             });
             console.log(`trackReferralClick: notified ${adminIds.length} admin(s) about new download`);

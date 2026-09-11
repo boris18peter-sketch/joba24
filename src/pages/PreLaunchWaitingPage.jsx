@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, Zap, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, X } from 'lucide-react';
+import { Bell, CheckCircle2, ChevronLeft, ShieldCheck, Award, Sparkles, Download, Users, Pencil, X } from 'lucide-react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
@@ -16,13 +16,13 @@ import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
 
 const ACTION_BTN = {
-  padding: '8px 14px', borderRadius: 10, flexShrink: 0,
-  fontSize: 13, fontWeight: 800, cursor: 'pointer',
-  display: 'inline-flex', alignItems: 'center', gap: 4,
+  padding: '10px 18px', borderRadius: 12, flexShrink: 0,
+  fontSize: 14, fontWeight: 800, cursor: 'pointer',
+  display: 'inline-flex', alignItems: 'center', gap: 5,
 };
 
 // ── Badge icons for step circles ──
-const GreenBadgeIcon = ({ size = 24, done = false }) => (
+const GreenBadgeIcon = ({ size = 38, done = false }) => (
   <div style={{ width: size, height: size, borderRadius: '50%', background: done ? 'linear-gradient(135deg,#16a34a,#059669)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: done ? '0 2px 8px rgba(22,163,74,0.3)' : 'none', border: done ? 'none' : '1.5px solid rgba(255,255,255,0.2)', transition: 'all 0.3s ease' }}>
     {done && (
       <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 10 10" fill="none">
@@ -32,7 +32,7 @@ const GreenBadgeIcon = ({ size = 24, done = false }) => (
   </div>
 );
 
-const GoldBadgeIcon = ({ size = 24, done = false }) => (
+const GoldBadgeIcon = ({ size = 38, done = false }) => (
   <div style={{ width: size, height: size, borderRadius: '50%', background: done ? 'linear-gradient(135deg,#fbbf24,#d97706)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: done ? '0 2px 8px rgba(217,119,6,0.3)' : 'none', border: done ? 'none' : '1.5px solid rgba(255,255,255,0.2)', transition: 'all 0.3s ease' }}>
     {done && (
       <svg width={size * 0.58} height={size * 0.58} viewBox="0 0 10 10" fill="none">
@@ -87,23 +87,23 @@ function RegistrationCounter() {
   }, []);
 
   return (
-    <div style={{ textAlign: 'center', marginBottom: 8 }}>
+    <div style={{ textAlign: 'center', marginBottom: 10 }}>
       <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
+        display: 'inline-flex', alignItems: 'center', gap: 8,
         background: 'rgba(255,255,255,0.08)',
         border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 99, padding: '7px 16px',
+        borderRadius: 99, padding: '9px 20px',
         backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       }}>
-        <Users size={14} color="rgba(255,255,255,0.7)" />
+        <Users size={16} color="rgba(255,255,255,0.7)" />
         <span style={{
-          fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
+          fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
           transition: 'transform 0.3s ease',
           transform: justChanged ? 'scale(1.12)' : 'scale(1)',
-          display: 'inline-flex', alignItems: 'baseline', gap: 3,
+          display: 'inline-flex', alignItems: 'baseline', gap: 4,
         }}>
           כבר
-          <span style={{ color: '#fbbf24', fontSize: 16, fontWeight: 900 }}>{count.toLocaleString()}</span>
+          <span style={{ color: '#fbbf24', fontSize: 18, fontWeight: 900 }}>{count.toLocaleString()}</span>
           הצטרפו ל-Joba24
         </span>
       </div>
@@ -120,27 +120,27 @@ function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
   const iconBg = done ? 'rgba(52,211,153,0.15)' : pending ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.08)';
 
   const useCustomBadge = !!customIcon;
-  const badgeSize = 34;
+  const badgeSize = 38;
 
   const iconContent = useCustomBadge
     ? React.cloneElement(customIcon, { done, size: badgeSize })
     : done
-      ? <CheckCircle2 size={20} color="#34d399" strokeWidth={2.5} />
-      : <Icon size={20} color="rgba(255,255,255,0.75)" />;
+      ? <CheckCircle2 size={22} color="#34d399" strokeWidth={2.5} />
+      : <Icon size={22} color="rgba(255,255,255,0.75)" />;
 
   return (
-    <div style={{ marginBottom: 5 }}>
+    <div style={{ marginBottom: 8 }}>
       <div style={{
         background: bg, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        border: `1.5px solid ${border}`, borderRadius: 14, padding: '11px 13px',
-        display: 'flex', alignItems: 'center', gap: 10,
+        border: `1.5px solid ${border}`, borderRadius: 16, padding: '14px 16px',
+        display: 'flex', alignItems: 'center', gap: 12,
       }}>
         {/* When a custom badge is used, the box is transparent — only the badge shows.
             No double-circle effect. */}
         <div style={{
-          width: useCustomBadge ? badgeSize : 40,
-          height: useCustomBadge ? badgeSize : 40,
-          borderRadius: useCustomBadge ? '50%' : 10,
+          width: useCustomBadge ? badgeSize : 44,
+          height: useCustomBadge ? badgeSize : 44,
+          borderRadius: useCustomBadge ? '50%' : 12,
           flexShrink: 0,
           background: useCustomBadge ? 'transparent' : iconBg,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -149,11 +149,11 @@ function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
           {iconContent}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: done ? 'rgba(255,255,255,0.95)' : 'white' }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: done ? 'rgba(255,255,255,0.95)' : 'white' }}>
             {title}
           </div>
           {subtitle && (
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4, marginTop: 2 }}>{subtitle}</div>
+            <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, marginTop: 3 }}>{subtitle}</div>
           )}
         </div>
         {action}
@@ -277,23 +277,23 @@ export default function PreLaunchWaitingPage({ me }) {
       <div style={{
         flex: 1, overflowY: 'auto', overflowX: 'hidden',
         WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
-        padding: 'max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom))',
+        padding: 'max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom))',
         position: 'relative', zIndex: 1,
       }}>
 
         {/* ── Hero ── */}
-        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 16, overflow: 'hidden',
-            margin: '0 auto 6px', border: '2px solid rgba(255,255,255,0.2)',
+            width: 64, height: 64, borderRadius: 18, overflow: 'hidden',
+            margin: '0 auto 8px', border: '2px solid rgba(255,255,255,0.2)',
             boxShadow: '0 6px 22px rgba(0,0,0,0.3)',
           }}>
             <img src={BRAND_LOGO} alt="Joba24" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.25 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: 'white', margin: 0, lineHeight: 1.25 }}>
             {me?.full_name ? `${me.full_name.split(' ')[0]}, הפרופיל שלך מוכן!` : 'הפרופיל שלך מוכן!'}
           </h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.88)', margin: '8px auto 0', lineHeight: 1.55, maxWidth: 330, fontWeight: 500 }}>
+          <p style={{ fontSize: 17.5, color: 'rgba(255,255,255,0.9)', margin: '10px auto 0', lineHeight: 1.6, maxWidth: 340, fontWeight: 500 }}>
             זהו מסך זמני לקראת הפתיחה! בימים הקרובים יתחילו לעלות ל־Joba24 המון משימות ועבודות חדשות שתוכל לראות, לבחור ולהגיש אליהן מועמדות ישירות מהאפליקציה.
           </p>
         </div>
@@ -302,12 +302,12 @@ export default function PreLaunchWaitingPage({ me }) {
         {!inApp && (
           <div style={{
             background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-            border: '1.5px solid rgba(251,191,36,0.3)', borderRadius: 16,
-            padding: '12px 14px 14px', marginBottom: 12, textAlign: 'center',
+            border: '1.5px solid rgba(251,191,36,0.3)', borderRadius: 18,
+            padding: '14px 16px 16px', marginBottom: 16, textAlign: 'center',
           }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <Download size={15} color="#fbbf24" />
-              <span style={{ fontSize: 14, fontWeight: 800, color: 'white' }}>הורד את האפליקציה ותישאר מעודכן</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+              <Download size={17} color="#fbbf24" />
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'white' }}>הורד את האפליקציה ותישאר מעודכן</span>
             </div>
             <StoreDownloadButtons size="md" />
           </div>
@@ -316,9 +316,8 @@ export default function PreLaunchWaitingPage({ me }) {
         {/* ═══ CHECKLIST ═══ */}
         <>
             {/* Section header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <Zap size={18} color="#fbbf24" />
-              <span style={{ fontSize: 17, fontWeight: 800, color: 'white' }}>כדי שלא תפספס משימה</span>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 19, fontWeight: 800, color: 'white' }}>כדי שלא תפספס משימה</span>
             </div>
 
             {/* Step 1: Notifications */}
@@ -370,7 +369,7 @@ export default function PreLaunchWaitingPage({ me }) {
 
             {/* Connected platforms chips */}
             {isSocialConnected && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4, marginBottom: 6, paddingRight: 4 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 8, paddingRight: 4 }}>
                 {connectedPlatforms.map(p => (
                   <span key={p.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 99, padding: '5px 10px 5px 6px' }}>
                     <span style={{ width: 18, height: 18, borderRadius: 5, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -399,27 +398,27 @@ export default function PreLaunchWaitingPage({ me }) {
         <button
           onClick={() => navigate('/join?edit=1&preview=1')}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '9px 16px', borderRadius: 12, margin: '0 auto 2px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            padding: '11px 20px', borderRadius: 14, margin: '0 auto 4px',
             background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
-            color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 700, cursor: 'pointer',
             minHeight: 'unset', minWidth: 'unset',
           }}
         >
-          <Pencil size={13} color="rgba(255,255,255,0.6)" />
+          <Pencil size={14} color="rgba(255,255,255,0.6)" />
           שינוי קטגוריות והעדפות
         </button>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 10 }}>
+        <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginBottom: 14 }}>
           ניתן לעדכן את ההעדפות בכל שלב.
         </div>
 
         {/* Footer links */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'nowrap' }}>
-          <Link to="/terms" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>|</span>
-          <Link to="/privacy" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>|</span>
-          <Link to="/faq" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('faq_title')}</Link>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 4, flexWrap: 'nowrap' }}>
+          <Link to="/terms" style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13.5 }}>|</span>
+          <Link to="/privacy" style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
+          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13.5 }}>|</span>
+          <Link to="/faq" style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('faq_title')}</Link>
         </div>
       </div>
 

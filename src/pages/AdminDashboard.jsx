@@ -524,7 +524,10 @@ function KycButtons({ user, kycStatus }) {
 export default function AdminDashboard() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState('tasks');
+  const [tab, setTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('tab') || 'tasks';
+  });
   const [taskSearch, setTaskSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [taskStatusFilter, setTaskStatusFilter] = useState('');
