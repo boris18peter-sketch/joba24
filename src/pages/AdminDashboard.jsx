@@ -674,10 +674,15 @@ export default function AdminDashboard() {
   }
 
   const handleToggleBlock = async (user) => {
-    await base44.entities.User.update(user.id, { is_blocked: !user.is_blocked });
-    queryClient.setQueryData(['adminUsers'], (old = []) =>
-      old.map(u => u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u)
-    );
+    try {
+      await base44.entities.User.update(user.id, { is_blocked: !user.is_blocked });
+      queryClient.setQueryData(['adminUsers'], (old = []) =>
+        old.map(u => u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u)
+      );
+    } catch (e) {
+      toast.error(e.message?.includes('Rate limit') ? 'יותר מדי פעולות — נסה עוד רגע' : 'שגיאה: ' + (e.message || 'לא ניתן לעדכן'));
+      throw e;
+    }
   };
 
   const handleSendCredits = async (user, amount, note) => {
@@ -875,8 +880,21 @@ export default function AdminDashboard() {
                 <button
                   onClick={async () => {
                     const unapproved = allUsers.filter(u => !u.is_approved && u.role !== 'admin');
-                    for (const u of unapproved) { await base44.entities.User.update(u.id, { is_approved: true }); }
-                    queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+                    if (unapproved.length === 0) return;
+                    try {
+                      // bulkUpdate sends a single batched request (up to 500) instead
+                      // of N sequential update calls, which would hit the platform
+                      // rate limit ("Rate limit exceeded") on large lists.
+                      await base44.entities.User.bulkUpdate(
+                        unapproved.map(u => ({ id: u.id, is_approved: true }))
+                      );
+                      queryClient.setQueryData(['adminUsers'], (old = []) =>
+                        old.map(u => u.is_approved || u.role === 'admin' ? u : { ...u, is_approved: true })
+                      );
+                      toast.success(`${unapproved.length} משתמשים אושרו`);
+                    } catch (e) {
+                      toast.error('שגיאה באישור מרוכז: ' + (e.message || ''));
+                    }
                   }}
                   style={{ height: 36, padding: '0 12px', borderRadius: 10, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
                 >
