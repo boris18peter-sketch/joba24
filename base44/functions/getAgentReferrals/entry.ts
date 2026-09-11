@@ -82,6 +82,8 @@ export default async function(req) {
     const notificationsEnabled = referredUsers.filter(u =>
       u.fcm_tokens?.length > 0
     ).length;
+    const webRegistered = referredUsers.filter(u => u.registration_source === 'web').length;
+    const nativeRegistered = referredUsers.filter(u => u.registration_source === 'native').length;
 
     return Response.json({
       users: referredUsers,
@@ -95,6 +97,8 @@ export default async function(req) {
       funnel: {
         downloads: referralEvents.length,
         registered: referredUsers.length,
+        webRegistered,
+        nativeRegistered,
         profileCompleted,
         kycSubmitted,
         kycApproved,

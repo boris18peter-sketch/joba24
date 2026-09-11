@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Users, ShieldCheck, Loader2, Download, LogIn, TrendingUp, ChevronLeft, Smartphone } from 'lucide-react';
+import { Users, ShieldCheck, Loader2, Download, LogIn, TrendingUp, ChevronLeft, Smartphone, Globe } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -201,6 +201,11 @@ export default function AgentReferralsTab() {
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.full_name || u.email}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
                             <LogIn size={9} /> {u.created_date ? formatDistanceToNow(new Date(u.created_date), { addSuffix: true, locale: he }) : '—'}
+                            {u.registration_source === 'web' && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(124,58,237,0.1)', color: '#7c3aed', padding: '1px 5px', borderRadius: 6, fontWeight: 700, fontSize: 9 }}>
+                                <Globe size={8} /> דפדפן
+                              </span>
+                            )}
                           </div>
                         </div>
                         {u.created_date && <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>{format(new Date(u.created_date), 'dd/MM/yy')}</span>}

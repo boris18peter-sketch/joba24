@@ -145,6 +145,16 @@ export const AuthProvider = ({ children }) => {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
       }
 
+      // Track registration source (native app vs web browser) — only set once
+      try {
+        if (!currentUser.registration_source) {
+          const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+          await base44.auth.updateMe({ registration_source: isNative ? 'native' : 'web' });
+        }
+      } catch (srcErr) {
+        console.error('[Joba24] Auth: failed to set registration_source:', srcErr?.message);
+      }
+
       // Link this device's ReferralEvents to the authenticated user (pre-registration downloads)
       try {
         const deviceId = localStorage.getItem('joba24_device_id');
