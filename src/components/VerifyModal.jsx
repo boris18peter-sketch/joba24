@@ -179,20 +179,22 @@ export default function VerifyModal({ onClose, onSuccess }) {
       background: 'rgba(5,15,40,0.65)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       backdropFilter: 'blur(8px)',
-      touchAction: 'none',
     }} onClick={(e) => e.target === e.currentTarget && onClose()}>
     <div style={{
         background: '#fafbff',
         borderRadius: '28px 28px 0 0',
         width: '100%', maxWidth: 480,
         maxHeight: '94vh', overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        WebkitOverflowScrolling: 'touch',
+        paddingBottom: 'max(20px, env(safe-area-inset-bottom))',
         boxShadow: '0 -16px 60px rgba(0,0,0,0.2)',
       }} dir="rtl">
 
         {step === 1 ? (
           <>
             {/* Header */}
-            <div style={{ padding: '24px 20px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ padding: '24px 20px 12px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10, background: '#fafbff', borderRadius: '28px 28px 0 0' }}>
               <div style={{ flex: 1 }}>
                 {/* Progress */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
