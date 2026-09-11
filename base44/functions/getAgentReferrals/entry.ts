@@ -73,7 +73,7 @@ export default async function(req) {
       u.phone && u.preferred_categories?.length > 0
     ).length;
     const kycSubmitted = referredUsers.filter(u =>
-      u.kyc_status || u.id_number || u.id_photo_url
+      u.kyc_status || u.is_verified || u.id_number || u.id_photo_url
     ).length;
     const kycApproved = referredUsers.filter(u => u.is_verified).length;
     const socialConnected = referredUsers.filter(u =>

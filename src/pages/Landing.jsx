@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import { isStandaloneApp } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useRegistrationCount } from '@/hooks/useRegistrationCount';
 
 export default function Landing() {
   const [email, setEmail] = useState('');
@@ -14,6 +15,7 @@ export default function Landing() {
   const [interestType, setInterestType] = useState('both');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const regCount = useRegistrationCount();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,6 +68,12 @@ export default function Landing() {
           <p className="text-xl text-white/90 mb-10 leading-relaxed">
             בין אם זה הובלה, תיקון, ניקיון או כל עבודה אחרת — מצא עוזר מוכשר בתוך דקות ובמחיר הוגן.
           </p>
+          <div style={{ marginBottom: 24 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '10px 24px', backdropFilter: 'blur(8px)' }}>
+              <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 900 }}>{regCount.toLocaleString()}</span>
+              <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700 }}>כבר הצטרפו ל-Joba24</span>
+            </span>
+          </div>
           <a href="#signup" className="inline-block">
             <Button className="h-14 px-10 text-base font-bold rounded-2xl bg-white hover:bg-gray-100 text-primary shadow-xl">
               הרשם עכשיו ✨

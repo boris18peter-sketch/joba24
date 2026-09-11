@@ -98,10 +98,10 @@ export default function AgentDashboard() {
   }).length;
 
   const stats = [
-    { label: 'הורדות אפליקציה', value: totalDownloads, color: '#7c3aed' },
-    { label: 'נרשמו', value: registeredDownloads, color: '#059669' },
+    { label: 'הורדות', value: funnel.downloads || 0, color: '#7c3aed' },
+    { label: 'נרשמו', value: funnel.registered || 0, color: '#059669' },
     { label: 'מילאו פרופיל', value: funnel.profileCompleted || 0, color: '#1a6fd4' },
-    { label: 'אומתו', value: funnel.kycApproved || 0, color: '#d97706' },
+    { label: 'אומתו (KYC)', value: funnel.kycApproved || 0, color: '#d97706' },
   ];
 
   const formatLastActive = (dateStr) => {
@@ -160,44 +160,54 @@ export default function AgentDashboard() {
 
       <div style={{ padding: '16px 16px 80px' }}>
 
-        {/* Funnel — where your users are in the onboarding process */}
+        {/* Funnel — clear sequential conversion: downloads → register → profile → KYC → social */}
         {funnel.registered !== undefined && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px 16px', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '16px 16px 18px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
               <TrendingUp size={15} color="#1a6fd4" />
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>משפך ההמרה</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>משפך ההמרה</span>
+              <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 'auto' }}>שלב מתוך הקודם</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[
-                { label: 'הורידו', value: funnel.downloads || 0, color: '#7c3aed' },
-                { label: 'נרשמו', value: funnel.registered || 0, color: '#1a6fd4' },
-                { label: 'מילאו פרופיל', value: funnel.profileCompleted || 0, color: '#059669' },
-                { label: 'הגישו KYC', value: funnel.kycSubmitted || 0, color: '#d97706' },
-                { label: 'אומתו', value: funnel.kycApproved || 0, color: '#16a34a' },
-                { label: 'חיברו רשת', value: funnel.socialConnected || 0, color: '#92400e' },
-                { label: 'הפעילו התראות', value: funnel.notificationsEnabled || 0, color: '#1d4ed8' },
-              ].map((step, i, arr) => {
-                const prev = i > 0 ? arr[i - 1].value : 0;
-                const conv = prev > 0 ? Math.round((step.value / prev) * 100) : null;
-                return (
-                  <div key={step.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 90, fontSize: 11, fontWeight: 700, color: 'var(--text-2)', flexShrink: 0 }}>{step.label}</div>
-                    <div style={{ flex: 1, height: 22, borderRadius: 6, background: 'var(--surface-3)', overflow: 'hidden', position: 'relative' }}>
-                      <div style={{
-                        height: '100%', borderRadius: 6, background: step.color,
-                        width: `${totalDownloads > 0 ? Math.max(3, (step.value / totalDownloads) * 100) : 0}%`,
-                        transition: 'width 0.4s ease',
-                      }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(() => {
+                const steps = [
+                  { label: 'הורידו את האפליקציה', value: funnel.downloads || 0, color: '#7c3aed' },
+                  { label: 'נרשמו (התחברו)', value: funnel.registered || 0, color: '#1a6fd4' },
+                  { label: 'מילאו פרופיל עובד', value: funnel.profileCompleted || 0, color: '#059669' },
+                  { label: 'הגישו אימות KYC', value: funnel.kycSubmitted || 0, color: '#d97706' },
+                  { label: 'אומתו (וי ירוק)', value: funnel.kycApproved || 0, color: '#16a34a' },
+                  { label: 'חיברו רשת חברתית', value: funnel.socialConnected || 0, color: '#92400e' },
+                ];
+                const maxVal = steps[0].value || 1;
+                return steps.map((step, i) => {
+                  const prev = i > 0 ? steps[i - 1].value : 0;
+                  const conv = prev > 0 ? Math.round((step.value / prev) * 100) : null;
+                  return (
+                    <div key={step.label}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>{step.label}</span>
+                            <span style={{ fontSize: 14, fontWeight: 900, color: step.color }}>
+                              {step.value}
+                              {conv !== null && i > 0 && (
+                                <span style={{ fontSize: 10, color: conv >= 50 ? '#16a34a' : '#d97706', fontWeight: 700, marginRight: 5 }}> ({conv}%)</span>
+                              )}
+                            </span>
+                          </div>
+                          <div style={{ height: 10, borderRadius: 6, background: 'var(--surface-3)', overflow: 'hidden' }}>
+                            <div style={{
+                              height: '100%', borderRadius: 6, background: step.color,
+                              width: `${maxVal > 0 ? Math.max(2, (step.value / maxVal) * 100) : 0}%`,
+                              transition: 'width 0.4s ease',
+                            }} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ minWidth: 55, textAlign: 'left', flexShrink: 0 }}>
-                      <span style={{ fontSize: 13, fontWeight: 900, color: step.color }}>{step.value}</span>
-                      {conv !== null && i > 0 && (
-                        <span style={{ fontSize: 9, color: conv >= 50 ? '#16a34a' : '#d97706', fontWeight: 700, marginRight: 4 }}> ({conv}%)</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
         )}

@@ -14,6 +14,7 @@ import { getCityLabel } from '@/lib/cityLabels';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { useLanguage } from '@/lib/LanguageContext';
+import RotatingPromoText from '@/components/RotatingPromoText';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
@@ -336,7 +337,6 @@ export default function WorkerOnboarding() {
 
   // ── Stepper ──
   const currentStep = STEPS[step];
-  const Icon = currentStep.icon;
   const progress = ((step + 1) / (totalSteps + 1)) * 100;
   const isPhotoStep = currentStep.type === 'photo';
   const canSkip = isPhotoStep;
@@ -355,7 +355,7 @@ export default function WorkerOnboarding() {
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* ── Header with progress ── */}
       <div style={{ padding: 'max(12px, env(safe-area-inset-top)) 16px 12px', background: 'var(--surface-2)', borderBottom: '1px solid var(--border-1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           {step > 0 ? (
             <button onClick={handleBack} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-3)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ChevronRight size={18} color="var(--text-2)" />
@@ -363,11 +363,11 @@ export default function WorkerOnboarding() {
           ) : (
             <div style={{ width: 36, height: 36 }} />
           )}
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }}>{step + 1} / {totalSteps}</span>
-          <button onClick={() => navigate('/')} style={{ marginRight: 'auto', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('wo_skip')}</button>
-        </div>
-        <div style={{ textAlign: 'center', marginBottom: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>השלם פרופיל עובד וקבל עבודות</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{step + 1} / {totalSteps}</span>
+          <div style={{ flex: 1, textAlign: 'center', overflow: 'hidden' }}>
+            <RotatingPromoText messages={['השלם פרופיל עובד וקבל עבודות']} style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }} />
+          </div>
+          <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>{t('wo_skip')}</button>
         </div>
         {/* Progress bar */}
         <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
@@ -397,11 +397,8 @@ export default function WorkerOnboarding() {
             transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
             style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
-            {/* Fixed header area — icon + title + subtitle */}
-            <div style={{ padding: '24px 20px 0', flexShrink: 0 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 18, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, border: '1px solid #bfdbfe' }}>
-                <Icon size={26} color="#1a6fd4" />
-              </div>
+            {/* Fixed header area — title + subtitle (icon removed to save space) */}
+            <div style={{ padding: '20px 20px 0', flexShrink: 0 }}>
               <h2 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)', margin: 0, marginBottom: 4, lineHeight: 1.3 }}>{currentStep.title}</h2>
               <p style={{ fontSize: 14, color: 'var(--text-3)', margin: 0, marginBottom: 6, lineHeight: 1.5 }}>{currentStep.subtitle}</p>
               <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 5, opacity: 0.85, background: 'var(--surface-3)', padding: '6px 10px', borderRadius: 10, border: '1px solid var(--border-1)' }}>

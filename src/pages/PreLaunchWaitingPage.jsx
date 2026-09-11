@@ -129,10 +129,10 @@ function StepRow({ icon: Icon, title, subtitle, state, action, customIcon, DoneI
       : <Icon size={22} color="rgba(255,255,255,0.75)" />;
 
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div style={{ marginBottom: 18 }}>
       <div style={{
         background: bg, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        border: `1.5px solid ${border}`, borderRadius: 16, padding: '14px 16px',
+        border: `1.5px solid ${border}`, borderRadius: 16, padding: '16px 18px',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         {/* When a custom badge is used, the box is transparent — only the badge shows.
@@ -283,7 +283,7 @@ export default function PreLaunchWaitingPage({ me }) {
       }}>
 
         {/* ── Hero ── */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18, overflow: 'hidden',
             margin: '0 auto 8px', border: '2px solid rgba(255,255,255,0.2)',
@@ -369,27 +369,7 @@ export default function PreLaunchWaitingPage({ me }) {
               }
             />
 
-            {/* Connected platforms chips */}
-            {isSocialConnected && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 8, paddingRight: 4 }}>
-                {connectedPlatforms.map(p => (
-                  <span key={p.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 99, padding: '5px 10px 5px 6px' }}>
-                    <span style={{ width: 18, height: 18, borderRadius: 5, background: p.brandColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <p.icon size={11} color="white" />
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>@{me?.[`${p.key}_username`]}</span>
-                    <button
-                      onClick={() => handleDisconnectSocial(p.key)}
-                      disabled={socialLoading}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', opacity: 0.6, minHeight: 'unset', minWidth: 'unset' }}
-                      title="נתק"
-                    >
-                      <ChevronLeft size={14} color="rgba(255,255,255,0.6)" style={{ transform: 'rotate(90deg)' }} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+
 
             {/* Live counter */}
             <RegistrationCounter />

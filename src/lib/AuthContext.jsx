@@ -130,8 +130,14 @@ export const AuthProvider = ({ children }) => {
         const refFromUrl = urlParams.get('ref');
         const savedRef = refFromUrl || localStorage.getItem('joba24_ref_code');
         if (savedRef && !currentUser.referred_by_agent_code) {
-          await base44.auth.updateMe({ referred_by_agent_code: savedRef });
-          localStorage.removeItem('joba24_ref_code');
+          try {
+            await base44.auth.updateMe({ referred_by_agent_code: savedRef });
+            // Only remove from localStorage after successful update — otherwise
+            // linkReferralDevice can still recover it from ReferralEvent records.
+            localStorage.removeItem('joba24_ref_code');
+          } catch (e) {
+            console.error('[Joba24] Auth: updateMe referred_by_agent_code failed, keeping ref in localStorage:', e?.message);
+          }
           // Clean URL to prevent re-processing
           if (refFromUrl) window.history.replaceState({}, '', window.location.pathname);
         }

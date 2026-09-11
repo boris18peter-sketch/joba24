@@ -66,6 +66,10 @@ export default function AgentReferralsTab() {
         downloads: downloads.length,
         registeredDownloads,
         pendingDownloads: downloads.length - registeredDownloads,
+        profileCompleted: referred.filter(u => u.phone && u.preferred_categories?.length > 0).length,
+        kycSubmitted: referred.filter(u => u.kyc_status || u.is_verified || u.id_number || u.id_photo_url).length,
+        kycApproved: referred.filter(u => u.is_verified).length,
+        socialConnected: referred.filter(u => u.instagram_verified || u.facebook_verified || u.tiktok_verified).length,
         referredUsers: referred,
         downloadEvents: downloads.filter(e => !e.registered).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)),
       };
@@ -75,12 +79,15 @@ export default function AgentReferralsTab() {
   const totalRegistered = rows.reduce((s, r) => s + r.registered, 0);
   const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
   const totalDownloads = rows.reduce((s, r) => s + r.downloads, 0);
+  const totalProfileCompleted = rows.reduce((s, r) => s + r.profileCompleted, 0);
+  const totalKycApproved = rows.reduce((s, r) => s + r.kycApproved, 0);
+  const totalSocialConnected = rows.reduce((s, r) => s + r.socialConnected, 0);
   const conversion = totalDownloads > 0 ? Math.round((totalRegistered / totalDownloads) * 100) : 0;
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Summary stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+      {/* Summary stats — full funnel */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
           <Smartphone size={16} color="#7c3aed" style={{ marginBottom: 4 }} />
           <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalDownloads}</div>
@@ -93,13 +100,25 @@ export default function AgentReferralsTab() {
         </div>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
           <TrendingUp size={16} color="#059669" style={{ marginBottom: 4 }} />
-          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{agents.length}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>סוכנים</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalProfileCompleted}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>מילאו פרופיל</div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
+        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
+          <ShieldCheck size={16} color="#d97706" style={{ marginBottom: 4 }} />
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalKycApproved}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>אומתו (KYC)</div>
         </div>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
-          <Download size={16} color="#d97706" style={{ marginBottom: 4 }} />
-          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalClicks}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>לחיצות</div>
+          <Users size={16} color="#92400e" style={{ marginBottom: 4 }} />
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalSocialConnected}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>חיברו רשת</div>
+        </div>
+        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
+          <Download size={16} color="#7c3aed" style={{ marginBottom: 4 }} />
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{agents.length}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>סוכנים</div>
         </div>
       </div>
       <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginBottom: 14 }}>
@@ -160,6 +179,36 @@ export default function AgentReferralsTab() {
 
               {isOpen && (
                 <div style={{ borderTop: '1px solid var(--border-1)', padding: '10px 14px 12px', background: 'var(--surface-1)' }}>
+                  {/* Per-agent funnel */}
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-2)', marginBottom: 6 }}>משפך ההמרה</div>
+                    {(() => {
+                      const steps = [
+                        { label: 'הורידו', value: r.downloads, color: '#7c3aed' },
+                        { label: 'נרשמו', value: r.registered, color: '#1a6fd4' },
+                        { label: 'מילאו פרופיל', value: r.profileCompleted, color: '#059669' },
+                        { label: 'אומתו KYC', value: r.kycApproved, color: '#d97706' },
+                        { label: 'חיברו רשת', value: r.socialConnected, color: '#92400e' },
+                      ];
+                      const maxVal = steps[0].value || 1;
+                      return steps.map((s, i) => {
+                        const prev = i > 0 ? steps[i - 1].value : 0;
+                        const conv = prev > 0 ? Math.round((s.value / prev) * 100) : null;
+                        return (
+                          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <span style={{ width: 70, fontSize: 10, fontWeight: 700, color: 'var(--text-2)', flexShrink: 0 }}>{s.label}</span>
+                            <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'var(--surface-3)', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', borderRadius: 4, background: s.color, width: `${maxVal > 0 ? Math.max(2, (s.value / maxVal) * 100) : 0}%` }} />
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 900, color: s.color, minWidth: 35, textAlign: 'left', flexShrink: 0 }}>
+                              {s.value}{conv !== null && i > 0 && <span style={{ fontSize: 8, color: 'var(--text-3)' }}> ({conv}%)</span>}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
                   {/* Pending downloads */}
                   {r.downloadEvents.length > 0 && (
                     <>
