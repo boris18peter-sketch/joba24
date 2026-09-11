@@ -340,6 +340,16 @@ export default function WorkerOnboarding() {
   const progress = ((step + 1) / (totalSteps + 1)) * 100;
   const isPhotoStep = currentStep.type === 'photo';
   const canSkip = isPhotoStep;
+  const canProceed = (() => {
+    switch (currentStep.type) {
+      case 'chips': return (data.preferred_categories || []).length > 0;
+      case 'cities': return (data.preferred_cities || []).length > 0;
+      case 'textarea': return (data.bio || '').trim().length > 0;
+      case 'phone': return (data.phone || '').trim().length > 0;
+      case 'photo': return true;
+      default: return true;
+    }
+  })();
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--surface-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -355,6 +365,9 @@ export default function WorkerOnboarding() {
           )}
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }}>{step + 1} / {totalSteps}</span>
           <button onClick={() => navigate('/')} style={{ marginRight: 'auto', background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t('wo_skip')}</button>
+        </div>
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>השלם פרופיל עובד וקבל עבודות</span>
         </div>
         {/* Progress bar */}
         <div style={{ height: 4, background: 'var(--surface-3)', borderRadius: 99, overflow: 'hidden' }}>
@@ -628,13 +641,13 @@ export default function WorkerOnboarding() {
       <div style={{ flexShrink: 0, padding: '12px 20px max(12px, env(safe-area-inset-bottom))', background: 'var(--surface-2)', borderTop: '1px solid var(--border-1)' }}>
         <button
           onClick={handleNext}
-          disabled={saving}
+          disabled={saving || !canProceed}
           style={{
             width: '100%', padding: '15px 0', borderRadius: 16,
-            background: saving ? '#94a3b8' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
-            color: 'white', fontSize: 17, fontWeight: 900, border: 'none',
-            cursor: saving ? 'not-allowed' : 'pointer',
-            boxShadow: '0 8px 24px rgba(26,111,212,0.3)',
+            background: (saving || !canProceed) ? '#e2e8f0' : 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+            color: (saving || !canProceed) ? '#94a3b8' : 'white', fontSize: 17, fontWeight: 900, border: 'none',
+            cursor: (saving || !canProceed) ? 'not-allowed' : 'pointer',
+            boxShadow: (saving || !canProceed) ? 'none' : '0 8px 24px rgba(26,111,212,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
         >

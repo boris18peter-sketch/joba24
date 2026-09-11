@@ -112,7 +112,7 @@ function RegistrationCounter() {
 }
 
 // ── Compact step row — shows "✓ X פעיל" when done ──
-function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
+function StepRow({ icon: Icon, title, subtitle, state, action, customIcon, DoneIcon }) {
   const done = state === 'done';
   const pending = state === 'pending';
   const border = done ? 'rgba(52,211,153,0.35)' : pending ? 'rgba(251,191,36,0.35)' : 'rgba(255,255,255,0.1)';
@@ -125,11 +125,11 @@ function StepRow({ icon: Icon, title, subtitle, state, action, customIcon }) {
   const iconContent = useCustomBadge
     ? React.cloneElement(customIcon, { done, size: badgeSize })
     : done
-      ? <CheckCircle2 size={22} color="#34d399" strokeWidth={2.5} />
+      ? (DoneIcon ? <DoneIcon size={22} color="#34d399" strokeWidth={2.5} /> : <CheckCircle2 size={22} color="#34d399" strokeWidth={2.5} />)
       : <Icon size={22} color="rgba(255,255,255,0.75)" />;
 
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div style={{ marginBottom: 12 }}>
       <div style={{
         background: bg, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         border: `1.5px solid ${border}`, borderRadius: 16, padding: '14px 16px',
@@ -279,10 +279,11 @@ export default function PreLaunchWaitingPage({ me }) {
         WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain',
         padding: 'max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom))',
         position: 'relative', zIndex: 1,
+        display: 'flex', flexDirection: 'column',
       }}>
 
         {/* ── Hero ── */}
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18, overflow: 'hidden',
             margin: '0 auto 8px', border: '2px solid rgba(255,255,255,0.2)',
@@ -323,6 +324,7 @@ export default function PreLaunchWaitingPage({ me }) {
             {/* Step 1: Notifications */}
             <StepRow
               icon={Bell}
+              DoneIcon={Bell}
               state={notifState}
               title={notifDone ? 'התראות פעילות' : 'התראות'}
               subtitle={notifDone ? 'מומלץ גם להפעיל מיקום בהגדרות למשימות קרובות.' : notifPerm === 'denied' ? 'הפעל התראות מהגדרות הטלפון → Joba24. מומלץ גם להפעיל מיקום.' : 'קבל עדכון מיד על משימה מתאימה. מומלץ גם להפעיל מיקום בהגדרות.'}
@@ -394,6 +396,7 @@ export default function PreLaunchWaitingPage({ me }) {
 
           </>
 
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
         {/* Edit preferences — secondary, smaller */}
         <button
           onClick={() => navigate('/join?edit=1&preview=1')}
@@ -419,6 +422,7 @@ export default function PreLaunchWaitingPage({ me }) {
           <Link to="/privacy" style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('privacy_title')}</Link>
           <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 13.5 }}>|</span>
           <Link to="/faq" style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('faq_title')}</Link>
+        </div>
         </div>
       </div>
 
