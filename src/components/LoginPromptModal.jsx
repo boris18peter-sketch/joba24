@@ -47,6 +47,9 @@ function EmailForm({ onBack, onSuccess }) {
 
   const resolveEmail = () => email.trim();
 
+  // Google Play reviewer bypass — skip real OTP, use fixed code
+  const isReviewerEmail = () => email.trim().toLowerCase() === 'hello@joba24.com';
+
   // Derive a deterministic password from the email.
   // The OTP email is the real security layer — this password is just a gateway
   // so the user never needs to remember or type a password.
@@ -66,6 +69,12 @@ function EmailForm({ onBack, onSuccess }) {
 
   const handleEmailSubmit = async () => {
     if (!validateEmail(email)) return;
+
+    // Reviewer account: go straight to OTP screen (fixed code 2424)
+    if (isReviewerEmail()) {
+      setMode('otp');
+      return;
+    }
 
     const actualEmail = resolveEmail();
     setLoading(true);
@@ -117,6 +126,23 @@ function EmailForm({ onBack, onSuccess }) {
       const actualEmail = resolveEmail();
       const password = derivePassword(actualEmail);
 
+      // Google Play reviewer bypass — fixed code 2424, skip real OTP verification
+      if (isReviewerEmail() && otp.trim() === '2424') {
+        try {
+          await base44.auth.loginViaEmailPassword(email.trim(), password);
+          onSuccess();
+          return;
+        } catch {
+          try {
+            await base44.auth.register({ email: email.trim(), password });
+            setError('חשבון הבדיקה אינו מאומת. יש לאמת אותו פעם אחת מראש.');
+          } catch {
+            setError('חשבון הבדיקה אינו מוגדר. יש ליצור ולאמת אותו פעם אחת מראש.');
+          }
+          return;
+        }
+      }
+
       await base44.auth.verifyOtp({ email: actualEmail, otpCode: otp.trim() });
       await base44.auth.loginViaEmailPassword(actualEmail, password);
       onSuccess();
@@ -151,7 +177,9 @@ function EmailForm({ onBack, onSuccess }) {
         </button>
         <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>אימות באימייל</div>
         <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
-          <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.</>
+          {isReviewerEmail()
+            ? <>הזן את קוד הגישה עבור <strong style={{ color: 'var(--text-1)' }}>{email}</strong>.</>
+            : <>שלחנו קוד אימות ל-<strong style={{ color: 'var(--text-1)' }}>{email}</strong>. הזן את הקוד שקיבלת.</>}
         </div>
         <input
           type="text"
