@@ -385,6 +385,44 @@ export default function PreLaunchWaitingPage({ me }) {
             {/* Live counter */}
             <RegistrationCounter />
 
+            {/* "מה קורה עכשיו?" — replaces old "פרופיל פעיל" card */}
+            <div style={{
+              background: 'rgba(96,165,250,0.1)',
+              border: '1.5px solid rgba(96,165,250,0.25)',
+              borderRadius: 20, padding: '20px 20px', marginBottom: 12,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Bell size={20} color="#60a5fa" />
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#60a5fa' }}>מה קורה עכשיו?</span>
+              </div>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 8px', lineHeight: 1.5 }}>
+                אנחנו מתחילים להכניס משימות בימים הקרובים.
+              </p>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.75)', margin: '0 0 14px', lineHeight: 1.5 }}>
+                כשמתפרסמת משימה שמתאימה לך — נשלח לך התראה מיד.
+              </p>
+              {/* Flow */}
+              <div style={{
+                textAlign: 'center', fontSize: 14, fontWeight: 700,
+                color: 'rgba(255,255,255,0.55)', lineHeight: 1.6,
+                background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: '12px 14px',
+              }}>
+                משימה מתאימה ← 🔔 התראה ← הגשת מועמדות
+              </div>
+              {/* Emphasized reminder — always visible */}
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 8,
+                marginTop: 14, padding: '12px 14px',
+                background: 'rgba(251,191,36,0.12)',
+                border: '1px solid rgba(251,191,36,0.3)',
+                borderRadius: 12,
+              }}>
+                <MapPin size={16} color="#fbbf24" style={{ flexShrink: 0, marginTop: 1 }} />
+                <span style={{ fontSize: 14, color: '#fbbf24', lineHeight: 1.5, fontWeight: 700 }}>
+                  ודא שההתראות והמיקום פעילים בהגדרות הטלפון כדי שלא תפסס הזדמנות.
+                </span>
+              </div>
+            </div>
           </>
 
         {/* Edit preferences — secondary, smaller */}
