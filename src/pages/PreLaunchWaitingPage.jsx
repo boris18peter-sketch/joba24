@@ -101,7 +101,7 @@ function RegistrationCounter() {
         }}>
           כבר
           <span style={{ color: '#fbbf24', fontSize: 16, fontWeight: 900 }}>{count.toLocaleString()}</span>
-          עובדים מוכנים לקבל משימות
+          הצטרפו ל-Joba24
         </span>
       </div>
     </div>
@@ -252,8 +252,6 @@ export default function PreLaunchWaitingPage({ me }) {
   const kycStepState = kycDone ? 'done' : kycStatus === 'pending' ? 'pending' : 'default';
   const socialStepState = socialDone ? 'done' : isSocialConnected ? 'pending' : 'default';
 
-  const allDone = notifDone && kycDone && socialDone;
-
   return (
     <div dir="rtl" style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -308,43 +306,38 @@ export default function PreLaunchWaitingPage({ me }) {
           </div>
         )}
 
-        {/* ═══ COMPLETION STATE — all steps done ═══ */}
-        {allDone ? (
-          <>
-            <div style={{ textAlign: 'center', marginBottom: 18 }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>🎉</div>
-              <h2 style={{ fontSize: 22, fontWeight: 900, color: 'white', margin: '0 0 6px' }}>הכול מוכן!</h2>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: 0 }}>
-                הפרופיל שלך הושלם ב־100%
-              </p>
-            </div>
+        {/* ═══ PROGRESS BAR + CHECKLIST — always shown ═══ */}
+        <>
+          {/* Progress indicator */}
+          {(() => {
+            const completed = [notifDone, kycDone, socialDone].filter(Boolean).length;
+            const pct = Math.round((completed / 3) * 100);
+            return (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'rgba(255,255,255,0.85)' }}>השלמת פרופיל</span>
+                  <span style={{ fontSize: 13, fontWeight: 900, color: completed === 3 ? '#34d399' : '#fbbf24' }}>{completed}/3</span>
+                </div>
+                <div style={{ height: 8, borderRadius: 99, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: 99,
+                    background: completed === 3
+                      ? 'linear-gradient(90deg,#34d399,#059669)'
+                      : 'linear-gradient(90deg,#fbbf24,#d97706)',
+                    width: `${pct}%`,
+                    transition: 'width 0.5s cubic-bezier(0.32,1.2,0.64,1)',
+                    boxShadow: completed === 3 ? '0 0 12px rgba(52,211,153,0.5)' : '0 0 12px rgba(251,191,36,0.4)',
+                  }} />
+                </div>
+                {completed === 3 && (
+                  <div style={{ textAlign: 'center', marginTop: 8, fontSize: 13, fontWeight: 800, color: '#34d399' }}>
+                    ✨ הפרופיל שלך מושלם! משימות בדרך.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
-            <div style={{
-              background: 'var(--surface-2)', borderRadius: 16, padding: '4px 0', marginBottom: 18,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            }}>
-              <CompletionItem icon={<GreenBadgeIcon size={20} />} label="זהות מאומתת" />
-              <CompletionItem icon={<GoldBadgeIcon size={20} />} label="רשת חברתית מחוברת" />
-              <CompletionItem icon={<Bell size={16} color="#34d399" />} label="התראות פעילות" />
-            </div>
-
-            <div style={{
-              textAlign: 'center',
-              background: 'rgba(52,211,153,0.08)',
-              border: '1px solid rgba(52,211,153,0.2)',
-              borderRadius: 16, padding: '16px 18px', marginBottom: 14,
-            }}>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', margin: 0, fontWeight: 600, lineHeight: 1.5 }}>
-                בימים הקרובים האפליקציה תיפתח במלואה ותתחיל לקבל משימות שמתאימות לך.
-              </p>
-            </div>
-
-            <RegistrationCounter />
-          </>
-
-        ) : (
-          /* ═══ CHECKLIST STATE — steps still to complete ═══ */
-          <>
             {/* Section header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Zap size={18} color="#fbbf24" />
@@ -464,7 +457,6 @@ export default function PreLaunchWaitingPage({ me }) {
               </div>
             </div>
           </>
-        )}
 
         {/* Edit preferences — secondary, smaller */}
         <button

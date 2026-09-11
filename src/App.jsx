@@ -129,7 +129,12 @@ function CaptureRefCode() {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     if (ref) {
-      localStorage.setItem('joba24_ref_code', ref);
+      // FIRST-TOUCH: only store the ref code if no previous one exists.
+      // A user who clicked agent A's link then agent B's link stays attributed
+      // to agent A (the first agent). This is critical for commission accuracy.
+      if (!localStorage.getItem('joba24_ref_code')) {
+        localStorage.setItem('joba24_ref_code', ref);
+      }
       // Track the click (once per session per ref code) + create ReferralEvent
       const clickKey = `joba24_ref_click_${ref}`;
       if (!sessionStorage.getItem(clickKey)) {
