@@ -68,7 +68,7 @@ export default function AgentReferralsTab() {
         pendingDownloads: downloads.length - registeredDownloads,
         profileCompleted: referred.filter(u => u.phone && u.preferred_categories?.length > 0).length,
         kycSubmitted: referred.filter(u => u.kyc_status || u.is_verified || u.id_number || u.id_photo_url).length,
-        kycApproved: referred.filter(u => u.is_verified).length,
+        kycApproved: referred.filter(u => u.kyc_status === 'approved').length,
         socialConnected: referred.filter(u => u.instagram_verified || u.facebook_verified || u.tiktok_verified).length,
         referredUsers: referred,
         downloadEvents: downloads.filter(e => !e.registered).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)),

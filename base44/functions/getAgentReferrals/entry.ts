@@ -75,7 +75,7 @@ export default async function(req) {
     const kycSubmitted = referredUsers.filter(u =>
       u.kyc_status || u.is_verified || u.id_number || u.id_photo_url
     ).length;
-    const kycApproved = referredUsers.filter(u => u.is_verified).length;
+    const kycApproved = referredUsers.filter(u => u.kyc_status === 'approved').length;
     const socialConnected = referredUsers.filter(u =>
       u.instagram_verified || u.facebook_verified || u.tiktok_verified
     ).length;

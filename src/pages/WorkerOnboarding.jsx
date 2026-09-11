@@ -15,6 +15,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { useLanguage } from '@/lib/LanguageContext';
 import RotatingPromoText from '@/components/RotatingPromoText';
+import { useRegistrationCount } from '@/hooks/useRegistrationCount';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
@@ -54,6 +55,7 @@ export default function WorkerOnboarding() {
   const [showCityOther, setShowCityOther] = useState(false);
   const [customCity, setCustomCity] = useState('');
   const isEdit = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('edit') === '1';
+  const regCount = useRegistrationCount();
 
   const { data: me } = useQuery({
     queryKey: ['me'],
@@ -250,6 +252,12 @@ export default function WorkerOnboarding() {
           <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.95)', margin: 0, lineHeight: 1.6, maxWidth: 380, fontWeight: 700 }}>
             {t('wo_hero_body2')}
           </p>
+          <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '10px 24px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+              <span style={{ color: '#fbbf24', fontSize: 20, fontWeight: 900 }}>{regCount.toLocaleString()}</span>
+              <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700 }}>כבר הצטרפו ל-Joba24</span>
+            </span>
+          </div>
         </div>
 
         {/* Bottom — CTA */}

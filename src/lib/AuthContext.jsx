@@ -151,11 +151,23 @@ export const AuthProvider = ({ children }) => {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
       }
 
-      // Track registration source (native app vs web browser) — only set once
+      // Track registration source + granular platform — only set once
       try {
         if (!currentUser.registration_source) {
           const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
-          await base44.auth.updateMe({ registration_source: isNative ? 'native' : 'web' });
+          // Detect specific platform: ios, android, or web
+          let platform = 'web';
+          if (isNative) {
+            const plat = window.Capacitor?.getPlatform?.();
+            platform = plat === 'ios' ? 'ios' : plat === 'android' ? 'android' : 'native';
+          } else if (typeof navigator !== 'undefined') {
+            const ua = navigator.userAgent || '';
+            if (/Android/i.test(ua) && /;\s*wv\)/i.test(ua)) platform = 'android';
+          }
+          await base44.auth.updateMe({
+            registration_source: isNative ? 'native' : 'web',
+            registration_platform: platform,
+          });
         }
       } catch (srcErr) {
         console.error('[Joba24] Auth: failed to set registration_source:', srcErr?.message);

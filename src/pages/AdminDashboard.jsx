@@ -228,7 +228,26 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
             {isAgent && <span style={{ fontSize: 9, fontWeight: 800, background: '#7c3aed', color: 'white', padding: '1px 6px', borderRadius: 10 }}>סוכן</span>}
             {user.is_blocked && <span style={{ fontSize: 9, fontWeight: 800, background: '#dc2626', color: 'white', padding: '1px 6px', borderRadius: 10 }}>חסום</span>}
           </div>
-          <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy') : ''}</div>
+          <div style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span>{user.email} · {user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy') : ''}</span>
+            {/* Agent attribution */}
+            {user.referred_by_agent_code ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, background: 'rgba(124,58,237,0.1)', color: '#7c3aed', padding: '1px 6px', borderRadius: 6 }}>
+                <Users size={8} /> סוכן: {user.referred_by_agent_code}
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 700, background: 'var(--surface-3)', color: 'var(--text-3)', padding: '1px 6px', borderRadius: 6 }}>
+                אורגני
+              </span>
+            )}
+            {/* Platform */}
+            {(() => {
+              const plat = user.registration_platform || (user.registration_source === 'native' ? 'native' : 'web');
+              const platMap = { ios: { label: '🍎', title: 'iOS' }, android: { label: '🤖', title: 'Android' }, native: { label: '📱', title: 'Native' }, web: { label: '🌐', title: 'Browser' } };
+              const p = platMap[plat] || platMap.web;
+              return <span title={p.title} style={{ fontSize: 10 }}>{p.label}</span>;
+            })()}
+          </div>
         </div>
         {user.rating > 0 && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: '#d97706', fontWeight: 700, flexShrink: 0 }}>
@@ -347,6 +366,27 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits }) {
           )}
 
           {user.bio && <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}><strong>אודות:</strong> {user.bio}</div>}
+
+          {/* Attribution + Platform */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
+            <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
+              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>מקור הרשמה</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 12 }}>
+                {user.referred_by_agent_code ? `סוכן: ${user.referred_by_agent_code}` : 'אורגני'}
+              </div>
+            </div>
+            <div style={{ background: 'var(--surface-3)', borderRadius: 8, padding: '6px 10px' }}>
+              <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>פלטפורמה</div>
+              <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 12 }}>
+                {(() => {
+                  const plat = user.registration_platform || (user.registration_source === 'native' ? 'native' : 'web');
+                  const map = { ios: 'Apple (iOS)', android: 'Android', native: 'נייטיב', web: 'דפדפן' };
+                  return map[plat] || plat;
+                })()}
+              </div>
+            </div>
+          </div>
+
           {user.preferred_cities?.length > 0 && <div><strong>ערים:</strong> {user.preferred_cities.join(', ')}</div>}
           {user.preferred_categories?.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -531,6 +571,7 @@ export default function AdminDashboard() {
   const [taskSearch, setTaskSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [taskStatusFilter, setTaskStatusFilter] = useState('');
+  const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, platform: '' });
 
   const { data: allTasks = [], isLoading: loadingTasks, refetch: refetchTasks } = useQuery({
     queryKey: ['adminTasks'],
@@ -542,7 +583,7 @@ export default function AdminDashboard() {
 
   const { data: allUsers = [], isLoading: loadingUsers, refetch: refetchUsers } = useQuery({
     queryKey: ['adminUsers'],
-    queryFn: () => base44.entities.User.list('-created_date', 200),
+    queryFn: () => base44.entities.User.list('-created_date', 500),
     enabled: me?.role === 'admin',
     staleTime: 30000,
     refetchOnWindowFocus: false,
@@ -707,7 +748,17 @@ export default function AdminDashboard() {
 
   const filteredUsers = allUsers.filter(u => {
     const q = userSearch.toLowerCase();
-    return !q || u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+    const matchQ = !q || u.full_name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+    if (!matchQ) return false;
+    if (userFilters.verified && !isUserVerified(u)) return false;
+    if (userFilters.social && !hasSocialVerified(u)) return false;
+    if (userFilters.profileFilled && !(u.phone && u.preferred_categories?.length > 0)) return false;
+    if (userFilters.viaAgent && !u.referred_by_agent_code) return false;
+    if (userFilters.platform) {
+      const plat = u.registration_platform || (u.registration_source === 'native' ? 'native' : 'web');
+      if (plat !== userFilters.platform) return false;
+    }
+    return true;
   });
 
   const pendingReports = allReports.filter(r => r.status === 'pending').length;
@@ -840,8 +891,10 @@ export default function AdminDashboard() {
                     { key: 'phone', label: 'טלפון' },
                     { key: 'role', label: 'תפקיד' },
                     { key: 'referred_by_agent_code', label: 'קוד סוכן' },
+                    { key: 'registration_source', label: 'מקור הרשמה' },
+                    { key: 'registration_platform', label: 'פלטפורמה' },
                     { key: 'is_approved', label: 'מאושר' },
-                    { key: 'is_verified', label: 'מאומת (וי ירוק)' },
+                    { key: 'is_verified', label: 'מאומת (אימייל)' },
                     { key: 'kyc_status', label: 'סטטוס KYC' },
                     { key: 'id_number', label: 'ת.ז.' },
                     { key: 'instagram_username', label: 'אינסטגרם' },
@@ -864,6 +917,53 @@ export default function AdminDashboard() {
                 <Download size={13} /> ייצא Excel
               </button>
             </div>
+
+            {/* Filter chips */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+              {[
+                { key: 'verified', label: 'מאומתים', icon: ShieldCheck, color: '#16a34a' },
+                { key: 'social', label: 'רשת חברתית', icon: Award, color: '#d97706' },
+                { key: 'profileFilled', label: 'מילאו פרטים', icon: UserCheck, color: '#1a6fd4' },
+                { key: 'viaAgent', label: 'הגיעו על ידי סוכן', icon: Users, color: '#7c3aed' },
+              ].map(f => {
+                const active = userFilters[f.key];
+                return (
+                  <button key={f.key} onClick={() => setUserFilters(prev => ({ ...prev, [f.key]: !prev[f.key] }))}
+                    style={{
+                      padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                      background: active ? f.color : 'var(--surface-2)',
+                      color: active ? 'white' : 'var(--text-2)',
+                      border: `1px solid ${active ? f.color : 'var(--border-1)'}`,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                    <f.icon size={12} /> {f.label}
+                  </button>
+                );
+              })}
+              {['ios', 'android', 'web'].map(plat => {
+                const labels = { ios: '🍎 אפל', android: '🤖 אנדרואיד', web: '🌐 דפדפן' };
+                const active = userFilters.platform === plat;
+                return (
+                  <button key={plat} onClick={() => setUserFilters(prev => ({ ...prev, platform: active ? '' : plat }))}
+                    style={{
+                      padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                      background: active ? '#0f2b6b' : 'var(--surface-2)',
+                      color: active ? 'white' : 'var(--text-2)',
+                      border: `1px solid ${active ? '#0f2b6b' : 'var(--border-1)'}`,
+                      cursor: 'pointer',
+                    }}>
+                    {labels[plat]}
+                  </button>
+                );
+              })}
+              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.platform) && (
+                <button onClick={() => setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, platform: '' })}
+                  style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}>
+                  נקה פילטרים
+                </button>
+              )}
+            </div>
+
             {loadingUsers ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} className="animate-spin" color="#1a6fd4" /></div>
             ) : (
