@@ -384,6 +384,15 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
     const resolver = isNative ? PROD_BASE_URL : window.location.origin;
 
+    // Clear any previous user's token BEFORE starting a new login. On a shared
+    // device this prevents a stale token from user A persisting if user B's
+    // login is cancelled or fails — and ensures the app never authenticates as
+    // the wrong user after a failed/aborted OAuth flow.
+    try {
+      localStorage.removeItem('base44_access_token');
+      localStorage.removeItem('token');
+    } catch {}
+
     // ── Native (iOS + Android) ── open the OAuth provider in the SYSTEM
     // browser (SFSafariViewController on iOS, Chrome Custom Tab on Android) via
     // @capacitor/browser. This is mandatory on Android: Google blocks OAuth in

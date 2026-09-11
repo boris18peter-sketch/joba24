@@ -43,7 +43,18 @@ export default async function(req: Request): Promise<Response> {
     }
 
     if (action === 'poll') {
-      // 1) Race-free match by sid (when the backend preserved it in from_url).
+      // Match by sid ONLY. The sid is unique per login attempt (generated in
+      // LoginPromptModal), so this can never return another user's token.
+      //
+      // The previous "most recent sid=null record" fallback was a CRITICAL
+      // security hole: the OAuthHandshake table is global (not device-scoped),
+      // so when the backend dropped the sid from from_url, the fallback
+      // returned the most recent null-sid record from ANY user/device —
+      // logging user B into user A's account (cross-user contamination). The
+      // sid is now reliably preserved via the base44.app from_url
+      // (LoginPromptModal hardcodes it), so the fallback is unnecessary.
+      // If the sid is missing or unmatched, return null (login fails
+      // gracefully — the user retries) rather than risk the wrong user's token.
       if (sidStr) {
         const bySid = await base44.asServiceRole.entities.OAuthHandshake.filter({ sid: sidStr }, '-created_date', 1);
         const rec = bySid && bySid[0];
@@ -52,20 +63,7 @@ export default async function(req: Request): Promise<Response> {
           return Response.json({ token: rec.token });
         }
       }
-      // 2) Fallback: most recent record from the last 3 minutes. Covers the
-      //    case where the backend dropped the sid — the auth-callback page
-      //    stored the token with sid=null.
-      // Fallback: latest record with sid=null (the backend dropped the sid
-      // from from_url). Verify recency server-side so a stale record from a
-      // previous cancelled login isn't returned (created_date $gte filtering
-      // is unreliable via the SDK, so we check age here instead).
-      const recent = await base44.asServiceRole.entities.OAuthHandshake.filter({ sid: null }, '-created_date', 1);
-      const rec = recent && recent[0];
-      if (!rec) return Response.json({ token: null });
-      const ageMs = Date.now() - new Date(rec.created_date).getTime();
-      if (Number.isNaN(ageMs) || ageMs > 300 * 1000) return Response.json({ token: null });
-      try { await base44.asServiceRole.entities.OAuthHandshake.delete(rec.id); } catch {}
-      return Response.json({ token: rec.token });
+      return Response.json({ token: null });
     }
 
     return Response.json({ error: 'invalid action' }, { status: 400 });
