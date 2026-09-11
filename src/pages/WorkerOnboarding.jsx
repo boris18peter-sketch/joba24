@@ -16,6 +16,8 @@ import { useJobaSettings } from '@/hooks/useJobaSettings';
 import { useLanguage } from '@/lib/LanguageContext';
 import RotatingPromoText from '@/components/RotatingPromoText';
 import { useRegistrationCount } from '@/hooks/useRegistrationCount';
+import StoreDownloadButtons from '@/components/StoreDownloadButtons';
+import { isStandaloneApp } from '@/lib/utils';
 
 const JOIN_COMPLETED_KEY = 'joba24_join_completed';
 const JOIN_BONUS_GRANTED_KEY = 'joba24_join_bonus_granted';
@@ -278,6 +280,16 @@ export default function WorkerOnboarding() {
             >
               {t('continue_as_guest')}
             </button>
+          )}
+          {/* Store download buttons — browser only (hidden inside the native app /
+              installed PWA). Renders only when store URLs are configured in the
+              admin dashboard (JobaSettings). The ref code is already preserved
+              across the OAuth redirect, so downloads here stay attributed to the
+              referring agent. */}
+          {!isStandaloneApp && !window.Capacitor?.isNativePlatform?.() && (
+            <div style={{ marginTop: 18 }}>
+              <StoreDownloadButtons size="sm" />
+            </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, flexWrap: 'nowrap' }}>
             <Link to="/terms" style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('terms_title')}</Link>

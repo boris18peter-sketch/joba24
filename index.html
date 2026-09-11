@@ -71,8 +71,14 @@
               }
             } catch (e) {}
             // Instantly return to the native app via the joba24:// scheme —
-            // iOS ONLY. (On base44.app origin after the normalize above.)
-            if (isIOS) {
+            // iOS ONLY, and ONLY on the /auth-callback route (the native-flow
+            // signal). On the regular web flow the OAuth provider returns the
+            // user to joba24.com/?access_token=… (from_url = the page they were
+            // on) — firing joba24:// there either does nothing (app not
+            // installed) or hijacks the page, leaving mobile Safari on a blank
+            // white screen. The Base44 SDK picks up the web-flow token from the
+            // URL by itself; the scheme is exclusively for the native callback.
+            if (isIOS && window.location.pathname === '/auth-callback') {
               try { window.location.replace('joba24://auth-callback?access_token=' + encodeURIComponent(t)); } catch (e) {}
             }
           }
