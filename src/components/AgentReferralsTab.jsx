@@ -67,7 +67,7 @@ export default function AgentReferralsTab() {
         registeredDownloads,
         pendingDownloads: downloads.length - registeredDownloads,
         profileCompleted: referred.filter(u => u.phone && u.preferred_categories?.length > 0).length,
-        kycSubmitted: referred.filter(u => u.kyc_status || u.is_verified || u.id_number || u.id_photo_url).length,
+        kycSubmitted: referred.filter(u => u.kyc_status || u.id_number || u.id_photo_url).length,
         kycApproved: referred.filter(u => u.kyc_status === 'approved').length,
         socialConnected: referred.filter(u => u.instagram_verified || u.facebook_verified || u.tiktok_verified).length,
         referredUsers: referred,
@@ -80,6 +80,7 @@ export default function AgentReferralsTab() {
   const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
   const totalDownloads = rows.reduce((s, r) => s + r.downloads, 0);
   const totalProfileCompleted = rows.reduce((s, r) => s + r.profileCompleted, 0);
+  const totalKycSubmitted = rows.reduce((s, r) => s + r.kycSubmitted, 0);
   const totalKycApproved = rows.reduce((s, r) => s + r.kycApproved, 0);
   const totalSocialConnected = rows.reduce((s, r) => s + r.socialConnected, 0);
   const conversion = totalDownloads > 0 ? Math.round((totalRegistered / totalDownloads) * 100) : 0;
@@ -107,8 +108,9 @@ export default function AgentReferralsTab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 }}>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
           <ShieldCheck size={16} color="#d97706" style={{ marginBottom: 4 }} />
-          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalKycApproved}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>אומתו (KYC)</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-1)' }}>{totalKycSubmitted}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700 }}>מילאו KYC</div>
+          <div style={{ fontSize: 9, color: '#16a34a', fontWeight: 600, marginTop: 2 }}>{totalKycApproved} אושרו</div>
         </div>
         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
           <Users size={16} color="#92400e" style={{ marginBottom: 4 }} />
@@ -187,7 +189,7 @@ export default function AgentReferralsTab() {
                         { label: 'הורידו', value: r.downloads, color: '#7c3aed' },
                         { label: 'נרשמו', value: r.registered, color: '#1a6fd4' },
                         { label: 'מילאו פרופיל', value: r.profileCompleted, color: '#059669' },
-                        { label: 'אומתו KYC', value: r.kycApproved, color: '#d97706' },
+                        { label: 'מילאו KYC', value: r.kycSubmitted, color: '#d97706' },
                         { label: 'חיברו רשת', value: r.socialConnected, color: '#92400e' },
                       ];
                       const maxVal = steps[0].value || 1;

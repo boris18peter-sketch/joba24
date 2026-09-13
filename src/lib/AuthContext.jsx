@@ -190,6 +190,17 @@ export const AuthProvider = ({ children }) => {
         console.error('[Joba24] Auth: failed to set registration_source:', srcErr?.message);
       }
 
+      // Update last_active_at (throttled to once per hour — avoids redundant API calls
+      // on every app open, while still tracking daily retention for admin dashboards)
+      try {
+        const now = new Date().toISOString();
+        const lastActive = currentUser.last_active_at;
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        if (!lastActive || lastActive < oneHourAgo) {
+          await base44.auth.updateMe({ last_active_at: now });
+        }
+      } catch {}
+
       // Link this device's ReferralEvents to the authenticated user (pre-registration downloads)
       try {
         const deviceId = localStorage.getItem('joba24_device_id');

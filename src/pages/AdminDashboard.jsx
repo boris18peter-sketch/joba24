@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import GoldBadge from '@/components/GoldBadge';
@@ -19,6 +19,7 @@ import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
+import AssignAgentModal from '@/components/AssignAgentModal';
 
 const STATUS_COLORS = {
   OPEN: { bg: '#dbeafe', text: '#1d4ed8', label: 'פתוח' },
@@ -191,7 +192,7 @@ function SendCreditsModal({ user, onClose, onSave }) {
   );
 }
 
-function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, onToggleSelect }) {
+function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, onToggleSelect, onAssignAgent }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
@@ -429,6 +430,19 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, o
               </button>
             )}
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+            {user.referred_by_agent_code && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#7c3aed', background: '#f5f3ff', padding: '3px 8px', borderRadius: 8, fontWeight: 600 }}>
+                שויך ל: {user.referred_by_agent_code}
+              </span>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onAssignAgent(user); }}
+              style={{ padding: '3px 10px', borderRadius: 10, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              <UserCheck size={11} /> שייך לסוכן
+            </button>
+          </div>
           {isAgent && user.agent_code && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f5f3ff', borderRadius: 8, padding: '6px 10px', marginTop: 2 }}>
               <div style={{ flex: 1, fontSize: 11, color: '#7c3aed', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -442,8 +456,16 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, o
           {user.score_tasks > 0 && <div><strong>משימות הושלמו:</strong> {user.score_tasks}</div>}
           {user.rating_count > 0 && <div><strong>דירוגים שניתנו:</strong> {user.rating_count}</div>}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+              <span style={{ fontSize: 10, color: '#cbd5e1' }}>{user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</span>
+              {user.last_active_at && (() => {
+                const daysSince = Math.floor((Date.now() - new Date(user.last_active_at).getTime()) / 86400000);
+                if (daysSince <= 7) return <span style={{ fontSize: 9, color: '#16a34a', fontWeight: 600 }}>פעיל לאחרונה</span>;
+                if (daysSince > 30) return <span style={{ fontSize: 9, color: '#dc2626', fontWeight: 600 }}>📱 לא פעיל {daysSince} ימים</span>;
+                return <span style={{ fontSize: 9, color: '#d97706', fontWeight: 600 }}>לא פעיל {daysSince} ימים</span>;
+              })()}
+            </div>
             <CopyableId id={user.id} />
-            <span style={{ fontSize: 10, color: '#cbd5e1' }}>{user.created_date ? format(new Date(user.created_date), 'dd/MM/yyyy HH:mm') : ''}</span>
           </div>
         </div>
       )}
@@ -573,7 +595,7 @@ export default function AdminDashboard() {
   const [taskSearch, setTaskSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [taskStatusFilter, setTaskStatusFilter] = useState('');
-  const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, platform: '' });
+  const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' });
 
   const { data: allTasks = [], isLoading: loadingTasks, refetch: refetchTasks } = useQuery({
     queryKey: ['adminTasks'],
@@ -622,6 +644,8 @@ export default function AdminDashboard() {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignTarget, setAssignTarget] = useState(null);
 
   // KYC users = those with a KYC status OR submitted ID docs.
   // `is_verified` is the platform's email-verification flag (auto-set by Google/Apple/OTP),
@@ -731,6 +755,33 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAssignAgent = async (agentCode, agentId) => {
+    if (assignTarget === 'bulk') {
+      const ids = Array.from(selectedUsers);
+      if (ids.length === 0) return;
+      try {
+        await base44.entities.User.bulkUpdate(ids.map(id => ({ id, referred_by_agent_code: agentCode, agent_id: agentId })));
+        queryClient.setQueryData(['adminUsers'], (old = []) =>
+          old.map(u => selectedUsers.has(u.id) ? { ...u, referred_by_agent_code: agentCode, agent_id: agentId } : u)
+        );
+        toast.success(`${ids.length} משתמשים שויכו לסוכן`);
+        setSelectedUsers(new Set());
+      } catch (e) {
+        toast.error('שגיאה: ' + (e.message || ''));
+      }
+    } else if (assignTarget) {
+      try {
+        await base44.entities.User.update(assignTarget, { referred_by_agent_code: agentCode, agent_id: agentId });
+        queryClient.setQueryData(['adminUsers'], (old = []) =>
+          old.map(u => u.id === assignTarget ? { ...u, referred_by_agent_code: agentCode, agent_id: agentId } : u)
+        );
+        toast.success('המשתמש שויך לסוכן');
+      } catch (e) {
+        toast.error('שגיאה: ' + (e.message || ''));
+      }
+    }
+  };
+
   const handleReviewReport = async (report) => {
     await base44.entities.Report.update(report.id, { status: 'reviewed' });
     queryClient.setQueryData(['adminReports'], (old = []) =>
@@ -788,6 +839,7 @@ export default function AdminDashboard() {
     if (userFilters.social && !hasSocialVerified(u)) return false;
     if (userFilters.profileFilled && !(u.phone && u.preferred_categories?.length > 0)) return false;
     if (userFilters.viaAgent && !u.referred_by_agent_code) return false;
+    if (userFilters.noAgent && u.referred_by_agent_code) return false;
     if (userFilters.platform) {
       const plat = u.registration_platform || (u.registration_source === 'native' ? 'native' : 'web');
       if (plat !== userFilters.platform) return false;
@@ -955,6 +1007,7 @@ export default function AdminDashboard() {
                 { key: 'social', label: 'רשת חברתית', icon: Award, color: '#d97706' },
                 { key: 'profileFilled', label: 'מילאו פרטים', icon: UserCheck, color: '#1a6fd4' },
                 { key: 'viaAgent', label: 'הגיעו על ידי סוכן', icon: Users, color: '#7c3aed' },
+                { key: 'noAgent', label: 'ללא סוכן', icon: UserX, color: '#dc2626' },
               ].map(f => {
                 const active = userFilters[f.key];
                 return (
@@ -987,7 +1040,7 @@ export default function AdminDashboard() {
                 );
               })}
               {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.platform) && (
-                <button onClick={() => setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, platform: '' })}
+                <button onClick={() => setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' })}
                   style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}>
                   נקה פילטרים
                 </button>
@@ -999,6 +1052,7 @@ export default function AdminDashboard() {
                 <span style={{ fontSize: 12, fontWeight: 800, color: '#1a6fd4', flexShrink: 0 }}>{selectedUsers.size} נבחרו</span>
                 <button onClick={() => setShowBulkApproveModal(true)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#1a6fd4', color: 'white', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>אשר נבחרים</button>
                 <button onClick={() => handleBulkApprove(false)} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>בטל גישה לנבחרים</button>
+                <button onClick={() => { setAssignTarget('bulk'); setShowAssignModal(true); }} style={{ height: 32, padding: '0 12px', borderRadius: 8, background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}><UserCheck size={12} /> שייך לסוכן</button>
                 <button onClick={() => setSelectedUsers(new Set())} style={{ height: 32, padding: '0 10px', borderRadius: 8, background: 'var(--surface-3)', color: 'var(--text-2)', border: '1px solid var(--border-1)', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginLeft: 'auto' }}>ביטול</button>
               </div>
             )}
@@ -1006,10 +1060,14 @@ export default function AdminDashboard() {
             {loadingUsers ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Loader2 size={24} className="animate-spin" color="#1a6fd4" /></div>
             ) : (
-              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{filteredUsers.length} משתמשים</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {filteredUsers.length} משתמשים
+                {filteredUsers.length > 0 && <button onClick={() => setSelectedUsers(new Set(filteredUsers.map(u => u.id)))} style={{ background: 'none', border: 'none', color: '#1a6fd4', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: 0 }}>בחר הכל</button>}
+                {selectedUsers.size > 0 && <button onClick={() => setSelectedUsers(new Set())} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 11, fontWeight: 700, cursor: 'pointer', padding: 0 }}>נקה בחירה</button>}
+              </div>
             )}
             {filteredUsers.map(user => (
-              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} />
+              <UserRow key={user.id} user={user} onToggleBlock={handleToggleBlock} onSetAgent={handleSetAgent} onSendCredits={handleSendCredits} isSelected={selectedUsers.has(user.id)} onToggleSelect={() => toggleSelectUser(user.id)} onAssignAgent={(u) => { setAssignTarget(u.id); setShowAssignModal(true); }} />
             ))}
             {showApproveModal && (
               <ApproveAllModal
@@ -1033,6 +1091,14 @@ export default function AdminDashboard() {
                 selectedCount={selectedUsers.size}
                 onClose={() => setShowBulkApproveModal(false)}
                 onConfirm={async () => { await handleBulkApprove(true); }}
+              />
+            )}
+            {showAssignModal && (
+              <AssignAgentModal
+                agents={allUsers.filter(u => !!u.agent_code)}
+                count={assignTarget === 'bulk' ? selectedUsers.size : 1}
+                onClose={() => { setShowAssignModal(false); setAssignTarget(null); }}
+                onAssign={handleAssignAgent}
               />
             )}
           </>
