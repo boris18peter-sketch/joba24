@@ -13,6 +13,7 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         CERTIFICATE_P12_PASSWORD: "Joba24SigningPass1"
+        FACEBOOK_CLIENT_TOKEN: ""  # Required: get from Meta App Dashboard → Settings → Advanced → Client Token
       node: latest
       xcode: latest
     scripts:
@@ -65,7 +66,8 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION=2.130298.0 \
-            CURRENT_PROJECT_VERSION=18
+            CURRENT_PROJECT_VERSION=18 \
+            FACEBOOK_CLIENT_TOKEN="$FACEBOOK_CLIENT_TOKEN"
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
@@ -132,6 +134,7 @@ workflows:
         ANDROID_VERSION_NAME: "1.0.0"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
+        FACEBOOK_CLIENT_TOKEN: ""  # Required: get from Meta App Dashboard → Settings → Advanced → Client Token
       node: latest
       java: 21
     scripts:
@@ -175,6 +178,209 @@ workflows:
       - name: Add Android platform
         script: |
           npx cap add android
+      - name: Inject Meta App Events SDK for Android
+        script: |
+          python3 << 'PYEOF'
+          import os
+
+          PKG = "com.base69e6bdb4986a04a256653a23.app"
+          PKG_PATH = PKG.replace(".", "/")
+          SRC_DIR = f"android/app/src/main/java/{PKG_PATH}"
+          META_APP_ID = "953835113913539"
+
+          os.makedirs(SRC_DIR, exist_ok=True)
+
+          # ── 1. Create MetaAppEventsPlugin.java ──
+          plugin_code = f'''package {PKG};
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.facebook.appevents.AppEventsLogger;
+import android.os.Bundle;
+
+@CapacitorPlugin(name = "MetaAppEvents")
+public class MetaAppEventsPlugin extends Plugin {{
+    private AppEventsLogger logger;
+
+    @Override
+    public void load() {{
+        super.load();
+        logger = AppEventsLogger.newLogger(getContext());
+    }}
+
+    @PluginMethod
+    public void logEvent(PluginCall call) {{
+        String name = call.getString("name");
+        if (name == null) {{
+            call.reject("name is required");
+            return;
+        }}
+        JSObject params = call.getObject("params", new JSObject());
+        Bundle bundle = new Bundle();
+        for (String key : params.keys()) {{
+            Object value = params.get(key);
+            if (value instanceof String) {{
+                bundle.putString(key, (String) value);
+            }} else if (value instanceof Number) {{
+                bundle.putDouble(key, ((Number) value).doubleValue());
+            }} else if (value instanceof Boolean) {{
+                bundle.putBoolean(key, (Boolean) value);
+            }}
+        }}
+        Double valueToSum = call.getDouble("valueToSum", 0.0);
+        if (valueToSum != null && valueToSum > 0) {{
+            logger.logEvent(name, valueToSum, bundle);
+        }} else {{
+            logger.logEvent(name, bundle);
+        }}
+        call.resolve();
+    }}
+
+    @PluginMethod
+    public void setUserId(PluginCall call) {{
+        String userId = call.getString("userId", "");
+        logger.setUserID(userId.isEmpty() ? null : userId);
+        call.resolve();
+    }}
+}}
+'''
+          plugin_path = os.path.join(SRC_DIR, "MetaAppEventsPlugin.java")
+          with open(plugin_path, "w") as f:
+              f.write(plugin_code)
+          print(f"[meta] Created {plugin_path}")
+
+          # ── 2. Register plugin + activate app events in MainActivity.java ──
+          main_activity_path = os.path.join(SRC_DIR, "MainActivity.java")
+          with open(main_activity_path, "r") as f:
+              ma_content = f.read()
+
+          if "MetaAppEventsPlugin" not in ma_content:
+              ma_content = ma_content.replace(
+                  "public class MainActivity extends BridgeActivity {",
+                  "public class MainActivity extends BridgeActivity {",
+                  1
+              )
+              # Add registerPlugin before super.onCreate
+              if "registerPlugin(MetaAppEventsPlugin.class);" not in ma_content:
+                  ma_content = ma_content.replace(
+                      "super.onCreate(savedInstanceState);",
+                      "registerPlugin(MetaAppEventsPlugin.class);\n        super.onCreate(savedInstanceState);",
+                      1
+                  )
+              # Add AppEventsLogger.activateApp after super.onCreate
+              if "AppEventsLogger.activateApp" not in ma_content:
+                  ma_content = ma_content.replace(
+                      "super.onCreate(savedInstanceState);",
+                      "super.onCreate(savedInstanceState);\n        com.facebook.appevents.AppEventsLogger.activateApp(getApplication());",
+                      1
+                  )
+              with open(main_activity_path, "w") as f:
+                  f.write(ma_content)
+              print("[meta] Registered MetaAppEventsPlugin in MainActivity.java")
+          else:
+              print("[meta] MetaAppEventsPlugin already registered in MainActivity.java")
+
+          # ── 3. Add Facebook SDK to app/build.gradle ──
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, "r") as f:
+              gradle_content = f.read()
+
+          if "facebook-android-sdk" not in gradle_content:
+              gradle_content = gradle_content.replace(
+                  "dependencies {",
+                  "dependencies {\n    implementation 'com.facebook.android:facebook-android-sdk:17.0.0'",
+                  1
+              )
+              with open(gradle_path, "w") as f:
+                  f.write(gradle_content)
+              print("[meta] Added Facebook SDK to app/build.gradle")
+          else:
+              print("[meta] Facebook SDK already in app/build.gradle")
+
+          # ── 4. Add Facebook metadata to AndroidManifest.xml ──
+          manifest_path = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest_path, "r") as f:
+              manifest_content = f.read()
+
+          if "com.facebook.sdk.ApplicationId" not in manifest_content:
+              meta_block = f'''        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
+        <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/>
+        <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="true"/>
+        <meta-data android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled" android:value="true"/>
+'''
+              manifest_content = manifest_content.replace(
+                  "<application",
+                  meta_block + "        <application",
+                  1
+              )
+              with open(manifest_path, "w") as f:
+                  f.write(manifest_content)
+              print("[meta] Added Facebook metadata to AndroidManifest.xml")
+          else:
+              print("[meta] Facebook metadata already in AndroidManifest.xml")
+
+          # ── 5. Add Facebook strings to strings.xml ──
+          strings_path = "android/app/src/main/res/values/strings.xml"
+          fb_client_token = os.environ.get("FACEBOOK_CLIENT_TOKEN", "")
+
+          strings_content = ""
+          if os.path.exists(strings_path):
+              with open(strings_path, "r") as f:
+                  strings_content = f.read()
+
+          if "facebook_app_id" not in strings_content:
+              fb_strings = f'''<string name="facebook_app_id">{META_APP_ID}</string>
+<string name="facebook_client_token">{fb_client_token}</string>
+'''
+              strings_content = strings_content.replace(
+                  "</resources>",
+                  fb_strings + "</resources>",
+                  1
+              )
+              with open(strings_path, "w") as f:
+                  f.write(strings_content)
+              print("[meta] Added Facebook strings to strings.xml")
+          else:
+              print("[meta] Facebook strings already in strings.xml")
+
+          print("[meta] Meta App Events SDK injection complete")
+          PYEOF
+      - name: Verify Meta App Events SDK injection
+        script: |
+          echo "=== Checking MetaAppEventsPlugin.java ==="
+          if [ -f "android/app/src/main/java/com/base69e6bdb4986a04a256653a23/app/MetaAppEventsPlugin.java" ]; then
+            echo "✓ MetaAppEventsPlugin.java created"
+          else
+            echo "✗ ERROR: MetaAppEventsPlugin.java not found!"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking Facebook SDK in build.gradle ==="
+          if grep -q "facebook-android-sdk" android/app/build.gradle; then
+            echo "✓ Facebook SDK dependency found in build.gradle"
+          else
+            echo "✗ ERROR: Facebook SDK not in build.gradle"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking Facebook metadata in AndroidManifest.xml ==="
+          if grep -q "com.facebook.sdk.ApplicationId" android/app/src/main/AndroidManifest.xml; then
+            echo "✓ Facebook metadata found in manifest"
+          else
+            echo "✗ ERROR: Facebook metadata missing from manifest"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking plugin registration in MainActivity.java ==="
+          if grep -q "MetaAppEventsPlugin" android/app/src/main/java/com/base69e6bdb4986a04a256653a23/app/MainActivity.java; then
+            echo "✓ MetaAppEventsPlugin registered in MainActivity"
+          else
+            echo "✗ ERROR: MetaAppEventsPlugin not registered in MainActivity"
+            exit 1
+          fi
       - name: Copy Firebase google-services.json
         script: |
           if [ -f "android-config/google-services.json" ]; then

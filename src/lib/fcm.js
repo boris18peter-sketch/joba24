@@ -17,6 +17,7 @@ const VAPID_KEY = "BMGA4Y0BwTCSY44y0Q1y4dkPklK4vBLMboxjxPUpGQQS7NBNXvYAvtEdsbl0u
 // content loads from a remote server.url (bridge not injected). We check the bridge
 // directly AND the Android WebView UA marker so the native path is taken on both.
 import { hasCapacitorBridge } from '@/lib/nativeEnv';
+import { trackMetaEventOnce, MetaEvents } from '@/lib/metaAppEvents';
 
 // Early check: if Notifications API is not supported, bail out entirely
 const isNotificationsSupported = () => {
@@ -126,6 +127,9 @@ export async function requestNotificationPermission() {
       const result = await FirebaseMessaging.requestPermissions();
       const perm = result.receive === 'granted' ? 'granted' : 'denied';
       console.log('[FCM][Native] Permission request result:', perm);
+      if (perm === 'granted') {
+        trackMetaEventOnce(MetaEvents.NotificationsEnabled, 'meta_notifications_tracked');
+      }
       return perm;
     } catch (err) {
       console.error('[FCM][Native] Permission request failed, falling back to web:', err.message);
@@ -148,6 +152,9 @@ export async function requestNotificationPermission() {
   try {
     const permission = await Notification.requestPermission();
     console.log('[FCM] Permission request result:', permission, 'Standalone:', isStandalone);
+    if (permission === 'granted') {
+      trackMetaEventOnce(MetaEvents.NotificationsEnabled, 'meta_notifications_tracked');
+    }
     return permission;
   } catch (err) {
     console.error('[FCM] Permission request failed:', err.message);

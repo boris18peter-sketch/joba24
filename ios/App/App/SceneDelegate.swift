@@ -1,6 +1,8 @@
 import UIKit
 import Capacitor
 import StoreKit
+import FacebookCore
+import AppTrackingTransparency
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -16,6 +18,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        // Route Facebook URL scheme callbacks to the Meta SDK
+        for context in URLContexts {
+            let url = context.url
+            let scheme = url.scheme
+            if scheme?.hasPrefix("fb") == true || scheme == "joba24" {
+                ApplicationDelegate.shared.application(UIApplication.shared, open: url, options: [:])
+            }
+        }
         SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
     }
 
@@ -30,6 +40,35 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
     }
+
+    // ── App activation + ATT prompt ──
+    // Logs the fb_mobile_activate_app event (required for Meta App Ads activation attribution)
+    // and requests ATT permission once on first launch.
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        AppEvents.shared.activateApp()
+
+        // Request ATT on first launch only
+        if !UserDefaults.standard.bool(forKey: "meta_att_requested") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.requestATTPermission()
+            }
+        }
+    }
+
+    private func requestATTPermission() {
+        if #available(iOS 14, *) {
+            let current = ATTrackingManager.trackingAuthorizationStatus
+            if current == .notDetermined {
+                ATTrackingManager.requestTrackingAuthorization { status in
+                    Settings.shared.isAdvertiserTrackingEnabled = (status == .authorized)
+                    UserDefaults.standard.set(true, forKey: "meta_att_requested")
+                }
+            } else {
+                Settings.shared.isAdvertiserTrackingEnabled = (current == .authorized)
+                UserDefaults.standard.set(true, forKey: "meta_att_requested")
+            }
+        }
+    }
 }
 
 // MARK: - Local plugin registration
@@ -40,6 +79,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 class JobaBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(IosIapPlugin())
+        bridge?.registerPluginInstance(MetaAppEventsPlugin())
     }
 }
 

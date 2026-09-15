@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { isNativeLike } from '@/lib/nativeEnv';
 import { detectMobilePlatform } from '@/lib/utils';
+import { trackMetaEvent, setMetaUserId, MetaEvents } from '@/lib/metaAppEvents';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -54,6 +55,9 @@ export const AuthProvider = ({ children }) => {
         const freshUser = await base44.auth.me();
         setUser(prev => {
           if (!prev) return freshUser;
+          if (prev.kyc_status !== 'approved' && freshUser.kyc_status === 'approved') {
+            trackMetaEvent(MetaEvents.KYCCompleted);
+          }
           if (prev.is_verified !== freshUser.is_verified ||
               prev.kyc_status !== freshUser.kyc_status ||
               prev.worker_credits !== freshUser.worker_credits) {
@@ -161,7 +165,11 @@ export const AuthProvider = ({ children }) => {
       // code is saved so the configurable referral bonus is applied for referred users.
       if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
+        trackMetaEvent(MetaEvents.CompleteRegistration);
       }
+
+      // Set Meta user ID for attribution (call after every login)
+      setMetaUserId(currentUser?.id);
 
       // Track registration source + granular platform — only set once
       try {
@@ -219,7 +227,14 @@ export const AuthProvider = ({ children }) => {
       // Subscribe to User entity changes to keep user data (credits, KYC status, verification) up to date in real-time
       unsubUserRef.current = base44.entities.User.subscribe((event) => {
         if (event.data?.id === currentUser?.id || event.id === currentUser?.id) {
-          setUser(prev => prev ? { ...prev, ...event.data } : event.data);
+          setUser(prev => {
+            if (!prev) return event.data;
+            // Track KYCCompleted when kyc_status transitions to 'approved' via WS
+            if (prev.kyc_status !== 'approved' && event.data?.kyc_status === 'approved') {
+              trackMetaEvent(MetaEvents.KYCCompleted);
+            }
+            return prev ? { ...prev, ...event.data } : event.data;
+          });
           // Invalidate the ['me'] React Query cache so all pages using useQuery(['me']) get fresh data
           queryClientInstance.invalidateQueries({ queryKey: ['me'] });
         }
@@ -269,6 +284,9 @@ export const AuthProvider = ({ children }) => {
           base44.auth.me().then(freshUser => {
             setUser(prev => {
               if (!prev) return freshUser;
+              if (prev.kyc_status !== 'approved' && freshUser.kyc_status === 'approved') {
+                trackMetaEvent(MetaEvents.KYCCompleted);
+              }
               if (prev.is_verified !== freshUser.is_verified ||
                   prev.kyc_status !== freshUser.kyc_status ||
                   prev.worker_credits !== freshUser.worker_credits ||
@@ -317,6 +335,9 @@ export const AuthProvider = ({ children }) => {
     if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }
     if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
     if (unsubAppRef.current) { unsubAppRef.current(); unsubAppRef.current = null; }
+
+    // Clear Meta App Events user ID on logout
+    setMetaUserId('');
 
     // Clear all personal cached data from localStorage
     localStorage.removeItem('joba24_notifications');
