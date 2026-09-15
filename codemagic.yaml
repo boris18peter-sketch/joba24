@@ -13,7 +13,7 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         CERTIFICATE_P12_PASSWORD: "Joba24SigningPass1"
-        FACEBOOK_CLIENT_TOKEN: ""  # Required: get from Meta App Dashboard → Settings → Advanced → Client Token
+        # FACEBOOK_CLIENT_TOKEN is provided by the ios_signing environment group
       node: latest
       xcode: latest
     scripts:
@@ -129,12 +129,14 @@ workflows:
     environment:
       android_signing:
         - joba24_android_upload
+      groups:
+        - ios_signing          # shares FACEBOOK_CLIENT_TOKEN with iOS; does not affect keystore signing
       vars:
         ANDROID_VERSION_CODE: 18
         ANDROID_VERSION_NAME: "1.0.0"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
-        FACEBOOK_CLIENT_TOKEN: ""  # Required: get from Meta App Dashboard → Settings → Advanced → Client Token
+        # FACEBOOK_CLIENT_TOKEN is provided by the ios_signing environment group
       node: latest
       java: 21
     scripts:
