@@ -28,17 +28,25 @@ export default async function(req: Request): Promise<Response> {
       if (!token || typeof token !== 'string') {
         return Response.json({ error: 'invalid token' }, { status: 400 });
       }
+      // Reject null-sid stores. The sid is the ONLY key the poll matches by —
+      // a null-sid record can NEVER be retrieved (the poll requires a non-null
+      // sid), so storing it creates an orphaned record containing a LIVE access
+      // token that sits in the DB for 10 minutes with no legitimate consumer.
+      // The sid is set by LoginPromptModal before opening the browser and
+      // preserved via the base44.app from_url. If the backend drops it, the
+      // login fails gracefully (the user retries) rather than leaking tokens.
+      if (!sidStr) {
+        return Response.json({ error: 'sid required — null-sid stores are rejected to prevent orphaned token records' }, { status: 400 });
+      }
       // Cleanup expired handshake records (older than 10 minutes).
       const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       try {
         await base44.asServiceRole.entities.OAuthHandshake.deleteMany({ created_date: { $lt: tenMinAgo } });
       } catch {}
       // Replace any existing record for this sid (idempotent retries).
-      if (sidStr) {
-        try {
-          await base44.asServiceRole.entities.OAuthHandshake.deleteMany({ sid: sidStr });
-        } catch {}
-      }
+      try {
+        await base44.asServiceRole.entities.OAuthHandshake.deleteMany({ sid: sidStr });
+      } catch {}
       await base44.asServiceRole.entities.OAuthHandshake.create({ sid: sidStr, token });
       return Response.json({ ok: true });
     }

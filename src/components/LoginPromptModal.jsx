@@ -383,6 +383,16 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     const providerPath = provider === 'google' ? '' : `/${provider}`;
     const authBase = isNative ? PROD_BASE_URL : (appParams.appBaseUrl || '');
     const resolver = isNative ? PROD_BASE_URL : window.location.origin;
+    // Google OAuth: force the account-chooser screen. Without this, Google
+    // auto-signs-in with whatever Google session the browser already holds —
+    // so if user A was previously logged in, user B clicking "Login with
+    // Google" on the SAME device/browser gets user A's token back. The app
+    // then authenticates as user A, and every updateMe() (profile fields,
+    // onboarding) overwrites user A's account. This was the root cause of the
+    // cross-user profile contamination (Boris's details changed when a new
+    // user "joined"). prompt=select_account forces Google to always ask which
+    // account to use, so the new user picks their own account.
+    const providerParams = provider === 'google' ? '&prompt=select_account' : '';
 
     // Clear any previous user's token BEFORE starting a new login. On a shared
     // device this prevents a stale token from user A persisting if user B's
@@ -428,7 +438,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
       // app URL) makes the backend honor from_url and land on /auth-callback.
       const APP_BASE44_URL = 'https://joba24.base44.app';
       const fromUrl = `${APP_BASE44_URL}/auth-callback?sid=${encodeURIComponent(sid)}`;
-      const loginUrl = `${APP_BASE44_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}`;
+      const loginUrl = `${APP_BASE44_URL}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(fromUrl)}${providerParams}`;
       setPendingLoginUrl(loginUrl);
       openExternalBrowser(loginUrl)
         .then(() => setWaitingForAuth(true))
@@ -440,7 +450,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     // provider redirects back here with the access_token, which the Base44 SDK
     // picks up from the URL on return — same flow as any web app.
     const redirectUrl = getRedirectUrl();
-    const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}`, resolver).toString();
+    const loginUrl = new URL(`${authBase}/api/apps/auth${providerPath}/login?app_id=${appParams.appId}&from_url=${encodeURIComponent(redirectUrl)}${providerParams}`, resolver).toString();
     window.location.href = loginUrl;
   };
   const handleGoogle = () => openOAuth('google');
