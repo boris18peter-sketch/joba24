@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Coins, Gift, Sparkles, Zap, Star, TrendingUp, Save, RotateCcw, Loader2, UserPlus, Megaphone, Hammer, Rocket, Apple, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
+import FacebookAutoPostSettings from '@/components/admin/FacebookAutoPostSettings';
 
 // JobaSettings — single source of truth for all credit/bonus charges and the launch gate.
 const FIELDS = [
@@ -357,6 +358,9 @@ export default function JobaSettingsTab() {
         </div>
         <Switch checked={draft.guest_access_enabled} onCheckedChange={(c) => handleChange('guest_access_enabled', c)} />
       </div>
+
+      {/* Facebook auto-post settings */}
+      {!isLoading && <FacebookAutoPostSettings settingsRecord={settingsRecord} />}
 
       {/* Settings rows */}
       {isLoading ? (
