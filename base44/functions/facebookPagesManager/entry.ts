@@ -309,7 +309,7 @@ function formatPost(task: any): string {
   // ── City + Price ──
   const details: string[] = [];
   if (task.city) details.push(task.city);
-  if (task.price) details.push(`"מוכן לשלם" ₪${task.price}`);
+  if (task.price) details.push(`מוכן לשלם ₪${task.price}`);
   if (details.length) {
     lines.push(details.join(' • '));
     lines.push('');

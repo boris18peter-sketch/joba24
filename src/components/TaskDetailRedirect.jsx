@@ -17,8 +17,14 @@ export default function TaskDetailRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (id) openTaskSheet(id);
+    // ORDER MATTERS: navigate FIRST, then openTaskSheet.
+    // openTaskSheet pushes a history entry with { taskSheet: id } state.
+    // If navigate('/', { replace: true }) runs AFTER, it overwrites that entry
+    // — the { taskSheet } state is lost, and TaskDetailSheet's route-change
+    // effect sees no taskSheet state and hides the sheet immediately.
+    // Navigating first ensures openTaskSheet's pushState lands on top cleanly.
     navigate('/', { replace: true });
+    if (id) openTaskSheet(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
