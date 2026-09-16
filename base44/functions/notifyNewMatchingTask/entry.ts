@@ -85,9 +85,14 @@ Deno.serve(async (req) => {
       skip += pageSize;
     }
 
+    // SECURITY (pre-launch gate): only notify APPROVED users. Without this filter,
+    // unapproved users on the waiting page receive push notifications about new
+    // tasks, and tapping the notification opens the TaskDetailSheet on top of
+    // the waiting page — bypassing the gate entirely.
     const eligibleWorkers = allUsers.filter(u =>
       u.fcm_tokens?.length > 0 &&
-      u.id !== data.client_id
+      u.id !== data.client_id &&
+      (u.is_approved === true || u.role === 'admin')
     );
 
     if (!eligibleWorkers.length) {

@@ -21,9 +21,14 @@ const PENDING_KEY = 'joba24_pending_task';
 
 export default function DeepLinkHandler() {
   const { openTaskSheet } = useTaskSheet();
-  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const { isAuthenticated, isLoadingAuth, user } = useAuth();
   const location = useLocation();
   const openedRef = useRef(false);
+
+  // Pre-launch gate: don't open the task sheet for unapproved users.
+  // TaskDetailSheet renders at App level (outside Layout), so it would appear
+  // ON TOP of the waiting page — bypassing the gate. This check prevents that.
+  const isApproved = user?.is_approved || user?.role === 'admin';
 
   // Capture ?open_task from the URL on first load, store it, clean the URL.
   useEffect(() => {
@@ -43,24 +48,27 @@ export default function DeepLinkHandler() {
   useEffect(() => {
     if (openedRef.current) return;
     if (isLoadingAuth || !isAuthenticated) return;
+    if (!isApproved) return; // unapproved — stay on waiting page, don't open task
     if (location.pathname === '/join') return; // wait for onboarding to finish
     const pending = sessionStorage.getItem(PENDING_KEY);
     if (!pending) return;
     openedRef.current = true;
     sessionStorage.removeItem(PENDING_KEY);
     openTaskSheet(pending);
-  }, [isAuthenticated, isLoadingAuth, location.pathname, openTaskSheet]);
+  }, [isAuthenticated, isLoadingAuth, isApproved, location.pathname, openTaskSheet]);
 
   // Foreground notification click → open the sheet immediately
   useEffect(() => {
     const handler = (event) => {
       if (event.data?.type === 'OPEN_TASK_SHEET' && event.data?.taskId) {
+        // Pre-launch gate: don't open task sheet for unapproved users
+        if (!isApproved) return;
         openTaskSheet(event.data.taskId);
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [openTaskSheet]);
+  }, [openTaskSheet, isApproved]);
 
   return null;
 }
