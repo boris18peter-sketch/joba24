@@ -39,6 +39,16 @@ Deno.serve(async (req) => {
     const workerUsers = await base44.asServiceRole.entities.User.filter({ id: user.id });
     const userData = workerUsers[0];
 
+    // Pre-launch gate (server-side enforcement): block unapproved users from
+    // applying when the gate is active. The frontend gate (Layout.jsx) can be
+    // bypassed via direct API calls or during the approvalStatus loading
+    // window — this is the authoritative server-side check.
+    if (settings.pre_launch_gate_active !== false && userData?.role !== 'admin') {
+      if (!userData?.is_approved) {
+        return Response.json({ error: 'not_approved', message: 'המשתמש אינו מאושר עדיין' }, { status: 403 });
+      }
+    }
+
     // Verification gate: if task requires verified workers, block unverified users
     if (task.verification_required) {
       if (!userData?.is_verified || userData?.kyc_status !== 'approved') {
