@@ -129,6 +129,28 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
       // Cache in React Query so Layout's useQuery(['me']) doesn't make a duplicate API call
       queryClientInstance.setQueryData(['me'], currentUser);
+
+      // ── Cross-user contamination guard ──
+      // The null-sid OAuthHandshake bug (now fixed) silently swapped tokens
+      // between users — user B's device got user A's token, so me() returned
+      // user A's data (name, credits, tasks). This guard catches any REMAINING
+      // stale tokens on devices: if the authenticated user ID changed WITHOUT
+      // an explicit logout (which clears joba24_last_user_id), the token is
+      // contaminated — force logout to prevent cross-user data exposure.
+      // Also catches any future token-swap bug of the same class.
+      const lastUserId = localStorage.getItem('joba24_last_user_id');
+      if (lastUserId && lastUserId !== currentUser.id) {
+        console.error('[Joba24] Auth: cross-user contamination detected — token user ID changed without logout. Forcing logout.', { last: lastUserId, current: currentUser.id });
+        try {
+          localStorage.removeItem('base44_access_token');
+          localStorage.removeItem('token');
+          localStorage.removeItem('joba24_last_user_id');
+        } catch {}
+        window.location.reload();
+        return;
+      }
+      localStorage.setItem('joba24_last_user_id', currentUser.id);
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
@@ -351,6 +373,7 @@ export const AuthProvider = ({ children }) => {
     try {
       localStorage.removeItem('base44_access_token');
       localStorage.removeItem('token');
+      localStorage.removeItem('joba24_last_user_id');
     } catch {}
     localStorage.removeItem('joba24_guest_mode');
     setIsGuest(false);

@@ -401,6 +401,9 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
     try {
       localStorage.removeItem('base44_access_token');
       localStorage.removeItem('token');
+      // Clear the last known user ID so the contamination guard in
+      // checkUserAuth() doesn't flag this explicit new login as a swap.
+      localStorage.removeItem('joba24_last_user_id');
     } catch {}
 
     // ── Native (iOS + Android) ── open the OAuth provider in the SYSTEM
@@ -501,7 +504,7 @@ export default function LoginPromptModal({ onLogin, onClose, type = 'apply' }) {
           {waitingForAuth ? (
             <WaitingForAuthScreen onCancel={handleCancelAuth} loginUrl={pendingLoginUrl} />
           ) : showEmail ? (
-            <EmailForm onBack={() => setShowEmail(false)} onSuccess={() => { onLogin?.(); window.location.reload(); }} />
+            <EmailForm onBack={() => setShowEmail(false)} onSuccess={() => { localStorage.removeItem('joba24_last_user_id'); onLogin?.(); window.location.reload(); }} />
           ) : (
             <>
               {/* Title */}
