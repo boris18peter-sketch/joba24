@@ -108,17 +108,25 @@ function SetAgentModal({ user, onClose, onSave }) {
 
   const handleSave = async () => {
     setLoading(true);
-    const agentCode = user.agent_code || `AGENT_${user.id.slice(-6).toUpperCase()}`;
-    await onSave(user, { role: 'agent', commission_rate: Number(rate), agent_code: agentCode });
-    setLoading(false);
-    onClose();
+    try {
+      const agentCode = user.agent_code || `AGENT_${user.id.slice(-6).toUpperCase()}`;
+      await onSave(user, { role: 'agent', commission_rate: Number(rate), agent_code: agentCode });
+      setLoading(false);
+      onClose();
+    } catch {
+      setLoading(false);
+    }
   };
 
   const handleRemove = async () => {
     setLoading(true);
-    await onSave(user, { role: 'user', commission_rate: 0, agent_code: null });
-    setLoading(false);
-    onClose();
+    try {
+      await onSave(user, { role: 'user', commission_rate: 0, agent_code: null });
+      setLoading(false);
+      onClose();
+    } catch {
+      setLoading(false);
+    }
   };
 
   return (
@@ -204,7 +212,9 @@ function UserRow({ user, onToggleBlock, onSetAgent, onSendCredits, isSelected, o
   const handleBlock = async (e) => {
     e.stopPropagation();
     setLoading(true);
-    await onToggleBlock(user);
+    try {
+      await onToggleBlock(user);
+    } catch {}
     setLoading(false);
   };
 
@@ -596,6 +606,7 @@ export default function AdminDashboard() {
   const [userSearch, setUserSearch] = useState('');
   const [taskStatusFilter, setTaskStatusFilter] = useState('');
   const [userFilters, setUserFilters] = useState({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' });
+  const [userDateFilter, setUserDateFilter] = useState('all');
 
   const { data: allTasks = [], isLoading: loadingTasks, refetch: refetchTasks } = useQuery({
     queryKey: ['adminTasks'],
@@ -725,10 +736,16 @@ export default function AdminDashboard() {
   };
 
   const handleSetAgent = async (user, updates) => {
-    await base44.entities.User.update(user.id, updates);
-    queryClient.setQueryData(['adminUsers'], (old = []) =>
-      old.map(u => u.id === user.id ? { ...u, ...updates } : u)
-    );
+    try {
+      await base44.entities.User.update(user.id, updates);
+      queryClient.setQueryData(['adminUsers'], (old = []) =>
+        old.map(u => u.id === user.id ? { ...u, ...updates } : u)
+      );
+      toast.success('המשתמש עודכן בהצלחה');
+    } catch (e) {
+      toast.error('שגיאה: ' + (e.message?.includes('Rate limit') ? 'יותר מדי פעולות — נסה עוד רגע' : (e.message || 'לא ניתן לעדכן')));
+      throw e;
+    }
   };
 
   const toggleSelectUser = (userId) => {
@@ -843,6 +860,18 @@ export default function AdminDashboard() {
     if (userFilters.platform) {
       const plat = u.registration_platform || (u.registration_source === 'native' ? 'native' : 'web');
       if (plat !== userFilters.platform) return false;
+    }
+    if (userDateFilter !== 'all' && u.created_date) {
+      const created = new Date(u.created_date).getTime();
+      const now = Date.now();
+      const ranges = {
+        today: 24 * 60 * 60 * 1000,
+        '2days': 2 * 24 * 60 * 60 * 1000,
+        week: 7 * 24 * 60 * 60 * 1000,
+        '2weeks': 14 * 24 * 60 * 60 * 1000,
+        month: 30 * 24 * 60 * 60 * 1000,
+      };
+      if (now - created > ranges[userDateFilter]) return false;
     }
     return true;
   });
@@ -1039,8 +1068,26 @@ export default function AdminDashboard() {
                   </button>
                 );
               })}
-              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.platform) && (
-                <button onClick={() => setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' })}
+              <select
+                value={userDateFilter}
+                onChange={e => setUserDateFilter(e.target.value)}
+                style={{
+                  padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  border: `1px solid ${userDateFilter !== 'all' ? '#0f2b6b' : 'var(--border-1)'}`,
+                  background: userDateFilter !== 'all' ? '#0f2b6b' : 'var(--surface-2)',
+                  color: userDateFilter !== 'all' ? 'white' : 'var(--text-2)',
+                  cursor: 'pointer', outline: 'none',
+                }}
+              >
+                <option value="all">כל הזמנים</option>
+                <option value="today">24 שעות אחרונות</option>
+                <option value="2days">יומיים אחרונים</option>
+                <option value="week">שבוע אחרון</option>
+                <option value="2weeks">שבועיים אחרונים</option>
+                <option value="month">חודש אחרון</option>
+              </select>
+              {(userFilters.verified || userFilters.social || userFilters.profileFilled || userFilters.viaAgent || userFilters.platform || userDateFilter !== 'all') && (
+                <button onClick={() => { setUserFilters({ verified: false, social: false, profileFilled: false, viaAgent: false, noAgent: false, platform: '' }); setUserDateFilter('all'); }}
                   style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}>
                   נקה פילטרים
                 </button>
