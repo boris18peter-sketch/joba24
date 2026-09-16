@@ -226,26 +226,50 @@ async function getPageAccessToken(userToken: string, pageId: string): Promise<st
   return null;
 }
 
+// Extracts only the user's free-text description, stripping the structured
+// form-field block (which starts with "--- emoji label ---") that some
+// categories append to the description field.
+function extractMainDescription(description: string): string {
+  if (!description) return '';
+  const separatorMatch = description.match(/---[^-].*?---/);
+  if (!separatorMatch) return description.trim();
+  const separatorIdx = description.indexOf(separatorMatch[0]);
+  return description.slice(0, separatorIdx).trim();
+}
+
 function formatPost(task: any): string {
   const lines: string[] = [];
 
-  lines.push(`🛠️ ${task.title || 'משימה חדשה'}`);
+  // ── Headline ──
+  lines.push(`🛠️ ${task.title || 'משימה חדשה ב-Joba24'}`);
+  lines.push('');
 
-  if (task.description) {
+  // ── Description (only the user's free text, not the structured form fields) ──
+  const desc = extractMainDescription(task.description);
+  if (desc && desc !== task.title) {
+    lines.push(desc);
     lines.push('');
-    lines.push(task.description);
   }
 
-  lines.push('');
-  if (task.city) lines.push(`📍 עיר: ${task.city}`);
-  if (task.price) lines.push(`💰 תקציב: ₪${task.price}`);
-  if (task.category) lines.push(`🏷️ קטגוריה: ${CATEGORY_LABELS[task.category] || task.category}`);
-  if (task.estimated_time) lines.push(`⏱️ זמן משוער: ${task.estimated_time}`);
-  if (task.payment_method) lines.push(`💳 תשלום: ${task.payment_method}`);
+  // ── Key details — compact inline row ──
+  const details: string[] = [];
+  if (task.city) details.push(`📍 ${task.city}`);
+  if (task.price) details.push(`💰 ₪${task.price}`);
+  if (task.category) details.push(`🏷️ ${CATEGORY_LABELS[task.category] || task.category}`);
+  if (details.length) {
+    lines.push(details.join('  ·  '));
+    lines.push('');
+  }
 
-  lines.push('');
-  lines.push('מחפשים עובד מקצועי? היכנסו ל-Joba24 והגישו הצעה!');
-  lines.push(`🔗 ${APP_URL}`);
+  // ── Poster name ──
+  if (task.client_name) {
+    lines.push(`👤 פורסם על ידי ${task.client_name}`);
+    lines.push('');
+  }
+
+  // ── Call to action + direct task link ──
+  lines.push('📲 מחפשים עבודה? לחצו לפרטים והגשת הצעה ↓');
+  lines.push(`${APP_URL}/task/${task.id}?utm_source=facebook`);
 
   return lines.join('\n');
 }
