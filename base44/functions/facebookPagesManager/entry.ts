@@ -104,15 +104,64 @@ export default async function(req: Request): Promise<Response> {
       // Format and post
       const message = formatPost(task);
 
+      // ── Upload media if the task has images or video ──
+      const taskImages = Array.isArray(task.images) ? task.images.filter(Boolean) : [];
+      const taskVideo = task.video_url || null;
+
+      // If there's a video, post it as a video post (Facebook doesn't allow
+      // mixing video + photos in a single post)
+      if (taskVideo) {
+        const videoResp = await fetch(`${GRAPH_API}/${settings.facebook_page_id}/videos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file_url: taskVideo,
+            description: message,
+            access_token: pageToken,
+          }),
+        });
+        const videoData = await videoResp.json();
+        if (videoData.error) return Response.json({ error: videoData.error.message }, { status: 500 });
+        return Response.json({ ok: true, post_id: videoData.id, media_type: 'video', post_url: `https://facebook.com/${settings.facebook_page_id}/videos/${videoData.id}` });
+      }
+
+      // Upload images as unpublished photos, then attach to the feed post
+      // (Facebook allows up to 10 photos per multi-photo post)
+      const attachedMedia: { media_fbid: string }[] = [];
+      for (const imgUrl of taskImages.slice(0, 10)) {
+        try {
+          const photoResp = await fetch(`${GRAPH_API}/${settings.facebook_page_id}/photos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: imgUrl,
+              published: false,
+              access_token: pageToken,
+            }),
+          });
+          const photoData = await photoResp.json();
+          if (photoData.id) {
+            attachedMedia.push({ media_fbid: photoData.id });
+          }
+        } catch {}
+      }
+
+      // ── Create feed post (text-only or multi-photo) ──
+      const postBody: Record<string, any> = { message, access_token: pageToken };
+      if (attachedMedia.length > 0) {
+        postBody.attached_media = attachedMedia;
+      }
+
       const postResp = await fetch(`${GRAPH_API}/${settings.facebook_page_id}/feed`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, access_token: pageToken }),
+        body: JSON.stringify(postBody),
       });
       const postData = await postResp.json();
       if (postData.error) return Response.json({ error: postData.error.message }, { status: 500 });
 
-      return Response.json({ ok: true, post_id: postData.id, post_url: `https://facebook.com/${postData.id.split('_')[0]}/posts/${postData.id.split('_')[1]}` });
+      const [pageId, postId] = postData.id.split('_');
+      return Response.json({ ok: true, post_id: postData.id, post_url: `https://facebook.com/${pageId}/posts/${postId}`, media_count: attachedMedia.length });
     }
 
     // ── TEST POST ──
@@ -241,8 +290,14 @@ function formatPost(task: any): string {
   const lines: string[] = [];
 
   // ── Headline ──
-  lines.push(`🛠️ ${task.title || 'משימה חדשה ב-Joba24'}`);
+  lines.push('🔔 עבודה חדשה ב-Joba24');
   lines.push('');
+
+  // ── Title ──
+  if (task.title) {
+    lines.push(task.title);
+    lines.push('');
+  }
 
   // ── Description (only the user's free text, not the structured form fields) ──
   const desc = extractMainDescription(task.description);
@@ -251,24 +306,20 @@ function formatPost(task: any): string {
     lines.push('');
   }
 
-  // ── Key details — compact inline row ──
+  // ── City + Price ──
   const details: string[] = [];
-  if (task.city) details.push(`📍 ${task.city}`);
-  if (task.price) details.push(`💰 ₪${task.price}`);
-  if (task.category) details.push(`🏷️ ${CATEGORY_LABELS[task.category] || task.category}`);
+  if (task.city) details.push(task.city);
+  if (task.price) details.push(`"מוכן לשלם" ₪${task.price}`);
   if (details.length) {
-    lines.push(details.join('  ·  '));
+    lines.push(details.join(' • '));
     lines.push('');
   }
 
-  // ── Poster name ──
-  if (task.client_name) {
-    lines.push(`👤 פורסם על ידי ${task.client_name}`);
-    lines.push('');
-  }
-
-  // ── Call to action + direct task link ──
-  lines.push('📲 מחפשים עבודה? לחצו לפרטים והגשת הצעה ↓');
+  // ── Call to action + clean link on its own line (no trailing text) ──
+  lines.push('מתאים לך? 👈');
+  // Link on its own line with no trailing punctuation/spaces — Facebook
+  // sometimes concatenates trailing characters into the URL, breaking the
+  // deep link. A clean line ensures the link is parsed correctly.
   lines.push(`${APP_URL}/task/${task.id}?utm_source=facebook`);
 
   return lines.join('\n');
