@@ -145,23 +145,85 @@ export default async function(req: Request): Promise<Response> {
 
 // ── Helpers ──
 
+// Lists managed Pages including Business-Manager-owned Pages.
+// /me/accounts returns only directly-managed Pages. Pages owned by or shared
+// with a Business Manager require business_management scope and separate
+// calls to /{business-id}/owned_pages and /{business-id}/client_pages.
 async function listPages(userToken: string): Promise<any[] | Response> {
-  const resp = await fetch(`${GRAPH_API}/me/accounts?fields=id,name,access_token&limit=100`, {
+  // 1. Direct pages
+  const acctResp = await fetch(`${GRAPH_API}/me/accounts?fields=id,name,access_token&limit=100`, {
     headers: { Authorization: `Bearer ${userToken}` },
   });
-  const data = await resp.json();
-  if (data.error) return Response.json({ error: data.error.message }, { status: 500 });
-  return (data.data || []).map((p: any) => ({ id: p.id, name: p.name }));
+  const acctData = await acctResp.json();
+  if (acctData.error) return Response.json({ error: acctData.error.message }, { status: 500 });
+
+  const directPages = (acctData.data || []).map((p: any) => ({ id: p.id, name: p.name }));
+  const pageMap = new Map<string, any>();
+  for (const p of directPages) pageMap.set(p.id, p);
+
+  // 2. Business-Manager pages
+  const bizResp = await fetch(`${GRAPH_API}/me/businesses?fields=id,name&limit=100`, {
+    headers: { Authorization: `Bearer ${userToken}` },
+  });
+  const bizData = await bizResp.json();
+  if (!bizData.error && bizData.data) {
+    for (const biz of bizData.data) {
+      const [clientResp, ownedResp] = await Promise.all([
+        fetch(`${GRAPH_API}/${biz.id}/client_pages?fields=id,name,access_token&limit=100`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+        fetch(`${GRAPH_API}/${biz.id}/owned_pages?fields=id,name,access_token&limit=100`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+      ]);
+      const clientData = await clientResp.json();
+      const ownedData = await ownedResp.json();
+      for (const p of (clientData.data || [])) {
+        if (!pageMap.has(p.id)) pageMap.set(p.id, { id: p.id, name: p.name });
+      }
+      for (const p of (ownedData.data || [])) {
+        if (!pageMap.has(p.id)) pageMap.set(p.id, { id: p.id, name: p.name });
+      }
+    }
+  }
+
+  return Array.from(pageMap.values());
 }
 
 async function getPageAccessToken(userToken: string, pageId: string): Promise<string | null> {
-  const resp = await fetch(`${GRAPH_API}/me/accounts?fields=id,name,access_token&limit=100`, {
+  // Try direct pages first
+  const acctResp = await fetch(`${GRAPH_API}/me/accounts?fields=id,name,access_token&limit=100`, {
     headers: { Authorization: `Bearer ${userToken}` },
   });
-  const data = await resp.json();
-  if (data.error) return null;
-  const page = (data.data || []).find((p: any) => p.id === pageId);
-  return page?.access_token || null;
+  const acctData = await acctResp.json();
+  if (!acctData.error) {
+    const page = (acctData.data || []).find((p: any) => p.id === pageId);
+    if (page?.access_token) return page.access_token;
+  }
+
+  // Try Business-Manager pages
+  const bizResp = await fetch(`${GRAPH_API}/me/businesses?fields=id,name&limit=100`, {
+    headers: { Authorization: `Bearer ${userToken}` },
+  });
+  const bizData = await bizResp.json();
+  if (!bizData.error && bizData.data) {
+    for (const biz of bizData.data) {
+      const [clientResp, ownedResp] = await Promise.all([
+        fetch(`${GRAPH_API}/${biz.id}/client_pages?fields=id,name,access_token&limit=100`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+        fetch(`${GRAPH_API}/${biz.id}/owned_pages?fields=id,name,access_token&limit=100`, {
+          headers: { Authorization: `Bearer ${userToken}` },
+        }),
+      ]);
+      const clientData = await clientResp.json();
+      const ownedData = await ownedResp.json();
+      const found = [...(clientData.data || []), ...(ownedData.data || [])].find((p: any) => p.id === pageId);
+      if (found?.access_token) return found.access_token;
+    }
+  }
+
+  return null;
 }
 
 function formatPost(task: any): string {
