@@ -1,6 +1,27 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const CITY_CENTERS = {
+// ═══════════════════════════════════════════════════════════════
+//  REALISTIC CONTENT LIBRARY — Hebrew, like real Facebook posts
+// ═══════════════════════════════════════════════════════════════
+
+const FIRST_NAMES_MALE = [
+  'דניאל', 'רון', 'איתי', 'יואב', 'אור', 'נועם', 'אביב', 'עידן', 'תום', 'גיא',
+  'עומרי', 'אלון', 'יניב', 'שחר', 'רועי', 'אסף', 'מאור', 'טל', 'ברק', 'ניר',
+  'אריאל', 'יונתן', 'עדי', 'יוסי', 'אבי', 'משה', 'דוד', 'אלעד', 'ערן', 'ליאור',
+];
+const FIRST_NAMES_FEMALE = [
+  'מיה', 'נועה', 'יובל', 'שירה', 'תמר', 'רוני', 'עדן', 'אלונה', 'ליאת', 'מאיה',
+  'ענבר', 'הדר', 'טליה', 'אורי', 'גילי', 'ספיר', 'אופיר', 'קורין', 'רומי', 'נגה',
+  'ירדן', 'אורלי', 'דנה', 'הילה', 'מרב', 'ורד', 'שלי', 'אפרת', 'תהילה', 'נועה',
+];
+const LAST_NAMES = [
+  'כהן', 'לוי', 'מזרחי', 'פרץ', 'ביטון', 'אברהם', 'פרידמן', 'מאיר', 'אסולין',
+  'חזן', 'דהן', 'גבאי', 'שפירא', 'רוזנברג', 'גולדברג', 'אבני', 'בן דוד', 'חזקיה',
+  'נחמיאס', 'שוסטר', 'אזולאי', 'כץ', 'שמש', 'ארביב', 'עמרני', 'בוקריס', 'גרין',
+  'לוינסון', 'מור', 'שטרן',
+];
+
+const CITY_CENTERS: Record<string, { lat: number; lng: number }> = {
   'תל אביב': { lat: 32.0853, lng: 34.7818 },
   'ירושלים': { lat: 31.7683, lng: 35.2137 },
   'חיפה': { lat: 32.7940, lng: 34.9896 },
@@ -28,73 +49,427 @@ const CITY_CENTERS = {
   'קרית שמונה': { lat: 33.2070, lng: 35.5680 },
 };
 
-const TASK_TITLES = [
-  'תיקון ברז מדמם', 'התקנת מנורה', 'צביעת קיר', 'ניקיון דירה',
-  'הובלת רהיטים', 'תיקון דלת', 'הרכבת רהיטים', 'תיקון מזגן',
-  'גינון וטיפול בצמחים', 'משלוח חבילה', 'סידור מחסן', 'תיקון כיור',
-  'התקנת מדף', 'צביעת דלת', 'ניקיון חלונות', 'פינוי פסולת',
-  'הובלת קופסאות', 'תיקון דוד שמש', 'טיפול בגינה', 'סידור בית',
-  'תיקון חשמל', 'החלפת מנעול', 'ניקיון לאחר שיפוץ', 'הרכבת מטבח',
-  'תיקון אינסטלציה', 'התקנת וילון', 'צביעת מרפסת', 'הובלת מקרר',
-  'ניקיון ספות', 'תיקון פרגולה', 'התקנת מאוורר', 'גיזום עצים',
-];
-
-const CATEGORIES = [
-  'plumbing', 'electricity', 'handyman', 'cleaning', 'moving',
-  'heavy_lifting', 'painting', 'carpentry', 'ac', 'locksmith',
-  'gardening', 'home_maintenance', 'delivery', 'shopping', 'personal_help', 'other'
-];
-
 const STREETS = [
   'רוטשילד', 'הרצל', 'דיזנגוף', 'בן גוריון', 'אלנבי', 'טרומפלדור',
-  'אבן גבירול', 'ז\'בוטינסקי', 'ויצמן', 'בן יהודה', 'הנביאים', 'יפו',
+  'אבן גבירול', 'ויצמן', 'בן יהודה', 'הנביאים', 'יפו',
   'החשמונאים', 'הראשונים', 'העצמאות', 'המכבים', 'הגיבורים', 'העלייה',
-  'השלום', 'הגבורה', 'משה לוי', 'דרך השלום', 'התמר', 'הזית',
+  'השלום', 'הגבורה', 'דרך השלום', 'התמר', 'הזית', 'הגפן',
+  'התמרים', 'הדקל', 'הרימון', 'הדסה', 'העמק',
 ];
+
+const CONTENT: Record<string, { titles: string[]; descriptions: string[] }> = {
+  plumbing: {
+    titles: [
+      'ברז מטפטף במטבח - צריך תיקון דחוף',
+      'הצפה בחדר אמבטיה, מישהו יכול לבוא מהר?',
+      'החלפת ברז כיור אמבטיה',
+      'תיקון צנרת מים במטבח',
+      'ברז ראשי מדמם, צריך עזרה',
+      'נזילה מתחת לכיור - דחוף',
+      'החלפת מערכת דוד שמש',
+      'תיקון אסלה שמדממת',
+      'פתיחת סתימה בכיור המטבח',
+      'התקנת מטבח חדש - חיבורי מים',
+    ],
+    descriptions: [
+      'הברז במטבח מתחיל לטפטף מאז אתמול בערב ולא הצלחתי לסגור אותו לגמרי. גר בקומה 3 והמים מטפטפים כל הזמן. מישהו יכול לבוא היום או מחר בבוקר?',
+      'יש לי נזילה קטנה מתחת לכיור במטבח. כנראה צריך להחליף אטם או צנרת. הבאתי חלקים מהחנות אבל אני לא מצליח לפרק את הצנרת לבד. מתאים למישהו לבוא בצהריים?',
+      'הדוד לא מחמם מים כבר יומיים. בדקתי את המפסק והוא דלוק, כנראה צריך להחליף נורה או תרמוסטט. מתאים למישהו לבוא מחר בבוקר? מתגורר במרכז העיר.',
+      'האסלה בשירותים מדממת כל הזמן והמים זורמים ללא הפסקה. ניסיתי לכוון את המצוף אבל זה לא עזר. צריך מישהו שמבין באינסטלציה שיכול לבוא מהר.',
+      'החלפתי את הברז במטבח אבל יש טפטוף קטן מהחיבור. כנראה לא הידקתי מספיק או צריך אטם חדש. עבודה קטנה אבל דחוף לי. תודה!',
+    ],
+  },
+  electricity: {
+    titles: [
+      'התקנת מנורת תקרה בסלון',
+      'תקלת חשמל במטבח - המפסק קופץ',
+      'החלפת שקע תקול',
+      'התקנת נקודת חשמל למזגן',
+      'תיקון גוף תאורה שלא עובד',
+      'התקנת פחת חשמל חדש',
+      'בדיקת לוח חשמל ראשי',
+      'חיבור כיריים חשמליות חדשות',
+      'התקנת גוף תאורה בחצר',
+      'תיקון מנורת חירום שלא נדלקת',
+    ],
+    descriptions: [
+      'המפסק במטבח קופץ כל פעם שאני מדליק את התנור. ניסיתי להוריד עומס אבל זה ממשיך. כנראה יש בעיה בחיווט או במפסק עצמו. מישהו יכול לבוא לבדוק?',
+      'קניתי מנורת תקרה חדשה לסלון וצריך מישהו שירכיב אותה. יש כבר נקודת חשמל בתקרה, רק צריך לחבר ולתקן. עבודה של כחצי שעה בערך.',
+      'יש לי שקע בחדר שינה שלא עובד. כל השאר בבית תקינים. בדקתי את המפסק והוא דלוק. כנראה החיבור בפנים התרופף או משהו. צריך בעל מקצוע.',
+      'התקנתי מזגן חדש וצריך לחבר נקודת חשמל נפרדת עם הגנה. המזגן הוא 1.5 כוח סוס, צריך שקע מתאים ופחת. מתאים למישהו לבוא השבוע?',
+      'המנורה במסדרון מהבהבת כל הזמן ולפעמים כבה לגמרי. החלפתי נורה אבל זה לא עזר. כנראה המפסק או החיווט. עבודה קטנה אבל דחוף לי.',
+    ],
+  },
+  handyman: {
+    titles: [
+      'הרכבת ארון מטבח IKEA',
+      'תליית מדפים בסלון',
+      'תיקון דלת שלא נסגרת',
+      'הרכבת וילון מעלית',
+      'תיקון ידית דלת פנימית',
+      'התקנת מוט וילון בחדר שינה',
+      'תיקון ארון הזזה שירד מהפסים',
+      'הרכבת מדף זכוכית במקלחת',
+      'תיקון רהיט מתפרק',
+      'התקנת וילון גלילה',
+    ],
+    descriptions: [
+      'קניתי ארון מטבח מאיקאה וצריך מישהו להרכיב. זה ארון גדול עם 4 דלתות. כל החלקים פה, רק צריך כלים וידיים טובות. מתאים למישהו שיש לו ניסיון עם איקאה.',
+      'יש לי 3 מדפים לתלות בסלון. קניתי ברגים ודיבלים. הקיר הוא גבס אז צריך דיבלים מתאימים. עבודה קטנה, חצי שעה בערך. מתאים להיום או מחר?',
+      'הדלת בחדר השינה לא נסגרת טוב. נראה שהציר זז קצת או שהדלת התעוותה. צריך מישהו שיכול ליישר את הציר או להחליף אותו. מתאים לבוא בבוקר?',
+      'הוילון המעלית בסלון נתקע. הוא עולה חצי ואז נעצר. כנראה המנגנון או החוטים. צריך מישהו שמבין בזה שיוכל לפרק ולתקן או להחליף את המנגנון.',
+      'הידית בדלת הכניסה רופפת וקשה לפתוח. נראה שהברגים מתפרקים מבפנים. צריך לחזק או להחליף את המנעול. מישהו יכול לבוא היום? זה דחוף כי קשה לנעול.',
+    ],
+  },
+  cleaning: {
+    titles: [
+      'ניקיון יסודי לדירת 3 חדרים',
+      'ניקיון דירה לאחר שיפוץ',
+      'ניקיון חלונות ותריסים',
+      'ניקיון ספות וכורסאות',
+      'ניקיון מקצועי למשרד קטן',
+      'ניקיון מטבח ושירותים',
+      'ניקיון לפני כניסה לדירה חדשה',
+      'ניקיון שטיחים וריצפה',
+      'ניקיון חוזר פעם בשבוע',
+      'ניקיון מאסיבי למעבר דירה',
+    ],
+    descriptions: [
+      'עוברים דירה וצריך ניקיון יסודי לפני שנכנסים. מדובר בדירת 3 חדרים, 80 מטר. כולל מטבח, שירותים, חלונות ורצפות. מתאים למישהו עם ניסיון בניקיון דירות. צריך לסיים עד סוף השבוע.',
+      'סיימנו שיפוץ בדירה ויש המון אבק ולכלוך. צריך ניקיון יסודי כולל הסרת שאריות צבע, ניקוי חלונות, רצפות ומטבח. דירת 4 חדרים. עדיף מישהו עם ציוד מקצועי.',
+      'יש לי 3 ספות בד שצריך לנקות. יש כתמים קטנים מאוכל ושתייה. צריך ניקוי עמוק עם קיטור או חומרים מתאימים. מתאים למישהו שיש לו מכשיר ניקוי מקצועי.',
+      'מחפש מנקה קבוע פעם בשבוע לדירת 3 חדרים. ניקיון שוטף כולל אבק, רצפות, מטבח ושירותים. עדיף מישהו מהאזור. הכי טוב יום שישי בבוקר או שישי בצהריים.',
+      'צריך ניקיון חלונות בדירת 4 חדרים בקומה 2. יש 8 חלונות כולל תריסים. יש גם מרפסת. צריך סולם וציוד. מתאים למישהו עם ניסיון בניקוי חלונות בגובה.',
+    ],
+  },
+  moving: {
+    titles: [
+      'הובלת דירת 2 חדרים - מקומית',
+      'הובלת רהיטים בודדים',
+      'מעבר דירה עם אריזה',
+      'הובלת מקרר ומכונת כביסה',
+      'פינוי דירה לפני שיפוץ',
+      'הובלה מתל אביב לירושלים',
+      'העברת ריהוט מחנות',
+      'הובלת כביסה למעונות',
+      'פירוק והובלת ארון גדול',
+      'הובלת מכשירי חשמל',
+    ],
+    descriptions: [
+      'עוברים מתל אביב לרמת גן, דירת 2 חדרים. יש מיטה, ארון, שולחן, ספה וקופסאות. לא צריך אריזה, רק הובלה. מעבר באותו יום. יש מעלית בשני הבניינים. מתאים למישהו עם רכב מתאים.',
+      'צריך להעביר מקרר ומכונת כביסה מהחנות לדירה. מרחק קצר, אותה עיר. צריך רכב עם גובה מתאים ואמצעי אבטוח. המקרר גדול, כנראה צריך 2 אנשים. מתאים להיום או מחר.',
+      'עוברים דירה וצריכים עזרה באריזה והובלה. דירת 3 חדרים, צריך לארוז הכל ולהעביר לדירה החדשה באותה עיר. עדיף צוות של 2-3 אנשים. מתאים למי שיש לו קרטונים וחומרי אריזה.',
+      'צריך לפנות דירת 3 חדרים לפני שיפוץ. הכל צריך לצאת - רהיטים, מכשירים, פסולת. יש גם כמה דברים שצריך לשמור ולהעביר למחסן. מחפש צוות עם רכב גדול. עדיף בסוף השבוע.',
+      'קניתי ספה גדולה וצריך להעביר מהחנות לדירה. מדובר בספה פינתית, די כבדה. מרחק של כ-10 דקות נסיעה. צריך רכב מתאים ו-2 אנשים. יש מעלית בדירה.',
+    ],
+  },
+  painting: {
+    titles: [
+      'צביעת דירת 3 חדרים',
+      'צביעת קיר אחד בסלון',
+      'צביעה לפני מכירת דירה',
+      'צביעת חדר ילדים',
+      'צביעת תקרה במטבח',
+      'תיקון סדקים וצביעה',
+      'צביעת דלתות פנימיות',
+      'צביעת מרפסת ומעקה',
+      'צביעת חדר מדרגות',
+      'שיפוץ וצביעת חדר אמבטיה',
+    ],
+    descriptions: [
+      'צריך לצבוע דירת 3 חדרים, 70 מטר. כולל תקרות וקירות. הקירות במצב סביר, צריך רק לתקן כמה סדקים קטנים. צריך 2 שכבות. עדיף צבע לבן או בהיר. מתאים למישהו עם ניסיון.',
+      'רוצה לצבוע קיר אחד בסלון בצבע שונה מהשאר. קיר אקספוזה או צבע עמוק. כבר קניתי צבע ויש סרט הגנה. עבודה של כשעתיים-שלוש. מתאים לסוף השבוע.',
+      'מוכרים את הדירה וצריך לרענן את הצבע. דירת 4 חדרים, צריך צבע לבן על הקירות והתקרות. הכל מוכן, הדירה ריקה. צריך לסיים תוך 2-3 ימים. מתאים למישהו עם צוות.',
+      'מתכננים לשפץ את חדר הילדים. צריך לצבוע בצבע ידידותי לילדים, אולי עם ציור קיר או צורות. החדר קטן, כ-12 מטר. מחפש מישהו יצירתי עם ניסיון בצביעת חדרי ילדים.',
+      'יש סדקים בתקרה של המטבח וצריך לתקן ולצבוע מחדש. הסדקים לא גדולים אבל נראים רע. צריך שפכטל, צבע וכישורים. עבודה קטנה, חצי יום. מתאים למישהו מהאזור.',
+    ],
+  },
+  carpentry: {
+    titles: [
+      'הרכבת ארון מטבח מותאם',
+      'תיקון דלת ארון שבורה',
+      'בניית מדף עץ לספרים',
+      'התקנת ריצפת פרקט',
+      'תיקון כיסא מתפרק',
+      'בניית שולחן עבודה',
+      'הרכבת מיטה זוגית',
+      'חידוש ריהוט עץ',
+      'התקנת פרגולה במרפסת',
+      'בניית ארון קיר מותאם',
+    ],
+    descriptions: [
+      'צריך נגר שיבנה ארון מטבח מותאם אישית. יש לי תוכנית ומידות. המטבח קטן וצריך פתרון חכם לניצול מקסימלי של המקום. עדיף מישהו עם ניסיון במטבחים מותאמים.',
+      'הדלת של ארון המטבח נשברה בציר. עץ הדלת קצת התפורר מהבורג. צריך לתקן את החור ולהרכיב ציר חדש או להחליף את הדלת. עבודה קטנה אבל צריך יד אמן.',
+      'רוצה לבנות מדף עץ גדול לספרים בסלון. אורך 2 מטר, 5 מדפים. יש לי עץ וחומרים. צריך מישהו שיחתוך וירכיב. עדיף עץ מלא, לא לוחות חלקיקים. מתאים לסוף השבוע.',
+      'רוצה להחליף את הרצפה בסלון לפרקט. שטח של כ-25 מטר. צריך להוריד את האריחים הישנים ולהתקין פרקט חדש. יש לי את הפרקט, צריך רק ידיים. מתאים למישהו עם ניסיון בפרקט.',
+      'יש לי כיסא עץ ישן שמתפרק. הדבק התפרק וכמה חיבורים רופפים. צריך לפרק, להדביק מחדש ולחזק. זה כיסא יקר ולא רוצה לזרוק. מחפש נגר שיכול לשפץ.',
+    ],
+  },
+  ac: {
+    titles: [
+      'התקנת מזגן מפוצל חדש',
+      'תיקון מזגן שלא מקרר',
+      'ניקוי מזגן מרכזי',
+      'מילוי גז למזגן',
+      'תיקון מזגן שמרעיש',
+      'התקנת מזגן אינוורטר',
+      'תחזוקת מזגן לקראת קיץ',
+      'פירוק והתקנת מזגן במעבר דירה',
+      'תיקון דליפת מים ממזגן',
+      'החלפת מנוע מזגן',
+    ],
+    descriptions: [
+      'קניתי מזגן מפוצל 1.5 כוח סוס וצריך התקנה. הדירה בקומה 3, יש מקום מוכן עם חשמל ונקז. צריך רק להרכיב את היחידה הפנימית והחיצונית ולחבר צנרת. מתאים למישהו עם רישיון מזגנים.',
+      'המזגן בסלון לא מקרר כבר כמה ימים. מדליק אבל מוציא אוויר רגיל. אולי צריך גז או יש תקלה במדחס. צריך מישהו שיכול לבדוק ולתקן. מזגן תדיראן בן 5 שנים.',
+      'צריך לנקות את המזגן המרכזי לפני הקיץ. יש 3 יחידות פנימיות ויחידה חיצונית אחת. צריך ניקוי יסודי עם חומרים. המערכת בת 3 שנים, עובדת טוב אבל צריך תחזוקה.',
+      'המזגן מטפטף מים על הרצפה. כנראה הנקז סתום או שיש בעיה בניקוז. ניסיתי לנקות אבל זה לא עזר. צריך מישהו שיכול לפתוח ולנקות את צינור הניקוז. דחוף כי זה מציף.',
+    ],
+  },
+  gardening: {
+    titles: [
+      'טיפוח גינה פרטית',
+      'גיזום עצים ושיחים',
+      'הקמת מדשאה קטנה',
+      'עיצוב גינת גג',
+      'ניקוי עלים ופסולת גינה',
+      'התקנת מערכת השקיה',
+      'נטיעת צמחים ופרחים',
+      'תיקון גדר גינה',
+      'הכנת גינה לקראת עונה',
+      'תחזוקה חודשית של גינה',
+    ],
+    descriptions: [
+      'יש לי גינה קטנה בבית שצריכה שיפוץ. צריך לנקות עשבים, לגזום שיחים, ולשתול כמה צמחים חדשים. הגינה בערך 30 מטר. מחפש מישהו עם ידע בגינון שיכול להפוך את זה למשהו יפה.',
+      'יש לי עץ גדול בחצר שצריך גיזום דחוף. הענפים מגיעים לחלונות ולחשמל. צריך מישהו עם ציוד מתאים (סולם, מסור). העץ בגובה של כ-4 מטר. עדיף מישהו עם ניסיון בגיזום עצים גבוהים.',
+      'רוצה להקים מדשאה קטנה בחצר האחורית. שטח של כ-15 מטר. צריך להכין את הקרקע, להניח דשא ולהתקין מערכת השקיה קטנה. יש חיבור מים קרוב. מחפש מישהו שיכול לעשות את כל העבודה.',
+      'יש לי גינת גג שמוזנחת. צריך לנקות, לסדר עציצים, להוסיף אדמה ולשתול מחדש. יש כבר עציצים ומתקני השקיה אבל צריך עזרה בסידור. מתאים למישהו שאוהב גינון ויש לו עין לעיצוב.',
+    ],
+  },
+  delivery: {
+    titles: [
+      'משלוח חבילה גדולה',
+      'איסוף רהיט מחנות',
+      'העברת מסמכים דחופה',
+      'משלוח עוגה לאירוע',
+      'הסעת כלב לוטרינר',
+      'איסוף מכבסה',
+      'משלוח מזון למשרד',
+      'העברת ציוד למחסן',
+      'משלוח פרחים ליום הולדת',
+      'איסור חומרי בניין',
+    ],
+    descriptions: [
+      'צריך לאסוף חבילה גדולה ממעבדה בפתח תקווה ולהביא לתל אביב. החבילה במשקל כ-15 קילו, צריך רכב מתאים. מתאים למישהו שנוסע בכיוון או יכול לעשות סטייה קטנה.',
+      'קניתי שולחן מחנות רהיטים באזור התעשייה וצריך שמישהו יאסוף ויביא לדירה. השולחן מתפרק וארוז בקרטון. משקל כ-20 קילו. מרחק נסיעה כ-15 דקות. מתאים להיום או מחר.',
+      'צריך להעביר מסמכים חשובים ממשרד בתל אביב לעורך דין ברמת גן. מדובר במעטפה אחת, דחוף מאוד. צריך שיגיע תוך שעה. מתאים למישהו שנמצא באזור ויכול לקחת את זה עכשיו.',
+      'הזמנתי עוגה ליום הולדת וצריך מישהו שיאסוף מהקונדיטוריה ויביא למקום האירוע. העוגה עדינה וצריך להוביל בזהירות. מרחק כ-20 דקות נסיעה. מתאים להיום בצהריים.',
+    ],
+  },
+  locksmith: {
+    titles: [
+      'פתיחת דלת נעולה - נעלתי בחוץ',
+      'החלפת מנעול דלת כניסה',
+      'התקנת מנעול חכם',
+      'שכפול מפתחות',
+      'תיקון מנעול דלת שנתקע',
+      'החלפת צילינדר',
+      'פריצת רכב - מפתח בפנים',
+      'התקנת חומר פריצה לדלת',
+      'תיקון מנעול כספת',
+      'החלפת צירי דלת כניסה',
+    ],
+    descriptions: [
+      'נעלתי את עצמי בחוץ! הדלת נעולה ואין לי מפתח. צריך מנעולן שיכול לבוא מהר. גר בקומה 2, יש דלת רגילה עם צילינדר. מוכן לשלם מחיר מלא רק שמישהו יבוא עכשיו.',
+      'עברתי לדירה חדשה וצריך להחליף את המנעול של דלת הכניסה. רוצה מנעול איכותי עם צילינדר פנימי. יש לי מנעול חדש, רק צריך התקנה. מתאים למישהו שיכול לבוא היום או מחר.',
+      'רוצה להתקין מנעול חכם בדלת הכניסה. קניתי מנעול עם קוד ובלוטות. צריך מישהו שיכול להסיר את הישן ולהתקין את החדש. דלת מתכת. מתאים למישהו עם ניסיון במנעולים חכמים.',
+      'המנעול בדלת הכניסה נתקע וקשה לפתוח. צריך לסכך או להחליף את הצילינדר. לפעמים צריך לנדנד את המפתח כמה פעמים. עבודה קטנה אבל דחוף. מתאים למישהו שיכול לבוא היום.',
+    ],
+  },
+};
+
+const GENERIC_TITLES = [
+  'עזרה כללית בבית',
+  'מחפש בעל מקצוע',
+  'עבודה קטנה בבית',
+  'צריך עזרה מהירה',
+  'מחפש מישהו לעבודה',
+  'עזרה דרושה',
+];
+
+const GENERIC_DESCRIPTIONS = [
+  'צריך עזרה כללית בבית. מדובר בעבודה לא גדולה, בערך שעתיים. מתאים למישהו מהאזור שיכול לבוא השבוע. מוכן לשלם מחיר הוגן.',
+  'מחפש בעל מקצוע לעבודה קטנה. העבודה די פשוטה אבל צריך מישהו עם ניסיון. יש לי את החומרים, צריך רק ידיים טובות. מתאים להיום או מחר.',
+  'צריך עזרה מהירה עם משימה בבית. לא משהו מסובך אבל אני לא מצליח לבד. מתאים למישהו שגר באזור ויכול לבוא תוך זמן קצר. תודה!',
+];
+
+const ALL_CATEGORIES = Object.keys(CONTENT).concat([
+  'home_maintenance', 'car', 'transportation', 'shopping', 'pets',
+  'babysitting', 'elderly_care', 'tutoring', 'fitness', 'photography',
+  'events', 'personal_help', 'it_support', 'other',
+]);
+
+// ═══════════════════════════════════════════════════════════════
+//  HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+
+function randomFrom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function roundPrice(price: number): number {
+  return Math.round(price / 50) * 50;
+}
+
+function generatePhone(): string {
+  const prefixes = ['050', '052', '053', '054', '055', '058'];
+  const prefix = randomFrom(prefixes);
+  const num = Math.floor(1000000 + Math.random() * 8999999);
+  return `${prefix}-${num}`;
+}
+
+function generateBio(isMale: boolean, profession: string): string {
+  const bios = [
+    `${profession} עם ניסיון של שנים. זמין ואמין, עבודה איכותית מובטחת.`,
+    `אבא לשניים, עובד במקצוע כבר ${Math.floor(Math.random() * 15 + 3)} שנים. שירות אדיב ומחירים הוגנים.`,
+    `עוסק בתחום ${Math.floor(Math.random() * 10 + 2)} שנים. זמין לעבודות בכל הארץ. הגינות לפני הכל.`,
+    `${isMale ? 'בחור' : 'בחורה'} רציני${isMale ? '' : 'ת'} עם ניסיון בתחום. מחויב/ה לאיכות ולשירות. זמין/ה גם בסופי שבוע.`,
+    `מקצועי ואמין. ניסיון רב בעבודות ${profession}. מחירים נוחים וזמינות גבוהה.`,
+  ];
+  return randomFrom(bios);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DEMO USER POOL MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+async function getOrCreateDemoUsers(base44: any, count: number) {
+  const existing = await base44.asServiceRole.entities.DemoUser.list('-created_date', 100);
+  if (existing.length >= count) return existing;
+
+  const needed = count - existing.length;
+  const cities = Object.keys(CITY_CENTERS);
+  const newUsers = [];
+
+  for (let i = 0; i < needed; i++) {
+    const isMale = Math.random() > 0.5;
+    const firstName = randomFrom(isMale ? FIRST_NAMES_MALE : FIRST_NAMES_FEMALE);
+    const lastName = randomFrom(LAST_NAMES);
+    const fullName = `${firstName} ${lastName}`;
+    const demoId = `demo_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const city = randomFrom(cities);
+    const profession = randomFrom(["אינסטלטור", "חשמלאי", "יד אמן", "ניקיון", "שפכט", "נגר", "מנעולן", "הובלות", "גנן", "בעל מקצוע"]);
+    const rating = Math.round((3.5 + Math.random() * 1.5) * 10) / 10;
+    const isVerified = Math.random() > 0.35;
+    const hasInstagram = Math.random() > 0.6;
+    const hasFacebook = Math.random() > 0.7;
+
+    const user = await base44.asServiceRole.entities.DemoUser.create({
+      demo_id: demoId,
+      full_name: fullName,
+      phone: generatePhone(),
+      bio: generateBio(isMale, profession),
+      profession,
+      preferred_categories: [randomFrom(ALL_CATEGORIES), randomFrom(ALL_CATEGORIES)],
+      preferred_cities: [city],
+      profile_photo: `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(fullName)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`,
+      rating,
+      rating_count: Math.floor(Math.random() * 40) + 1,
+      tasks_completed: Math.floor(Math.random() * 50),
+      tasks_posted: Math.floor(Math.random() * 25),
+      is_verified: isVerified,
+      instagram_username: hasInstagram ? fullName.replace(/\s/g, "").toLowerCase() + Math.floor(Math.random() * 99) : undefined,
+      instagram_verified: hasInstagram && isVerified && Math.random() > 0.5,
+      facebook_username: hasFacebook ? fullName.replace(/\s/g, "").toLowerCase() : undefined,
+      facebook_verified: hasFacebook && isVerified && Math.random() > 0.5,
+      repeat_hires: Math.floor(Math.random() * 10),
+      avg_response_minutes: Math.floor(Math.random() * 60) + 5,
+      on_time_rate: Math.round((0.7 + Math.random() * 0.3) * 100) / 100,
+      certificates: [],
+      certificate_files: [],
+      profile_media: [],
+    });
+    newUsers.push(user);
+  }
+
+  return [...existing, ...newUsers];
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MAIN HANDLER
+// ═══════════════════════════════════════════════════════════════
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { action, city, count, minPrice, maxPrice } = body;
+    const { action, city, count, minPrice, maxPrice, categories } = body;
 
-    if (action === 'cleanup') {
-      const tasks = await base44.entities.Task.filter({ client_id: user.id }, '-created_date', 500);
-      const bulkTasks = tasks.filter(t => t.title?.startsWith('🧪🏙️'));
-      let deleted = 0;
-      for (const t of bulkTasks) {
+    // ── CLEANUP ──
+    if (action === "cleanup") {
+      // Old format: tasks with emoji prefix under admin account
+      const adminTasks = await base44.entities.Task.filter({ client_id: user.id }, "-created_date", 500);
+      const oldDemo = adminTasks.filter((t: any) => t.title?.startsWith("🧪🏙️"));
+      for (const t of oldDemo) {
         await base44.entities.Task.delete(t.id);
-        deleted++;
       }
-      return Response.json({ success: true, deleted });
+
+      // New format: tasks with demo_ client_id
+      const allTasks = await base44.entities.Task.list("-created_date", 500);
+      const newDemo = allTasks.filter((t: any) => t.client_id?.startsWith("demo_"));
+      for (const t of newDemo) {
+        await base44.entities.Task.delete(t.id);
+      }
+
+      // Delete demo users
+      const demoUsers = await base44.asServiceRole.entities.DemoUser.list("-created_date", 200);
+      for (const u of demoUsers) {
+        await base44.asServiceRole.entities.DemoUser.delete(u.id);
+      }
+
+      return Response.json({ success: true, deleted: oldDemo.length + newDemo.length });
     }
 
-    if (action === 'generate') {
-      if (!city || !count) return Response.json({ error: 'city and count required' }, { status: 400 });
+    // ── GENERATE ──
+    if (action === "generate") {
+      if (!city || !count) return Response.json({ error: "city and count required" }, { status: 400 });
       const center = CITY_CENTERS[city] || { lat: 32.0853, lng: 34.7818 };
       const min = Math.max(1, Number(minPrice) || 100);
       const max = Math.max(min, Number(maxPrice) || 2000);
       const n = Math.min(100, Math.max(1, Number(count)));
 
-      const estimatedTimes = ['15m', '30m', '1h', '2h'];
-      const paymentMethods = ['Cash', 'Bit', 'PayBox'];
+      const selectedCats: string[] = Array.isArray(categories) && categories.length > 0
+        ? categories
+        : ALL_CATEGORIES;
+
+      const demoUsers = await getOrCreateDemoUsers(base44, 15);
+
+      const estimatedTimes = ["15 דקות", "30 דקות", "שעה", "שעתיים", "3 שעות", "חצי יום"];
+      const paymentMethods = ["Cash", "Bit", "PayBox"];
+      const urgencyTags = ["immediate", "few_hours", "evening", "flexible"];
 
       const tasks = [];
       for (let i = 0; i < n; i++) {
-        const title = `🧪🏙️ ${TASK_TITLES[Math.floor(Math.random() * TASK_TITLES.length)]}`;
-        const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
-        const price = Math.round(min + Math.random() * (max - min));
+        const category = randomFrom(selectedCats);
+        const content = CONTENT[category];
+        const title = content ? randomFrom(content.titles) : randomFrom(GENERIC_TITLES);
+        const description = content ? randomFrom(content.descriptions) : randomFrom(GENERIC_DESCRIPTIONS);
+
+        const rawPrice = min + Math.random() * (max - min);
+        const price = roundPrice(rawPrice);
+
         const lat = center.lat + (Math.random() - 0.5) * 0.06;
         const lng = center.lng + (Math.random() - 0.5) * 0.06;
-        const street = STREETS[Math.floor(Math.random() * STREETS.length)];
+        const street = randomFrom(STREETS);
         const num = Math.floor(Math.random() * 120) + 1;
+
+        const demoUser = randomFrom(demoUsers);
 
         tasks.push({
           title,
-          description: `משימת סימולציה ב${city}`,
+          description,
           price,
           base_price: price,
           city,
@@ -102,24 +477,26 @@ Deno.serve(async (req) => {
           lat: parseFloat(lat.toFixed(6)),
           lng: parseFloat(lng.toFixed(6)),
           category,
-          status: 'OPEN',
-          payment_method: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
-          payment_status: 'funded',
-          approval_mode: Math.random() > 0.5 ? 'instant' : 'manual',
-          estimated_time: estimatedTimes[Math.floor(Math.random() * estimatedTimes.length)],
-          client_id: user.id,
-          client_name: user.full_name,
-          client_verified: user.is_verified || false,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          status: "OPEN",
+          payment_method: randomFrom(paymentMethods),
+          payment_status: "funded",
+          approval_mode: Math.random() > 0.5 ? "instant" : "manual",
+          estimated_time: randomFrom(estimatedTimes),
+          urgency_tag: randomFrom(urgencyTags),
+          client_id: demoUser.demo_id,
+          client_name: demoUser.full_name,
+          client_verified: demoUser.is_verified || false,
+          client_rating: demoUser.rating || 0,
+          expires_at: new Date(Date.now() + (6 + Math.random() * 42) * 60 * 60 * 1000).toISOString(),
           expiry_duration_hours: 24,
         });
       }
 
       await base44.entities.Task.bulkCreate(tasks);
-      return Response.json({ success: true, count: tasks.length });
+      return Response.json({ success: true, count: tasks.length, demoUsers: demoUsers.length });
     }
 
-    return Response.json({ error: 'Invalid action' }, { status: 400 });
+    return Response.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

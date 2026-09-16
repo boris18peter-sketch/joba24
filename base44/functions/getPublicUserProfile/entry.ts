@@ -10,6 +10,51 @@ Deno.serve(async (req) => {
     const { userId, taskId } = body;
     if (!userId) return Response.json({ error: 'userId required' }, { status: 400 });
 
+    // ── Demo user: if userId starts with 'demo_', look up DemoUser entity ──
+    if (userId.startsWith('demo_')) {
+      const demoUsers = await base44.asServiceRole.entities.DemoUser.filter({ demo_id: userId }, '-created_date', 1);
+      const demoUser = demoUsers[0];
+      if (!demoUser) return Response.json({ error: 'Demo user not found' }, { status: 404 });
+
+      // Fetch reviews and tasks for this demo user (will be empty but keeps the response shape consistent)
+      const postedTasks = await base44.asServiceRole.entities.Task.filter({ client_id: userId, status: 'OPEN' }, '-created_date', 20);
+
+      return Response.json({
+        user: {
+          id: demoUser.demo_id,
+          full_name: demoUser.full_name,
+          profile_photo: demoUser.profile_photo,
+          is_verified: demoUser.is_verified,
+          is_phone_verified: false,
+          kyc_status: demoUser.is_verified ? 'approved' : undefined,
+          rating: demoUser.rating || 0,
+          rating_count: demoUser.rating_count || 0,
+          tasks_completed: demoUser.tasks_completed || 0,
+          tasks_posted: demoUser.tasks_posted || postedTasks.length,
+          reviews: [],
+          bio: demoUser.bio,
+          intro_video_url: undefined,
+          phone: undefined,
+          profession: demoUser.profession,
+          preferred_categories: demoUser.preferred_categories,
+          preferred_cities: demoUser.preferred_cities,
+          certificates: demoUser.certificates,
+          certificate_files: demoUser.certificate_files,
+          profile_media: demoUser.profile_media,
+          repeat_hires: demoUser.repeat_hires,
+          avg_response_minutes: demoUser.avg_response_minutes,
+          on_time_rate: demoUser.on_time_rate,
+          instagram_username: demoUser.instagram_username || undefined,
+          instagram_verified: demoUser.instagram_verified || false,
+          facebook_username: demoUser.facebook_username || undefined,
+          facebook_verified: demoUser.facebook_verified || false,
+          tiktok_username: demoUser.tiktok_username || undefined,
+          tiktok_verified: demoUser.tiktok_verified || false,
+          created_date: demoUser.created_date,
+        },
+      });
+    }
+
     // Fetch the target user with service role (bypasses built-in User RLS)
     const users = await base44.asServiceRole.entities.User.filter({ id: userId }, '-created_date', 1);
     const targetUser = users[0];

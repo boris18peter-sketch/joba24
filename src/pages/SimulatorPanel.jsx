@@ -25,6 +25,8 @@ import {
   Eye, AlertTriangle, Gift, Phone, BarChart3, Layers, Layout, Building2
 } from 'lucide-react';
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
+import { getCategoryLabel } from '@/lib/categories';
+import DemoTasksManager from '@/components/simulator/DemoTasksManager';
 
 /* ─── Reusable UI ─────────────────────────── */
 function Section({ title, icon, children, danger, defaultOpen = false, badge }) {
@@ -182,10 +184,35 @@ export default function SimulatorPanel() {
   const [bulkCount, setBulkCount] = useState(20);
   const [bulkMinPrice, setBulkMinPrice] = useState(100);
   const [bulkMaxPrice, setBulkMaxPrice] = useState(2000);
+  const [bulkCategories, setBulkCategories] = useState([]);
+
+  const CATEGORY_OPTIONS = [
+    { value: 'plumbing', label: 'אינסטלציה' },
+    { value: 'electricity', label: 'חשמל' },
+    { value: 'handyman', label: 'יד אמן' },
+    { value: 'cleaning', label: 'ניקיון' },
+    { value: 'moving', label: 'הובלות' },
+    { value: 'heavy_lifting', label: 'הרמה כבדה' },
+    { value: 'painting', label: 'צבעות' },
+    { value: 'carpentry', label: 'נגרות' },
+    { value: 'ac', label: 'מזגנים' },
+    { value: 'locksmith', label: 'מנעולים' },
+    { value: 'gardening', label: 'גינון' },
+    { value: 'home_maintenance', label: 'תחזוקת בית' },
+    { value: 'car', label: 'רכב' },
+    { value: 'delivery', label: 'משלוחים' },
+    { value: 'shopping', label: 'קניות' },
+    { value: 'pets', label: 'חיות מחמד' },
+    { value: 'other', label: 'אחר' },
+  ];
+
+  const toggleCategory = (cat) => {
+    setBulkCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
+  };
 
   const myTasks = allTasks.filter(t => t.client_id === me?.id);
   const testTasks = myTasks.filter(t => t.title?.includes('🧪'));
-  const bulkTasks = myTasks.filter(t => t.title?.startsWith('🧪🏙️'));
+  const demoTasks = allTasks.filter(t => t.client_id?.startsWith('demo_') || t.title?.startsWith('🧪🏙️'));
   const openTasks = allTasks.filter(t => t.status === 'OPEN');
   const myOpenTasks = myTasks.filter(t => t.status === 'OPEN');
   const takenByMe = allTasks.filter(t => t.worker_id === me?.id && ['TAKEN', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'APPROVED_PENDING_DEPARTURE'].includes(t.status));
@@ -898,10 +925,10 @@ export default function SimulatorPanel() {
         ))}
       </Section>
 
-      {/* ── Bulk Task Generator ── */}
-      <Section title="🏙️ מחולל משימות בכמות" icon={<Building2 size={14} color="#0891b2" />} defaultOpen badge={bulkTasks.length}>
+      {/* ── Demo Task Generator ── */}
+      <Section title="🏙️ מחולל משימות דמו" icon={<Building2 size={14} color="#0891b2" />} defaultOpen badge={demoTasks.length}>
         <div style={{ fontSize: 11, color: '#0e7490', padding: '6px 10px', background: '#ecfeff', borderRadius: 8, border: '1px solid #a5f3fc', lineHeight: 1.5 }}>
-          צור משימות רנדומליות בעיר נבחרת, במיקומים רנדומליים ובמחירים בטווח שתבחר. ניתן למחוק הכל בכפתור אחד.
+          יוצר משימות ריאליסטיות מחשבונות דמו — כותרות ותיאורים אמיתיים, מחירים מעוגלים, פרופילים מלאים. נראה כמו משתמשים אמיתיים.
         </div>
 
         {/* City selector */}
@@ -911,6 +938,34 @@ export default function SimulatorPanel() {
             style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b' }}>
             {ISRAELI_CITIES.filter(c => c !== 'אחר').map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+
+        {/* Category multi-select */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>
+            קטגוריות {bulkCategories.length > 0 && `(${bulkCategories.length} נבחרו)`} — ריק = הכל
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 120, overflowY: 'auto', padding: 4, background: '#f8faff', borderRadius: 8, border: '1px solid #dce8f5' }}>
+            {CATEGORY_OPTIONS.map(c => {
+              const active = bulkCategories.includes(c.value);
+              return (
+                <button key={c.value} onClick={() => toggleCategory(c.value)}
+                  style={{
+                    padding: '4px 10px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                    background: active ? '#0891b2' : 'white',
+                    color: active ? 'white' : '#0f2b6b',
+                    border: `1px solid ${active ? '#0891b2' : '#dce8f5'}`,
+                  }}>
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+          {bulkCategories.length > 0 && (
+            <button onClick={() => setBulkCategories([])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#dc2626', fontSize: 10, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+              נקה בחירה
+            </button>
+          )}
         </div>
 
         {/* Count */}
@@ -924,44 +979,50 @@ export default function SimulatorPanel() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>מחיר מינ\' (₪)</label>
-            <input type="number" value={bulkMinPrice} onChange={e => setBulkMinPrice(Number(e.target.value) || 0)} min={0}
+            <input type="number" value={bulkMinPrice} onChange={e => setBulkMinPrice(Number(e.target.value) || 0)} min={0} step={50}
               style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b', boxSizing: 'border-box' }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>מחיר מקס\' (₪)</label>
-            <input type="number" value={bulkMaxPrice} onChange={e => setBulkMaxPrice(Number(e.target.value) || 0)} min={0}
+            <input type="number" value={bulkMaxPrice} onChange={e => setBulkMaxPrice(Number(e.target.value) || 0)} min={0} step={50}
               style={{ height: 38, borderRadius: 10, border: '1px solid #dce8f5', padding: '0 10px', fontSize: 13, outline: 'none', background: 'white', color: '#0f2b6b', boxSizing: 'border-box' }} />
           </div>
         </div>
 
         {/* Generate */}
-        <Btn label="🚀 צור משימות" color="#0891b2"
+        <Btn label="🚀 צור משימות דמו" color="#0891b2"
           onClick={async () => {
             if (bulkMinPrice > bulkMaxPrice) { toast.error('מחיר מינימום גבוה ממקסימום'); return; }
             const res = await base44.functions.invoke('bulkSimulatorTasks', {
               action: 'generate', city: bulkCity, count: bulkCount,
               minPrice: bulkMinPrice, maxPrice: bulkMaxPrice,
+              categories: bulkCategories.length > 0 ? bulkCategories : undefined,
             });
             if (res.data?.error) throw new Error(res.data.error);
-            toast.success(`✅ נוצרו ${res.data.count} משימות ב${bulkCity}`);
+            toast.success(`✅ נוצרו ${res.data.count} משימות דמו ב${bulkCity}`);
           }} />
 
         {/* Stats */}
-        {bulkTasks.length > 0 && (
+        {demoTasks.length > 0 && (
           <div style={{ fontSize: 11, color: '#0e7490', padding: '5px 10px', background: '#ecfeff', borderRadius: 8, border: '1px solid #a5f3fc' }}>
-            נוצרו עד כה: <strong>{bulkTasks.length}</strong> משימות סימולציה ({bulkTasks.filter(t => t.status === 'OPEN').length} פתוחות)
+            נוצרו עד כה: <strong>{demoTasks.length}</strong> משימות דמו ({demoTasks.filter(t => t.status === 'OPEN').length} פתוחות)
           </div>
         )}
 
-        {/* Delete all bulk tasks */}
-        {bulkTasks.length > 0 && (
-          <Btn label={`🗑️ מחק את כל ${bulkTasks.length} המשימות`} color="#dc2626"
+        {/* Delete all demo tasks */}
+        {demoTasks.length > 0 && (
+          <Btn label={`🗑️ מחק את כל ${demoTasks.length} המשימות + משתמשי דמו`} color="#dc2626"
             onClick={async () => {
               const res = await base44.functions.invoke('bulkSimulatorTasks', { action: 'cleanup' });
               if (res.data?.error) throw new Error(res.data.error);
               toast.success(`🗑️ נמחקו ${res.data.deleted} משימות`);
             }} />
         )}
+      </Section>
+
+      {/* ── Demo Tasks Manager ── */}
+      <Section title="📋 ניהול משימות דמו" icon={<List size={14} color="#7c3aed" />} defaultOpen badge={demoTasks.length}>
+        <DemoTasksManager />
       </Section>
 
       {/* ── Cleanup ── */}

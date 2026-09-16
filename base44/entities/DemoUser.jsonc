@@ -1,0 +1,149 @@
+{
+  "name": "DemoUser",
+  "type": "object",
+  "properties": {
+    "demo_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d9\u05d9\u05d7\u05d5\u05d3\u05d9 (demo_xxx) \u2014 \u05de\u05e9\u05de\u05e9 \u05db-client_id \u05d1\u05de\u05e9\u05d9\u05de\u05d5\u05ea \u05e1\u05d9\u05de\u05d5\u05dc\u05e6\u05d9\u05d4"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string",
+      "description": "\u05ea\u05d9\u05d0\u05d5\u05e8 \u05d0\u05d9\u05e9\u05d9 \u05e9\u05dc \u05de\u05e9\u05ea\u05de\u05e9 \u05d4\u05d3\u05de\u05d5"
+    },
+    "profession": {
+      "type": "string"
+    },
+    "preferred_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_cities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "profile_photo": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "default": 0
+    },
+    "rating_count": {
+      "type": "number",
+      "default": 0
+    },
+    "tasks_completed": {
+      "type": "number",
+      "default": 0
+    },
+    "tasks_posted": {
+      "type": "number",
+      "default": 0
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "instagram_username": {
+      "type": "string"
+    },
+    "instagram_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "facebook_username": {
+      "type": "string"
+    },
+    "facebook_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "tiktok_username": {
+      "type": "string"
+    },
+    "tiktok_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "repeat_hires": {
+      "type": "number",
+      "default": 0
+    },
+    "avg_response_minutes": {
+      "type": "number"
+    },
+    "on_time_rate": {
+      "type": "number"
+    },
+    "certificates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "certificate_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "profile_media": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "demo_id",
+    "full_name"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
