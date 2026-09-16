@@ -505,16 +505,15 @@ export default function Layout() {
     : preLaunchGateActive
       ? ((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin')
       : true;
-  // While the DB approval status is still loading, don't flash the pre-launch
-  // waiting page for users whose JWT may be stale (approved in DB but not yet in
-  // token) — fall through to the app. Once the DB status arrives, genuinely
-  // unapproved users are redirected to the waiting page on the next poll.
+  // SECURITY: No loading-window gap. While the DB approval status is loading,
+  // gate based on the JWT's is_approved. This closes the vulnerability where
+  // unapproved users could see the full app for 1-2s before the waiting page
+  // kicked in. Users approved in DB but not yet in JWT will see the waiting
+  // page briefly until the DB status arrives — a minor flash, far better than
+  // the security hole of unapproved users seeing the app.
   const approvalLoading = approvalStatus === undefined;
   // Authenticated but not-yet-approved users can still read Terms / Privacy / FAQ
-  // (rendered with the same minimal layout as unauthenticated visitors). Without
-  // this, the pre-launch gate below would trap them on the waiting page and the
-  // Terms/Privacy/FAQ links from the waiting page would be unusable.
-  if (isAuthenticated && me && !isApprovedUser && !approvalLoading && PUBLIC_PAGES.includes(location.pathname)) {
+  if (isAuthenticated && me && !isApprovedUser && PUBLIC_PAGES.includes(location.pathname)) {
     return (
       <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden', paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
         <div id="main-scroll" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', height: '100%' }}>
@@ -524,7 +523,7 @@ export default function Layout() {
     );
   }
 
-  if (isAuthenticated && me && !isApprovedUser && !approvalLoading) {
+  if (isAuthenticated && me && !isApprovedUser) {
     return <PreLaunchWaitingPage me={me} />;
   }
 
