@@ -39,8 +39,15 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       const r = getRateRange(category, isHourly);
       return { min: r.min, max: r.max, reason: t('ps_market_fallback'), confidence: 'low' };
     };
-    // Longer debounce than a text-only suggestion: the analysis now also
-    // searches live market prices, so we don't want a run per keystroke pause.
+    // The full analysis consumes integration credits on every run, so it only
+    // fires once the publisher has actually described the job (or attached a
+    // photo). Before that we show the free curated range instantly.
+    if ((description || '').trim().length < 15 && !hasPhotos) {
+      setResult(fallback());
+      return;
+    }
+    // Longer debounce than a text-only suggestion: the analysis also searches
+    // live market prices, so we don't want a run per keystroke pause.
     const timer = setTimeout(async () => {
       try {
         const res = await analyzePrice({

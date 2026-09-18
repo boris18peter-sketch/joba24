@@ -167,7 +167,10 @@ ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר:
     prompt,
     ...(hasPhotos ? { file_urls: photoUrls } : {}),
     add_context_from_internet: true,
-    model: 'gemini_3_1_pro',
+    // gemini_3_flash is the cheapest model that supports BOTH vision
+    // (file_urls) and live web search, so analyses stay accurate without the
+    // much higher per-call cost of the Pro tier.
+    model: 'gemini_3_flash',
     response_json_schema: {
       type: 'object',
       properties: {
