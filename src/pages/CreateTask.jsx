@@ -1610,7 +1610,7 @@ export default function CreateTask() {
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             {t('ct_price_note')}
           </div>
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} distance={moveDistance} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
+          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} distance={moveDistance} images={form.images} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}
