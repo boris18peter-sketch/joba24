@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { MapPin, Clock, Zap, CheckSquare, Loader2, Sparkles, Info, AlertTriangle, Save, Mic, MicOff, ChevronDown, ChevronUp, Plus, X, Play, CreditCard, FileText, Phone, Calendar, ShieldCheck } from 'lucide-react';
 import SelectionSheet from '@/components/SelectionSheet';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { getRequirementCategories } from '@/lib/requirements';
+import { getRequirementCategories, getActiveRequirements } from '@/lib/requirements';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -63,16 +63,9 @@ function toLocalDatetimeInput(isoStr) {
 }
 
 function SocialProofBar() {
-  const { t } = useLanguage();
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 100),
-    staleTime: 60000,
-  });
-  const completedCount = tasks.filter(t => t.status === 'COMPLETED').length || 238;
   return (
     <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-      <span>{t('ct_social_proof', { count: completedCount })}</span>
+      <span>איתות ישלח לכל העובדים הרלוונטיים באזור שלך - על בסיס קטגוריה, ניסיון והיסטוריית פעילות.</span>
     </div>
   );
 }
@@ -374,6 +367,11 @@ export default function CreateTask() {
     const a = Math.sin(dLatRad / 2) ** 2 + Math.cos(oLat * Math.PI / 180) * Math.cos(dLat * Math.PI / 180) * Math.sin(dLngRad / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   })();
+  // Requirement labels — fed to the price engine so flagged requirements
+  // (extra people, heavy lifting, certification…) affect the suggestion.
+  const requirementsText = getActiveRequirements(form.requirements, form.category, t)
+    .map(r => (r.value ? `${r.label}: ${r.value}` : r.label))
+    .join(', ');
   const updateHourly = (field, val) => {
     setForm(p => {
       const next = { ...p, [field]: val };
@@ -1610,7 +1608,18 @@ export default function CreateTask() {
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: '10px 12px', marginBottom: 8, fontSize: 12, color: '#92400e', fontWeight: 600, lineHeight: 1.5 }}>
             {t('ct_price_note')}
           </div>
-          <PriceSuggestion category={form.category} estimatedTime={form.estimated_time} description={form.description} location={form.city || form.location_name} isHourly={isHourly} distance={moveDistance} images={form.images} onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }} />
+          <PriceSuggestion
+            category={form.category}
+            estimatedTime={form.estimated_time}
+            description={form.description}
+            location={form.city || form.location_name}
+            isHourly={isHourly}
+            distance={moveDistance}
+            images={form.images}
+            detailsText={extraFieldsText}
+            requirementsText={requirementsText}
+            onAccept={p => { if (isHourly) { updateHourly('hourly_rate', String(p)); } else { set('price', String(p)); setErrors(prev => ({...prev, price: false})); } }}
+          />
 
           {/* Auto bump */}
           <button type="button" onClick={() => set('auto_bump_enabled', !form.auto_bump_enabled)}

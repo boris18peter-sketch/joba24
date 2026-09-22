@@ -1,150 +1,149 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, Send, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, Send, ShieldCheck } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
-import ImageUploader from '@/components/ImageUploader';
-import { getActiveRequirements } from '@/lib/requirements';
-import { getCategoryLabel } from '@/lib/categories';
+import { calculateCurrentPrice, formatHourlySublabel } from '@/lib/priceCalculator';
 import { useLanguage } from '@/lib/LanguageContext';
 
-export default function ApplySheet({ task, onClose, onApply, loading, showImages = true }) {
+/**
+ * The single "apply for task" popup used everywhere — the feed card and the
+ * task-detail sheet both render exactly this component, so the experience is
+ * identical no matter where the worker taps "apply".
+ *
+ * The popup owns the message + moderation UX; the actual submission is
+ * delegated to `onApply(message, images)` so each caller keeps its own
+ * post-apply cache/notification logic.
+ */
+export default function ApplySheet({ task, onClose, onApply, loading }) {
   const { t, isRTL } = useLanguage();
   const [message, setMessage] = useState('');
-  const [images, setImages] = useState([]);
-  const cost = Math.max(1, Math.round((task?.price || 0) * 0.05));
+  const [msgBlocked, setMsgBlocked] = useState(false);
+  const submittedRef = useRef(false);
 
-  // Build requirements list for display
-  const reqs = getActiveRequirements(task?.requirements, task?.category, t).map(r =>
-    r.value ? `${r.label}: ${r.value}` : r.label
-  );
-  if (task?.requires_invoice) reqs.push(t('as_requires_invoice'));
-  if (task?.verification_required) reqs.push(t('as_requires_green'));
+  const handleSubmit = async () => {
+    if (loading || submittedRef.current) return;
+    if (message.trim().length > 3) {
+      const { moderateText } = await import('@/hooks/useModeration');
+      const mod = await moderateText(message.trim());
+      if (mod.flagged) {
+        setMsgBlocked(true);
+        setTimeout(() => setMsgBlocked(false), 4000);
+        return;
+      }
+    }
+    submittedRef.current = true;
+    try {
+      await onApply(message.trim(), []);
+    } finally {
+      submittedRef.current = false;
+    }
+  };
 
   return createPortal(
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(5,15,40,0.65)', backdropFilter: 'blur(8px)',
+        background: 'rgba(5,15,40,0.55)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        backdropFilter: 'blur(6px)',
+        animation: 'fadeInBackdrop 0.18s ease',
         touchAction: 'none',
       }}
-      onClick={onClose}
-      onPointerDown={e => e.stopPropagation()}
-      onTouchStart={e => e.stopPropagation()}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
     >
       <div
         dir={isRTL ? 'rtl' : 'ltr'}
-        style={{
-          background: 'white', borderRadius: '28px 28px 0 0',
-          width: '100%', maxWidth: 480,
-          padding: '0 20px', paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
-          boxShadow: '0 -20px 80px rgba(0,0,0,0.25)',
-          animation: 'sheetSlideUp 0.3s cubic-bezier(0.34,1.4,0.64,1)',
-          position: 'relative',
-          maxHeight: '92dvh', overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', overscrollBehavior: 'contain',
-        }}
         onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--sheet-bg)',
+          borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
+          width: '100%', maxWidth: 480,
+          boxShadow: 'var(--shadow-xl)',
+          padding: '12px 20px',
+          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
+          animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1)',
+          maxHeight: '90dvh',
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
+        }}
       >
-        {/* Handle */}
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '14px auto 20px' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
 
-        {/* Close */}
-        <button onClick={onClose} style={{ position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 12, background: '#f3f4f6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}>
-          <X size={18} color="#6b7280" />
-        </button>
-
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', borderRadius: 18, padding: '16px 20px', marginBottom: 16, color: 'white' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+        {/* Task + commitment header */}
+        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
             <span>{t('application_fee')}</span>
-            <CreditIcon size={12} />
-            <span style={{ fontWeight: 800 }}>{cost} {t('credits')}</span>
+            <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
+              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} /> {t('credits')}
+            </span>
           </div>
-          <div style={{ fontSize: 18, fontWeight: 900 }}>₪{task?.price}</div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{task?.title}</div>
+          <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task?.title}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task) || 0)}</div>
+          {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{sub}</div> : null; })()}
         </div>
 
-        {/* Task details & requirements summary */}
-        {(task?.category || reqs.length > 0 || task?.location_name || task?.payment_method) && (
-          <div style={{ background: '#f8faff', border: '1px solid #e2e8f0', borderRadius: 14, padding: '12px 14px', marginBottom: 16 }}>
-            {task?.category && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: reqs.length > 0 ? 8 : 0 }}>
-                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{t('category')}:</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a6fd4' }}>{getCategoryLabel(task.category, t)}</span>
-              </div>
-            )}
-            {task?.location_name && (
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: reqs.length > 0 ? 8 : 0 }}>
-                📍 {task.location_name.split(',')[0]}
-              </div>
-            )}
-            {task?.payment_method && (
-              <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginBottom: reqs.length > 0 ? 8 : 0 }}>
-                💳 {task.payment_method === 'Cash' ? t('cash') : task.payment_method}
-              </div>
-            )}
-            {reqs.length > 0 && (
-              <div style={{ borderTop: task?.category || task?.location_name || task?.payment_method ? '1px solid #e2e8f0' : 'none', paddingTop: 8 }}>
-                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, marginBottom: 6 }}>{t('as_task_reqs')}</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {reqs.map((req, i) => (
-                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '4px 8px', fontSize: 11, fontWeight: 600, color: '#166534' }}>
-                      <CheckCircle2 size={11} color="#059669" /> {req}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Joba commitment explanation */}
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.6 }}>
-          <div style={{ fontWeight: 800, marginBottom: 4 }}>{t('as_how_jobs')}</div>
-          <span dangerouslySetInnerHTML={{ __html: t('as_jobs_explain') }} />
+        {/* Commitment reassurance */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', marginBottom: 14 }}>
+          <ShieldCheck size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.4 }}>
+            {t('application_commitment_note')}
+          </span>
         </div>
 
         {/* Message */}
-        <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 18, padding: '14px 16px', marginBottom: 16 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>
-            {t('add_message_to_owner')}
-          </p>
+        <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>{t('add_message')}</p>
           <textarea
-            placeholder={t('eg_experience')}
             value={message}
-            onChange={e => setMessage(e.target.value)}
+            onChange={e => { setMessage(e.target.value); setMsgBlocked(false); }}
+            placeholder={t('message_placeholder')}
             rows={3}
-            style={{ width: '100%', background: 'white', border: '1.5px solid #dce8f5', borderRadius: 12, padding: '12px 14px', fontSize: 15, fontFamily: 'inherit', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
+            style={{
+              width: '100%', borderRadius: 10, border: `1px solid ${msgBlocked ? '#fca5a5' : '#bfdbfe'}`,
+              padding: '10px 12px', fontSize: 16, fontFamily: 'inherit', resize: 'none',
+              outline: 'none', color: '#1a2540', background: 'white', boxSizing: 'border-box',
+              lineHeight: 1.5,
+            }}
           />
+          {msgBlocked && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 10px' }}>
+              <span style={{ fontSize: 13 }}>🛡️</span>
+              <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{t('message_blocked')}</span>
+            </div>
+          )}
         </div>
 
-        {/* Images */}
-        {showImages && (
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>{t('images_optional')}</p>
-            <ImageUploader images={images} onChange={setImages} />
-          </div>
-        )}
-
-        {/* Buttons */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={() => onApply(message, images)}
-            disabled={loading}
-            style={{ flex: 1, height: 52, borderRadius: 16, background: loading ? '#93b4d8' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)', color: 'white', fontWeight: 800, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15, boxShadow: '0 4px 16px rgba(26,111,212,0.3)' }}
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <><Send size={15} /> {t('send_application')}</>}
-          </button>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={onClose}
+            style={{ height: 52, padding: '0 18px', borderRadius: 'var(--r-md)', background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
+          >{t('cancel_btn')}</button>
+          <button
+            onClick={handleSubmit}
             disabled={loading}
-            style={{ height: 52, padding: '0 18px', borderRadius: 16, background: 'white', border: '1.5px solid #dce8f5', color: '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
+            style={{
+              flex: 1, height: 52, borderRadius: 'var(--r-md)',
+              background: loading ? '#93b4d8' : 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))',
+              border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              boxShadow: loading ? 'none' : 'var(--shadow-md)',
+              transition: 'background 0.2s, transform 0.1s',
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >
-            {t('cancel')}
+            {loading ? <Loader2 size={20} className="animate-spin" /> :
+             <><Send size={16} strokeWidth={1.8} /> {t('send_application')}</>}
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeInBackdrop { from{opacity:0} to{opacity:1} }
+      `}</style>
     </div>,
     document.body
   );

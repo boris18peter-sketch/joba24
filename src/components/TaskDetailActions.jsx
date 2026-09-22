@@ -64,7 +64,6 @@ export default function TaskDetailActions({
             loading={applyLoading}
             onClose={() => onSetShowApplyForm(false)}
             onApply={(msg) => onApply(msg, [])}
-            showImages={false}
           />,
           document.body
         )}

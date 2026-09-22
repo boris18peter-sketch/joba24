@@ -23,7 +23,7 @@ function AnalysisRow({ icon, label, value }) {
   );
 }
 
-export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, distance, images, onAccept }) {
+export default function PriceSuggestion({ category, estimatedTime, description, location, isHourly, distance, images, detailsText, requirementsText, onAccept }) {
   const { t, isRTL, lang } = useLanguage();
   const [result, setResult] = useState(null);
 
@@ -42,7 +42,10 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     // The full analysis consumes integration credits on every run, so it only
     // fires once the publisher has actually described the job (or attached a
     // photo). Before that we show the free curated range instantly.
-    if ((description || '').trim().length < 15 && !hasPhotos) {
+    // Structured form details count as "described" — a moving job with the
+    // addresses and floors filled in is analysable even with a short text.
+    const hasDetails = (detailsText || '').trim().length > 0;
+    if ((description || '').trim().length < 15 && !hasPhotos && !hasDetails) {
       setResult(fallback());
       return;
     }
@@ -52,6 +55,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
       try {
         const res = await analyzePrice({
           category, estimatedTime, description, location, isHourly, distance, images, lang,
+          detailsText, requirementsText,
         });
         if (!cancelled) setResult(res || fallback());
       } catch {
@@ -61,7 +65,7 @@ export default function PriceSuggestion({ category, estimatedTime, description, 
     }, 1200);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [category, estimatedTime, description, location, isHourly, distance, photoKey, lang, t]);
+  }, [category, estimatedTime, description, location, isHourly, distance, photoKey, lang, t, detailsText, requirementsText]);
 
   if (!category) return null;
 

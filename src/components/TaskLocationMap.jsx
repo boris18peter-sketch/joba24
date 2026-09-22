@@ -70,6 +70,12 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
 
   const [pinInfoVisible, setPinInfoVisible] = useState(false);
 
+  // In the full-screen view the overlay is portaled to <body> and covers the
+  // device status bar — a button at top:10 sits underneath it and can't be
+  // tapped. Push the top row below the safe area so expand/collapse is always
+  // reachable.
+  const topOffset = isExpanded ? 'max(44px, calc(env(safe-area-inset-top, 0px) + 8px))' : 10;
+
   return (
     <div style={{ position: 'relative', height, width: '100%' }}>
       <Map
@@ -95,7 +101,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
       <button
         onClick={isExpanded ? onCollapse : onExpand}
         style={{
-          position: 'absolute', top: 10, left: 10, zIndex: 10,
+          position: 'absolute', top: topOffset, left: 10, zIndex: 10,
           width: 34, height: 34, borderRadius: 10,
           background: 'white', border: '1px solid #e2e8f0',
           boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
@@ -107,7 +113,7 @@ function MapView({ mapToken, task, userLocation, height, onExpand, onCollapse, i
       {/* Pin click info bubble — small, top-right, doesn't cover map */}
       {pinInfoVisible && distKm !== null && (
         <div dir="rtl" style={{
-          position: 'absolute', top: 10, right: 10, zIndex: 20,
+          position: 'absolute', top: topOffset, right: 10, zIndex: 20,
           background: 'white', borderRadius: 14, padding: '8px 12px',
           boxShadow: '0 4px 16px rgba(0,0,0,0.18)', border: '1px solid #e2e8f0',
           display: 'flex', alignItems: 'center', gap: 10, minWidth: 130,

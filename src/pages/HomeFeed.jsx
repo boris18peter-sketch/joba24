@@ -691,24 +691,15 @@ export default function HomeFeed() {
                 {/* Search icon + input + category chips */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 10, paddingLeft: 8, minWidth: 0, overflow: 'hidden' }}>
                   <Search size={14} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0 }} />
-                  <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
-                  <div className="cat-scroll" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, overflowX: 'auto', scrollbarWidth: 'none', minWidth: 0 }}>
-                    {(filters.categories || []).map(cat => (
-                      <span key={cat} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, paddingRight: 6, paddingLeft: 4, height: 22, borderRadius: 6, background: '#dbeafe', border: '1px solid #93c5fd', flexShrink: 0, fontSize: 11, color: '#1d4ed8', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        {getCategoryLabel(cat, t)}
-                        <button onClick={(e) => { e.stopPropagation(); setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) })); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: '#60a5fa', lineHeight: 1, marginTop: 0 }}><X size={9} /></button>
-                      </span>
-                    ))}
-                    <input
-                      placeholder={filters.categories?.length > 0 ? '' : t('search_placeholder')}
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      onFocus={() => setSearchFocused(true)}
-                      onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
-                      style={{ flex: 1, minWidth: 30, border: 'none', background: 'transparent', fontSize: '16px', fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)', height: 28 }}
-                    />
-                  </div>
+                  <input
+                    placeholder={t('search_placeholder')}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(search)}
+                    style={{ flex: 1, minWidth: 30, border: 'none', background: 'transparent', fontSize: '16px', fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)', height: 28 }}
+                  />
                   {search && (
                     <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}>
                       <X size={13} color="#94a3b8" />
@@ -753,6 +744,39 @@ export default function HomeFeed() {
                   {hasSheetFilters && <span style={{ position: 'absolute', top: 6, right: 8, width: 7, height: 7, borderRadius: '50%', background: '#ef4444', border: '1.5px solid white' }} />}
                 </button>
               </div>
+
+              {/* Selected categories — docked row below the field. Keeping them
+                  out of the input stops them from sliding around inside the
+                  search bar while typing or scrolling. */}
+              {(filters.categories || []).length > 0 && (
+                <div className="cat-scroll" style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingTop: 8 }}>
+                  <style>{`.cat-scroll::-webkit-scrollbar{display:none}`}</style>
+                  {(filters.categories || []).map(cat => (
+                    <span key={cat} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5, height: 28,
+                      padding: '0 6px 0 10px', borderRadius: 999, flexShrink: 0,
+                      background: 'linear-gradient(135deg,#eff6ff,#dbeafe)',
+                      border: '1px solid #93c5fd', fontSize: 12, color: '#1d4ed8',
+                      fontWeight: 700, whiteSpace: 'nowrap',
+                    }}>
+                      {getCategoryLabel(cat, t)}
+                      <button
+                        onClick={() => setFilters(f => ({ ...f, categories: (f.categories || []).filter(c => c !== cat) }))}
+                        aria-label="remove"
+                        style={{
+                          width: 18, height: 18, borderRadius: '50%', background: '#1a6fd4',
+                          border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', color: 'white', padding: 0, flexShrink: 0,
+                          minHeight: 'unset', minWidth: 'unset',
+                        }}
+                      >
+                        <X size={10} strokeWidth={3} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {searchFocused && !search && recentSearches.length > 0 && (
                 <div style={{ position: 'absolute', top: 38, right: 0, left: 0, background: 'var(--surface-2)', borderRadius: 8, border: '1px solid var(--border-1)', boxShadow: '0 6px 16px rgba(0,0,0,0.08)', zIndex: 50, overflow: 'hidden' }}>
                   {recentSearches.map((s, i) => (<button key={i} onClick={() => { setSearch(s); setSearchFocused(false); }} style={{ width: '100%', padding: '5px 10px', background: 'none', border: 'none', textAlign: 'right', fontSize: 11, color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Search size={9} color="#94a3b8" /> {s}</button>))}

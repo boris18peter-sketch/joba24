@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel } from '@/lib/priceCalculator';
 import CreditIcon from '@/components/CreditIcon';
 import CancelTaskConfirmModal from '@/components/CancelTaskConfirmModal';
+import ApplySheet from '@/components/ApplySheet';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import VerifyModal from '@/components/VerifyModal';
@@ -55,178 +56,6 @@ const URGENCY_TAG_CONFIG = {
   evening:   { emoji: '🌅', label: 'urgency_evening', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
   flexible:  { emoji: '😌', label: 'urgency_flexible', color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
 };
-
-// ── Apply Modal ──────────────────────────────────────────────────────────────
-function ApplyModal({ task, currentUserId, workerName, onClose, onApplied, onInsufficientCredits, onVerificationRequired }) {
-  const { t, isRTL } = useLanguage();
-  const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [msgBlocked, setMsgBlocked] = useState(false);
-  const submitBtnRef = useRef(null);
-  const submittedRef = useRef(false);
-
-  const handleSubmit = async () => {
-    if (loading || submittedRef.current) return;
-    // Moderation check on message
-    if (message.trim().length > 3) {
-      const { moderateText } = await import('@/hooks/useModeration');
-      const mod = await moderateText(message.trim());
-      if (mod.flagged) {
-        setMsgBlocked(true);
-        setTimeout(() => setMsgBlocked(false), 4000);
-        return;
-      }
-    }
-    submittedRef.current = true;
-    setLoading(true);
-    try {
-      const res = await base44.functions.invoke('applyForTask', {
-        taskId: task.id,
-        message: message.trim(),
-      });
-      if (res.data?.error === 'already_applied') {
-        toast(t('already_applied'));
-        onClose();
-        return;
-      }
-      if (res.data?.error === 'insufficient_credits') {
-        submittedRef.current = false;
-        setLoading(false);
-        onClose();
-        onInsufficientCredits?.(res.data.credits_required);
-        return;
-      }
-      if (res.data?.error === 'verification_required') {
-        submittedRef.current = false;
-        setLoading(false);
-        onClose();
-        onVerificationRequired?.();
-        return;
-      }
-      const charged = res.data?.credits_charged || 0;
-      onApplied(res.data?.application, charged);
-      setTimeout(() => onClose(), 120);
-    } catch (err) {
-      submittedRef.current = false;
-      setLoading(false);
-      const errData = err?.response?.data;
-      if (errData?.error === 'insufficient_credits') {
-        onClose();
-        onInsufficientCredits?.(errData.credits_required);
-      } else {
-        toast.error(t('error_sending_app'));
-      }
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 999999,
-        background: 'rgba(5,15,40,0.55)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        backdropFilter: 'blur(6px)',
-        animation: 'fadeInBackdrop 0.18s ease',
-        touchAction: 'none',
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      onPointerDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
-    >
-      <div
-        dir={isRTL ? 'rtl' : 'ltr'}
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: 'var(--sheet-bg)',
-          borderRadius: 'var(--r-2xl) var(--r-2xl) 0 0',
-          width: '100%', maxWidth: 480,
-          boxShadow: 'var(--shadow-xl)',
-          padding: '12px 20px',
-          paddingBottom: 'max(28px, env(safe-area-inset-bottom))',
-          animation: 'sheetSlideUp 0.3s cubic-bezier(0.32,1.2,0.64,1)',
-          maxHeight: '90dvh',
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
-        }}
-      >
-        <div style={{ width: 40, height: 4, borderRadius: 99, background: '#dde4ef', margin: '0 auto 18px' }} />
-
-        <div style={{ background: 'linear-gradient(135deg, #0f2b6b, #1a6fd4)', borderRadius: 16, padding: '14px 16px', marginBottom: 16, color: 'white' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
-            <span>{t('application_fee')}</span>
-            <span style={{ fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
-              {Math.max(1, Math.round((calculateCurrentPrice(task) || 0) * 0.05))} <CreditIcon size={12} /> {t('credits')}
-            </span>
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 2 }}>{task.title}</div>
-          <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>₪{Math.round(calculateCurrentPrice(task))}</div>
-          {(() => { const sub = formatHourlySublabel(task); return sub ? <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{sub}</div> : null; })()}
-        </div>
-
-        {/* Joba commitment reassurance — one clean, encouraging line */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 12px', marginBottom: 14 }}>
-          <ShieldCheck size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#166534', fontWeight: 600, lineHeight: 1.4 }}>
-            {t('application_commitment_note')}
-          </span>
-        </div>
-
-        <div style={{ background: '#eff6ff', borderRadius: 16, padding: 14, border: '1px solid #bfdbfe', marginBottom: 14 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f2b6b', margin: '0 0 8px' }}>{t('add_message')}</p>
-          <textarea
-            value={message}
-            onChange={e => { setMessage(e.target.value); setMsgBlocked(false); }}
-            placeholder={t('message_placeholder')}
-            rows={3}
-            style={{
-              width: '100%', borderRadius: 10, border: `1px solid ${msgBlocked ? '#fca5a5' : '#bfdbfe'}`,
-              padding: '10px 12px', fontSize: 16, fontFamily: 'inherit', resize: 'none',
-              outline: 'none', color: '#1a2540', background: 'white', boxSizing: 'border-box',
-              lineHeight: 1.5,
-            }}
-          />
-          {msgBlocked && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, padding: '7px 10px' }}>
-              <span style={{ fontSize: 13 }}>🛡️</span>
-              <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{t('message_blocked')}</span>
-            </div>
-          )}
-          </div>
-
-          <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={onClose}
-            style={{ height: 52, padding: '0 18px', borderRadius: 'var(--r-md)', background: 'var(--surface-3)', border: '1px solid var(--border-1)', color: 'var(--text-2)', fontWeight: 700, cursor: 'pointer', fontSize: 14, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
-          >{t('cancel_btn')}</button>
-          <button
-            ref={submitBtnRef}
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{
-              flex: 1, height: 52, borderRadius: 'var(--r-md)',
-              background: loading ? '#93b4d8' : 'linear-gradient(135deg,var(--brand-primary),var(--brand-primary-dark))',
-              border: 'none', fontSize: 15, fontWeight: 900, color: 'white',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : 'var(--shadow-md)',
-              transition: 'background 0.2s, transform 0.1s',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            {loading ? <Loader2 size={20} className="animate-spin" /> :
-             <><Send size={16} strokeWidth={1.8} /> {t('send_application')}</>}
-          </button>
-          </div>
-      </div>
-
-      <style>{`
-        @keyframes fadeInBackdrop { from{opacity:0} to{opacity:1} }
-        @keyframes slideUpModal { from{transform:translateY(50px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes successPop { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
-      `}</style>
-    </div>
-  );
-}
 
 // Scanning texts are now imported from translations via useLanguage() in the component
 
@@ -282,6 +111,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
   const cancellingRef = useRef(false); // hard guard — survives re-renders
   const cancelTaskRef = useRef(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applySubmitting, setApplySubmitting] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [applyLocked, setApplyLocked] = useState(false);
   const [applyPressed, setApplyPressed] = useState(false);
@@ -359,6 +189,47 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
     queryClient.invalidateQueries({ queryKey: ['applications', task.id] });
     queryClient.invalidateQueries({ queryKey: ['task', task.id] });
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  };
+
+  // Submission for the shared ApplySheet popup (same component the task-detail
+  // sheet renders, so both entry points behave identically).
+  const handleApplySubmit = async (msg) => {
+    setApplySubmitting(true);
+    try {
+      const res = await base44.functions.invoke('applyForTask', { taskId: displayTask.id, message: msg });
+      if (res.data?.error === 'already_applied') {
+        toast(t('already_applied'));
+        setShowApplyModal(false);
+        return;
+      }
+      if (res.data?.error === 'insufficient_credits') {
+        setShowApplyModal(false);
+        setNeededCredits(res.data.credits_required || 0);
+        setShowBuyCredits(true);
+        return;
+      }
+      if (res.data?.error === 'verification_required') {
+        setShowApplyModal(false);
+        setShowVerificationRequired(true);
+        return;
+      }
+      handleApplied(res.data?.application, res.data?.credits_charged || 0);
+      setTimeout(() => setShowApplyModal(false), 120);
+    } catch (err) {
+      const errData = err?.response?.data;
+      if (errData?.error === 'insufficient_credits') {
+        setShowApplyModal(false);
+        setNeededCredits(errData.credits_required || 0);
+        setShowBuyCredits(true);
+      } else if (errData?.error === 'verification_required') {
+        setShowApplyModal(false);
+        setShowVerificationRequired(true);
+      } else {
+        toast.error(t('error_sending_app'));
+      }
+    } finally {
+      setApplySubmitting(false);
+    }
   };
 
   const handleCancelTask = async () => {
@@ -814,14 +685,11 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       </div>
 
       {showApplyModal && createPortal(
-        <ApplyModal
+        <ApplySheet
           task={displayTask}
-          currentUserId={currentUserId}
-          workerName={workerName}
+          loading={applySubmitting}
           onClose={() => setShowApplyModal(false)}
-          onApplied={handleApplied}
-          onInsufficientCredits={(req) => { setNeededCredits(req); setShowBuyCredits(true); }}
-          onVerificationRequired={() => setShowVerificationRequired(true)}
+          onApply={handleApplySubmit}
         />,
         document.body
       )}

@@ -104,7 +104,7 @@ function normalizeConfidence(raw, hasPhotos, description) {
 // ── The analysis call ──
 // Returns null when the LLM produced nothing usable (caller falls back to the
 // curated category range).
-export async function analyzePrice({ category, estimatedTime, description, location, isHourly, distance, images, lang }) {
+export async function analyzePrice({ category, estimatedTime, description, location, isHourly, distance, images, lang, detailsText, requirementsText }) {
   const configRange = getRateRange(category, isHourly);
   const taskCount = countDistinctTasks(description);
   const isMultiTask = !isHourly && taskCount >= 2;
@@ -130,6 +130,16 @@ export async function analyzePrice({ category, estimatedTime, description, locat
 אם התמונה לא ברורה או לא רלוונטית, ציין זאת בשדה identified והחזר רמת ביטחון נמוכה.`
     : 'לא צורפו תמונות — בסס את ההערכה על התיאור בלבד.';
 
+  // The structured fields the publisher filled in the form (category extras,
+  // moving addresses, schedule, quantities…) — these carry as much pricing
+  // signal as the free text and must reach the model.
+  const structuredBlock = (detailsText || '').trim()
+    ? `\nפרטים מובנים שהמפרסם מילא בטופס — קריטיים לתמחור, התחשב בכל אחד מהם:\n${detailsText.trim()}\n`
+    : '';
+  const requirementsBlock = (requirementsText || '').trim()
+    ? `\nדרישות שהמפרסם סימן: ${requirementsText.trim()}\n`
+    : '';
+
   const prompt = `
 אתה מומחה תמחור בכיר לפלטפורמת עבודות קטנות בישראל (בסגנון TaskRabbit / Fixlers).
 הערך את הג'ובה הבאה והחזר המלצת מחיר מקצועית. המחיר הוא ${unit}.
@@ -138,7 +148,7 @@ export async function analyzePrice({ category, estimatedTime, description, locat
 סוג תמחור: ${isHourly ? 'לפי שעה' : 'מחיר כולל למשימה'}
 ${estimatedTime ? `זמן משוער: ${estimatedTime}` : 'זמן משוער: לא צוין'}
 תיאור: ${description || 'לא צוין'}
-מיקום: ${location || 'לא צוין'}
+${structuredBlock}${requirementsBlock}מיקום: ${location || 'לא צוין'}
 ${distanceLine}
 ${historyLine}
 טווח מחירים מקצועי לקטגוריה זו בישראל 2025: ₪${configRange.min}–₪${configRange.max} ${isHourly ? 'לשעה' : ''}
@@ -153,6 +163,9 @@ ${photoInstructions}
 הכללים:
 - קרא את כל התיאור בעיון. אם מוזכרות מספר עבודות נפרדות (למשל פירוק ארון + התקנת מכונת כביסה + תיקון מגירות), המחיר הוא סכום כל העבודות יחד, לא מחיר של עבודה אחת.
 - אל תתעלם מאף עבודה שמוזכרת בתיאור. ככל שיש יותר עבודות או שהן מורכבות יותר, המחיר עולה בהתאם.
+- חובה לשלב בתמחור את הפרטים המובנים מהטופס יחד עם התיאור. דוגמה: בקטגוריית הובלה, אם התיאור מציין שצריך לפרק מקרר — יש להוסיף למחיר גם את הפירוק וההרכבה, ולא רק את ההובלה. כך גם לגבי מספר אנשים, קומות, מעלית, נפח, מרחק ודרישות מיוחדות.
+- אם התיאור והפרטים המובנים סותרים זה את זה — הפרטים המובנים מדויקים יותר.
+- גם אם התיאור קצר, אל תתעלם מהפרטים המובנים — הם חלק מהעבודה ומהמחיר.
 ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר: דלק, בלאי רכב וזמן נסיעה.\n` : ''}- min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות.
 - min תמיד קטן מ-max בפער משמעותי — לפחות 15% מהמחיר (ולא פחות מ-${isHourly ? '10' : '50'} ₪). אסור ש-min יהיה שווה ל-max.
 - הטה את ההמלצה לכיוון העליון של הטווח הריאלי כדי שהמשימה תהיה אטרקטיבית לעובדים — עדיף להמליץ על מחיר גבוה יותר שימשוך יותר עובדים מקצועיים.

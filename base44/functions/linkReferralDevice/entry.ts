@@ -99,21 +99,26 @@ export default async function(req) {
     }
 
     // ── Notify all admins about the new registration ──
-    try {
-      const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' }, '-created_date', 10);
-      const adminIds = admins.filter(a => a.fcm_tokens?.length > 0).map(a => a.id);
-      if (adminIds.length > 0) {
-        const regName = user.full_name || 'משתמש חדש';
-        await base44.asServiceRole.functions.invoke('sendPushNotification', {
-          user_ids: adminIds,
-          title: 'הרשמה חדשה ל-Joba24! 🎉',
-          body: `${regName} נרשם${attributedAgentCode ? ` דרך סוכן ${attributedAgentCode}` : ''}.`,
-          url: '/admin',
-          tag: `admin_new_register_${user.id}`,
-        });
+    // Gated on eventsToLink: this function runs on EVERY app load, but the
+    // events are only unregistered the first time. Without this gate admins
+    // received the same "new registration" push again on every login.
+    if (eventsToLink.length > 0) {
+      try {
+        const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' }, '-created_date', 10);
+        const adminIds = admins.filter(a => a.fcm_tokens?.length > 0).map(a => a.id);
+        if (adminIds.length > 0) {
+          const regName = user.full_name || 'משתמש חדש';
+          await base44.asServiceRole.functions.invoke('sendPushNotification', {
+            user_ids: adminIds,
+            title: 'הרשמה חדשה ל-Joba24! 🎉',
+            body: `${regName} נרשם${attributedAgentCode ? ` דרך סוכן ${attributedAgentCode}` : ''}.`,
+            url: '/admin',
+            tag: `admin_new_register_${user.id}`,
+          });
+        }
+      } catch (e) {
+        console.error('linkReferralDevice: failed to notify admins:', e);
       }
-    } catch (e) {
-      console.error('linkReferralDevice: failed to notify admins:', e);
     }
 
     console.log(`linkReferralDevice: linked ${eventsToLink.length} events to user ${user.id} (agent=${attributedAgentCode})`);
