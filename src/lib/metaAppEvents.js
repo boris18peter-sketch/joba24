@@ -17,6 +17,7 @@ export const MetaEvents = {
   LocationEnabled: 'LocationEnabled',
   NotificationsEnabled: 'NotificationsEnabled',
   KYCCompleted: 'KYCCompleted',
+  Purchase: 'Purchase',
 };
 
 /**
@@ -65,6 +66,47 @@ export async function trackMetaEventOnce(eventName, flagKey, params = {}) {
   if (localStorage.getItem(flagKey)) return;
   localStorage.setItem(flagKey, '1');
   await trackMetaEvent(eventName, params);
+}
+
+// Dedup guard for real-money events. The same payment can legitimately be
+// confirmed more than once — a retried browser callback, a re-delivered
+// StoreKit transaction, a webhook arriving alongside the status poll — and Meta
+// must see exactly ONE Purchase per transaction. Each transaction id is
+// remembered the moment it is reported, so a second confirmation is a no-op.
+const PURCHASE_DEDUP_PREFIX = 'meta_purchase_logged_';
+
+/**
+ * Report Meta's standard Purchase event for a payment that has ALREADY been
+ * confirmed successful by the provider (Apple receipt verification or Tranzila
+ * status). Never call this when checkout opens, when the payment starts, is
+ * pending, fails or is cancelled.
+ *
+ * Only the amount, the currency and a non-sensitive content type are sent —
+ * no card data, no tokens, no provider payloads.
+ *
+ * @param {object} o
+ * @param {string} o.transactionId — unique payment id, used as the dedup key
+ * @param {number} o.value         — the real amount paid
+ * @param {string} [o.currency]    — ISO 4217 code, defaults to ILS
+ * @param {object} [o.params]      — optional extra non-sensitive parameters
+ */
+export async function trackMetaPurchase({ transactionId, value, currency = 'ILS', params = {} }) {
+  if (!transactionId) return;
+  const key = PURCHASE_DEDUP_PREFIX + transactionId;
+  try {
+    if (localStorage.getItem(key)) return;
+    // Claim the transaction BEFORE reporting, so two confirmations racing each
+    // other can't both get through.
+    localStorage.setItem(key, '1');
+  } catch {
+    // localStorage unavailable — still report, dedup is best-effort here
+  }
+  const amount = Number(value);
+  await trackMetaEvent(
+    MetaEvents.Purchase,
+    { ...params, currency },
+    Number.isFinite(amount) && amount > 0 ? amount : null
+  );
 }
 
 export default MetaAppEventsNative;

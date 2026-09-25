@@ -5,6 +5,7 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { purchaseIosProduct, finishIosTransaction, IOS_IAP_ALL } from '@/lib/iosIap';
+import { trackMetaPurchase } from '@/lib/metaAppEvents';
 
 /**
  * IosPurchaseConfirm — Apple In-App Purchase confirm step (iOS native only).
@@ -32,6 +33,15 @@ export default function IosPurchaseConfirm({ pkg, isSubscription, priceLabel, on
       if (verify.data?.success) {
         // 3. Only after credits are granted — finish the transaction
         await finishIosTransaction(purchase.transactionId);
+        // Meta Purchase — Apple's receipt was verified server-side and the
+        // credits were granted. Deduped by the Apple transaction id, so a
+        // re-delivered or retried verification cannot report it twice.
+        trackMetaPurchase({
+          transactionId: purchase.transactionId,
+          value: pkg.price,
+          currency: 'ILS',
+          params: { content_type: isSubscription ? 'subscription' : 'consumable' },
+        });
         onDone();
       } else {
         toast.error(verify.data?.error || t('buy_ios_error'));

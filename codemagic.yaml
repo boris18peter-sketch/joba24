@@ -55,6 +55,15 @@ workflows:
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles --verbose
+      - name: Verify FACEBOOK_CLIENT_TOKEN is available (iOS)
+        script: |
+          if [ -z "${FACEBOOK_CLIENT_TOKEN:-}" ]; then
+            echo "ERROR: FACEBOOK_CLIENT_TOKEN is empty or not set."
+            echo "The Meta App Events SDK cannot be configured without it, so app events would silently fail."
+            echo "Set it in the 'ios_signing' environment group (Codemagic > Environment variables)."
+            exit 1
+          fi
+          echo "FACEBOOK_CLIENT_TOKEN is present (value intentionally not printed)."
       - name: Archive the app
         script: |
           xcodebuild archive \
@@ -68,6 +77,27 @@ workflows:
             MARKETING_VERSION=2.130298.0 \
             CURRENT_PROJECT_VERSION=18 \
             FACEBOOK_CLIENT_TOKEN="$FACEBOOK_CLIENT_TOKEN"
+      - name: Verify SKAdNetwork IDs in the built app (iOS)
+        script: |
+          PLIST="$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app/Info.plist"
+          if [ ! -f "$PLIST" ]; then
+            echo "ERROR: archived Info.plist not found at $PLIST - cannot verify SKAdNetwork configuration."
+            exit 1
+          fi
+          if ! /usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$PLIST" > /dev/null 2>&1; then
+            echo "ERROR: SKAdNetworkItems is missing from the archived production build."
+            exit 1
+          fi
+          COUNT=$(/usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$PLIST" | grep -c "SKAdNetworkIdentifier" || true)
+          echo "SKAdNetworkItems present in the production build ($COUNT entries)."
+          for ID in v9wttpbfk9.skadnetwork n38lu8286q.skadnetwork; do
+            if /usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$PLIST" | grep -q "$ID"; then
+              echo "  OK: $ID"
+            else
+              echo "ERROR: required Meta SKAdNetwork ID $ID is missing from the archived build."
+              exit 1
+            fi
+          done
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
@@ -185,6 +215,18 @@ workflows:
           python3 << 'PYEOF'
           import os
 
+          # Fail fast if the Meta client token is missing. Without it the SDK
+          # loads but app events are never delivered — a silent failure that is
+          # very hard to notice after release. The value is never printed.
+          FB_CLIENT_TOKEN = os.environ.get("FACEBOOK_CLIENT_TOKEN", "").strip()
+          if not FB_CLIENT_TOKEN:
+              raise SystemExit(
+                  "ERROR: FACEBOOK_CLIENT_TOKEN is empty or not set. "
+                  "Set it in the 'ios_signing' environment group (Codemagic > Environment variables). "
+                  "The Meta App Events SDK cannot be configured without it."
+              )
+          print("[meta] FACEBOOK_CLIENT_TOKEN is present (value intentionally not printed)")
+
           PKG = "com.base69e6bdb4986a04a256653a23.app"
           PKG_PATH = PKG.replace(".", "/")
           SRC_DIR = f"android/app/src/main/java/{PKG_PATH}"
@@ -195,60 +237,60 @@ workflows:
           # ── 1. Create MetaAppEventsPlugin.java ──
           plugin_code = f'''package {PKG};
 
-import com.getcapacitor.JSObject;
-import com.getcapacitor.Plugin;
-import com.getcapacitor.PluginCall;
-import com.getcapacitor.PluginMethod;
-import com.getcapacitor.annotation.CapacitorPlugin;
-import com.facebook.appevents.AppEventsLogger;
-import android.os.Bundle;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import com.facebook.appevents.AppEventsLogger;
+          import android.os.Bundle;
 
-@CapacitorPlugin(name = "MetaAppEvents")
-public class MetaAppEventsPlugin extends Plugin {{
-    private AppEventsLogger logger;
+          @CapacitorPlugin(name = "MetaAppEvents")
+          public class MetaAppEventsPlugin extends Plugin {{
+              private AppEventsLogger logger;
 
-    @Override
-    public void load() {{
-        super.load();
-        logger = AppEventsLogger.newLogger(getContext());
-    }}
+              @Override
+              public void load() {{
+                  super.load();
+                  logger = AppEventsLogger.newLogger(getContext());
+              }}
 
-    @PluginMethod
-    public void logEvent(PluginCall call) {{
-        String name = call.getString("name");
-        if (name == null) {{
-            call.reject("name is required");
-            return;
-        }}
-        JSObject params = call.getObject("params", new JSObject());
-        Bundle bundle = new Bundle();
-        for (String key : params.keys()) {{
-            Object value = params.get(key);
-            if (value instanceof String) {{
-                bundle.putString(key, (String) value);
-            }} else if (value instanceof Number) {{
-                bundle.putDouble(key, ((Number) value).doubleValue());
-            }} else if (value instanceof Boolean) {{
-                bundle.putBoolean(key, (Boolean) value);
-            }}
-        }}
-        Double valueToSum = call.getDouble("valueToSum", 0.0);
-        if (valueToSum != null && valueToSum > 0) {{
-            logger.logEvent(name, valueToSum, bundle);
-        }} else {{
-            logger.logEvent(name, bundle);
-        }}
-        call.resolve();
-    }}
+              @PluginMethod
+              public void logEvent(PluginCall call) {{
+                  String name = call.getString("name");
+                  if (name == null) {{
+                      call.reject("name is required");
+                      return;
+                  }}
+                  JSObject params = call.getObject("params", new JSObject());
+                  Bundle bundle = new Bundle();
+                  for (String key : params.keys()) {{
+                      Object value = params.get(key);
+                      if (value instanceof String) {{
+                          bundle.putString(key, (String) value);
+                      }} else if (value instanceof Number) {{
+                          bundle.putDouble(key, ((Number) value).doubleValue());
+                      }} else if (value instanceof Boolean) {{
+                          bundle.putBoolean(key, (Boolean) value);
+                      }}
+                  }}
+                  Double valueToSum = call.getDouble("valueToSum", 0.0);
+                  if (valueToSum != null && valueToSum > 0) {{
+                      logger.logEvent(name, valueToSum, bundle);
+                  }} else {{
+                      logger.logEvent(name, bundle);
+                  }}
+                  call.resolve();
+              }}
 
-    @PluginMethod
-    public void setUserId(PluginCall call) {{
-        String userId = call.getString("userId", "");
-        logger.setUserID(userId.isEmpty() ? null : userId);
-        call.resolve();
-    }}
-}}
-'''
+              @PluginMethod
+              public void setUserId(PluginCall call) {{
+                  String userId = call.getString("userId", "");
+                  logger.setUserID(userId.isEmpty() ? null : userId);
+                  call.resolve();
+              }}
+          }}
+          '''
           plugin_path = os.path.join(SRC_DIR, "MetaAppEventsPlugin.java")
           with open(plugin_path, "w") as f:
               f.write(plugin_code)
@@ -309,24 +351,40 @@ public class MetaAppEventsPlugin extends Plugin {{
 
           if "com.facebook.sdk.ApplicationId" not in manifest_content:
               meta_block = f'''        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
-        <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/>
-        <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="true"/>
-        <meta-data android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled" android:value="true"/>
-'''
+                  <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/>
+                  <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="true"/>
+                  <meta-data android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled" android:value="true"/>
+          '''
               manifest_content = manifest_content.replace(
                   "<application",
                   meta_block + "        <application",
                   1
               )
-              with open(manifest_path, "w") as f:
-                  f.write(manifest_content)
               print("[meta] Added Facebook metadata to AndroidManifest.xml")
           else:
               print("[meta] Facebook metadata already in AndroidManifest.xml")
 
+          # ── 4b. Advertising ID permission ──
+          # Required for the Meta SDK to read the Android Advertising ID on
+          # targetSdk 33+ (Android 13 and up). Without it the SDK silently loses
+          # the identifier used for install attribution.
+          if "com.google.android.gms.permission.AD_ID" not in manifest_content:
+              manifest_content = manifest_content.replace(
+                  "<application",
+                  '    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />\n        <application',
+                  1
+              )
+              print("[meta] Added AD_ID permission to AndroidManifest.xml")
+          else:
+              print("[meta] AD_ID permission already in AndroidManifest.xml")
+
+          # Single write, after every manifest edit above
+          with open(manifest_path, "w") as f:
+              f.write(manifest_content)
+
           # ── 5. Add Facebook strings to strings.xml ──
           strings_path = "android/app/src/main/res/values/strings.xml"
-          fb_client_token = os.environ.get("FACEBOOK_CLIENT_TOKEN", "")
+          fb_client_token = FB_CLIENT_TOKEN
 
           strings_content = ""
           if os.path.exists(strings_path):
@@ -335,8 +393,8 @@ public class MetaAppEventsPlugin extends Plugin {{
 
           if "facebook_app_id" not in strings_content:
               fb_strings = f'''<string name="facebook_app_id">{META_APP_ID}</string>
-<string name="facebook_client_token">{fb_client_token}</string>
-'''
+          <string name="facebook_client_token">{fb_client_token}</string>
+          '''
               strings_content = strings_content.replace(
                   "</resources>",
                   fb_strings + "</resources>",
@@ -381,6 +439,36 @@ public class MetaAppEventsPlugin extends Plugin {{
             echo "✓ MetaAppEventsPlugin registered in MainActivity"
           else
             echo "✗ ERROR: MetaAppEventsPlugin not registered in MainActivity"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking activateApp call in MainActivity.java ==="
+          if grep -q "AppEventsLogger.activateApp" android/app/src/main/java/com/base69e6bdb4986a04a256653a23/app/MainActivity.java; then
+            echo "✓ AppEventsLogger.activateApp present"
+          else
+            echo "✗ ERROR: AppEventsLogger.activateApp missing from MainActivity"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking Advertising ID permission in AndroidManifest.xml ==="
+          if grep -q "com.google.android.gms.permission.AD_ID" android/app/src/main/AndroidManifest.xml; then
+            echo "✓ Advertising ID permission present"
+          else
+            echo "✗ ERROR: com.google.android.gms.permission.AD_ID missing from AndroidManifest.xml"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking Facebook Client Token was injected ==="
+          if grep -q "com.facebook.sdk.ClientToken" android/app/src/main/AndroidManifest.xml; then
+            echo "✓ ClientToken meta-data present in manifest"
+          else
+            echo "✗ ERROR: com.facebook.sdk.ClientToken missing from AndroidManifest.xml"
+            exit 1
+          fi
+          if grep -qE 'name="facebook_client_token">[^<]' android/app/src/main/res/values/strings.xml; then
+            echo "✓ facebook_client_token is present and non-empty (value intentionally not printed)"
+          else
+            echo "✗ ERROR: facebook_client_token is missing or empty in strings.xml"
             exit 1
           fi
       - name: Copy Firebase google-services.json

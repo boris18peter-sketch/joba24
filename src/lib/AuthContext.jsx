@@ -185,9 +185,12 @@ export const AuthProvider = ({ children }) => {
 
       // Grant signup bonus if first time (no credits yet) — runs AFTER the referral
       // code is saved so the configurable referral bonus is applied for referred users.
+      // NOTE: the Meta CompleteRegistration event deliberately does NOT live here.
+      // It used to be tied to this balance check, which made it re-fire on later
+      // logins and balance changes. It now lives in the registration block below,
+      // which is keyed on the account's own creation state instead.
       if (currentUser && (currentUser.worker_credits === undefined || currentUser.worker_credits === null)) {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
-        trackMetaEvent(MetaEvents.CompleteRegistration);
       }
 
       // Set Meta user ID for attribution (call after every login)
@@ -215,6 +218,26 @@ export const AuthProvider = ({ children }) => {
             registration_source: isNative ? 'native' : 'web',
             registration_platform: platform,
           });
+
+          // ── Meta CompleteRegistration ──
+          // Fires ONLY here, and only after the write above succeeded:
+          //   • the server record had no `registration_source`, so this account
+          //     has never been through the post-registration flow;
+          //   • the write has just claimed it, so this is exactly once per user
+          //     and can never repeat on a later login, app launch or balance
+          //     change (the old trigger was keyed on the Joba balance, which is
+          //     what made it fire repeatedly).
+          // `created_date` is the account's real creation time and is the source
+          // of truth for "genuinely new registration" — accounts that predate
+          // this marker are existing users, not new registrations, and are
+          // skipped so they never emit a false registration event.
+          const createdAt = Date.parse(currentUser.created_date || '');
+          const isGenuinelyNewAccount =
+            Number.isFinite(createdAt) &&
+            Date.now() - createdAt < 7 * 24 * 60 * 60 * 1000;
+          if (isGenuinelyNewAccount) {
+            trackMetaEvent(MetaEvents.CompleteRegistration);
+          }
         }
       } catch (srcErr) {
         console.error('[Joba24] Auth: failed to set registration_source:', srcErr?.message);
