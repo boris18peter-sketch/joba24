@@ -494,35 +494,18 @@ workflows:
           print(f"[meta] Created {plugin_path}")
 
           # ── 2. Register plugin + activate app events in MainActivity.java ──
-          main_activity_path = os.path.join(SRC_DIR, "MainActivity.java")
-          with open(main_activity_path, "r") as f:
-              ma_content = f.read()
-
-          if "MetaAppEventsPlugin" not in ma_content:
-              ma_content = ma_content.replace(
-                  "public class MainActivity extends BridgeActivity {",
-                  "public class MainActivity extends BridgeActivity {",
-                  1
-              )
-              # Add registerPlugin before super.onCreate
-              if "registerPlugin(MetaAppEventsPlugin.class);" not in ma_content:
-                  ma_content = ma_content.replace(
-                      "super.onCreate(savedInstanceState);",
-                      "registerPlugin(MetaAppEventsPlugin.class);\n        super.onCreate(savedInstanceState);",
-                      1
-                  )
-              # Add AppEventsLogger.activateApp after super.onCreate
-              if "AppEventsLogger.activateApp" not in ma_content:
-                  ma_content = ma_content.replace(
-                      "super.onCreate(savedInstanceState);",
-                      "super.onCreate(savedInstanceState);\n        com.facebook.appevents.AppEventsLogger.activateApp(getApplication());",
-                      1
-                  )
-              with open(main_activity_path, "w") as f:
-                  f.write(ma_content)
-              print("[meta] Registered MetaAppEventsPlugin in MainActivity.java")
-          else:
-              print("[meta] MetaAppEventsPlugin already registered in MainActivity.java")
+          # The Capacitor template generates an EMPTY MainActivity with no
+          # onCreate override, so the old "replace super.onCreate(...)" approach
+          # matched nothing and silently registered nothing. The shared script
+          # detects the real file, generates the override, and is idempotent.
+          import subprocess
+          subprocess.run([
+              "python3", "scripts/patch-android-mainactivity.py",
+              os.path.join(SRC_DIR, "MainActivity.java"),
+              "--before", "registerPlugin(MetaAppEventsPlugin.class);",
+              "--after", "com.facebook.appevents.AppEventsLogger.activateApp(getApplication());",
+          ], check=True)
+          print("[meta] Registered MetaAppEventsPlugin in MainActivity.java")
 
           # ── 3. Add Facebook SDK to app/build.gradle ──
           gradle_path = "android/app/build.gradle"
@@ -730,19 +713,16 @@ workflows:
           print("[tiktok] Wrote TikTokAppEventsPlugin.java")
 
           # 3. Register the plugin in MainActivity.java
-          main_activity_path = os.path.join(SRC_DIR, "MainActivity.java")
-          with open(main_activity_path, "r") as f:
-              ma = f.read()
-          if "TikTokAppEventsPlugin" not in ma:
-              ma = ma.replace(
-                  "super.onCreate(savedInstanceState);",
-                  "registerPlugin(TikTokAppEventsPlugin.class);\n        super.onCreate(savedInstanceState);",
-                  1)
-              with open(main_activity_path, "w") as f:
-                  f.write(ma)
-              print("[tiktok] Registered TikTokAppEventsPlugin in MainActivity.java")
-          else:
-              print("[tiktok] TikTokAppEventsPlugin already registered")
+          # Same shared script as the Meta step: it detects the real generated
+          # MainActivity, generates the missing onCreate override, and merges
+          # idempotently so repeated builds never duplicate registrations.
+          import subprocess
+          subprocess.run([
+              "python3", "scripts/patch-android-mainactivity.py",
+              os.path.join(SRC_DIR, "MainActivity.java"),
+              "--before", "registerPlugin(TikTokAppEventsPlugin.class);",
+          ], check=True)
+          print("[tiktok] Registered TikTokAppEventsPlugin in MainActivity.java")
 
           # 4. Add credentials to strings.xml
           strings_path = "android/app/src/main/res/values/strings.xml"
@@ -795,12 +775,33 @@ workflows:
             echo "ERROR: TikTok SDK not in build.gradle"
             exit 1
           fi
-          if grep -q "TikTokAppEventsPlugin" "$BASE/MainActivity.java"; then
-            echo "OK: TikTokAppEventsPlugin registered in MainActivity"
-          else
-            echo "ERROR: TikTokAppEventsPlugin not registered in MainActivity"
+          MA="$BASE/MainActivity.java"
+          if [ ! -f "$MA" ]; then
+            echo "ERROR: MainActivity.java not found at $MA"
             exit 1
           fi
+          # Verify the registration method Capacitor 8 actually requires, not just
+          # that the class name appears somewhere in the file. registerPlugin()
+          # only feeds the Bridge.Builder that BridgeActivity.onCreate() consumes
+          # via load(), so the call must exist AND precede super.onCreate().
+          REG_LINE=$(grep -n "registerPlugin(TikTokAppEventsPlugin.class);" "$MA" | head -1 | cut -d: -f1)
+          SUPER_LINE=$(grep -n "super\.onCreate(" "$MA" | head -1 | cut -d: -f1)
+          if [ -z "$REG_LINE" ]; then
+            echo "ERROR: MainActivity never calls registerPlugin(TikTokAppEventsPlugin.class)"
+            cat "$MA"
+            exit 1
+          fi
+          if [ -z "$SUPER_LINE" ]; then
+            echo "ERROR: MainActivity has no super.onCreate() call - registration order cannot be confirmed"
+            cat "$MA"
+            exit 1
+          fi
+          if [ "$REG_LINE" -ge "$SUPER_LINE" ]; then
+            echo "ERROR: registerPlugin(TikTokAppEventsPlugin.class) at line $REG_LINE must come BEFORE super.onCreate() at line $SUPER_LINE"
+            cat "$MA"
+            exit 1
+          fi
+          echo "OK: TikTokAppEventsPlugin registered before super.onCreate (line $REG_LINE < $SUPER_LINE)"
           if grep -qE 'name="tiktok_app_secret">[^<]' android/app/src/main/res/values/strings.xml; then
             echo "OK: tiktok_app_secret is present and non-empty (value not printed)"
           else
