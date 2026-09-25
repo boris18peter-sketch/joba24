@@ -461,7 +461,11 @@ workflows:
                   }}
                   JSObject params = call.getObject("params", new JSObject());
                   Bundle bundle = new Bundle();
-                  for (String key : params.keys()) {{
+                  // JSObject.keys() returns Iterator<String> (org.json.JSONObject),
+                  // which is not Iterable - a for-each loop does not compile against it.
+                  java.util.Iterator<String> keys = params.keys();
+                  while (keys.hasNext()) {{
+                      String key = keys.next();
                       Object value = params.get(key);
                       if (value instanceof String) {{
                           bundle.putString(key, (String) value);
@@ -701,7 +705,11 @@ workflows:
                   if (name == null) { call.reject("name is required"); return; }
                   JSObject params = call.getObject("params", new JSObject());
                   JSONObject json = new JSONObject();
-                  for (String key : params.keys()) {
+                  // JSObject.keys() returns Iterator<String> (org.json.JSONObject),
+                  // which is not Iterable - a for-each loop does not compile against it.
+                  java.util.Iterator<String> keys = params.keys();
+                  while (keys.hasNext()) {
+                      String key = keys.next();
                       try { json.put(key, params.get(key)); } catch (Throwable ignored) {}
                   }
                   String eventId = call.getString("eventId");
