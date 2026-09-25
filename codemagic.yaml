@@ -877,6 +877,27 @@ workflows:
             echo "✗ ERROR: facebook_client_token is missing or empty in strings.xml"
             exit 1
           fi
+      - name: Copy Firebase google-services.json
+        script: |
+          # Runs AFTER "Add Android platform" generated the project and BEFORE
+          # any Gradle invocation. This MUST stay before the verification step
+          # below: the check used to run first and always failed, because the
+          # file it asserts on is only created here.
+          if [ ! -f "android-config/google-services.json" ]; then
+            echo "ERROR: android-config/google-services.json not found in repo"
+            exit 1
+          fi
+          # The Google Services plugin matches this file to the app module by
+          # package name. A mismatch means Firebase silently never initialises
+          # (Analytics AND FCM), so fail loudly here instead.
+          PKG="com.base69e6bdb4986a04a256653a23.app"
+          if ! grep -q "\"$PKG\"" android-config/google-services.json; then
+            echo "ERROR: android-config/google-services.json has no client for package $PKG."
+            echo "The Google Services plugin would not match it and Firebase would not initialise."
+            exit 1
+          fi
+          cp android-config/google-services.json android/app/google-services.json
+          echo "google-services.json copied successfully (package $PKG confirmed)"
       - name: Verify Firebase Analytics is wired for Android
         script: |
           echo "=== Checking the Capacitor Firebase Analytics plugin is synced ==="
@@ -895,15 +916,6 @@ workflows:
             echo "OK: google-services.json present"
           else
             echo "ERROR: android/app/google-services.json missing - Firebase will not initialise."
-            exit 1
-          fi
-      - name: Copy Firebase google-services.json
-        script: |
-          if [ -f "android-config/google-services.json" ]; then
-            cp android-config/google-services.json android/app/google-services.json
-            echo "google-services.json copied successfully"
-          else
-            echo "ERROR: android-config/google-services.json not found in repo"
             exit 1
           fi
       - name: Copy custom app icon and splash screen
