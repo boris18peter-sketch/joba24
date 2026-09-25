@@ -11,26 +11,39 @@
 
 // Imported lazily so a platform without the plugin (e.g. a plain web build)
 // can never break the app bundle.
-async function sdk() {
-  const mod = await import('@capacitor-firebase/analytics');
-  return mod.FirebaseAnalytics;
+//
+// The loader resolves to a PLAIN object holding the plugin — never to the
+// plugin itself. A Capacitor plugin is a Proxy that answers every property
+// lookup with a callable wrapper, so it also looks like a thenable: returning
+// it from an async function makes the promise machinery call `.then()` on it,
+// and Capacitor answers that by creating an orphan promise that rejects with
+// `"FirebaseAnalytics.then()" is not implemented on web` — an unhandled
+// rejection on every analytics event.
+let sdkPromise = null;
+function loadSdk() {
+  if (!sdkPromise) {
+    sdkPromise = import('@capacitor-firebase/analytics').then((mod) => ({
+      FirebaseAnalytics: mod.FirebaseAnalytics,
+    }));
+  }
+  return sdkPromise;
 }
 
 export const firebaseProvider = {
   id: 'firebase',
 
   async dispatch({ providerEvent, params }) {
-    const FirebaseAnalytics = await sdk();
+    const { FirebaseAnalytics } = await loadSdk();
     await FirebaseAnalytics.logEvent({ name: providerEvent, params });
   },
 
   async setUserId(userId) {
-    const FirebaseAnalytics = await sdk();
+    const { FirebaseAnalytics } = await loadSdk();
     await FirebaseAnalytics.setUserId({ userId: userId || null });
   },
 
   async clearUser() {
-    const FirebaseAnalytics = await sdk();
+    const { FirebaseAnalytics } = await loadSdk();
     await FirebaseAnalytics.setUserId({ userId: null });
   },
 };
