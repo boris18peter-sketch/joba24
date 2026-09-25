@@ -466,7 +466,7 @@ workflows:
                   java.util.Iterator<String> keys = params.keys();
                   while (keys.hasNext()) {{
                       String key = keys.next();
-                      Object value = params.get(key);
+                      Object value = params.opt(key);
                       if (value instanceof String) {{
                           bundle.putString(key, (String) value);
                       }} else if (value instanceof Number) {{
