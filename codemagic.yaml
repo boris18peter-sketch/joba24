@@ -232,7 +232,7 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION=2.130298.0 \
-            CURRENT_PROJECT_VERSION=19 \
+            CURRENT_PROJECT_VERSION=20 \
             FACEBOOK_CLIENT_TOKEN="$FACEBOOK_CLIENT_TOKEN"
       - name: Verify SKAdNetwork IDs in the built app (iOS)
         script: |
@@ -359,8 +359,8 @@ workflows:
       groups:
         - ios_signing          # shares FACEBOOK_CLIENT_TOKEN with iOS; does not affect keystore signing
       vars:
-        ANDROID_VERSION_CODE: 19
-        ANDROID_VERSION_NAME: "1.0.1"
+        ANDROID_VERSION_CODE: 20
+        ANDROID_VERSION_NAME: "1.0.2"
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
         # FACEBOOK_CLIENT_TOKEN is provided by the ios_signing environment group
