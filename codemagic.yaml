@@ -611,14 +611,38 @@ workflows:
           PKG_PATH = PKG.replace(".", "/")
           SRC_DIR = "android/app/src/main/java/" + PKG_PATH
 
-          # 1. Add the TikTok SDK to app/build.gradle
+          # 1a. Add the JitPack repository.
+          # The TikTok App Events Android SDK is NOT published to Google Maven or
+          # Maven Central - it is distributed via JitPack under the coordinate
+          # com.github.tiktok:tiktok-business-android-sdk. Confirmed against the
+          # official repo's own build.gradle (which declares
+          # maven { url 'https://jitpack.io' }) and the JitPack POM for tag 1.7.1.
+          # Without this repository Gradle cannot resolve the dependency.
+          root_gradle_path = "android/build.gradle"
+          with open(root_gradle_path, "r") as f:
+              root_gradle = f.read()
+          if "jitpack.io" not in root_gradle:
+              anchor = "allprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}"
+              if anchor not in root_gradle:
+                  raise SystemExit("ERROR: the allprojects repositories block was not found in android/build.gradle - the Capacitor template changed, review this step.")
+              root_gradle = root_gradle.replace(
+                  anchor,
+                  "allprojects {\n    repositories {\n        google()\n        mavenCentral()\n        maven { url 'https://jitpack.io' }\n    }\n}",
+                  1)
+              with open(root_gradle_path, "w") as f:
+                  f.write(root_gradle)
+              print("[tiktok] Added JitPack repository to android/build.gradle")
+          else:
+              print("[tiktok] JitPack repository already present in android/build.gradle")
+
+          # 1b. Add the TikTok SDK to app/build.gradle
           gradle_path = "android/app/build.gradle"
           with open(gradle_path, "r") as f:
               gradle = f.read()
           if "tiktok-business-android-sdk" not in gradle:
               gradle = gradle.replace(
                   "dependencies {",
-                  "dependencies {\n    implementation 'com.tiktok:tiktok-business-android-sdk:1.7.1'",
+                  "dependencies {\n    implementation 'com.github.tiktok:tiktok-business-android-sdk:1.7.1'",
                   1)
               with open(gradle_path, "w") as f:
                   f.write(gradle)
@@ -655,11 +679,12 @@ workflows:
                           android.util.Log.w("TikTok", "credentials missing - SDK not initialised");
                           return;
                       }
+                      // TTConfig has no setAccessToken() in the official SDK.
+                      // The access token is passed via this constructor overload.
                       TikTokBusinessSdk.TTConfig config =
-                              new TikTokBusinessSdk.TTConfig(getContext())
+                              new TikTokBusinessSdk.TTConfig(getContext(), appSecret)
                                       .setAppId(appId)
-                                      .setTTAppId(ttAppId)
-                                      .setAccessToken(appSecret);
+                                      .setTTAppId(ttAppId);
                       TikTokBusinessSdk.initializeSdk(config);
                       TikTokBusinessSdk.startTrack();
                       initialized = true;
@@ -688,7 +713,8 @@ workflows:
               public void setUserId(PluginCall call) {
                   String userId = call.getString("userId", "");
                   if (userId != null && !userId.isEmpty()) {
-                      TikTokBusinessSdk.setUserID(userId);
+                      // The official SDK exposes identify(), not setUserID().
+                      TikTokBusinessSdk.identify(userId, null, null, null);
                   }
                   call.resolve();
               }
@@ -769,10 +795,16 @@ workflows:
             echo "ERROR: TikTokAppEventsPlugin.java not found!"
             exit 1
           fi
-          if grep -q "tiktok-business-android-sdk" android/app/build.gradle; then
-            echo "OK: TikTok SDK dependency present in build.gradle"
+          if grep -q "com.github.tiktok:tiktok-business-android-sdk" android/app/build.gradle; then
+            echo "OK: TikTok SDK dependency present in build.gradle (JitPack coordinate)"
           else
-            echo "ERROR: TikTok SDK not in build.gradle"
+            echo "ERROR: TikTok SDK not in build.gradle with the JitPack coordinate com.github.tiktok:tiktok-business-android-sdk"
+            exit 1
+          fi
+          if grep -q "jitpack.io" android/build.gradle; then
+            echo "OK: JitPack repository present in android/build.gradle"
+          else
+            echo "ERROR: JitPack repository missing from android/build.gradle - the TikTok SDK cannot resolve without it"
             exit 1
           fi
           MA="$BASE/MainActivity.java"
