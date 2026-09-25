@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
 
 export default function TaskApplicants({ task, onApprove }) {
@@ -62,6 +63,9 @@ export default function TaskApplicants({ task, onApprove }) {
         workerName: app.worker_name,
       });
       if (!res.data?.success) throw new Error(res.data?.error || 'שגיאה באישור');
+      // Marketplace — the publisher selected a worker. Deduped per task, so the
+      // worker-self-take path in TaskDetail never double-counts this.
+      trackEvent('worker_selected', { category: task?.category, city: task?.city, value: task?.price }, { dedupeKey: task.id });
       return { task: res.data.task };
     },
     onSuccess: (data) => {

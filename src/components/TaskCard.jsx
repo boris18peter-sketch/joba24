@@ -6,6 +6,7 @@ import BoostOverlay from '@/components/BoostOverlay';
 import MediaLightbox from '@/components/MediaLightbox';
 import { WorkerPoolPill } from '@/components/WorkerPoolScanner';
 import { getCategoryLabel } from '@/lib/categories';
+import { trackEvent } from '@/lib/analytics';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import UserBadge from '@/components/UserBadge';
 import { base44 } from '@/api/base44Client';
@@ -213,6 +214,13 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
         setShowVerificationRequired(true);
         return;
       }
+      // Worker funnel — deeper quality event. Fires only after the backend
+      // returned a persisted application record.
+      trackEvent(
+        'application_submitted',
+        { category: displayTask?.category, city: displayTask?.city, value: displayTask?.price },
+        { dedupeKey: res.data?.application?.id || displayTask?.id }
+      );
       handleApplied(res.data?.application, res.data?.credits_charged || 0);
       setTimeout(() => setShowApplyModal(false), 120);
     } catch (err) {

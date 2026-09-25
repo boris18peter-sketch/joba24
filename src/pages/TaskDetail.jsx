@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -393,6 +394,15 @@ export default function TaskDetail(props) {
     prevTaskStatusRef.current = task?.status;
   }, [task?.status]);
 
+  // Worker funnel — the worker opened this task listing.
+  // 'session' dedup: counted once per task per app session, so rerenders and
+  // reopening the sheet do not inflate the funnel.
+  useEffect(() => {
+    if (task?.id) {
+      trackEvent('task_viewed', { category: task.category, city: task.city, value: task.price }, { dedupeKey: task.id });
+    }
+  }, [task?.id]);
+
   // Check expiry — update via backend function to avoid direct client-side status writes
   useEffect(() => {
     if (!task || task.status !== 'OPEN') return;
@@ -416,6 +426,9 @@ export default function TaskDetail(props) {
         return;
       }
       setTaskTaken(true);
+      // Marketplace — a worker was selected for this task (deduped per task,
+      // so the publisher-approval and worker-self-take paths never double-count).
+      trackEvent('worker_selected', { category: task?.category, city: task?.city, value: task?.price }, { dedupeKey: id });
       // Sync all caches so the UI transitions from "go now" to the active
       // worker flow (WorkerStatusUpdater / ActiveTaskBanner) — the "go now"
       // and "יצאתי לדרך" buttons stay synchronized.
@@ -544,6 +557,13 @@ export default function TaskDetail(props) {
       queryClient.invalidateQueries({ queryKey: ['applications', id] });
       setShowApplyForm(false);
       setHasApplied(true);
+      // Worker funnel — deeper quality event. Fires only after the backend
+      // returned a persisted application record.
+      trackEvent(
+        'application_submitted',
+        { category: task?.category, city: task?.city, value: task?.price },
+        { dedupeKey: newApp?.id || id }
+      );
       toast.success(t('app_sent_n_credits').replace('{n}', data.credits_charged));
     } catch (err) {
       // 403 = insufficient credits

@@ -4,7 +4,7 @@ import { X, Loader2, Shield } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { useLanguage } from '@/lib/LanguageContext';
-import { trackMetaPurchase } from '@/lib/metaAppEvents';
+import { trackEvent } from '@/lib/analytics';
 
 /**
  * TranzilaIframe — Full-screen payment modal using Tranzila's iFrame.
@@ -82,7 +82,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
           // Meta Purchase — the charge was confirmed successful by Tranzila.
           // Deduped inside the helper by payment id, so a repeated callback
           // (or the status poll below) can never report a second Purchase.
-          trackMetaPurchase({ transactionId: paymentId, value: sum, currency: 'ILS' });
+          trackEvent('purchase', { value: sum, currency: 'ILS', content_type: isSubscription ? 'subscription' : 'consumable' }, { dedupeKey: paymentId });
           onSuccess();
         } else {
           if (pollRef.current) clearInterval(pollRef.current);
@@ -110,7 +110,7 @@ export default function TranzilaIframe({ supplier, sum, paymentId, isSubscriptio
           if (!processedRef.current) {
             processedRef.current = true;
             // Meta Purchase — confirmed by the server-side payment status.
-            trackMetaPurchase({ transactionId: paymentId, value: sum, currency: 'ILS' });
+            trackEvent('purchase', { value: sum, currency: 'ILS', content_type: isSubscription ? 'subscription' : 'consumable' }, { dedupeKey: paymentId });
             onSuccess();
           }
         } else if (status === 'failed') {

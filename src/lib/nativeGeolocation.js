@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { isNativeLike } from '@/lib/nativeEnv';
-import { trackMetaEventOnce, MetaEvents } from '@/lib/metaAppEvents';
+import { trackEvent } from '@/lib/analytics';
 
 /**
  * Drop-in replacement for navigator.geolocation.getCurrentPosition.
@@ -75,7 +75,7 @@ export function getCurrentPosition(successCallback, errorCallback, options) {
         }
         Geolocation.getCurrentPosition(options || {})
           .then((pos) => {
-            trackMetaEventOnce(MetaEvents.LocationEnabled, 'meta_location_tracked');
+            trackEvent('location_enabled', {}, { dedupeKey: localStorage.getItem('joba24_device_id') });
             successCallback({
               coords: {
                 latitude: pos.coords.latitude,
@@ -109,7 +109,7 @@ export function getCurrentPosition(successCallback, errorCallback, options) {
   } else if (navigator.geolocation) {
    navigator.geolocation.getCurrentPosition(
      (pos) => {
-       trackMetaEventOnce(MetaEvents.LocationEnabled, 'meta_location_tracked');
+       trackEvent('location_enabled', {}, { dedupeKey: localStorage.getItem('joba24_device_id') });
        successCallback(pos);
      },
      errorCallback,

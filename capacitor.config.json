@@ -13,6 +13,15 @@
       "*.base44.app"
     ]
   },
+  "experimental": {
+    "ios": {
+      "spm": {
+        "packageOptions": {
+          "@capacitor-firebase/analytics": { "symlink": true }
+        }
+      }
+    }
+  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 500,

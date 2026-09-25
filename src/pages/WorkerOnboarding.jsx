@@ -13,7 +13,7 @@ import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCityLabel } from '@/lib/cityLabels';
 import LoginPromptModal from '@/components/LoginPromptModal';
 import { useJobaSettings } from '@/hooks/useJobaSettings';
-import { trackMetaEvent, MetaEvents } from '@/lib/metaAppEvents';
+import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
 import RotatingPromoText from '@/components/RotatingPromoText';
 import { useRegistrationCount } from '@/hooks/useRegistrationCount';
@@ -131,7 +131,8 @@ export default function WorkerOnboarding() {
 
         // On last step — mark join completed + grant the configured profile bonus (once per user, server-checked)
         if (isLastStep && me?.id) {
-          trackMetaEvent(MetaEvents.WorkerProfileCompleted);
+          // Worker funnel — key worker acquisition conversion event.
+          trackEvent('worker_profile_completed', {}, { dedupeKey: me.id });
           localStorage.setItem(JOIN_COMPLETED_KEY, '1');
           const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
           // Fast path: localStorage says already granted

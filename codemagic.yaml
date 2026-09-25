@@ -26,6 +26,160 @@ workflows:
       - name: Sync Capacitor iOS project
         script: |
           ./node_modules/.bin/cap sync ios
+      - name: Inject TikTok App Events SDK (iOS)
+        script: |
+          python3 << 'PYEOF'
+          import os, re, json
+
+          APP_ID = os.environ.get("TIKTOK_APP_ID", "").strip()
+          TT_APP_ID = os.environ.get("TIKTOK_TT_APP_ID", "").strip()
+          TOKEN = os.environ.get("TIKTOK_ACCESS_TOKEN", "").strip()
+
+          # ── Fail safe: no credentials -> inject nothing at all ──
+          # The TikTok native integration is credential-gated on purpose. With
+          # no credentials the build is byte-identical to today's build, so a
+          # missing credential can never break a release. TikTok simply reports
+          # WAITING FOR CREDENTIAL at runtime.
+          missing = [n for n, v in (("TIKTOK_APP_ID", APP_ID), ("TIKTOK_TT_APP_ID", TT_APP_ID), ("TIKTOK_ACCESS_TOKEN", TOKEN)) if not v]
+          if missing:
+              print("[tiktok] SKIPPED - missing: " + ", ".join(missing))
+              print("[tiktok] iOS build continues without the TikTok SDK (no partial state).")
+              raise SystemExit(0)
+
+          PKG_DIR = "ios/App/CapApp-SPM/Sources/CapApp-SPM"
+          PKG_SWIFT = "ios/App/CapApp-SPM/Package.swift"
+
+          # ── 1. Add TikTokBusinessSDK to the SPM package (idempotent) ──
+          with open(PKG_SWIFT, "r") as f:
+              pkg = f.read()
+          if "tiktok-business-ios-sdk" not in pkg:
+              pkg = pkg.replace(
+                  '.package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0")',
+                  '.package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0"),\n        .package(url: "https://github.com/tiktok/tiktok-business-ios-sdk.git", from: "1.7.2")',
+                  1)
+              pkg = pkg.replace(
+                  '.product(name: "FacebookCore", package: "facebook-ios-sdk")',
+                  '.product(name: "FacebookCore", package: "facebook-ios-sdk"),\n                .product(name: "TikTokBusinessSDK", package: "tiktok-business-ios-sdk")',
+                  1)
+              with open(PKG_SWIFT, "w") as f:
+                  f.write(pkg)
+              print("[tiktok] Added TikTokBusinessSDK to Package.swift")
+          else:
+              print("[tiktok] TikTokBusinessSDK already in Package.swift")
+
+          # ── 2. Write the native plugin ──
+          plugin = '''import Foundation
+          import Capacitor
+          import TikTokBusinessSDK
+
+          // TikTok App Events bridge. Registered in JobaBridgeViewController.capacitorDidLoad().
+          //
+          // SKAdNetwork: Meta is the single conversion-value writer in this app, so
+          // TikTok's own SKAN updates are disabled (disableSKAdNetworkSupport()).
+          // TikTok attribution is still configured through TikTok Events Manager.
+          @objc(TikTokAppEventsPlugin)
+          public class TikTokAppEventsPlugin: CAPPlugin, CAPBridgedPlugin {
+              public let identifier = "TikTokAppEventsPlugin"
+              public let jsName = "TikTokAppEvents"
+              public let pluginMethods: [CAPPluginMethod] = [
+                  CAPPluginMethod(name: "logEvent", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "setUserId", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "logout", returnType: CAPPluginReturnPromise),
+                  CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise)
+              ]
+
+              private var initialized = false
+
+              override public func load() {
+                  let appId = Bundle.main.object(forInfoDictionaryKey: "TikTokAppId") as? String ?? ""
+                  let ttAppId = Bundle.main.object(forInfoDictionaryKey: "TikTokTTAppId") as? String ?? ""
+                  let accessToken = Bundle.main.object(forInfoDictionaryKey: "TikTokAccessToken") as? String ?? ""
+
+                  guard !appId.isEmpty, !ttAppId.isEmpty, !accessToken.isEmpty else {
+                      print("[TikTok] credentials missing - SDK not initialised")
+                      return
+                  }
+
+                  guard let config = TikTokConfig(accessToken: accessToken, appId: appId, tiktokAppId: ttAppId) else {
+                      print("[TikTok] config could not be created")
+                      return
+                  }
+
+                  config.disableSKAdNetworkSupport()
+
+                  if TikTokBusiness.initializeSdk(config) {
+                      initialized = true
+                      TikTokBusiness.startTrack()
+                      print("[TikTok] SDK initialised")
+                  } else {
+                      print("[TikTok] SDK initialisation failed")
+                  }
+              }
+
+              @objc public func logEvent(_ call: CAPPluginCall) {
+                  guard initialized else { call.resolve(); return }
+                  guard let eventName = call.getString("name") else {
+                      call.reject("name is required")
+                      return
+                  }
+                  let props = call.getObject("params") ?? [:]
+                  let eventId = call.getString("eventId")
+                  let data = try? JSONSerialization.data(withJSONObject: props, options: [])
+                  let jsonString = data.flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+                  let event = TikTokBaseEvent(eventName: eventName, properties: jsonString, eventId: eventId)
+                  TikTokBusiness.trackTTEvent(event)
+                  call.resolve()
+              }
+
+              @objc public func setUserId(_ call: CAPPluginCall) {
+                  let userId = call.getString("userId") ?? ""
+                  if !userId.isEmpty { TikTokBusiness.setUserID(userId) }
+                  call.resolve()
+              }
+
+              @objc public func logout(_ call: CAPPluginCall) {
+                  TikTokBusiness.logout()
+                  call.resolve()
+              }
+
+              @objc public func isAvailable(_ call: CAPPluginCall) {
+                  call.resolve(["available": initialized])
+              }
+          }
+          '''
+          # Strip the python-heredoc indentation so the Swift file is well formed
+          plugin = "\n".join(line[10:] if line.startswith("          ") else line for line in plugin.split("\n"))
+          with open(os.path.join(PKG_DIR, "TikTokAppEventsPlugin.swift"), "w") as f:
+              f.write(plugin + "\n")
+          print("[tiktok] Wrote TikTokAppEventsPlugin.swift")
+
+          # ── 3. Register the plugin in SceneDelegate ──
+          scene = "ios/App/App/SceneDelegate.swift"
+          with open(scene, "r") as f:
+              sc = f.read()
+          if "TikTokAppEventsPlugin" not in sc:
+              sc = sc.replace(
+                  "bridge?.registerPluginInstance(MetaAppEventsPlugin())",
+                  "bridge?.registerPluginInstance(MetaAppEventsPlugin())\n        bridge?.registerPluginInstance(TikTokAppEventsPlugin())",
+                  1)
+              with open(scene, "w") as f:
+                  f.write(sc)
+              print("[tiktok] Registered TikTokAppEventsPlugin in SceneDelegate.swift")
+          else:
+              print("[tiktok] TikTokAppEventsPlugin already registered")
+
+          # ── 4. Inject credentials into Info.plist ──
+          plist = "ios/App/App/Info.plist"
+          import plistlib
+          with open(plist, "rb") as f:
+              info = plistlib.load(f)
+          info["TikTokAppId"] = APP_ID
+          info["TikTokTTAppId"] = TT_APP_ID
+          info["TikTokAccessToken"] = TOKEN
+          with open(plist, "wb") as f:
+              plistlib.dump(info, f)
+          print("[tiktok] Injected TikTok credentials into Info.plist (values not printed)")
+          PYEOF
       - name: Validate Xcode project file syntax
         script: |
           ruby -e 'require "xcodeproj"; Xcodeproj::Project.open("ios/App/App.xcodeproj")' && echo "project.pbxproj is valid" || (echo "ERROR: project.pbxproj has a syntax error - it was likely corrupted during copy-paste. Re-copy the full file carefully." && exit 1)
@@ -98,6 +252,46 @@ workflows:
               exit 1
             fi
           done
+      - name: Verify Firebase Analytics + TikTok SDK in the archived build
+        script: |
+          APP="$CM_BUILD_DIR/build/App.xcarchive/Products/Applications/App.app"
+          if [ ! -d "$APP" ]; then
+            echo "ERROR: archived .app not found at $APP"
+            exit 1
+          fi
+
+          echo "=== Firebase Analytics (native SDK linked) ==="
+          if find "$APP" -name "*FirebaseAnalytics*" | head -1 | grep -q .; then
+            echo "OK: FirebaseAnalytics framework present in the archived app"
+          else
+            echo "ERROR: FirebaseAnalytics is missing from the archived app - Google Ads conversions will not be recorded."
+            exit 1
+          fi
+          if [ -f "$APP/GoogleService-Info.plist" ]; then
+            echo "OK: GoogleService-Info.plist bundled"
+          else
+            echo "ERROR: GoogleService-Info.plist is not bundled - Firebase Analytics cannot initialise."
+            exit 1
+          fi
+
+          echo ""
+          echo "=== TikTok App Events SDK (credential-gated) ==="
+          if [ -n "${TIKTOK_APP_ID:-}" ] && [ -n "${TIKTOK_ACCESS_TOKEN:-}" ]; then
+            if find "$APP" -name "*TikTokBusinessSDK*" | head -1 | grep -q .; then
+              echo "OK: TikTokBusinessSDK framework present in the archived app"
+            else
+              echo "ERROR: TikTok credentials were provided but TikTokBusinessSDK is missing from the archived app."
+              exit 1
+            fi
+            if /usr/libexec/PlistBuddy -c "Print :TikTokAccessToken" "$APP/Info.plist" > /dev/null 2>&1; then
+              echo "OK: TikTok credentials present in Info.plist (values not printed)"
+            else
+              echo "ERROR: TikTokAccessToken missing from Info.plist."
+              exit 1
+            fi
+          else
+            echo "SKIPPED: TikTok credentials not provided - TikTok is WAITING FOR CREDENTIAL."
+          fi
       - name: Export ipa
         script: |
           PROFILE_PATH=$(ls "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision 2>/dev/null | head -n 1)
@@ -408,6 +602,213 @@ workflows:
 
           print("[meta] Meta App Events SDK injection complete")
           PYEOF
+      - name: Inject TikTok App Events SDK (Android)
+        script: |
+          python3 << 'PYEOF'
+          import os
+
+          APP_ID = os.environ.get("TIKTOK_APP_ID", "").strip()
+          TT_APP_ID = os.environ.get("TIKTOK_TT_APP_ID", "").strip()
+          TOKEN = os.environ.get("TIKTOK_ACCESS_TOKEN", "").strip()
+
+          # Fail safe: no credentials -> inject nothing at all. Credential-gated
+          # on purpose: without credentials the build is byte-identical to
+          # today's, so a missing credential can never break a release. TikTok
+          # reports WAITING FOR CREDENTIAL at runtime instead.
+          missing = [n for n, v in (("TIKTOK_APP_ID", APP_ID), ("TIKTOK_TT_APP_ID", TT_APP_ID), ("TIKTOK_ACCESS_TOKEN", TOKEN)) if not v]
+          if missing:
+              print("[tiktok] SKIPPED - missing: " + ", ".join(missing))
+              print("[tiktok] Android build continues without the TikTok SDK (no partial state).")
+              raise SystemExit(0)
+
+          PKG = "com.base69e6bdb4986a04a256653a23.app"
+          PKG_PATH = PKG.replace(".", "/")
+          SRC_DIR = "android/app/src/main/java/" + PKG_PATH
+
+          # 1. Add the TikTok SDK to app/build.gradle
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, "r") as f:
+              gradle = f.read()
+          if "tiktok-business-android-sdk" not in gradle:
+              gradle = gradle.replace(
+                  "dependencies {",
+                  "dependencies {\n    implementation 'com.tiktok:tiktok-business-android-sdk:1.7.1'",
+                  1)
+              with open(gradle_path, "w") as f:
+                  f.write(gradle)
+              print("[tiktok] Added TikTok SDK to app/build.gradle")
+          else:
+              print("[tiktok] TikTok SDK already in app/build.gradle")
+
+          # 2. Create TikTokAppEventsPlugin.java
+          plugin = '''package %PKG%;
+
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import com.tiktok.TikTokBusinessSdk;
+          import com.tiktok.appevents.base.TTBaseEvent;
+          import org.json.JSONObject;
+
+          @CapacitorPlugin(name = "TikTokAppEvents")
+          public class TikTokAppEventsPlugin extends Plugin {
+              private boolean initialized = false;
+
+              @Override
+              public void load() {
+                  super.load();
+                  try {
+                      String appId = getContext().getString(R.string.tiktok_app_id);
+                      String ttAppId = getContext().getString(R.string.tiktok_tt_app_id);
+                      String accessToken = getContext().getString(R.string.tiktok_access_token);
+                      if (appId == null || appId.isEmpty()
+                              || ttAppId == null || ttAppId.isEmpty()
+                              || accessToken == null || accessToken.isEmpty()) {
+                          android.util.Log.w("TikTok", "credentials missing - SDK not initialised");
+                          return;
+                      }
+                      TikTokBusinessSdk.TTConfig config =
+                              new TikTokBusinessSdk.TTConfig(getContext(), accessToken)
+                                      .setAppId(appId)
+                                      .setTTAppId(ttAppId);
+                      TikTokBusinessSdk.initializeSdk(config);
+                      TikTokBusinessSdk.startTrack();
+                      initialized = true;
+                      android.util.Log.i("TikTok", "SDK initialised");
+                  } catch (Throwable t) {
+                      android.util.Log.e("TikTok", "initialisation failed: " + t.getMessage());
+                  }
+              }
+
+              @PluginMethod
+              public void logEvent(PluginCall call) {
+                  if (!initialized) { call.resolve(); return; }
+                  String name = call.getString("name");
+                  if (name == null) { call.reject("name is required"); return; }
+                  JSObject params = call.getObject("params", new JSObject());
+                  JSONObject json = new JSONObject();
+                  for (String key : params.keys()) {
+                      try { json.put(key, params.get(key)); } catch (Throwable ignored) {}
+                  }
+                  String eventId = call.getString("eventId");
+                  TikTokBusinessSdk.trackTTEvent(new TTBaseEvent(name, json, eventId));
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void setUserId(PluginCall call) {
+                  String userId = call.getString("userId", "");
+                  if (userId != null && !userId.isEmpty()) {
+                      TikTokBusinessSdk.setUserID(userId);
+                  }
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void logout(PluginCall call) {
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void isAvailable(PluginCall call) {
+                  JSObject res = new JSObject();
+                  res.put("available", initialized);
+                  call.resolve(res);
+              }
+          }
+          '''
+          plugin = plugin.replace("%PKG%", PKG)
+          plugin = "\n".join(line[10:] if line.startswith("          ") else line for line in plugin.split("\n"))
+          with open(os.path.join(SRC_DIR, "TikTokAppEventsPlugin.java"), "w") as f:
+              f.write(plugin + "\n")
+          print("[tiktok] Wrote TikTokAppEventsPlugin.java")
+
+          # 3. Register the plugin in MainActivity.java
+          main_activity_path = os.path.join(SRC_DIR, "MainActivity.java")
+          with open(main_activity_path, "r") as f:
+              ma = f.read()
+          if "TikTokAppEventsPlugin" not in ma:
+              ma = ma.replace(
+                  "super.onCreate(savedInstanceState);",
+                  "registerPlugin(TikTokAppEventsPlugin.class);\n        super.onCreate(savedInstanceState);",
+                  1)
+              with open(main_activity_path, "w") as f:
+                  f.write(ma)
+              print("[tiktok] Registered TikTokAppEventsPlugin in MainActivity.java")
+          else:
+              print("[tiktok] TikTokAppEventsPlugin already registered")
+
+          # 4. Add credentials to strings.xml
+          strings_path = "android/app/src/main/res/values/strings.xml"
+          with open(strings_path, "r") as f:
+              strings = f.read()
+          if "tiktok_app_id" not in strings:
+              block = ('<string name="tiktok_app_id">' + APP_ID + '</string>\n'
+                       '<string name="tiktok_tt_app_id">' + TT_APP_ID + '</string>\n'
+                       '<string name="tiktok_access_token">' + TOKEN + '</string>\n')
+              strings = strings.replace("</resources>", block + "</resources>", 1)
+              with open(strings_path, "w") as f:
+                  f.write(strings)
+              print("[tiktok] Added TikTok credentials to strings.xml (values not printed)")
+          else:
+              print("[tiktok] TikTok credentials already in strings.xml")
+
+          # 5. Add the TikTok App ID meta-data to AndroidManifest.xml
+          manifest_path = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest_path, "r") as f:
+              manifest = f.read()
+          if "com.tiktok.sdk.AppId" not in manifest:
+              manifest = manifest.replace(
+                  "<application",
+                  '<meta-data android:name="com.tiktok.sdk.AppId" android:value="@string/tiktok_app_id"/>\n        <application',
+                  1)
+              with open(manifest_path, "w") as f:
+                  f.write(manifest)
+              print("[tiktok] Added TikTok App ID meta-data to AndroidManifest.xml")
+          else:
+              print("[tiktok] TikTok App ID meta-data already present")
+
+          print("[tiktok] TikTok App Events SDK injection complete")
+          PYEOF
+      - name: Verify TikTok App Events SDK injection (Android)
+        script: |
+          if [ -z "${TIKTOK_APP_ID:-}" ] || [ -z "${TIKTOK_ACCESS_TOKEN:-}" ]; then
+            echo "SKIPPED: TikTok credentials not provided - TikTok is WAITING FOR CREDENTIAL."
+            exit 0
+          fi
+          BASE="android/app/src/main/java/com/base69e6bdb4986a04a256653a23/app"
+          if [ -f "$BASE/TikTokAppEventsPlugin.java" ]; then
+            echo "OK: TikTokAppEventsPlugin.java created"
+          else
+            echo "ERROR: TikTokAppEventsPlugin.java not found!"
+            exit 1
+          fi
+          if grep -q "tiktok-business-android-sdk" android/app/build.gradle; then
+            echo "OK: TikTok SDK dependency present in build.gradle"
+          else
+            echo "ERROR: TikTok SDK not in build.gradle"
+            exit 1
+          fi
+          if grep -q "TikTokAppEventsPlugin" "$BASE/MainActivity.java"; then
+            echo "OK: TikTokAppEventsPlugin registered in MainActivity"
+          else
+            echo "ERROR: TikTokAppEventsPlugin not registered in MainActivity"
+            exit 1
+          fi
+          if grep -qE 'name="tiktok_access_token">[^<]' android/app/src/main/res/values/strings.xml; then
+            echo "OK: tiktok_access_token is present and non-empty (value not printed)"
+          else
+            echo "ERROR: tiktok_access_token missing or empty in strings.xml"
+            exit 1
+          fi
+          if grep -q "com.tiktok.sdk.AppId" android/app/src/main/AndroidManifest.xml; then
+            echo "OK: TikTok App ID meta-data present in manifest"
+          else
+            echo "ERROR: TikTok App ID meta-data missing from manifest"
+            exit 1
+          fi
       - name: Verify Meta App Events SDK injection
         script: |
           echo "=== Checking MetaAppEventsPlugin.java ==="
@@ -469,6 +870,26 @@ workflows:
             echo "✓ facebook_client_token is present and non-empty (value intentionally not printed)"
           else
             echo "✗ ERROR: facebook_client_token is missing or empty in strings.xml"
+            exit 1
+          fi
+      - name: Verify Firebase Analytics is wired for Android
+        script: |
+          echo "=== Checking the Capacitor Firebase Analytics plugin is synced ==="
+          if grep -q "firebase-analytics" android/app/capacitor.build.gradle 2>/dev/null \
+             || grep -q "firebase-analytics" android/app/build.gradle 2>/dev/null \
+             || grep -rq "capacitor-firebase-analytics" android/app/src/main/assets/capacitor.plugins.json 2>/dev/null; then
+            echo "OK: Firebase Analytics plugin present in the Android project"
+          else
+            echo "ERROR: @capacitor-firebase/analytics is not synced into the Android project - Google Ads conversions will not be recorded."
+            echo "Run: npm install && npx cap sync android"
+            exit 1
+          fi
+          echo ""
+          echo "=== Checking google-services.json is in place (required for Firebase init) ==="
+          if [ -f "android/app/google-services.json" ]; then
+            echo "OK: google-services.json present"
+          else
+            echo "ERROR: android/app/google-services.json missing - Firebase will not initialise."
             exit 1
           fi
       - name: Copy Firebase google-services.json

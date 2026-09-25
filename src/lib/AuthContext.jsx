@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { isNativeLike } from '@/lib/nativeEnv';
 import { detectMobilePlatform } from '@/lib/utils';
-import { trackMetaEvent, setMetaUserId, MetaEvents } from '@/lib/metaAppEvents';
+import { trackEvent, setAnalyticsUser, clearAnalyticsUser } from '@/lib/analytics';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
         setUser(prev => {
           if (!prev) return freshUser;
           if (prev.kyc_status !== 'approved' && freshUser.kyc_status === 'approved') {
-            trackMetaEvent(MetaEvents.KYCCompleted);
+            trackEvent('kyc_completed', {}, { dedupeKey: freshUser.id });
           }
           if (prev.is_verified !== freshUser.is_verified ||
               prev.kyc_status !== freshUser.kyc_status ||
@@ -193,8 +193,8 @@ export const AuthProvider = ({ children }) => {
         base44.functions.invoke('grantSignupBonus', {}).catch(() => {});
       }
 
-      // Set Meta user ID for attribution (call after every login)
-      setMetaUserId(currentUser?.id);
+      // Set the stable internal user id for attribution on every provider
+      setAnalyticsUser(currentUser?.id);
 
       // Track registration source + granular platform — only set once
       try {
@@ -236,7 +236,7 @@ export const AuthProvider = ({ children }) => {
             Number.isFinite(createdAt) &&
             Date.now() - createdAt < 7 * 24 * 60 * 60 * 1000;
           if (isGenuinelyNewAccount) {
-            trackMetaEvent(MetaEvents.CompleteRegistration);
+            trackEvent('sign_up', {}, { dedupeKey: currentUser.id });
           }
         }
       } catch (srcErr) {
@@ -276,7 +276,7 @@ export const AuthProvider = ({ children }) => {
             if (!prev) return event.data;
             // Track KYCCompleted when kyc_status transitions to 'approved' via WS
             if (prev.kyc_status !== 'approved' && event.data?.kyc_status === 'approved') {
-              trackMetaEvent(MetaEvents.KYCCompleted);
+              trackEvent('kyc_completed', {}, { dedupeKey: event.data?.id });
             }
             return prev ? { ...prev, ...event.data } : event.data;
           });
@@ -330,7 +330,7 @@ export const AuthProvider = ({ children }) => {
             setUser(prev => {
               if (!prev) return freshUser;
               if (prev.kyc_status !== 'approved' && freshUser.kyc_status === 'approved') {
-                trackMetaEvent(MetaEvents.KYCCompleted);
+                trackEvent('kyc_completed', {}, { dedupeKey: freshUser.id });
               }
               if (prev.is_verified !== freshUser.is_verified ||
                   prev.kyc_status !== freshUser.kyc_status ||
@@ -381,8 +381,8 @@ export const AuthProvider = ({ children }) => {
     if (unsubCreditRef.current) { unsubCreditRef.current(); unsubCreditRef.current = null; }
     if (unsubAppRef.current) { unsubAppRef.current(); unsubAppRef.current = null; }
 
-    // Clear Meta App Events user ID on logout
-    setMetaUserId('');
+    // Clear the analytics identity on every provider
+    clearAnalyticsUser();
 
     // Clear all personal cached data from localStorage
     localStorage.removeItem('joba24_notifications');

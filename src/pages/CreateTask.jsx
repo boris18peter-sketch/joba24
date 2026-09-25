@@ -29,6 +29,7 @@ import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
+import { trackEvent } from '@/lib/analytics';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
@@ -603,6 +604,12 @@ export default function CreateTask() {
     }
   };
 
+  // Publisher funnel — the publisher opened the create-task flow.
+  // 'session' dedup: fires once per app session, not on every rerender.
+  useEffect(() => {
+    trackEvent('task_creation_started', {}, { dedupeKey: 'create-task' });
+  }, []);
+
   const handleSubmit = () => {
     if (!isAuthenticated) {
       // Save current form to draft before showing login
@@ -818,6 +825,13 @@ export default function CreateTask() {
     setLoading(false);
     submittingRef.current = false;
     localStorage.removeItem(DRAFT_KEY);
+    // Publisher funnel — KEY CONVERSION. Fires only after the backend returned
+    // a persisted task record, so it can never report a failed publish.
+    trackEvent(
+      'task_published',
+      { category: finalCategory, city: form.city, value: Number(form.price), currency: 'ILS' },
+      { dedupeKey: created?.id }
+    );
     toast.success(t('ct_publish_ok'));
     if (created?.id) {
       setSearchingTaskId(created.id);
@@ -956,6 +970,12 @@ export default function CreateTask() {
       setLoading(false);
       submittingRef.current = false;
       localStorage.removeItem(DRAFT_KEY);
+      // Publisher funnel — KEY CONVERSION (chat-composer publish path).
+      trackEvent(
+        'task_published',
+        { category: chatFormData.category || 'other', city: chatFormData.city, value: Number(chatFormData.price), currency: 'ILS' },
+        { dedupeKey: created?.id }
+      );
       toast.success(t('ct_publish_ok'));
 
       if (created?.id) {

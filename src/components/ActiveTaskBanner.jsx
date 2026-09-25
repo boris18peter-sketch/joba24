@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
@@ -177,6 +178,12 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
       queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      // Marketplace — deeper quality event for BOTH funnels. Deduped per task.
+      trackEvent(
+        'task_completed',
+        { category: task?.category, city: task?.city, value: task?.price, currency: 'ILS' },
+        { dedupeKey: task.id }
+      );
       toast.success(t('task_completed') || 'Task completed! 🎉');
       // Dispatch rating popup event — pass COMPLETED status so maybeShowRating
       // (which requires status === 'COMPLETED') actually fires. The local `task`
