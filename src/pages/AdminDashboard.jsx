@@ -761,12 +761,19 @@ export default function AdminDashboard() {
     const ids = Array.from(selectedUsers);
     if (ids.length === 0) return;
     try {
-      await base44.entities.User.bulkUpdate(ids.map(id => ({ id, is_approved: approve })));
+      // Must go through the backend: the built-in User entity silently ignores
+      // client-side bulkUpdate, so the previous call never changed any record.
+      const res = await base44.functions.invoke('adminBulkUpdateUsers', {
+        userIds: ids,
+        updates: { is_approved: approve },
+      });
+      if (res.data?.error) throw new Error(res.data.error);
       queryClient.setQueryData(['adminUsers'], (old = []) =>
         old.map(u => selectedUsers.has(u.id) ? { ...u, is_approved: approve } : u)
       );
       toast.success(`${ids.length} משתמשים ${approve ? 'אושרו' : 'בוטלה גישתם'}`);
       setSelectedUsers(new Set());
+      refetchUsers();
     } catch (e) {
       toast.error('שגיאה: ' + (e.message || ''));
     }
@@ -777,7 +784,11 @@ export default function AdminDashboard() {
       const ids = Array.from(selectedUsers);
       if (ids.length === 0) return;
       try {
-        await base44.entities.User.bulkUpdate(ids.map(id => ({ id, referred_by_agent_code: agentCode, agent_id: agentId })));
+        const res = await base44.functions.invoke('adminBulkUpdateUsers', {
+          userIds: ids,
+          updates: { referred_by_agent_code: agentCode, agent_id: agentId },
+        });
+        if (res.data?.error) throw new Error(res.data.error);
         queryClient.setQueryData(['adminUsers'], (old = []) =>
           old.map(u => selectedUsers.has(u.id) ? { ...u, referred_by_agent_code: agentCode, agent_id: agentId } : u)
         );
@@ -1123,13 +1134,16 @@ export default function AdminDashboard() {
                 onConfirm={async () => {
                   const unapproved = allUsers.filter(u => !u.is_approved && u.role !== 'admin');
                   if (unapproved.length === 0) return;
-                  await base44.entities.User.bulkUpdate(
-                    unapproved.map(u => ({ id: u.id, is_approved: true }))
-                  );
+                  const res = await base44.functions.invoke('adminBulkUpdateUsers', {
+                    userIds: unapproved.map(u => u.id),
+                    updates: { is_approved: true },
+                  });
+                  if (res.data?.error) throw new Error(res.data.error);
                   queryClient.setQueryData(['adminUsers'], (old = []) =>
                     old.map(u => u.is_approved || u.role === 'admin' ? u : { ...u, is_approved: true })
                   );
                   toast.success(`${unapproved.length} משתמשים אושרו`);
+                  refetchUsers();
                 }}
               />
             )}

@@ -19,6 +19,8 @@ Deno.serve(async (req) => {
       role: freshUser.role ?? 'user',
       worker_credits: freshUser.worker_credits,
       pre_launch_gate_active: settings.pre_launch_gate_active !== false,
+      pre_launch_release_mode: settings.pre_launch_release_mode || 'all',
+      pre_launch_release_at: settings.pre_launch_release_at || '',
     });
   } catch (error) {
     console.error('❌ checkApprovalStatus error:', error);

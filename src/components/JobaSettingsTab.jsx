@@ -105,6 +105,8 @@ const DEFAULTS = {
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
   pre_launch_gate_active: true,
+  pre_launch_release_mode: 'all',
+  pre_launch_release_at: '',
   app_store_url: '',
   google_play_url: '',
   store_buttons_enabled: true,
@@ -176,6 +178,8 @@ export default function JobaSettingsTab() {
         if (v !== undefined && v !== null) merged[f.key] = Number(v);
       });
       merged.pre_launch_gate_active = settingsRecord.pre_launch_gate_active !== false;
+      merged.pre_launch_release_mode = settingsRecord.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all';
+      merged.pre_launch_release_at = settingsRecord.pre_launch_release_at || '';
       merged.app_store_url = settingsRecord.app_store_url || '';
       merged.google_play_url = settingsRecord.google_play_url || '';
       merged.store_buttons_enabled = settingsRecord.store_buttons_enabled !== false;
@@ -193,6 +197,17 @@ export default function JobaSettingsTab() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const gateActive = draft.pre_launch_gate_active !== false;
+      const releaseMode = draft.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all';
+      // Stamp the cutoff the moment the admin switches to "new users only" with
+      // the gate off — everyone already registered stays on the waiting page.
+      // Cleared whenever the gate goes back on, or the mode returns to "everyone".
+      let releaseAt = settingsRecord?.pre_launch_release_at || '';
+      if (gateActive || releaseMode === 'all') {
+        releaseAt = '';
+      } else if (settingsRecord?.pre_launch_release_mode !== 'new_only' || !releaseAt) {
+        releaseAt = new Date().toISOString();
+      }
       const payload = {
         signup_bonus: Number(draft.signup_bonus),
         referral_signup_bonus: Number(draft.referral_signup_bonus),
@@ -203,7 +218,9 @@ export default function JobaSettingsTab() {
         boost_cost: Number(draft.boost_cost),
         loyalty_reward_percent: Number(draft.loyalty_reward_percent),
         loyalty_reward_min: Number(draft.loyalty_reward_min),
-        pre_launch_gate_active: draft.pre_launch_gate_active !== false,
+        pre_launch_gate_active: gateActive,
+        pre_launch_release_mode: releaseMode,
+        pre_launch_release_at: releaseAt,
         app_store_url: String(draft.app_store_url || ''),
         google_play_url: String(draft.google_play_url || ''),
         store_buttons_enabled: draft.store_buttons_enabled !== false,
@@ -286,6 +303,47 @@ export default function JobaSettingsTab() {
           onCheckedChange={(checked) => handleChange('pre_launch_gate_active', checked)}
         />
       </div>
+
+      {/* Release mode — only shown once the launch gate is OFF */}
+      {!draft.pre_launch_gate_active && (
+        <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: 14, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)' }}>מי מקבל גישה?</div>
+          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, marginBottom: 10, lineHeight: 1.45 }}>
+            מצב ההשקה כבוי. בחר למי לפתוח את האפליקציה.
+          </div>
+          {[
+            { key: 'all', title: 'כולם נכנסים', desc: 'גם מי שהיה בדף ההמתנה וגם משתמשים חדשים — גישה מלאה לכולם.' },
+            { key: 'new_only', title: 'רק משתמשים חדשים', desc: 'משתמשים חדשים נכנסים ישר בלי מסך המתנה. מי שכבר היה בדף ההמתנה ימשיך לראות אותו עד אישור ידני.' },
+          ].map(opt => {
+            const active = (draft.pre_launch_release_mode || 'all') === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => handleChange('pre_launch_release_mode', opt.key)}
+                style={{
+                  width: '100%', textAlign: 'right', display: 'flex', gap: 10, alignItems: 'flex-start',
+                  padding: '10px 12px', marginBottom: 8, borderRadius: 12, cursor: 'pointer',
+                  background: active ? '#eff6ff' : 'var(--surface-3)',
+                  border: `1.5px solid ${active ? '#1a6fd4' : 'var(--border-1)'}`,
+                }}
+              >
+                <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1, border: `2px solid ${active ? '#1a6fd4' : 'var(--border-2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1a6fd4' }} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: active ? '#1a6fd4' : 'var(--text-1)' }}>{opt.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2, lineHeight: 1.45 }}>{opt.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+          {draft.pre_launch_release_mode === 'new_only' && draft.pre_launch_release_at && (
+            <div style={{ fontSize: 10.5, color: '#94a3b8', lineHeight: 1.5 }}>
+              נקודת החיתוך: {new Date(draft.pre_launch_release_at).toLocaleString('he-IL')} — כל מי שנרשם לפניה נשאר בדף ההמתנה.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Store download buttons — server-driven links + visibility */}
       <div style={{ background: 'var(--surface-2)', borderRadius: 14, border: '1px solid var(--border-1)', padding: '14px', marginBottom: 12 }}>

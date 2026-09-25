@@ -499,12 +499,25 @@ export default function Layout() {
   // every authenticated user enters the full app — no waiting page. Defaults to
   // active (true) until settings load, so the app never opens accidentally.
   const preLaunchGateActive = approvalStatus?.data?.pre_launch_gate_active !== false;
+  const releaseMode = approvalStatus?.data?.pre_launch_release_mode || 'all';
+  const releaseAt = approvalStatus?.data?.pre_launch_release_at || '';
+  // When the launch gate is OFF the admin chooses who is released:
+  //   'all'      → everyone (waiting-list users AND new users) enters immediately
+  //   'new_only' → only accounts created at/after the release moment enter;
+  //                everyone already on the waiting page stays gated until approved
+  let releasedByLaunch = false;
+  if (!preLaunchGateActive) {
+    if (releaseMode === 'new_only' && releaseAt) {
+      const createdMs = me?.created_date ? new Date(me.created_date).getTime() : 0;
+      releasedByLaunch = createdMs >= new Date(releaseAt).getTime();
+    } else {
+      releasedByLaunch = true;
+    }
+  }
   // Use DB value if available (freshest); fall back to JWT value while loading
   const isApprovedUser = isBlocked
     ? false
-    : preLaunchGateActive
-      ? ((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin')
-      : true;
+    : (((dbIsApproved !== undefined ? dbIsApproved : me?.is_approved) || me?.role === 'admin') || releasedByLaunch);
   // SECURITY: No loading-window gap. While the DB approval status is loading,
   // gate based on the JWT's is_approved. This closes the vulnerability where
   // unapproved users could see the full app for 1-2s before the waiting page

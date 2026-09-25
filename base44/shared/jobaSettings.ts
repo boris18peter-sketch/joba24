@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS = {
   loyalty_reward_percent: 10,
   loyalty_reward_min: 1,
   pre_launch_gate_active: true,
+  pre_launch_release_mode: 'all',
+  pre_launch_release_at: '',
   facebook_auto_post_enabled: false,
 };
 
@@ -39,6 +41,8 @@ export async function getJobaSettings(base44) {
         loyalty_reward_percent: num(rec.loyalty_reward_percent, DEFAULT_SETTINGS.loyalty_reward_percent),
         loyalty_reward_min: num(rec.loyalty_reward_min, DEFAULT_SETTINGS.loyalty_reward_min),
         pre_launch_gate_active: rec.pre_launch_gate_active !== false,
+        pre_launch_release_mode: rec.pre_launch_release_mode === 'new_only' ? 'new_only' : 'all',
+        pre_launch_release_at: rec.pre_launch_release_at || '',
         facebook_page_id: rec.facebook_page_id || null,
         facebook_page_name: rec.facebook_page_name || null,
         facebook_auto_post_enabled: rec.facebook_auto_post_enabled === true,
