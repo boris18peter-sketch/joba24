@@ -534,17 +534,20 @@ workflows:
               manifest_content = f.read()
 
           if "com.facebook.sdk.ApplicationId" not in manifest_content:
-              meta_block = f'''        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
+              # The Meta SDK reads these entries ONLY when they are children of
+              # <application>. Anchoring on "<application" inserted them BEFORE
+              # the opening tag - i.e. outside it - so the SDK never saw them.
+              meta_block = f'''    <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/>
                   <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token"/>
                   <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="true"/>
                   <meta-data android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled" android:value="true"/>
-          '''
+              '''
               manifest_content = manifest_content.replace(
-                  "<application",
-                  meta_block + "        <application",
+                  "</application>",
+                  meta_block + "</application>",
                   1
               )
-              print("[meta] Added Facebook metadata to AndroidManifest.xml")
+              print("[meta] Added Facebook metadata to AndroidManifest.xml (inside <application>)")
           else:
               print("[meta] Facebook metadata already in AndroidManifest.xml")
 
@@ -778,13 +781,16 @@ workflows:
           with open(manifest_path, "r") as f:
               manifest = f.read()
           if "com.tiktok.sdk.AppId" not in manifest:
+              # The TikTok SDK reads this entry ONLY when it is a child of
+              # <application>. Anchoring on "<application" inserted it BEFORE the
+              # opening tag - i.e. outside it - so the SDK never saw it.
               manifest = manifest.replace(
-                  "<application",
-                  '<meta-data android:name="com.tiktok.sdk.AppId" android:value="@string/tiktok_app_id"/>\n        <application',
+                  "</application>",
+                  '    <meta-data android:name="com.tiktok.sdk.AppId" android:value="@string/tiktok_app_id"/>\n    </application>',
                   1)
               with open(manifest_path, "w") as f:
                   f.write(manifest)
-              print("[tiktok] Added TikTok App ID meta-data to AndroidManifest.xml")
+              print("[tiktok] Added TikTok App ID meta-data to AndroidManifest.xml (inside <application>)")
           else:
               print("[tiktok] TikTok App ID meta-data already present")
 
@@ -848,10 +854,14 @@ workflows:
             echo "ERROR: tiktok_app_secret missing or empty in strings.xml"
             exit 1
           fi
-          if grep -q "com.tiktok.sdk.AppId" android/app/src/main/AndroidManifest.xml; then
-            echo "OK: TikTok App ID meta-data present in manifest"
+          # The TikTok SDK only reads this entry when it is INSIDE <application>,
+          # so verify placement, not just presence in the file.
+          TT_MANIFEST="android/app/src/main/AndroidManifest.xml"
+          TT_APP_BLOCK=$(awk '/<application/,/<\/application>/' "$TT_MANIFEST")
+          if echo "$TT_APP_BLOCK" | grep -q "com.tiktok.sdk.AppId"; then
+            echo "OK: TikTok App ID meta-data present INSIDE <application>"
           else
-            echo "ERROR: TikTok App ID meta-data missing from manifest"
+            echo "ERROR: com.tiktok.sdk.AppId is not inside <application> - the TikTok SDK will not read it"
             exit 1
           fi
       - name: Verify Meta App Events SDK injection
@@ -873,10 +883,14 @@ workflows:
           fi
           echo ""
           echo "=== Checking Facebook metadata in AndroidManifest.xml ==="
-          if grep -q "com.facebook.sdk.ApplicationId" android/app/src/main/AndroidManifest.xml; then
-            echo "✓ Facebook metadata found in manifest"
+          # The Meta SDK only reads these entries when they are INSIDE <application>,
+          # so verify placement, not just presence in the file.
+          META_MANIFEST="android/app/src/main/AndroidManifest.xml"
+          META_APP_BLOCK=$(awk '/<application/,/<\/application>/' "$META_MANIFEST")
+          if echo "$META_APP_BLOCK" | grep -q "com.facebook.sdk.ApplicationId"; then
+            echo "✓ Facebook metadata found INSIDE <application>"
           else
-            echo "✗ ERROR: Facebook metadata missing from manifest"
+            echo "✗ ERROR: com.facebook.sdk.ApplicationId is not inside <application> - the Meta SDK will not read it"
             exit 1
           fi
           echo ""
@@ -905,10 +919,10 @@ workflows:
           fi
           echo ""
           echo "=== Checking Facebook Client Token was injected ==="
-          if grep -q "com.facebook.sdk.ClientToken" android/app/src/main/AndroidManifest.xml; then
-            echo "✓ ClientToken meta-data present in manifest"
+          if echo "$META_APP_BLOCK" | grep -q "com.facebook.sdk.ClientToken"; then
+            echo "✓ ClientToken meta-data present INSIDE <application>"
           else
-            echo "✗ ERROR: com.facebook.sdk.ClientToken missing from AndroidManifest.xml"
+            echo "✗ ERROR: com.facebook.sdk.ClientToken is not inside <application>"
             exit 1
           fi
           if grep -qE 'name="facebook_client_token">[^<]' android/app/src/main/res/values/strings.xml; then
