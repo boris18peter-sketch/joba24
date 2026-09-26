@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { hasCapacitorBridge, isAndroidWebView } from '@/lib/nativeEnv';
+import { waitForLocationPermissionSettled } from '@/lib/nativeGeolocation';
 
 // Runs ONCE per app load (module-level, not per navigation) and asks the OS for
 // notification permission. No custom UI — the native/OS dialog is the only thing
@@ -40,6 +41,13 @@ export default function NotificationPermissionPrompt() {
       // the WebView's Notification API resolves 'denied' instantly. Skip it so we
       // don't record a false denial.
       if (isAndroidWebView() && !hasCapacitorBridge()) return true;
+
+      // Android shows ONE runtime-permission dialog at a time. If the app is
+      // already asking for location, opening the notification dialog in parallel
+      // makes it disappear silently until the next launch — so wait for the
+      // location dialog to be answered first.
+      if (hasCapacitorBridge()) await waitForLocationPermissionSettled(4000);
+      if (cancelled) return true;
 
       const perm = await requestNotificationPermission();
       if (cancelled) return true;
