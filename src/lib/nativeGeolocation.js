@@ -29,6 +29,50 @@ function hasCapacitorBridge() {
     (typeof window !== 'undefined' && !!window.Capacitor?.Plugins?.Geolocation);
 }
 
+// ── Runtime-permission sequencing (Android) ───────────────────────────────
+// Android shows only ONE runtime-permission dialog at a time. The location
+// dialog is requested on startup (HomeFeed), so when the notification prompt
+// asked for POST_NOTIFICATIONS at the same moment, the system silently dropped
+// the second request — which is why the notification dialog only appeared on
+// the SECOND app launch. These flags let the notification prompt wait until the
+// location dialog has been answered before it opens its own.
+let locationRequestStarted = false;
+let locationPermissionSettled = false;
+let resolveLocationSettled = null;
+const locationSettledPromise = new Promise((resolve) => { resolveLocationSettled = resolve; });
+
+function markLocationPermissionSettled() {
+  if (locationPermissionSettled) return;
+  locationPermissionSettled = true;
+  resolveLocationSettled();
+}
+
+/**
+ * Resolves once it is safe to show ANOTHER runtime-permission dialog — i.e.
+ * after the location dialog (if one is pending) has been answered.
+ *
+ * - Permission already settled → resolves immediately.
+ * - A location request is in flight → waits for the user's answer (up to maxWaitMs).
+ * - No location request started → waits a short grace period for the mount-time
+ *   request to begin, then resolves so notifications are never blocked.
+ */
+export function waitForLocationPermissionSettled(maxWaitMs = 20000) {
+  if (!hasCapacitorBridge() || locationPermissionSettled) return Promise.resolve();
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(grace);
+      clearTimeout(cap);
+      resolve();
+    };
+    const grace = setTimeout(() => { if (!locationRequestStarted) finish(); }, 1200);
+    const cap = setTimeout(finish, maxWaitMs);
+    locationSettledPromise.then(finish);
+  });
+}
+
 /**
  * Checks the current geolocation permission status WITHOUT prompting the user.
  * Returns 'granted', 'denied', or 'default' (not yet asked).
@@ -65,8 +109,10 @@ export function checkLocationPermission() {
 
 export function getCurrentPosition(successCallback, errorCallback, options) {
   if (hasCapacitorBridge()) {
+    locationRequestStarted = true;
     Geolocation.requestPermissions()
       .then((status) => {
+        markLocationPermissionSettled();
         if (status.location !== 'granted') {
           if (errorCallback) {
             errorCallback({ code: 1, message: 'Location permission denied' });
@@ -99,6 +145,7 @@ export function getCurrentPosition(successCallback, errorCallback, options) {
           });
       })
       .catch((err) => {
+        markLocationPermissionSettled();
         // requestPermissions failed — fall back to Web API
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);

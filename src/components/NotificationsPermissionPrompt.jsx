@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { base44 } from '@/api/base44Client';
 import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
+import { waitForLocationPermissionSettled } from '@/lib/nativeGeolocation';
 import { Bell, X } from 'lucide-react';
 
 /**
@@ -93,7 +94,17 @@ export default function NotificationsPermissionPrompt() {
             }
           };
           if (platform === 'android') {
-            mountTimer = setTimeout(requestNow, 600);
+            // Android shows ONE runtime-permission dialog at a time. The location
+            // dialog is requested on startup (HomeFeed), so asking for
+            // POST_NOTIFICATIONS in parallel made the system silently drop it —
+            // the notification dialog then only appeared on the next launch.
+            // Wait for the location dialog to be answered before asking.
+            mountTimer = setTimeout(async () => {
+              if (cancelled) return;
+              await waitForLocationPermissionSettled();
+              if (cancelled) return;
+              requestNow();
+            }, 600);
           } else {
             gestureHandler = requestNow;
             document.addEventListener('click', gestureHandler, { once: false });
