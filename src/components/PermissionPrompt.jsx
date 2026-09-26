@@ -2,7 +2,11 @@ import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { requestNotificationPermission, getFCMToken } from '@/lib/fcm';
 import { hasCapacitorBridge, isAndroidWebView } from '@/lib/nativeEnv';
-import { checkLocationPermission } from '@/lib/nativeGeolocation';
+import {
+  checkLocationPermission,
+  getCurrentPosition,
+  waitForLocationPermissionSettled,
+} from '@/lib/nativeGeolocation';
 
 /**
  * Startup runtime-permission prompt — runs ONCE per app load and asks the OS for
@@ -17,11 +21,11 @@ import { checkLocationPermission } from '@/lib/nativeGeolocation';
  * the OS refuses to show it again and we stay silent — no nagging.
  *
  * ORDER MATTERS ON ANDROID. The system shows only ONE runtime-permission dialog at
- * a time, and the feed already asks for location on startup. Asking for
- * notifications in parallel made the notification dialog disappear silently until
- * the next launch — so location is requested and awaited to completion FIRST, and
- * notifications are only requested afterwards. Never reverse this order or run the
- * two in parallel.
+ * a time, and the feed already opens the location dialog on startup. Asking for
+ * notifications while that dialog is still on screen makes Android DROP the
+ * notification request silently — the dialog simply never appears. So we always
+ * let the location dialog finish first (waitForLocationPermissionSettled), then ask
+ * for notifications. Never reverse this order or run the two in parallel.
  */
 let ranThisLoad = false;
 
@@ -60,41 +64,20 @@ export default function PermissionPrompt() {
     };
 
     /**
-     * Step 1 — location.
-     * Returns 'granted' | 'denied' | 'default' (undecided) | 'unavailable'.
-     * An already-answered permission returns instantly WITHOUT a dialog, so this
-     * is safe to call on every entry.
+     * Opens the OS location dialog. The position call is what triggers it, and it
+     * is bounded by its own timeout — so an ignored dialog can never hang the
+     * notification request that comes after it.
      */
-    const askLocation = async () => {
-      const current = await checkLocationPermission();
-      if (current !== 'default') return current;
-      if (cancelled) return current;
-
-      // Native app — triggers the real OS location dialog.
-      if (hasCapacitorBridge()) {
-        try {
-          const { Geolocation } = await import('@capacitor/geolocation');
-          const status = await Geolocation.requestPermissions();
-          return status.location;
-        } catch {
-          return 'unavailable';
-        }
-      }
-
-      // Web / PWA — the browser dialog is opened by requesting a position.
-      if (typeof navigator === 'undefined' || !navigator.geolocation) return 'unavailable';
-      if (inEmbeddedFrame()) return 'unavailable';
-      return await new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          () => resolve('granted'),
-          (err) => resolve(err?.code === 1 ? 'denied' : 'prompt'),
-          { timeout: 15000 }
-        );
+    const openLocationDialog = () => new Promise((resolve) => {
+      getCurrentPosition(() => resolve(), () => resolve(), {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 60000,
       });
-    };
+    });
 
     /**
-     * Step 2 — notifications.
+     * Asks for notification permission.
      * Returns true when the OS has an answer (granted/denied) so there is nothing
      * left to ask; false while the dialog is still unanswered, so it can be retried
      * on the first user gesture.
@@ -117,11 +100,24 @@ export default function PermissionPrompt() {
     };
 
     (async () => {
-      // ── 1) Location FIRST, and wait for it to be answered ──
-      await askLocation();
+      // ── 1) LOCATION FIRST ──
+      // The feed opens the location dialog on startup. Wait for it to be answered
+      // before doing anything else, so we never collide with it.
+      if (hasCapacitorBridge()) await waitForLocationPermissionSettled(4000);
       if (cancelled) return;
 
-      // ── 2) Only now is it safe to open the notification dialog ──
+      if (!inEmbeddedFrame()) {
+        const loc = await checkLocationPermission();
+        // Only ask while undecided — an answered permission returns instantly with
+        // no dialog, so this never nags.
+        if (loc === 'default') await openLocationDialog();
+      }
+      if (cancelled) return;
+
+      // ── 2) NOTIFICATIONS, once the location dialog is off the screen ──
+      if (hasCapacitorBridge()) await waitForLocationPermissionSettled(4000);
+      if (cancelled) return;
+
       // Already granted on the web path → just refresh the token, never re-ask.
       if (!hasCapacitorBridge() && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         await saveToken();
