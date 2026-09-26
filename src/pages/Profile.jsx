@@ -16,7 +16,6 @@ import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
 import EditNameSheet from '@/components/profile/EditNameSheet';
-import PermissionToggles from '@/components/profile/PermissionToggles';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -219,9 +218,6 @@ export default function Profile() {
 
         {/* Verify CTA — status-aware */}
         <VerificationStatusBanner me={me} />
-
-        {/* Device permissions — location + notifications */}
-        <PermissionToggles />
 
         {/* About */}
         {me?.bio && (

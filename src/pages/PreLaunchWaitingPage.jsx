@@ -9,7 +9,6 @@ import { useAuth } from '@/lib/AuthContext';
 import VerifyModal from '@/components/VerifyModal';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
-import PermissionGate from '@/components/PermissionGate';
 import { isStandaloneApp } from '@/lib/utils';
 import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
 
@@ -405,9 +404,6 @@ export default function PreLaunchWaitingPage({ me }) {
         </div>
         </div>
       </div>
-
-      {/* Auto-trigger notification permission on first app entry (not second) */}
-      <PermissionGate />
 
       {showVerifyModal && createPortal(
         <VerifyModal
