@@ -10,7 +10,6 @@ import VerifyModal from '@/components/VerifyModal';
 import StoreDownloadButtons from '@/components/StoreDownloadButtons';
 import SocialConnectSheet, { PLATFORMS } from '@/components/SocialConnectSheet';
 import { isStandaloneApp } from '@/lib/utils';
-import PermissionGate from '@/components/PermissionGate';
 import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
 
 const BRAND_LOGO = 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg';
@@ -405,9 +404,6 @@ export default function PreLaunchWaitingPage({ me }) {
         </div>
         </div>
       </div>
-
-      {/* Auto-trigger notification permission on first app entry (not second) */}
-      <PermissionGate />
 
       {showVerifyModal && createPortal(
         <VerifyModal
