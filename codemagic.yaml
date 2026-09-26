@@ -14,6 +14,9 @@ workflows:
         XCODE_SCHEME: "App"
         CERTIFICATE_P12_PASSWORD: "Joba24SigningPass1"
         # FACEBOOK_CLIENT_TOKEN is provided by the ios_signing environment group
+        # Platform-specific TikTok credentials also come from that group:
+        # TIKTOK_IOS_APP_ID / TIKTOK_IOS_TT_APP_ID / TIKTOK_IOS_APP_SECRET
+        # (Android reads TIKTOK_ANDROID_* instead — never the iOS values)
       node: latest
       xcode: latest
     scripts:
@@ -31,16 +34,20 @@ workflows:
           python3 << 'PYEOF'
           import os, re, json
 
-          APP_ID = os.environ.get("TIKTOK_APP_ID", "").strip()
-          TT_APP_ID = os.environ.get("TIKTOK_TT_APP_ID", "").strip()
-          APP_SECRET = os.environ.get("TIKTOK_APP_SECRET", "").strip()
+          # iOS-specific TikTok credentials. The iOS app connection in TikTok
+          # Events Manager issues its own App ID / TT App ID / App Secret, so the
+          # iOS build must read ONLY the TIKTOK_IOS_* values. Reading the shared
+          # legacy names sent iOS-attributed events with the wrong app identity.
+          APP_ID = os.environ.get("TIKTOK_IOS_APP_ID", "").strip()
+          TT_APP_ID = os.environ.get("TIKTOK_IOS_TT_APP_ID", "").strip()
+          APP_SECRET = os.environ.get("TIKTOK_IOS_APP_SECRET", "").strip()
 
           # ── Fail safe: no credentials -> inject nothing at all ──
           # The TikTok native integration is credential-gated on purpose. With
           # no credentials the build is byte-identical to today's build, so a
           # missing credential can never break a release. TikTok simply reports
           # WAITING FOR CREDENTIAL at runtime.
-          missing = [n for n, v in (("TIKTOK_APP_ID", APP_ID), ("TIKTOK_TT_APP_ID", TT_APP_ID), ("TIKTOK_APP_SECRET", APP_SECRET)) if not v]
+          missing = [n for n, v in (("TIKTOK_IOS_APP_ID", APP_ID), ("TIKTOK_IOS_TT_APP_ID", TT_APP_ID), ("TIKTOK_IOS_APP_SECRET", APP_SECRET)) if not v]
           if missing:
               print("[tiktok] SKIPPED - missing: " + ", ".join(missing))
               print("[tiktok] iOS build continues without the TikTok SDK (no partial state).")
@@ -279,7 +286,7 @@ workflows:
 
           echo ""
           echo "=== TikTok App Events SDK (credential-gated) ==="
-          if [ -n "${TIKTOK_APP_ID:-}" ] && [ -n "${TIKTOK_APP_SECRET:-}" ]; then
+          if [ -n "${TIKTOK_IOS_APP_ID:-}" ] && [ -n "${TIKTOK_IOS_APP_SECRET:-}" ]; then
             if find "$APP" -name "*TikTokBusinessSDK*" | head -1 | grep -q .; then
               echo "OK: TikTokBusinessSDK framework present in the archived app"
             else
@@ -364,6 +371,9 @@ workflows:
         VITE_BASE44_APP_ID: "69e6bdb4986a04a256653a23"
         VITE_BASE44_APP_BASE_URL: "https://joba24.base44.app"
         # FACEBOOK_CLIENT_TOKEN is provided by the ios_signing environment group
+        # Platform-specific TikTok credentials also come from that group:
+        # TIKTOK_ANDROID_APP_ID / TIKTOK_ANDROID_TT_APP_ID / TIKTOK_ANDROID_APP_SECRET
+        # (iOS reads TIKTOK_IOS_* instead — never the Android values)
       node: latest
       java: 21
     scripts:
@@ -600,15 +610,20 @@ workflows:
           python3 << 'PYEOF'
           import os
 
-          APP_ID = os.environ.get("TIKTOK_APP_ID", "").strip()
-          TT_APP_ID = os.environ.get("TIKTOK_TT_APP_ID", "").strip()
-          APP_SECRET = os.environ.get("TIKTOK_APP_SECRET", "").strip()
+          # Android-specific TikTok credentials. The Android app connection in
+          # TikTok Events Manager (package com.base69e6bdb4986a04a256653a23.app)
+          # issues its own App ID / TT App ID / App Secret, so the Android build
+          # must read ONLY the TIKTOK_ANDROID_* values. Reading the shared legacy
+          # names sent Android-attributed events with the iOS app identity.
+          APP_ID = os.environ.get("TIKTOK_ANDROID_APP_ID", "").strip()
+          TT_APP_ID = os.environ.get("TIKTOK_ANDROID_TT_APP_ID", "").strip()
+          APP_SECRET = os.environ.get("TIKTOK_ANDROID_APP_SECRET", "").strip()
 
           # Fail safe: no credentials -> inject nothing at all. Credential-gated
           # on purpose: without credentials the build is byte-identical to
           # today's, so a missing credential can never break a release. TikTok
           # reports WAITING FOR CREDENTIAL at runtime instead.
-          missing = [n for n, v in (("TIKTOK_APP_ID", APP_ID), ("TIKTOK_TT_APP_ID", TT_APP_ID), ("TIKTOK_APP_SECRET", APP_SECRET)) if not v]
+          missing = [n for n, v in (("TIKTOK_ANDROID_APP_ID", APP_ID), ("TIKTOK_ANDROID_TT_APP_ID", TT_APP_ID), ("TIKTOK_ANDROID_APP_SECRET", APP_SECRET)) if not v]
           if missing:
               print("[tiktok] SKIPPED - missing: " + ", ".join(missing))
               print("[tiktok] Android build continues without the TikTok SDK (no partial state).")
@@ -798,7 +813,7 @@ workflows:
           PYEOF
       - name: Verify TikTok App Events SDK injection (Android)
         script: |
-          if [ -z "${TIKTOK_APP_ID:-}" ] || [ -z "${TIKTOK_APP_SECRET:-}" ]; then
+          if [ -z "${TIKTOK_ANDROID_APP_ID:-}" ] || [ -z "${TIKTOK_ANDROID_APP_SECRET:-}" ]; then
             echo "SKIPPED: TikTok credentials not provided - TikTok is WAITING FOR CREDENTIAL."
             exit 0
           fi
