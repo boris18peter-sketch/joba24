@@ -20,6 +20,17 @@ import {
  * ask again), the row says what happened and links straight to device settings
  * instead of leaving the user with a switch that appears to do nothing.
  */
+/**
+ * The note shown when the OS will not open its own permission dialog again.
+ * Returns null while the dialog can still be shown, so the app never nudges
+ * the user to device settings when it can just ask directly.
+ */
+function blockedNote(status, href) {
+  if (status === 'denied') return { text: 'ההרשאה נחסמה במערכת.', href };
+  if (status === 'unavailable') return { text: 'לא ניתן לפתוח כאן את חלון ההרשאה.', href };
+  return null;
+}
+
 function PermissionRow({ icon: Icon, iconBg, iconColor, label, sub, granted, loading, onToggle, note }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px' }}>
@@ -58,7 +69,13 @@ export default function PermissionToggles() {
     const [loc, notif] = await Promise.all([getLocationStatus(), getNotificationStatus()]);
     setLocation(loc);
     setNotifications(notif);
-  }, []);
+    // Already blocked at the OS level: the dialog will not open again, so the
+    // row points at device settings instead of a switch that cannot help.
+    setNotes(prev => ({
+      location: loc === 'granted' ? null : (blockedNote(loc, locationSettings) || prev.location || null),
+      notifications: notif === 'granted' ? null : (blockedNote(notif, notificationSettings) || prev.notifications || null),
+    }));
+  }, [locationSettings, notificationSettings]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -80,14 +97,7 @@ export default function PermissionToggles() {
       ...prev,
       [key]: status === 'granted'
         ? null
-        : {
-            text: status === 'denied'
-              ? 'ההרשאה נחסמה במערכת.'
-              : status === 'unavailable'
-                ? 'לא ניתן לפתוח כאן את חלון ההרשאה.'
-                : 'ההרשאה טרם אושרה.',
-            href,
-          },
+        : (blockedNote(status, href) || { text: 'ההרשאה טרם אושרה.' }),
     }));
   };
 

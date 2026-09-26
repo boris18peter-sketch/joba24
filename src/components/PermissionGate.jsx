@@ -24,7 +24,9 @@ import {
  * notification dialog silently disappear until the next launch.
  */
 export default function PermissionGate() {
-  const [missing, setMissing] = useState([]);   // ['location', 'notifications']
+  // OS status per permission: 'granted' | 'denied' | 'prompt' | 'unavailable'.
+  // A key that is undefined is simply not part of this flow.
+  const [status, setStatus] = useState({});
   const [dismissed, setDismissed] = useState(false);
   const [working, setWorking] = useState(false);
 
@@ -34,10 +36,7 @@ export default function PermissionGate() {
 
     const apply = (loc, notif) => {
       if (cancelled) return;
-      const still = [];
-      if (loc !== 'granted') still.push('location');
-      if (notif !== 'granted') still.push('notifications');
-      setMissing(still);
+      setStatus({ location: loc, notifications: notif });
     };
 
     // ── Native app ──
@@ -85,7 +84,7 @@ export default function PermissionGate() {
       const me = await base44.auth.me().catch(() => null);
       if (!me || (me.fcm_tokens?.length || 0) > 0) return;
       if (cancelled) return;
-      setMissing(['notifications']);
+      setStatus({ notifications: 'unavailable' });
     };
 
     if (isAndroidWebView() && !hasCapacitorBridge()) {
@@ -110,20 +109,25 @@ export default function PermissionGate() {
     if (notif === 'prompt') notif = await requestNotifications();
     if (notif === 'granted') await registerPushToken();
 
-    const still = [];
-    if (loc !== 'granted') still.push('location');
-    if (notif !== 'granted') still.push('notifications');
-    setMissing(still);
-    if (still.length === 0) setDismissed(true);
+    setStatus({ location: loc, notifications: notif });
+    if (loc === 'granted' && notif === 'granted') setDismissed(true);
     setWorking(false);
   };
 
-  if (dismissed || missing.length === 0) return null;
+  const missing = ['location', 'notifications']
+    .filter((key) => status[key] !== undefined && status[key] !== 'granted');
 
-  const notificationIntent = missing.includes('notifications') ? getAppSettingsIntent('notifications') : null;
-  const locationIntent = missing.includes('location') ? getAppSettingsIntent('location') : null;
+  // The system dialog can only be shown while the permission is undetermined.
+  // Once the OS reports 'denied' (or the dialog is unreachable) it will never
+  // ask again, so only then do we send the user to device settings.
+  const blocked = (key) => status[key] === 'denied' || status[key] === 'unavailable';
+  const notificationIntent = blocked('notifications') ? getAppSettingsIntent('notifications') : null;
+  const locationIntent = blocked('location') ? getAppSettingsIntent('location') : null;
+  const settingsUrl = notificationIntent || locationIntent;
   // iOS has no settings deep link, so fall back to written steps.
-  const showSteps = !notificationIntent && !locationIntent;
+  const showSteps = !settingsUrl && (blocked('location') || blocked('notifications'));
+
+  if (dismissed || missing.length === 0) return null;
 
   return createPortal(
     <div
@@ -198,9 +202,9 @@ export default function PermissionGate() {
           {working ? <Loader2 size={18} className="animate-spin" /> : 'אישור הרשאות'}
         </button>
 
-        {(locationIntent || notificationIntent) && (
+        {settingsUrl && (
           <a
-            href={locationIntent || notificationIntent}
+            href={settingsUrl}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: '100%', height: 48, borderRadius: 16, marginTop: 10,
