@@ -1,10 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { isNativeLike } from '@/lib/nativeEnv';
 import { detectMobilePlatform } from '@/lib/utils';
 import { trackEvent, setAnalyticsUser, clearAnalyticsUser } from '@/lib/analytics';
+import { applyDisplayName } from '@/lib/displayName';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { queryClientInstance } from '@/lib/query-client';
 import LoginPromptModal from '@/components/LoginPromptModal';
@@ -419,9 +420,16 @@ export const AuthProvider = ({ children }) => {
     setIsGuest(false);
   };
 
+  // `full_name` is a built-in auth field the platform refuses to change, so a
+  // user-chosen name is kept in the custom `display_name` field. Exposing the
+  // merged value as `full_name` here means every existing `user.full_name` read
+  // across the app shows the chosen name — and every new record that snapshots
+  // a name (worker_name, sender_name, …) stores it too.
+  const displayUser = useMemo(() => applyDisplayName(user), [user]);
+
   return (
     <AuthContext.Provider value={{ 
-      user, 
+      user: displayUser, 
       isAuthenticated, 
       isLoadingAuth,
       isLoadingPublicSettings,

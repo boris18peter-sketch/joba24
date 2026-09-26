@@ -88,7 +88,10 @@ Deno.serve(async (req) => {
     return Response.json({
       user: {
         id: targetUser.id,
-        full_name: targetUser.full_name,
+        // The name the user chose to be shown under (custom `display_name`),
+        // falling back to their account name. The built-in `full_name` itself
+        // cannot be changed — see src/lib/displayName.js.
+        full_name: (targetUser.display_name || '').trim() || targetUser.full_name,
         profile_photo: targetUser.profile_photo,
         is_verified: targetUser.is_verified,
         is_phone_verified: targetUser.is_phone_verified,

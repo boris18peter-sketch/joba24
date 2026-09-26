@@ -15,6 +15,8 @@ import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
+import EditNameSheet from '@/components/profile/EditNameSheet';
+import PermissionToggles from '@/components/profile/PermissionToggles';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -64,6 +66,7 @@ export default function Profile() {
   const { openTaskSheet } = useTaskSheet();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
+  const [showEditName, setShowEditName] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const photoInputRef = useRef(null);
 
@@ -191,9 +194,13 @@ export default function Profile() {
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <div
+            onClick={() => setShowEditName(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, cursor: 'pointer', padding: '2px 8px', borderRadius: 12 }}
+          >
             <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
             {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
+            <Pencil size={13} color="rgba(255,255,255,0.7)" />
           </div>
 
         </div>
@@ -212,6 +219,9 @@ export default function Profile() {
 
         {/* Verify CTA — status-aware */}
         <VerificationStatusBanner me={me} />
+
+        {/* Device permissions — location + notifications */}
+        <PermissionToggles />
 
         {/* About */}
         {me?.bio && (
@@ -358,6 +368,14 @@ export default function Profile() {
           </div>
         </div>,
         document.body
+      )}
+
+      {showEditName && (
+        <EditNameSheet
+          user={me}
+          onClose={() => setShowEditName(false)}
+          onSaved={refreshUser}
+        />
       )}
     </div>
   );

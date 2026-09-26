@@ -37,7 +37,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { notificationStore } from '@/lib/notificationStore';
 import VerifyModal from '@/components/VerifyModal';
-import NotificationsPermissionPrompt from '@/components/NotificationsPermissionPrompt';
+import PermissionGate from '@/components/PermissionGate';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import ChatPushNotification from '@/components/ChatPushNotification';
 import ApprovalRevokedPopup from '@/components/ApprovalRevokedPopup';
@@ -567,7 +567,7 @@ export default function Layout() {
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', overflow: 'hidden' }}>
       <ChatPushNotification />
-      <NotificationsPermissionPrompt />
+      <PermissionGate />
       <AppHeader onOpenMenu={() => setSideMenuOpen(true)} />
       {createPortal(<SideMenu open={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />, document.body)}
 
