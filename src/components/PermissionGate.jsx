@@ -5,7 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { isAndroidWebView, hasCapacitorBridge } from '@/lib/nativeEnv';
 import { waitForLocationPermissionSettled } from '@/lib/nativeGeolocation';
 import {
-  checkLocationPermission, requestLocation,
+  getLocationStatus, requestLocation,
   getNotificationStatus, requestNotifications,
   registerPushToken, getAppSettingsIntent,
 } from '@/lib/permissions';
@@ -46,8 +46,8 @@ export default function PermissionGate() {
       // may already have opened the dialog) before asking ourselves.
       await waitForLocationPermissionSettled(4000);
 
-      let loc = await checkLocationPermission();
-      if (loc === 'default') loc = await requestLocation();
+      let loc = await getLocationStatus();
+      if (loc === 'prompt') loc = await requestLocation();
 
       let notif = await getNotificationStatus();
       if (notif === 'prompt') {
@@ -62,14 +62,14 @@ export default function PermissionGate() {
 
     // ── Web ──
     const runWeb = async () => {
-      const loc = await checkLocationPermission();
+      const loc = await getLocationStatus();
       const notif = await getNotificationStatus();
       if (loc === 'granted' && notif === 'granted') return;
 
       // Browsers only open these dialogs in response to a user gesture.
       const onGesture = async () => {
         listeners.forEach(([ev, fn]) => document.removeEventListener(ev, fn));
-        const locNow = loc === 'default' ? await requestLocation() : loc;
+        const locNow = loc === 'prompt' ? await requestLocation() : loc;
         const notifNow = notif === 'prompt' ? await requestNotifications() : notif;
         if (notifNow === 'granted') await registerPushToken();
         apply(locNow, notifNow);
@@ -104,8 +104,8 @@ export default function PermissionGate() {
 
   const handleAllow = async () => {
     setWorking(true);
-    let loc = await checkLocationPermission();
-    if (loc === 'default') loc = await requestLocation();
+    let loc = await getLocationStatus();
+    if (loc === 'prompt') loc = await requestLocation();
     let notif = await getNotificationStatus();
     if (notif === 'prompt') notif = await requestNotifications();
     if (notif === 'granted') await registerPushToken();

@@ -2,19 +2,25 @@ import { useCallback, useEffect, useState } from 'react';
 import { MapPin, Bell, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
-  checkLocationPermission, requestLocation,
-  getNotificationStatus, requestNotifications, registerPushToken,
+  getLocationStatus, requestLocation,
+  getNotificationStatus, requestNotifications,
+  registerPushToken, getAppSettingsIntent,
 } from '@/lib/permissions';
 
 /**
  * Two switches that reflect — and request — the device permissions the app
  * relies on: location and notifications.
  *
- * Turning a switch ON shows the operating-system permission dialog. Turning it
- * OFF cannot be done from the app: the OS only lets the user revoke a
- * permission in device settings, so the switch snaps back and says so.
+ * Turning a switch ON opens the operating-system permission dialog, and the
+ * switch then shows exactly what the OS answered. Turning it OFF cannot be done
+ * from the app — the OS only lets the user revoke a permission in device
+ * settings — so the switch snaps back and says so.
+ *
+ * Whenever the OS dialog cannot be opened at all (blocked, or the OS will not
+ * ask again), the row says what happened and links straight to device settings
+ * instead of leaving the user with a switch that appears to do nothing.
  */
-function PermissionRow({ icon: Icon, iconBg, iconColor, label, sub, granted, loading, onToggle, hint }) {
+function PermissionRow({ icon: Icon, iconBg, iconColor, label, sub, granted, loading, onToggle, note }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px' }}>
       <div style={{ width: 38, height: 38, borderRadius: 11, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -23,7 +29,14 @@ function PermissionRow({ icon: Icon, iconBg, iconColor, label, sub, granted, loa
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>{label}</div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{sub}</div>
-        {hint && <div style={{ fontSize: 11, color: 'var(--color-warning)', marginTop: 3, fontWeight: 600 }}>{hint}</div>}
+        {note && (
+          <div style={{ fontSize: 11, color: 'var(--color-warning)', marginTop: 3, fontWeight: 600, lineHeight: 1.55 }}>
+            {note.text}{' '}
+            {note.href
+              ? <a href={note.href} style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>פתח הגדרות</a>
+              : <span style={{ color: 'var(--text-2)' }}>הגדרות ← Joba24</span>}
+          </div>
+        )}
       </div>
       {loading
         ? <Loader2 size={18} className="animate-spin" color="var(--text-3)" />
@@ -33,13 +46,16 @@ function PermissionRow({ icon: Icon, iconBg, iconColor, label, sub, granted, loa
 }
 
 export default function PermissionToggles() {
-  const [location, setLocation] = useState(null);      // 'granted' | 'denied' | 'prompt'
+  const [location, setLocation] = useState(null);      // 'granted' | 'denied' | 'prompt' | 'unavailable'
   const [notifications, setNotifications] = useState(null);
   const [busy, setBusy] = useState(null);              // 'location' | 'notifications'
-  const [hint, setHint] = useState(null);              // key of the row showing the "turn off in settings" note
+  const [notes, setNotes] = useState({});              // { location: {text, href}, notifications: {...} }
+
+  const locationSettings = getAppSettingsIntent('location');
+  const notificationSettings = getAppSettingsIntent('notifications');
 
   const refresh = useCallback(async () => {
-    const [loc, notif] = await Promise.all([checkLocationPermission(), getNotificationStatus()]);
+    const [loc, notif] = await Promise.all([getLocationStatus(), getNotificationStatus()]);
     setLocation(loc);
     setNotifications(notif);
   }, []);
@@ -54,21 +70,42 @@ export default function PermissionToggles() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [refresh]);
 
+  /**
+   * Turns the OS answer into the note shown under the row. A granted permission
+   * clears the note; anything else explains what happened and, when the OS will
+   * no longer ask, points at device settings.
+   */
+  const setOutcome = (key, status, href) => {
+    setNotes(prev => ({
+      ...prev,
+      [key]: status === 'granted'
+        ? null
+        : {
+            text: status === 'denied'
+              ? 'ההרשאה נחסמה במערכת.'
+              : status === 'unavailable'
+                ? 'לא ניתן לפתוח כאן את חלון ההרשאה.'
+                : 'ההרשאה טרם אושרה.',
+            href,
+          },
+    }));
+  };
+
   const handleLocationToggle = async (next) => {
-    setHint(null);
-    if (!next) { setHint('location'); return; }
+    if (!next) { setOutcome('location', 'denied', locationSettings); return; }
     setBusy('location');
     const status = await requestLocation();
     setLocation(status);
     setBusy(null);
+    setOutcome('location', status, locationSettings);
   };
 
   const handleNotificationToggle = async (next) => {
-    setHint(null);
-    if (!next) { setHint('notifications'); return; }
+    if (!next) { setOutcome('notifications', 'denied', notificationSettings); return; }
     setBusy('notifications');
     const status = await requestNotifications();
     setNotifications(status);
+    setOutcome('notifications', status, notificationSettings);
     if (status === 'granted') await registerPushToken();
     setBusy(null);
   };
@@ -89,7 +126,7 @@ export default function PermissionToggles() {
         granted={location === 'granted'}
         loading={busy === 'location' || location === null}
         onToggle={handleLocationToggle}
-        hint={hint === 'location' ? 'לכיבוי יש להיכנס להגדרות המכשיר' : null}
+        note={notes.location}
       />
 
       <div style={{ height: 1, background: 'var(--border-1)', margin: '0 14px 0 64px' }} />
@@ -101,7 +138,7 @@ export default function PermissionToggles() {
         granted={notifications === 'granted'}
         loading={busy === 'notifications' || notifications === null}
         onToggle={handleNotificationToggle}
-        hint={hint === 'notifications' ? 'לכיבוי יש להיכנס להגדרות המכשיר' : null}
+        note={notes.notifications}
       />
     </div>
   );

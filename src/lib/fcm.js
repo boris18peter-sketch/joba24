@@ -119,28 +119,45 @@ async function ensureSW() {
 
 export async function requestNotificationPermission() {
   // Native Capacitor path (real APNs) — only when the bridge is ACTUALLY available.
-  // On Android WebView without the bridge (old server.url build), falls through
-  // to the web API below, which triggers the WebView's native permission dialog.
   if (hasCapacitorBridge()) {
     try {
       const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
       const result = await FirebaseMessaging.requestPermissions();
-      const perm = result.receive === 'granted' ? 'granted' : 'denied';
+      // 'prompt' / 'prompt-with-rationale' means the user has not answered the OS
+      // dialog yet. Reporting that as a denial would tell the user they refused
+      // while the dialog is still open (or was never shown).
+      const receive = result.receive;
+      const perm = receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : 'prompt';
       console.log('[FCM][Native] Permission request result:', perm);
       if (perm === 'granted') {
         trackEvent('notifications_enabled', {}, { dedupeKey: localStorage.getItem('joba24_device_id') });
       }
       return perm;
     } catch (err) {
-      console.error('[FCM][Native] Permission request failed, falling back to web:', err.message);
-      // Fall through to web API — the native plugin may not be initialized
-      // (e.g. missing Google Services gradle plugin on Android)
+      // Deliberately NO fallback to Notification.requestPermission() here.
+      // Inside the native WebView that API resolves 'denied' instantly WITHOUT
+      // ever showing a dialog — which is exactly what made the toggle look like
+      // it did nothing. Report that the OS dialog could not be opened instead,
+      // so the UI can send the user to device settings.
+      console.error('[FCM][Native] Could not open the OS permission dialog:', err.message);
+      return 'unavailable';
     }
   }
 
   if (typeof Notification === 'undefined') {
     console.warn('[FCM] Notification API not supported');
-    return 'denied';
+    return 'unavailable';
+  }
+
+  // Browsers refuse to open the permission dialog inside an embedded frame
+  // (the in-app preview): the request resolves 'denied' with no dialog at all.
+  try {
+    if (window.self !== window.top) {
+      console.warn('[FCM] Embedded frame - the browser will not show the dialog');
+      return 'unavailable';
+    }
+  } catch {
+    return 'unavailable';
   }
   
   // Check if running as standalone PWA (especially important for iOS)
@@ -155,10 +172,12 @@ export async function requestNotificationPermission() {
     if (permission === 'granted') {
       trackEvent('notifications_enabled', {}, { dedupeKey: localStorage.getItem('joba24_device_id') });
     }
-    return permission;
+    // 'default' means the dialog was dismissed without an answer — that is not a
+    // denial, so the user is told they can simply try again.
+    return permission === 'default' ? 'prompt' : permission;
   } catch (err) {
     console.error('[FCM] Permission request failed:', err.message);
-    return 'denied';
+    return 'unavailable';
   }
 }
 

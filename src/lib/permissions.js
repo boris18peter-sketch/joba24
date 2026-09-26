@@ -2,8 +2,19 @@
  * Device-permission helpers for the two permissions the app asks for:
  * location and notifications.
  *
- * Both are normalised to 'granted' | 'denied' | 'prompt' so the UI can treat
- * them identically, on native (Capacitor) and on the web.
+ * Every function returns one of a shared, normalised vocabulary so the UI can
+ * treat both permissions identically, on native (Capacitor) and on the web:
+ *
+ *   'granted'     — the OS reports the permission as allowed
+ *   'denied'      — the user refused it; the OS will not ask again
+ *   'prompt'      — not decided yet; the OS dialog can still be shown
+ *   'unavailable' — this environment cannot open the OS dialog at all (no native
+ *                   bridge, plugin not installed, or the browser blocks it in an
+ *                   embedded frame). The user must change it in device settings.
+ *
+ * 'unavailable' exists so a permission request is NEVER reported as a silent
+ * denial: that made the toggles look like they did nothing at all when the OS
+ * dialog could not be opened.
  */
 import { base44 } from '@/api/base44Client';
 import { checkLocationPermission, getCurrentPosition } from '@/lib/nativeGeolocation';
@@ -15,7 +26,24 @@ export { checkLocationPermission };
 /** The app's Android package id — needed to deep-link to its settings screen. */
 const ANDROID_PACKAGE = 'com.base69e6bdb4986a04a256653a23.app';
 
-/** Current notification permission: 'granted' | 'denied' | 'prompt'. */
+/** True when we are rendered inside an embedded frame (the in-app preview). */
+function isEmbeddedFrame() {
+  try {
+    return typeof window !== 'undefined' && window.self !== window.top;
+  } catch {
+    return true; // cross-origin access threw — definitely framed
+  }
+}
+
+/** Current location permission, without prompting. */
+export async function getLocationStatus() {
+  const raw = await checkLocationPermission(); // 'granted' | 'denied' | 'default'
+  if (raw === 'granted') return 'granted';
+  if (raw === 'denied') return 'denied';
+  return 'prompt';
+}
+
+/** Current notification permission, without prompting. */
 export async function getNotificationStatus() {
   if (hasCapacitorBridge()) {
     try {
@@ -25,28 +53,29 @@ export async function getNotificationStatus() {
       if (receive === 'denied') return 'denied';
       return 'prompt';
     } catch {
-      return 'prompt';
+      // The native plugin is unreachable, so the OS dialog cannot be opened.
+      return 'unavailable';
     }
   }
-  if (typeof Notification === 'undefined') return 'denied';
+  if (typeof Notification === 'undefined') return 'unavailable';
   const perm = Notification.permission; // 'default' | 'granted' | 'denied'
   return perm === 'default' ? 'prompt' : perm;
 }
 
-/** Asks for notification permission (shows the OS dialog when undetermined). */
+/** Asks for notification permission — opens the OS dialog while undetermined. */
 export async function requestNotifications() {
-  const result = await requestNotificationPermission();
-  if (result === 'granted') return 'granted';
-  if (result === 'denied') return 'denied';
-  return 'prompt';
+  if (!hasCapacitorBridge() && isEmbeddedFrame()) return 'unavailable';
+  return requestNotificationPermission(); // 'granted' | 'denied' | 'prompt' | 'unavailable'
 }
 
 /**
- * Asks for location permission. The position call is what triggers the OS
- * dialog; the returned value is then read back from the authoritative
- * permission status, so a GPS timeout is never mistaken for a denial.
+ * Asks for location permission. The position call is what opens the OS dialog;
+ * the result is then read back from the authoritative permission status, so a
+ * GPS timeout is never mistaken for a denial.
  */
 export async function requestLocation() {
+  if (!hasCapacitorBridge() && isEmbeddedFrame()) return 'unavailable';
+
   await new Promise((resolve) => {
     getCurrentPosition(() => resolve(), () => resolve(), {
       enableHighAccuracy: false,
@@ -54,10 +83,7 @@ export async function requestLocation() {
       maximumAge: 60000,
     });
   });
-  const status = await checkLocationPermission();
-  if (status === 'granted') return 'granted';
-  if (status === 'denied') return 'denied';
-  return 'prompt';
+  return getLocationStatus();
 }
 
 /**
