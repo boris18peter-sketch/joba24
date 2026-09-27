@@ -130,7 +130,7 @@ export default function VerificationApprovedPopup({ variant = 'green', onClose }
                 <div style={{ width: 26, height: 26, borderRadius: 8, background: v.badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <CheckCircle2 size={15} color="white" strokeWidth={2.4} />
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', flex: 1 }}>{perk}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#0f1e40', flex: 1 }}>{perk}</span>
               </div>
             ))}
           </div>

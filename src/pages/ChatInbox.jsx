@@ -252,14 +252,14 @@ export default function ChatInbox() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                    <span style={{ fontWeight: 900, color: 'var(--text-1)', fontSize: 14 }}>{t('ci_support')}</span>
+                    <span style={{ fontWeight: 900, color: '#0f2b6b', fontSize: 14 }}>{t('ci_support')}</span>
                     {lastSupportMsg?.created_date && (
-                      <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, color: '#64748b', flexShrink: 0 }}>
                         {formatDistanceToNow(new Date(lastSupportMsg.created_date), { addSuffix: true })}
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 12, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {lastSupportMsg
                       ? (lastSupportMsg.sender_role === 'admin' ? '' : (isRTL ? '← ' : '→ ')) + lastSupportMsg.content
                       : t('ci_support_available')
