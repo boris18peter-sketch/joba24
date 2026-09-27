@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2, LifeBuoy } from 'lucide-react';
@@ -7,13 +7,54 @@ import PageHeader from '@/components/PageHeader';
 import { formatDistanceToNow } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 import { chatMessagePreview } from '@/lib/chatPreview';
+import { threadCounterpart } from '@/lib/chatThread';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
+
+/**
+ * One conversation per (task, other person) — never per task.
+ * A task owner talking to two applicants gets two rows; each applicant gets
+ * their own row with the owner and never shares a thread with the other.
+ */
+function buildConversations(messages, tasks, myId) {
+  const taskById = Object.fromEntries(tasks.map((t) => [t.id, t]));
+  const map = {};
+
+  const touch = (taskId, otherId) => {
+    const task = taskById[taskId];
+    if (!task || !otherId || otherId === myId) return null;
+    const key = `${taskId}::${otherId}`;
+    if (!map[key]) map[key] = { key, task, otherId, lastMsg: null, unread: 0, otherName: '' };
+    return map[key];
+  };
+
+  messages.forEach((m) => {
+    const task = taskById[m.task_id];
+    if (!task) return;
+    const otherId = m.thread_key
+      ? threadCounterpart(m.thread_key, myId)
+      : (myId === task.client_id ? task.worker_id : task.client_id);
+    const conv = touch(m.task_id, otherId);
+    if (!conv) return;
+    if (!conv.lastMsg || new Date(m.created_date) > new Date(conv.lastMsg.created_date)) conv.lastMsg = m;
+    if (m.sender_id === conv.otherId && m.sender_name) conv.otherName = m.sender_name;
+    if (m.sender_id !== myId && !m.read) conv.unread += 1;
+  });
+
+  // An approved pairing with no messages yet still belongs in the inbox.
+  tasks.forEach((t) => {
+    if (!ACTIVE_STATUSES.includes(t.status)) return;
+    touch(t.id, myId === t.client_id ? t.worker_id : t.client_id);
+  });
+
+  return Object.values(map).sort(
+    (a, b) => new Date(b.lastMsg?.created_date || 0) - new Date(a.lastMsg?.created_date || 0)
+  );
+}
 
 export default function ChatInbox() {
   const { t, isRTL } = useLanguage();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-  const queryClient = useQueryClient();
 
   // Reuse Layout's existing queries — avoids duplicate API calls
   const { data: workerTasks = [] } = useQuery({
@@ -33,7 +74,7 @@ export default function ChatInbox() {
   });
 
   // Tasks the worker applied to (but isn't approved yet) — so conversations
-  // started via QuickChatDrawer before approval still appear in the inbox.
+  // started before approval still appear in the inbox.
   const { data: myApplications = [] } = useQuery({
     queryKey: ['myApplicationsFeed', me?.id],
     queryFn: () => base44.entities.TaskApplication.filter({ worker_id: me.id }, '-created_date', 50),
@@ -63,9 +104,6 @@ export default function ChatInbox() {
     refetchOnWindowFocus: false,
   });
 
-  // Layout's useRealtimeSync already updates workerTasksLayout & myPublishedTasks caches via WebSocket.
-  // No need for a duplicate subscription here.
-
   // Merge and deduplicate — includes tasks the worker applied to (not yet approved)
   const allTasks = useMemo(() => {
     const map = {};
@@ -73,52 +111,31 @@ export default function ChatInbox() {
     return Object.values(map).sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
   }, [workerTasks, clientTasks, appliedTasks]);
 
-  // Fetch messages for ALL tasks (not just active ones) — so pre-approval
-  // conversations (task still OPEN) are included in the message fetch.
   const taskIdString = useMemo(() => allTasks.map(t => t.id).sort().join(','), [allTasks]);
 
-  // Fetch last messages + unread counts
-  const [lastMessages, setLastMessages] = useState({});
-  const [unreadCounts, setUnreadCounts] = useState({});
+  const [conversations, setConversations] = useState([]);
 
-  // Visible = tasks with active engagement OR tasks that have chat messages
-  // (covers pre-approval conversations where the task is still OPEN).
-  const visibleTasks = useMemo(() => {
-    return allTasks.filter(t => ACTIVE_STATUSES.includes(t.status) || lastMessages[t.id]);
-  }, [allTasks, lastMessages]);
+  // Live tasks for the realtime handler (avoids re-subscribing on every render)
+  const tasksRef = useRef(allTasks);
+  useEffect(() => { tasksRef.current = allTasks; }, [allTasks]);
 
   useEffect(() => {
-    if (!taskIdString || !me?.id) return;
+    if (!me?.id || !allTasks.length) {
+      setConversations([]);
+      return;
+    }
     let cancelled = false;
 
     const run = async () => {
-      const taskIds = taskIdString.split(',').filter(Boolean);
-      if (!taskIds.length) {
-        setLastMessages({});
-        setUnreadCounts({});
-        return;
-      }
-
-      const newLastMessages = {};
-      const newUnreadCounts = {};
+      const taskIds = allTasks.map(t => t.id);
+      let allMsgs = [];
 
       try {
-        const allMsgs = await base44.entities.ChatMessage.filter(
+        allMsgs = await base44.entities.ChatMessage.filter(
           { task_id: { $in: taskIds } },
           '-created_date',
           500
         );
-
-        const byTask = {};
-        allMsgs.forEach(m => {
-          if (!byTask[m.task_id]) byTask[m.task_id] = [];
-          byTask[m.task_id].push(m);
-        });
-
-        Object.entries(byTask).forEach(([taskId, msgs]) => {
-          newLastMessages[taskId] = msgs[0];
-          newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-        });
       } catch {
         // If $in not supported, fetch messages in small sequential batches (max 3 at a time)
         const batchSize = 3;
@@ -130,21 +147,13 @@ export default function ChatInbox() {
                 .catch(() => [])
             )
           );
-          results.forEach((msgs, j) => {
-            if (msgs.length > 0) {
-              const taskId = batch[j];
-              newLastMessages[taskId] = msgs[0];
-              newUnreadCounts[taskId] = msgs.filter(m => m.sender_id !== me.id && !m.read).length;
-            }
-          });
+          results.forEach(msgs => { allMsgs = allMsgs.concat(msgs); });
         }
       }
 
-      if (!cancelled) {
-        setLastMessages(newLastMessages);
-        setUnreadCounts(newUnreadCounts);
-      }
+      if (!cancelled) setConversations(buildConversations(allMsgs, allTasks, me.id));
     };
+
     run();
     return () => { cancelled = true; };
   }, [taskIdString, me?.id]);
@@ -153,13 +162,36 @@ export default function ChatInbox() {
   useEffect(() => {
     if (!me?.id) return;
     const unsub = base44.entities.ChatMessage.subscribe(event => {
-      if (event.type === 'create' && event.data) {
-        const msg = event.data;
-        setLastMessages(prev => ({ ...prev, [msg.task_id]: msg }));
-        if (msg.sender_id !== me.id) {
-          setUnreadCounts(prev => ({ ...prev, [msg.task_id]: (prev[msg.task_id] || 0) + 1 }));
+      if (event.type !== 'create' || !event.data) return;
+      const m = event.data;
+      const task = tasksRef.current.find(t => t.id === m.task_id);
+      if (!task) return;
+      const otherId = m.thread_key
+        ? threadCounterpart(m.thread_key, me.id)
+        : (me.id === task.client_id ? task.worker_id : task.client_id);
+      if (!otherId || otherId === me.id) return;
+      const key = `${m.task_id}::${otherId}`;
+      const isMine = m.sender_id === me.id;
+
+      setConversations(prev => {
+        const idx = prev.findIndex(c => c.key === key);
+        if (idx === -1) {
+          return [{
+            key, task, otherId, lastMsg: m,
+            unread: isMine ? 0 : 1,
+            otherName: m.sender_id === otherId ? (m.sender_name || '') : '',
+          }, ...prev];
         }
-      }
+        const next = [...prev];
+        const cur = next[idx];
+        next[idx] = {
+          ...cur,
+          lastMsg: (!cur.lastMsg || new Date(m.created_date) >= new Date(cur.lastMsg.created_date)) ? m : cur.lastMsg,
+          unread: isMine ? cur.unread : cur.unread + 1,
+          otherName: m.sender_id === otherId ? (m.sender_name || cur.otherName) : cur.otherName,
+        };
+        return next;
+      });
     });
     return unsub;
   }, [me?.id]);
@@ -171,7 +203,13 @@ export default function ChatInbox() {
   const lastSupportMsg = supportMsgs[0];
 
   const isLoading = !me;
-  const totalChats = visibleTasks.length + 1; // +1 for support
+  const totalChats = conversations.length + 1; // +1 for support
+
+  const nameFor = (conv) => {
+    if (conv.otherName) return conv.otherName;
+    const isMyTask = conv.task.client_id === me?.id;
+    return isMyTask ? (conv.task.worker_name || t('worker')) : (conv.task.client_name || t('client'));
+  };
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -232,24 +270,22 @@ export default function ChatInbox() {
               </div>
             </Link>
 
-            {/* ── Task chats ── */}
-            {visibleTasks.length === 0 ? (
+            {/* ── Task conversations — one row per person ── */}
+            {conversations.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
                 <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 15 }}>{t('no_active_conversations')}</p>
                 <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>{t('conversations_appear')}</p>
               </div>
             ) : (
-              visibleTasks.map(task => {
-                const isMyTask = task.client_id === me?.id;
-                const otherName = isMyTask ? (task.worker_name || t('worker')) : (task.client_name || t('client'));
-                const lastMsg = lastMessages[task.id];
-                const unread = unreadCounts[task.id] || 0;
+              conversations.map(conv => {
+                const otherName = nameFor(conv);
+                const lastMsg = conv.lastMsg;
+                const unread = conv.unread || 0;
+                const isMyTask = conv.task.client_id === me?.id;
 
                 return (
-                  <Link key={task.id} to={`/chat/${task.id}`} style={{ textDecoration: 'none' }}
-                    onClick={() => setUnreadCounts(prev => ({ ...prev, [task.id]: 0 }))}
-                  >
+                  <Link key={conv.key} to={`/chat/${conv.task.id}?with=${conv.otherId}`} style={{ textDecoration: 'none' }}>
                     <div style={{
                       background: 'var(--card-bg)',
                       borderRadius: 18,
@@ -292,7 +328,7 @@ export default function ChatInbox() {
                           )}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {task.title}
+                          {conv.task.title}
                         </div>
                         {lastMsg && (
                           <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
