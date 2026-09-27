@@ -2,7 +2,7 @@
 import PackageDescription
 
 // DO NOT MODIFY THIS FILE - managed by Capacitor CLI commands
-// (Facebook SDK dependency added manually for Meta App Events)
+// (Facebook + TikTok SDK dependencies added manually for App Events)
 let package = Package(
     name: "CapApp-SPM",
     platforms: [.iOS(.v15)],
@@ -13,7 +13,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0"),
-        .package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0")
+        .package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0"),
+        .package(url: "https://github.com/tiktok/tiktok-business-ios-sdk.git", from: "1.7.2")
     ],
     targets: [
         .target(
@@ -21,7 +22,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
-                .product(name: "FacebookCore", package: "facebook-ios-sdk")
+                .product(name: "FacebookCore", package: "facebook-ios-sdk"),
+                .product(name: "TikTokBusinessSDK", package: "tiktok-business-ios-sdk")
             ]
         )
     ]

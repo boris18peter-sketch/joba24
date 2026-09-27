@@ -29,6 +29,77 @@ workflows:
       - name: Sync Capacitor iOS project
         script: |
           ./node_modules/.bin/cap sync ios
+      - name: Inject Meta + TikTok SDKs into iOS SPM package
+        script: |
+          python3 << 'PYEOF'
+          import re
+
+          # `cap sync ios` REGENERATES ios/App/CapApp-SPM/Package.swift and wipes
+          # every manual entry, so this step must run on EVERY build, right after
+          # the sync, and re-add both SDKs. Every anchor replace fails the build
+          # loudly instead of silently skipping: a silent skip is exactly what
+          # produced "unable to resolve module dependency: 'FacebookCore'" and
+          # "'TikTokBusinessSDK'" at archive time while the log still said "Added".
+          PKG_SWIFT = "ios/App/CapApp-SPM/Package.swift"
+          CAPACITOR_PKG = "https://github.com/ionic-team/capacitor-swift-pm.git"
+
+          with open(PKG_SWIFT, "r") as f:
+              pkg = f.read()
+
+
+          def must_sub(text, pattern, replacement, what):
+              new_text, count = re.subn(pattern, replacement, text, count=1)
+              if count != 1:
+                  print("[ios-sdk] ERROR: anchor not found in Package.swift - " + what)
+                  print("[ios-sdk] ERROR: Capacitor changed the generated file; update this step.")
+                  print("--- Package.swift as generated ---")
+                  print(text)
+                  print("--- end ---")
+                  raise SystemExit(1)
+              return new_text
+
+
+          if "facebook-ios-sdk" in pkg and "tiktok-business-ios-sdk" in pkg:
+              print("[ios-sdk] Both SDKs already declared in Package.swift")
+          else:
+              # 1. Dependency declarations, anchored on the capacitor-swift-pm
+              #    package line, which cap sync always writes.
+              pkg = must_sub(
+                  pkg,
+                  r'([ \t]*\.package\(url:[ \t]*"' + re.escape(CAPACITOR_PKG) + r'"[^\n]*?)(,?)(\n)',
+                  r'\1,\n'
+                  r'        .package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0"),\n'
+                  r'        .package(url: "https://github.com/tiktok/tiktok-business-ios-sdk.git", from: "1.7.2")\3',
+                  "capacitor-swift-pm dependency line")
+
+              # 2. Target products, anchored on the Cordova product line.
+              pkg = must_sub(
+                  pkg,
+                  r'([ \t]*\.product\(name:[ \t]*"Cordova",[ \t]*package:[ \t]*"capacitor-swift-pm"\))(,?)(\n)',
+                  r'\1,\n'
+                  r'                .product(name: "FacebookCore", package: "facebook-ios-sdk"),\n'
+                  r'                .product(name: "TikTokBusinessSDK", package: "tiktok-business-ios-sdk")\3',
+                  "Cordova product line")
+
+              with open(PKG_SWIFT, "w") as f:
+                  f.write(pkg)
+              print("[ios-sdk] Injected facebook-ios-sdk + tiktok-business-ios-sdk")
+
+          # 3. Verify the written file really declares both, then print it in full.
+          with open(PKG_SWIFT, "r") as f:
+              final = f.read()
+          for needle in ('package: "facebook-ios-sdk"',
+                         'package: "tiktok-business-ios-sdk"',
+                         'product(name: "FacebookCore"',
+                         'product(name: "TikTokBusinessSDK"'):
+              if needle not in final:
+                  print("[ios-sdk] ERROR: Package.swift is missing " + needle)
+                  print(final)
+                  raise SystemExit(1)
+          print("=== Final Package.swift ===")
+          print(final)
+          print("=== End Package.swift ===")
+          PYEOF
       - name: Inject TikTok App Events SDK (iOS)
         script: |
           python3 << 'PYEOF'
@@ -56,23 +127,18 @@ workflows:
           PKG_DIR = "ios/App/CapApp-SPM/Sources/CapApp-SPM"
           PKG_SWIFT = "ios/App/CapApp-SPM/Package.swift"
 
-          # ── 1. Add TikTokBusinessSDK to the SPM package (idempotent) ──
+          # ── 1. Verify the SPM package (owned by the injection step above) ──
+          # "Inject Meta + TikTok SDKs into iOS SPM package" runs right after
+          # cap sync ios and is the only writer of Package.swift. Never edit it
+          # here: anchoring on the Facebook line silently skipped the insert once
+          # cap sync had wiped that line.
           with open(PKG_SWIFT, "r") as f:
               pkg = f.read()
-          if "tiktok-business-ios-sdk" not in pkg:
-              pkg = pkg.replace(
-                  '.package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0")',
-                  '.package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0"),\n        .package(url: "https://github.com/tiktok/tiktok-business-ios-sdk.git", from: "1.7.2")',
-                  1)
-              pkg = pkg.replace(
-                  '.product(name: "FacebookCore", package: "facebook-ios-sdk")',
-                  '.product(name: "FacebookCore", package: "facebook-ios-sdk"),\n                .product(name: "TikTokBusinessSDK", package: "tiktok-business-ios-sdk")',
-                  1)
-              with open(PKG_SWIFT, "w") as f:
-                  f.write(pkg)
-              print("[tiktok] Added TikTokBusinessSDK to Package.swift")
-          else:
-              print("[tiktok] TikTokBusinessSDK already in Package.swift")
+          if "tiktok-business-ios-sdk" not in pkg or 'product(name: "TikTokBusinessSDK"' not in pkg:
+              print("[tiktok] ERROR: TikTokBusinessSDK is missing from Package.swift.")
+              print(pkg)
+              raise SystemExit(1)
+          print("[tiktok] TikTokBusinessSDK present in Package.swift")
 
           # ── 2. Write the native plugin ──
           plugin = '''import Foundation
@@ -163,20 +229,29 @@ workflows:
               f.write(plugin + "\n")
           print("[tiktok] Wrote TikTokAppEventsPlugin.swift")
 
-          # ── 3. Register the plugin in SceneDelegate ──
+          # ── 3. Register the plugin next to the Meta plugin ──
+          # MetaAppEventsPlugin is registered in JobaBridgeViewController
+          # .capacitorDidLoad() inside SceneDelegate.swift — that is the ONLY real
+          # registration site, so TikTok is registered there too. Missing anchor
+          # stops the build instead of silently shipping an unregistered plugin.
           scene = "ios/App/App/SceneDelegate.swift"
+          META_REG = "bridge?.registerPluginInstance(MetaAppEventsPlugin())"
+          TIKTOK_REG = "bridge?.registerPluginInstance(TikTokAppEventsPlugin())"
           with open(scene, "r") as f:
               sc = f.read()
-          if "TikTokAppEventsPlugin" not in sc:
-              sc = sc.replace(
-                  "bridge?.registerPluginInstance(MetaAppEventsPlugin())",
-                  "bridge?.registerPluginInstance(MetaAppEventsPlugin())\n        bridge?.registerPluginInstance(TikTokAppEventsPlugin())",
-                  1)
+          if TIKTOK_REG in sc:
+              print("[tiktok] TikTokAppEventsPlugin already registered in SceneDelegate.swift")
+          else:
+              if META_REG not in sc:
+                  print("[tiktok] ERROR: SceneDelegate.swift does not register MetaAppEventsPlugin -")
+                  print("[tiktok] ERROR: cannot place the TikTok registration next to it.")
+                  print("[tiktok] ERROR: expected to find: " + META_REG)
+                  print(sc)
+                  raise SystemExit(1)
+              sc = sc.replace(META_REG, META_REG + "\n        " + TIKTOK_REG, 1)
               with open(scene, "w") as f:
                   f.write(sc)
               print("[tiktok] Registered TikTokAppEventsPlugin in SceneDelegate.swift")
-          else:
-              print("[tiktok] TikTokAppEventsPlugin already registered")
 
           # ── 4. Inject credentials into Info.plist ──
           plist = "ios/App/App/Info.plist"
