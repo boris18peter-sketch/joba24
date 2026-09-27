@@ -221,8 +221,11 @@ workflows:
                       return
                   }
 
-                  // TikTokConfig exposes a class factory method, NOT an initializer.
-                  guard let config = TikTokConfig.config(withAccessToken: appSecret, appId: appId, tiktokAppId: ttAppId) else {
+                  // In TikTokBusinessSDK 1.7.x the Objective-C factory
+                  // +configWithAccessToken:appId:tiktokAppId: is imported into Swift as a
+                  // FAILABLE INITIALIZER, not a static method — so it must be called as
+                  // TikTokConfig(accessToken:appId:tiktokAppId:).
+                  guard let config = TikTokConfig(accessToken: appSecret, appId: appId, tiktokAppId: ttAppId) else {
                       print("[TikTok] config could not be created")
                       return
                   }
