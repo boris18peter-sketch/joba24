@@ -1,20 +1,67 @@
 import React from 'react';
 
+/**
+ * A lazily-loaded route chunk can end up on a different module generation than
+ * the app root — a stale chunk after a deploy, or a live-preview rebuild that
+ * re-fetched a shared module. React compares contexts by identity, so the stale
+ * chunk reads a SECOND copy of LanguageContext and throws
+ * "must be used inside <X>Provider" even though the provider is right there.
+ *
+ * Two module instances can't be reconciled at runtime, so the only real fix is
+ * to reload onto a single fresh module graph. Throttled so a genuine bug can
+ * never turn into a reload loop.
+ */
+const STALE_MODULE_RE = /must be used inside \w+Provider|Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i;
+
+function healStaleModule() {
+  const KEY = 'joba24_boundary_reload_ts';
+  const last = Number(sessionStorage.getItem(KEY) || 0);
+  if (Date.now() - last <= 10000) return false;
+  sessionStorage.setItem(KEY, String(Date.now()));
+  // Unregister stale service workers first, otherwise the reload can serve the
+  // same outdated chunks from cache.
+  try {
+    navigator.serviceWorker?.getRegistrations?.()
+      .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+      .then(() => window.location.reload())
+      .catch(() => window.location.reload());
+  } catch {
+    window.location.reload();
+  }
+  return true;
+}
+
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, recovering: false };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return {
+      hasError: true,
+      error,
+      recovering: STALE_MODULE_RE.test(error?.message || ''),
+    };
   }
 
   componentDidCatch(error, info) {
     console.error('[Joba24] React crash:', error.message, info.componentStack);
+    if (STALE_MODULE_RE.test(error?.message || '')) {
+      // If the throttle blocked the reload, fall back to the normal crash screen
+      // rather than leaving the user on a spinner forever.
+      if (!healStaleModule()) this.setState({ recovering: false });
+    }
   }
 
   render() {
+    if (this.state.recovering) {
+      return (
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-1)' }}>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid var(--border-1)', borderTopColor: '#1a6fd4' }} className="animate-spin" />
+        </div>
+      );
+    }
     if (this.state.hasError) {
       return (
         <div style={{
