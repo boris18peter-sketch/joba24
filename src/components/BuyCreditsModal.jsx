@@ -178,7 +178,9 @@ export default function BuyCreditsModal({ onClose, creditsNeeded, initialState }
     <div
       dir={isRTL ? 'rtl' : 'ltr'}
       style={{
-        position: 'fixed', inset: 0, zIndex: 999999,
+        // Above the task-detail sheet (1000000) — the purchase popup is opened
+        // FROM inside that sheet when a worker is short on jobas.
+        position: 'fixed', inset: 0, zIndex: 1000002,
         background: 'rgba(5,15,40,0.65)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',

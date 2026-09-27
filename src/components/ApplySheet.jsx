@@ -42,7 +42,9 @@ export default function ApplySheet({ task, onClose, onApply, loading }) {
   return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 999999,
+        // Above the task-detail sheet (1000000) — the apply popup is opened FROM
+        // inside that sheet, so it must sit on top of it, not behind it.
+        position: 'fixed', inset: 0, zIndex: 1000002,
         background: 'rgba(5,15,40,0.55)',
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
         backdropFilter: 'blur(6px)',

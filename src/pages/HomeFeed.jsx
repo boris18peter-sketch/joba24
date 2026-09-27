@@ -705,7 +705,7 @@ export default function HomeFeed() {
                        stretch it and push the X off-centre. */
                     <button
                       onClick={() => setSearch('')}
-                      aria-label={t('clear')}
+                      aria-label={t('clear_search')}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                         width: 22, height: 22, minWidth: 'unset', minHeight: 'unset',

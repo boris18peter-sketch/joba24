@@ -1427,6 +1427,16 @@ export default function TaskDetail(props) {
         document.body
       )}
 
+      {/* Purchase popup — must render from inside the sheet too, otherwise the
+          "not enough jobas" flow from the task sheet does nothing. */}
+      {showBuyCredits && createPortal(
+        <BuyCreditsModal
+          creditsNeeded={creditsNeeded}
+          onClose={() => { setShowBuyCredits(false); setCreditsNeeded(null); }}
+        />,
+        document.body
+      )}
+
       {showReport && task && createPortal(
         <ReportModal task={task} me={me} onClose={() => setShowReport(false)} />,
         document.body

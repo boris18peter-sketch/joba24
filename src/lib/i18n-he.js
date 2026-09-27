@@ -926,6 +926,7 @@ export const he = {
     wp_save: 'שמור',
     wp_save_profile: 'שמור פרופיל',
     wp_profile_updated: 'הפרופיל עודכן!',
+    clear_search: 'נקה חיפוש',
     wp_identity: 'פרטי זיהוי',
     wp_full_name: 'השם המוצג',
     wp_full_name_hint: 'השם הזה יוצג בכל מקום — בפוסטים, בצ׳אטים ובפרופיל.',

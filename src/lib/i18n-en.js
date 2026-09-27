@@ -901,6 +901,7 @@ export const en = {
     wp_save: 'Save',
     wp_save_profile: 'Save Profile',
     wp_profile_updated: 'Profile updated!',
+    clear_search: 'Clear search',
     wp_identity: 'Identity',
     wp_full_name: 'Display name',
     wp_full_name_hint: 'This name appears everywhere — posts, chats and your profile.',
