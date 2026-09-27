@@ -477,3 +477,12 @@ button[style*="linear-gradient(135deg, #1a6fd4"]:active {
 @keyframes newTaskGlow    { 0%,100%{box-shadow:0 0 0 2px rgba(26,111,212,0.18),0 4px 24px rgba(26,111,212,0.08)} 50%{box-shadow:0 0 0 4px rgba(26,111,212,0.55),0 6px 40px rgba(26,111,212,0.32)} }
 
 .pin-bounce { animation: pin-bounce 2s ease-in-out infinite; }
+
+/* ════════════════════════════════════════════════════════════════════
+   CHAT — micro-interactions (short, never delay interaction)
+   ════════════════════════════════════════════════════════════════════ */
+@keyframes chatMsgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.chat-msg-in { animation: chatMsgIn 0.18s ease-out both; }
+
+@keyframes chatRowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.chat-row-in { animation: chatRowIn 0.2s ease-out both; }

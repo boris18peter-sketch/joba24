@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2, LifeBuoy } from 'lucide-react';
+import { Loader2, LifeBuoy } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
-import { formatDistanceToNow } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { useLanguage } from '@/lib/LanguageContext';
 import { chatMessagePreview } from '@/lib/chatPreview';
 import { threadCounterpart } from '@/lib/chatThread';
+import ConversationRow from '@/components/chat/ConversationRow';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
 
@@ -57,6 +58,14 @@ function buildConversations(messages, tasks, myId) {
   // the task's own last update when nothing has been said yet.
   const stamp = (c) => new Date(c.lastMsg?.created_date || c.task.updated_date || 0).getTime();
   return Object.values(map).sort((a, b) => stamp(b) - stamp(a));
+}
+
+function supportStamp(date, t) {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isToday(d)) return format(d, 'HH:mm');
+  if (isYesterday(d)) return t('chat_yesterday');
+  return format(d, 'd/M');
 }
 
 export default function ChatInbox() {
@@ -218,142 +227,82 @@ export default function ChatInbox() {
   const isLoading = !me;
   const totalChats = conversations.length + 1; // +1 for support
 
-  const nameFor = (conv) => {
-    if (conv.otherName) return conv.otherName;
-    const isMyTask = conv.task.client_id === me?.id;
-    return isMyTask ? (conv.task.worker_name || t('worker')) : (conv.task.client_name || t('client'));
-  };
-
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface-1)' }} dir={isRTL ? 'rtl' : 'ltr'}>
-      <PageHeader title={t('messages')} right={<span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>{totalChats} {t('chats')}</span>} />
+      <PageHeader title={t('messages')} right={<span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600 }}>{totalChats} {t('chats')}</span>} />
 
-      <div style={{ padding: '16px 16px 100px' }}>
+      <div style={{ paddingBottom: 100 }}>
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: 40 }}><Loader2 size={28} className="animate-spin text-primary mx-auto" /></div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* ── Support chat — always at top ── */}
+          <>
+            {/* ── Support — always pinned at the top ── */}
             <Link to="/support" style={{ textDecoration: 'none' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                borderRadius: 18, padding: '14px 16px',
-                display: 'flex', alignItems: 'center', gap: 14,
-                border: '1.5px solid #bfdbfe',
-                boxShadow: '0 2px 12px rgba(26,111,212,0.1)',
-                marginBottom: 8,
+              <div className="chat-row-in" style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 14px',
+                background: 'rgba(26,111,212,0.055)',
+                borderBottom: '1px solid var(--border-1)',
               }}>
                 <div style={{
-                  width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #1a6fd4, #0a52b0)',
+                  width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+                  background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative',
+                  boxShadow: '0 2px 8px rgba(15,40,107,0.14)',
                 }}>
                   <LifeBuoy size={22} color="white" />
-                  {supportUnread > 0 && (
-                    <div style={{
-                      position: 'absolute', top: -2, right: -2,
-                      width: 18, height: 18, borderRadius: '50%',
-                      background: '#dc2626', border: '2px solid white',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 9, fontWeight: 900, color: 'white',
-                    }}>{supportUnread > 9 ? '9+' : supportUnread}</div>
-                  )}
                 </div>
+
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                    <span style={{ fontWeight: 900, color: '#0f2b6b', fontSize: 14 }}>{t('ci_support')}</span>
-                    {lastSupportMsg?.created_date && (
-                      <span style={{ fontSize: 10, color: '#64748b', flexShrink: 0 }}>
-                        {formatDistanceToNow(new Date(lastSupportMsg.created_date), { addSuffix: true })}
-                      </span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)' }}>{t('ci_support')}</span>
+                    <span style={{ marginInlineStart: 'auto', fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>
+                      {supportStamp(lastSupportMsg?.created_date, t)}
+                    </span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {lastSupportMsg
-                      ? (lastSupportMsg.sender_role === 'admin' ? '' : (isRTL ? '← ' : '→ ')) + lastSupportMsg.content
-                      : t('ci_support_available')
-                    }
+                  <div style={{
+                    fontSize: 13.5, color: supportUnread > 0 ? 'var(--text-1)' : 'var(--text-2)',
+                    fontWeight: supportUnread > 0 ? 600 : 400,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {lastSupportMsg ? chatMessagePreview(lastSupportMsg.content, t) : t('ci_support_available')}
                   </div>
                 </div>
-                <MessageCircle size={16} color="#1a6fd4" style={{ flexShrink: 0 }} />
+
+                {supportUnread > 0 && (
+                  <div className="j-badge-pop" style={{
+                    minWidth: 20, height: 20, padding: '0 6px', borderRadius: 999, flexShrink: 0,
+                    background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', color: '#fff',
+                    fontSize: 11, fontWeight: 800,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(26,111,212,0.35)',
+                  }}>{supportUnread > 9 ? '9+' : supportUnread}</div>
+                )}
               </div>
             </Link>
 
             {/* ── Task conversations — one row per person ── */}
             {conversations.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <div style={{ fontSize: 36, marginBottom: 8 }}>💬</div>
+              <div style={{ textAlign: 'center', padding: '56px 24px' }}>
+                <div style={{ fontSize: 34, marginBottom: 10 }}>💬</div>
                 <p style={{ fontWeight: 700, color: 'var(--text-1)', margin: 0, fontSize: 15 }}>{t('no_active_conversations')}</p>
-                <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>{t('conversations_appear')}</p>
+                <p style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6, lineHeight: 1.6 }}>{t('conversations_appear')}</p>
               </div>
             ) : (
-              conversations.map(conv => {
-                const otherName = nameFor(conv);
-                const lastMsg = conv.lastMsg;
-                const unread = conv.unread || 0;
-                const isMyTask = conv.task.client_id === me?.id;
-
-                return (
-                  <Link
-                    key={conv.key}
-                    to={`/chat/${conv.task.id}?with=${conv.otherId}`}
-                    style={{ textDecoration: 'none' }}
-                    onClick={() => markConversationRead(conv)}
-                  >
-                    <div style={{
-                      background: 'var(--card-bg)',
-                      borderRadius: 18, padding: '14px 16px',
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      border: unread > 0 ? '1.5px solid #bfdbfe' : '1px solid var(--border-1)',
-                      boxShadow: unread > 0 ? '0 2px 12px rgba(26,111,212,0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
-                      marginBottom: 8,
-                    }}>
-                      <div style={{
-                        width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
-                        background: isMyTask ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 18, color: 'white', fontWeight: 900,
-                        position: 'relative',
-                      }}>
-                        {otherName.charAt(0)}
-                        {unread > 0 && (
-                          <div style={{
-                            position: 'absolute', top: -2, right: -2,
-                            width: 18, height: 18, borderRadius: '50%',
-                            background: '#dc2626', border: '2px solid white',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 9, fontWeight: 900, color: 'white',
-                          }}>{unread > 9 ? '9+' : unread}</div>
-                        )}
-                      </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                          <span style={{ fontWeight: unread > 0 ? 900 : 700, color: 'var(--text-1)', fontSize: 14 }}>{otherName}</span>
-                          {lastMsg?.created_date && (
-                            <span style={{ fontSize: 10, color: '#aaa', flexShrink: 0 }}>
-                              {formatDistanceToNow(new Date(lastMsg.created_date), { addSuffix: true })}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {conv.task.title}
-                        </div>
-                        {lastMsg && (
-                          <div style={{ fontSize: 12, color: unread > 0 ? 'var(--text-1)' : 'var(--text-3)', fontWeight: unread > 0 ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                            {lastMsg.sender_id === me?.id ? (isRTL ? '← ' : '→ ') : ''}{chatMessagePreview(lastMsg.content, t)}
-                          </div>
-                        )}
-                      </div>
-
-                      <MessageCircle size={16} color={unread > 0 ? '#1a6fd4' : '#ccc'} style={{ flexShrink: 0 }} />
-                    </div>
-                  </Link>
-                );
-              })
+              conversations.map((conv, i) => (
+                <Link
+                  key={conv.key}
+                  to={`/chat/${conv.task.id}?with=${conv.otherId}`}
+                  style={{ textDecoration: 'none' }}
+                  onClick={() => markConversationRead(conv)}
+                >
+                  <div style={{ borderBottom: i < conversations.length - 1 ? '1px solid var(--border-1)' : 'none' }}>
+                    <ConversationRow conv={conv} meId={me.id} t={t} />
+                  </div>
+                </Link>
+              ))
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
