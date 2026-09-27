@@ -221,7 +221,7 @@ export default function MyTasks() {
                     </button>
                   )}
                   {task.status === 'TAKEN' && (
-                    <Link to={`/chat/${task.id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
+                    <Link to={`/chat/${task.id}?with=${task.worker_id}`} style={{ textDecoration: 'none' }} onClick={e => e.stopPropagation()}>
                       <button style={{ height: 34, paddingInline: 12, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <MessageCircle size={13} /> {t('chat')}
                       </button>

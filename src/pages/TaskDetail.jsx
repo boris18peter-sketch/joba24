@@ -89,6 +89,7 @@ import TaskLocationMap from '@/components/TaskLocationMap';
 
 import ApplySheet from '@/components/ApplySheet';
 import QuickChatDrawer from '@/components/QuickChatDrawer';
+import { chatThreadKey } from '@/lib/chatThread';
 import WorkerCompletionPhoto from '@/components/WorkerCompletionPhoto';
 
 // Labels are context-aware: isOwner sees employer language, worker sees worker language
@@ -592,7 +593,9 @@ export default function TaskDetail(props) {
       task_id: id,
       sender_id: me.id,
       sender_name: me.full_name,
-      content: t('signal_reopen_msg').replace('{title}', task.title)
+      content: t('signal_reopen_msg').replace('{title}', task.title),
+      thread_key: chatThreadKey(me.id, task.client_id),
+      recipient_id: task.client_id,
     });
     // Also create a signal record on the task so owner can see interested workers
     await base44.entities.Task.update(id, {
@@ -1473,7 +1476,14 @@ export default function TaskDetail(props) {
 
 
 
-      {showQuickChat && task && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowQuickChat(false)} />}
+      {showQuickChat && task && me && (
+        <QuickChatDrawer
+          task={task}
+          me={me}
+          otherUserId={me.id === task.client_id ? task.worker_id : task.client_id}
+          onClose={() => setShowQuickChat(false)}
+        />
+      )}
 
       {showInvoice && task && me && createPortal(
         <InvoiceModal task={task} me={me} onClose={() => setShowInvoice(false)} />,

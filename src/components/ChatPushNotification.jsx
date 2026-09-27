@@ -29,8 +29,8 @@ export default function ChatPushNotification() {
       // Ignore own messages
       if (msg.sender_id === me.id) return;
 
-      // Ignore if already in this chat
-      if (location.pathname === `/chat/${msg.task_id}`) return;
+      // Ignore only if already in THIS conversation — same task AND same person
+      if (location.pathname === `/chat/${msg.task_id}` && location.search.includes(`with=${msg.sender_id}`)) return;
 
       // Get task title (cached)
       let taskTitle = taskCache.current[msg.task_id];
@@ -56,7 +56,7 @@ export default function ChatPushNotification() {
           style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
           onClick={() => {
             toast.dismiss();
-            navigate(`/chat/${msg.task_id}`);
+            navigate(`/chat/${msg.task_id}?with=${msg.sender_id}`);
           }}
         >
           <div style={{

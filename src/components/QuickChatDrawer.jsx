@@ -15,6 +15,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import { useViewportHeight } from '@/hooks/useViewportHeight';
 import ChatImageBubble from '@/components/chat/ChatImageBubble';
+import { chatThreadKey, isMessageInThread } from '@/lib/chatThread';
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -80,7 +81,7 @@ function TaskInfoPopup({ task, onClose }) {
  * QuickChatDrawer — full-screen chat popup, identical design to Chat.jsx.
  * Fetches the other user's profile for avatar, verified badge, and online status.
  */
-export default function QuickChatDrawer({ task, me, onClose }) {
+export default function QuickChatDrawer({ task, me, onClose, otherUserId }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { height: viewportHeight, offsetTop: viewportOffsetTop } = useViewportHeight();
@@ -95,8 +96,11 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   const inputRef = useRef(null);
   const { recording, recordSeconds, uploading: uploadingVoice, start: startRecording, stop: stopRecording, cancel: cancelRecording, formatTime } = useVoiceRecording();
 
-  // Determine the other person's ID
-  const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
+  // Determine the other person's ID — `otherUserId` when the caller knows
+  // exactly who this conversation is with (e.g. the owner picking an applicant).
+  const otherPersonId = otherUserId || (me?.id === task?.client_id ? task?.worker_id : task?.client_id);
+  const threadKey = chatThreadKey(me?.id, otherPersonId);
+  const pairIds = [me?.id, otherPersonId].filter(Boolean);
 
   // Fetch other user's profile for avatar + verified status
   const { data: otherUserData } = useQuery({
@@ -107,27 +111,30 @@ export default function QuickChatDrawer({ task, me, onClose }) {
   });
 
   const otherIsOnline = useOnlineStatus(otherPersonId);
-  const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || 'הפועל') : (task?.client_name || 'המעסיק');
+  const otherPersonName = otherUserData?.display_name || otherUserData?.full_name
+    || (me?.id === task?.client_id ? (task?.worker_name || 'הפועל') : (task?.client_name || 'המעסיק'));
 
   // Load message history — show cached instantly, then fetch fresh
-  const CACHE_KEY = `quickchat_msgs_${task.id}`;
+  const CACHE_KEY = `quickchat_msgs_${task.id}_${threadKey || 'none'}`;
 
-  const [initialized, setInitialized] = useState(false);
   useEffect(() => {
-    if (initialized) return;
+    if (!threadKey) return;
+    let cached = null;
     try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed?.length) setMessages(parsed);
-      }
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) cached = JSON.parse(raw);
     } catch {}
-    setInitialized(true);
-  }, []);
+    setMessages(Array.isArray(cached) ? cached : []);
+  }, [threadKey, CACHE_KEY]);
 
+  // Scoped to this thread — never the whole task's message bucket.
   const { data: fetchedMessages = [] } = useQuery({
-    queryKey: ['quickChat', task.id],
-    queryFn: () => base44.entities.ChatMessage.filter({ task_id: task.id }, 'created_date', 500),
+    queryKey: ['quickChat', task.id, threadKey],
+    queryFn: async () => {
+      const msgs = await base44.entities.ChatMessage.filter({ task_id: task.id }, 'created_date', 500);
+      return msgs.filter((m) => isMessageInThread(m, threadKey, pairIds));
+    },
+    enabled: !!threadKey,
     staleTime: 60000,
   });
 
@@ -156,8 +163,10 @@ export default function QuickChatDrawer({ task, me, onClose }) {
 
   // Real-time subscription
   useEffect(() => {
+    if (!threadKey) return;
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== task.id) return;
+      if (!isMessageInThread(event.data, threadKey, pairIds)) return;
       if (event.type === 'create') {
         setMessages(prev => {
           if (prev.some(m => m.id === event.data.id)) return prev;
@@ -176,7 +185,7 @@ export default function QuickChatDrawer({ task, me, onClose }) {
       }
     });
     return unsub;
-  }, [task.id, me?.id]);
+  }, [task.id, me?.id, threadKey]);
 
   // Auto scroll
   useEffect(() => {
@@ -226,6 +235,8 @@ export default function QuickChatDrawer({ task, me, onClose }) {
         sender_id: me.id,
         sender_name: me.full_name,
         content: msgContent,
+        thread_key: threadKey,
+        recipient_id: otherPersonId,
       });
       setMessages(prev => prev.map(m => m.id === optimisticId ? (created || { ...optimisticMsg, _optimistic: false }) : m));
     } catch {

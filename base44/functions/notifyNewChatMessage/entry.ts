@@ -16,9 +16,11 @@ Deno.serve(async (req) => {
       return Response.json({ sent: 0, reason: 'Task not found' });
     }
 
-    // Determine who to notify: if sender is client → notify worker, if sender is worker → notify client
+    // Determine who to notify. The message carries its own recipient, which is
+    // the only reliable source once several applicants chat on one task —
+    // falling back to client/worker only covers pre-thread messages.
     const isSenderClient = data.sender_id === task.client_id;
-    const targetUserId = isSenderClient ? task.worker_id : task.client_id;
+    const targetUserId = data.recipient_id || (isSenderClient ? task.worker_id : task.client_id);
 
     if (!targetUserId) {
       return Response.json({ sent: 0, reason: 'No recipient' });

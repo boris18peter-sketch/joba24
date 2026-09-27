@@ -808,8 +808,8 @@ export default function SimulatorPanel() {
         {takenByMe.concat(myTakenAsClient).slice(0, 3).map(t => (
           <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
             <Btn label={`📩 שלח הודעה`} color="#1a6fd4" small
-              onClick={wrap(() => base44.entities.ChatMessage.create({ task_id: t.id, sender_id: me.id, sender_name: me.full_name, content: '🧪 הודעת בדיקה QA', read: false }))} />
-            <Btn label="🔗 פתח צ'אט" color="#6366f1" small onClick={async () => navigate(`/chat/${t.id}`)} />
+              onClick={wrap(() => base44.entities.ChatMessage.create({ task_id: t.id, sender_id: me.id, sender_name: me.full_name, content: '🧪 הודעת בדיקה QA', read: false, thread_key: [me.id, t.client_id].sort().join('__'), recipient_id: t.client_id }))} />
+            <Btn label="🔗 פתח צ'אט" color="#6366f1" small onClick={async () => navigate(`/chat/${t.id}?with=${t.client_id}`)} />
           </div>
         ))}
         {takenByMe.concat(myTakenAsClient).length === 0 && (

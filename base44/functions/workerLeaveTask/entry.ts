@@ -64,6 +64,9 @@ Deno.serve(async (req) => {
         sender_id: user.id,
         sender_name: user.full_name,
         content: `👋 ${user.full_name} יצא מהמשימה. המשימה חזרה להיות פתוחה — תוכל לאשר בקשות קיימות או לקבל חדשות.`,
+        // Same thread as the conversation they were already having
+        thread_key: [user.id, task.client_id].sort().join('__'),
+        recipient_id: task.client_id,
       });
     }
 

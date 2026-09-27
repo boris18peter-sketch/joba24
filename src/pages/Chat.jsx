@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { chatThreadKey, isMessageInThread } from '@/lib/chatThread';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert, Mic, X } from 'lucide-react';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
@@ -98,6 +99,10 @@ function TypingIndicator() {
 
 export default function Chat() {
   const { taskId } = useParams();
+  const [searchParams] = useSearchParams();
+  // A chat is a conversation between exactly TWO people. `with` identifies the
+  // other participant, so two applicants on the same task never share a thread.
+  const withId = searchParams.get('with');
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const { openTaskSheet } = useTaskSheet();
@@ -127,7 +132,9 @@ export default function Chat() {
   });
 
   // Fetch other user's profile for avatar + verified status
-  const otherPersonIdCalc = me?.id === (task?.client_id) ? task?.worker_id : task?.client_id;
+  const otherPersonIdCalc = withId || (me?.id === (task?.client_id) ? task?.worker_id : task?.client_id);
+  const threadKey = chatThreadKey(me?.id, otherPersonIdCalc);
+  const pairIds = [me?.id, otherPersonIdCalc].filter(Boolean);
   const otherIsOnline = useOnlineStatus(otherPersonIdCalc);
   const { data: otherUserData } = useQuery({
     queryKey: ['userProfile', otherPersonIdCalc],
@@ -137,25 +144,30 @@ export default function Chat() {
   });
 
   // Load message history — show cached instantly, then fetch fresh from server
-  const CACHE_KEY = `chat_msgs_${taskId}`;
+  const CACHE_KEY = `chat_msgs_${taskId}_${threadKey || 'none'}`;
 
-  // Initialize messages from cache immediately (synchronous — zero delay)
-  const [initialized, setInitialized] = useState(false);
+  // Initialize messages from cache immediately (synchronous — zero delay).
+  // Re-runs when the thread changes: switching between two applicants on the
+  // same task is the same route, so the component does not remount.
   useEffect(() => {
-    if (initialized) return;
+    if (!threadKey) return;
+    let cached = null;
     try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed?.length) setMessages(parsed);
-      }
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) cached = JSON.parse(raw);
     } catch {}
-    setInitialized(true);
-  }, []);
+    setMessages(Array.isArray(cached) ? cached : []);
+  }, [threadKey, CACHE_KEY]);
 
+  // Scoped to this thread — a message between the owner and someone else
+  // must never reach this conversation.
   const { data: fetchedMessages = [] } = useQuery({
-    queryKey: ['chatMessages', taskId],
-    queryFn: () => base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500),
+    queryKey: ['chatMessages', taskId, threadKey],
+    queryFn: async () => {
+      const msgs = await base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500);
+      return msgs.filter((m) => isMessageInThread(m, threadKey, pairIds));
+    },
+    enabled: !!threadKey,
     staleTime: 60000,
   });
 
@@ -185,8 +197,10 @@ export default function Chat() {
 
   // Real-time subscription — single source of truth for live updates
   useEffect(() => {
+    if (!threadKey) return;
     const unsub = base44.entities.ChatMessage.subscribe(event => {
       if (event.data?.task_id !== taskId) return;
+      if (!isMessageInThread(event.data, threadKey, pairIds)) return;
       if (event.type === 'create') {
         setMessages(prev => {
           if (prev.some(m => m.id === event.data.id)) return prev;
@@ -207,7 +221,7 @@ export default function Chat() {
       }
     });
     return unsub;
-  }, [taskId, me?.id]);
+  }, [taskId, me?.id, threadKey]);
 
   // Auto scroll — scroll the container directly (avoids scrollIntoView scrolling parent containers)
   useEffect(() => {
@@ -275,6 +289,8 @@ export default function Chat() {
         sender_id: me.id,
         sender_name: me.full_name,
         content: msgContent,
+        thread_key: threadKey,
+        recipient_id: otherPersonIdCalc,
       });
       // Replace optimistic with real message
       setMessages(prev => prev.map(m => m.id === optimisticId ? (created || { ...optimisticMsg, _optimistic: false }) : m));
@@ -316,8 +332,11 @@ export default function Chat() {
     return result;
   }, [messages]);
 
-  const otherPersonName = me?.id === task?.client_id ? (task?.worker_name || t('chat_worker_default')) : (task?.client_name || t('chat_client_default'));
-  const otherPersonId = me?.id === task?.client_id ? task?.worker_id : task?.client_id;
+  // Prefer the counterpart's own profile name — an applicant is not yet the
+  // task's `worker_name`, so the task snapshot would show the wrong person.
+  const otherPersonName = otherUserData?.display_name || otherUserData?.full_name
+    || (me?.id === task?.client_id ? (task?.worker_name || t('chat_worker_default')) : (task?.client_name || t('chat_client_default')));
+  const otherPersonId = otherPersonIdCalc;
   const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return createPortal(

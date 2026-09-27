@@ -206,7 +206,7 @@ export default function MyTasksCarousel({ myTasks, hideWhenWorking }) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {isTaken && (
-                      <div onClick={e => { e.stopPropagation(); navigate(`/chat/${task.id}`); }}>
+                      <div onClick={e => { e.stopPropagation(); navigate(`/chat/${task.id}?with=${task.worker_id}`); }}>
                         <div style={{ width: 22, height: 22, borderRadius: 7, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <MessageCircle size={11} color="#1a6fd4" />
                         </div>

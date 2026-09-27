@@ -15,7 +15,7 @@ export default function LiveNotificationPopup({ notification, onClose }) {
   const touchStartY = useRef(null);
 
   const TYPES = {
-    new_message:           { emoji: '💬', title: (n) => `${t('notif_new_message')}${n.senderName || ''}`,   body: (n) => n.preview || t('notif_preview'),                link: (n) => n.taskId ? `/chat/${n.taskId}` : null },
+    new_message:           { emoji: '💬', title: (n) => `${t('notif_new_message')}${n.senderName || ''}`,   body: (n) => n.preview || t('notif_preview'),                link: (n) => n.taskId ? `/chat/${n.taskId}${n.actorId ? `?with=${n.actorId}` : ''}` : null },
     task_taken:            { emoji: '🎉', title: ()  => t('notif_task_taken'),                               body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_click_approve')}` : t('notif_click_approve'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },
     application_received:  { emoji: '✋', title: ()  => t('notif_app_received'),                             body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_check')}` : t('notif_check'),  link: (n) => n.taskId ? `/task/${n.taskId}` : null },
     application_approved:  { emoji: '🎯', title: ()  => t('notif_app_approved'),                            body: (n) => n.taskTitle ? `"${n.taskTitle}" — ${t('notif_start')}` : t('notif_start'), link: (n) => n.taskId ? `/task/${n.taskId}` : null },

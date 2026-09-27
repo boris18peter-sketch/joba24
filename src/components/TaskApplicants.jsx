@@ -17,7 +17,8 @@ export default function TaskApplicants({ task, onApprove }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showCancelWorkerConfirm, setShowCancelWorkerConfirm] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  // Which applicant the owner is chatting with — one thread per applicant.
+  const [chatWith, setChatWith] = useState(null);
   const [lightbox, setLightbox] = useState({ open: false, images: [], index: 0 });
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
 
@@ -363,7 +364,7 @@ export default function TaskApplicants({ task, onApprove }) {
 
               {/* Quick action: chat */}
               <button
-                onClick={() => setShowChat(true)}
+                onClick={() => setChatWith(app.worker_id)}
                 style={{
                   width: 36, height: 36, borderRadius: 11, flexShrink: 0,
                   background: '#eff6ff', border: '1px solid #bfdbfe',
@@ -458,7 +459,7 @@ export default function TaskApplicants({ task, onApprove }) {
         );
       })}
 
-      {showChat && me && <QuickChatDrawer task={task} me={me} onClose={() => setShowChat(false)} />}
+      {chatWith && me && <QuickChatDrawer task={task} me={me} otherUserId={chatWith} onClose={() => setChatWith(null)} />}
       <MediaLightbox
         isOpen={lightbox.open}
         items={lightbox.images.map(url => ({ type: 'image', url }))}

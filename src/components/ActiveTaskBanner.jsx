@@ -516,7 +516,14 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
         loading={updating}
       />
 
-      {showChat && me && <QuickChatDrawer task={taskList[activeIdx]} me={me} onClose={() => setShowChat(false)} />}
+      {showChat && me && taskList[activeIdx] && (
+        <QuickChatDrawer
+          task={taskList[activeIdx]}
+          me={me}
+          otherUserId={me.id === taskList[activeIdx].client_id ? taskList[activeIdx].worker_id : taskList[activeIdx].client_id}
+          onClose={() => setShowChat(false)}
+        />
+      )}
 
       {/* Media upload sheet */}
       {mediaTask && createPortal(
