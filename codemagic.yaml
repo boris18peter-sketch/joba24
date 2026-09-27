@@ -59,31 +59,54 @@ workflows:
               return new_text
 
 
-          if "facebook-ios-sdk" in pkg and "tiktok-business-ios-sdk" in pkg:
-              print("[ios-sdk] Both SDKs already declared in Package.swift")
-          else:
-              # 1. Dependency declarations, anchored on the capacitor-swift-pm
-              #    package line, which cap sync always writes.
-              pkg = must_sub(
-                  pkg,
-                  r'([ \t]*\.package\(url:[ \t]*"' + re.escape(CAPACITOR_PKG) + r'"[^\n]*?)(,?)(\n)',
-                  r'\1,\n'
-                  r'        .package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0"),\n'
-                  r'        .package(url: "https://github.com/tiktok/tiktok-business-ios-sdk.git", from: "1.7.2")\3',
-                  "capacitor-swift-pm dependency line")
+          # Idempotency: drop any SDK entries left behind by a previous run of
+          # this step, so re-running it never duplicates or corrupts the file.
+          # (In the normal flow `cap sync ios` regenerates the file first, so
+          # there is usually nothing to drop.)
+          pkg = re.sub(r'[ \t]*\.package\(url:[ \t]*"https://github\.com/facebook/facebook-ios-sdk\.git"[^\n]*\n', '', pkg)
+          pkg = re.sub(r'[ \t]*\.package\(url:[ \t]*"https://github\.com/tiktok/tiktok-business-ios-sdk\.git"[^\n]*\n', '', pkg)
+          pkg = re.sub(r'[ \t]*\.product\(name:[ \t]*"FacebookCore"[^\n]*\n', '', pkg)
+          pkg = re.sub(r'[ \t]*\.product\(name:[ \t]*"TikTokBusinessSDK"[^\n]*\n', '', pkg)
 
-              # 2. Target products, anchored on the Cordova product line.
-              pkg = must_sub(
-                  pkg,
-                  r'([ \t]*\.product\(name:[ \t]*"Cordova",[ \t]*package:[ \t]*"capacitor-swift-pm"\))(,?)(\n)',
-                  r'\1,\n'
-                  r'                .product(name: "FacebookCore", package: "facebook-ios-sdk"),\n'
-                  r'                .product(name: "TikTokBusinessSDK", package: "tiktok-business-ios-sdk")\3',
-                  "Cordova product line")
+          # 1. Dependency declarations, anchored on the capacitor-swift-pm
+          #    package line, which cap sync always writes.
+          #
+          #    CRITICAL: the replacement must end with \2\3, NOT \3. Group 2 is
+          #    the anchor line's OWN trailing comma. cap sync does not stop at
+          #    this line - it appends the local Capacitor plugin packages right
+          #    after it (CapacitorApp, CapacitorBrowser, CapacitorGeolocation,
+          #    CapacitorSplashScreen, CapacitorFirebaseAnalytics,
+          #    CapacitorFirebaseMessaging, CapgoCapacitorInappbrowser). If that
+          #    comma is swallowed, the first plugin entry loses its separator and
+          #    Swift chains it onto the TikTok entry:
+          #      "Static member 'package' cannot be used on instance of type
+          #       'Package.Dependency'"  (Package.swift line 16)
+          #    Emitting \2\3 restores the comma when the anchor is followed by
+          #    more entries, and omits it when the anchor is the last entry.
+          pkg = must_sub(
+              pkg,
+              r'([ \t]*\.package\(url:[ \t]*"' + re.escape(CAPACITOR_PKG) + r'"[^\n]*?)(,?)(\n)',
+              r'\1,\n'
+              r'        .package(url: "https://github.com/facebook/facebook-ios-sdk.git", from: "17.0.0"),\n'
+              r'        .package(url: "https://github.com/tiktok/tiktok-business-ios-sdk.git", from: "1.7.2")\2\3',
+              "capacitor-swift-pm dependency line")
 
-              with open(PKG_SWIFT, "w") as f:
-                  f.write(pkg)
-              print("[ios-sdk] Injected facebook-ios-sdk + tiktok-business-ios-sdk")
+          # 2. Target products, anchored on the Cordova product line.
+          #    Same \2\3 rule as above - the local plugin products follow this
+          #    line, so its comma must survive:
+          #      "Static member 'product' cannot be used on instance of type
+          #       'Target.Dependency'"  (Package.swift line 32)
+          pkg = must_sub(
+              pkg,
+              r'([ \t]*\.product\(name:[ \t]*"Cordova",[ \t]*package:[ \t]*"capacitor-swift-pm"\))(,?)(\n)',
+              r'\1,\n'
+              r'                .product(name: "FacebookCore", package: "facebook-ios-sdk"),\n'
+              r'                .product(name: "TikTokBusinessSDK", package: "tiktok-business-ios-sdk")\2\3',
+              "Cordova product line")
+
+          with open(PKG_SWIFT, "w") as f:
+              f.write(pkg)
+          print("[ios-sdk] Injected facebook-ios-sdk + tiktok-business-ios-sdk")
 
           # 3. Verify the written file really declares both, then print it in full.
           with open(PKG_SWIFT, "r") as f:
@@ -96,6 +119,31 @@ workflows:
                   print("[ios-sdk] ERROR: Package.swift is missing " + needle)
                   print(final)
                   raise SystemExit(1)
+
+          # 4. Structural check: every array entry must be comma-terminated
+          #    unless it is the last entry of its array. A missing comma is still
+          #    valid *syntax*, so it only surfaces as a type error much later, at
+          #    archive time - which is exactly how the broken manifest reached
+          #    the build. Catch it here instead.
+          pkg_lines = final.split("\n")
+          for idx, line in enumerate(pkg_lines):
+              entry = line.strip()
+              if not (entry.startswith(".package(") or entry.startswith(".product(")):
+                  continue
+              if entry.endswith(","):
+                  continue
+              next_nonblank = ""
+              for candidate in pkg_lines[idx + 1:]:
+                  if candidate.strip():
+                      next_nonblank = candidate.strip()
+                      break
+              if next_nonblank not in ("],", "]"):
+                  print("[ios-sdk] ERROR: array entry on line " + str(idx + 1) + " has no trailing comma")
+                  print("  entry: " + entry)
+                  print("  next:  " + next_nonblank)
+                  print("  -> Swift would chain this entry onto the previous value.")
+                  raise SystemExit(1)
+          print("[ios-sdk] Package.swift structure OK - all array entries comma-terminated")
           print("=== Final Package.swift ===")
           print(final)
           print("=== End Package.swift ===")
@@ -303,6 +351,16 @@ workflows:
             exit 1
           fi
           echo "FACEBOOK_CLIENT_TOKEN is present (value intentionally not printed)."
+      - name: Resolve SPM dependencies (validate Package.swift before archive)
+        script: |
+          set -e
+          echo "=== Package.swift used for this build ==="
+          cat ios/App/CapApp-SPM/Package.swift
+          echo "=== Resolving Swift Package dependencies (type-checks the manifest) ==="
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+          echo "OK: Package.swift resolved - Facebook + TikTok + all Capacitor plugins linked"
       - name: Archive the app
         script: |
           xcodebuild archive \
