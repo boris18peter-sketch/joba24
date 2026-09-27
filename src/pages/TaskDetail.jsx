@@ -27,6 +27,8 @@ import TaskDetailsRows from '@/components/TaskDetailsRows.jsx';
 import CategoryDetailsView from '@/components/CategoryDetailsView';
 import { calculateCurrentPrice, getHourlyBreakdown, formatHoursLabel, formatHourlySublabel, formatScheduleSlots } from '@/lib/priceCalculator';
 import { isUserVerified, hasSocialVerified, copyToClipboard } from '@/lib/utils';
+import { selectTask, patchTaskCache } from '@/lib/taskCache';
+import { creditsShortfall } from '@/lib/jobaBalance';
 
 const CATEGORY_EMOJI = {
   plumbing: '🔧', electricity: '⚡', gardening: '🌿', cleaning: '🧹', car: '🚗',
@@ -206,7 +208,9 @@ export default function TaskDetail(props) {
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
     queryFn: () => base44.entities.Task.filter({ id }),
-    select: (data) => data[0],
+    // The cache holds either an array (fresh fetch) or a single object
+    // (realtime/optimistic write) — normalise so the sheet never goes blank.
+    select: selectTask,
     staleTime: 30000,
     refetchOnWindowFocus: false
   });
@@ -296,7 +300,7 @@ export default function TaskDetail(props) {
       if (!event.data) return;
       // Strip undefined so partial patch never overwrites existing fields with undefined
       const patch = Object.fromEntries(Object.entries(event.data).filter(([, v]) => v !== undefined));
-      queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...patch } : patch);
+      patchTaskCache(queryClient, id, patch);
       // Also keep activeWorkerTask / activeClientTask in sync so banner inside TaskDetail is live
       const currentMeId = meIdRef.current;
       if (currentMeId) {
@@ -317,7 +321,7 @@ export default function TaskDetail(props) {
         // Reliable rating trigger for both owner and worker — dispatches with the
         // full cached task (now COMPLETED). Dedup in maybeShowRating (shownRatingRef
         // + localStorage) prevents double-popups if Layout's WebSocket handler also fires.
-        const fullTask = queryClient.getQueryData(['task', id]);
+        const fullTask = selectTask(queryClient.getQueryData(['task', id]));
         if (fullTask && (fullTask.client_id === currentMeId || fullTask.worker_id === currentMeId)) {
           window.dispatchEvent(new CustomEvent('show_rating_modal', { detail: { task: fullTask } }));
         }
@@ -384,7 +388,7 @@ export default function TaskDetail(props) {
   const handleWorkerUpdate = async (data) => {
     const patch = { ...data };
     // Optimistic update for TaskDetail view
-    queryClient.setQueryData(['task', id], (old) => old ? { ...old, ...patch } : old);
+    patchTaskCache(queryClient, id, patch, { create: false });
     // Persist to server — WebSocket fires and Layout handles all other caches
     await base44.entities.Task.update(id, patch);
   };
@@ -571,8 +575,9 @@ export default function TaskDetail(props) {
       const status = err?.response?.status || err?.status;
       const errData = err?.response?.data || err?.data;
       if (status === 403 || errData?.error === 'insufficient_credits') {
-        const needed = errData?.credits_required;
-        setCreditsNeeded(needed || null);
+        // Show the SHORTFALL, not the task's full cost — a worker holding 84
+        // jobas on an 85-joba application is 1 short, not 85 short.
+        setCreditsNeeded(creditsShortfall(errData, me?.worker_credits ?? authUser?.worker_credits ?? 0));
         setShowApplyForm(false);
         setShowBuyCredits(true);
       } else {

@@ -169,7 +169,7 @@ function DetailsPopup({ user, reviews, tasks, trustScore, trustLevel, mainColor,
             max={30}
             color="#d97706"
             done={ratingPoints >= 30}
-            status={ratingCount > 0 ? t('tc_rating_status', { n: ratingCount }) : t('tc_rating_empty')}
+            status={ratingCount > 0 ? t('tc_rating_status', { n: ratingCount }) : t(isPublic ? 'tc_rating_empty_public' : 'tc_rating_empty')}
           />
           <MetricRow
             icon={<Briefcase size={16} color="#7c3aed" />}

@@ -41,6 +41,24 @@ export function balanceValueCaption(jobas, t) {
 }
 
 /**
+ * How many jobas a worker is SHORT for an application.
+ *
+ * The backend's `insufficient_credits` response carries the task's full cost
+ * (`credits_required`) and the worker's balance (`credits_available`). Showing
+ * the full cost told a worker holding 84 jobas that they needed 85 — instead of
+ * the 1 they were actually missing.
+ *
+ * Returns null when the requirement is unknown, so callers can skip the banner.
+ */
+export function creditsShortfall({ credits_required, credits_available } = {}, fallbackBalance = 0) {
+  const required = Number(credits_required) || 0;
+  if (required <= 0) return null;
+  const available = Number(credits_available);
+  const balance = Number.isFinite(available) ? available : (Number(fallbackBalance) || 0);
+  return Math.max(1, required - balance);
+}
+
+/**
  * Compute locked (committed) jobas from a list of pending applications.
  * Locked = sum of credits_charged where status === 'pending'.
  */

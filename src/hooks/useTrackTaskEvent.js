@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { patchTaskCache } from '@/lib/taskCache';
 
 // queryClient is passed in so we can patch the cache immediately after the server responds
 function fireEvent(taskId, eventType, queryClient) {
@@ -11,15 +12,12 @@ function fireEvent(taskId, eventType, queryClient) {
     .then((res) => {
       if (!queryClient || !res?.data) return;
       const { views_count, clicks_count } = res.data;
-      // Patch the cached task directly — no full refetch needed
-      queryClient.setQueryData(['task', taskId], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          ...(views_count  != null ? { views_count }  : {}),
-          ...(clicks_count != null ? { clicks_count } : {}),
-        };
-      });
+      // Patch the cached task directly — no full refetch needed. Goes through
+      // patchTaskCache so it merges correctly whichever shape the cache holds.
+      const patch = {};
+      if (views_count  != null) patch.views_count  = views_count;
+      if (clicks_count != null) patch.clicks_count = clicks_count;
+      if (Object.keys(patch).length) patchTaskCache(queryClient, taskId, patch, { create: false });
       // Also patch the tasks list cache
       queryClient.setQueriesData({ queryKey: ['tasks'] }, (old) => {
         if (!Array.isArray(old)) return old;

@@ -17,6 +17,7 @@ import InvoiceModal from '@/components/InvoiceModal';
 import MediaLightbox from '@/components/MediaLightbox';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { patchTaskCache } from '@/lib/taskCache';
 
 function getRelativeTime(date, t) {
   if (!date) return null;
@@ -134,7 +135,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
 
     // ── Optimistic update — update cache immediately so UI responds instantly ──
     const optimisticTask = { ...task, ...update };
-    queryClient.setQueryData(['task', task.id], optimisticTask);
+    patchTaskCache(queryClient, task.id, optimisticTask);
     // Also update activeWorkerTask cache optimistically so banner stays up-to-date
     queryClient.setQueryData(['activeWorkerTask', me?.id], (old) => {
       return old?.id === task.id ? { ...old, ...update } : old;
@@ -547,7 +548,7 @@ export default function ActiveTaskBanner({ tasks, roleHint, extraInfo }) {
                 setSavingMedia(true);
                 await base44.entities.Task.update(mediaTask.id, { completion_photos: mediaPhotos, completion_video_url: mediaVideo || null });
                 queryClient.setQueryData(['activeWorkerTask', me?.id], old => old?.id === mediaTask.id ? { ...old, completion_photos: mediaPhotos, completion_video_url: mediaVideo || null } : old);
-                queryClient.setQueryData(['task', mediaTask.id], old => old ? { ...old, completion_photos: mediaPhotos, completion_video_url: mediaVideo || null } : old);
+                patchTaskCache(queryClient, mediaTask.id, { completion_photos: mediaPhotos, completion_video_url: mediaVideo || null }, { create: false });
                 queryClient.invalidateQueries({ queryKey: ['task', mediaTask.id] });
                 // Notify task owner that proof was submitted
                 if (mediaTask.client_id && mediaTask.client_id !== me?.id) {

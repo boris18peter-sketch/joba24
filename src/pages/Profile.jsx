@@ -15,7 +15,6 @@ import SocialLinksSection from '@/components/SocialLinksSection';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
 import TaskReviewHistory from '@/components/TaskReviewHistory';
 import ProfileStatsPill from '@/components/profile/ProfileStatsPill';
-import EditNameSheet from '@/components/profile/EditNameSheet';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCategoryLabel } from '@/lib/categories';
@@ -65,7 +64,6 @@ export default function Profile() {
   const { openTaskSheet } = useTaskSheet();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnifiedHistory, setShowUnifiedHistory] = useState(false);
-  const [showEditName, setShowEditName] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const photoInputRef = useRef(null);
 
@@ -193,13 +191,11 @@ export default function Profile() {
             <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
           </div>
 
-          <div
-            onClick={() => setShowEditName(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, cursor: 'pointer', padding: '2px 8px', borderRadius: 12 }}
-          >
+          {/* Read-only here — the name is edited on the profile edit page
+              (/worker-profile), which is the single place for profile edits. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, padding: '2px 8px' }}>
             <span style={{ fontSize: 19, fontWeight: 900, color: 'white' }}>{me?.full_name || 'User'}</span>
             {verified && social ? <GoldBadge size="md" /> : verified && <VerifiedBadge size="md" />}
-            <Pencil size={13} color="rgba(255,255,255,0.7)" />
           </div>
 
         </div>
@@ -366,13 +362,6 @@ export default function Profile() {
         document.body
       )}
 
-      {showEditName && (
-        <EditNameSheet
-          user={me}
-          onClose={() => setShowEditName(false)}
-          onSaved={refreshUser}
-        />
-      )}
     </div>
   );
 }

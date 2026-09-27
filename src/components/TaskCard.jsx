@@ -28,6 +28,7 @@ import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { isUserVerified } from '@/lib/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
+import { creditsShortfall } from '@/lib/jobaBalance';
 
 
 function normalizeDate(d) {
@@ -205,7 +206,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       }
       if (res.data?.error === 'insufficient_credits') {
         setShowApplyModal(false);
-        setNeededCredits(res.data.credits_required || 0);
+        setNeededCredits(creditsShortfall(res.data));
         setShowBuyCredits(true);
         return;
       }
@@ -227,7 +228,7 @@ function TaskCard({ task, myApp, currentUserId, workerName, badges, viewOnly, is
       const errData = err?.response?.data;
       if (errData?.error === 'insufficient_credits') {
         setShowApplyModal(false);
-        setNeededCredits(errData.credits_required || 0);
+        setNeededCredits(creditsShortfall(errData));
         setShowBuyCredits(true);
       } else if (errData?.error === 'verification_required') {
         setShowApplyModal(false);

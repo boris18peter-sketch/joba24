@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play } from 'lucide-react';
+import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play, Pencil, User as UserIcon } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
@@ -15,6 +15,8 @@ import { getCityLabel } from '@/lib/cityLabels';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import EditNameSheet from '@/components/profile/EditNameSheet';
+import { getDisplayName } from '@/lib/displayName';
 
 const INITIAL_CITIES_COUNT = 12;
 
@@ -90,6 +92,7 @@ export default function WorkerProfile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [showAllCities, setShowAllCities] = useState(false);
+  const [showEditName, setShowEditName] = useState(false);
   const certDocRef = useRef(null);
   const photoInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -260,6 +263,29 @@ export default function WorkerProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* ── Display name (edit mode only — the profile page is read-only) ── */}
+        {!isViewingOther && (
+          <SectionCard title={t('wp_identity')}>
+            <button
+              type="button"
+              onClick={() => setShowEditName(true)}
+              style={{ all: 'unset', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+            >
+              <div style={{ width: 38, height: 38, borderRadius: 11, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <UserIcon size={18} color="#1a6fd4" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('wp_full_name')}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(currentUser)}</div>
+              </div>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#1a6fd4', flexShrink: 0 }}>
+                <Pencil size={13} /> {t('pr_edit')}
+              </span>
+            </button>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>{t('wp_full_name_hint')}</div>
+          </SectionCard>
+        )}
 
         {/* ── About: bio + intro video + phone (edit mode) ── */}
         {!isViewingOther && (
@@ -458,6 +484,17 @@ export default function WorkerProfile() {
 
         <div style={{ height: 16 }} />
       </div>
+
+      {showEditName && (
+        <EditNameSheet
+          user={currentUser}
+          onClose={() => setShowEditName(false)}
+          onSaved={async () => {
+            await refreshUser();
+            queryClient.invalidateQueries({ queryKey: ['me'] });
+          }}
+        />
+      )}
     </div>
   );
 }

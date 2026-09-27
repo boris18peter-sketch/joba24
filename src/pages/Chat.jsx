@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { chatThreadKey } from '@/lib/chatThread';
+import { selectTask } from '@/lib/taskCache';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -108,7 +109,8 @@ export default function Chat() {
   const { data: task } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => base44.entities.Task.filter({ id: taskId }),
-    select: d => d[0],
+    // Tolerates both cache shapes (array from a fetch, object from a patch).
+    select: selectTask,
   });
 
   const otherPersonId = withId || (me?.id === task?.client_id ? task?.worker_id : task?.client_id);

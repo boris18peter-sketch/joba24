@@ -689,7 +689,7 @@ export default function HomeFeed() {
                 boxShadow: searchFocused ? '0 0 0 3px rgba(26,111,212,0.1)' : 'none',
               }}>
                 {/* Search icon + input + category chips */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 10, paddingLeft: 8, minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, paddingRight: 8, paddingLeft: 8, minWidth: 0, overflow: 'hidden' }}>
                   <Search size={14} style={{ color: searchFocused ? '#1a6fd4' : '#b0bec5', flexShrink: 0 }} />
                   <input
                     placeholder={t('search_placeholder')}
@@ -701,8 +701,18 @@ export default function HomeFeed() {
                     style={{ flex: 1, minWidth: 30, border: 'none', background: 'transparent', fontSize: '16px', fontFamily: 'inherit', outline: 'none', color: 'var(--text-1)', height: 28 }}
                   />
                   {search && (
-                    <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', flexShrink: 0 }}>
-                      <X size={13} color="#94a3b8" />
+                    /* Fixed square so the global 44px tap-target rule can't
+                       stretch it and push the X off-centre. */
+                    <button
+                      onClick={() => setSearch('')}
+                      aria-label={t('clear')}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        width: 22, height: 22, minWidth: 'unset', minHeight: 'unset',
+                        borderRadius: '50%', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', flexShrink: 0,
+                      }}>
+                      <X size={14} color="#94a3b8" />
                     </button>
                   )}
                 </div>

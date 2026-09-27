@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
+import { selectTask } from '@/lib/taskCache';
 import { useLanguage } from '@/lib/LanguageContext';
 import { X, ArrowUp } from 'lucide-react';
 
@@ -19,7 +20,7 @@ export default function ReturnToTaskPopup() {
   const { data: task } = useQuery({
     queryKey: ['task', hiddenTaskId],
     queryFn: () => base44.entities.Task.filter({ id: hiddenTaskId }),
-    select: d => d?.[0],
+    select: selectTask,
     enabled: !!hiddenTaskId,
     staleTime: 60000,
   });

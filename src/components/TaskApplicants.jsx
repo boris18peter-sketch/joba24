@@ -11,6 +11,7 @@ import UserVerificationBadge from '@/components/UserVerificationBadge';
 import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 import { useLanguage } from '@/lib/LanguageContext';
+import { selectTask, patchTaskCache } from '@/lib/taskCache';
 
 export default function TaskApplicants({ task, onApprove }) {
   const { t, isRTL } = useLanguage();
@@ -73,7 +74,7 @@ export default function TaskApplicants({ task, onApprove }) {
       setApprovingId(null);
       const updatedTask = data.task;
       if (updatedTask) {
-        queryClient.setQueryData(['task', task.id], (old) => old ? { ...old, ...updatedTask } : updatedTask);
+        patchTaskCache(queryClient, task.id, updatedTask);
         queryClient.setQueryData(['workerTasksLayout', updatedTask.worker_id], (old = []) => {
           if (!Array.isArray(old)) return old;
           const exists = old.find(t => t.id === task.id);
@@ -129,7 +130,7 @@ export default function TaskApplicants({ task, onApprove }) {
       // Optimistic: remove cancelled worker from applicants array so badge count updates immediately
       const cancelledWorkerId = task.worker_id;
       const patchTask = (t) => t ? { ...t, applicants: (t.applicants || []).filter(a => a.worker_id !== cancelledWorkerId), worker_id: null, worker_name: null, worker_status: null, status: 'OPEN' } : t;
-      queryClient.setQueryData(['task', task.id], patchTask);
+      patchTaskCache(queryClient, task.id, patchTask(selectTask(queryClient.getQueryData(['task', task.id]))));
       queryClient.setQueryData(['allTasks'], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       queryClient.setQueryData(['myTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
       queryClient.setQueryData(['myPublishedTasks', me?.id], (old = []) => Array.isArray(old) ? old.map(t => t.id === task.id ? patchTask(t) : t) : old);
