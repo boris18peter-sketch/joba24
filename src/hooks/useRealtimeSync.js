@@ -210,6 +210,8 @@ export default function useRealtimeSync({
       if (event.type !== 'create' || !event.data) return;
       const msg = event.data;
       if (msg.sender_id === me.id) return;
+      // A message belongs to exactly one conversation — only its recipient hears about it.
+      if (msg.recipient_id && msg.recipient_id !== me.id) return;
       const allTasks = [...(myPublishedTasksRef.current || []), ...(workerTasksRef.current || [])];
       const task = allTasks.find((t) => t.id === msg.task_id);
       if (!task) return;

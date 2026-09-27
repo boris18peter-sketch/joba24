@@ -32,20 +32,36 @@ export default function ChatPushNotification() {
       // Ignore only if already in THIS conversation — same task AND same person
       if (location.pathname === `/chat/${msg.task_id}` && location.search.includes(`with=${msg.sender_id}`)) return;
 
-      // Get task title (cached)
-      let taskTitle = taskCache.current[msg.task_id];
-      if (!taskTitle) {
+      // Only conversations I am part of may reach me. `recipient_id` is exact;
+      // older messages fall back to being one of the task's two parties. Without
+      // this, an applicant gets notified about a conversation between the
+      // publisher and a DIFFERENT applicant.
+      const cached = taskCache.current[msg.task_id];
+      if (cached) {
+        if (msg.recipient_id) {
+          if (msg.recipient_id !== me.id) return;
+        } else if (cached.clientId !== me.id && cached.workerId !== me.id) {
+          return;
+        }
+      } else {
+        let task = null;
         try {
           const tasks = await base44.entities.Task.filter({ id: msg.task_id });
-          taskTitle = tasks[0]?.title || 'משימה';
-          taskCache.current[msg.task_id] = taskTitle;
-        } catch {
-          taskTitle = 'משימה';
+          task = tasks[0] || null;
+        } catch {}
+        taskCache.current[msg.task_id] = {
+          title: task?.title || 'משימה',
+          clientId: task?.client_id,
+          workerId: task?.worker_id,
+        };
+        if (msg.recipient_id) {
+          if (msg.recipient_id !== me.id) return;
+        } else if (task?.client_id !== me.id && task?.worker_id !== me.id) {
+          return;
         }
       }
+      const taskTitle = taskCache.current[msg.task_id].title;
 
-      // Only notify if this user is part of this task's chat
-      // (we don't have a membership check here, but the message was received = they're subscribed)
       const isImage = msg.content?.startsWith('[img]');
       const displayContent = isImage ? '📷 תמונה' : msg.content;
       const senderName = msg.sender_name || 'הודעה חדשה';
