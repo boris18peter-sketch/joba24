@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
@@ -10,6 +10,12 @@ import { chatMessagePreview } from '@/lib/chatPreview';
 import { threadCounterpart } from '@/lib/chatThread';
 
 const ACTIVE_STATUSES = ['TAKEN', 'APPROVED_PENDING_DEPARTURE', 'ON_THE_WAY', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'];
+
+// Messages are read in chunks of tasks so every conversation gets its own
+// headroom. A single flat limit could hide a conversation behind newer traffic
+// elsewhere; a per-chunk limit scales with how many tasks the user has.
+const CHUNK_SIZE = 8;
+const PER_CHUNK = 150;
 
 /**
  * One conversation per (task, other person) — never per task.
@@ -47,9 +53,10 @@ function buildConversations(messages, tasks, myId) {
     touch(t.id, myId === t.client_id ? t.worker_id : t.client_id);
   });
 
-  return Object.values(map).sort(
-    (a, b) => new Date(b.lastMsg?.created_date || 0) - new Date(a.lastMsg?.created_date || 0)
-  );
+  // Most recent conversation first — by its real last message, falling back to
+  // the task's own last update when nothing has been said yet.
+  const stamp = (c) => new Date(c.lastMsg?.created_date || c.task.updated_date || 0).getTime();
+  return Object.values(map).sort((a, b) => stamp(b) - stamp(a));
 }
 
 export default function ChatInbox() {
@@ -88,8 +95,7 @@ export default function ChatInbox() {
     queryFn: async () => {
       if (!myApplications.length) return [];
       const taskIds = [...new Set(myApplications.map(a => a.task_id))];
-      const tasks = await base44.entities.Task.filter({ id: { $in: taskIds } });
-      return tasks;
+      return base44.entities.Task.filter({ id: { $in: taskIds } });
     },
     enabled: !!me?.id && myApplications.length > 0,
     staleTime: 30000,
@@ -111,89 +117,96 @@ export default function ChatInbox() {
     return Object.values(map).sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
   }, [workerTasks, clientTasks, appliedTasks]);
 
-  const taskIdString = useMemo(() => allTasks.map(t => t.id).sort().join(','), [allTasks]);
+  const taskIds = useMemo(() => allTasks.map(t => t.id), [allTasks]);
+  const taskIdsKey = useMemo(() => [...taskIds].sort().join(','), [taskIds]);
 
-  const [conversations, setConversations] = useState([]);
+  // One flat message store for the whole inbox; conversations are derived from
+  // it. Realtime upserts into the store by id, so a read-receipt updates the
+  // unread badge without any extra fetch.
+  const [messages, setMessages] = useState([]);
+  const storeRef = useRef(new Map());
+  const taskIdsRef = useRef(taskIds);
+  useEffect(() => { taskIdsRef.current = taskIds; }, [taskIds]);
 
-  // Live tasks for the realtime handler (avoids re-subscribing on every render)
-  const tasksRef = useRef(allTasks);
-  useEffect(() => { tasksRef.current = allTasks; }, [allTasks]);
+  const mergeMessages = useCallback((incoming) => {
+    if (!incoming?.length) return;
+    for (const m of incoming) {
+      if (!m?.id) continue;
+      const prev = storeRef.current.get(m.id);
+      storeRef.current.set(m.id, prev ? { ...prev, ...m } : m);
+    }
+    setMessages([...storeRef.current.values()]);
+  }, []);
+
+  const loadMessages = useCallback(async (ids) => {
+    if (!ids.length) return;
+    const chunks = [];
+    for (let i = 0; i < ids.length; i += CHUNK_SIZE) chunks.push(ids.slice(i, i + CHUNK_SIZE));
+    const pages = await Promise.all(
+      chunks.map(chunk =>
+        base44.entities.ChatMessage
+          .filter({ task_id: { $in: chunk } }, '-created_date', PER_CHUNK)
+          .catch(() => [])
+      )
+    );
+    mergeMessages(pages.flat());
+  }, [mergeMessages]);
 
   useEffect(() => {
-    if (!me?.id || !allTasks.length) {
-      setConversations([]);
-      return;
-    }
-    let cancelled = false;
+    if (!taskIdsKey) { setMessages([]); return; }
+    loadMessages(taskIdsKey.split(','));
+  }, [taskIdsKey, loadMessages]);
 
-    const run = async () => {
-      const taskIds = allTasks.map(t => t.id);
-      let allMsgs = [];
-
-      try {
-        allMsgs = await base44.entities.ChatMessage.filter(
-          { task_id: { $in: taskIds } },
-          '-created_date',
-          500
-        );
-      } catch {
-        // If $in not supported, fetch messages in small sequential batches (max 3 at a time)
-        const batchSize = 3;
-        for (let i = 0; i < taskIds.length && i < 15; i += batchSize) {
-          const batch = taskIds.slice(i, i + batchSize);
-          const results = await Promise.all(
-            batch.map(id =>
-              base44.entities.ChatMessage.filter({ task_id: id }, '-created_date', 50)
-                .catch(() => [])
-            )
-          );
-          results.forEach(msgs => { allMsgs = allMsgs.concat(msgs); });
-        }
-      }
-
-      if (!cancelled) setConversations(buildConversations(allMsgs, allTasks, me.id));
-    };
-
-    run();
-    return () => { cancelled = true; };
-  }, [taskIdString, me?.id]);
-
-  // Real-time message updates
+  // Realtime: creates AND updates (read receipts) — never deletes what we hold.
   useEffect(() => {
     if (!me?.id) return;
     const unsub = base44.entities.ChatMessage.subscribe(event => {
-      if (event.type !== 'create' || !event.data) return;
+      if (event.type === 'delete') {
+        if (storeRef.current.delete(event.id)) setMessages([...storeRef.current.values()]);
+        return;
+      }
       const m = event.data;
-      const task = tasksRef.current.find(t => t.id === m.task_id);
-      if (!task) return;
-      const otherId = m.thread_key
-        ? threadCounterpart(m.thread_key, me.id)
-        : (me.id === task.client_id ? task.worker_id : task.client_id);
-      if (!otherId || otherId === me.id) return;
-      const key = `${m.task_id}::${otherId}`;
-      const isMine = m.sender_id === me.id;
-
-      setConversations(prev => {
-        const idx = prev.findIndex(c => c.key === key);
-        if (idx === -1) {
-          return [{
-            key, task, otherId, lastMsg: m,
-            unread: isMine ? 0 : 1,
-            otherName: m.sender_id === otherId ? (m.sender_name || '') : '',
-          }, ...prev];
-        }
-        const next = [...prev];
-        const cur = next[idx];
-        next[idx] = {
-          ...cur,
-          lastMsg: (!cur.lastMsg || new Date(m.created_date) >= new Date(cur.lastMsg.created_date)) ? m : cur.lastMsg,
-          unread: isMine ? cur.unread : cur.unread + 1,
-          otherName: m.sender_id === otherId ? (m.sender_name || cur.otherName) : cur.otherName,
-        };
-        return next;
-      });
+      if (!m?.id) return;
+      if (!taskIdsRef.current.includes(m.task_id)) return;
+      mergeMessages([m]);
     });
     return unsub;
+  }, [me?.id, mergeMessages]);
+
+  // Returning to the app re-reads the latest page so previews catch up.
+  useEffect(() => {
+    if (!me?.id) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && taskIdsRef.current.length) {
+        loadMessages(taskIdsRef.current);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [me?.id, loadMessages]);
+
+  const conversations = useMemo(
+    () => (me?.id ? buildConversations(messages, allTasks, me.id) : []),
+    [messages, allTasks, me?.id],
+  );
+
+  // Opening a conversation clears its badge immediately, without waiting for
+  // the server round-trip.
+  const markConversationRead = useCallback((conv) => {
+    const touched = [];
+    storeRef.current.forEach((m, id) => {
+      if (m.task_id !== conv.task.id || m.read || m.sender_id === me?.id) return;
+      const otherId = m.thread_key ? threadCounterpart(m.thread_key, me.id) : conv.otherId;
+      if (otherId !== conv.otherId) return;
+      storeRef.current.set(id, { ...m, read: true });
+      touched.push(m.id);
+      base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {});
+    });
+    if (touched.length) setMessages([...storeRef.current.values()]);
   }, [me?.id]);
 
   // Support chat preview
@@ -224,11 +237,8 @@ export default function ChatInbox() {
             <Link to="/support" style={{ textDecoration: 'none' }}>
               <div style={{
                 background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                borderRadius: 18,
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
+                borderRadius: 18, padding: '14px 16px',
+                display: 'flex', alignItems: 'center', gap: 14,
                 border: '1.5px solid #bfdbfe',
                 boxShadow: '0 2px 12px rgba(26,111,212,0.1)',
                 marginBottom: 8,
@@ -285,19 +295,20 @@ export default function ChatInbox() {
                 const isMyTask = conv.task.client_id === me?.id;
 
                 return (
-                  <Link key={conv.key} to={`/chat/${conv.task.id}?with=${conv.otherId}`} style={{ textDecoration: 'none' }}>
+                  <Link
+                    key={conv.key}
+                    to={`/chat/${conv.task.id}?with=${conv.otherId}`}
+                    style={{ textDecoration: 'none' }}
+                    onClick={() => markConversationRead(conv)}
+                  >
                     <div style={{
                       background: 'var(--card-bg)',
-                      borderRadius: 18,
-                      padding: '14px 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 14,
-                      border: unread > 0 ? '1.5px solid #bfdbfe' : `1px solid var(--border-1)`,
+                      borderRadius: 18, padding: '14px 16px',
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      border: unread > 0 ? '1.5px solid #bfdbfe' : '1px solid var(--border-1)',
                       boxShadow: unread > 0 ? '0 2px 12px rgba(26,111,212,0.1)' : '0 1px 4px rgba(0,0,0,0.04)',
                       marginBottom: 8,
                     }}>
-                      {/* Avatar */}
                       <div style={{
                         width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
                         background: isMyTask ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#1a6fd4,#0a52b0)',
@@ -317,7 +328,6 @@ export default function ChatInbox() {
                         )}
                       </div>
 
-                      {/* Content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
                           <span style={{ fontWeight: unread > 0 ? 900 : 700, color: 'var(--text-1)', fontSize: 14 }}>{otherName}</span>

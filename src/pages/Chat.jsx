@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { chatThreadKey, isMessageInThread } from '@/lib/chatThread';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Send, Loader2, Image, Check, CheckCheck, Info, ShieldAlert, Mic, X } from 'lucide-react';
+import { chatThreadKey } from '@/lib/chatThread';
+import { useQuery } from '@tanstack/react-query';
+import { Send, Loader2, Image, Info, ShieldAlert, Mic, X } from 'lucide-react';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { toast } from 'sonner';
 import BackButton from '@/components/BackButton';
@@ -13,11 +13,16 @@ import { format, isToday, isYesterday } from 'date-fns';
 import VerifyModal from '@/components/VerifyModal';
 import { useVerifyGuard } from '@/hooks/useVerifyGuard';
 import UserVerificationBadge from '@/components/UserVerificationBadge';
-import { isUserVerified, hasSocialVerified } from '@/lib/utils';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
-import { useViewportHeight } from '@/hooks/useViewportHeight';
+import { useChatViewport } from '@/hooks/useViewportHeight';
+import useChatThread from '@/hooks/useChatThread';
 import ChatImageBubble from '@/components/chat/ChatImageBubble';
+import ChatMessageRow from '@/components/chat/ChatMessageRow';
+import NewMessagesPill from '@/components/chat/NewMessagesPill';
+
+const NEAR_BOTTOM_PX = 80;   // "close enough to the bottom" to keep following
+const LOAD_OLDER_PX = 140;   // scroll distance from the top that pulls older pages
 
 // Online status: fetch + subscribe to real-time changes, check < 90s = online
 function useOnlineStatus(userId) {
@@ -28,21 +33,14 @@ function useOnlineStatus(userId) {
       try {
         const results = await base44.entities.UserPresence.filter({ user_id: userId });
         const p = results[0];
-        if (p?.last_seen) {
-          const diff = Date.now() - new Date(p.last_seen).getTime();
-          setIsOnline(diff < 180000);
-        } else {
-          setIsOnline(false);
-        }
+        setIsOnline(p?.last_seen ? Date.now() - new Date(p.last_seen).getTime() < 180000 : false);
       } catch { setIsOnline(false); }
     };
     check();
     const interval = setInterval(check, 60000);
-    // Also subscribe to real-time presence updates
     const unsub = base44.entities.UserPresence.subscribe(event => {
       if (event.data?.user_id === userId && event.data?.last_seen) {
-        const diff = Date.now() - new Date(event.data.last_seen).getTime();
-        setIsOnline(diff < 90000);
+        setIsOnline(Date.now() - new Date(event.data.last_seen).getTime() < 90000);
       }
     });
     return () => { clearInterval(interval); unsub(); };
@@ -50,7 +48,7 @@ function useOnlineStatus(userId) {
   return isOnline;
 }
 
-// Ping my own presence every 30s
+// Ping my own presence every 2 minutes
 function usePingPresence(userId) {
   useEffect(() => {
     if (!userId) return;
@@ -83,20 +81,6 @@ function DateSeparator({ date }) {
   );
 }
 
-function TypingIndicator() {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-      <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-1)', borderRadius: '18px 18px 4px 18px', padding: '10px 14px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          {[0,1,2].map(i => (
-            <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', animation: `typingBounce 1.2s ease-in-out ${i*0.2}s infinite` }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Chat() {
   const { taskId } = useParams();
   const [searchParams] = useSearchParams();
@@ -106,21 +90,27 @@ export default function Chat() {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const { openTaskSheet } = useTaskSheet();
-  const [messages, setMessages] = useState([]);
+
   const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [otherTyping, setOtherTyping] = useState(false);
   const [blockedMsg, setBlockedMsg] = useState(null);
-  const bottomRef = useRef(null);
+  const [showNewPill, setShowNewPill] = useState(false);
+
+  const shellRef = useRef(null);
+  const listRef = useRef(null);
   const fileRef = useRef(null);
-  const typingTimerRef = useRef(null);
-  const containerRef = useRef(null);
-  const outerRef = useRef(null);
   const inputRef = useRef(null);
+  const markedReadRef = useRef(new Set());
+
+  // Follow-the-bottom state, kept in refs so scrolling never re-renders.
+  const stickRef = useRef(true);
+  const preserveRef = useRef(false);
+  const prevLenRef = useRef(0);
+  const didScrollRef = useRef(false);
+  const scrollRafRef = useRef(0);
+
   const { recording, recordSeconds, uploading: uploadingVoice, start: startRecording, stop: stopRecording, cancel: cancelRecording, formatTime } = useVoiceRecording();
 
-  const queryClient = useQueryClient();
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { gate, showVerify, onSuccess: onVerifySuccess, onClose: onVerifyClose } = useVerifyGuard(me);
   usePingPresence(me?.id);
@@ -131,176 +121,141 @@ export default function Chat() {
     select: d => d[0],
   });
 
-  // Fetch other user's profile for avatar + verified status
-  const otherPersonIdCalc = withId || (me?.id === (task?.client_id) ? task?.worker_id : task?.client_id);
-  const threadKey = chatThreadKey(me?.id, otherPersonIdCalc);
-  const pairIds = [me?.id, otherPersonIdCalc].filter(Boolean);
-  const otherIsOnline = useOnlineStatus(otherPersonIdCalc);
+  const otherPersonId = withId || (me?.id === task?.client_id ? task?.worker_id : task?.client_id);
+  const threadKey = useMemo(() => chatThreadKey(me?.id, otherPersonId), [me?.id, otherPersonId]);
+  const pairIds = useMemo(() => [me?.id, otherPersonId].filter(Boolean), [me?.id, otherPersonId]);
+
+  const otherIsOnline = useOnlineStatus(otherPersonId);
   const { data: otherUserData } = useQuery({
-    queryKey: ['userProfile', otherPersonIdCalc],
-    queryFn: () => base44.entities.User.filter({ id: otherPersonIdCalc }),
+    queryKey: ['userProfile', otherPersonId],
+    queryFn: () => base44.entities.User.filter({ id: otherPersonId }),
     select: d => d?.[0],
-    enabled: !!otherPersonIdCalc,
+    enabled: !!otherPersonId,
   });
 
-  // Load message history — show cached instantly, then fetch fresh from server
-  const CACHE_KEY = `chat_msgs_${taskId}_${threadKey || 'none'}`;
-
-  // Initialize messages from cache immediately (synchronous — zero delay).
-  // Re-runs when the thread changes: switching between two applicants on the
-  // same task is the same route, so the component does not remount.
-  useEffect(() => {
-    if (!threadKey) return;
-    let cached = null;
-    try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
-      if (raw) cached = JSON.parse(raw);
-    } catch {}
-    setMessages(Array.isArray(cached) ? cached : []);
-  }, [threadKey, CACHE_KEY]);
-
-  // Scoped to this thread — a message between the owner and someone else
-  // must never reach this conversation.
-  const { data: fetchedMessages = [] } = useQuery({
-    queryKey: ['chatMessages', taskId, threadKey],
-    queryFn: async () => {
-      const msgs = await base44.entities.ChatMessage.filter({ task_id: taskId }, 'created_date', 500);
-      return msgs.filter((m) => isMessageInThread(m, threadKey, pairIds));
-    },
-    enabled: !!threadKey,
-    staleTime: 60000,
+  // Single source of truth for this thread — fetch, realtime, pagination and
+  // optimistic sends all merge through it (see useChatThread).
+  const { messages, initialLoading, hasMore, loadingOlder, loadOlder, send, retry, dropLocal } = useChatThread({
+    taskId, threadKey, meId: me?.id, meName: me?.full_name, otherId: otherPersonId, pairIds,
   });
 
-  // Merge fresh server data into state + update cache
-  useEffect(() => {
-    if (!fetchedMessages.length) return;
-    setMessages(prev => {
-      const optimistic = prev.filter(m => m._optimistic);
-      const merged = [...fetchedMessages, ...optimistic].sort((a, b) =>
-        new Date(a.created_date || 0) - new Date(b.created_date || 0)
-      );
-      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetchedMessages)); } catch {}
-      return merged;
-    });
-  }, [fetchedMessages]);
+  // Pin the shell to the visible viewport (keyboard-aware, no re-renders).
+  useChatViewport(shellRef);
 
-  // Mark incoming messages as read — only once per message
-  const markedReadRef = useRef(new Set());
+  // ── Scroll management ────────────────────────────────────────────────────
+  // Opening a conversation shows the newest messages.
+  useEffect(() => {
+    if (initialLoading || didScrollRef.current) return;
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    stickRef.current = true;
+    didScrollRef.current = true;
+    prevLenRef.current = messages.length;
+  }, [initialLoading, messages.length]);
+
+  // Switching to another person is the same route — reset the scroll state.
+  useEffect(() => {
+    didScrollRef.current = false;
+    stickRef.current = true;
+    preserveRef.current = false;
+    prevLenRef.current = 0;
+    setShowNewPill(false);
+  }, [threadKey]);
+
+  // New messages: follow only when the user is already at the bottom (or sent
+  // the message themselves); otherwise surface the "new messages" pill.
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || initialLoading) return;
+    if (preserveRef.current) { preserveRef.current = false; prevLenRef.current = messages.length; return; }
+    const grew = messages.length > prevLenRef.current;
+    prevLenRef.current = messages.length;
+    if (!grew) return;
+
+    const last = messages[messages.length - 1];
+    if (stickRef.current || last?.sender_id === me?.id) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      setShowNewPill(false);
+    } else {
+      setShowNewPill(true);
+    }
+  }, [messages, initialLoading, me?.id]);
+
+  // Mark incoming messages read — once per message id.
   useEffect(() => {
     if (!me?.id || !messages.length) return;
-    const unread = messages.filter(m => m.sender_id !== me.id && !m.read && !markedReadRef.current.has(m.id));
-    unread.forEach(m => {
+    messages.forEach(m => {
+      if (m._status || m.sender_id === me.id || m.read) return;
+      if (markedReadRef.current.has(m.id)) return;
       markedReadRef.current.add(m.id);
       base44.entities.ChatMessage.update(m.id, { read: true }).catch(() => {});
     });
   }, [messages, me?.id]);
 
-  // Real-time subscription — single source of truth for live updates
-  useEffect(() => {
-    if (!threadKey) return;
-    const unsub = base44.entities.ChatMessage.subscribe(event => {
-      if (event.data?.task_id !== taskId) return;
-      if (!isMessageInThread(event.data, threadKey, pairIds)) return;
-      if (event.type === 'create') {
-        setMessages(prev => {
-          if (prev.some(m => m.id === event.data.id)) return prev;
-          // Replace matching optimistic message if it exists
-          const hasOptimistic = prev.some(m => m._optimistic && m.sender_id === event.data.sender_id);
-          if (hasOptimistic) {
-            return prev.map(m => (m._optimistic && m.sender_id === event.data.sender_id) ? event.data : m);
+  // Pull the previous page while keeping the exact scroll position.
+  const loadOlderKeepPosition = async () => {
+    const el = listRef.current;
+    if (!el || !hasMore || loadingOlder) return;
+    const prevHeight = el.scrollHeight;
+    const prevTop = el.scrollTop;
+    preserveRef.current = true;
+    await loadOlder();
+    requestAnimationFrame(() => {
+      preserveRef.current = false;
+      const node = listRef.current;
+      if (!node) return;
+      node.scrollTop = node.scrollHeight - prevHeight + prevTop;
+    });
+  };
+
+  const handleScroll = () => {
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = 0;
+      const el = listRef.current;
+      if (!el) return;
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      const nearBottom = distance < NEAR_BOTTOM_PX;
+      stickRef.current = nearBottom;
+      if (nearBottom) setShowNewPill(false);
+      if (el.scrollTop < LOAD_OLDER_PX) loadOlderKeepPosition();
+    });
+  };
+
+  const jumpToBottom = () => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    stickRef.current = true;
+    setShowNewPill(false);
+  };
+
+  // ── Sending ──────────────────────────────────────────────────────────────
+  const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
+    gate(async () => {
+      const localId = await send(content, mediaUrl, mediaType);
+      if (!localId) return;
+      setInput('');
+      if (inputRef.current) inputRef.current.style.height = 'auto';
+      stickRef.current = true;
+
+      // Moderation runs alongside the send; a flagged message is pulled back out.
+      if (!mediaUrl && content.trim().length > 1) {
+        moderateText(content.trim()).then(res => {
+          if (res?.flagged) {
+            dropLocal(localId);
+            setBlockedMsg(content.trim());
+            setTimeout(() => setBlockedMsg(null), 5000);
           }
-          return [...prev, event.data];
         });
-        if (event.data.sender_id !== me?.id && event.data.id) {
-          base44.entities.ChatMessage.update(event.data.id, { read: true }).catch(() => {});
-        }
-        if (event.data.sender_id !== me?.id) setOtherTyping(false);
-      }
-      if (event.type === 'update') {
-        setMessages(prev => prev.map(m => m.id === event.data.id ? { ...m, ...event.data } : m));
       }
     });
-    return unsub;
-  }, [taskId, me?.id, threadKey]);
-
-  // Auto scroll — scroll the container directly (avoids scrollIntoView scrolling parent containers)
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [messages, otherTyping]);
-
-  // Auto-focus input on mount
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
-
-  // WhatsApp-style keyboard: the chat container shrinks to the VisualViewport
-  // height so the input bar sits right above the keyboard without the whole
-  // screen being pushed up by the browser's scroll-into-view behavior.
-  const { height: viewportHeight, offsetTop: viewportOffsetTop } = useViewportHeight();
-
-  const handleSend = (content, mediaUrl = null, mediaType = 'img') => {
-    gate(() => sendMessage(content, mediaUrl, mediaType));
   };
 
   const handleStopRecording = async () => {
     const audioUrl = await stopRecording();
-    if (audioUrl) {
-      sendMessage('', audioUrl, 'audio');
-    }
-  };
-
-  const sendMessage = async (content, mediaUrl = null, mediaType = 'img') => {
-    if ((!content?.trim() && !mediaUrl) || !me) return;
-    const prefix = mediaType === 'audio' ? '[audio]' : '[img]';
-    const msgContent = mediaUrl ? `${prefix}${mediaUrl}` : content.trim();
-
-    // Optimistic: add message to UI immediately
-    const optimisticId = `opt-${Date.now()}`;
-    const optimisticMsg = {
-      id: optimisticId,
-      task_id: taskId,
-      sender_id: me.id,
-      sender_name: me.full_name,
-      content: msgContent,
-      created_date: new Date().toISOString(),
-      read: false,
-      _optimistic: true,
-    };
-    setMessages(prev => [...prev, optimisticMsg]);
-    setInput('');
-    setSending(true);
-
-    // Moderation check in parallel — remove optimistic msg if flagged
-    if (!mediaUrl && content.trim().length > 1) {
-      moderateText(content.trim()).then(modResult => {
-        if (modResult.flagged) {
-          setMessages(prev => prev.filter(m => m.id !== optimisticId));
-          setBlockedMsg(content.trim());
-          setTimeout(() => setBlockedMsg(null), 5000);
-        }
-      });
-    }
-
-    try {
-      const created = await base44.entities.ChatMessage.create({
-        task_id: taskId,
-        sender_id: me.id,
-        sender_name: me.full_name,
-        content: msgContent,
-        thread_key: threadKey,
-        recipient_id: otherPersonIdCalc,
-      });
-      // Replace optimistic with real message
-      setMessages(prev => prev.map(m => m.id === optimisticId ? (created || { ...optimisticMsg, _optimistic: false }) : m));
-    } catch {
-      // Remove optimistic on error
-      setMessages(prev => prev.filter(m => m.id !== optimisticId));
-      toast.error(t('chat_send_error'));
-    } finally {
-      setSending(false);
-    }
+    if (audioUrl) handleSend('', audioUrl, 'audio');
   };
 
   const handleFileUpload = async (e) => {
@@ -308,14 +263,19 @@ export default function Chat() {
     if (!file) return;
     gate(async () => {
       setUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await sendMessage('', file_url, 'img');
-      setUploading(false);
-      e.target.value = '';
+      try {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        await send('', file_url, 'img');
+      } catch {
+        toast.error(t('chat_send_error'));
+      } finally {
+        setUploading(false);
+        e.target.value = '';
+      }
     });
   };
 
-  // Group messages by date — memoized so it only recomputes when messages change
+  // Group messages by date — memoized so it only recomputes when messages change.
   const grouped = useMemo(() => {
     const result = [];
     let lastDate = null;
@@ -336,13 +296,22 @@ export default function Chat() {
   // task's `worker_name`, so the task snapshot would show the wrong person.
   const otherPersonName = otherUserData?.display_name || otherUserData?.full_name
     || (me?.id === task?.client_id ? (task?.worker_name || t('chat_worker_default')) : (task?.client_name || t('chat_client_default')));
-  const otherPersonId = otherPersonIdCalc;
-  const roleLabel = me?.id === task?.client_id ? t('chat_role_worker') : t('chat_role_client');
 
   return createPortal(
-    <div ref={outerRef} style={{ position: 'fixed', top: viewportOffsetTop || 0, left: 0, right: 0, height: viewportHeight || '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', zIndex: 999999, overflow: 'hidden' }} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div
+      ref={shellRef}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0,
+        height: '100dvh',
+        display: 'flex', flexDirection: 'column',
+        background: 'var(--surface-1)',
+        zIndex: 999999, overflow: 'hidden',
+      }}
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
       {showVerify && <VerifyModal onClose={onVerifyClose} onSuccess={onVerifySuccess} />}
-      {/* Header — fixed flex item, doesn't scroll */}
+
+      {/* ── Header — fixed ── */}
       <div style={{
         background: 'var(--surface-2)',
         borderBottom: '1px solid var(--border-1)',
@@ -351,7 +320,6 @@ export default function Chat() {
         boxShadow: '0 1px 8px rgba(0,0,0,0.06)',
         flexShrink: 0, zIndex: 40,
       }}>
-        {/* Right: Avatar + back button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <BackButton />
           <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}
@@ -362,7 +330,6 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Center: Name + verified + online */}
         <div style={{ flex: 1, minWidth: 0, textAlign: 'center', cursor: 'pointer' }} onClick={() => {
           if (otherPersonId) navigate(`/public-profile?id=${otherPersonId}`);
         }}>
@@ -376,151 +343,101 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Left: Task info button */}
         <button
           onClick={() => task && openTaskSheet(task.id)}
           style={{ background: '#eff6ff', border: 'none', borderRadius: 12, padding: '7px 11px', color: '#1a6fd4', fontWeight: 700, fontSize: 12, flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
         >
           <Info size={14} /> {t('chat_task_info')}
-          </button>
+        </button>
       </div>
 
-      {/* Messages */}
-      <div ref={containerRef} style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', minHeight: 0, padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', paddingTop: 60 }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
-            <div style={{ fontWeight: 700, color: '#334155', fontSize: 15 }}>{t('chat_start_conv')}</div>
-            <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{t('chat_send_msg_to').replace('{name}', otherPersonName)}</div>
-          </div>
-        )}
+      {/* ── Messages — the only scrollable region ── */}
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+        <div
+          ref={listRef}
+          onScroll={handleScroll}
+          style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', padding: '16px', display: 'flex', flexDirection: 'column', gap: 2 }}
+        >
+          {loadingOlder && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 10px' }}>
+              <Loader2 size={16} className="animate-spin" color="#94a3b8" />
+            </div>
+          )}
 
-        {grouped.map(item => {
-          if (item.type === 'date') return <DateSeparator key={item.key} date={item.date} />;
-          const { msg, isContinuation } = item;
-          const isMe = msg.sender_id === me?.id;
-          const isImage = msg.content?.startsWith('[img]');
-          const isAudio = msg.content?.startsWith('[audio]');
-          const imgUrl = isImage ? msg.content.replace('[img]', '') : null;
-          const audioUrl = isAudio ? msg.content.replace('[audio]', '') : null;
+          {initialLoading && messages.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '8px 0' }}>
+              {[0, 1, 2, 3, 4].map(i => (
+                <div key={i} style={{ alignSelf: i % 2 ? 'flex-end' : 'flex-start', width: `${42 + (i % 3) * 14}%`, height: 40, borderRadius: 18, background: 'var(--surface-3)', opacity: 1 - i * 0.12 }} />
+              ))}
+            </div>
+          ) : messages.length === 0 ? (
+            <div style={{ textAlign: 'center', paddingTop: 60 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>💬</div>
+              <div style={{ fontWeight: 700, color: '#334155', fontSize: 15 }}>{t('chat_start_conv')}</div>
+              <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{t('chat_send_msg_to').replace('{name}', otherPersonName)}</div>
+            </div>
+          ) : (
+            grouped.map(item => {
+              if (item.type === 'date') return <DateSeparator key={item.key} date={item.date} />;
+              return (
+                <ChatMessageRow
+                  key={item.key}
+                  msg={item.msg}
+                  isMe={item.msg.sender_id === me?.id}
+                  isContinuation={item.isContinuation}
+                  otherUserData={otherUserData}
+                  onRetry={retry}
+                />
+              );
+            })
+          )}
 
-          return (
-            <div
-              key={msg.id}
-              style={{
-                display: 'flex',
-                justifyContent: isMe ? 'flex-end' : 'flex-start',
-                marginBottom: isContinuation ? 2 : 8,
-                alignItems: 'flex-end', gap: 6,
-              }}
-            >
-              {/* Avatar for other person (only on last in group) */}
-              {!isMe && !isContinuation && (
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, marginBottom: 2, color: 'white', fontWeight: 700, overflow: 'hidden' }}>
-                  {otherUserData?.profile_photo
-                    ? <img src={otherUserData.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : msg.sender_name?.[0] || '?'}
+          {blockedMsg && (
+            <div dir={isRTL ? 'rtl' : 'ltr'} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <div style={{ maxWidth: '80%', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '18px 18px 4px 18px', padding: '10px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <ShieldAlert size={14} color="#dc2626" />
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{t('chat_blocked_title')}</span>
                 </div>
-              )}
-              {!isMe && isContinuation && <div style={{ width: 28, flexShrink: 0 }} />}
-
-              <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                {/* Sender name (first in group, not me) */}
-                {!isMe && !isContinuation && (
-                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 700, marginBottom: 3, paddingRight: 4 }}>{msg.sender_name}</div>
-                )}
-
-                {isImage ? (
-                  <ChatImageBubble url={imgUrl} isMe={isMe} />
-                ) : isAudio ? (
-                  <audio src={audioUrl} controls style={{ maxWidth: 220, height: 36, outline: 'none' }} />
-                ) : (
-                  <div className="selectable-text" style={{
-                     padding: '9px 13px',
-                     borderRadius: isMe
-                       ? (isContinuation ? '14px 14px 14px 4px' : '18px 18px 18px 4px')
-                       : (isContinuation ? '14px 14px 4px 14px' : '18px 18px 4px 18px'),
-                     background: isMe ? '#1e293b' : 'var(--surface-2)',
-                     color: isMe ? 'white' : 'var(--text-1)',
-                     fontSize: 14,
-                     lineHeight: 1.5,
-                     boxShadow: isMe ? 'none' : '0 1px 4px rgba(0,0,0,0.07)',
-                     border: isMe ? 'none' : '1px solid var(--border-1)',
-                     wordBreak: 'break-word',
-                   }}>
-                     {msg.content}
-                   </div>
-                )}
-
-                {/* Timestamp + read */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 3, paddingRight: 4 }}>
-                  <span style={{ fontSize: 10, color: '#94a3b8' }}>
-                    {msg.created_date ? format(new Date(msg.created_date), 'HH:mm') : ''}
-                  </span>
-                  {isMe && (
-                    msg.read
-                      ? <CheckCheck size={12} color="#3b82f6" />
-                      : <Check size={12} color="#94a3b8" />
-                  )}
-                </div>
+                <div style={{ fontSize: 13, color: '#7f1d1d', wordBreak: 'break-word' }}>{blockedMsg.slice(0, 60)}{blockedMsg.length > 60 ? '...' : ''}</div>
+                <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, lineHeight: 1.5 }}>{t('chat_blocked_body')}</div>
               </div>
             </div>
-          );
-        })}
+          )}
+        </div>
 
-        {otherTyping && <TypingIndicator />}
-        {blockedMsg && (
-          <div dir={isRTL ? 'rtl' : 'ltr'} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-            <div style={{ maxWidth: '80%', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '18px 18px 4px 18px', padding: '10px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <ShieldAlert size={14} color="#dc2626" />
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#dc2626' }}>{t('chat_blocked_title')}</span>
-              </div>
-              <div style={{ fontSize: 13, color: '#7f1d1d', wordBreak: 'break-word' }}>{blockedMsg.slice(0, 60)}{blockedMsg.length > 60 ? '...' : ''}</div>
-              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4, lineHeight: 1.5 }}>{t('chat_blocked_body')}</div>
-            </div>
-          </div>
-        )}
+        {showNewPill && <NewMessagesPill onClick={jumpToBottom} />}
       </div>
 
-      {/* Input bar */}
+      {/* ── Composer — fixed, sits directly above the keyboard ── */}
       <div style={{
         background: 'var(--surface-2)',
         borderTop: '1px solid var(--border-1)',
         padding: '10px 12px',
-        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+        paddingBottom: 'max(10px, var(--safe-bottom, env(safe-area-inset-bottom)))',
         display: 'flex', alignItems: 'flex-end', gap: 8,
         flexShrink: 0,
       }}>
-        {/* File upload */}
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading || recording || uploadingVoice}
-          style={{ width: 40, height: 40, borderRadius: 12, background: '#f1f5f9', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+          style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
         >
           {uploading ? <Loader2 size={16} color="#1a6fd4" className="animate-spin" /> : <Image size={16} color="#64748b" />}
         </button>
         <input ref={fileRef} type="file" accept="image/*,video/*,.pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
 
-        {/* Text input or recording indicator */}
         {recording ? (
-          <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 12px', borderRadius: 22,
-            background: '#fef2f2', border: '1.5px solid #fca5a5',
-            minHeight: 42,
-          }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 22, background: 'var(--color-danger-bg)', border: '1.5px solid #fca5a5', minHeight: 42 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', animation: 'pulse-app 1.5s infinite' }} />
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>
-              {formatTime(recordSeconds)}
-            </span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontFamily: 'monospace' }}>{formatTime(recordSeconds)}</span>
             <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>{t('chat_recording')}</span>
             <button onClick={cancelRecording} style={{ marginRight: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
               <X size={14} /> {t('chat_cancel')}
             </button>
           </div>
         ) : (
-          <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 22, border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, transition: 'border-color 0.2s', minHeight: 42 }}>
+          <div style={{ flex: 1, background: 'var(--surface-3)', borderRadius: 22, border: '1.5px solid var(--border-1)', display: 'flex', alignItems: 'center', padding: '2px 6px 2px 12px', gap: 6, minHeight: 42 }}>
             <textarea
               ref={inputRef}
               placeholder={t('chat_type_msg')}
@@ -539,57 +456,39 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Mic / Send / Stop recording */}
         {uploadingVoice ? (
-          <button disabled style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: '#e2e8f0', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'not-allowed' }}>
+          <button disabled style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'not-allowed' }}>
             <Loader2 size={16} color="#1a6fd4" className="animate-spin" />
           </button>
         ) : recording ? (
           <button
             onClick={handleStopRecording}
-            style={{
-              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-              background: '#dc2626', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
-            }}
+            style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: '#dc2626', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}
           >
             <Send size={16} color="white" />
           </button>
         ) : input.trim() ? (
           <button
             onClick={() => handleSend(input)}
-            disabled={sending}
-            style={{
-              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-              background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(26,111,212,0.3)',
-            }}
+            style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(135deg,#1a6fd4,#3b82f6)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,111,212,0.3)' }}
           >
-            {sending ? <Loader2 size={16} className="animate-spin" color="white" /> : <Send size={16} color="white" />}
+            <Send size={16} color="white" />
           </button>
         ) : (
           <button
             onClick={startRecording}
-            disabled={sending || uploading}
-            style={{
-              width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-              background: '#f1f5f9', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}
+            disabled={uploading}
+            style={{ width: 42, height: 42, borderRadius: '50%', flexShrink: 0, background: 'var(--surface-3)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             <Mic size={16} color="#64748b" />
           </button>
         )}
       </div>
+
       <style>{`
-        @keyframes typingBounce {
-          0%, 100% { transform: translateY(0); opacity: 0.5; }
-          50% { transform: translateY(-4px); opacity: 1; }
+        @keyframes pillSlideIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
       `}</style>
     </div>,
