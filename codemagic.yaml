@@ -399,7 +399,7 @@ workflows:
             DEVELOPMENT_TEAM=322DV2PB9V \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            MARKETING_VERSION=2.130298.0 \
+            MARKETING_VERSION=2.130299.0 \
             CURRENT_PROJECT_VERSION=24 \
             FACEBOOK_CLIENT_TOKEN="$FACEBOOK_CLIENT_TOKEN"
       - name: Verify SKAdNetwork IDs in the built app (iOS)
