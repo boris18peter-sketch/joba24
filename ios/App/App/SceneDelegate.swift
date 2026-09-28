@@ -3,6 +3,7 @@ import Capacitor
 import StoreKit
 import FacebookCore
 import AppTrackingTransparency
+import CapApp_SPM
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?

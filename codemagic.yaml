@@ -290,6 +290,31 @@ workflows:
           TIKTOK_REG = "bridge?.registerPluginInstance(TikTokAppEventsPlugin())"
           with open(scene, "r") as f:
               sc = f.read()
+
+          # ── 3a. Import the CapApp-SPM module ──
+          # MetaAppEventsPlugin and TikTokAppEventsPlugin are compiled into the
+          # CapApp-SPM Swift package (module name CapApp_SPM), NOT into the App
+          # target. Without this import SceneDelegate.swift fails to compile with
+          # "cannot find 'MetaAppEventsPlugin' / 'TikTokAppEventsPlugin' in scope".
+          # Inserted once after the last top-level import — idempotent.
+          if "import CapApp_SPM" not in sc:
+              lines = sc.split("\n")
+              last_import = -1
+              for i, line in enumerate(lines):
+                  if line.startswith("import "):
+                      last_import = i
+              if last_import < 0:
+                  print("[tiktok] ERROR: no import statement found in SceneDelegate.swift -")
+                  print("[tiktok] ERROR: cannot place 'import CapApp_SPM'.")
+                  raise SystemExit(1)
+              lines.insert(last_import + 1, "import CapApp_SPM")
+              sc = "\n".join(lines)
+              with open(scene, "w") as f:
+                  f.write(sc)
+              print("[tiktok] Added 'import CapApp_SPM' to SceneDelegate.swift")
+          else:
+              print("[tiktok] SceneDelegate.swift already imports CapApp_SPM")
+
           if TIKTOK_REG in sc:
               print("[tiktok] TikTokAppEventsPlugin already registered in SceneDelegate.swift")
           else:
@@ -423,10 +448,13 @@ workflows:
           echo ""
           echo "=== TikTok App Events SDK (credential-gated) ==="
           if [ -n "${TIKTOK_IOS_APP_ID:-}" ] && [ -n "${TIKTOK_IOS_APP_SECRET:-}" ]; then
-            if find "$APP" -name "*TikTokBusinessSDK*" | head -1 | grep -q .; then
-              echo "OK: TikTokBusinessSDK framework present in the archived app"
+            # TikTokBusinessSDK is an SPM *source* target, so it is statically linked
+            # into the App binary — there is no TikTokBusinessSDK.framework inside
+            # App.app/Frameworks. Check the binary's string table instead.
+            if strings "$APP/App" | grep -q "TikTokBusiness"; then
+              echo "OK: TikTokBusinessSDK linked into the App binary"
             else
-              echo "ERROR: TikTok credentials were provided but TikTokBusinessSDK is missing from the archived app."
+              echo "ERROR: TikTok credentials were provided but TikTokBusinessSDK is not linked into the App binary."
               exit 1
             fi
             if /usr/libexec/PlistBuddy -c "Print :TikTokAppSecret" "$APP/Info.plist" > /dev/null 2>&1; then
