@@ -105,6 +105,7 @@ const Terms = lazyRetry(() => import('@/pages/Terms'));
 const Privacy = lazyRetry(() => import('@/pages/Privacy'));
 const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
 const AuthCallback = lazyRetry(() => import('@/pages/AuthCallback'));
+const StoreKitStudio = lazyRetry(() => import('@/pages/StoreKitStudio'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -235,6 +236,7 @@ const AuthenticatedApp = () => {
           <Routes location={location}>
             <Route path="/r/:code" element={<ReferralRedirect />} />
             <Route path="/auth-callback" element={<AuthCallback />} />
+            <Route path="/store-kit" element={<StoreKitStudio />} />
             <Route path="/lp" element={<Landing />} />
             <Route element={<Layout />}>
               <Route path="/" element={<HomeFeed />} />
