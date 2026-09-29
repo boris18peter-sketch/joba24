@@ -1,5 +1,19 @@
-import html2canvas from 'html2canvas';
 import { THEMES } from '@/lib/storekit/specs';
+
+// html2canvas is loaded on demand (only when an export actually runs) instead of
+// being imported at module scope. Importing it statically put the library in the
+// Studio page's module graph, which forced Vite's dependency optimizer to
+// re-bundle it the first time the page was opened — and that optimizer restart
+// made the page's own dynamic import fail ("Failed to fetch dynamically imported
+// module"). Loading it lazily keeps the page load independent of the optimizer
+// and keeps ~200KB off the initial route.
+let html2canvasPromise = null;
+const loadHtml2canvas = () => {
+  if (!html2canvasPromise) {
+    html2canvasPromise = import('html2canvas').then(m => m.default || m);
+  }
+  return html2canvasPromise;
+};
 
 /**
  * Capture one store canvas at its exact export pixel size.
@@ -14,6 +28,8 @@ export async function captureCanvas(node, spec, themeKey) {
   if (document.fonts?.ready) {
     try { await document.fonts.ready; } catch { /* fonts already resolved */ }
   }
+
+  const html2canvas = await loadHtml2canvas();
 
   const rendered = await html2canvas(node, {
     backgroundColor: bg,
