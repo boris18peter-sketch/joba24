@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play, Pencil, User as UserIcon } from 'lucide-react';
+import { Plus, X, Save, Loader2, Star, Upload, FileText, Trash2, Camera, ChevronLeft, Phone, Video, Play } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
 import ProfileMediaGallery from '@/components/ProfileMediaGallery';
@@ -15,8 +15,8 @@ import { getCityLabel } from '@/lib/cityLabels';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import EditNameSheet from '@/components/profile/EditNameSheet';
-import { getDisplayName } from '@/lib/displayName';
+import InlineNameField from '@/components/profile/InlineNameField';
+import { getDisplayName, validateDisplayName } from '@/lib/displayName';
 
 const INITIAL_CITIES_COUNT = 12;
 
@@ -92,7 +92,7 @@ export default function WorkerProfile() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [showAllCities, setShowAllCities] = useState(false);
-  const [showEditName, setShowEditName] = useState(false);
+  const [nameError, setNameError] = useState(null);
   const certDocRef = useRef(null);
   const photoInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -148,11 +148,33 @@ export default function WorkerProfile() {
       ],
       preferred_categories: currentUser.preferred_categories || [],
       preferred_cities: currentUser.preferred_cities || [],
+      display_name: getDisplayName(currentUser),
     });
   }
 
   const saveMutation = useMutation({
-    mutationFn: () => base44.auth.updateMe(form),
+    mutationFn: async () => {
+      const name = validateDisplayName(form.display_name).name;
+      await base44.auth.updateMe({ ...form, display_name: name });
+      // Keep the name snapshotted on this user's still-open tasks in sync, so the
+      // feed and active chats show it immediately. Tasks that already ended keep
+      // the name they were published under (invoices and history must not change
+      // retroactively).
+      if (name !== getDisplayName(currentUser)) {
+        try {
+          await base44.entities.Task.updateMany(
+            { client_id: currentUser.id, status: 'OPEN' },
+            { $set: { client_name: name } }
+          );
+          await base44.entities.Task.updateMany(
+            { worker_id: currentUser.id, status: 'OPEN' },
+            { $set: { worker_name: name } }
+          );
+        } catch (backfillErr) {
+          console.error('[WorkerProfile] task name refresh failed:', backfillErr?.message);
+        }
+      }
+    },
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['me'] });
       // Refresh AuthContext's user so Profile.jsx (which reads authUser) shows
@@ -163,6 +185,16 @@ export default function WorkerProfile() {
       navigate('/profile');
     },
   });
+
+  const handleSave = () => {
+    const check = validateDisplayName(form.display_name);
+    if (!check.ok) {
+      setNameError(check.error);
+      return;
+    }
+    setNameError(null);
+    saveMutation.mutate();
+  };
 
   if (isViewingOther && !currentUser) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
@@ -187,7 +219,7 @@ export default function WorkerProfile() {
   const avgRating = workerReviews.length > 0
     ? (workerReviews.reduce((sum, r) => sum + r.rating, 0) / workerReviews.length).toFixed(1)
     : null;
-  const initials = currentUser?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+  const initials = (form.display_name || currentUser?.full_name || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
 
   const hasCerts = (form.certificate_files || []).length > 0 || (currentUser?.certificates || []).length > 0;
 
@@ -204,7 +236,7 @@ export default function WorkerProfile() {
         </span>
         {!isViewingOther && (
           <button
-            onClick={() => saveMutation.mutate()}
+            onClick={handleSave}
             disabled={saveMutation.isPending}
             style={{ height: 36, paddingInline: 18, borderRadius: 20, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
           >
@@ -239,12 +271,29 @@ export default function WorkerProfile() {
           <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoUpload} />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{currentUser?.full_name}</span>
-          {currentUser?.is_verified && (currentUser?.instagram_verified || currentUser?.facebook_verified || currentUser?.tiktok_verified)
-            ? <GoldBadge size="md" />
-            : currentUser?.is_verified && <VerifiedBadge size="md" />}
-        </div>
+        {isViewingOther ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-1)' }}>{getDisplayName(currentUser)}</span>
+            {currentUser?.is_verified && (currentUser?.instagram_verified || currentUser?.facebook_verified || currentUser?.tiktok_verified)
+              ? <GoldBadge size="md" />
+              : currentUser?.is_verified && <VerifiedBadge size="md" />}
+          </div>
+        ) : (
+          <>
+            <InlineNameField
+              value={form.display_name}
+              onChange={(v) => { setForm(f => ({ ...f, display_name: v })); setNameError(null); }}
+              error={nameError}
+              placeholder={t('wp_full_name')}
+            />
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, textAlign: 'center', lineHeight: 1.5, maxWidth: 320 }}>{t('wp_full_name_hint')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+              {currentUser?.is_verified && (currentUser?.instagram_verified || currentUser?.facebook_verified || currentUser?.tiktok_verified)
+                ? <GoldBadge size="md" />
+                : currentUser?.is_verified && <VerifiedBadge size="md" />}
+            </div>
+          </>
+        )}
         {/* Mini stats */}
         {isViewingOther && (
           <div style={{ display: 'flex', gap: 0, marginTop: 16, background: 'var(--surface-3)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border-1)', width: '100%', maxWidth: 300 }}>
@@ -263,29 +312,6 @@ export default function WorkerProfile() {
       </div>
 
       <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-        {/* ── Display name (edit mode only — the profile page is read-only) ── */}
-        {!isViewingOther && (
-          <SectionCard title={t('wp_identity')}>
-            <button
-              type="button"
-              onClick={() => setShowEditName(true)}
-              style={{ all: 'unset', boxSizing: 'border-box', width: '100%', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-            >
-              <div style={{ width: 38, height: 38, borderRadius: 11, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <UserIcon size={18} color="#1a6fd4" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('wp_full_name')}</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(currentUser)}</div>
-              </div>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#1a6fd4', flexShrink: 0 }}>
-                <Pencil size={13} /> {t('pr_edit')}
-              </span>
-            </button>
-            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, lineHeight: 1.5 }}>{t('wp_full_name_hint')}</div>
-          </SectionCard>
-        )}
 
         {/* ── About: bio + intro video + phone (edit mode) ── */}
         {!isViewingOther && (
@@ -471,30 +497,8 @@ export default function WorkerProfile() {
           </SectionCard>
         )}
 
-        {/* ── Save button (bottom, edit mode) ── */}
-        {!isViewingOther && (
-          <button
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            style={{ width: '100%', height: 56, borderRadius: 18, background: 'linear-gradient(135deg,#1a6fd4,#0a52b0)', border: 'none', color: 'white', fontWeight: 900, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 6px 20px rgba(26,111,212,0.35)', marginTop: 4 }}
-          >
-            {saveMutation.isPending ? <Loader2 size={20} className="animate-spin" /> : <><Save size={18} /> {t('wp_save_profile')}</>}
-          </button>
-        )}
-
         <div style={{ height: 16 }} />
       </div>
-
-      {showEditName && (
-        <EditNameSheet
-          user={currentUser}
-          onClose={() => setShowEditName(false)}
-          onSaved={async () => {
-            await refreshUser();
-            queryClient.invalidateQueries({ queryKey: ['me'] });
-          }}
-        />
-      )}
     </div>
   );
 }
