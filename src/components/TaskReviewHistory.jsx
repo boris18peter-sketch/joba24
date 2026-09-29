@@ -196,16 +196,19 @@ export default function TaskReviewHistory({ tasks = [], reviews = [], userId, cl
                     )}
                   </div>
 
+                  {/* The review belongs to this task — no divider, no second
+                      header and no repeated date, so it never reads as a
+                      separate entry. Task first, its review right below it. */}
                   {hasReview && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-1)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <Stars rating={item.review.rating} size={13} />
-                        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)' }}>
                           {item.review.role === 'worker' ? t('review_from_client') : t('review_from_worker')}
                         </span>
                       </div>
                       {item.review.comment && (
-                        <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+                        <p style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.6, margin: '6px 0 0', fontStyle: 'italic' }}>
                           "{item.review.comment}"
                         </p>
                       )}

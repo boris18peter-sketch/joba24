@@ -187,8 +187,10 @@ export default function AddressAutocomplete({ value, onSelect, error, onBlur, in
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const borderColor = confirmed ? '#16a34a' : error ? '#ef4444' : '#dce8f5';
-  const bgColor = confirmed ? '#f0fdf4' : error ? '#fff5f5' : '#f4f7fb';
+  // Theme-aware: a hardcoded light background paired with `var(--text-1)` text
+  // turned the input invisible in dark mode (white text on a near-white field).
+  const borderColor = confirmed ? 'var(--color-success)' : error ? 'var(--color-danger)' : 'var(--border-1)';
+  const bgColor = confirmed ? 'var(--color-success-bg)' : error ? 'var(--color-danger-bg)' : 'var(--surface-3)';
   const showDropdown = suggestions.length > 0 || (showQuickPick && !query);
 
   return (
