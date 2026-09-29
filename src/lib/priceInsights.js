@@ -158,7 +158,7 @@ ${photoInstructions}
 השתמש בחיפוש אינטרנט כדי לאמת מחירי שוק עדכניים בישראל לתחום ${category}.
 
 השב בלבד עם JSON תקין בפורמט:
-{"min": <מספר>, "max": <מספר>, "identified": "<מה זוהה>", "required_work": "<מה נדרש>", "materials": "<חומרים ועלותם>", "confidence": "high|medium|low", "reason": "<משפט קצר עד 8 מילים>"}
+{"min": <מספר>, "max": <מספר>, "identified": "<מה זוהה>", "required_work": "<מה נדרש>", "materials": "<פירוט החומרים ועלותם>", "materials_cost_min": <מספר>, "materials_cost_max": <מספר>, "confidence": "high|medium|low", "reason": "<משפט קצר עד 8 מילים>"}
 
 הכללים:
 - קרא את כל התיאור בעיון. אם מוזכרות מספר עבודות נפרדות (למשל פירוק ארון + התקנת מכונת כביסה + תיקון מגירות), המחיר הוא סכום כל העבודות יחד, לא מחיר של עבודה אחת.
@@ -166,6 +166,10 @@ ${photoInstructions}
 - חובה לשלב בתמחור את הפרטים המובנים מהטופס יחד עם התיאור. דוגמה: בקטגוריית הובלה, אם התיאור מציין שצריך לפרק מקרר — יש להוסיף למחיר גם את הפירוק וההרכבה, ולא רק את ההובלה. כך גם לגבי מספר אנשים, קומות, מעלית, נפח, מרחק ודרישות מיוחדות.
 - אם התיאור והפרטים המובנים סותרים זה את זה — הפרטים המובנים מדויקים יותר.
 - גם אם התיאור קצר, אל תתעלם מהפרטים המובנים — הם חלק מהעבודה ומהמחיר.
+- עלות החומרים (materials_cost_min ו-materials_cost_max) היא עלות החומרים בלבד, בלי שכר עבודה. אם אין חומרים — החזר 0 בשניהם.
+- עלות החומרים היא רכיב בתוך המחיר הכולל, לא תוספת מעליו. המחיר הכולל חייב תמיד לכסות את עלות החומרים בתוספת שכר עבודה הוגן — לכן min חייב להיות גבוה מ-materials_cost_max. אסור בהחלט להחזיר מחיר כולל שנמוך או שווה לעלות החומרים.
+- כשעלות החומרים גבוהה, המחיר הכולל עולה בהתאם ורשאי לחרוג מהטווח המקצועי של הקטגוריה. עלות החומרים עצמה אינה מוגבלת בטווח הקטגוריה.
+- בשדה materials פרט את החומרים הנדרשים ואת עלותם המשוערת בישראל בלבד, בהתאמה למספרים שהחזרת בשדות materials_cost_min/materials_cost_max. אין לחזור בשדה זה על המחיר הכולל.
 ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר: דלק, בלאי רכב וזמן נסיעה.\n` : ''}- min ו-max חייבים להיות מספרים שלמים מעוגלים לעשרות.
 - min תמיד קטן מ-max בפער משמעותי — לפחות 15% מהמחיר (ולא פחות מ-${isHourly ? '10' : '50'} ₪). אסור ש-min יהיה שווה ל-max.
 - הטה את ההמלצה לכיוון העליון של הטווח הריאלי כדי שהמשימה תהיה אטרקטיבית לעובדים — עדיף להמליץ על מחיר גבוה יותר שימשוך יותר עובדים מקצועיים.
@@ -192,6 +196,8 @@ ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר:
         identified: { type: 'string' },
         required_work: { type: 'string' },
         materials: { type: 'string' },
+        materials_cost_min: { type: 'number' },
+        materials_cost_max: { type: 'number' },
         confidence: { type: 'string' },
         reason: { type: 'string' },
       },
@@ -202,19 +208,32 @@ ${distanceLine ? `- המרחק בין הכתובות משפיע על המחיר:
 
   // For non-hourly multi-task bundles, allow the upper bound to scale up
   // (the market range is per single task; a bundle sums several tasks).
-  const minFloor = configRange.min;
-  const maxCeiling = isHourly
+  const categoryCeiling = isHourly
     ? configRange.max
     : isMultiTask
       ? Math.min(configRange.max * Math.min(taskCount + 1, 5), 3000)
       : configRange.max;
+
+  // Materials are a component INSIDE the total price, never an add-on above it,
+  // so a recommendation that doesn't even cover the parts bill is meaningless.
+  // Whatever the model returned, the range is lifted to cover materials plus a
+  // fair labour margin — and the category ceiling rises with it, because the
+  // typical range doesn't apply to a job with unusually expensive parts.
+  const materialsMax = Math.min(Math.max(0, Number(result.materials_cost_max) || 0), categoryCeiling);
+  const hasMaterials = !isHourly && materialsMax > 0;
+  const materialsFloor = hasMaterials
+    ? materialsMax + Math.max(80, Math.round(materialsMax * 0.4))
+    : 0;
+
+  const minFloor = Math.max(configRange.min, materialsFloor);
+  const maxCeiling = Math.max(categoryCeiling, hasMaterials ? materialsFloor + 150 : 0);
   const clampedMin = clampToRange(Math.round(result.min / 10) * 10, minFloor, maxCeiling);
   const clampedMax = clampToRange(Math.round(result.max / 10) * 10, minFloor, maxCeiling);
   let finalMin = Math.min(clampedMin, clampedMax);
   let finalMax = Math.max(clampedMin, clampedMax);
   // Guarantee a meaningful spread so we NEVER show a collapsed range like
   // "400–400". Enforce ≥15% (or the hourly minimum) between the two.
-  const minSpread = Math.max(isHourly ? 10 : 50, Math.round(finalMax * 0.15));
+  const minSpread = Math.max(isHourly ? 10 : 50, Math.round(finalMax * 0.15 / 10) * 10);
   if (finalMax - finalMin < minSpread) {
     finalMin = Math.max(minFloor, finalMax - minSpread);
     if (finalMax - finalMin < minSpread) finalMax = finalMin + minSpread;
