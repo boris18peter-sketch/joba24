@@ -1,0 +1,51 @@
+{
+  "name": "BrandDomain",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string",
+      "description": "Brand.id (ADR-23). Never a slug. The canonical relational Brand identifier this hostname resolves to."
+    },
+    "hostname": {
+      "type": "string",
+      "description": "Lowercase hostname without protocol, port or trailing slash (e.g. joba24.com, events.joba24.com). Joba24-owned routing key."
+    },
+    "is_primary": {
+      "type": "boolean",
+      "default": false,
+      "description": "The Brand's canonical domain, used for absolute links and share URLs. At most one per Brand."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "disabled"
+      ],
+      "default": "active",
+      "description": "active = resolves to the Brand. pending = registered but not live. disabled = must not resolve."
+    }
+  },
+  "required": [
+    "brand_id",
+    "hostname"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

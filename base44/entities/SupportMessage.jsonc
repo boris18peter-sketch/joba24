@@ -29,6 +29,10 @@
     "read": {
       "type": "boolean",
       "default": false
+    },
+    "surface_brand_id": {
+      "type": "string",
+      "description": "Brand.id (ADR-23) of the surface the support conversation belongs to. Attribution only \u2014 support remains one shared platform inbox. Nullable on pre-Package-4.3 records."
     }
   },
   "required": [

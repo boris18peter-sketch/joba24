@@ -1,0 +1,80 @@
+{
+  "name": "BrandConfig",
+  "type": "object",
+  "properties": {
+    "brand_id": {
+      "type": "string",
+      "description": "Brand.id (ADR-23). One config record per Brand."
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Brand name shown in the UI. Falls back to Brand.name."
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "favicon_url": {
+      "type": "string"
+    },
+    "primary_color": {
+      "type": "string"
+    },
+    "primary_dark_color": {
+      "type": "string"
+    },
+    "accent_color": {
+      "type": "string"
+    },
+    "support_email": {
+      "type": "string"
+    },
+    "support_phone": {
+      "type": "string"
+    },
+    "terms_url": {
+      "type": "string"
+    },
+    "privacy_url": {
+      "type": "string"
+    },
+    "default_locale": {
+      "type": "string",
+      "description": "Default UI language for this Brand (e.g. he, en)."
+    },
+    "inherit_from_brand_id": {
+      "type": "string",
+      "description": "Brand whose config supplies any field this Brand leaves unset. Defaults to the platform Brand (Joba24). A Brand overrides only what it sets."
+    },
+    "marketplace": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Nullable overrides of JobaSettings keys (e.g. signup_bonus, application_fee_percent, story_cost). Unset keys inherit from the parent Brand."
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this Brand's configuration may be served to unauthenticated visitors."
+    }
+  },
+  "required": [
+    "brand_id"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -38,6 +38,10 @@
     "note": {
       "type": "string",
       "description": "\u05d4\u05e2\u05e8\u05d4 \u05d7\u05d5\u05e4\u05e9\u05d9\u05ea"
+    },
+    "brand_id": {
+      "type": "string",
+      "description": "Brand.id (ADR-23) that originated this transaction. Attribution only \u2014 there is ONE global credit wallet per user; credits are never split per Brand (Invariant: no separate wallets). Nullable on pre-Package-4.3 records."
     }
   },
   "required": [

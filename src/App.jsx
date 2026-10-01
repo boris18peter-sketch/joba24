@@ -9,6 +9,8 @@ import { base44 } from '@/api/base44Client';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
+import { BrandProvider } from '@/lib/brand/BrandProvider';
+import BrandGate from '@/components/BrandGate';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -108,8 +110,6 @@ const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
 const AuthCallback = lazyRetry(() => import('@/pages/AuthCallback'));
 const StoreKitStudio = lazyRetry(() => import('@/pages/StoreKitStudio'));
 const DesignPreviewV2 = lazyRetry(() => import('@/pages/DesignPreviewV2'));
-// TEMPORARY — User Field Hardening (UH-5) FLS abuse probe. Removed with the page.
-const FlsAbuseProbe = lazyRetry(() => import('@/pages/FlsAbuseProbe'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -170,7 +170,7 @@ function CaptureRefCode() {
 // support) get their own key and animate (slide) in/out.
 const STANDALONE = (p) =>
   p === '/lp' || p === '/presentation' || p === '/reset-password' || p === '/join' ||
-  p === '/design-v2' || p === '/fls-abuse' || p === '/support' || p.startsWith('/chat/') || p.startsWith('/r/');
+  p === '/design-v2' || p === '/support' || p.startsWith('/chat/') || p.startsWith('/r/');
 function getDepth(pathname) {
   if (!STANDALONE(pathname)) return 0;
   if (pathname.startsWith('/chat/')) return 2;
@@ -242,8 +242,7 @@ const AuthenticatedApp = () => {
             <Route path="/auth-callback" element={<AuthCallback />} />
             <Route path="/store-kit" element={<StoreKitStudio />} />
             <Route path="/design-v2" element={<DesignPreviewV2 />} />
-            {/* TEMPORARY — User Field Hardening (UH-5) abuse probe. Unlinked; removed after the verdict. */}
-            <Route path="/fls-abuse" element={<FlsAbuseProbe />} />
+
             <Route path="/lp" element={<Landing />} />
             <Route element={<Layout />}>
               <Route path="/" element={<HomeFeed />} />
@@ -305,6 +304,8 @@ function App() {
   return (
     <AppErrorBoundary>
       <LanguageProvider>
+        <BrandProvider>
+        <BrandGate>
         <AuthProvider>
           <QueryClientProvider client={queryClientInstance}>
             <Router>
@@ -323,6 +324,8 @@ function App() {
             <Toaster />
           </QueryClientProvider>
         </AuthProvider>
+        </BrandGate>
+        </BrandProvider>
       </LanguageProvider>
     </AppErrorBoundary>
   )

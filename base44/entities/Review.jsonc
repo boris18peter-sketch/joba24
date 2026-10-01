@@ -43,6 +43,10 @@
     "would_hire_again": {
       "type": "boolean",
       "description": "\u05de\u05de\u05dc\u05d9\u05e5 / \u05d0\u05e9\u05db\u05d5\u05e8 \u05e9\u05d5\u05d1"
+    },
+    "surface_brand_id": {
+      "type": "string",
+      "description": "Brand.id (ADR-23) of the surface on which the review was left. Attribution only \u2014 the reviewee's rating stays global (ADR-05). Enables per-Brand analytics. Nullable on pre-Package-4.3 records."
     }
   },
   "required": [

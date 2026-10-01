@@ -1,0 +1,72 @@
+{
+  "name": "BrandMembership",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "The global User.id. Membership never duplicates identity, KYC, email, phone, credit balance or reputation \u2014 those stay global (ADR-05, ADR-07)."
+    },
+    "brand_id": {
+      "type": "string",
+      "description": "Brand.id (ADR-23). Which Brand this membership is for."
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "member",
+        "brand_admin"
+      ],
+      "default": "member",
+      "description": "Brand-scoped role. Never a User.role (ADR-06). brand_admin is reserved and not yet used by any feature."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended"
+      ],
+      "default": "active"
+    },
+    "joined_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "first_action": {
+      "type": "string",
+      "description": "The meaningful action that created this membership (e.g. create_task, apply_for_task, backfill). Browsing alone never creates a membership."
+    }
+  },
+  "required": [
+    "user_id",
+    "brand_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
