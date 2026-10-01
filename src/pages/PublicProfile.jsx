@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { MapPin, FileText, ChevronLeft, Loader2, Clock, X, Phone, Instagram, Facebook, Music2, ShieldCheck, Link2 } from 'lucide-react';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import GoldBadge from '@/components/GoldBadge';
@@ -37,12 +38,12 @@ export default function PublicProfile() {
 
   const { data: completedTasks = [] } = useQuery({
     queryKey: ['publicTasks', userId],
-    queryFn: () => base44.entities.Task.filter({ worker_id: userId, status: 'COMPLETED' }, '-created_date', 20),
+    queryFn: () => fetchPublicTasks({ mode: 'userCompleted', userId, role: 'worker', limit: 20 }),
     enabled: !!userId,
   });
   const { data: postedTasks = [] } = useQuery({
     queryKey: ['publicPostedTasks', userId],
-    queryFn: () => base44.entities.Task.filter({ client_id: userId, status: 'COMPLETED' }, '-created_date', 20),
+    queryFn: () => fetchPublicTasks({ mode: 'userCompleted', userId, role: 'client', limit: 20 }),
     enabled: !!userId,
   });
 

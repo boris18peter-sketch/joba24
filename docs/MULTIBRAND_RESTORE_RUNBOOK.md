@@ -1321,6 +1321,37 @@ Delete the 4 new entities and their seeded rows; remove the 6 attribution fields
 
 ---
 
+## Package #4.5 — Task/TaskApplication Brand Isolation + Admin → Brands ⚠️ **IMPLEMENTED — non-admin RLS not empirically probed**
+
+| | |
+|---|---|
+| **Date** | 2026-10-02 |
+| **Status** | **Implemented · build exit 0 · readers and creation-validation verified server-side.** One item unprobed (below). |
+| **Production data changed** | `TaskApplication.client_id` × 34 · **no Task, credit, payment or identity value altered** |
+| **Tranzila** | **Untouched.** The 3.1A blocker remains fully in force. |
+
+### New backend functions
+
+`getPublicTasks` (brand-aware public reader: open / stories / byIds / userCompleted / single / completedByCategory) · `getTaskApplicantStats` (counts only) · `adminCreateBrand` (trusted brand creation). `getOpenTasks` rewritten brand-aware. New shared module `base44/shared/brandContext.ts` resolves the Brand from the **request host** — never from a client `brand_id`.
+
+### Entities
+
+`TaskApplication` +`client_id` (denormalized task owner) + RLS. `Task` + RLS. All previous properties byte-identical.
+
+### Client surfaces migrated off direct entity reads
+
+`HomeFeed` · `MapView` · `StoriesBar` · `DailyGoal` · `PublicProfile` · `priceInsights` · `LockedCreditsPopup` · `TaskDetail` · `LiveActivityPulse` · `BoostOverlay` · `LiveSearchOverlay` — all via `src/lib/publicTasks.js`.
+
+### ⚠️ Unprobed
+
+`{{user.data.brand_ids}}` inside `$in` is documented by the RLS authoring guide and matches the guide's exact array-template form, but could not be exercised with a non-admin session from the build environment. **Failure mode is benign:** every marketplace listing now goes through a trusted reader, and the party branches (`client_id` / `worker_id`) are independent of it — a stricter-than-intended rule cannot empty the feed.
+
+### Known behaviour changes
+
+Non-party realtime `Task` events no longer stream (RLS filters them); `HomeFeed` polls every 60s instead. 90 `TaskApplication` rows reference deleted tasks and therefore have no derivable `client_id`.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1

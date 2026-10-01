@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 // HomeFeed — main dashboard
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -174,7 +175,7 @@ export default function HomeFeed() {
   );
   const { data: appliedTasksData = [] } = useQuery({
     queryKey: ['appliedTasksData', me?.id],
-    queryFn: () => base44.entities.Task.filter({ id: { $in: appliedTaskIds } }),
+    queryFn: () => fetchPublicTasks({ mode: 'byIds', taskIds: appliedTaskIds }),
     enabled: !!me?.id && appliedTaskIds.length > 0,
     staleTime: 300000,
     refetchOnWindowFocus: false,
@@ -182,10 +183,11 @@ export default function HomeFeed() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['allTasks'],
-    queryFn: () => base44.entities.Task.filter({ status: 'OPEN' }, '-created_date', 100),
+    queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
     staleTime: 60000,
     gcTime: 300000,
     refetchOnWindowFocus: false,
+    refetchInterval: 60000,
     retry: 1,
   });
 

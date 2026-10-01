@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { fetchApplicantStats } from '@/lib/publicTasks';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
@@ -526,8 +527,7 @@ function ScannerStep({ taskId, taskTitle, taskPrice, taskCategory, taskLocation,
 
   useEffect(() => {
     if (!taskId) return;
-    base44.entities.TaskApplication.filter({ task_id: taskId })
-      .then(apps => setWorkerCount(apps.length));
+    fetchApplicantStats([taskId]).then(counts => setWorkerCount(counts?.[taskId]?.all ?? 0));
   }, [taskId]);
 
   useEffect(() => {

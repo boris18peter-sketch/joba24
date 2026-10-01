@@ -16,6 +16,7 @@ import { getCategoryLabel } from '@/lib/categories';
 import { exportToCSV } from '@/lib/csvExport';
 import CopyableId from '@/components/CopyableId';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
+import BrandsTab from '@/components/admin/BrandsTab';
 import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
@@ -964,6 +965,9 @@ export default function AdminDashboard() {
         <TabButton active={tab === 'joba_settings'} onClick={() => setTab('joba_settings')}>
           <Coins size={13} style={{ display: 'inline', marginLeft: 4 }} /> הגדרות ג'ובות
         </TabButton>
+        <TabButton active={tab === 'brands'} onClick={() => setTab('brands')}>
+          <Shield size={13} style={{ display: 'inline', marginLeft: 4 }} /> מותגים
+        </TabButton>
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
@@ -971,6 +975,11 @@ export default function AdminDashboard() {
         {/* ANALYTICS TAB */}
         {tab === 'analytics' && (
           <AdminAnalyticsTab allUsers={allUsers} />
+        )}
+
+        {/* BRANDS TAB — Platform Admin only (Package 4.5) */}
+        {tab === 'brands' && (
+          <BrandsTab />
         )}
 
         {/* TASKS TAB */}

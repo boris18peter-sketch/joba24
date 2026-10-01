@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { fetchApplicantStats } from '@/lib/publicTasks';
 
 const MESSAGES = [
   { icon: '👀', text: 'עובדים צופים במשימה', color: '#1a6fd4' },
@@ -10,19 +11,19 @@ const MESSAGES = [
 ];
 
 export default function LiveActivityPulse({ task, compact }) {
-  const queryClient = useQueryClient();
   const [msgIdx, setMsgIdx] = useState(0);
   const intervalRef = useRef(null);
 
-  // Real: application count for this task
-  const { data: applications = [] } = useQuery({
-    queryKey: ['applications-pulse', task?.id],
-    queryFn: () => base44.entities.TaskApplication.filter({ task_id: task.id }),
+  // Real: application count for this task — from the public stats reader, which
+  // returns a NUMBER only. The UI never receives TaskApplication records.
+  const { data: appStats } = useQuery({
+    queryKey: ['applicant-stats', task?.id],
+    queryFn: () => fetchApplicantStats([task.id]),
     enabled: !!task?.id,
-    refetchInterval: 45000,
-    staleTime: 30000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
-  const applicationCount = applications.filter(a => a.status !== 'cancelled').length;
+  const applicationCount = appStats?.[task?.id]?.all ?? 0;
 
   // Real: online workers count
   const { data: onlineWorkers = [] } = useQuery({
@@ -32,17 +33,6 @@ export default function LiveActivityPulse({ task, compact }) {
     staleTime: 45000,
   });
   const onlineCount = onlineWorkers.length;
-
-  // Subscribe to new applications for this task in real time
-  useEffect(() => {
-    if (!task?.id) return;
-    const unsub = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === task.id) {
-        queryClient.invalidateQueries({ queryKey: ['applications-pulse', task.id] });
-      }
-    });
-    return () => unsub();
-  }, [task?.id]);
 
   // Rotate status messages
   useEffect(() => {

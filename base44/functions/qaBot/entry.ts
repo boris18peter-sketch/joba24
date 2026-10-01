@@ -68,6 +68,8 @@ Deno.serve(async (req) => {
         status: 'pending',
         credits_charged: 0, // bot costs nothing
         surface_brand_id: JOBA24_BRAND_ID,
+        // Derived from the persisted Task — never from the client.
+        client_id: task.client_id,
       });
       log.push(`✅ Bot applied to task "${task.title}"`);
       return Response.json({ success: true, action, app, log });
@@ -185,6 +187,7 @@ Deno.serve(async (req) => {
           worker_score: 99, worker_rating: 5.0, worker_tasks_count: 42,
           message: '🤖 full_flow QA bot', status: 'pending', credits_charged: 0,
           surface_brand_id: JOBA24_BRAND_ID,
+          client_id: task.client_id,
         });
         log.push('1. Bot applied');
       } else {

@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
           type: 'Refund_Rejection',
           task_id: taskId,
           task_title: task.title,
+          brand_id: task.origin_brand_id || null,
           balance_after: newBalance,
           note: `הבקשה למשימה "${task.title}" נדחתה על ידי המפרסם — ${creditsToRefund} ג׳ובות הוחזרו`,
         });

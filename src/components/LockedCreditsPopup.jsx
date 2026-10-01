@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { X, Lock, Loader2, RotateCcw } from 'lucide-react';
 import CreditIcon from '@/components/CreditIcon';
 import TaskCard from '@/components/TaskCard';
@@ -29,7 +30,7 @@ export default function LockedCreditsPopup({ applications, lockedTotal, onClose 
   );
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['lockedPopupTasks', taskIds],
-    queryFn: () => base44.entities.Task.filter({ id: { $in: taskIds } }, '-created_date', 50),
+    queryFn: () => fetchPublicTasks({ mode: 'byIds', taskIds }),
     enabled: taskIds.length > 0,
     staleTime: 30000,
   });

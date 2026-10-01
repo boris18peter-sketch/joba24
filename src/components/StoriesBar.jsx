@@ -3,6 +3,7 @@ import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { getCategoryLabel } from '@/lib/categories';
 import { X, MapPin, Navigation, Eye, MousePointerClick } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -407,7 +408,7 @@ export default function StoriesBar({ filterCategory = null, currentUserId = null
   const { data: rawStories = [] } = useQuery({
     queryKey: ['stories'],
     queryFn: async () => {
-      const tasks = await base44.entities.Task.filter({ is_story: true }, '-created_date', 30);
+      const tasks = await fetchPublicTasks({ mode: 'stories' });
       const now = new Date();
       return tasks.filter(t => t.story_expires_at && new Date(t.story_expires_at) > now && t.status === 'OPEN');
     },

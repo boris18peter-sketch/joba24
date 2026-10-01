@@ -267,7 +267,10 @@ const AuthenticatedApp = () => {
                 <Route path="/my-tasks" element={<MyTasks />} />
                 <Route path="/chats" element={<ChatInbox />} />
                 <Route path="/notifications" element={<Notifications />} />
-                <Route path="/admin" element={<AdminDashboard />} />
+                {/* Platform Admin only — same guard as /simulator */}
+                <Route element={<AdminRoute />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                </Route>
                 <Route path="/admin/agent-referrals" element={<AgentReferralsReport />} />
                 <Route path="/agent-dashboard" element={<AgentDashboard />} />
                 <Route path="/qa" element={<QADashboard />} />

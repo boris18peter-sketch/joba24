@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
         type: 'Application_Fee',
         task_id: taskId,
         task_title: task.title,
+        brand_id: task.origin_brand_id || null,
         balance_after: newBalance,
         note: `Boost — איתות נוסף למשימה "${task.title}"`,
       }),

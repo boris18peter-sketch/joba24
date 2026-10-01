@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getCurrentPosition } from '@/lib/nativeGeolocation';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { Target, MapPin, Zap, RefreshCw, CheckCircle2, Clock, Navigation, Filter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
@@ -88,7 +89,7 @@ export default function DailyGoal() {
   const { data: me } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: tasks = [] } = useQuery({
     queryKey: ['open-tasks-daily'],
-    queryFn: () => base44.entities.Task.filter({ status: 'OPEN' }, '-created_date', 100),
+    queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
     refetchInterval: 30000,
   });
 

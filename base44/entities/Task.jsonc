@@ -396,5 +396,57 @@
   "required": [
     "title",
     "price"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.origin_brand_id": {
+            "$in": "{{user.data.brand_ids}}"
+          }
+        },
+        {
+          "data.client_id": "{{user.id}}"
+        },
+        {
+          "data.worker_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "data.client_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.client_id": "{{user.id}}"
+        },
+        {
+          "data.worker_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.client_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
 }

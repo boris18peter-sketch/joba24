@@ -4,6 +4,7 @@ import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTaskSheet } from '@/lib/TaskSheetContext';
 import { Navigation, X, MapPin, Clock, ChevronRight, ArrowRight, ArrowUp, ArrowUpRight, ArrowUpLeft, RotateCcw, Flag, SlidersHorizontal, ChevronDown, ChevronUp, Check } from 'lucide-react';
@@ -154,7 +155,7 @@ export default function MapView() {
   });
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    queryFn: () => fetchPublicTasks({ mode: 'open', limit: 100 }),
     staleTime: 60000,
     refetchOnWindowFocus: false,
   });

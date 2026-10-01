@@ -10,6 +10,7 @@
  */
 
 import { base44 } from '@/api/base44Client';
+import { fetchPublicTasks } from '@/lib/publicTasks';
 import { getCategoryPriceRange } from '@/lib/taskFlowConfig';
 
 // Realistic per-hour rate ranges for hourly categories in the Israeli market (2025).
@@ -64,11 +65,7 @@ export async function fetchHistoricalPrices(category) {
 
   let data = null;
   try {
-    const tasks = await base44.entities.Task.filter(
-      { category, status: 'COMPLETED' },
-      '-completed_at',
-      100
-    );
+    const tasks = await fetchPublicTasks({ mode: 'completedByCategory', category, limit: 100 });
     const prices = (tasks || [])
       .map(t => Number(t.price))
       .filter(p => Number.isFinite(p) && p > 0)

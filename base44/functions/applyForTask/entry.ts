@@ -80,6 +80,9 @@ Deno.serve(async (req) => {
       task_title: task.title,
       worker_id: user.id,
       worker_name: user.full_name,
+      // Derived server-side from the persisted Task — never from the client.
+      // Makes "task owner" expressible in the entity RLS rule.
+      client_id: task.client_id,
       worker_score: userData?.worker_score || 0,
       worker_rating: userData?.rating || 0,
       worker_tasks_count: userData?.score_tasks || 0,
@@ -110,6 +113,7 @@ Deno.serve(async (req) => {
       type: 'Application_Fee',
       task_id: taskId,
       task_title: task.title,
+      brand_id: task.origin_brand_id || null,
       balance_after: newBalance,
       note: `הגשת בקשה למשימה: ${task.title}`,
     });

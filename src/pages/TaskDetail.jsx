@@ -57,6 +57,7 @@ import ActiveTaskBanner from '@/components/ActiveTaskBanner';
 import ActiveTaskBannerFromCache from '@/components/ActiveTaskBannerFromCache';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useTaskTranslation } from '@/hooks/useTaskTranslation';
+import { fetchPublicTasks, fetchApplicantStats } from '@/lib/publicTasks';
 
 const getScanningTexts = (t) => t('scanning_texts');
 
@@ -195,19 +196,20 @@ export default function TaskDetail(props) {
     select: (data) => data[0] ?? null,
     enabled: !!me?.id
   });
-  // Application count for live activity in banner
-  const { data: taskApplications = [] } = useQuery({
-    queryKey: ['applications-pulse', id],
-    queryFn: () => base44.entities.TaskApplication.filter({ task_id: id }),
+  // Application count for live activity in banner — a NUMBER from the public
+  // stats reader; no TaskApplication record is exposed to the client.
+  const { data: appStats } = useQuery({
+    queryKey: ['applicant-stats', id],
+    queryFn: () => fetchApplicantStats([id]),
     enabled: !!id,
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 15000,
+    refetchInterval: 30000,
   });
-  const applicationCount = taskApplications.filter((a) => a.status === 'pending' || a.status === 'approved').length;
+  const applicationCount = appStats?.[id]?.active ?? 0;
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],
-    queryFn: () => base44.entities.Task.filter({ id }),
+    queryFn: () => fetchPublicTasks({ mode: 'single', taskId: id }),
     // The cache holds either an array (fresh fetch) or a single object
     // (realtime/optimistic write) — normalise so the sheet never goes blank.
     select: selectTask,

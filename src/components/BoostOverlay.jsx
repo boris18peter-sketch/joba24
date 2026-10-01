@@ -3,7 +3,7 @@
  * Same structure as LiveSearchOverlay but purple palette.
  */
 import { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { fetchApplicantStats } from '@/lib/publicTasks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -152,7 +152,7 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
 
   useEffect(() => {
     if (!taskId) return;
-    base44.entities.TaskApplication.filter({ task_id: taskId }).then(apps => setWorkerCount(apps.length));
+    fetchApplicantStats([taskId]).then(counts => setWorkerCount(counts?.[taskId]?.all ?? 0));
   }, [taskId]);
 
   useEffect(() => {
@@ -170,15 +170,17 @@ function BoostScanner({ taskId, taskTitle, taskPrice, taskCategory, onNavigate }
     return () => clearInterval(interval);
   }, []);
 
+  // Counts come from the public stats reader (numbers only), so this polls
+  // instead of subscribing to TaskApplication events.
   useEffect(() => {
     if (!taskId) return;
-    const unsub = base44.entities.TaskApplication.subscribe((event) => {
-      if (event.data?.task_id === taskId && event.type === 'create') {
-        setWorkerCount(c => c + 1);
-        setStatusMsg(t('bo_first_app'));
-      }
-    });
-    return () => unsub();
+    const iv = setInterval(() => {
+      fetchApplicantStats([taskId]).then(counts => {
+        const n = counts?.[taskId]?.all ?? 0;
+        setWorkerCount(prev => (n > prev ? n : prev));
+      });
+    }, 8000);
+    return () => clearInterval(iv);
   }, [taskId]);
 
   useEffect(() => { const t = setTimeout(() => goToTask(), 8000); return () => clearTimeout(t); }, []);

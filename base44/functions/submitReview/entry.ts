@@ -75,6 +75,8 @@ Deno.serve(async (req) => {
       rating,
       comment: comment || '',
       role,
+      // Trusted Brand attribution, derived server-side from the persisted Task.
+      surface_brand_id: task.origin_brand_id || null,
       arrived_on_time: arrivedOnTime ?? null,
       professional: professional ?? null,
       good_communication: goodCommunication ?? null,
