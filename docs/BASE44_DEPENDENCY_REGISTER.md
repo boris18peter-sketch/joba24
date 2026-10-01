@@ -77,7 +77,7 @@
 | **Replacement** | Register own OAuth apps per provider; own callback endpoints |
 | **Lock-in** | **CRITICAL** |
 
-**Verified constraint:** in-code comments state Base44's OAuth backend **rejects cross-domain `from_url`** and falls back to `base44.app`. This directly constrains multi-brand domains (§ see register §8 and blueprint §R).
+**Verified constraint:** in-code comments state Base44's OAuth backend **rejects cross-domain `from_url`** and falls back to `base44.app`. This directly constrains multi-brand domains (see §8 and blueprint §R).
 
 ---
 
@@ -86,7 +86,7 @@
 | | |
 |---|---|
 | **Dependency** | Base44 RLS engine (`rls` block in `.jsonc`, `{{user.*}}` templates) |
-| **Where used** | **4 / 21 entities only**: `Review`, `WorkerStat`, `DemoUser`, `OAuthHandshake`, `Brand` |
+| **Where used** | **5 / 21 entities only**: `Review`, `WorkerStat`, `DemoUser`, `OAuthHandshake`, `Brand` |
 | **Capability affected** | Data isolation — currently mostly *absent* |
 | **Public-facing** | No (invisible when correct) |
 | **Portable** | ⚠️ Concept is portable; **rule syntax is Base44-specific** |
@@ -122,7 +122,7 @@
 | **Portable** | ✅ Concept is universal (admin/service credentials) |
 | **Difficulty** | **HIGH** |
 | **Replacement** | Service credentials in the target backend |
-| **Lock-in** | **MEDIUM** — but it is the **biggest internal security risk** (§ see blueprint §G/H) |
+| **Lock-in** | **MEDIUM** — but it is the **biggest internal security risk** (blueprint §G/H) |
 
 **Note:** `asServiceRole` gives no protection — 62 functions currently rely on their own ad-hoc checks, and 26 have none at all.
 
@@ -156,7 +156,7 @@
 | **Capability affected** | Public identity, SEO, OAuth return, share links |
 | **Public-facing** | ✅ Yes — **the most visible dependency** |
 | **Portable** | ✅ A domain is portable by definition |
-| **Difficulty** | **HIGH** (⚠️ platform limits unknown — see §19) |
+| **Difficulty** | **HIGH** (⚠️ platform limits unknown — see §21) |
 | **Replacement** | Any host + DNS + certificate |
 | **Lock-in** | **LOW on the domain itself**, **HIGH on the provisioning/SSL/OAuth plumbing** |
 
@@ -203,7 +203,7 @@
 | **Portable** | ✅ Standard |
 | **Difficulty** | **MEDIUM** |
 | **Replacement** | Configure per target backend |
-| **Lock-in** | **MEDIUM** — ⚠️ multiple origins must be verified (§19) |
+| **Lock-in** | **MEDIUM** — ⚠️ multiple origins must be verified (§21) |
 
 ---
 
@@ -378,4 +378,4 @@ These are **not code questions** — they must be answered by the Base44 platfor
 | 🟡 **MEDIUM lock-in** | Functions · Service role · Workflows · Realtime · CORS · Admin · Connectors |
 | 🟢 **LOW / already portable** | Push (FCM) · Payments (Tranzila/IAP/Stripe) · Analytics (Meta/TikTok/Firebase) · Maps · Secrets · Hosting · SSL · Emails · Agents |
 
-**Conclusion:** the lock-in is concentrated in **identity** and **data/storage plumbing** — not in money, measurement or media delivery. That is the good news: the hardest parts to replace are also the parts where a careful, staged migration is genuinely possible because the business model itself (tasks, brands, applications, reviews) is plain data.
+**Conclusion:** the lock-in is concentrated in **identity** and **data/storage plumbing** — not in money, measurement or media delivery. That is the good news: the hardest parts to replace are also the parts where a careful, staged migration is genuinely possible, because the business model itself (tasks, brands, applications, reviews) is plain data.

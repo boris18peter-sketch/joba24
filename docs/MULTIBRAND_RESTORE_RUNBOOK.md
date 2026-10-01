@@ -272,3 +272,93 @@ Known limitations:
 ```
 
 **Gate: no package is deployed until section 3 (A–H) is complete.**
+
+---
+
+# PART 5 — PLATFORM PORTABILITY & VENDOR-INDEPENDENCE (PERMANENT)
+
+Added 2026-10-01. Applies to every future package, migration and phase. See also `BASE44_DEPENDENCY_REGISTER.md` and `MULTIBRAND_BLUEPRINT.md` (ADR-16…ADR-22).
+
+## 5.1 Core principle
+
+Base44 is our current **infrastructure provider**. Base44 must **not** become the **business architecture** of Joba24.
+
+```
+JOBA24 PLATFORM  →  BRAND ENGINE  →  N independent marketplace brands
+        Base44 = implementation layer underneath, not the domain model
+```
+
+**We are designing an exit path, not executing an exit.**
+
+## 5.2 Brand identity must be Joba24-owned
+
+- Every production Brand must use **its own custom domain** (e.g. `events.co.il`) or a **Joba24-owned subdomain** (e.g. `events.joba24.com`).
+- Base44 URLs may exist as internal infrastructure endpoints where unavoidable, but must **never** be a Brand's public identity.
+- `brand_id` and `brand.slug` are **Joba24 platform identifiers**. A Base44 project ID, app ID or hostname must never be the canonical Brand identity.
+- Add `provider_metadata` **only** if a real infrastructure identifier is technically unavoidable — never as the domain identity, and never speculatively.
+
+## 5.3 No Base44 brand leakage
+
+User-facing surfaces must not expose Base44 branding or infrastructure: public/navigation/login URLs · OAuth redirects · emails · notification links · share links · task links · support links · legal links · QR codes · canonical URLs · OpenGraph URLs · deep links · public API URLs where an abstraction is possible.
+
+## 5.4 Provider-independent domain model
+
+```
+hostname → BrandDomain → Brand Resolver → brand_id → BrandContext
+```
+
+`BrandDomain` holds **Joba24-owned** domain configuration and must **not** assume `*.base44.app`. It must support custom domains, `brand.joba24.com` subdomains, future domain changes, and multiple domains per Brand. **A Brand keeps its identity if its domain changes.**
+
+## 5.5 Entities that must remain provider-independent
+
+`Brand` · `BrandMembership` · `BrandDomain` · `BrandConfig` · `BrandFeature` · `BrandCommercials` · `BrandCategory` · `Category` · `CategoryConfig` · `CategoryFieldSchema` · `Task` · `TaskApplication` · `TaskDistributionRule` · `BrandAuditLog` · `ConsentRecord`
+
+No Base44-specific IDs or assumptions in these entities unless technically unavoidable.
+
+## 5.6 Portability layer
+
+Isolate infrastructure concerns behind clear boundaries **only when a new Multi-Brand subsystem is introduced** — the smallest reasonable adapter, never a speculative framework: auth · data repository · storage · notifications · analytics · payments · domain resolver · email.
+
+**Goal:** business logic expresses Joba24 concepts, not Base44 implementation details.
+
+## 5.7 Data & media portability
+
+Document (do **not** execute) the portability of users, brands, memberships, tasks, applications, chats, reviews, categories, brand configuration, distribution rules, credits, transactions, payments, KYC status, audit logs and referral attribution — each with canonical source, export capability, relationships, provider-specific fields, media dependencies, identifiers and migration difficulty.
+
+Media/assets: profile images, task images, completion evidence, **KYC documents**, brand logos and brand assets. Introduce a **storage indirection** (stable logical key → resolved URL) before any future move, so references survive a provider change. KYC follows the private-storage security plan.
+
+## 5.8 Auth portability
+
+Do **not** rewrite authentication. Document only: exportable identity data, how `User.id` relates to Base44 Auth, password portability limits, OAuth provider dependencies, session/token dependencies, native OAuth dependencies, and what a future provider move would require.
+
+**The current Joba24 authentication flow must not change.**
+
+## 5.9 No premature rewrite
+
+This principle is **not** permission to refactor working code. Joba24 stays on Base44; production flows, auth, mobile apps, database and functions stay unchanged except when explicitly approved in a future implementation package.
+
+## 5.10 Future provider-migration principle
+
+If Joba24 ever leaves Base44: **existing Brands, domains, users, Task IDs and marketplace history all remain traceable; frontend/business behaviour remains equivalent. Only the infrastructure layer changes.**
+
+## 5.11 Public brand professionalism — launch checklist for every Brand
+
+- [ ] No Base44 branding visible
+- [ ] Canonical Brand domain
+- [ ] Brand-specific identity
+- [ ] Brand-specific favicon / title
+- [ ] Brand-specific emails where supported
+- [ ] Brand-specific share links
+- [ ] Brand-specific support / legal URLs where configured
+- [ ] No accidental Joba24 branding unless intentionally required
+- [ ] No accidental Base44 URLs in user-facing flows
+- [ ] OAuth/login returns the user to the correct Brand
+- [ ] Tasks remain synchronized with the Joba24 Core
+
+## 5.12 Shared core remains the goal
+
+Portability must **not** create separate databases or duplicate marketplaces per Brand.
+
+**One Joba24 core · one global user · one task · one application · one chat · one marketplace infrastructure**, with N configurable Brands above it.
+
+Vendor independence is about **infrastructure portability** — not about separating Brands into different backends.
