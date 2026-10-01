@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 
 /**
  * applyForTask — Worker applies for an open task.
@@ -87,6 +88,7 @@ Deno.serve(async (req) => {
       images: images || [],
       status: 'pending',
       credits_charged: creditsRequired,
+      surface_brand_id: JOBA24_BRAND_ID,
     });
 
     // Rebuild applicants array from actual TaskApplication records (single source of truth)

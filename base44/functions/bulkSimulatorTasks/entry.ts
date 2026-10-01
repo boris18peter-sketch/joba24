@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 
 // ═══════════════════════════════════════════════════════════════
 //  REALISTIC CONTENT LIBRARY — Hebrew, like real Facebook posts
@@ -583,6 +584,7 @@ Deno.serve(async (req) => {
           client_rating: demoUser.rating || 0,
           expires_at: new Date(Date.now() + (6 + Math.random() * 42) * 60 * 60 * 1000).toISOString(),
           expiry_duration_hours: 24,
+          origin_brand_id: JOBA24_BRAND_ID,
         });
       }
 

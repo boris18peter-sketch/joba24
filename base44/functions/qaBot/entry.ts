@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 
 /**
  * qaBot — Simulates a second user (bot worker) performing actions on tasks.
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
         message: '🤖 בקשת בוט — QA אוטומטי',
         status: 'pending',
         credits_charged: 0, // bot costs nothing
+        surface_brand_id: JOBA24_BRAND_ID,
       });
       log.push(`✅ Bot applied to task "${task.title}"`);
       return Response.json({ success: true, action, app, log });
@@ -174,6 +176,7 @@ Deno.serve(async (req) => {
           worker_id: BOT_ID, worker_name: BOT_NAME,
           worker_score: 99, worker_rating: 5.0, worker_tasks_count: 42,
           message: '🤖 full_flow QA bot', status: 'pending', credits_charged: 0,
+          surface_brand_id: JOBA24_BRAND_ID,
         });
         log.push('1. Bot applied');
       } else {

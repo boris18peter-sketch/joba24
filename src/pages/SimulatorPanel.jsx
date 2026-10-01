@@ -27,6 +27,7 @@ import {
 import { ISRAELI_CITIES } from '@/lib/israeliCities';
 import { getCategoryLabel } from '@/lib/categories';
 import DemoTasksManager from '@/components/simulator/DemoTasksManager';
+import { JOBA24_BRAND_ID } from '@/lib/jobaBrand';
 
 /* ─── Reusable UI ─────────────────────────── */
 function Section({ title, icon, children, danger, defaultOpen = false, badge }) {
@@ -252,6 +253,7 @@ export default function SimulatorPanel() {
       payment_method: 'Cash',
       estimated_time: '1h',
       client_id: me?.id, client_name: me?.full_name,
+      origin_brand_id: JOBA24_BRAND_ID,
       approval_mode: 'instant',
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       ...overrides,
@@ -500,6 +502,7 @@ export default function SimulatorPanel() {
               category: 'other', status: 'OPEN', payment_method: 'Cash', approval_mode: 'instant',
               is_story: true, story_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
               client_id: me.id, client_name: me.full_name,
+              origin_brand_id: JOBA24_BRAND_ID,
             });
             toast.success(`Story נוצרה! יתרה: ${newBalance}`);
           })} />

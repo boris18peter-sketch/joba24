@@ -30,6 +30,7 @@ import CategoryExtraFields from '@/components/CategoryExtraFields';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 import { trackEvent } from '@/lib/analytics';
+import { JOBA24_BRAND_ID } from '@/lib/jobaBrand';
 import TaskChatInterface from '@/components/TaskChatInterface';
 import WorkerAvailabilityIndicator from '@/components/WorkerAvailabilityIndicator';
 
@@ -815,6 +816,7 @@ export default function CreateTask() {
       client_name: me?.full_name,
       client_rating: me?.rating || 0,
       client_verified: me?.is_verified || false,
+      origin_brand_id: JOBA24_BRAND_ID,
     });
 
     // Deduct story credits via backend (idempotent — safe to fire-and-forget)
@@ -961,6 +963,7 @@ export default function CreateTask() {
         client_name: me?.full_name,
         client_rating: me?.rating || 0,
         client_verified: me?.is_verified || false,
+        origin_brand_id: JOBA24_BRAND_ID,
       });
 
       // Deduct story credits via backend
