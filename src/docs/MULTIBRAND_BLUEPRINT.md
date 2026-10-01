@@ -1,0 +1,138 @@
+# JOBA24 MULTI-BRAND PLATFORM — BLUEPRINT
+
+> **Living architecture document.** The authoritative record of *decisions* (ADRs), invariants, the entity model and the phase plan.
+> **Companion documents:** `BASE44_DEPENDENCY_REGISTER.md` · `MULTIBRAND_RESTORE_RUNBOOK.md`
+> **Status:** Phase 1 deployed. Phase 2 **not approved**.
+> **Governing rule:** the live Joba24 product is the regression baseline and must not change unintentionally at any phase.
+
+---
+
+## 1. Invariants (non-negotiable)
+
+1. **One task row, forever.** `origin_brand_id` is set once at creation; never edited by ordinary flows.
+2. **Origin ≠ surface.** Every attributable action records both where the resource originated and where the action happened. Neither is inferred.
+3. **Authorization precedes distribution.** Brand context is resolved **before** authentication, so guests are scoped too.
+4. **Configuration is data.** Brands, categories, field schemas, features, commercials and notification templates are records.
+5. **Additive-first.** add nullable → backfill → verify → switch read path → retire legacy (much later). No destructive step early.
+6. **Joba24 is the baseline.** Any change that cannot be introduced without altering existing behaviour is flagged, not assumed acceptable.
+7. **Base44 is infrastructure, not the business architecture.** The domain model stays Joba24-owned and portable.
+
+---
+
+## 2. Architecture Decision Record
+
+| # | Decision | Status |
+|---|---|---|
+| ADR-01 | One database, one codebase, one core | Accepted |
+| ADR-02 | `origin_brand_id` immutable after set | Accepted |
+| ADR-03 | Distinguish `origin_brand_id` vs `surface_brand_id` | Accepted |
+| ADR-04 | **No `TaskDistribution` projection table** — rules are brand-level; distribution is derived | Accepted |
+| ADR-05 | `User` gains **no** brand fields — identity stays global | Accepted |
+| ADR-06 | Partner admin is a `BrandMembership.role`, never a `User.role` | Accepted |
+| ADR-07 | KYC stays platform-level, read via redacted projection | Accepted |
+| ADR-08 | Commercial attribution via **immutable snapshots**, not a separate entity | Accepted |
+| ADR-09 | Merge the four `Category*Config` entities into one `CategoryConfig` | Accepted |
+| ADR-10 | RLS is **Phase 3**, before any brand work — hard gate | Accepted |
+| ADR-11 | Brand resolution happens **before** authentication | Accepted |
+| ADR-12 | Never accept client-supplied `brand_id` for authorization | Accepted |
+| ADR-13 | Joba24 continues on the legacy path until parity is proven by shadow comparison | Accepted |
+| ADR-14 | Brand #2 launches **web-only** | Accepted |
+| ADR-15 | `Task.applicants[]` is frozen, not removed, in early phases | Accepted |
+| **ADR-16** | **Base44 is an implementation/infrastructure layer, never the business architecture. The domain model is owned by Joba24.** | **Accepted** |
+| **ADR-17** | **Brand identity is Joba24-owned. `brand_id` / `brand.slug` are Joba24 platform identifiers. A Base44 project ID, app ID or hostname must never be the canonical Brand identity.** | **Accepted** |
+| **ADR-18** | **No Base44 brand leakage in user-facing surfaces** (URLs, login, OAuth redirects, emails, share links, deep links, QR, canonical/OG, support/legal links). | **Accepted** |
+| **ADR-19** | **Provider-independent domain model:** `hostname → BrandDomain → Brand Resolver → brand_id → BrandContext`. `BrandDomain` holds Joba24-owned configuration and must not assume `*.base44.app`. A Brand keeps its identity if its domain changes. | **Accepted** |
+| **ADR-20** | **Portability boundaries are introduced only when a new Multi-Brand subsystem is built** — smallest reasonable adapter, never a speculative framework. Business logic expresses Joba24 concepts, not provider details. | **Accepted** |
+| **ADR-21** | **Portability documentation precedes Brand #2; execution of any migration is never implied.** No premature rewrite. | **Accepted** |
+| **ADR-22** | **No speculative provider fields.** Add `provider_metadata` only if a real infrastructure identifier is technically unavoidable, and never as the domain identity. | **Accepted** |
+
+---
+
+## 3. Global vs brand-scoped ownership (summary)
+
+| Scope | Entities |
+|---|---|
+| **GLOBAL** | `User` · `JobaSettings` · `Category` · `CategoryConfig` · `WorkerStat` · `DemoUser` · `UserPresence` · `OAuthHandshake` · `Brand` (tenant registry) |
+| **ORIGIN-ATTRIBUTED** | `Task` (`origin_brand_id`) |
+| **SURFACE-ATTRIBUTED** | `TaskApplication` · `ChatMessage` · `Review` · `NotificationLog` · `SupportMessage` |
+| **DERIVED (no brand field)** | `Report` · `WorkerStat` |
+| **SNAPSHOT (financial)** | `CreditTransaction` · `TranzilaPayment` · `IosPurchase` · `Transaction` |
+| **BRAND-SCOPED** | `BrandMembership` · `BrandDomain` · `BrandConfig` · `BrandFeature` · `BrandCommercials` · `BrandCategory` · `BrandAuditLog` · `TaskDistributionRule` |
+| **BRAND-CONFIGURABLE** | `NotificationConfig` · `CategoryFieldSchema` (nullable `brand_id`) |
+| **GLOBAL or BRAND** | `ConsentRecord` (`scope` field) |
+
+---
+
+## 4. Entity model (summary)
+
+**New:** `Brand` · `BrandMembership` · `BrandDomain` · `BrandConfig` · `BrandFeature` · `BrandCommercials` · `BrandAuditLog` · `Category` · `BrandCategory` · `CategoryFieldSchema` · `CategoryConfig` · `TaskDistributionRule` · `ConsentRecord`
+
+**Rejected / merged:** `TaskDistribution` (rejected, ADR-04) · separate attribution entity (rejected, ADR-08) · `BrandAdminRole` (merged into `BrandMembership`) · four `Category*Config` (merged, ADR-09).
+
+**Modified (all nullable, additive):** `Task` + `origin_brand_id` · `TaskApplication` + `surface_brand_id` · `ChatMessage` + `surface_brand_id` · `Review` + `surface_brand_id` · `NotificationConfig` + `brand_id` · `NotificationLog` + `surface_brand_id` · `SupportMessage` + `surface_brand_id` · financial entities + attribution/commercial snapshots · `ReferralEvent` + `brand_id` · `EarlySignup` + `brand_id`.
+
+**Unchanged by design:** `User` (ADR-05) · `JobaSettings` (platform defaults) · `feedRanker.js` · `Task.applicants[]` (ADR-15).
+
+---
+
+## 5. Distribution engine
+
+```
+Tasks
+  ↓ 1. AUTHORIZATION   may this actor read at all?
+  ↓ 2. DISTRIBUTION    is it visible on the resolved surface?
+  ↓ 3. ELIGIBILITY     may this actor apply? (credits, verification, requirements)
+  ↓ 4. feedRanker.js   UNCHANGED
+  ↓ Feed
+```
+
+```
+visibleOn(task, surface) =
+      task.origin_brand_id === surface
+   || rule[task.origin_brand_id].publish_to_joba24 && surface === 'joba24'
+   || rule[task.origin_brand_id].allow_other_brands_visibility
+   || task.distribution_overrides?.[surface] === true
+```
+
+`TaskDistributionRule` is brand-level (N rows). No projection table (ADR-04). Per-task exceptions use the nullable `distribution_overrides` object.
+
+---
+
+## 6. Phase plan (summary)
+
+| Phase | Goal | Risk |
+|---|---|---|
+| 0 | Architecture freeze · authorization matrix · external verification · regression baseline | LOW |
+| 1 | Safe Brand Foundation — `Brand` entity, Joba24 seed, nullable attribution fields | LOW |
+| 2 | Backfill + reconciliation (existing data → Joba24) | MEDIUM |
+| 3 | **Security hardening — RLS + server authorization, entity by entity** | **CRITICAL** |
+| 4 | Categories / configuration as data | HIGH |
+| 5 | Distribution engine | HIGH |
+| 6 | Brand runtime (config, features, commercials, notifications, analytics) | MEDIUM |
+| 7 | Joba24 Brand Engine parity (shadow comparison) | MEDIUM |
+| 8 | First external Brand — **web only** + Partner Admin | MEDIUM |
+| 9 | Custom-domain production hardening | HIGH |
+| 10 | Branded native applications | HIGH |
+| 11 | Self-service Brand Factory | MEDIUM |
+
+**Critical path:** 3 → 5 → 6 → 7 → 8. Phase 4 is parallelisable. Phase 3 is independently valuable to Joba24 today.
+
+---
+
+## 7. Portability principle (ADR-16…ADR-22)
+
+```
+        JOBA24 PLATFORM            ← owned by Joba24
+              ↓
+         BRAND ENGINE              ← configuration-driven
+              ↓
+   N independent marketplace brands
+              ↓
+   Base44 (or any provider)        ← infrastructure layer only
+```
+
+- Brand identity is **Joba24-owned**; domains are **Joba24-owned** (custom domain or `brand.joba24.com`).
+- Provider-specific identifiers, if ever unavoidable, are isolated as provider metadata — **never** the domain identity.
+- Adapters are introduced **per subsystem**, not as a framework.
+- Portability is **documented**, not executed. See `BASE44_DEPENDENCY_REGISTER.md`.
+- Portability must **never** split the core: one user, one task, one application, one chat, one marketplace.
