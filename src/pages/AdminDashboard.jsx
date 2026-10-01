@@ -528,16 +528,13 @@ function KycButtons({ user, kycStatus }) {
       // for the 30s poll. The function also writes the User entity (WS fires too).
       const isVerified = updates.is_verified ?? false;
       const kycStatus = updates.kyc_status || 'approved';
-      if (isVerified || kycStatus === 'rejected') {
-        await base44.functions.invoke('adminUpdateVerification', {
-          userId: user.id,
-          isVerified,
-          kycStatus,
-        });
-      } else {
-        // "Pending" — no push needed, direct update
-        await base44.entities.User.update(user.id, updates);
-      }
+      // UH-2: the KYC verdict is written ONLY by the admin function. The
+      // "pending" path routes through it too — it sends no push for pending.
+      await base44.functions.invoke('adminUpdateVerification', {
+        userId: user.id,
+        isVerified,
+        kycStatus,
+      });
       queryClient.setQueryData(['adminUsers'], (old = []) =>
         old.map(u => u.id === user.id ? { ...u, is_verified: isVerified, kyc_status: kycStatus } : u)
       );
@@ -715,7 +712,11 @@ export default function AdminDashboard() {
 
   const handleToggleBlock = async (user) => {
     try {
-      await base44.entities.User.update(user.id, { is_blocked: !user.is_blocked });
+      // UH-4: access state is server/admin only.
+      await base44.functions.invoke('adminSetUserFields', {
+        userId: user.id,
+        values: { is_blocked: !user.is_blocked },
+      });
       queryClient.setQueryData(['adminUsers'], (old = []) =>
         old.map(u => u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u)
       );
@@ -737,7 +738,11 @@ export default function AdminDashboard() {
 
   const handleSetAgent = async (user, updates) => {
     try {
-      await base44.entities.User.update(user.id, updates);
+      // UH-4: role / commission / agent code / approval are server/admin only.
+      await base44.functions.invoke('adminSetUserFields', {
+        userId: user.id,
+        values: updates,
+      });
       queryClient.setQueryData(['adminUsers'], (old = []) =>
         old.map(u => u.id === user.id ? { ...u, ...updates } : u)
       );
@@ -799,7 +804,11 @@ export default function AdminDashboard() {
       }
     } else if (assignTarget) {
       try {
-        await base44.entities.User.update(assignTarget, { referred_by_agent_code: agentCode, agent_id: agentId });
+        // UH-4: referral attribution is server/admin only.
+        await base44.functions.invoke('adminSetUserFields', {
+          userId: assignTarget,
+          values: { referred_by_agent_code: agentCode, agent_id: agentId },
+        });
         queryClient.setQueryData(['adminUsers'], (old = []) =>
           old.map(u => u.id === assignTarget ? { ...u, referred_by_agent_code: agentCode, agent_id: agentId } : u)
         );

@@ -1169,7 +1169,81 @@ Remove the `brand_ids` property from `base44/entities/User.jsonc`. Delete `docs/
 
 ---
 
-## ⏭️ NEXT SECURITY PACKAGE (approved, NOT started) — User Field Hardening
+## Package UH — User Field Hardening (UH-1 … UH-5) ⚠️ **IMPLEMENTED — BROWSER ABUSE PROBE PENDING**
+
+| | |
+|---|---|
+| **Date** | 2026-10-02 |
+| **Phase** | User Field Hardening — closes the pre-existing exposure found in Package #4.0 |
+| **Status** | **Implemented · build passing (exit 0) · schema audited · backend functions verified.** Browser FLS abuse probe staged, not yet run. |
+| **Production data changed** | **NONE** — code + one entity schema only. |
+| **Tranzila** | **Untouched.** The 3.1A blocker remains fully in force. |
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | 28 protected `User` fields gain field-level `rls.write:false`; every legitimate client writer is migrated to a trusted backend/service-role function FIRST. |
+| **B. Files/entities/data affected** | `base44/entities/User.jsonc` + 4 new backend functions + 1 edited + 7 client files. No data migration. |
+| **C. Exact rollback** | Remove the `rls` keys from `base44/entities/User.jsonc`; restore the 7 client call sites; delete the 4 new functions; restore `adminUpdateVerification` from HEAD. |
+| **D. Rollback changes** | Code + schema. |
+| **E. Data loss risk** | **None** — no record is migrated. |
+| **F. Online rollback** | Yes. |
+| **G. Complexity** | **MEDIUM** (per-field `rls` removal is independent and instant). |
+| **H. Verify after rollback** | Re-run build; confirm the client can again write a previously-locked field. |
+
+### New backend functions
+
+| Function | Auth | Owns |
+|---|---|---|
+| `grantProfileCompletionBonus` | authenticated user | `worker_credits` (profile bonus) |
+| `adminSetUserCredits` | admin / service role | `worker_credits` (absolute or delta) + `CreditTransaction` |
+| `submitKyc` | authenticated user | KYC submission — **forces** `kyc_status:'pending'` + `is_verified:false` |
+| `adminSetUserFields` | admin / service role | strict whitelist: access, agent/referral, reputation, social verdicts, KYC artefacts |
+
+**Changed:** `adminUpdateVerification` — now owns the KYC verdict pair exclusively; `isVerified`/`kycStatus` individually optional; the rejection push fires only on an actual rejection; `silent` suppresses the push for internal tooling; switched to `requireInternalOperator`.
+
+### Locked fields (28)
+
+`role` · `is_approved` · `is_blocked` · `is_verified` · `kyc_status` · `worker_credits` · `rating` · `rating_count` · `score_tasks` · `tasks_completed` · `repeat_hires` · `avg_response_minutes` · `on_time_rate` · **`trust_score` (declared)** · `agent_code` · `referred_by_agent_code` · `agent_id` · `commission_rate` · `referral_clicks` · `id_number` · `id_photo_url` · `instagram_verified` · `facebook_verified` · `tiktok_verified` · `instagram_verify_code` · `facebook_verify_code` · `tiktok_verify_code` · `brand_ids`
+
+**Left client-writable (18):** profile, media, profession, preferences, certificates, social handles, `notifications_enabled`, `fcm_tokens`, `last_active_at`, `registration_source`, `verified_celebration_shown`.
+
+### Client write paths migrated
+
+| Was | Now |
+|---|---|
+| `WorkerOnboarding` — `updateMe({ worker_credits })` | `grantProfileCompletionBonus` |
+| `VerifyModal` — `updateMe({ … , is_verified, kyc_status })` | `submitKyc` |
+| `AdminDashboard` ×5 — direct `entities.User.update` | `adminUpdateVerification` / `adminSetUserFields` |
+| `AuthContext` — `updateMe({ referred_by_agent_code })` | server-derived via `linkReferralDevice` (awaited before the signup bonus) |
+| `SimulatorPanel` ×7 — `updateMe` of credits/verification | `adminSetUserCredits` / `adminUpdateVerification` / `adminSetUserFields` |
+| `demoMode` — `updateMe` of protected fields | split: plain → `updateMe`; protected → `adminSetUserFields`; verdict → `adminUpdateVerification` (`silent`) |
+
+### Verification performed
+
+- Build: **exit 0**.
+- Schema audit: **46 fields · 28 locked · 0 missing locks** · `trust_score` present · `brand_ids.rls.write === false`.
+- Zero client `entities.User.update` calls remain; **all** backend User writes use `asServiceRole`.
+- Function smoke tests (no writes): `adminSetUserFields` rejects a non-whitelisted field (400) · `adminSetUserCredits` validates (400) · `adminUpdateVerification` validates (400) · `grantProfileCompletionBonus` returns `already_granted` (idempotency confirmed, no write).
+- **Browser FLS abuse probe: STAGED, NOT RUN.** `/fls-abuse` (temporary, unlinked) — 26 protected-field write attempts + a `bio` control, against the throwaway only, with mandatory cleanup.
+
+### Known limitations
+
+- `uploadFile` for KYC uses the public upload path (pre-existing, out of scope).
+- The throwaway's password is temporarily embedded in the probe page; both are removed with the page.
+
+### Rollback
+
+1. Remove every `"rls": { "write": false }` block from `base44/entities/User.jsonc` (leave `brand_ids`).
+2. Restore the 7 client call sites listed above.
+3. Delete `grantProfileCompletionBonus`, `adminSetUserCredits`, `submitKyc`, `adminSetUserFields`.
+4. Restore `adminUpdateVerification/entry.ts` from HEAD.
+5. **No data action required** — nothing was migrated.
+
+---
+
+## ⏭️ NEXT SECURITY PACKAGE (IMPLEMENTED — see Package UH above) — User Field Hardening
 
 Approved as a **separate security package that must run BEFORE the Multibrand work continues**, because Package #4.0 found a **pre-existing live exposure** unrelated to Multibrand.
 

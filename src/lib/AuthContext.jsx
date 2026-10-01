@@ -167,19 +167,22 @@ export const AuthProvider = ({ children }) => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const refFromUrl = urlParams.get('ref');
-        const savedRef = refFromUrl || localStorage.getItem('joba24_ref_code');
-        if (savedRef && !currentUser.referred_by_agent_code) {
+        // UH-4: attribution is NEVER written from a client-supplied ref code.
+        // The agent is derived SERVER-SIDE by linkReferralDevice() from the
+        // persisted ReferralEvent for this device (first-touch, immutable).
+        // It is awaited here so the signup bonus below sees the resolved
+        // attribution. The ref code stays in localStorage so CaptureRefCode
+        // can still ensure the ReferralEvent exists for this device.
+        const deviceId = localStorage.getItem('joba24_device_id');
+        if (deviceId) {
           try {
-            await base44.auth.updateMe({ referred_by_agent_code: savedRef });
-            // Only remove from localStorage after successful update — otherwise
-            // linkReferralDevice can still recover it from ReferralEvent records.
-            localStorage.removeItem('joba24_ref_code');
+            await base44.functions.invoke('linkReferralDevice', { device_id: deviceId });
           } catch (e) {
-            console.error('[Joba24] Auth: updateMe referred_by_agent_code failed, keeping ref in localStorage:', e?.message);
+            console.error('[Joba24] Auth: linkReferralDevice failed:', e?.message);
           }
-          // Clean URL to prevent re-processing
-          if (refFromUrl) window.history.replaceState({}, '', window.location.pathname);
         }
+        // Clean URL to prevent re-processing
+        if (refFromUrl) window.history.replaceState({}, '', window.location.pathname);
       } catch (refErr) {
         console.error('[Joba24] Auth: failed to apply referral code:', refErr?.message);
       }
@@ -255,15 +258,9 @@ export const AuthProvider = ({ children }) => {
         }
       } catch {}
 
-      // Link this device's ReferralEvents to the authenticated user (pre-registration downloads)
-      try {
-        const deviceId = localStorage.getItem('joba24_device_id');
-        if (deviceId) {
-          base44.functions.invoke('linkReferralDevice', { device_id: deviceId }).catch(() => {});
-        }
-      } catch (linkErr) {
-        console.error('[Joba24] Auth: failed to link referral device:', linkErr?.message);
-      }
+      // ReferralEvent linking (pre-registration downloads) happens in the awaited
+      // linkReferralDevice() call above, so attribution is resolved server-side
+      // BEFORE the signup bonus runs.
 
       // Clean up any previous subscriptions before creating new ones (prevents leaks on re-auth)
       if (unsubUserRef.current) { unsubUserRef.current(); unsubUserRef.current = null; }

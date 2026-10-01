@@ -153,13 +153,15 @@ export default function VerifyModal({ onClose, onSuccess }) {
     }
     if (!formValid) return;
     setLoading(true);
-    await base44.auth.updateMe({
+    // UH-2: KYC submission goes through the trusted backend function. The client
+    // submits ONLY its own data — the verdict (is_verified / kyc_status) is
+    // forced server-side and can never be decided here. UX is unchanged: the
+    // modal still shows "pending" immediately after submitting.
+    await base44.functions.invoke('submitKyc', {
       full_name: form.full_name,
       phone: form.phone,
       id_number: form.id_number,
       id_photo_url: idPhotoUrl,
-      is_verified: false,
-      kyc_status: 'pending',
     });
     queryClient.invalidateQueries({ queryKey: ['me'] });
     setLoading(false);

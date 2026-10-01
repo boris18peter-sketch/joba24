@@ -262,16 +262,18 @@ export default function SimulatorPanel() {
     return t;
   };
 
+  // UH-1: credits are mutated ONLY by the trusted admin function, which reads
+  // and writes the balance and records the matching CreditTransaction.
   const addCredits = async (amount, type = 'Signup_Bonus', note = '') => {
-    const current = me?.worker_credits ?? 0;
-    const newBalance = current + amount;
-    await base44.auth.updateMe({ worker_credits: newBalance });
-    await base44.entities.CreditTransaction.create({
-      user_id: me.id, amount, type,
+    const res = await base44.functions.invoke('adminSetUserCredits', {
+      userId: me.id,
+      delta: amount,
+      type,
       note: note || `🧪 סימולטור: +${amount}`,
-      balance_after: newBalance,
     });
-    toast.success(`✅ נוספו ${amount} ג'ובות | יתרה: ${newBalance}`);
+    if (res.data?.error) { toast.error(res.data.error); return; }
+    queryClient.invalidateQueries({ queryKey: ['me'] });
+    toast.success(`✅ נוספו ${amount} ג'ובות | יתרה: ${res.data.newBalance}`);
   };
 
   const advanceWorkerStatus = async (task, ws) => {
@@ -458,13 +460,17 @@ export default function SimulatorPanel() {
             onClick={wrap(() => addCredits(100, 'Purchase', 'רכישה גדולה'))} />
           <Btn label="➕ +5 (לבדיקת חסמת Story)" color="#d97706"
             onClick={wrap(async () => {
-              await base44.auth.updateMe({ worker_credits: 5 });
+              await base44.functions.invoke('adminSetUserCredits', { userId: me.id, setBalance: 5 });
+              queryClient.invalidateQueries({ queryKey: ['me'] });
               toast('יתרה = 5 (פחות מ-10 לבדיקת חסמת Story)');
             })} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
           <Btn label="🔄 אפס ל-0" color="#dc2626"
-            onClick={wrap(() => base44.auth.updateMe({ worker_credits: 0 }))} />
+            onClick={wrap(async () => {
+              await base44.functions.invoke('adminSetUserCredits', { userId: me.id, setBalance: 0 });
+              queryClient.invalidateQueries({ queryKey: ['me'] });
+            })} />
           <Btn label="💰 בונוס לויאלטי" color="#8b5cf6"
             onClick={wrap(async () => {
               await base44.functions.invoke('grantLoyaltyReward', { userId: me?.id });
@@ -494,8 +500,8 @@ export default function SimulatorPanel() {
             const credits = me?.worker_credits ?? 0;
             if (credits < 10) { toast.error(`צריך 10, יש ${credits}`); return; }
             const newBalance = credits - 10;
-            await base44.auth.updateMe({ worker_credits: newBalance });
-            await base44.entities.CreditTransaction.create({ user_id: me.id, amount: -10, type: 'Application_Fee', note: 'Story בדיקה', balance_after: newBalance });
+            await base44.functions.invoke('adminSetUserCredits', { userId: me.id, delta: -10, type: 'Application_Fee', note: 'Story בדיקה' });
+            queryClient.invalidateQueries({ queryKey: ['me'] });
             await base44.entities.Task.create({
               title: '🧪 Story בדיקה', description: 'Story לבדיקה', price: 100, base_price: 100,
               city: 'תל אביב', location_name: 'תל אביב, דיזנגוף 50', lat: 32.08, lng: 34.77,
@@ -568,23 +574,24 @@ export default function SimulatorPanel() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
           <Btn label="✅ סמן כמאומת" color="#059669"
-            onClick={wrap(() => base44.auth.updateMe({ is_verified: true }))} />
+            onClick={wrap(() => base44.functions.invoke('adminUpdateVerification', { userId: me.id, isVerified: true, silent: true }))} />
           <Btn label="❌ הסר אימות" color="#dc2626"
-            onClick={wrap(() => base44.auth.updateMe({ is_verified: false }))} />
+            onClick={wrap(() => base44.functions.invoke('adminUpdateVerification', { userId: me.id, isVerified: false, silent: true }))} />
         </div>
         <Btn label="🔐 פתח מודל אימות" color="#7c3aed" outline
           onClick={async () => navigate('/?open_verify=1')} />
         <Btn label="🟢 אשר + הצג פופאפ ווי ירוק (זרימה מלאה)" color="#059669"
           onClick={async () => {
             if (me?.id) localStorage.removeItem(`joba24_verified_celebration_${me.id}`);
-            await base44.auth.updateMe({ is_verified: true, kyc_status: 'approved' });
+            await base44.functions.invoke('adminUpdateVerification', { userId: me.id, isVerified: true, kycStatus: 'approved', silent: true });
             toast.success('סומן כמאומת — פופאפ אמור להופיע');
             refetchMe();
           }} />
         <Btn label="🏆 אשר + הצג פופאפ ווי זהב (זרימה מלאה)" color="#f59e0b"
           onClick={async () => {
             if (me?.id) localStorage.removeItem(`joba24_verified_celebration_${me.id}`);
-            await base44.auth.updateMe({ is_verified: true, kyc_status: 'approved', instagram_verified: true });
+            await base44.functions.invoke('adminUpdateVerification', { userId: me.id, isVerified: true, kycStatus: 'approved', silent: true });
+            await base44.functions.invoke('adminSetUserFields', { userId: me.id, values: { instagram_verified: true } });
             toast.success('סומן כזהב — פופאפ אמור להופיע');
             refetchMe();
           }} />

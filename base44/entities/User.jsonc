@@ -9,21 +9,35 @@
         "user",
         "agent"
       ],
-      "default": "user"
+      "default": "user",
+      "description": "UH-4: server/admin only \u2014 a user must never promote themselves. Written by adminSetUserFields (service role).",
+      "rls": {
+        "write": false
+      }
     },
     "is_approved": {
       "type": "boolean",
       "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05d0\u05d5\u05e9\u05e8 \u05dc\u05d2\u05d9\u05e9\u05d4 \u05de\u05dc\u05d0\u05d4 \u05dc\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4 (Pre-launch gate)"
+      "description": "\u05d4\u05d0\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9 \u05d0\u05d5\u05e9\u05e8 \u05dc\u05d2\u05d9\u05e9\u05d4 \u05de\u05dc\u05d0\u05d4 \u05dc\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4 (Pre-launch gate). UH-4: server/admin only \u2014 written by adminBulkUpdateUsers / adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "is_blocked": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "UH-4: server/admin only \u2014 a user must never unblock themselves. Written by adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "is_verified": {
       "type": "boolean",
       "default": false,
-      "description": "\u05d5\u05d5\u05d9 \u05d9\u05e8\u05d5\u05e7 \u2014 \u05de\u05d0\u05d5\u05de\u05ea \u05e8\u05e7 \u05dc\u05d0\u05d7\u05e8 \u05d0\u05d9\u05e9\u05d5\u05e8 \u05de\u05e0\u05d4\u05dc \u05d1-KYC"
+      "description": "\u05d5\u05d5\u05d9 \u05d9\u05e8\u05d5\u05e7 \u2014 \u05de\u05d0\u05d5\u05de\u05ea \u05e8\u05e7 \u05dc\u05d0\u05d7\u05e8 \u05d0\u05d9\u05e9\u05d5\u05e8 \u05de\u05e0\u05d4\u05dc \u05d1-KYC. UH-2: server/admin only \u2014 the KYC verdict is written ONLY by adminUpdateVerification. submitKyc can only ever set it to false.",
+      "rls": {
+        "write": false
+      }
     },
     "kyc_status": {
       "type": "string",
@@ -32,7 +46,10 @@
         "approved",
         "rejected"
       ],
-      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05d0\u05d9\u05de\u05d5\u05ea KYC: pending=\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05d0\u05d9\u05e9\u05d5\u05e8, approved=\u05de\u05d0\u05d5\u05e9\u05e8, rejected=\u05e0\u05d3\u05d7\u05d4"
+      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05d0\u05d9\u05de\u05d5\u05ea KYC: pending=\u05de\u05de\u05ea\u05d9\u05df \u05dc\u05d0\u05d9\u05e9\u05d5\u05e8, approved=\u05de\u05d0\u05d5\u05e9\u05e8, rejected=\u05e0\u05d3\u05d7\u05d4. UH-2: server/admin only \u2014 written by submitKyc (pending only) or adminUpdateVerification (the verdict).",
+      "rls": {
+        "write": false
+      }
     },
     "verified_celebration_shown": {
       "type": "boolean",
@@ -89,23 +106,42 @@
     },
     "worker_credits": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "UH-1: server only \u2014 a user must never write their own balance. Every mutation runs through a service-role function that re-reads the balance and writes the matching CreditTransaction.",
+      "rls": {
+        "write": false
+      }
     },
     "rating": {
-      "type": "number"
+      "type": "number",
+      "description": "UH-3: server only \u2014 derived from persisted Reviews by submitReview.",
+      "rls": {
+        "write": false
+      }
     },
     "rating_count": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "UH-3: server only \u2014 derived from persisted Reviews by submitReview.",
+      "rls": {
+        "write": false
+      }
     },
     "score_tasks": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "UH-3: server only \u2014 platform-derived task statistic.",
+      "rls": {
+        "write": false
+      }
     },
     "tasks_completed": {
       "type": "number",
       "default": 0,
-      "description": "\u05de\u05e1\u05e4\u05e8 \u05de\u05e9\u05d9\u05de\u05d5\u05ea \u05e9\u05d4\u05d5\u05e9\u05dc\u05de\u05d5"
+      "description": "\u05de\u05e1\u05e4\u05e8 \u05de\u05e9\u05d9\u05de\u05d5\u05ea \u05e9\u05d4\u05d5\u05e9\u05dc\u05de\u05d5. UH-3: server only \u2014 incremented by completeTask.",
+      "rls": {
+        "write": false
+      }
     },
     "certificates": {
       "type": "array",
@@ -131,40 +167,84 @@
     },
     "repeat_hires": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "UH-3: server only \u2014 derived from persisted Reviews by submitReview.",
+      "rls": {
+        "write": false
+      }
     },
     "avg_response_minutes": {
-      "type": "number"
+      "type": "number",
+      "description": "UH-3: server only \u2014 platform-derived response statistic.",
+      "rls": {
+        "write": false
+      }
     },
     "on_time_rate": {
-      "type": "number"
+      "type": "number",
+      "description": "UH-3: server only \u2014 derived from persisted Reviews by submitReview.",
+      "rls": {
+        "write": false
+      }
+    },
+    "trust_score": {
+      "type": "number",
+      "default": 1,
+      "description": "UH-3: server only \u2014 platform trust score, reduced by reportNoShow and cancelTaskPayment. Declared by User Field Hardening (was written at runtime without a schema entry).",
+      "rls": {
+        "write": false
+      }
     },
     "agent_code": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e4\u05e0\u05d9\u05d4 \u05d0\u05d9\u05e9\u05d9 \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df"
+      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e4\u05e0\u05d9\u05d4 \u05d0\u05d9\u05e9\u05d9 \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df. UH-4: server/admin only \u2014 written by adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "referred_by_agent_code": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d2\u05d9\u05d9\u05e1 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+      "description": "\u05e7\u05d5\u05d3 \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d2\u05d9\u05d9\u05e1 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9. UH-4: server only \u2014 first-touch attribution derived by linkReferralDevice from persisted ReferralEvents, never from client input.",
+      "rls": {
+        "write": false
+      }
     },
     "agent_id": {
       "type": "string",
-      "description": "ID \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d2\u05d9\u05d9\u05e1 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+      "description": "ID \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df \u05e9\u05d2\u05d9\u05d9\u05e1 \u05d0\u05ea \u05d4\u05de\u05e9\u05ea\u05de\u05e9. UH-4: server/admin only \u2014 written by linkReferralDevice / adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "commission_rate": {
       "type": "number",
-      "default": 0
+      "default": 0,
+      "description": "UH-4: server/admin only \u2014 changes commission entitlement. Written by adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "referral_clicks": {
       "type": "number",
       "default": 0,
-      "description": "\u05de\u05e1\u05e4\u05e8 \u05dc\u05d7\u05d9\u05e6\u05d5\u05ea \u05e2\u05dc \u05dc\u05d9\u05e0\u05e7 \u05d4\u05d4\u05e4\u05e0\u05d9\u05d4 \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df"
+      "description": "\u05de\u05e1\u05e4\u05e8 \u05dc\u05d7\u05d9\u05e6\u05d5\u05ea \u05e2\u05dc \u05dc\u05d9\u05e0\u05e7 \u05d4\u05d4\u05e4\u05e0\u05d9\u05d4 \u05e9\u05dc \u05d4\u05e1\u05d5\u05db\u05df. UH-4: server only \u2014 incremented by trackReferralClick.",
+      "rls": {
+        "write": false
+      }
     },
     "id_number": {
-      "type": "string"
+      "type": "string",
+      "description": "UH-2: user-submitted KYC data, written server-side by submitKyc.",
+      "rls": {
+        "write": false
+      }
     },
     "id_photo_url": {
-      "type": "string"
+      "type": "string",
+      "description": "UH-2: user-submitted KYC data, written server-side by submitKyc.",
+      "rls": {
+        "write": false
+      }
     },
     "last_active_at": {
       "type": "string",
@@ -192,42 +272,60 @@
     },
     "instagram_username": {
       "type": "string",
-      "description": "\u05e9\u05dd \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05d0\u05d9\u05e0\u05e1\u05d8\u05d2\u05e8\u05dd"
+      "description": "\u05e9\u05dd \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05d0\u05d9\u05e0\u05e1\u05d8\u05d2\u05e8\u05dd \u2014 legitimately user-editable"
     },
     "instagram_verified": {
       "type": "boolean",
       "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05d0\u05d9\u05e0\u05e1\u05d8\u05d2\u05e8\u05dd \u05d0\u05d5\u05de\u05ea"
+      "description": "\u05d4\u05d0\u05dd \u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05d0\u05d9\u05e0\u05e1\u05d8\u05d2\u05e8\u05dd \u05d0\u05d5\u05de\u05ea. UH-4: server only \u2014 written by verifyInstagram (server-derived) or adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "instagram_verify_code": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05d0\u05d9\u05e0\u05e1\u05d8\u05d2\u05e8\u05dd"
+      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05d0\u05d9\u05e0\u05e1\u05d8\u05d2\u05e8\u05dd. UH-2: server only \u2014 written by verifyInstagram.",
+      "rls": {
+        "write": false
+      }
     },
     "facebook_username": {
       "type": "string",
-      "description": "\u05e9\u05dd \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05e4\u05d9\u05d9\u05e1\u05d1\u05d5\u05e7"
+      "description": "\u05e9\u05dd \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05e4\u05d9\u05d9\u05e1\u05d1\u05d5\u05e7 \u2014 legitimately user-editable"
     },
     "facebook_verified": {
       "type": "boolean",
       "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05e4\u05d9\u05d9\u05e1\u05d1\u05d5\u05e7 \u05d0\u05d5\u05de\u05ea"
+      "description": "\u05d4\u05d0\u05dd \u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05e4\u05d9\u05d9\u05e1\u05d1\u05d5\u05e7 \u05d0\u05d5\u05de\u05ea. UH-4: server only \u2014 written by verifyInstagram (server-derived) or adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "facebook_verify_code": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05e4\u05d9\u05d9\u05e1\u05d1\u05d5\u05e7"
+      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05e4\u05d9\u05d9\u05e1\u05d1\u05d5\u05e7. UH-2: server only \u2014 written by verifyInstagram.",
+      "rls": {
+        "write": false
+      }
     },
     "tiktok_username": {
       "type": "string",
-      "description": "\u05e9\u05dd \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05d8\u05d9\u05e7\u05d8\u05d5\u05e7"
+      "description": "\u05e9\u05dd \u05de\u05e9\u05ea\u05de\u05e9 \u05d1\u05d8\u05d9\u05e7\u05d8\u05d5\u05e7 \u2014 legitimately user-editable"
     },
     "tiktok_verified": {
       "type": "boolean",
       "default": false,
-      "description": "\u05d4\u05d0\u05dd \u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05d8\u05d9\u05e7\u05d8\u05d5\u05e7 \u05d0\u05d5\u05de\u05ea"
+      "description": "\u05d4\u05d0\u05dd \u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05d8\u05d9\u05e7\u05d8\u05d5\u05e7 \u05d0\u05d5\u05de\u05ea. UH-4: server only \u2014 written by verifyInstagram (server-derived) or adminSetUserFields.",
+      "rls": {
+        "write": false
+      }
     },
     "tiktok_verify_code": {
       "type": "string",
-      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05d8\u05d9\u05e7\u05d8\u05d5\u05e7"
+      "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05d8\u05d9\u05e7\u05d8\u05d5\u05e7. UH-2: server only \u2014 written by verifyInstagram.",
+      "rls": {
+        "write": false
+      }
     },
     "brand_ids": {
       "type": "array",

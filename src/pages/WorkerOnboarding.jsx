@@ -129,36 +129,26 @@ export default function WorkerOnboarding() {
         await base44.auth.updateMe(updateData);
         queryClient.invalidateQueries({ queryKey: ['me'] });
 
-        // On last step — mark join completed + grant the configured profile bonus (once per user, server-checked)
+        // On last step — mark join completed + grant the configured profile bonus.
+        // UH-1: the bonus is granted ONLY by the trusted backend function. It
+        // derives eligibility, the amount and the balance server-side, so the
+        // client can never compute or write its own credit balance.
         if (isLastStep && me?.id) {
           // Worker funnel — key worker acquisition conversion event.
           trackEvent('worker_profile_completed', {}, { dedupeKey: me.id });
           localStorage.setItem(JOIN_COMPLETED_KEY, '1');
           const bonusKey = JOIN_BONUS_GRANTED_KEY + '_' + me.id;
-          // Fast path: localStorage says already granted
           if (!localStorage.getItem(bonusKey)) {
-            // Server-side guard: check if a Loyalty_Reward (profile bonus) transaction already exists
-            const existingBonus = await base44.entities.CreditTransaction.filter({
-              user_id: me.id,
-              type: 'Loyalty_Reward',
-            });
-            if (existingBonus.length === 0 && profileBonus > 0) {
-              const freshMe = await base44.auth.me();
-              const currentCredits = freshMe.worker_credits ?? 0;
-              await base44.auth.updateMe({ worker_credits: currentCredits + profileBonus });
-              await base44.entities.CreditTransaction.create({
-                user_id: me.id,
-                amount: profileBonus,
-                type: 'Loyalty_Reward',
-                note: t('wo_bonus_note'),
-                balance_after: currentCredits + profileBonus,
-              });
-              setGrantedBonus(profileBonus);
-              queryClient.invalidateQueries({ queryKey: ['me'] });
+            try {
+              const res = await base44.functions.invoke('grantProfileCompletionBonus', {});
+              if (res.data?.granted) setGrantedBonus(res.data.amount);
+            } catch (bonusErr) {
+              console.error('Profile completion bonus error:', bonusErr);
             }
-            // Mark locally so we skip the server check next time
+            // Mark locally so we skip the call next time (server is authoritative)
             localStorage.setItem(bonusKey, '1');
           }
+          queryClient.invalidateQueries({ queryKey: ['me'] });
         }
       } catch (e) {
         console.error('Save error:', e);
