@@ -710,6 +710,96 @@ Three security findings were reviewed and **deliberately deferred** to a separat
 
 ---
 
+## Package #3.1D — Review Integrity Closure ✅ **SOURCE COMPLETE — NOT YET PUBLISHED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 3.1D — closes the review-integrity trust boundary recorded as residual risk #1 in Package #3.1C |
+| **Status** | **Source complete · reviewed · build passing.** **Deliberately NOT published.** |
+| **Last Known Good State** | see §LKGS-3.1D |
+| **Production data changed** | **NONE** — code only |
+
+### Scope (exactly what was approved — no expansion)
+
+`submitReview` only. No other function, entity, schema, RLS rule, workflow or client file was touched.
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | `submitReview` stops accepting `revieweeId` and `role` from the request body and derives both from the persisted `Task` and the authenticated caller. A caller who is neither party to the task is rejected. |
+| **B. Files/entities/data affected** | **1 backend file.** No entity, schema, RLS, workflow, secret, payment, credit or notification change. |
+| **C. Exact rollback procedure** | Restore the 3.1C destructure (`revieweeId`, `role`), the original `!taskId \|\| !revieweeId \|\| !rating \|\| !role` validation, and the single-line `isOwner` derivation; remove the `forbidden` import. |
+| **D. Rollback changes** | Code only. |
+| **E. Data loss risk on rollback** | **None.** No record was created, updated or deleted. |
+| **F. Online rollback possible** | Yes. |
+| **G. Rollback complexity** | **LOW** — one file, one function. |
+| **H. Verification after rollback** | Re-run build; confirm a review can again be submitted with a client-supplied `revieweeId`/`role`. |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `base44/functions/submitReview/entry.ts` | +1 import (`forbidden`) · destructure drops `revieweeId` + `role` · validation narrowed to `taskId` + `rating` · relationship derived server-side · non-party caller rejected · missing-counterpart rejected |
+
+### Trust boundary — before → after
+
+| Field | Before (3.1C) | After (3.1D) |
+|---|---|---|
+| `revieweeId` | **trusted from client** — any user id | **derived**: `isOwner ? task.worker_id : task.client_id` |
+| `role` (direction) | **trusted from client** — `'client'` or `'worker'` | **derived**: `isOwner ? 'client' : 'worker'` |
+| `isOwner` | derived server-side (3.1C) | derived server-side — unchanged |
+| Caller must be a party to the task | not enforced | **enforced** — otherwise `403` |
+| Task must have a counterpart for the direction | not enforced | **enforced** — otherwise `400` |
+
+### Derivation rule (authoritative)
+
+```
+isOwner  = task.client_id === user.id      // caller is the task's client
+isWorker = task.worker_id === user.id      // caller is the assigned worker
+
+if (!isOwner && !isWorker) → 403            // caller is neither party
+
+role       = isOwner ? 'client' : 'worker'  // direction, derived
+revieweeId = isOwner ? task.worker_id : task.client_id   // counterpart, derived
+
+if (!revieweeId) → 400                      // no legitimate counterpart
+```
+
+### Preserved behaviour (verified unchanged)
+
+Review eligibility · when reviews may be submitted · rating values · comment/content handling · duplicate-review behaviour and the loyalty retry-on-duplicate path · loyalty trigger conditions · loyalty math · task lifecycle (`worker_confirmed`) · credits · payments · notifications · schemas · RLS · KYC · OAuth/native auth.
+
+### Parity evidence (read-only, no production writes)
+
+- **Build:** exit 0.
+- **Caller parity (source level):** the only caller is `src/components/RatingModal.jsx`, which already derives the same values client-side — `revieweeId = isWorker ? task.client_id : task.worker_id` and `role = isWorker ? 'worker' : 'client'`. The server-side derivation reproduces the caller's own computation exactly. Its now-ignored `revieweeId`/`role`/`isOwner` fields were left in place (no client change needed).
+- **Persisted-record parity** across all **4** existing `Review` records, replaying the 3.1D derivation with each record's stored reviewer as the caller:
+  - **4/4** derived `role` === stored `role`.
+  - **4/4** derived `reviewee_id` === stored `reviewee_id`.
+  - **4/4** reviewers are a party to their task (3 client-side, 1 worker-side).
+  - The server-side derivation would have produced **byte-identical** relationship fields for every review ever written through this function.
+- **Loyalty parity:** the client → worker 5-star path is unchanged — `isOwner` is computed exactly as in 3.1C, so `grantLoyaltyReward` is still invoked under identical conditions with `{ taskId }`, and the worker → client review still never invokes it.
+- **Duplicate path:** the `existing.length > 0` branch and its loyalty retry are untouched.
+
+### Residual risks (recorded, NOT closed by 3.1D)
+
+1. **A second, unvalidated Review write path exists outside `submitReview`.** `src/components/CompletionModal.jsx` creates a `Review` record **directly** through the entity SDK (`base44.entities.Review.create`). That path is gated only by the `Review` RLS create rule (`data.reviewer_id === {{user.id}}`), so an authenticated caller can still POST a Review row with an arbitrary `task_id`, `reviewee_id` and `role`. **3.1D does not close this — it was outside the approved scope.** Impact is limited to **review-list integrity**: it cannot inflate `User.rating` (only `submitReview` updates that) and it cannot mint loyalty credits (the `grantLoyaltyReward` ownership check rejects a non-owner, and an owner forging a 5-star review about their own worker is acting within their own legitimate authority). Recommended follow-up: route `CompletionModal` through `submitReview`, or add server-side validation to that path.
+2. **`SimulatorPanel.jsx` also creates `Review` records directly** (two sites). Those are now behind the admin-only `/simulator` route guard from 3.1C, so they are admin-reachable only.
+3. **`notificationManager` runtime verification** still pending the controlled post-publish procedure (unchanged from 3.1B).
+4. **QA agent ↔ `qaBot`** service-role reachability remains unverified at runtime (unchanged from 3.1C).
+5. **Tranzila remains frozen.** The 3.1A blocker is fully in force and untouched.
+
+### Rollback
+
+1. In `base44/functions/submitReview/entry.ts`, remove the `forbidden` import line.
+2. Restore the destructure to `taskId, revieweeId, rating, comment, role,` and the validation to `if (!taskId || !revieweeId || !rating || !role)`.
+3. Replace the derivation block with the 3.1C single line `const isOwner = task.client_id === user.id;`.
+4. **No data action required** — nothing was migrated.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -897,6 +987,45 @@ Three security findings were reviewed and **deliberately deferred** to a separat
 | `submitReview` | signed-in user | `isOwner` |
 
 **To restore to LKGS-3.1C:** perform the per-file rollback in the Package #3.1C record above.
+
+---
+
+## LKGS-3.1D — pre-Package #3.1D
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #3.1D |
+| **Build result** | **exit 0** |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active` |
+| **Task records** | **272** — 272 attributed, 0 unattributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **123** — 123 attributed, 0 unattributed, 1 distinct `surface_brand_id` |
+| **Review** | **4** — 3 client-role · 1 worker-role · 4/4 reviewer is a party to their task |
+| **Review write paths** | **4** — 1 via `submitReview` (RatingModal) · 1 direct entity create (CompletionModal) · 2 direct entity creates (SimulatorPanel, admin-only) |
+| **Tasks with an assigned worker** | **4** |
+| **JobaSettings loyalty** | `loyalty_reward_percent` **10** · `loyalty_reward_min` **1** |
+| **ChatMessage** | 76 |
+| **User** | 145 |
+| **CreditTransaction** | 491 |
+| **NotificationLog** | 476 |
+| **NotificationConfig** | 23 |
+| **ReferralEvent** | 157 |
+| **DemoUser** | 100 |
+| **TranzilaPayment** | 17 — unchanged from LKGS-3.1B, still **EXPLAINED** |
+| **SupportMessage** | 10 |
+| **Report** | 1 |
+| **WorkerStat** | 1 |
+| **Transaction** | 1 |
+| **UserPresence** | 6 |
+| **RLS coverage** | 5/21 entities (`Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat`) |
+
+**Trust-boundary state at capture (the path 3.1D changes):**
+
+| Path | Auth at capture | Relationship inputs trusted from client |
+|---|---|---|
+| `submitReview` | signed-in user | `revieweeId`, `role` (`isOwner` already derived in 3.1C) |
+
+**To restore to LKGS-3.1D:** perform the rollback in the Package #3.1D record above.
 
 ---
 

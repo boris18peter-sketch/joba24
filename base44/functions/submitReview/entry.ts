@@ -1,8 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { forbidden } from '../../shared/internalAuth.ts';
 
 /**
  * submitReview — Creates a review and updates the reviewee's rating, trust score,
  * and on_time_rate on their profile. Also triggers loyalty bonus for 5-star worker reviews.
+ *
+ * ── Trust boundary (Package #3.1D) ────────────────────────────────────────
+ * The client supplies only the task identifier, the rating and the review text.
+ * WHO is reviewed and WHICH direction the review runs are derived server-side
+ * from the persisted Task and the authenticated caller. `revieweeId` and `role`
+ * are no longer accepted from the request body.
  */
 Deno.serve(async (req) => {
   try {
@@ -11,11 +18,11 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const {
-      taskId, revieweeId, rating, comment, role,
+      taskId, rating, comment,
       arrivedOnTime, professional, goodCommunication, fairPricing, wouldHireAgain,
     } = await req.json();
 
-    if (!taskId || !revieweeId || !rating || !role) {
+    if (!taskId || !rating) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -24,12 +31,27 @@ Deno.serve(async (req) => {
     const task = tasks?.[0];
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
 
-    // ── Ownership is derived server-side (Package #3.1C) ───────────────────
-    // `isOwner` distinguishes the client reviewing the worker (which is the only
-    // path that can grant the 5-star loyalty reward) from the worker reviewing
-    // the client. It is no longer read from the request body, so a client-supplied
-    // boolean can no longer influence the outcome.
-    const isOwner = task.client_id === user.id;
+    // ── Review relationship is derived server-side (Package #3.1D) ─────────
+    // Who is being reviewed, and in which direction, is determined exclusively
+    // by the persisted Task and the authenticated caller. The request body no
+    // longer carries `revieweeId` or `role`, so neither can be forged to aim a
+    // review at an unrelated user or to flip the review direction.
+    const isOwner = task.client_id === user.id;    // caller is the task's client
+    const isWorker = task.worker_id === user.id;   // caller is the assigned worker
+
+    if (!isOwner && !isWorker) {
+      // Caller is neither party to this task — no review relationship exists.
+      return forbidden('Only the task client or the assigned worker can review this task');
+    }
+
+    // Direction and counterpart, both derived — never taken from the client.
+    const role = isOwner ? 'client' : 'worker';
+    const revieweeId = isOwner ? task.worker_id : task.client_id;
+
+    if (!revieweeId) {
+      // The task has no legitimate counterpart for this review direction.
+      return Response.json({ error: 'Task has no counterpart to review' }, { status: 400 });
+    }
 
     // Prevent duplicate reviews — but retry loyalty bonus if it was missed on first attempt
     const existing = await base44.asServiceRole.entities.Review.filter({ task_id: taskId, reviewer_id: user.id });
