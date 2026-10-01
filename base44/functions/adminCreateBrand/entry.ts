@@ -149,9 +149,10 @@ Deno.serve(async (req) => {
     }
 
     // ── Go live (final step) ────────────────────────────────────────────────
-    for (const d of domains) {
-      await svc.entities.BrandDomain.update(d.id, { status: 'active' });
-    }
+    // Domains deliberately stay 'pending' here. A hostname may only be
+    // ACTIVATED once a server-side reachability check has confirmed it actually
+    // serves this app (adminManageDomain → verify → activate). Activating it at
+    // creation would bypass that gate for a hostname nobody has checked yet.
     const live = await svc.entities.Brand.update(brand.id, { status: requestedStatus });
 
     const primary = hostsToRegister[0];
@@ -159,9 +160,10 @@ Deno.serve(async (req) => {
       success: true,
       brand: live,
       config,
-      domains: domains.map((d) => ({ hostname: d.hostname, status: 'active', is_primary: d.is_primary })),
+      domains: domains.map((d) => ({ hostname: d.hostname, status: 'pending', is_primary: d.is_primary, verified: false })),
       category_count: rows.length,
       url: `https://${primary}`,
+      next_step: 'verify_domain',
     });
   } catch (error) {
     console.error('adminCreateBrand error:', error?.message, JSON.stringify(error?.data || {}));
