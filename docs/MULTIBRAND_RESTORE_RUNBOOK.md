@@ -800,6 +800,97 @@ Review eligibility · when reviews may be submitted · rating values · comment/
 
 ---
 
+## Package #3.1E — Review Write Path Consolidation ✅ **SOURCE COMPLETE — NOT YET PUBLISHED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 3.1E — closes residual risk #1 recorded in Package #3.1D (the second, unvalidated Review write path) |
+| **Status** | **Source complete · reviewed · build passing.** **Deliberately NOT published.** |
+| **Last Known Good State** | see §LKGS-3.1E |
+| **Production data changed** | **NONE** — code only |
+
+### Scope (exactly what was approved — no expansion)
+
+`src/components/CompletionModal.jsx` only. One file.
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | The direct `Review` entity creation in `CompletionModal` is replaced by a call to the secured `submitReview` function. The client-derived `revieweeId`/`role` values are deleted. |
+| **B. Files/entities/data affected** | **1 frontend file.** No entity, schema, RLS, workflow, secret, payment, credit or notification change. |
+| **C. Exact rollback procedure** | Restore the `const revieweeId = isWorker ? task.client_id : task.worker_id;` line and replace the `submitReview` invoke block with the original `base44.entities.Review.create({…})` call. |
+| **D. Rollback changes** | Code only. |
+| **E. Data loss risk on rollback** | **None.** No record was created, updated or deleted. |
+| **F. Online rollback possible** | Yes. |
+| **G. Rollback complexity** | **LOW** — one file, one block. |
+| **H. Verification after rollback** | Re-run build; confirm completing a task again writes a Review row directly. |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `src/components/CompletionModal.jsx` | removed `const revieweeId` · replaced direct `Review.create` with `base44.functions.invoke('submitReview', { taskId, rating, comment })` · added success guard matching `RatingModal`'s established pattern |
+
+### Complete Review write-path inventory (post-3.1E)
+
+| # | Location | Type | Classification |
+|---|---|---|---|
+| 1 | `base44/functions/submitReview/entry.ts:71` | `asServiceRole.entities.Review.create` | **SECURED PRODUCTION PATH — the single authority** |
+| 2 | `src/pages/SimulatorPanel.jsx:609` | `entities.Review.create` (worker-side) | **ADMIN-ONLY SIMULATOR** (behind the 3.1C `/simulator` admin route guard) |
+| 3 | `src/pages/SimulatorPanel.jsx:618` | `entities.Review.create` (client-side) | **ADMIN-ONLY SIMULATOR** (behind the 3.1C `/simulator` admin route guard) |
+| — | `src/components/CompletionModal.jsx` | ~~`entities.Review.create`~~ | **REMOVED by this package** |
+
+**No `Review.update`, `Review.updateMany`, `Review.delete` or `Review.deleteMany` call exists anywhere in the codebase.** There is no update path and no delete path.
+
+**Read-only paths** (unchanged, all reads): `AdminDashboard`, `Leaderboard`, `Profile`, `SimulatorPanel`, `TaskDetail`, `WorkerProfile`, `getPublicUserProfile`, `grantLoyaltyReward`, `runQAChecks`, `submitReview`.
+
+**Conclusion:** for a normal production user there is now **exactly one** authoritative Review creation path — `submitReview`.
+
+### Trust boundary — before → after
+
+| | Before (3.1D) | After (3.1E) |
+|---|---|---|
+| Production Review write paths | **2** — `submitReview` *and* a direct client-side create in `CompletionModal` | **1** — `submitReview` |
+| `CompletionModal` relationship inputs | client-computed `revieweeId` + `role`, written directly | **not computed, not sent** — derived server-side |
+| `CompletionModal` fields sent | `task_id`, `reviewer_id`, `reviewee_id`, `rating`, `comment`, `role` | `taskId`, `rating`, `comment` |
+
+### Behaviour parity and intentional corrections
+
+Preserved exactly: same rating · same comment/review text · same task · same success state · same modal behaviour (close + `navigate('/')`) · same downstream refresh (`invalidateQueries` for `['tasks']`, `['task', id]`, `['me']` unchanged) · same success toast · same silent-failure behaviour (a rejected mutation still leaves the modal open with no `onError` handler, exactly as before).
+
+**Three intentional, verified consequences of consolidation** — all previously *missing* because the direct write bypassed the secured function:
+
+1. **`User.rating` / `rating_count` now update** for a review left at task completion. Previously a completion-time review never affected the reviewee's rating average.
+2. **The loyalty bonus now triggers** for a client's 5-star review at task completion. Previously this path silently skipped the reward. The loyalty **math and eligibility are untouched** — `grantLoyaltyReward` still derives everything from the persisted review and task.
+3. **Duplicate protection now covers this path.** Previously, completing a task after a review already existed created a *second* Review row. `submitReview`'s `(task_id, reviewer_id)` check now returns "Already reviewed" — a genuine duplicate-row fix.
+
+No second rating update and no second loyalty trigger is introduced: `submitReview` performs each exactly once, and the direct create it replaced was removed rather than kept alongside it.
+
+### Parity evidence (read-only, no production writes)
+
+- **Build:** exit 0.
+- **Direction parity:** `CompletionModal` previously computed `role = isWorker ? 'worker' : 'client'` and `revieweeId = isWorker ? task.client_id : task.worker_id`. `submitReview` derives the identical values (Package #3.1D), so both review directions — client → worker and worker → client — resolve to exactly the same relationship as before.
+- **Global re-scan after the change:** zero direct `Review` creates remain in production frontend code; the only remaining ones are the two admin-only simulator sites.
+- **Duplicate key unchanged:** both the old and new flows key on `task_id` + `reviewer_id`.
+- **Downstream reads unchanged:** `TaskDetail`'s `Review.filter({ task_id, reviewer_id: me.id })` gate still sees the same row shape.
+
+### Residual risks (recorded, NOT closed by 3.1E)
+
+1. **The `Review` entity is still directly writable through the platform entity API by any authenticated user, subject only to RLS** (`create: { data.reviewer_id: "{{user.id}}" }`). No client code path remains, but a caller using the SDK directly could still POST a Review row with an arbitrary `task_id`/`reviewee_id`/`role`. Closing this requires an **RLS change** (`Review` create → admin/service-role only), which is **explicitly out of scope for 3.1E**. Note for that future package: `submitReview` writes via `asServiceRole` and would be unaffected, but the two **admin-only simulator sites use the user-scoped client** and would need to move to service role at the same time.
+2. **`notificationManager` runtime verification** still pending the controlled post-publish procedure (unchanged from 3.1B).
+3. **QA agent ↔ `qaBot`** service-role reachability remains unverified at runtime (unchanged from 3.1C).
+4. **Tranzila remains frozen.** The 3.1A blocker is fully in force and untouched.
+
+### Rollback
+
+1. In `src/components/CompletionModal.jsx`, restore `const revieweeId = isWorker ? task.client_id : task.worker_id;` beneath `const isWorker = …`.
+2. Replace the `submitReview` invoke block with the original `await base44.entities.Review.create({ task_id: task.id, reviewer_id: me.id, reviewee_id: revieweeId, rating, comment, role: isWorker ? 'worker' : 'client' });`.
+3. **No data action required** — nothing was migrated.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -1026,6 +1117,47 @@ Review eligibility · when reviews may be submitted · rating values · comment/
 | `submitReview` | signed-in user | `revieweeId`, `role` (`isOwner` already derived in 3.1C) |
 
 **To restore to LKGS-3.1D:** perform the rollback in the Package #3.1D record above.
+
+---
+
+## LKGS-3.1E — pre-Package #3.1E
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #3.1E |
+| **Build result** | **exit 0** |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active` |
+| **Task records** | **272** — 272 attributed, 0 unattributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **123** — 123 attributed, 0 unattributed, 1 distinct `surface_brand_id` |
+| **Review** | **4** — 3 client-role · 1 worker-role · 4/4 reviewer is a party to their task |
+| **Review write paths** | **3** — 1 secured production (`submitReview`) · 2 admin-only simulator · **plus 1 unvalidated production path** (`CompletionModal`) closed by this package |
+| **Review update / delete paths** | **0** — none exist in code |
+| **Tasks with an assigned worker** | **4** |
+| **JobaSettings loyalty** | `loyalty_reward_percent` **10** · `loyalty_reward_min` **1** |
+| **ChatMessage** | 76 |
+| **User** | 145 |
+| **CreditTransaction** | 491 |
+| **NotificationLog** | 476 |
+| **NotificationConfig** | 23 |
+| **ReferralEvent** | 157 |
+| **DemoUser** | 100 |
+| **TranzilaPayment** | 17 — unchanged from LKGS-3.1B, still **EXPLAINED** |
+| **SupportMessage** | 10 |
+| **Report** | 1 |
+| **WorkerStat** | 1 |
+| **Transaction** | 1 |
+| **UserPresence** | 6 |
+| **RLS coverage** | 5/21 entities (`Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat`) |
+
+**Review trust-boundary state at capture:**
+
+| Path | Auth at capture | Relationship inputs trusted from client |
+|---|---|---|
+| `submitReview` | signed-in user, must be a party to the task (3.1D) | none — fully derived |
+| `CompletionModal` direct create | signed-in user, **no server-side validation** | `reviewee_id`, `role` written straight through |
+
+**To restore to LKGS-3.1E:** perform the rollback in the Package #3.1E record above.
 
 ---
 

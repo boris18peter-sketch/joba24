@@ -15,7 +15,6 @@ export default function CompletionModal({ task, me, onClose }) {
   const { t, isRTL } = useLanguage();
 
   const isWorker = me?.id === task.worker_id;
-  const revieweeId = isWorker ? task.client_id : task.worker_id;
 
   const completeMutation = useMutation({
     mutationFn: async () => {
@@ -26,14 +25,19 @@ export default function CompletionModal({ task, me, onClose }) {
       if (!isWorker) {
         base44.functions.invoke('releasePayment', { taskId: task.id }).catch(e => console.warn('releasePayment:', e));
       }
-      await base44.entities.Review.create({
-        task_id: task.id,
-        reviewer_id: me.id,
-        reviewee_id: revieweeId,
+      // ── Review creation (Package #3.1E) ───────────────────────────────────
+      // Goes through the secured submitReview function — the single
+      // authoritative production path for creating a Review. It derives the
+      // reviewee and the review direction server-side from the persisted Task
+      // and the authenticated caller, so only the task id, the rating and the
+      // review text are sent. No relationship or ownership value is computed
+      // or trusted here.
+      const res = await base44.functions.invoke('submitReview', {
+        taskId: task.id,
         rating,
         comment,
-        role: isWorker ? 'worker' : 'client',
       });
+      if (!res.data?.success) throw new Error(res.data?.error || 'review_failed');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
