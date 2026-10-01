@@ -219,6 +219,54 @@ Yes — no downtime required.
 
 ---
 
+## Package #2 — Joba24 Historical Attribution Backfill ⛔ **BLOCKED — NOT DEPLOYED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 2 (Backfill) |
+| **Status** | **BLOCKED — canonical Brand identifier unresolved** |
+| **Last Known Good State** | see §LKGS-2 |
+| **Production data changed** | **NONE** |
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | `Task.origin_brand_id` and `TaskApplication.surface_brand_id` set to the canonical Joba24 Brand identifier, only where the field is currently unset |
+| **B. Files/entities/data affected** | `Task` (272 records), `TaskApplication` (123 records). **No schema, no code, no configuration.** |
+| **C. Exact rollback procedure** | Using the migration manifest, reset **only** the record IDs listed in it to `NULL`. Never a blanket `origin_brand_id = NULL`. |
+| **D. Rollback changes** | Data only (field values). No schema, code or configuration. |
+| **E. Data loss risk on rollback** | None — the fields are unset on every record and carry no business meaning |
+| **F. Online rollback possible** | Yes |
+| **G. Rollback complexity** | LOW |
+| **H. Verification after rollback** | Re-run counts; confirm all Task/TaskApplication fields identical to LKGS-2 |
+
+### ⛔ Blocker — canonical Brand identifier is ambiguous
+
+The implementation and the blueprint **disagree** on whether these fields hold the Brand **record ID** or the Brand **slug**:
+
+| Source | Implies |
+|---|---|
+| `src/lib/brandResolver.js` — `resolveBrandSlug()`, `DEFAULT_BRAND_SLUG = 'joba24'`, `KNOWN_DOMAINS` values are slugs | **slug** |
+| Blueprint §5 — `task.origin_brand_id === surface` where `surface === 'joba24'` | **slug** |
+| Field naming `origin_brand_id` / `surface_brand_id` (`_id` suffix, consistent with `client_id`, `worker_id`, `task_id`, `reviewer_id` in this codebase) | **record ID** |
+| ADR-17 — lists "`brand_id` and `brand.slug`" as two **distinct** identifiers | **record ID** |
+| ADR-19 — chain ends `→ brand_id → BrandContext`, but the implemented resolver emits a **slug** | **contradiction** |
+
+**Secondary finding:** `brandResolver.js` cites its authority as "§R בבלופרינט" — **no §R exists** in the blueprint (sections are 1–7). The resolver was written against a different blueprint revision than the one that was approved.
+
+**Resolution required before any write.** Candidate values:
+
+| Option | Value | Consequence |
+|---|---|---|
+| **A — Brand record ID** | `6abdfc541dc144ca0d91fde9` | Matches `_id` naming and ADR-17; requires `brandResolver` to return an ID (or a slug→ID lookup) |
+| **B — Brand slug** | `joba24` | Matches `brandResolver`; requires reinterpreting the `_id`-suffixed field names and breaks the codebase naming convention |
+
+**No production data may be written until one option is chosen and the blueprint, the resolver and the field semantics are aligned.**
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -238,6 +286,32 @@ Yes — no downtime required.
 | **Golden Suite** | baseline to be recorded (Phase 0) |
 
 **To restore to LKGS-1:** perform the Package #1 rollback procedure above.
+
+---
+
+## LKGS-2 — pre-Package #2
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01 10:14 (Asia/Jerusalem), **before any backfill** |
+| **Repository version** | `71a495b4aee16b37d8c69e88d5b31687edddb382` — "Add custom domain capability verification report" |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, name `Joba24`, status `active`, origin `platform`, is_default `true` |
+| **Task records** | **272** |
+| **Task.origin_brand_id NULL/unset** | **272** |
+| **Task.origin_brand_id non-null** | **0** |
+| **TaskApplication records** | **123** |
+| **TaskApplication.surface_brand_id NULL/unset** | **123** |
+| **TaskApplication.surface_brand_id non-null** | **0** |
+| **Task created_date range** | 2026-05-14 → 2026-09-30 |
+| **RLS coverage** | 5/21 entities (`Review`, `WorkerStat`, `DemoUser`, `OAuthHandshake`, `Brand`) |
+| **Production data changed by Package #2** | **NONE** |
+
+**Observation 1 — the field is ABSENT, not `null`.** On all 272 Tasks and 123 TaskApplications the field is **missing entirely**, not set to `null`. The backfill must treat *unset* as the trigger condition and must not rely on a `null` equality filter.
+
+**Observation 2 — two undeclared fields on `Task`.** Live `Task` records carry `is_sample` and `created_by` (email), neither of which appears in `Task.jsonc`. Pre-existing and unrelated to this package; recorded for completeness.
+
+**To restore to LKGS-2:** no action required — Package #2 changed nothing.
 
 ---
 
