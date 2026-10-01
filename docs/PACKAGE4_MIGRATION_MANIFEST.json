@@ -1,0 +1,13 @@
+{
+  "package": "Package 4 - Multibrand isolation & attribution",
+  "reserved": true,
+  "created": "2026-10-01",
+  "status": "RESERVED - INTENTIONALLY EMPTY",
+  "note": "Reserved for Package 4 data migrations. This file is deliberately empty because NO backfill has occurred yet. Populate it ONLY when a real backfill runs, recording the exact record IDs written so that rollback can target them individually (never a blanket clear). The Package #2 precedent is docs/PACKAGE2_MIGRATION_MANIFEST.json.",
+  "rules": [
+    "Never run a blanket clear during rollback - always target the exact record IDs listed here.",
+    "Record one entry per entity per migration run, with before/after counts.",
+    "A migration entry is written BEFORE the migration runs and completed AFTER verification."
+  ],
+  "migrations": []
+}

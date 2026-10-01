@@ -966,6 +966,167 @@ No data action required.
 
 ---
 
+## Package #4.0 — C3 Pre-Flight: User Field Trust Boundary (READ-ONLY) ✅ **COMPLETED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 4.0 — pre-flight gate for the Multibrand isolation foundation |
+| **Status** | **Completed — investigation and audit only** |
+| **Production data changed** | **NONE** |
+| **Runtime code changed** | **NONE** |
+| **Documentation changed** | Blueprint ADR-28; this record |
+
+### Question
+
+Can a normal authenticated user write arbitrary custom fields on their own `User` record through `base44.auth.updateMe(...)` — and therefore could a future `brand_ids` field be client-writable?
+
+### Answer — **YES (confirmed)**
+
+| Evidence | Source |
+|---|---|
+| "You can update any custom fields defined in your User entity schema." Protected: `id`, `email`, `full_name`, `created_date`, `updated_date`, `created_by`, `collaborator_role`. `role` requires editor access. | Base44 Auth SDK reference / User Schema docs |
+| `updateMe(data)` → `axios.put('/apps/${appId}/entities/User/me', data)` — no client-side field filtering | `node_modules/@base44/sdk/dist/modules/auth.js:103` |
+| The app already relies on this: `SimulatorPanel.jsx` writes `worker_credits`, `is_verified`, `kyc_status` through `updateMe` | `src/pages/SimulatorPanel.jsx:268,461,467,497,571,573,580,587` |
+| No field-level security exists anywhere on `User` | `base44/entities/User.jsonc` — 44 fields, 0 field-level `rls`, no top-level `rls` |
+
+### Live exposure discovered (pre-existing, independent of Multibrand)
+
+Because no field-level rule existed, these fields were client-writable by any authenticated user:
+
+`worker_credits` · `is_verified` · `kyc_status` · `is_approved` · `is_blocked` · `rating` · `rating_count` · `tasks_completed` · `repeat_hires` · `on_time_rate` · `score_tasks` · `commission_rate` · `agent_code` · `agent_id` · `referral_clicks` · `referred_by_agent_code` · `instagram_verified` · `facebook_verified` · `tiktok_verified`
+
+**Reported to the owner. Remediation approved as a separate User Field Hardening package (see §"Next security package" below).**
+
+### Resolution — the supported mechanism
+
+Field-level security (FLS). Documented behaviour:
+- `rls.write: false` on a field property → "Block all users"
+- Service role bypasses both RLS and FLS entirely
+- "Field-level security rules on the `User` entity apply" to the update-app-user path that `updateMe` uses
+
+**Conclusion: `brand_ids` CAN be made server-writable / user-unwritable. The RLS-anchored Multibrand design is viable.**
+
+### Method limitation (recorded honestly)
+
+The live write probe was **not** executed. See Package #4.1.1 for the reason and the blocker.
+
+### Rollback
+
+Revert the two documentation edits (blueprint ADR-28, this record). No runtime action.
+
+---
+
+## Package #4.1.1 — `brand_ids` FLS Foundation ⚠️ **IMPLEMENTED — VERIFICATION BLOCKED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 4.1.1 — first step of the Multibrand isolation foundation |
+| **Status** | **Implemented · build passing · behaviourally inert · write probes BLOCKED (no throwaway account)** |
+| **Last Known Good State** | see §LKGS-4.1.1 |
+| **Production data changed** | **NONE** — schema only. No backfill. |
+| **Canonical identifier** | **`Brand.id` = `6abdfc541dc144ca0d91fde9`** (ADR-23) — not used by this package |
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | `User` gains one inert field, `brand_ids`, with field-level `rls.write:false`. |
+| **B. Files/entities/data affected** | **1 entity file** (`base44/entities/User.jsonc`) + documentation. No code, no data, no RLS rules, no functions. |
+| **C. Exact rollback procedure** | Remove the `brand_ids` property from `base44/entities/User.jsonc`. |
+| **D. Rollback changes** | Schema only. |
+| **E. Data loss risk on rollback** | **None** — the field is unset on every record. |
+| **F. Online rollback possible** | Yes — rules and schema apply immediately, no deployment. |
+| **G. Rollback complexity** | **TRIVIAL** — one property. |
+| **H. Verification after rollback** | Confirm `brand_ids` is absent from the schema and from every user record. |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `base44/entities/User.jsonc` | **+1 property** `brand_ids` (appended last; all 44 original properties byte-identical, `active_brand_id` deliberately NOT added per decision P2) |
+| `docs/PACKAGE4_MIGRATION_MANIFEST.json` | **NEW** — reserved, intentionally empty (no backfill has occurred) |
+| `docs/MULTIBRAND_RESTORE_RUNBOOK.md` | this record + Package #4.0 record + LKGS-4.1.1 |
+| `docs/MULTIBRAND_BLUEPRINT.md` | status line + ADR-28 |
+
+### Exact change
+
+```diff
++    "brand_ids": {
++      "type": "array",
++      "items": { "type": "string" },
++      "description": "Package 4.1.1: canonical Brand.id values this user is a member of. Server-maintained only - field-level rls.write=false blocks every app-user write (updateMe included); only a service-role backend function may set it. INERT: nothing in the application reads this field yet. Never populate it from client input - it must be derived from BrandMembership records.",
++      "rls": { "write": false }
++    }
+```
+
+### Verification performed
+
+| Check | Result |
+|---|---|
+| Entity JSON parses | ✅ valid |
+| Property count | ✅ **45** (was 44) |
+| All 44 original properties preserved | ✅ byte-identical, in order |
+| `brand_ids` present, appended last | ✅ |
+| `brand_ids.rls.write === false` | ✅ |
+| `active_brand_id` absent (decision P2) | ✅ |
+| No top-level `rls` on `User` | ✅ |
+| Only one field carries field-level `rls` | ✅ (`brand_ids`) |
+| **Runtime inertness** — users carrying the field | ✅ **0 of 146** |
+| Build | ✅ exit 0 |
+| Production records modified | ✅ **0** |
+
+### ⚠️ Verification NOT performed — the write probes
+
+Both approved probes (item 5: client write rejected; item 7: service-role write succeeds) were **NOT executed**.
+
+**Reason — no throwaway/test account can be used:**
+
+1. **`exec_tool` runs as the owner's production admin account** (`boris18peter@gmail.com`, role `admin`). Decision P1 explicitly forbids using the production account, and the owner prohibited modifying legitimate production user data.
+2. **No test/demo/QA account exists.** All **146** users were scanned; **0** match a test-account pattern.
+3. **The one candidate — `hello@joba24.com`** (the app's hardcoded Play-reviewer bypass account, `LoginPromptModal.jsx:51`) — is a real, active account: id `6a5fc936327334d906e5ecae`, role `agent`, `is_approved: true`, `is_verified: true`, `kyc_status: approved`, **67 credits, 7 completed tasks**, last active 2026-09-29. It is used by Google Play reviewers, so it is **not** a throwaway and was deliberately left untouched.
+4. **A probe from `exec_tool` would be unreliable anyway.** The sandbox client bypasses RLS/FLS, so a write that succeeded there would be ambiguous — it could not be distinguished from FLS being broken. A false negative would trigger the package's own STOP condition and wrongly invalidate the RLS-based architecture.
+5. **A new account cannot be created** from the build environment: registration requires email OTP verification, and `User` records cannot be inserted directly.
+
+**Therefore the only faithful probe is a real browser session as a non-admin user.** Blocked pending an owner decision.
+
+### Known limitations
+
+- `brand_ids` is **declared but not enforced anywhere** — its FLS protection is documented by the platform but not yet empirically confirmed in this app.
+- Nothing reads `brand_ids`. It is inert by design.
+- `brand_ids` is **empty on all 146 users** — no backfill (deliberate, per scope).
+
+### Rollback
+
+Remove the `brand_ids` property from `base44/entities/User.jsonc`. Delete `docs/PACKAGE4_MIGRATION_MANIFEST.json` if no other Package 4 migration has occurred. **No data action required.**
+
+---
+
+## ⏭️ NEXT SECURITY PACKAGE (approved, NOT started) — User Field Hardening
+
+Approved as a **separate security package that must run BEFORE the Multibrand work continues**, because Package #4.0 found a **pre-existing live exposure** unrelated to Multibrand.
+
+**Scope:** move server-derived / security-sensitive `User` fields behind field-level `rls.write:false` and service-role writers:
+
+`worker_credits` · `is_verified` · `kyc_status` · `is_approved` · `is_blocked` · `rating` · `rating_count` · `tasks_completed` · `repeat_hires` · `on_time_rate` · `score_tasks` · `commission_rate` · `agent_code` · `agent_id` · `referral_clicks` · `referred_by_agent_code` · `instagram_verified` · `facebook_verified` · `tiktok_verified`
+
+**Must preserve:** legitimate profile editing · KYC submission · onboarding/profile-completion bonuses · admin operations · simulator functionality.
+
+**Known call sites that must move to service-role functions first:**
+
+| Site | Writes | Replacement needed |
+|---|---|---|
+| `SimulatorPanel.jsx:268,461,467,497` | `worker_credits` | admin-gated service-role function |
+| `SimulatorPanel.jsx:571,573,580,587` | `is_verified`, `kyc_status` | admin-gated service-role function |
+| `WorkerOnboarding.jsx:148` | `worker_credits` (profile bonus) | `grantProfileCompletionBonus` |
+| `VerifyModal.jsx:156` | `kyc_status:'pending'`, `is_verified:false` | `submitKyc` |
+| `AdminDashboard.jsx:539,718,740,802` | `is_blocked`, referral/agent fields | admin service-role function |
+
+**Status: NOT IMPLEMENTED. Awaiting explicit approval.**
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -1264,6 +1425,28 @@ No data action required.
 | any authenticated user via raw SDK | authenticated | **fully client-supplied — the exposure closed by this package** |
 
 **To restore to LKGS-3.1F:** perform the rollback in the Package #3.1F record above.
+
+---
+
+## LKGS-4.1.1 — pre-Package #4.1.1
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #4.1.1 |
+| **Build result** | **exit 0** |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active` |
+| **User entity schema** | **44 properties** · **0** field-level `rls` · no top-level `rls` |
+| **User records** | **146** · roles: `user` 137 · `agent` 8 · `admin` 1 |
+| **Users carrying `brand_ids`** | **0** — field did not exist |
+| **Task records** | **273** — all attributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **124** — all attributed |
+| **Review** | **6** |
+| **TranzilaPayment** | **17** — externally frozen by Tranzila; blocker unchanged |
+| **RLS coverage** | 5/21 entities (`Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat`) |
+| **Client-writable security-sensitive User fields** | **19** — see Package #4.0 record |
+
+**To restore to LKGS-4.1.1:** remove the `brand_ids` property from `base44/entities/User.jsonc`. No data action required.
 
 ---
 

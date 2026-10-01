@@ -228,6 +228,16 @@
     "tiktok_verify_code": {
       "type": "string",
       "description": "\u05e7\u05d5\u05d3 OTP \u05d6\u05de\u05e0\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05ea \u05d8\u05d9\u05e7\u05d8\u05d5\u05e7"
+    },
+    "brand_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Package 4.1.1: canonical Brand.id values this user is a member of. Server-maintained only - field-level rls.write=false blocks every app-user write (updateMe included); only a service-role backend function may set it. INERT: nothing in the application reads this field yet. Never populate it from client input - it must be derived from BrandMembership records.",
+      "rls": {
+        "write": false
+      }
     }
   }
 }
