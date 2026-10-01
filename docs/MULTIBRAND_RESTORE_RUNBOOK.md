@@ -1097,7 +1097,7 @@ A dedicated throwaway account was created and verified, as authorized:
 
 | | |
 |---|---|
-| **Email** | `boris18peter+joba24probe@gmail.com` (`+` alias of the owner's own address, so the OTP lands in an inbox the owner controls) |
+| **Email** | *(withheld — the throwaway test account is identified by its immutable User id below)* |
 | **User id** | `6abecbd306d8b265edba72c5` |
 | **Role** | `user` (non-admin) |
 | **Status** | registered · **verified** · ready |
@@ -1113,8 +1113,8 @@ A dedicated throwaway account was created and verified, as authorized:
 | — | `base44.entities.User.get(uid)` — even a **read** | ❌ `Admin permissions required for this operation` |
 
 **Session identity was confirmed independently before any write**, so the refusals cannot be attributed to the wrong account:
-- `loginViaEmailPassword` response → `email = boris18peter+joba24probe@gmail.com`, `role = user`
-- decoded JWT `sub` → `boris18peter+joba24probe@gmail.com`
+- `loginViaEmailPassword` response → role `user`
+- decoded JWT `sub` → the throwaway's User id
 
 **Finding: `exec_tool` is an admin-gated context.** Once the session is a non-admin, *every* User-entity operation — read, `updateMe`, and direct entity update — is refused with the same error. The sandbox **cannot represent a normal app user**, and therefore **cannot probe FLS at all**. This is a property of the build environment, not of the app.
 
@@ -1123,6 +1123,39 @@ A dedicated throwaway account was created and verified, as authorized:
 **Consequence for the package's stop condition (item 6):** the result is **UNKNOWN — not negative.** FLS must **not** be recorded as broken, and the RLS-anchored architecture must **not** be invalidated on the strength of a sandbox artefact. Item 6 is **not triggered**; it was never exercised.
 
 **Outstanding verification (items 5 and 7):** still open, pending a real browser session as the throwaway. Note the app's own login UI derives its password from the email (`LoginPromptModal.jsx` → `derivePassword`), so the throwaway — registered with an independent password — is **not** reachable through the normal UI login. Any browser-based probe must therefore either (a) log in programmatically via `loginViaEmailPassword`, or (b) first have its password set to the derived value.
+
+### ✅ Probe RESULT (2026-10-02) — **PASS** · FLS runtime-verified · Package 4.1.1 CLOSED
+
+Executed in a **real browser session** through a temporary, unlinked route (`/fls-probe`), since **completely removed** along with its credentials.
+
+| Check | Result |
+|---|---|
+| Authenticated identity | ✅ the dedicated throwaway, normal `user` — asserted on **both** User id and email, from the login response **and** the live session, before any write |
+| **Control** — normal client write to `bio` | ✅ **persisted** |
+| **Target** — normal client write to `brand_ids` | ✅ **explicitly rejected by FLS** |
+| `UNAUTHORIZED_TEST_BRAND` persisted? | ❌ **no** |
+| Cleanup | ✅ succeeded |
+| Original `bio` restored | ✅ |
+| Final `brand_ids` | ✅ **absent** |
+
+**Verdict: PASS.** The normal-user write path was validated (the control field persisted) *and* the FLS-protected field was rejected in the same session — so the `brand_ids` result **is** interpretable. The package's stop condition was never triggered.
+
+**Runtime-verified conclusion:** FLS on `User.brand_ids` is **enforced for normal app users**. `brand_ids` may now be treated as a **server-controlled authorization field**, on the express condition that **every** server writer derives its value from **trusted persisted state** and **never** from client input (ADR-25 / ADR-28). FLS protects the *field*, not the *value* — the writer must still derive it.
+
+### Probe teardown record
+
+| Removed | Verified |
+|---|---|
+| `src/pages/FlsProbe411.jsx` | deleted |
+| Its route, lazy import and standalone-screen entry in `src/App.jsx` | removed |
+| The embedded throwaway password and all probe credentials | removed with the page |
+| `fls-probe`, `UNAUTHORIZED_TEST_BRAND`, the throwaway address and password | **zero** references in runtime code, build output or credentials — named only in this teardown record |
+
+**Throwaway record left in place (no elevated state):** User id `6abecbd306d8b265edba72c5` · role **`user`** · `bio` **null** · `brand_ids` **absent** · no credits, KYC, rating or reputation written by the probe. (`is_verified: true` is a **registration** artefact — the account was OTP-verified when created, **not** written by the probe.) Across all **147** users, **0** carry `brand_ids`.
+
+**No backfill occurred.** `brand_ids` remains **unset on every user**. The field and its `rls.write:false` are the only runtime/schema artefacts of this phase, retained deliberately.
+
+**Tranzila: untouched.** The 3.1A blocker remains fully in force.
 
 ### Known limitations
 
