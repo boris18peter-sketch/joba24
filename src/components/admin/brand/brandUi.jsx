@@ -96,6 +96,55 @@ export function Btn({ children, onClick, variant = 'primary', disabled, loading,
   );
 }
 
+/**
+ * Invalidate everything a Brand edit can affect. BrandManager reads
+ * `['adminBrand', id]`; the marketplace reads `['brandCategories', id]`.
+ * Both must be refreshed or a save appears to do nothing.
+ */
+export function refreshBrand(queryClient, brandId) {
+  queryClient.invalidateQueries({ queryKey: ['adminBrand', brandId] });
+  queryClient.invalidateQueries({ queryKey: ['adminBrands'] });
+  queryClient.invalidateQueries({ queryKey: ['adminBrandDependencies', brandId] });
+  queryClient.invalidateQueries({ queryKey: ['brandCategories', brandId] });
+  queryClient.invalidateQueries({ queryKey: ['brandDashboard', brandId] });
+}
+
+const SAVE_STATES = {
+  idle: { text: '', tone: 'gray' },
+  dirty: { text: 'שינויים שלא נשמרו', tone: 'amber' },
+  saving: { text: 'שומר…', tone: 'blue' },
+  saved: { text: 'נשמר', tone: 'green' },
+  error: { text: 'שגיאה בשמירה', tone: 'red' },
+};
+
+/**
+ * A persistent save bar. A Brand Studio section must always say where it
+ * stands: unsaved, saving, saved or failed.
+ */
+export function SaveBar({ state = 'idle', onSave, onReset, label = 'שמור שינויים' }) {
+  const meta = SAVE_STATES[state] || SAVE_STATES.idle;
+  const busy = state === 'saving';
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+      position: 'sticky', bottom: 0, zIndex: 5,
+      background: 'var(--surface-2)', border: '1px solid var(--border-1)',
+      borderRadius: 14, padding: '10px 12px',
+    }}>
+      <span style={{ flex: 1, minWidth: 120 }}>
+        {meta.text && <Pill tone={meta.tone}>{meta.text}</Pill>}
+      </span>
+      {onReset && state === 'dirty' && (
+        <Btn variant="soft" onClick={onReset} style={{ height: 36, fontSize: 12 }}>בטל שינויים</Btn>
+      )}
+      <Btn onClick={onSave} loading={busy} disabled={state === 'idle' || state === 'saving'}
+        style={{ height: 38, fontSize: 13 }}>
+        {label}
+      </Btn>
+    </div>
+  );
+}
+
 /** Colour picker + HEX value, kept in sync. */
 export function ColorField({ label, value, onChange, fallback }) {
   const current = value || fallback || '#1a6fd4';

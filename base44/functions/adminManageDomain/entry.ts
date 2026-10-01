@@ -3,20 +3,26 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 /**
  * adminManageDomain — Brand Manager → Domains. Platform Admin only.
  *
- * IMPORTANT — what this function can and cannot do.
+ * TWO SEPARATE THINGS, and the UI must never blur them:
  *
- * Registering a hostname in `BrandDomain` only tells the APP RUNTIME which Brand
- * a hostname belongs to. It does NOT connect the domain at the platform/network
- * level. The platform step (Dashboard → Domains: add the domain, add the DNS
- * records, Verify) is the part that makes the hostname actually serve this app,
- * and it CANNOT be performed from application code.
+ *  1. ROUTING (this app). A hostname registered in `BrandDomain` with
+ *     status 'active' makes the runtime serve THAT Brand on that hostname.
+ *     That is all application code can do.
  *
- * Therefore:
- *  • `add`     creates the row as `pending`. It is never shown as connected.
- *  • `verify`  performs a REAL server-side check that the hostname serves this
- *              app. Only a successful check records `verified_at`.
- *  • `activate` REFUSES unless `verified_at` is set — a hostname typed into a
- *              database field can never be marked live.
+ *  2. CONNECTION (the platform). Making a hostname actually resolve to this app
+ *     — adding it in the platform's Domains page and pointing DNS at it — cannot
+ *     be performed from application code. `external_step` below is the exact
+ *     action a human must take.
+ *
+ * A domain is therefore only ever shown as connected after a REAL server-side
+ * fetch of the hostname confirms it serves this app.
+ *
+ * Status lifecycle:
+ *   pending     → registered, not yet reachable           (Pending setup)
+ *   pending     → reachable check failed                  (Pending verification)
+ *   pending     → check passed, verified_at set           (Verified, not routing)
+ *   active      → routing this Brand on that hostname      (Active)
+ *   disabled    → registered but deliberately not routing  (Disabled)
  *
  * Actions: add | verify | set_primary | activate | deactivate | remove
  */
@@ -28,6 +34,19 @@ function normalizeHost(raw: unknown): string {
     .trim().toLowerCase()
     .replace(/^[a-z]+:\/\//, '')
     .split('/')[0].split(':')[0].replace(/\.$/, '');
+}
+
+/** Is this hostname a subdomain of a domain the platform already owns? */
+function hostKind(hostname: string) {
+  const parts = hostname.split('.');
+  if (parts.length > 2) {
+    return {
+      kind: 'subdomain',
+      apex: parts.slice(1).join('.'),
+      needs_wildcard: true,
+    };
+  }
+  return { kind: 'custom', apex: hostname, needs_wildcard: false };
 }
 
 /** Server-side reachability check: does this hostname actually serve the app? */
@@ -44,8 +63,46 @@ async function checkHost(hostname: string) {
     const servesApp = res.status === 200 && /id=["']root["']/.test(body);
     return { reachable: true, status: res.status, serves_app: servesApp };
   } catch (e: any) {
-    return { reachable: false, status: 0, serves_app: false, message: e?.name === 'TimeoutError' ? 'timeout' : e?.message };
+    return {
+      reachable: false, status: 0, serves_app: false,
+      message: e?.name === 'TimeoutError' ? 'timeout' : e?.message,
+    };
   }
+}
+
+/** The exact action a human must take outside this app for a hostname. */
+function externalStep(hostname: string) {
+  const { kind, apex, needs_wildcard } = hostKind(hostname);
+  const firstLabel = hostname.split('.')[0];
+  if (kind === 'subdomain') {
+    return {
+      kind,
+      apex,
+      needs_wildcard,
+      summary: 'תת-דומיין — נדרשת רשומת DNS לא-קיימת ופתיחת הדומיין בפלטפורמה',
+      steps: [
+        `ודא ש-${apex} עצמו מחובר לאפליקציה בעמוד Domains בלוח הבקרה.`,
+        `הוסף רשומת CNAME עבור ${firstLabel} שמצביעה על ${apex} — או רשומת CNAME/AAAA מתאימה.`,
+        'אם הספק תומך ב-wildcard, רשומת CNAME עם הערך * תכסה כל תת-דומיין.',
+        'המתן להתפשטות DNS (בדרך כלל דקות עד שעה).',
+        'לחץ "אמת דומיין" כאן. רק אימות מוצלח פותח את ההפעלה.',
+      ],
+    };
+  }
+  return {
+    kind,
+    apex,
+    needs_wildcard: false,
+    summary: 'דומיין מותאם — נדרשת הוספה בלוח הבקרה והפניית DNS',
+    steps: [
+      'הוסף את הדומיין בעמוד Domains בלוח הבקרה של הפלטפורמה.',
+      'צור רשומת ANAME/ALIAS (או A) עבור @ שמצביעה על היעד שהפלטפורמה מציגה.',
+      'צור רשומת CNAME עבור www לאותו יעד.',
+      'הסר רשומות AAAA ו-CAA שעלולות לחסום את הנפקת האישור.',
+      'המתן להתפשטות DNS (עד 48 שעות).',
+      'לחץ "אמת דומיין" כאן. רק אימות מוצלח פותח את ההפעלה.',
+    ],
+  };
 }
 
 Deno.serve(async (req) => {
@@ -91,7 +148,19 @@ Deno.serve(async (req) => {
         is_primary: domains.length === 0,
         status: 'pending',
       });
-      return Response.json({ success: true, domain: created });
+      return Response.json({ success: true, domain: created, external_step: externalStep(hostname) });
+    }
+
+    // ── routing guidance for the whole Brand ─────────────────────────────────
+    if (action === 'routing') {
+      return Response.json({
+        success: true,
+        routing: domains.map((d: any) => ({
+          id: d.id,
+          hostname: d.hostname,
+          ...externalStep(d.hostname),
+        })),
+      });
     }
 
     // Every other action targets an existing domain row.
@@ -142,17 +211,28 @@ Deno.serve(async (req) => {
 
     // ── remove ───────────────────────────────────────────────────────────────
     if (action === 'remove') {
+      // The canonical platform Brand's domains are never removable.
       if (brand.is_default) {
         return Response.json({ error: 'cannot_remove_default_domain' }, { status: 400 });
       }
-      if (domains.length <= 1) {
-        return Response.json({ error: 'last_domain' }, { status: 409 });
+
+      const remaining = domains.filter((d: any) => d.id !== domain.id);
+      if (!remaining.length) {
+        return Response.json({
+          error: 'last_domain',
+          message: 'A Brand must keep at least one domain. Add a replacement first.',
+        }, { status: 409 });
       }
-      if (domain.is_primary && domains.length > 1) {
-        return Response.json({ error: 'reassign_primary_first' }, { status: 409 });
-      }
+
+      // Removing the primary is allowed as long as a replacement exists — the
+      // next domain is promoted automatically so the Brand is never left
+      // without a canonical hostname.
       await svc.entities.BrandDomain.delete(domain.id);
-      return Response.json({ success: true });
+      if (domain.is_primary) {
+        const next = remaining.find((d: any) => d.status === 'active') || remaining[0];
+        await svc.entities.BrandDomain.update(next.id, { is_primary: true });
+      }
+      return Response.json({ success: true, removed: domain.hostname });
     }
 
     return Response.json({ error: 'unknown_action' }, { status: 400 });

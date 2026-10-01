@@ -35,6 +35,11 @@ Deno.serve(async (req) => {
 
     const creditsToRefund = app.credits_charged || 0;
 
+    // Brand attribution for the refund — read from the persisted Task, never
+    // from client input.
+    const brandTasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
+    const brandTask = brandTasks?.[0] || null;
+
     // Mark cancelled first
     await base44.asServiceRole.entities.TaskApplication.update(applicationId, { status: 'cancelled' });
 
@@ -52,6 +57,7 @@ Deno.serve(async (req) => {
           task_title: app.task_title || '',
           balance_after: newBalance,
           note: `החזר ג'ובות - ביטול בקשה`,
+          brand_id: brandTask?.origin_brand_id || null,
         });
         console.log(`✅ Refunded ${creditsToRefund} credits to worker ${user.id}`);
       }

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
-import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX } from 'lucide-react';
+import { Users, ClipboardList, Flag, Shield, ShieldOff, Search, RefreshCw, ChevronDown, ChevronUp, Star, Ban, CheckCircle2, X, Loader2, UserCheck, Copy, Check, Headphones, Send, Coins, Instagram, Facebook, Music2, ExternalLink, Award, ShieldCheck, Bell, Trash2, TrendingUp, Download, UserX, Tag } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import PageHeader from '@/components/PageHeader';
 import GoldBadge from '@/components/GoldBadge';
@@ -17,6 +17,7 @@ import { exportToCSV } from '@/lib/csvExport';
 import CopyableId from '@/components/CopyableId';
 import AdminAnalyticsTab from '@/components/admin/AdminAnalyticsTab';
 import BrandsTab from '@/components/admin/BrandsTab';
+import GlobalCategoriesTab from '@/components/admin/GlobalCategoriesTab';
 import KycImageLightbox from '@/components/admin/KycImageLightbox';
 import { toast } from 'sonner';
 import ApproveAllModal from '@/components/ApproveAllModal';
@@ -968,6 +969,9 @@ export default function AdminDashboard() {
         <TabButton active={tab === 'brands'} onClick={() => setTab('brands')}>
           <Shield size={13} style={{ display: 'inline', marginLeft: 4 }} /> מותגים
         </TabButton>
+        <TabButton active={tab === 'categories'} onClick={() => setTab('categories')}>
+          <Tag size={13} style={{ display: 'inline', marginLeft: 4 }} /> קטגוריות
+        </TabButton>
       </div>
 
       <div style={{ padding: '12px 16px 80px' }}>
@@ -980,6 +984,11 @@ export default function AdminDashboard() {
         {/* BRANDS TAB — Platform Admin only (Package 4.5) */}
         {tab === 'brands' && (
           <BrandsTab />
+        )}
+
+        {/* GLOBAL CATEGORIES — the authoritative category + task-form catalogue */}
+        {tab === 'categories' && (
+          <GlobalCategoriesTab />
         )}
 
         {/* TASKS TAB */}

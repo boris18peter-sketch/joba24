@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/LanguageContext';
+import { getCurrentBrandId } from '@/lib/brand/currentBrand';
 import SupportHeader from '@/components/support/SupportHeader';
 import SupportMessageBubble from '@/components/support/SupportMessageBubble';
 import SupportComposer from '@/components/support/SupportComposer';
@@ -81,6 +82,7 @@ export default function SupportChat() {
       user_id: me.id,
       user_name: me.full_name || me.email,
       sender_role: 'user',
+      surface_brand_id: getCurrentBrandId(),
       ...payload,
     });
     setMessages(prev => [...prev, msg]);

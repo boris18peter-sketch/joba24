@@ -3,47 +3,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 /**
  * adminManageCategory — Brand Manager → Categories. Platform Admin only.
  *
- * BrandCategory is the AUTHORITATIVE source for the categories a Brand offers.
+ * BrandCategory ONLY records which GLOBAL categories this Brand offers, in what
+ * order, and an optional display label/icon override.
  *
- * A `category_key` is either one of the platform Task.category values, or a
- * BRAND-SPECIFIC key. The Task.category enum is fixed and must never be extended
- * per Brand, so a brand-specific category is persisted on a Task as
- * `category: 'other'` with the brand key kept in `category_details.brand_category_key`.
+ * The category definition and its TASK FORM are global (GlobalCategory) and are
+ * deliberately NOT duplicated per Brand: improving the global form improves it
+ * for every Brand that offers the category.
  *
- * Actions: upsert | toggle | reorder | remove | sync_platform
+ * Actions: enable | disable | toggle | bulk_toggle | reorder | set_label | remove | sync_global
  */
 
-const PLATFORM_KEYS = [
-  'plumbing', 'electricity', 'handyman', 'cleaning', 'moving', 'heavy_lifting',
-  'painting', 'carpentry', 'ac', 'locksmith', 'gardening', 'home_maintenance',
-  'car', 'transportation', 'delivery', 'shopping', 'pets', 'babysitting',
-  'elderly_care', 'tutoring', 'fitness', 'photography', 'events',
-  'personal_help', 'it_support', 'other',
-];
-const KEY_RE = /^[a-z][a-z0-9_]{1,30}$/;
-const FIELD_TYPES = ['text', 'number', 'select', 'multiselect', 'boolean', 'date', 'time', 'textarea'];
-
-/** Keep a form_config to the supported, practical shape. */
-function sanitizeFormConfig(raw: unknown) {
-  if (!raw || typeof raw !== 'object') return undefined;
-  const fields = Array.isArray((raw as any).fields) ? (raw as any).fields : [];
-  const clean = fields
-    .filter((f: any) => f && typeof f.key === 'string' && KEY_RE.test(f.key))
-    .slice(0, 20)
-    .map((f: any, i: number) => ({
-      key: f.key,
-      label: String(f.label || f.key).slice(0, 80),
-      type: FIELD_TYPES.includes(f.type) ? f.type : 'text',
-      required: f.required === true,
-      enabled: f.enabled !== false,
-      order: Number.isFinite(Number(f.order)) ? Number(f.order) : i,
-      options: Array.isArray(f.options)
-        ? f.options.map((o: any) => String(o).slice(0, 60)).filter(Boolean).slice(0, 20)
-        : [],
-    }))
-    .sort((a: any, b: any) => a.order - b.order);
-  return { fields: clean };
-}
+const str = (v: unknown, max = 80) => (typeof v === 'string' ? v.trim().slice(0, max) : undefined);
 
 Deno.serve(async (req) => {
   try {
@@ -64,49 +34,77 @@ Deno.serve(async (req) => {
 
     const rows = (await svc.entities.BrandCategory.filter({ brand_id: brandId }, 'sort_order', 300)) || [];
 
-    // ── upsert ───────────────────────────────────────────────────────────────
-    if (action === 'upsert') {
-      const key = String(body?.category_key || '').trim().toLowerCase();
-      if (!KEY_RE.test(key)) return Response.json({ error: 'category_key_invalid' }, { status: 400 });
+    const rowFor = (key: string) => rows.find((r: any) => r.category_key === key);
 
-      const clash = rows.find((r: any) => r.category_key === key && r.id !== body?.id);
-      if (clash) return Response.json({ error: 'category_key_taken' }, { status: 409 });
-
-      const formConfig = sanitizeFormConfig(body?.form_config);
-
-      const patch: Record<string, unknown> = {
-        category_key: key,
-        label: typeof body?.label === 'string' ? body.label.trim().slice(0, 80) : '',
-        icon: typeof body?.icon === 'string' ? body.icon.trim().slice(0, 16) : '',
-        enabled: body?.enabled !== false,
-      };
-      if (Number.isFinite(Number(body?.sort_order))) patch.sort_order = Number(body.sort_order);
-      if (formConfig !== undefined) patch.form_config = formConfig;
-
-      if (body?.id) {
-        const target = rows.find((r: any) => r.id === body.id);
-        if (!target) return Response.json({ error: 'category_not_found' }, { status: 404 });
-        const updated = await svc.entities.BrandCategory.update(body.id, patch);
-        return Response.json({ success: true, category: updated });
-      }
-
+    /** Materialise a Brand row for a global category the Brand has never seen. */
+    const ensureRow = async (key: string) => {
+      const existing = rowFor(key);
+      if (existing) return existing;
+      const globals = await svc.entities.GlobalCategory.filter({ category_key: key });
+      if (!globals?.[0]) return null;
       const nextOrder = rows.length
         ? Math.max(...rows.map((r: any) => Number(r.sort_order) || 0)) + 1
         : 0;
-      const created = await svc.entities.BrandCategory.create({
+      return await svc.entities.BrandCategory.create({
         brand_id: brandId,
+        category_key: key,
+        label: '',
+        icon: '',
         sort_order: nextOrder,
-        ...patch,
+        enabled: true,
       });
-      return Response.json({ success: true, category: created });
+    };
+
+    const setEnabled = async (key: string, enabled: boolean) => {
+      const row = await ensureRow(key);
+      if (!row) return { error: 'category_not_found' };
+      const updated = await svc.entities.BrandCategory.update(row.id, { enabled });
+      return { category: updated };
+    };
+
+    // ── enable / disable / toggle ────────────────────────────────────────────
+    if (action === 'enable' || action === 'disable' || action === 'toggle') {
+      const key = String(body?.category_key || body?.id || '');
+      let enabled;
+      if (action === 'toggle') {
+        const row = rowFor(key) || rows.find((r: any) => r.id === key);
+        if (!row) return Response.json({ error: 'category_not_found' }, { status: 404 });
+        enabled = row.enabled === false;
+      } else {
+        enabled = action === 'enable';
+      }
+      const key2 = rowFor(key) ? key : (rows.find((r: any) => r.id === key)?.category_key || key);
+      const result = await setEnabled(key2, enabled);
+      if (result.error) return Response.json({ error: result.error }, { status: 404 });
+      return Response.json({ success: true, category: result.category });
     }
 
-    // ── toggle ───────────────────────────────────────────────────────────────
-    if (action === 'toggle') {
-      const target = rows.find((r: any) => r.id === body?.id);
-      if (!target) return Response.json({ error: 'category_not_found' }, { status: 404 });
-      const updated = await svc.entities.BrandCategory.update(target.id, { enabled: target.enabled === false });
-      return Response.json({ success: true, category: updated });
+    // ── bulk_toggle — enable/disable every global category at once ───────────
+    if (action === 'bulk_toggle') {
+      const enabled = body?.enabled !== false;
+      const globals = (await svc.entities.GlobalCategory.list('sort_order', 500)) || [];
+      const targets = globals.filter((g: any) => g.active !== false);
+      const updates: any[] = [];
+      const creates: any[] = [];
+
+      for (const g of targets) {
+        const row = rowFor(g.category_key);
+        if (row) {
+          if (row.enabled !== enabled) updates.push({ id: row.id, enabled });
+        } else if (enabled) {
+          creates.push({
+            brand_id: brandId,
+            category_key: g.category_key,
+            label: '',
+            icon: '',
+            sort_order: Number(g.sort_order) || 0,
+            enabled: true,
+          });
+        }
+      }
+      if (updates.length) await svc.entities.BrandCategory.bulkUpdate(updates);
+      if (creates.length) await svc.entities.BrandCategory.bulkCreate(creates);
+      return Response.json({ success: true, updated: updates.length, created: creates.length });
     }
 
     // ── reorder ──────────────────────────────────────────────────────────────
@@ -114,51 +112,63 @@ Deno.serve(async (req) => {
       const order = Array.isArray(body?.order) ? body.order : [];
       const updates = order
         .filter((o: any) => o && typeof o.id === 'string')
-        .map((o: any, i: number) => ({ id: o.id, sort_order: Number.isFinite(Number(o.sort_order)) ? Number(o.sort_order) : i }));
+        .map((o: any, i: number) => ({
+          id: o.id,
+          sort_order: Number.isFinite(Number(o.sort_order)) ? Number(o.sort_order) : i,
+        }));
       if (!updates.length) return Response.json({ error: 'order_required' }, { status: 400 });
       await svc.entities.BrandCategory.bulkUpdate(updates);
       return Response.json({ success: true, updated: updates.length });
     }
 
-    // ── remove (refuses while the category is in use on a Task) ──────────────
+    // ── set_label — Brand-facing label / icon override only ──────────────────
+    if (action === 'set_label') {
+      const key = String(body?.category_key || '');
+      const row = await ensureRow(key);
+      if (!row) return Response.json({ error: 'category_not_found' }, { status: 404 });
+      const patch: Record<string, unknown> = {
+        label: str(body?.label, 80) ?? '',
+        icon: str(body?.icon, 16) ?? '',
+      };
+      const updated = await svc.entities.BrandCategory.update(row.id, patch);
+      return Response.json({ success: true, category: updated });
+    }
+
+    // ── remove — drops this Brand's row; the global category is untouched ────
     if (action === 'remove') {
-      const target = rows.find((r: any) => r.id === body?.id);
-      if (!target) return Response.json({ error: 'category_not_found' }, { status: 404 });
+      const key = String(body?.category_key || body?.id || '');
+      const row = rowFor(key) || rows.find((r: any) => r.id === key);
+      if (!row) return Response.json({ error: 'category_not_found' }, { status: 404 });
 
       const inUse = await svc.entities.Task.filter({
         origin_brand_id: brandId,
-        category: PLATFORM_KEYS.includes(target.category_key) ? target.category_key : 'other',
+        category: row.category_key,
       }, '-created_date', 1);
       if (inUse?.length) {
         return Response.json({
           error: 'category_in_use',
-          message: 'Tasks already use this category. Disable it instead of deleting it.',
+          message: 'Tasks already use this category. Disable it instead of removing it.',
         }, { status: 409 });
       }
 
-      await svc.entities.BrandCategory.delete(target.id);
+      await svc.entities.BrandCategory.delete(row.id);
       return Response.json({ success: true });
     }
 
-    // ── sync_platform — copy any platform category this Brand is missing ─────
-    if (action === 'sync_platform') {
-      const defaults = await svc.entities.Brand.filter({ is_default: true });
-      const parent = defaults?.[0];
-      if (!parent) return Response.json({ error: 'platform_brand_missing' }, { status: 500 });
-
-      const parentRows = (await svc.entities.BrandCategory.filter({ brand_id: parent.id }, 'sort_order', 300)) || [];
+    // ── sync_global — materialise a row for every active global category ─────
+    if (action === 'sync_global') {
+      const globals = (await svc.entities.GlobalCategory.list('sort_order', 500)) || [];
+      const active = globals.filter((g: any) => g.active !== false);
       const have = new Set(rows.map((r: any) => r.category_key));
-      const missing = parentRows.filter((p: any) => !have.has(p.category_key));
+      const missing = active.filter((g: any) => !have.has(g.category_key));
       if (!missing.length) return Response.json({ success: true, added: 0 });
-
-      await svc.entities.BrandCategory.bulkCreate(missing.map((p: any, i: number) => ({
+      await svc.entities.BrandCategory.bulkCreate(missing.map((g: any, i: number) => ({
         brand_id: brandId,
-        category_key: p.category_key,
-        label: p.label || '',
-        icon: p.icon || '',
+        category_key: g.category_key,
+        label: '',
+        icon: '',
         sort_order: rows.length + i,
         enabled: true,
-        form_config: {},
       })));
       return Response.json({ success: true, added: missing.length });
     }

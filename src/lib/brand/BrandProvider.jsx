@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BRAND_STATE, resolveBrandContext, effectiveBrandConfig } from '@/lib/brand/brandResolver';
+import { setCurrentBrandId } from '@/lib/brand/currentBrand';
 
 /**
  * BrandProvider — resolves the current Brand ONCE and shares it with the whole
@@ -31,6 +32,7 @@ export function BrandProvider({ children }) {
     resolveBrandContext(hostname)
       .then((resolved) => {
         if (cancelled) return;
+        setCurrentBrandId(resolved.brand?.id || null);
         setCtx({
           state: resolved.state,
           hostname: resolved.hostname,

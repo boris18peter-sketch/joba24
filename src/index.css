@@ -255,12 +255,14 @@
    GLOBAL UI PATTERNS
    ════════════════════════════════════════════════════════════════════ */
 
-/* ── Cards ── */
+/* ── Cards ──
+   Brand design tokens are read here with a platform fallback, so a Brand that
+   sets card tokens re-themes every .j-card without any component change. */
 .j-card {
-  background: var(--surface-2);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border-1);
-  box-shadow: var(--shadow-xs);
+  background: var(--brand-card-bg, var(--surface-2));
+  border-radius: var(--brand-card-radius, var(--r-lg));
+  border: 1px solid var(--brand-card-border, var(--border-1));
+  box-shadow: var(--brand-card-shadow, var(--shadow-xs));
 }
 
 /* ── Buttons ── */
@@ -272,13 +274,16 @@
 }
 .j-btn:active { opacity: 0.85; transform: scale(0.96); }
 .j-btn-primary {
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
-  color: white; border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--brand-btn-primary-bg, var(--brand-primary)), var(--brand-primary-dark));
+  color: var(--brand-btn-primary-text, white);
+  border-radius: var(--brand-btn-radius, var(--r-md));
   box-shadow: 0 4px 14px rgba(26,111,212,0.3);
 }
 .j-btn-secondary {
-  background: var(--surface-3); color: var(--text-2);
-  border: 1px solid var(--border-1); border-radius: var(--r-md);
+  background: var(--brand-btn-secondary-bg, var(--surface-3));
+  color: var(--brand-btn-secondary-text, var(--text-2));
+  border: 1px solid var(--border-1);
+  border-radius: var(--brand-btn-radius, var(--r-md));
 }
 .j-btn-danger {
   background: var(--color-danger-bg); color: var(--color-danger);
@@ -310,8 +315,8 @@
 /* ── Sheets / Modals ── */
 .mobile-sheet {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 100001;
-  background: var(--sheet-bg);
-  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+  background: var(--brand-modal-bg, var(--sheet-bg));
+  border-radius: var(--brand-modal-radius, var(--r-2xl)) var(--brand-modal-radius, var(--r-2xl)) 0 0;
   max-height: 90dvh; overflow-y: auto;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
   box-shadow: var(--shadow-xl);
@@ -332,7 +337,8 @@
 .mobile-modal-center > div {
   width: 100%; max-width: 420px; max-height: 88dvh;
   overflow-y: auto; overscroll-behavior: contain;
-  border-radius: var(--r-2xl); background: var(--sheet-bg);
+  border-radius: var(--brand-modal-radius, var(--r-2xl));
+  background: var(--brand-modal-bg, var(--sheet-bg));
 }
 
 /* ── Sheet drag handle ── */
@@ -343,13 +349,21 @@
 
 /* ── Inputs ── */
 .j-input {
-  width: 100%; border-radius: var(--r-md);
-  border: 1.5px solid var(--border-1);
-  background: var(--input-bg); color: var(--text-1);
+  width: 100%; border-radius: var(--brand-input-radius, var(--r-md));
+  border: 1.5px solid var(--brand-input-border, var(--border-1));
+  background: var(--brand-input-bg, var(--input-bg)); color: var(--text-1);
   font-family: var(--font-inter); outline: none;
   transition: border-color 0.15s;
 }
-.j-input:focus { border-color: var(--brand-primary); }
+.j-input:focus { border-color: var(--brand-input-focus, var(--brand-primary)); }
+
+/* ── Banners ── */
+.j-banner {
+  background: var(--brand-banner-bg, var(--brand-primary-dark));
+  color: var(--brand-banner-text, #ffffff);
+  border-radius: var(--brand-card-radius, var(--r-lg));
+}
+.j-banner-accent { color: var(--brand-banner-accent, var(--brand-accent)); }
 
 /* ── Z-Index Hierarchy ── */
 /* Bottom nav: 30 | Sticky headers: 49-50 | Sheets/Modals: 9999+ | Portals: 99999+ */

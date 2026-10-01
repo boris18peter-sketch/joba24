@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { resolveBrandFromRequest } from '../../shared/brandContext.ts';
 
 /**
  * trackReferralClick — Track referral link clicks AND app downloads/installs.
@@ -31,6 +32,9 @@ export default async function(req) {
 
     // Create a ReferralEvent for this device (idempotent — only if not already exists)
     if (device_id) {
+      // Attribution only — which Brand's surface the click came from, resolved
+      // from the request host, never from client input.
+      const brand = await resolveBrandFromRequest(base44, req).catch(() => null);
       const existing = await base44.asServiceRole.entities.ReferralEvent.filter({
         agent_code,
         device_id,
@@ -42,6 +46,7 @@ export default async function(req) {
           device_id,
           event_type: 'download',
           registered: false,
+          brand_id: brand?.brandId || null,
         });
         console.log(`trackReferralClick: created ReferralEvent for agent=${agent_code} device=${device_id}`);
 

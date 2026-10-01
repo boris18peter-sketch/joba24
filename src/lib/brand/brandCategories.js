@@ -2,18 +2,23 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import { CATEGORIES } from '@/lib/categories';
+import { fetchGlobalCategories, globalFormFields } from '@/lib/brand/globalCategories';
 
 /**
  * Brand categories at runtime.
  *
- * BrandCategory is the AUTHORITATIVE source for the categories a Brand offers.
- * The platform catalogue (src/lib/categories.js) is only the fallback label
- * source and the fallback list when a Brand has no configuration yet.
+ * The split of authority:
  *
- * A row is offered when `enabled !== false`. A row whose `category_key` is not
- * in the platform Task.category enum is a BRAND-SPECIFIC category: it is stored
- * on the Task as `category: 'other'` with the brand key preserved in
- * `category_details.brand_category_key` (the Task enum is fixed and must not be
+ *   GlobalCategory  → the category definition AND its task form (GLOBAL, shared)
+ *   BrandCategory   → only whether THIS Brand offers it, in what order, plus an
+ *                     optional display label/icon override
+ *
+ * A Brand therefore never owns a form. Improving a category's form in
+ * Admin → Categories changes it for every Brand that offers that category.
+ *
+ * A row is offered when `enabled !== false`. A key outside the platform
+ * Task.category enum is stored on the Task as `category: 'other'` with the key
+ * kept in `category_details.brand_category_key` (the enum is fixed and is never
  * extended per Brand).
  */
 
@@ -28,39 +33,57 @@ export function platformCategoryLabel(key) {
   return CATEGORIES.find((c) => c.value === key)?.label || key;
 }
 
-export async function fetchBrandCategories(brandId) {
+/** This Brand's rows, including disabled ones (the admin needs to see them). */
+export async function fetchBrandCategoryRows(brandId) {
   if (!brandId) return [];
   const rows = await base44.entities.BrandCategory.filter({ brand_id: brandId }, 'sort_order', 300);
-  return (rows || []).filter((r) => r.enabled !== false);
+  return rows || [];
 }
 
-/**
- * The categories the CURRENT surface's Brand offers, ordered by sort_order.
- * Falls back to the platform catalogue while loading or when the Brand has no
- * rows yet, so a Brand is never left with an empty category list.
- */
+/** The categories the CURRENT surface's Brand offers, ordered. */
 export function useBrandCategories() {
   const { brandId } = useBrand();
 
-  const { data, isLoading } = useQuery({
+  const brandQuery = useQuery({
     queryKey: ['brandCategories', brandId],
-    queryFn: () => fetchBrandCategories(brandId),
+    queryFn: () => fetchBrandCategoryRows(brandId),
     enabled: !!brandId,
     staleTime: 60000,
   });
 
-  const rows = data || [];
+  const globalQuery = useQuery({
+    queryKey: ['globalCategories'],
+    queryFn: fetchGlobalCategories,
+    staleTime: 60000,
+  });
+
+  const rows = brandQuery.data || [];
+  const globals = globalQuery.data || [];
+  const globalMap = {};
+  for (const g of globals) globalMap[g.category_key] = g;
+
+  const activeGlobals = globals.filter((g) => g.active !== false);
   const configured = rows.length > 0;
 
+  const shape = (key, overrideLabel, overrideIcon) => {
+    const g = globalMap[key];
+    return {
+      value: key,
+      label: overrideLabel || g?.label || platformCategoryLabel(key),
+      icon: overrideIcon || g?.icon || '',
+      description: g?.description || '',
+      fields: globalFormFields(g),
+      brandSpecific: isBrandSpecificKey(key),
+    };
+  };
+
   const categories = configured
-    ? rows.map((r) => ({
-        value: r.category_key,
-        label: r.label || platformCategoryLabel(r.category_key),
-        icon: r.icon || '',
-        formConfig: r.form_config || {},
-        brandSpecific: isBrandSpecificKey(r.category_key),
-      }))
-    : CATEGORIES.map((c) => ({ value: c.value, label: c.label, icon: '', formConfig: {}, brandSpecific: false }));
+    ? rows
+        .filter((r) => r.enabled !== false)
+        .slice()
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        .map((r) => shape(r.category_key, r.label, r.icon))
+    : activeGlobals.map((g) => shape(g.category_key));
 
   /** The Task.category value to persist for a Brand category choice. */
   const taskCategoryFor = (value) => (isBrandSpecificKey(value) ? 'other' : value);
@@ -68,5 +91,18 @@ export function useBrandCategories() {
   /** The BrandCategory row behind a category value, if any. */
   const rowFor = (value) => rows.find((r) => r.category_key === value) || null;
 
-  return { categories, rows, configured, isLoading, taskCategoryFor, rowFor };
+  /** The GLOBAL task form for a category value — one definition, all Brands. */
+  const formFieldsFor = (value) => globalFormFields(globalMap[value]);
+
+  return {
+    categories,
+    rows,
+    globalRows: globals,
+    globalMap,
+    configured,
+    isLoading: brandQuery.isLoading || globalQuery.isLoading,
+    taskCategoryFor,
+    rowFor,
+    formFieldsFor,
+  };
 }

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { mergeTheme } from '../../shared/brandTheme.ts';
 
 /**
  * adminUpdateBrand — Brand Manager.
@@ -110,6 +111,20 @@ Deno.serve(async (req) => {
     assign('support_phone', str(body?.support_phone));
     assign('terms_url', url(body?.terms_url));
     assign('privacy_url', url(body?.privacy_url));
+
+    // ── Design tokens (BrandConfig.theme) ────────────────────────────────────
+    // Merged, never replaced: saving one token never wipes the rest.
+    if (body?.theme && typeof body.theme === 'object') {
+      const { theme, invalid: badTokens } = mergeTheme(existing?.theme, body.theme);
+      if (badTokens.length) {
+        return Response.json({
+          error: 'theme_value_invalid',
+          fields: badTokens,
+          message: 'A colour must be a valid CSS colour, a radius 0-60, and a shadow a preset or a valid shadow value.',
+        }, { status: 400 });
+      }
+      cfgPatch.theme = theme;
+    }
 
     if (invalid.length) {
       return Response.json({

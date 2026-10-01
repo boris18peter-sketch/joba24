@@ -1,102 +1,297 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import {
-  Plus, ChevronUp, ChevronDown, Trash2, Pencil, Check, X, RefreshCw, ListPlus,
+  ChevronUp, ChevronDown, Check, X, RefreshCw, Pencil, Layers, PowerOff,
 } from 'lucide-react';
-import { Section, Field, inputStyle, Pill, Btn, card, mono } from '@/components/admin/brand/brandUi';
-import { PLATFORM_CATEGORY_KEYS, platformCategoryLabel } from '@/lib/brand/brandCategories';
+import { Section, Field, inputStyle, Pill, Btn, card, mono, refreshBrand } from '@/components/admin/brand/brandUi';
+import { platformCategoryLabel } from '@/lib/brand/brandCategories';
 
-const FIELD_TYPES = [
-  ['text', 'טקסט'], ['textarea', 'טקסט ארוך'], ['number', 'מספר'],
-  ['select', 'בחירה'], ['multiselect', 'בחירה מרובה'], ['boolean', 'כן/לא'],
-  ['date', 'תאריך'], ['time', 'שעה'],
-];
+/**
+ * Brand Categories — which GLOBAL categories this Brand offers.
+ *
+ * The Brand does NOT own the category definition or the task form; those are
+ * global (Admin → Categories). This tab only controls:
+ *   • enabled / disabled for this Brand
+ *   • this Brand's ordering
+ *   • an optional display label / icon override
+ *
+ * Toggles are OPTIMISTIC: the switch flips instantly and the write happens
+ * behind it, so nothing ever waits on a round trip to feel responsive.
+ */
 
-/** Per-category task-form fields — the practical, supported shape. */
-function FormConfigEditor({ value, onChange }) {
-  const fields = value?.fields || [];
+export default function BrandCategoriesTab({ brand, rows = [], globalRows = [] }) {
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(null);
+  const [overrides, setOverrides] = useState({}); // category_key -> enabled (optimistic)
+  const [localOrder, setLocalOrder] = useState(null); // [category_key]
+  const [editing, setEditing] = useState(null); // { category_key, label, icon }
 
-  const update = (i, patch) => onChange({
-    fields: fields.map((f, idx) => (idx === i ? { ...f, ...patch } : f)),
-  });
-  const move = (i, dir) => {
-    const next = [...fields];
-    const j = i + dir;
-    if (j < 0 || j >= next.length) return;
-    [next[i], next[j]] = [next[j], next[i]];
-    onChange({ fields: next.map((f, idx) => ({ ...f, order: idx })) });
+  const rowByKey = useMemo(() => {
+    const m = {};
+    for (const r of rows) m[r.category_key] = r;
+    return m;
+  }, [rows]);
+
+  const activeGlobals = useMemo(
+    () => globalRows.filter((g) => g.active !== false),
+    [globalRows],
+  );
+
+  /**
+   * Every active global category, with this Brand's state resolved.
+   * When a Brand has no rows at all the runtime offers everything, so the UI
+   * shows everything as enabled rather than lying about it.
+   */
+  const list = useMemo(() => {
+    const configured = rows.length > 0;
+    const items = activeGlobals.map((g) => {
+      const row = rowByKey[g.category_key];
+      const enabled = overrides[g.category_key] ?? (configured ? (row?.enabled !== false) : true);
+      return {
+        key: g.category_key,
+        row,
+        enabled,
+        label: row?.label || g.label || platformCategoryLabel(g.category_key),
+        icon: row?.icon || g.icon || '',
+        overridden: !!(row?.label || row?.icon),
+        fieldCount: (g.fields || []).filter((f) => f.enabled !== false).length,
+        sort: row?.sort_order ?? g.sort_order ?? 0,
+      };
+    });
+
+    if (!localOrder) return items.slice().sort((a, b) => a.sort - b.sort);
+    const pos = new Map(localOrder.map((k, i) => [k, i]));
+    return items.slice().sort((a, b) => (pos.get(a.key) ?? 999) - (pos.get(b.key) ?? 999));
+  }, [activeGlobals, rowByKey, overrides, localOrder, rows.length]);
+
+  const enabledCount = list.filter((c) => c.enabled).length;
+
+  const invoke = async (payload) => {
+    const res = await base44.functions.invoke('adminManageCategory', { brand_id: brand.id, ...payload });
+    return res?.data;
   };
-  const add = () => onChange({
-    fields: [...fields, {
-      key: `field_${fields.length + 1}`, label: '', type: 'text',
-      required: false, enabled: true, order: fields.length, options: [],
-    }],
-  });
-  const remove = (i) => onChange({ fields: fields.filter((_, idx) => idx !== i) });
+
+  const errText = (code) =>
+    code === 'category_in_use' ? 'הקטגוריה בשימוש במשימות — יש להשבית במקום להסיר'
+      : code === 'category_not_found' ? 'הקטגוריה לא נמצאה'
+      : 'הפעולה נכשלה';
+
+  /** Optimistic toggle — flips immediately, rolls back only on a real failure. */
+  const toggle = async (item) => {
+    const next = !item.enabled;
+    setOverrides((o) => ({ ...o, [item.key]: next }));
+    setBusy(`toggle:${item.key}`);
+    try {
+      const data = await invoke({ action: next ? 'enable' : 'disable', category_key: item.key });
+      if (!data?.success) {
+        setOverrides((o) => ({ ...o, [item.key]: !next }));
+        toast.error(errText(data?.error));
+        return;
+      }
+      refreshBrand(queryClient, brand.id);
+    } catch (e) {
+      setOverrides((o) => ({ ...o, [item.key]: !next }));
+      toast.error('הפעולה נכשלה');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const bulk = async (enabled) => {
+    setBusy(`bulk:${enabled}`);
+    const optimistic = {};
+    for (const c of list) optimistic[c.key] = enabled;
+    setOverrides(optimistic);
+    try {
+      const data = await invoke({ action: 'bulk_toggle', enabled });
+      if (!data?.success) {
+        setOverrides({});
+        toast.error('הפעולה נכשלה');
+        return;
+      }
+      refreshBrand(queryClient, brand.id);
+      toast.success(enabled ? 'כל הקטגוריות הופעלו' : 'כל הקטגוריות הושבתו');
+    } catch (e) {
+      setOverrides({});
+      toast.error('הפעולה נכשלה');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const move = async (index, dir) => {
+    const j = index + dir;
+    if (j < 0 || j >= list.length) return;
+    const keys = list.map((c) => c.key);
+    [keys[index], keys[j]] = [keys[j], keys[index]];
+    setLocalOrder(keys); // instant
+    setBusy('reorder');
+    try {
+      const data = await invoke({
+        action: 'reorder',
+        order: keys.map((k, i) => ({ id: rowByKey[k]?.id, sort_order: i })).filter((o) => o.id),
+      });
+      if (!data?.success) { setLocalOrder(null); toast.error('הסידור נכשל'); return; }
+      refreshBrand(queryClient, brand.id);
+    } catch (e) {
+      setLocalOrder(null);
+      toast.error('הסידור נכשל');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveLabel = async () => {
+    setBusy('label');
+    try {
+      const data = await invoke({
+        action: 'set_label',
+        category_key: editing.category_key,
+        label: editing.label,
+        icon: editing.icon,
+      });
+      if (!data?.success) { toast.error(errText(data?.error)); return; }
+      setEditing(null);
+      refreshBrand(queryClient, brand.id);
+      toast.success('התצוגה עודכנה');
+    } catch (e) {
+      toast.error('השמירה נכשלה');
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>
-        שדות אלה יוצגו בטופס יצירת המשימה של המותג, מתחת לשדות הקטגוריה הרגילים.
+    <Section
+      title="קטגוריות"
+      desc="הקטגוריות שהמותג מציע. ההגדרה וטופס המשימה של כל קטגוריה הם גלובליים — כאן קובעים רק מה מוצג במותג הזה, ובאיזה סדר."
+      actions={
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <Btn variant="soft" loading={busy === 'bulk:true'} onClick={() => bulk(true)} style={{ height: 36, fontSize: 12 }}>
+            הפעל הכל
+          </Btn>
+          <Btn variant="soft" loading={busy === 'bulk:false'} onClick={() => bulk(false)} style={{ height: 36, fontSize: 12 }}>
+            <PowerOff size={13} /> השבת הכל
+          </Btn>
+          <Btn variant="soft" loading={busy === 'sync'}
+            onClick={async () => {
+              setBusy('sync');
+              const data = await invoke({ action: 'sync_global' }).catch(() => null);
+              setBusy(null);
+              if (data?.success) { refreshBrand(queryClient, brand.id); toast.success('הקטלוג סונכרן'); }
+              else toast.error('הסנכרון נכשל');
+            }}
+            style={{ height: 36, fontSize: 12 }}>
+            <RefreshCw size={14} /> סנכרן מהקטלוג
+          </Btn>
+        </div>
+      }
+    >
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Pill tone={enabledCount ? 'green' : 'gray'}>{enabledCount} מופעלות</Pill>
+        <Pill tone="gray">{list.length - enabledCount} מושבתות</Pill>
+        <Pill tone="blue">הטופס גלובלי — {activeGlobals.reduce((s, g) => s + (g.fields || []).filter((f) => f.enabled !== false).length, 0)} שדות</Pill>
       </div>
 
-      {fields.length === 0 && (
-        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>לא הוגדרו שדות מותאמים לקטגוריה זו.</div>
+      {editing && (
+        <div style={{ ...card, padding: 13, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>
+              תצוגה למותג · <span style={mono}>{editing.category_key}</span>
+            </div>
+            <button onClick={() => setEditing(null)} style={iconBtn}><X size={15} /></button>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>
+            זו עקיפה לתצוגה בלבד — היא אינה משנה את הקטגוריה הגלובלית או את טופס המשימה.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 8 }}>
+            <Field label="תווית תצוגה" hint={`ברירת מחדל: ${platformCategoryLabel(editing.category_key)}`}>
+              <input style={inputStyle} value={editing.label}
+                onChange={(e) => setEditing((s) => ({ ...s, label: e.target.value }))} />
+            </Field>
+            <Field label="אייקון">
+              <input style={inputStyle} value={editing.icon} placeholder="📸"
+                onChange={(e) => setEditing((s) => ({ ...s, icon: e.target.value }))} />
+            </Field>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn onClick={saveLabel} loading={busy === 'label'}><Check size={15} /> שמור</Btn>
+            <Btn variant="soft" onClick={() => setEditing(null)}>ביטול</Btn>
+          </div>
+        </div>
       )}
 
-      {fields.map((f, i) => (
-        <div key={i} style={{ ...card, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input
-              style={{ ...inputStyle, height: 36, flex: 1, fontSize: 12, ...mono }}
-              value={f.key}
-              onChange={(e) => update(i, { key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-              placeholder="field_key"
-            />
-            <button onClick={() => move(i, -1)} style={iconBtn}><ChevronUp size={14} /></button>
-            <button onClick={() => move(i, 1)} style={iconBtn}><ChevronDown size={14} /></button>
-            <button onClick={() => remove(i)} style={iconBtn}><Trash2 size={14} color="#991b1b" /></button>
-          </div>
-          <input
-            style={{ ...inputStyle, height: 36, fontSize: 12 }}
-            value={f.label}
-            onChange={(e) => update(i, { label: e.target.value })}
-            placeholder="תווית שתוצג למשתמש"
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'center' }}>
-            <select
-              style={{ ...inputStyle, height: 36, fontSize: 12 }}
-              value={f.type}
-              onChange={(e) => update(i, { type: e.target.value })}
-            >
-              {FIELD_TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-            <label style={checkLabel}>
-              <input type="checkbox" checked={f.required === true} onChange={(e) => update(i, { required: e.target.checked })} />
-              חובה
-            </label>
-            <label style={checkLabel}>
-              <input type="checkbox" checked={f.enabled !== false} onChange={(e) => update(i, { enabled: e.target.checked })} />
-              פעיל
-            </label>
-          </div>
-          {(f.type === 'select' || f.type === 'multiselect') && (
-            <input
-              style={{ ...inputStyle, height: 36, fontSize: 12 }}
-              value={(f.options || []).join(', ')}
-              onChange={(e) => update(i, { options: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
-              placeholder="אפשרויות מופרדות בפסיק"
-            />
-          )}
+      {list.length === 0 && (
+        <div style={{ fontSize: 13, color: 'var(--text-3)', textAlign: 'center', padding: 20 }}>
+          אין קטגוריות גלובליות פעילות. הוסף אותן ב-Admin → Categories.
+        </div>
+      )}
+
+      {list.map((c, i) => (
+        <div key={c.key} style={{
+          ...card, padding: 11, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          opacity: c.enabled ? 1 : 0.62,
+          borderColor: c.enabled ? 'var(--border-1)' : 'var(--border-2)',
+        }}>
+          <button
+            onClick={() => toggle(c)}
+            disabled={busy === `toggle:${c.key}`}
+            title={c.enabled ? 'השבת למותג זה' : 'הפעל למותג זה'}
+            style={{
+              width: 46, height: 26, borderRadius: 20, border: 'none', cursor: 'pointer',
+              background: c.enabled ? 'var(--brand-primary)' : 'var(--border-2)',
+              position: 'relative', flexShrink: 0, transition: 'background .15s',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3, left: c.enabled ? 23 : 3,
+              width: 20, height: 20, borderRadius: '50%', background: 'white',
+              transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,.25)',
+            }} />
+          </button>
+
+          <span style={{ fontSize: 15 }}>{c.icon || ''}</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
+            {c.label}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)', ...mono }}>{c.key}</span>
+          {c.enabled
+            ? <Pill tone="green">מופעלת במותג</Pill>
+            : <Pill tone="gray">מושבתת במותג</Pill>}
+          {c.overridden && <Pill tone="blue">תצוגה מותאמת</Pill>}
+          {c.fieldCount > 0 && <Pill tone="gray">{c.fieldCount} שדות גלובליים</Pill>}
+
+          <span style={{ flex: 1 }} />
+
+          <button onClick={() => move(i, -1)} disabled={i === 0} style={{ ...iconBtn, opacity: i === 0 ? 0.4 : 1 }}>
+            <ChevronUp size={14} />
+          </button>
+          <button onClick={() => move(i, 1)} disabled={i === list.length - 1}
+            style={{ ...iconBtn, opacity: i === list.length - 1 ? 0.4 : 1 }}>
+            <ChevronDown size={14} />
+          </button>
+          <button
+            onClick={() => setEditing({ category_key: c.key, label: c.row?.label || '', icon: c.row?.icon || '' })}
+            style={iconBtn} title="עקיפת תצוגה"
+          >
+            <Pencil size={13} />
+          </button>
         </div>
       ))}
 
-      <Btn variant="soft" onClick={add} style={{ height: 36, fontSize: 12, alignSelf: 'flex-start' }}>
-        <ListPlus size={14} /> הוסף שדה
-      </Btn>
-    </div>
+      <div style={{
+        background: 'var(--surface-1)', border: '1px solid var(--border-1)',
+        borderRadius: 12, padding: 12, display: 'flex', gap: 9, alignItems: 'flex-start',
+      }}>
+        <Layers size={15} color="var(--text-3)" style={{ flexShrink: 0, marginTop: 1 }} />
+        <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.65 }}>
+          טופס המשימה של כל קטגוריה מוגדר פעם אחת בלבד ב-<b>Admin → Categories</b> ומשותף לכל המותגים.
+          שיפור הטופס שם מתעדכן מיד בכל המותגים שמציעים את הקטגוריה — בלי עבודה לכל מותג.
+        </div>
+      </div>
+    </Section>
   );
 }
 
@@ -105,198 +300,3 @@ const iconBtn = {
   background: 'var(--surface-1)', cursor: 'pointer', display: 'flex',
   alignItems: 'center', justifyContent: 'center', flexShrink: 0,
 };
-const checkLabel = {
-  display: 'flex', alignItems: 'center', gap: 5, fontSize: 11,
-  fontWeight: 700, color: 'var(--text-2)', cursor: 'pointer', whiteSpace: 'nowrap',
-};
-
-export default function BrandCategoriesTab({ brand, categories }) {
-  const queryClient = useQueryClient();
-  const [busy, setBusy] = useState(null);
-  const [editing, setEditing] = useState(null); // { id | null, category_key, label, icon, form_config }
-  const [adding, setAdding] = useState(false);
-
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['adminBrandCategories', brand.id] });
-
-  const invoke = async (payload) => {
-    const res = await base44.functions.invoke('adminManageCategory', { brand_id: brand.id, ...payload });
-    return res?.data;
-  };
-
-  const act = (key) => async (payload, okMsg) => {
-    setBusy(key);
-    try {
-      const data = await invoke(payload);
-      if (!data?.success) {
-        toast.error(
-          data?.error === 'category_key_taken' ? 'המזהה כבר קיים במותג'
-            : data?.error === 'category_key_invalid' ? 'מזהה קטגוריה לא תקין'
-            : data?.error === 'category_in_use' ? 'הקטגוריה בשימוש במשימות — יש להשבית במקום למחוק'
-            : 'הפעולה נכשלה'
-        );
-        return null;
-      }
-      refresh();
-      if (okMsg) toast.success(okMsg);
-      return data;
-    } catch (e) {
-      toast.error('הפעולה נכשלה');
-      return null;
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const reorder = async (index, dir) => {
-    const list = [...categories];
-    const j = index + dir;
-    if (j < 0 || j >= list.length) return;
-    [list[index], list[j]] = [list[j], list[index]];
-    await act('reorder')({ action: 'reorder', order: list.map((c, i) => ({ id: c.id, sort_order: i })) });
-  };
-
-  const openNew = () => {
-    setEditing({ id: null, category_key: '', label: '', icon: '', enabled: true, form_config: { fields: [] } });
-    setAdding(true);
-  };
-
-  const saveEditing = async () => {
-    const e = editing;
-    if (!e.category_key.trim()) { toast.error('יש להזין מזהה קטגוריה'); return; }
-    const data = await act('save')({
-      action: 'upsert',
-      id: e.id || undefined,
-      category_key: e.category_key.trim(),
-      label: e.label,
-      icon: e.icon,
-      enabled: e.enabled !== false,
-      form_config: e.form_config,
-    }, e.id ? 'הקטגוריה עודכנה' : 'הקטגוריה נוספה');
-    if (data) { setEditing(null); setAdding(false); }
-  };
-
-  const setEdit = (patch) => setEditing((e) => ({ ...e, ...patch }));
-
-  return (
-    <>
-      <Section
-        title="קטגוריות"
-        desc="BrandCategory הוא המקור הקובע לקטגוריות שהמותג מציע. קטגוריה מושבתת לא תוצג ולא תיבחר ביצירת משימה."
-        actions={
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Btn variant="soft" loading={busy === 'sync'}
-              onClick={() => act('sync')({ action: 'sync_platform' }, 'הקטגוריות סונכרנו')}
-              style={{ height: 36, fontSize: 12 }}>
-              <RefreshCw size={14} /> סנכרן מ-Joba24
-            </Btn>
-            <Btn onClick={openNew} style={{ height: 36, fontSize: 13 }}>
-              <Plus size={15} /> קטגוריה
-            </Btn>
-          </div>
-        }
-      >
-        {(adding || editing) && (
-          <div style={{ ...card, padding: 13, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-1)' }}>
-                {editing?.id ? 'עריכת קטגוריה' : 'קטגוריה חדשה'}
-              </div>
-              <button onClick={() => { setEditing(null); setAdding(false); }} style={iconBtn}>
-                <X size={15} />
-              </button>
-            </div>
-
-            <Field
-              label="מזהה קטגוריה (key) *"
-              hint={editing && PLATFORM_CATEGORY_KEYS.includes(editing.category_key)
-                ? 'קטגוריית Joba24 קיימת.'
-                : 'מזהה חדש שאינו של Joba24 — יישמר על המשימה כ"אחר" עם שמירת מזהה המותג.'}
-            >
-              <input
-                style={{ ...inputStyle, ...mono }}
-                value={editing?.category_key || ''}
-                onChange={(e) => setEdit({ category_key: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-                placeholder="wedding_photography"
-              />
-            </Field>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 8 }}>
-              <Field label="תווית תצוגה" hint={`ברירת מחדל: ${platformCategoryLabel(editing?.category_key || '')}`}>
-                <input style={inputStyle} value={editing?.label || ''} onChange={(e) => setEdit({ label: e.target.value })} />
-              </Field>
-              <Field label="אייקון">
-                <input style={inputStyle} value={editing?.icon || ''} onChange={(e) => setEdit({ icon: e.target.value })} placeholder="📸" />
-              </Field>
-            </div>
-
-            <div style={{ borderTop: '1px solid var(--border-1)', paddingTop: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-1)', marginBottom: 8 }}>
-                שדות טופס למשימה בקטגוריה זו
-              </div>
-              <FormConfigEditor
-                value={editing?.form_config}
-                onChange={(fc) => setEdit({ form_config: fc })}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Btn onClick={saveEditing} loading={busy === 'save'}>
-                <Check size={15} /> שמור
-              </Btn>
-              <Btn variant="soft" onClick={() => { setEditing(null); setAdding(false); }}>ביטול</Btn>
-            </div>
-          </div>
-        )}
-
-        {categories.length === 0 && !adding && (
-          <div style={{ fontSize: 13, color: 'var(--text-3)', textAlign: 'center', padding: 20 }}>
-            לא הוגדרו קטגוריות למותג זה
-          </div>
-        )}
-
-        {categories.map((c, i) => {
-          const fieldCount = (c.form_config?.fields || []).filter((f) => f.enabled !== false).length;
-          const disabled = c.enabled === false;
-          return (
-            <div key={c.id} style={{ ...card, padding: 11, display: 'flex', flexDirection: 'column', gap: 8, opacity: disabled ? 0.6 : 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 15 }}>{c.icon || ''}</span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>
-                  {c.label || platformCategoryLabel(c.category_key)}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', ...mono }}>{c.category_key}</span>
-                {!PLATFORM_CATEGORY_KEYS.includes(c.category_key) && <Pill tone="blue">מותג</Pill>}
-                {fieldCount > 0 && <Pill tone="gray">{fieldCount} שדות</Pill>}
-                {disabled && <Pill tone="amber">מושבת</Pill>}
-              </div>
-
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button onClick={() => reorder(i, -1)} disabled={i === 0} style={{ ...iconBtn, opacity: i === 0 ? 0.4 : 1 }}>
-                  <ChevronUp size={14} />
-                </button>
-                <button onClick={() => reorder(i, 1)} disabled={i === categories.length - 1}
-                  style={{ ...iconBtn, opacity: i === categories.length - 1 ? 0.4 : 1 }}>
-                  <ChevronDown size={14} />
-                </button>
-                <Btn variant="soft" onClick={() => act(`toggle:${c.id}`)({ action: 'toggle', id: c.id })}
-                  style={{ height: 32, fontSize: 12 }}>
-                  {disabled ? 'הפעל' : 'השבת'}
-                </Btn>
-                <Btn variant="soft"
-                  onClick={() => { setEditing({ ...c, form_config: c.form_config || { fields: [] } }); setAdding(false); }}
-                  style={{ height: 32, fontSize: 12 }}>
-                  <Pencil size={13} /> עריכה
-                </Btn>
-                <Btn variant="danger" loading={busy === `remove:${c.id}`}
-                  onClick={() => { if (window.confirm(`למחוק את ${c.label || c.category_key}?`)) act(`remove:${c.id}`)({ action: 'remove', id: c.id }, 'הקטגוריה נמחקה'); }}
-                  style={{ height: 32, fontSize: 12 }}>
-                  <Trash2 size={13} />
-                </Btn>
-              </div>
-            </div>
-          );
-        })}
-      </Section>
-    </>
-  );
-}

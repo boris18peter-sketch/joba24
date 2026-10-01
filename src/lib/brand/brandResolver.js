@@ -135,5 +135,7 @@ export function effectiveBrandConfig(ctx) {
     privacyUrl: config.privacy_url || null,
     defaultLocale: config.default_locale || null,
     marketplace: config.marketplace || {},
+    /** Brand design tokens. Null when the Brand defines none (platform look). */
+    theme: config.theme || null,
   };
 }

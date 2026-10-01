@@ -50,6 +50,11 @@
       "additionalProperties": true,
       "description": "Nullable overrides of JobaSettings keys (e.g. signup_bonus, application_fee_percent, story_cost). Unset keys inherit from the parent Brand."
     },
+    "theme": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Brand design tokens. A flat map of token name -> value (see src/lib/brand/themeTokens.js for the authoritative key list). Applied centrally by BrandTheme as CSS variables, so every reusable component themes automatically. An unset token inherits the platform default."
+    },
     "is_public": {
       "type": "boolean",
       "default": true,

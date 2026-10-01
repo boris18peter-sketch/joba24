@@ -5,25 +5,30 @@ import { base44 } from '@/api/base44Client';
 import { ArrowRight, Loader2, ExternalLink } from 'lucide-react';
 import { useBrand } from '@/lib/brand/BrandProvider';
 import BrandGeneralTab from '@/components/admin/brand/BrandGeneralTab';
-import BrandBrandingTab from '@/components/admin/brand/BrandBrandingTab';
+import BrandDesignTab from '@/components/admin/brand/BrandDesignTab';
 import BrandDomainsTab from '@/components/admin/brand/BrandDomainsTab';
 import BrandCategoriesTab from '@/components/admin/brand/BrandCategoriesTab';
 import BrandMarketplaceTab from '@/components/admin/brand/BrandMarketplaceTab';
+import BrandDashboardTab from '@/components/admin/brand/BrandDashboardTab';
 import BrandDangerTab from '@/components/admin/brand/BrandDangerTab';
 import { Pill } from '@/components/admin/brand/brandUi';
+import { fetchGlobalCategories } from '@/lib/brand/globalCategories';
 
 /**
- * BrandManager — the dedicated management page for one Brand.
- * Reached from Admin → Brands. Everything about a Brand is configured here;
- * no code edits and no manual entity editing are required.
+ * Brand Studio — everything about one Brand in one place.
+ *
+ * Sections: overview · design system · domains · categories · marketplace ·
+ * dashboard · danger zone. Each section owns its own save state; nothing waits
+ * on a full page reload.
  */
 
 const TABS = [
-  ['general', 'כללי'],
-  ['branding', 'מיתוג'],
+  ['overview', 'סקירה'],
+  ['design', 'מערכת עיצוב'],
   ['domains', 'דומיינים'],
   ['categories', 'קטגוריות'],
   ['marketplace', 'הגדרות שוק'],
+  ['dashboard', 'דשבורד'],
   ['danger', 'אזור מסוכן'],
 ];
 
@@ -37,7 +42,7 @@ export default function BrandManager() {
   const { brandId } = useParams();
   const navigate = useNavigate();
   const { brandId: surfaceBrandId } = useBrand();
-  const [tab, setTab] = useState('general');
+  const [tab, setTab] = useState('overview');
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['adminBrand', brandId],
@@ -55,6 +60,13 @@ export default function BrandManager() {
         categories: categories || [],
       };
     },
+    enabled: !!brandId,
+  });
+
+  // The global catalogue — shared by every Brand, so it is cached once.
+  const { data: globalCategories = [] } = useQuery({
+    queryKey: ['globalCategories'],
+    queryFn: fetchGlobalCategories,
     enabled: !!brandId,
   });
 
@@ -83,6 +95,7 @@ export default function BrandManager() {
   const primary = domains.find((d) => d.is_primary) || domains[0];
   const status = STATUS[brand.status] || STATUS.suspended;
   const isSurfaceBrand = surfaceBrandId === brand.id;
+  const themeTokens = config?.theme ? Object.keys(config.theme).length : 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -108,7 +121,7 @@ export default function BrandManager() {
           ) : (
             <div style={{
               width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-              background: config?.primary_color || '#1a6fd4',
+              background: config?.theme?.primary || config?.primary_color || '#1a6fd4',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 900, fontSize: 22,
             }}>
@@ -123,6 +136,7 @@ export default function BrandManager() {
               <Pill tone={status.tone}>{status.text}</Pill>
               {brand.is_default && <Pill tone="blue">פלטפורמה</Pill>}
               {isSurfaceBrand && <Pill tone="green">המותג הנוכחי</Pill>}
+              {themeTokens > 0 && <Pill tone="gray">{themeTokens} ערכי עיצוב</Pill>}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-3)', fontFamily: 'ui-monospace, monospace', marginTop: 3 }}>
               {brand.slug}
@@ -156,8 +170,10 @@ export default function BrandManager() {
                   height: 38, padding: '0 15px', borderRadius: 11, fontSize: 13, fontWeight: 800,
                   whiteSpace: 'nowrap', cursor: 'pointer',
                   border: active ? 'none' : '1px solid var(--border-1)',
-                  background: active ? 'linear-gradient(135deg,#1a6fd4,#0a52b0)' : 'var(--surface-1)',
-                  color: active ? 'white' : 'var(--text-2)',
+                  background: active
+                    ? 'linear-gradient(135deg, var(--brand-btn-primary-bg, #1a6fd4), var(--brand-primary-dark, #0a52b0))'
+                    : 'var(--surface-1)',
+                  color: active ? 'var(--brand-btn-primary-text, white)' : 'var(--text-2)',
                 }}
               >
                 {label}
@@ -167,11 +183,14 @@ export default function BrandManager() {
         </div>
       </div>
 
-      {tab === 'general' && <BrandGeneralTab brand={brand} config={config} onSaved={onSaved} />}
-      {tab === 'branding' && <BrandBrandingTab brand={brand} config={config} onSaved={onSaved} />}
+      {tab === 'overview' && <BrandGeneralTab brand={brand} config={config} onSaved={onSaved} />}
+      {tab === 'design' && <BrandDesignTab brand={brand} config={config} onSaved={onSaved} />}
       {tab === 'domains' && <BrandDomainsTab brand={brand} domains={domains} />}
-      {tab === 'categories' && <BrandCategoriesTab brand={brand} categories={categories} />}
+      {tab === 'categories' && (
+        <BrandCategoriesTab brand={brand} rows={categories} globalRows={globalCategories} />
+      )}
       {tab === 'marketplace' && <BrandMarketplaceTab brand={brand} config={config} onSaved={onSaved} />}
+      {tab === 'dashboard' && <BrandDashboardTab brand={brand} />}
       {tab === 'danger' && <BrandDangerTab brand={brand} />}
     </div>
   );

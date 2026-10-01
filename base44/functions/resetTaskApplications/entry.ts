@@ -50,6 +50,7 @@ Deno.serve(async (req) => {
             task_id: taskId,
             task_title: task.title || '',
             balance_after: newBalance,
+            brand_id: task.origin_brand_id || null,
             note: 'החזר ג\'ובות — המשימה פורסמה מחדש',
           });
           refundedCount++;

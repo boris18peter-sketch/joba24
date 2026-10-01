@@ -21,6 +21,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getCurrentBrandId } from '@/lib/brand/currentBrand';
 import { isMessageInThread } from '@/lib/chatThread';
 
 const PAGE_SIZE = 40;          // messages per page
@@ -186,6 +187,8 @@ export default function useChatThread({ taskId, threadKey, meId, meName, otherId
         content: opt.content,
         thread_key: tk,
         recipient_id: oid,
+        // Attribution only — the surface the message was sent from.
+        surface_brand_id: getCurrentBrandId(),
       });
       storeRef.current.delete(localId);
       if (created?.id) mergeIn([created]); else commit();

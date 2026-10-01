@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
         task_id: taskId,
         task_title: task.title,
         balance_after: newBalance,
+        brand_id: task.origin_brand_id || null,
         note: `החזר ג'ובות - יציאה מרצון מהמשימה "${task.title}"`,
       });
       console.log(`✅ Refunded ${creditsToRefund} credits to worker ${user.id}`);
@@ -67,6 +68,7 @@ Deno.serve(async (req) => {
         // Same thread as the conversation they were already having
         thread_key: [user.id, task.client_id].sort().join('__'),
         recipient_id: task.client_id,
+        surface_brand_id: task.origin_brand_id || null,
       });
     }
 

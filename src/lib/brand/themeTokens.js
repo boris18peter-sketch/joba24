@@ -1,0 +1,273 @@
+/**
+ * Brand design tokens (frontend).
+ *
+ * The authoritative KEY LIST for `BrandConfig.theme`, the Joba24 defaults, and
+ * the mapping from a token to the CSS variables the app actually reads.
+ *
+ * Everything is applied CENTRALLY by BrandTheme. Components must never hardcode
+ * a brand colour: they read the CSS variable, and the variable is what a Brand
+ * overrides. Each variable has a fallback equal to the current Joba24 value, so
+ * an unset token leaves the platform untouched.
+ *
+ * Mirrors `base44/shared/brandTheme.ts` (separate bundles, no shared import).
+ */
+
+export const TOKEN_GROUPS = [
+  {
+    id: 'core', title: 'ליבה', hint: 'הצבעים והמשטחים הבסיסיים של המותג.',
+    tokens: [
+      { key: 'primary', type: 'color', label: 'צבע ראשי' },
+      { key: 'primary_dark', type: 'color', label: 'ראשי כהה' },
+      { key: 'secondary', type: 'color', label: 'צבע משני' },
+      { key: 'accent', type: 'color', label: 'צבע הדגשה' },
+      { key: 'background', type: 'color', label: 'רקע עמוד' },
+      { key: 'surface', type: 'color', label: 'משטח / כרטיס' },
+      { key: 'surface_alt', type: 'color', label: 'משטח משני' },
+      { key: 'text_primary', type: 'color', label: 'טקסט ראשי' },
+      { key: 'text_secondary', type: 'color', label: 'טקסט משני' },
+      { key: 'border', type: 'color', label: 'גבול' },
+    ],
+  },
+  {
+    id: 'buttons', title: 'כפתורים', hint: 'כפתור ראשי, משני ורדיוס.',
+    tokens: [
+      { key: 'button_primary_bg', type: 'color', label: 'רקע כפתור ראשי' },
+      { key: 'button_primary_text', type: 'color', label: 'טקסט כפתור ראשי' },
+      { key: 'button_secondary_bg', type: 'color', label: 'רקע כפתור משני' },
+      { key: 'button_secondary_text', type: 'color', label: 'טקסט כפתור משני' },
+      { key: 'button_radius', type: 'number', label: 'רדיוס כפתור', unit: 'px' },
+    ],
+  },
+  {
+    id: 'cards', title: 'כרטיסים', hint: 'רקע, גבול, רדיוס וצל.',
+    tokens: [
+      { key: 'card_bg', type: 'color', label: 'רקע כרטיס' },
+      { key: 'card_border', type: 'color', label: 'גבול כרטיס' },
+      { key: 'card_radius', type: 'number', label: 'רדיוס כרטיס', unit: 'px' },
+      { key: 'card_shadow', type: 'shadow', label: 'עומק צל' },
+    ],
+  },
+  {
+    id: 'inputs', title: 'שדות קלט', hint: 'רקע, גבול, מיקוד ורדיוס.',
+    tokens: [
+      { key: 'input_bg', type: 'color', label: 'רקע שדה' },
+      { key: 'input_border', type: 'color', label: 'גבול שדה' },
+      { key: 'input_focus', type: 'color', label: 'צבע מיקוד' },
+      { key: 'input_radius', type: 'number', label: 'רדיוס שדה', unit: 'px' },
+    ],
+  },
+  {
+    id: 'modals', title: 'חלונות ופופ-אפים', hint: 'משטח, רעלה ורדיוס.',
+    tokens: [
+      { key: 'modal_bg', type: 'color', label: 'רקע חלון' },
+      { key: 'modal_radius', type: 'number', label: 'רדיוס חלון', unit: 'px' },
+      { key: 'overlay', type: 'color', label: 'צבע רעלה' },
+    ],
+  },
+  {
+    id: 'banners', title: 'באנרים', hint: 'רקע, טקסט והדגשה.',
+    tokens: [
+      { key: 'banner_bg', type: 'color', label: 'רקע באנר' },
+      { key: 'banner_text', type: 'color', label: 'טקסט באנר' },
+      { key: 'banner_accent', type: 'color', label: 'הדגשת באנר' },
+    ],
+  },
+  {
+    id: 'header', title: 'כותרת וניווט', hint: 'רקע, טקסט ומצב פעיל.',
+    tokens: [
+      { key: 'header_bg', type: 'color', label: 'רקע כותרת' },
+      { key: 'header_text', type: 'color', label: 'טקסט כותרת' },
+      { key: 'header_active', type: 'color', label: 'מצב פעיל' },
+    ],
+  },
+];
+
+export const ALL_TOKENS = TOKEN_GROUPS.flatMap((g) => g.tokens);
+
+/** Joba24 defaults — the values already in src/index.css. */
+export const TOKEN_DEFAULTS = {
+  primary: '#1a6fd4',
+  primary_dark: '#0a52b0',
+  secondary: '#eef3fc',
+  accent: '#fbbf24',
+  background: '#f2f5fb',
+  surface: '#ffffff',
+  surface_alt: '#eef3fc',
+  text_primary: '#0d1e40',
+  text_secondary: '#4b6083',
+  border: '#e4eaf5',
+  button_primary_bg: '#1a6fd4',
+  button_primary_text: '#ffffff',
+  button_secondary_bg: '#eef3fc',
+  button_secondary_text: '#4b6083',
+  button_radius: 14,
+  card_bg: '#ffffff',
+  card_border: '#e4eaf5',
+  card_radius: 18,
+  card_shadow: 'xs',
+  input_bg: '#f2f5fb',
+  input_border: '#e4eaf5',
+  input_focus: '#1a6fd4',
+  input_radius: 14,
+  modal_bg: '#ffffff',
+  modal_radius: 28,
+  overlay: 'rgba(5,15,40,0.6)',
+  banner_bg: '#0f2b6b',
+  banner_text: '#ffffff',
+  banner_accent: '#fbbf24',
+  header_bg: 'rgba(248,250,254,0.96)',
+  header_text: '#0d1e40',
+  header_active: '#1a6fd4',
+};
+
+export const SHADOW_PRESETS = {
+  none: 'none',
+  xs: '0 1px 3px rgba(15,40,107,0.06)',
+  sm: '0 2px 8px rgba(15,40,107,0.08)',
+  md: '0 4px 16px rgba(15,40,107,0.10)',
+  lg: '0 8px 32px rgba(15,40,107,0.13)',
+  xl: '0 16px 56px rgba(15,40,107,0.18)',
+};
+
+const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const FUNC_RE = /^(rgb|rgba|hsl|hsla)\([^)]*\)$/i;
+const NAME_RE = /^[a-z]{3,20}$/i;
+
+export function isColorValue(v) {
+  return typeof v === 'string' && (HEX_RE.test(v) || FUNC_RE.test(v) || NAME_RE.test(v));
+}
+
+/** Hex -> "H S% L%" for the shadcn HSL tokens. Returns null for non-hex. */
+export function hexToHsl(hex) {
+  let h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let hue = 0;
+  let sat = 0;
+  if (max !== min) {
+    const d = max - min;
+    sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) hue = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) hue = (b - r) / d + 2;
+    else hue = (r - g) / d + 4;
+    hue /= 6;
+  }
+  return `${Math.round(hue * 360)} ${Math.round(sat * 100)}% ${Math.round(l * 100)}%`;
+}
+
+/** A theme merged over the platform defaults — never a partial map. */
+export function resolveTheme(theme) {
+  const t = { ...TOKEN_DEFAULTS };
+  if (theme && typeof theme === 'object') {
+    for (const token of ALL_TOKENS) {
+      const raw = theme[token.key];
+      if (raw === undefined || raw === null || raw === '') continue;
+      if (token.type === 'color' && !isColorValue(raw)) continue;
+      if (token.type === 'number' && !Number.isFinite(Number(raw))) continue;
+      t[token.key] = raw;
+    }
+  }
+  return t;
+}
+
+/** A tint of a hex colour over white — used for the light "selected" surface. */
+function tint(hex, amount = 0.9) {
+  let h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  const mix = (c) => Math.round(parseInt(c, 16) * (1 - amount) + 255 * amount);
+  return `rgb(${mix(h.slice(0, 2))}, ${mix(h.slice(2, 4))}, ${mix(h.slice(4, 6))})`;
+}
+
+/**
+ * Token map -> the CSS variables the app reads.
+ * Only variables a token actually controls are emitted; every one of them has a
+ * fallback in CSS, so an unset token keeps the platform's current look.
+ */
+export function themeToCssVars(theme) {
+  const t = resolveTheme(theme);
+  const shadow = SHADOW_PRESETS[t.card_shadow] || SHADOW_PRESETS.xs;
+  const vars = {
+    '--brand-primary': t.primary,
+    '--brand-primary-dark': t.primary_dark,
+    '--brand-secondary': t.secondary,
+    '--brand-accent': t.accent,
+
+    '--surface-1': t.background,
+    '--surface-2': t.surface,
+    '--surface-3': t.surface_alt,
+    '--surface-4': t.surface_alt,
+    '--text-1': t.text_primary,
+    '--text-2': t.text_secondary,
+    '--border-1': t.border,
+    '--border-2': t.border,
+
+    '--card-bg': t.card_bg,
+    '--sheet-bg': t.surface,
+    '--nav-bg': t.surface,
+    '--modal-bg': t.modal_bg,
+    '--input-bg': t.input_bg,
+    '--overlay-bg': t.overlay,
+    '--header-bg': t.header_bg,
+
+    '--brand-btn-primary-bg': t.button_primary_bg,
+    '--brand-btn-primary-text': t.button_primary_text,
+    '--brand-btn-secondary-bg': t.button_secondary_bg,
+    '--brand-btn-secondary-text': t.button_secondary_text,
+    '--brand-btn-radius': `${t.button_radius}px`,
+
+    '--brand-card-bg': t.card_bg,
+    '--brand-card-border': t.card_border,
+    '--brand-card-radius': `${t.card_radius}px`,
+    '--brand-card-shadow': shadow,
+
+    '--brand-input-bg': t.input_bg,
+    '--brand-input-border': t.input_border,
+    '--brand-input-focus': t.input_focus,
+    '--brand-input-radius': `${t.input_radius}px`,
+
+    '--brand-modal-bg': t.modal_bg,
+    '--brand-modal-radius': `${t.modal_radius}px`,
+
+    '--brand-banner-bg': t.banner_bg,
+    '--brand-banner-text': t.banner_text,
+    '--brand-banner-accent': t.banner_accent,
+
+    '--brand-header-bg': t.header_bg,
+    '--brand-header-text': t.header_text,
+    '--brand-header-active': t.header_active,
+  };
+
+  const lightTint = tint(t.primary);
+  if (lightTint) vars['--brand-primary-light'] = lightTint;
+
+  // shadcn semantic tokens follow the core colours.
+  const primaryHsl = hexToHsl(t.primary);
+  if (primaryHsl) {
+    vars['--primary'] = primaryHsl;
+    vars['--accent'] = primaryHsl;
+    vars['--ring'] = primaryHsl;
+  }
+  const bgHsl = hexToHsl(t.background);
+  if (bgHsl) vars['--background'] = bgHsl;
+  const fgHsl = hexToHsl(t.text_primary);
+  if (fgHsl) vars['--foreground'] = fgHsl;
+  const cardHsl = hexToHsl(t.surface);
+  if (cardHsl) {
+    vars['--card'] = cardHsl;
+    vars['--popover'] = cardHsl;
+  }
+  const borderHsl = hexToHsl(t.border);
+  if (borderHsl) {
+    vars['--border'] = borderHsl;
+    vars['--input'] = borderHsl;
+  }
+
+  return vars;
+}
