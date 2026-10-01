@@ -108,6 +108,8 @@ const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
 const AuthCallback = lazyRetry(() => import('@/pages/AuthCallback'));
 const StoreKitStudio = lazyRetry(() => import('@/pages/StoreKitStudio'));
 const DesignPreviewV2 = lazyRetry(() => import('@/pages/DesignPreviewV2'));
+// TEMPORARY — Package 4.1.1 FLS verification harness. Removed with the page.
+const FlsProbe411 = lazyRetry(() => import('@/pages/FlsProbe411'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -168,7 +170,7 @@ function CaptureRefCode() {
 // support) get their own key and animate (slide) in/out.
 const STANDALONE = (p) =>
   p === '/lp' || p === '/presentation' || p === '/reset-password' || p === '/join' ||
-  p === '/design-v2' || p === '/support' || p.startsWith('/chat/') || p.startsWith('/r/');
+  p === '/design-v2' || p === '/fls-probe' || p === '/support' || p.startsWith('/chat/') || p.startsWith('/r/');
 function getDepth(pathname) {
   if (!STANDALONE(pathname)) return 0;
   if (pathname.startsWith('/chat/')) return 2;
@@ -240,6 +242,8 @@ const AuthenticatedApp = () => {
             <Route path="/auth-callback" element={<AuthCallback />} />
             <Route path="/store-kit" element={<StoreKitStudio />} />
             <Route path="/design-v2" element={<DesignPreviewV2 />} />
+            {/* TEMPORARY — Package 4.1.1 FLS verification. Unlinked; removed after the verdict. */}
+            <Route path="/fls-probe" element={<FlsProbe411 />} />
             <Route path="/lp" element={<Landing />} />
             <Route element={<Layout />}>
               <Route path="/" element={<HomeFeed />} />
