@@ -1267,6 +1267,60 @@ Approved as a **separate security package that must run BEFORE the Multibrand wo
 
 ---
 
+## Packages 4.1.2 → 4.4 — Multibrand Foundation ⚠️ **IMPLEMENTED — Task/TaskApplication read-RLS NOT applied**
+
+| | |
+|---|---|
+| **Date** | 2026-10-02 |
+| **Phase** | 4.1 isolation foundation · 4.2 brand runtime · 4.3 attribution · 4.4 brand configuration |
+| **Status** | **Implemented · build exit 0 · data verified.** One item deferred (see below). |
+| **Production data changed** | `User.brand_ids` × 147 · `BrandMembership` × 147 created · attribution stamped on 6 entities (1,226 records) |
+| **Tranzila** | **Untouched.** The 3.1A blocker remains fully in force. |
+
+### New entities
+
+`BrandDomain` · `BrandConfig` · `BrandCategory` · `BrandMembership` — all with public-read / admin-write RLS; `BrandMembership` read is own-row-or-admin, create/update/delete admin-only (ADR-27 — the server is the authoritative creator).
+
+### Additive attribution fields
+
+`Review.surface_brand_id` · `ChatMessage.surface_brand_id` · `NotificationLog.surface_brand_id` · `SupportMessage.surface_brand_id` · `CreditTransaction.brand_id` · `ReferralEvent.brand_id`. All nullable, all backfilled to the canonical Joba24 `Brand.id`. **No wallet, identity, KYC or rating was made Brand-specific.**
+
+### Brand runtime (4.2)
+
+`src/lib/brand/brandResolver.js` · `src/lib/brand/BrandProvider.jsx` · `src/components/BrandGate.jsx`, wired in `App.jsx` **above** `AuthProvider` (brand context precedes authentication — ADR-11). Chain: `hostname → BrandDomain → Brand → BrandConfig → BrandContext`. Registered domains win; platform/dev/embedded-preview hosts resolve to the platform Brand; **any other hostname resolves to nothing and the app renders a neutral notice with zero Joba24 data.**
+
+### Seeds
+
+`BrandDomain`: `joba24.com` (primary) · `www.joba24.com` · `joba24.base44.app`. `BrandConfig`: Joba24, locale `he`. `BrandCategory`: 26 rows (Joba24 inherits the platform labels).
+
+### Verification (read-only)
+
+- Build **exit 0**; zero probe/credential remnants in `src/`, `base44/`, `docs/`.
+- Brands: **1** (`joba24`, default, active) — **no Brand #2 created.**
+- Tasks **273/273** attributed to Joba24, **0 unattributed**, 1 distinct brand.
+- TaskApplications **124/124** attributed.
+- Users **147/147** carry `brand_ids: [JOBA24]`; **0** carry a foreign Brand.
+- BrandMembership **147**; BrandDomain **3**; BrandConfig **1**; BrandCategory **26**.
+
+### ⚠️ Deferred — Task / TaskApplication READ RLS
+
+**Not applied.** Enforcing brand-scoped reads on these two entities in this cycle would regress live Joba24 behaviour, because both currently serve **public/guest** surfaces that per-user RLS cannot express without exposing the platform Brand to every domain:
+
+| Reader | What it needs |
+|---|---|
+| `HomeFeed` (allTasks) · `MapView` · `StoriesBar` | guest reads — no user, so a membership rule matches nothing |
+| `TaskDetail` · `LiveActivityPulse` · `BoostOverlay` | **non-party** application counts, read from `TaskApplication` by `task_id` |
+
+**Prerequisites before it can be enforced (all server-side):** route guest reads through the existing public `getOpenTasks` (brand resolved from the request host), add a public single-task reader, denormalize `TaskApplication.client_id` + backfill so "task owner" is expressible in RLS, and move the three count readers onto `Task.applicants`. Then apply read RLS and write RLS (owner / assigned worker / applicant / admin).
+
+**Interim posture:** the resolved Brand from the runtime is the single authoritative surface, so no Brand is served another Brand's surface. **Isolation is architectural, not yet entity-enforced.**
+
+### Rollback
+
+Delete the 4 new entities and their seeded rows; remove the 6 attribution fields; delete `src/lib/brand/*` and `src/components/BrandGate.jsx` and revert the `App.jsx` wiring; unset `brand_ids` on the 147 listed users (never a global clear). **No Task, TaskApplication, payment or credit value was altered.**
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
