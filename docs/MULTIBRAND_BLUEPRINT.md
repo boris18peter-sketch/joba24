@@ -2,7 +2,7 @@
 
 > **Living architecture document.** The authoritative record of *decisions* (ADRs), invariants, the entity model and the phase plan.
 > **Companion documents:** `BASE44_DEPENDENCY_REGISTER.md` · `MULTIBRAND_RESTORE_RUNBOOK.md`
-> **Status:** Phase 1 deployed · Phase 2 (Joba24 attribution backfill) **deployed** · Package #2.1 (default attribution for new records) **deployed** · Phase 3 **not approved**.
+> **Status:** Phase 1 deployed · Phase 2 (Joba24 attribution backfill) **deployed** · Package #2.1 (default attribution for new records) **deployed** · Package #3.1B (internal endpoint security closure) **source complete, not yet published** · **⛔ Tranzila payments frozen — must NOT be reactivated until Package #3.1A completes (see runbook blocker)** · Phase 3 otherwise **not approved**.
 > **Governing rule:** the live Joba24 product is the regression baseline and must not change unintentionally at any phase.
 
 ---

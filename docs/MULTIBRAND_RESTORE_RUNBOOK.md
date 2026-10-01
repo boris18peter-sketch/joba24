@@ -5,6 +5,41 @@
 
 ---
 
+# ⛔ MANDATORY SECURITY BLOCKER — TRANZILA MUST NOT BE REACTIVATED
+
+**Recorded 2026-10-01 (Package #3.1B). Status: OPEN.**
+
+Tranzila payments are frozen and **not active in production**.
+
+> **Tranzila payments must NOT be reactivated until Package #3.1A is completed, after the required answers are received from Tranzila support.**
+
+There is **no server-side verification of Tranzila payment authenticity**, and there are **two** independent credit-granting paths that trust client-supplied results:
+
+| Path | Exposure |
+|---|---|
+| `verifyTranzilaPayment` | **Primary** credit path. Authenticated, but grants credits on a client-supplied `response_code === '000'` with no provider confirmation — forgeable by any signed-in user for their own pending payment. |
+| `tranzilaNotify` | Unauthenticated webhook. Grants credits on a client-supplied `Response === '000'` with no signature, no source check and no replay protection. |
+
+`response_hash` (Tranzila's documented HMAC authenticity mechanism) is scoped to **Hosted Fields only**; it is **not** documented for the DirectNG iframe or the `notify_url` callback, which is what Joba24 uses. The correct mechanism therefore **cannot be established from public documentation**.
+
+**Gate:** Package #3.1A may not start until Tranzila support answers §M. **Reactivation gate:** Tranzila may not be switched back on until 3.1A is deployed and verified.
+
+---
+
+## TranzilaPayment 15 → 17 — EXPLAINED / NO UNEXPECTED ACTIVITY
+
+**Recorded 2026-10-01. Status: CLOSED — do not investigate further.**
+
+`TranzilaPayment` records moved from **15** (LKGS-3.0) to **17** (LKGS-3.1B) while payments were frozen.
+
+**The owner confirms they personally initiated exactly two Tranzila payment attempts during this period, and received no credits from either attempt.**
+
+This fully accounts for the increase: 2 attempts → 2 `pending` records → 0 credits granted. That is the **expected** behaviour of the current (unverified) flow when a payment attempt does not complete successfully, and is consistent with Tranzila being blocked from reactivation.
+
+**No unexpected activity. No anomaly. These two records must not be investigated, modified, credited, refunded or deleted unless contradictory evidence appears.**
+
+---
+
 # PART 1 — ROLLBACK POLICY (NON-NEGOTIABLE)
 
 Applies to Implementation #1 and to **every** future implementation package, migration and phase.
@@ -457,6 +492,132 @@ The only record-level change is the two added fields. No change to publishing, p
 
 ---
 
+## Package #3.1A-PRE — Tranzila Callback Authenticity Research (READ-ONLY) ⛔ **BLOCKED — STOP CONDITION TRIGGERED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Status** | **Blocked on provider confirmation. Nothing implemented.** |
+| **Production data changed** | **NONE** |
+| **Runtime code changed** | **NONE** |
+| **Documentation changed** | This record · runbook blocker banner · blueprint status line |
+
+### Outcome
+
+The official Tranzila authenticity mechanism for the **DirectNG iframe / `notify_url`** callback **could not be established confidently** from public documentation, so per the package's own stop condition the work **stopped before any design**. `response_hash` is documented for **Hosted Fields only**.
+
+### Material finding — the remediation scope is wrong as originally written
+
+Package #3.1A as scoped (`tranzilaNotify` only) is **insufficient**. There are **two** credit-granting paths, and `verifyTranzilaPayment` is the *easier* forgery:
+
+- `verifyTranzilaPayment` is the code's own documented **"PRIMARY mechanism"** and grants credits on a **client-supplied** `response_code === '000'` — reachable by any authenticated user for their own pending payment, with **zero** Tranzila involvement.
+- `tranzilaNotify` is the **fallback**, unauthenticated.
+
+**Both must be closed by the same server-side verification primitive.** 3.1A must be re-scoped before approval.
+
+### Required from Tranzila support (§M)
+
+1. Does the DirectNG iframe response include `response_hash`? Exact payload construction and secret?
+2. Does the `notify_url` callback include a signature — especially for **subscription renewals** (which have no browser leg)?
+3. Is there a server-to-server transaction-status query endpoint (by `index` / `transaction_id`)?
+4. General secret or personal secret? Is `requested_by_user` required?
+5. Are the Token Module and Handshake enabled on `joba24`, `joba24ch`, `joba24tok`?
+6. Is there a DirectNG test/sandbox terminal?
+7. What are `TRANZILA_JOBA24_*` and `TRANZILA_JOBA24CH_*`? They exist as secrets but are referenced by **zero** files. *(Purpose only — values never needed.)*
+8. Is an IP allowlist supported for notify callbacks?
+
+**Rollback:** not applicable — nothing was implemented.
+
+---
+
+## Package #3.1B — Internal Endpoint Security Closure ✅ **SOURCE COMPLETE — NOT YET PUBLISHED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 3.1B — security enforcement only |
+| **Status** | **Source complete · reviewed · build passing.** **Deliberately NOT published.** |
+| **Last Known Good State** | see §LKGS-3.1B |
+| **Production data changed** | **NONE** |
+
+### Scope (exactly three functions — no expansion)
+
+`refundApplicationCredits` · `grantLoyaltyReward` · `notificationManager`
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | A server-side authorization check is added at the top of each of the three functions, before any existing logic. |
+| **B. Files/entities/data affected** | 1 new shared module + 3 function files. **No entity, schema, RLS, workflow, secret, payment or UI change.** |
+| **C. Exact rollback procedure** | Per function, independently: remove its added import line and its guard block; delete `base44/shared/internalAuth.ts` only if all three are rolled back. |
+| **D. Rollback changes** | Code only. |
+| **E. Data loss risk on rollback** | None. |
+| **F. Online rollback possible** | Yes. |
+| **G. Rollback complexity** | **LOW** — each function rolls back alone. |
+| **H. Verification after rollback** | Re-run build; confirm the function again returns its pre-package response for a test payload. |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `base44/shared/internalAuth.ts` | **NEW** — `getAuthenticatedUser`, `isServiceRoleCall`, `unauthorized`, `forbidden` |
+| `base44/functions/refundApplicationCredits/entry.ts` | +1 import · +1 guard (requires a signed-in user) |
+| `base44/functions/grantLoyaltyReward/entry.ts` | +1 import · +1 guard (requires a signed-in user) |
+| `base44/functions/notificationManager/entry.ts` | +1 import · +1 guard (requires the service credential) |
+
+### Before → after authorization
+
+| Function | Before | After |
+|---|---|---|
+| `refundApplicationCredits` | **None** — any caller, including anonymous | Signed-in user required (401 otherwise) |
+| `grantLoyaltyReward` | **None** — any caller, including anonymous | Signed-in user required (401 otherwise) |
+| `notificationManager` | **None** — any caller, including anonymous | Service credential required (403 otherwise) |
+
+### Why these levels (evidence-based, no invented policy)
+
+- `refundApplicationCredits`: exactly **one** caller — `SimulatorPanel.jsx`. Production refunds do **not** use this function; they use inline logic in `approveWorker`, `declineApplication`, `cancelMyApplication`, `expireInactiveTasks`, `cancelApprovedWorker`.
+- `grantLoyaltyReward`: **three** call sites — `SimulatorPanel.jsx` and `submitReview` ×2. `submitReview` authenticates the user first, then forwards that user token via `base44.functions.invoke`.
+- `notificationManager`: **zero** frontend callers. All **16** callers are backend functions, **every one confirmed** to use `base44.asServiceRole.functions.invoke`.
+
+### Joba24 behaviour parity
+
+No refund calculation, credit amount, loyalty percentage/minimum, eligibility, timing, notification content, timing, recipient logic, segmentation, cooldown, push behaviour, email behaviour, workflow or scheduled notification was changed. Only an authorization gate was added ahead of existing logic.
+
+### Pre-publish closure review (2026-10-01) — findings recorded, NOT fixed
+
+Three security findings were reviewed and **deliberately deferred** to a separately approved package. None is a regression introduced by 3.1B; all three pre-date it.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `grantLoyaltyReward` trusts a client-supplied `rating`, so a signed-in user can mint loyalty credits for any worker. | **Deferred.** Auth guard retained. Fix requires deriving `rating` server-side from the Review. |
+| 2 | `/simulator` is reachable by **any signed-in user** and can mint credits, mutate task/application lifecycle and cancel another user's approved worker. | **Deferred.** Evidence establishes it as internal QA tooling (see below). Needs route-level + server-side gating. |
+| 3 | `notificationManager`'s service-role guard is unverified at runtime. | **Accepted risk, controlled.** Not weakened. See the controlled post-publish procedure below. |
+
+**Simulator intent evidence (recorded):** the `/simulator` route is nested under `<ProtectedRoute />` (authentication only — **no role gate**); it has **no navigation entry point anywhere** in the app (no `Link`, absent from `SideMenu`, absent from the admin menu); its own heading reads "QA סימולטור — השקה"; it contains buttons that mutate credits and task lifecycle; and Joba24 already gates its other internal tooling (`NewUserSimulator`, documented as "Admin-only") behind `me?.role === 'admin'`. **Conclusion: internal QA / Platform Admin tooling, not a normal-user feature.**
+
+**Controlled post-publish verification for `notificationManager` (do not send real notifications):**
+1. Publish.
+2. Trigger exactly **one** low-risk, self-addressed notification through a legitimate path (e.g. a `notify*` workflow on a test task owned by the tester).
+3. Inspect the function's own log line: absence of `[NotificationManager] Rejected non-service-role invocation` proves the service credential was forwarded.
+4. Confirm a `NotificationLog` row was written for the tester.
+5. If the rejection warning appears, **roll back the `notificationManager` guard alone** (per the rollback above) — the other two functions are unaffected.
+
+### Known limitations / residual risk
+
+- `notificationManager`'s guard depends on the platform forwarding `Base44-Service-Authorization` on service-role function→function invocations. Documented behaviour, but **unverified at runtime**. If notifications stop after publishing, this guard is the first thing to check.
+- Runtime verification of all three guards **requires the app to be published** — the published URL serves the published build, so pre-publish external probes necessarily still show the old behaviour.
+
+### Rollback (per function, independent)
+
+1. **`refundApplicationCredits`** — remove the `internalAuth` import line and the guard block above `const { applicationId, reason } = await req.json();`.
+2. **`grantLoyaltyReward`** — remove the `internalAuth` import line and the guard block above `const { taskId, workerId, rating, taskTitle } = await req.json();`.
+3. **`notificationManager`** — remove the `internalAuth` import line and the guard block above `const { event_key, ... } = await req.json();`.
+4. Delete `base44/shared/internalAuth.ts` **only if** all three are rolled back.
+5. **No data action required** — nothing was migrated.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -562,6 +723,45 @@ The only record-level change is the two added fields. No change to publishing, p
 **Note — no disposable records were created in Package #3.0**, because the Q1/Q2 cross-user tests could not be performed safely without a controlled non-admin session (see Package #3.0 record).
 
 **To restore to LKGS-3.0:** no runtime action required — Package #3.0 changed nothing at runtime.
+
+---
+
+## LKGS-3.1B — pre-Package #3.1B
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #3.1B |
+| **Build result** | **exit 0** |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active` |
+| **Task records** | **272** — 272 attributed, 0 unattributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **123** — 123 attributed, 0 unattributed, 1 distinct `surface_brand_id` |
+| **ChatMessage** | 76 |
+| **User** | 145 |
+| **CreditTransaction** | 491 |
+| **NotificationLog** | 476 |
+| **NotificationConfig** | 23 |
+| **ReferralEvent** | 157 |
+| **TranzilaPayment** | **17** — increase from 15 **EXPLAINED** (owner-initiated attempts, 0 credits granted; see blocker section) |
+| **SupportMessage** | 10 |
+| **DemoUser** | 100 |
+| **Report** | 1 |
+| **WorkerStat** | 1 |
+| **JobaSettings** | 1 |
+| **Transaction** | 1 |
+| **UserPresence** | 6 |
+| **Review** | 4 |
+| **RLS coverage** | 5/21 entities (`Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat`) |
+
+**Function authorization state at capture (the three in scope):**
+
+| Function | Auth check | Legitimate call sites |
+|---|---|---|
+| `refundApplicationCredits` | **none** | 1 — `SimulatorPanel.jsx` (user token) |
+| `grantLoyaltyReward` | **none** | 3 — `SimulatorPanel.jsx` + `submitReview` ×2 (user token forwarded) |
+| `notificationManager` | **none** | 16 — all backend, all via `asServiceRole.functions.invoke`; **0** frontend |
+
+**To restore to LKGS-3.1B:** perform the per-function rollback in the Package #3.1B record above.
 
 ---
 
