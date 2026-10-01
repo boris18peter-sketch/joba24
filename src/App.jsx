@@ -12,6 +12,7 @@ import { LanguageProvider } from '@/lib/LanguageContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminRoute from '@/components/AdminRoute';
 import { TaskSheetProvider } from '@/lib/TaskSheetContext';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import EarningsDashboard from '@/pages/EarningsDashboard';
@@ -256,7 +257,10 @@ const AuthenticatedApp = () => {
                 <Route path="/wallet" element={<Wallet />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/worker-profile" element={<WorkerProfile />} />
-                <Route path="/simulator" element={<SimulatorPanel />} />
+                {/* Internal QA tooling — admin-only, same role check used elsewhere in Joba24 */}
+                <Route element={<AdminRoute />}>
+                  <Route path="/simulator" element={<SimulatorPanel />} />
+                </Route>
                 <Route path="/my-tasks" element={<MyTasks />} />
                 <Route path="/chats" element={<ChatInbox />} />
                 <Route path="/notifications" element={<Notifications />} />

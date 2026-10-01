@@ -618,6 +618,98 @@ Three security findings were reviewed and **deliberately deferred** to a separat
 
 ---
 
+## Package #3.1C — Internal Tooling Closure ✅ **SOURCE COMPLETE — NOT YET PUBLISHED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 3.1C — closes the three findings deferred by the Package #3.1B pre-publish closure review |
+| **Status** | **Source complete · reviewed · build passing.** **Deliberately NOT published.** |
+| **Last Known Good State** | see §LKGS-3.1C |
+| **Production data changed** | **NONE** — code only |
+
+### Scope (exactly what was approved — no expansion)
+
+1. `/simulator` route gated to admin.
+2. Server-side admin authorization on `bulkSimulatorTasks` · `qaBot` · `refundApplicationCredits`.
+3. `grantLoyaltyReward` — reward-critical data derived server-side.
+4. `submitReview` — client-supplied `isOwner` removed.
+5. `notificationManager` — **not changed** (guard kept exactly as reviewed in 3.1B).
+6. Tranzila — **not touched**. The 3.1A blocker remains fully in force.
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | One new admin route guard; one new shared authorization helper; admin checks added to three backend functions; the reward and review trust boundaries moved server-side. |
+| **B. Files/entities/data affected** | 2 new/edited frontend files + 6 backend files. **No entity, schema, RLS, workflow, secret, payment or notification change.** |
+| **C. Exact rollback procedure** | Revert the four trust-boundary edits and remove the guards (full procedure below). |
+| **D. Rollback changes** | Code only. |
+| **E. Data loss risk on rollback** | **None.** No record was created, updated or deleted. |
+| **F. Online rollback possible** | Yes. |
+| **G. Rollback complexity** | **LOW** — each function rolls back independently. |
+| **H. Verification after rollback** | Re-run build; confirm `/simulator` renders for a non-admin and the pre-3.1C function contracts are restored. |
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `src/components/AdminRoute.jsx` | **NEW** — admin-only route guard (`role === 'admin'`) |
+| `src/App.jsx` | +1 import · `/simulator` moved inside `<AdminRoute />` |
+| `base44/shared/internalAuth.ts` | +`requireInternalOperator` (admin user **or** service-role caller) |
+| `base44/functions/bulkSimulatorTasks/entry.ts` | +1 import · +1 admin guard |
+| `base44/functions/qaBot/entry.ts` | +1 import · +1 admin guard |
+| `base44/functions/refundApplicationCredits/entry.ts` | guard raised from *signed-in* → *admin* |
+| `base44/functions/grantLoyaltyReward/entry.ts` | +1 import · body reduced to `{ taskId }` · all reward inputs derived server-side |
+| `base44/functions/submitReview/entry.ts` | `isOwner` derived server-side · both reward calls reduced to `{ taskId }` |
+
+### Before → after trust boundaries
+
+| Path | Before (trusted the client for) | After (derives server-side) |
+|---|---|---|
+| `/simulator` route | Authentication only | **Admin only** |
+| `bulkSimulatorTasks` | Nothing (any signed-in user) | **Admin** |
+| `qaBot` | Nothing (any signed-in user) | **Admin** |
+| `refundApplicationCredits` | Nothing (any caller) → 3.1B: any signed-in user | **Admin** |
+| `grantLoyaltyReward` | `taskId`, `workerId`, `rating`, `taskTitle` | `taskId` **only**; owner, rating, worker and title all read from persisted records |
+| `submitReview` | `isOwner` (client boolean) | `task.client_id === user.id` |
+
+`notificationManager` is unchanged — its service-role guard is exactly as reviewed in Package #3.1B.
+
+### Parity evidence (read-only, no production writes)
+
+- **Build:** exit 0.
+- **Persisted-record parity check** across all **4** existing `Review` records and their `Task`s:
+  - **3/4** are `role: 'client'` where the reviewer **is** the task's client → the new derivation yields `isOwner = true` → the 5-star reward path is reachable, exactly as before.
+  - **1/4** is `role: 'worker'` where the reviewer **is** the task's worker → the new derivation yields `isOwner = false` → **no** reward, exactly as before.
+  - **4/4 agreement** between the stored review `role` and the newly derived ownership. The server-side derivation reproduces the legitimate flow exactly.
+- **Reward math unchanged:** `creditsCharged` → `effectiveCharged` → `max(loyalty_reward_min, round(effectiveCharged × loyalty_reward_percent / 100))`, plus the unchanged idempotency check on `(user_id, task_id, type: 'Loyalty_Reward')`. Settings still resolve to `loyalty_reward_percent: 10`, `loyalty_reward_min: 1`.
+- **Order of operations preserved:** rating gate → idempotency → application lookup → bonus calculation → balance update → transaction log.
+- **No caller sends a removed field.** Both `submitReview` call sites now send `{ taskId }`.
+
+### Deliberate non-change (recorded)
+
+`SimulatorPanel.jsx` line ~470 calls `grantLoyaltyReward` with `{ userId: me?.id }`. Under the old contract this **already** failed validation (400 — `taskId`, `workerId` and `rating` were all required), and the UI reported success unconditionally. Under the new contract it fails for the same reason (`taskId` missing). **Behaviour is identical; the button was already non-functional.** Left untouched — out of scope for this package.
+
+### Residual risks (recorded, NOT closed by 3.1C)
+
+1. **`submitReview` still trusts `revieweeId` and `role`.** A caller could direct a rating at an arbitrary user. This is a review-integrity issue, not a credit-minting one, and was outside the approved scope.
+2. **`grantLoyaltyReward`'s admin/service-role reachability.** The function now requires the caller to be the task owner, so it is closed to forgery regardless of role.
+3. **`notificationManager` runtime verification** still pending the controlled post-publish procedure (unchanged from 3.1B).
+4. **The QA agent** invokes `qaBot`. `requireInternalOperator` admits a service-role caller, so the agent path is preserved **provided** the platform invokes agent tools with service authority or the agent user is an admin. Unverified at runtime — same class of dependency as the 3.1B `notificationManager` guard. If the QA agent reports 403 after publishing, this is the first thing to check.
+
+### Rollback (per file, independent)
+
+1. **`src/App.jsx`** — remove the `AdminRoute` import and restore `<Route path="/simulator" element={<SimulatorPanel />} />` inside the `<ProtectedRoute />` group.
+2. **`src/components/AdminRoute.jsx`** — delete the file (only after step 1).
+3. **`bulkSimulatorTasks` / `qaBot`** — remove the `internalAuth` import line and the `requireInternalOperator` guard block.
+4. **`refundApplicationCredits`** — remove the guard block (or restore the 3.1B signed-in-user guard).
+5. **`grantLoyaltyReward`** — restore the 3.1B body-trusting contract and re-add `workerId`/`rating`/`taskTitle` to both `submitReview` call sites.
+6. **`submitReview`** — restore `isOwner` to the request-body destructure.
+7. **No data action required** — nothing was migrated.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -762,6 +854,49 @@ Three security findings were reviewed and **deliberately deferred** to a separat
 | `notificationManager` | **none** | 16 — all backend, all via `asServiceRole.functions.invoke`; **0** frontend |
 
 **To restore to LKGS-3.1B:** perform the per-function rollback in the Package #3.1B record above.
+
+---
+
+## LKGS-3.1C — pre-Package #3.1C
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #3.1C |
+| **Build result** | **exit 0** |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active` |
+| **Task records** | **272** — 272 attributed, 0 unattributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **123** — 123 attributed, 0 unattributed, 1 distinct `surface_brand_id` |
+| **Review** | **4** — 3 client-role (reviewer = task client) · 1 worker-role (reviewer = task worker) |
+| **Tasks with an assigned worker** | **4** |
+| **JobaSettings loyalty** | `loyalty_reward_percent` **10** · `loyalty_reward_min` **1** |
+| **ChatMessage** | 76 |
+| **User** | 145 |
+| **CreditTransaction** | 491 |
+| **NotificationLog** | 476 |
+| **NotificationConfig** | 23 |
+| **ReferralEvent** | 157 |
+| **DemoUser** | 100 |
+| **TranzilaPayment** | 17 — unchanged from LKGS-3.1B, still **EXPLAINED** |
+| **SupportMessage** | 10 |
+| **Report** | 1 |
+| **WorkerStat** | 1 |
+| **Transaction** | 1 |
+| **UserPresence** | 6 |
+| **RLS coverage** | 5/21 entities (`Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat`) |
+
+**Trust-boundary state at capture (the paths 3.1C changes):**
+
+| Path | Auth at capture | Reward-critical inputs trusted from client |
+|---|---|---|
+| `/simulator` route | authenticated only | — |
+| `bulkSimulatorTasks` | authenticated only | — |
+| `qaBot` | authenticated only | — |
+| `refundApplicationCredits` | signed-in user (3.1B) | — |
+| `grantLoyaltyReward` | signed-in user (3.1B) | `workerId`, `rating`, `taskTitle`, ownership |
+| `submitReview` | signed-in user | `isOwner` |
+
+**To restore to LKGS-3.1C:** perform the per-file rollback in the Package #3.1C record above.
 
 ---
 

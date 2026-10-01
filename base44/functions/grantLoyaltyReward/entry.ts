@@ -1,35 +1,65 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
-import { getAuthenticatedUser, unauthorized } from '../../shared/internalAuth.ts';
+import { getAuthenticatedUser, unauthorized, forbidden } from '../../shared/internalAuth.ts';
 
 /**
  * Called after a review is submitted.
  * If worker received a 5-star rating from the client → grant loyalty bonus.
  * Bonus = credits_charged * loyalty_reward_percent (configurable), min loyalty_reward_min.
  * 
- * Payload: { taskId, workerId, rating }
+ * Payload: { taskId }
+ *
+ * ── Trust boundary (Package #3.1C) ────────────────────────────────────────
+ * The client supplies ONLY the task identifier. Everything that determines the
+ * reward — who the owner is, what the persisted rating is, which worker is
+ * rewarded, and what the task is called — is derived server-side from persisted
+ * records, so none of it can be forged.
  */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // ── Authorization (Package #3.1B) ──────────────────────────────────────
-    // Previously unauthenticated, so anyone could mint loyalty credits. All
-    // three legitimate callers carry a signed-in user's token: SimulatorPanel
-    // (frontend) and submitReview (twice), which forwards its own authenticated
-    // user token via base44.functions.invoke. Reward amount, eligibility and
-    // timing are unchanged below.
+    // ── Authorization (Package #3.1C) ──────────────────────────────────────
+    // The caller must be a signed-in user AND the task's own client.
     const caller = await getAuthenticatedUser(base44);
     if (!caller) return unauthorized();
 
-    const { taskId, workerId, rating, taskTitle } = await req.json();
-    if (!taskId || !workerId || rating === undefined) {
-      return Response.json({ error: 'taskId, workerId, rating required' }, { status: 400 });
+    const { taskId } = await req.json();
+    if (!taskId) {
+      return Response.json({ error: 'taskId required' }, { status: 400 });
     }
 
-    // Only grant bonus for 5-star rating
-    if (rating !== 5) {
+    // The Task is the only source of truth for ownership, the assigned worker
+    // and the title.
+    const tasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
+    const task = tasks[0];
+    if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
+
+    // Only the task's own client (the poster) may grant a loyalty reward.
+    if (task.client_id !== caller.id) {
+      return forbidden('Only the task owner can grant a loyalty reward');
+    }
+
+    // The persisted Review is the only source of truth for the rating.
+    const reviews = await base44.asServiceRole.entities.Review.filter({
+      task_id: taskId,
+      reviewer_id: caller.id,
+    });
+    const review = reviews[0];
+    if (!review) {
+      return Response.json({ success: true, bonus: 0, note: 'No review found' });
+    }
+
+    // Only a persisted 5-star rating earns the bonus.
+    if (review.rating !== 5) {
       return Response.json({ success: true, bonus: 0, note: 'Rating < 5, no bonus' });
+    }
+
+    // Derived server-side — never taken from the request body.
+    const workerId = task.worker_id;
+    const taskTitle = task.title;
+    if (!workerId) {
+      return Response.json({ success: true, bonus: 0, note: 'No worker assigned' });
     }
 
     // Idempotency: check if bonus already granted for this task+worker

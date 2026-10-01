@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { getAuthenticatedUser, unauthorized } from '../../shared/internalAuth.ts';
+import { requireInternalOperator } from '../../shared/internalAuth.ts';
 
 /**
  * Shared helper: refund credits for a single application.
@@ -11,15 +11,14 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // ── Authorization (Package #3.1B) ──────────────────────────────────────
-    // This function moves credits and previously had NO authentication check, so
-    // anyone could invoke it. Its only legitimate caller is the in-app QA
-    // simulator (src/pages/SimulatorPanel.jsx), which already runs as a
-    // signed-in user. Requiring a signed-in user restores exactly that intended
-    // access level and introduces no new role policy.
+    // ── Authorization (Package #3.1C) ──────────────────────────────────────
+    // This function moves credits. Its only caller is the in-app QA simulator
+    // (src/pages/SimulatorPanel.jsx), which is now admin-only, so it requires an
+    // admin user (or the platform's own service-role caller) — the same
+    // `role === 'admin'` check the app already uses everywhere else.
     // Refund calculation and credit behaviour are unchanged below.
-    const caller = await getAuthenticatedUser(base44);
-    if (!caller) return unauthorized();
+    const denied = await requireInternalOperator(base44, req);
+    if (denied) return denied;
 
     const { applicationId, reason } = await req.json();
     if (!applicationId || !reason) {

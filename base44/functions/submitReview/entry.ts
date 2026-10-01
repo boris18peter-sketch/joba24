@@ -13,8 +13,6 @@ Deno.serve(async (req) => {
     const {
       taskId, revieweeId, rating, comment, role,
       arrivedOnTime, professional, goodCommunication, fairPricing, wouldHireAgain,
-      // completeTask / worker_confirmed flag
-      isOwner,
     } = await req.json();
 
     if (!taskId || !revieweeId || !rating || !role) {
@@ -26,18 +24,23 @@ Deno.serve(async (req) => {
     const task = tasks?.[0];
     if (!task) return Response.json({ error: 'Task not found' }, { status: 404 });
 
+    // ── Ownership is derived server-side (Package #3.1C) ───────────────────
+    // `isOwner` distinguishes the client reviewing the worker (which is the only
+    // path that can grant the 5-star loyalty reward) from the worker reviewing
+    // the client. It is no longer read from the request body, so a client-supplied
+    // boolean can no longer influence the outcome.
+    const isOwner = task.client_id === user.id;
+
     // Prevent duplicate reviews — but retry loyalty bonus if it was missed on first attempt
     const existing = await base44.asServiceRole.entities.Review.filter({ task_id: taskId, reviewer_id: user.id });
     if (existing.length > 0) {
       const existingReview = existing[0];
       // Retry: if the existing review was 5-star from the client, ensure the bonus was granted
       if (isOwner && existingReview.rating === 5 && task.worker_id) {
-        await base44.functions.invoke('grantLoyaltyReward', {
-          taskId,
-          workerId: task.worker_id,
-          rating: 5,
-          taskTitle: task.title,
-        }).catch(err => console.warn('⚠️ grantLoyaltyReward retry failed:', err?.message));
+        // Only the task id is sent — the reward is derived server-side from the
+        // persisted review and task (Package #3.1C).
+        await base44.functions.invoke('grantLoyaltyReward', { taskId })
+          .catch(err => console.warn('⚠️ grantLoyaltyReward retry failed:', err?.message));
       }
       return Response.json({ success: true, note: 'Already reviewed' });
     }
@@ -96,12 +99,9 @@ Deno.serve(async (req) => {
     // Loyalty bonus for 5-star worker review — awaited (not fire-and-forget) for reliability
     if (isOwner && rating === 5 && task.worker_id) {
       try {
-        await base44.functions.invoke('grantLoyaltyReward', {
-          taskId,
-          workerId: task.worker_id,
-          rating,
-          taskTitle: task.title,
-        });
+        // Only the task id is sent — the reward is derived server-side from the
+        // persisted review and task (Package #3.1C).
+        await base44.functions.invoke('grantLoyaltyReward', { taskId });
       } catch (err) {
         console.warn('⚠️ grantLoyaltyReward failed:', err?.message);
       }

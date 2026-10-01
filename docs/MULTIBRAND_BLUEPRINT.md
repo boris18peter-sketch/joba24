@@ -2,7 +2,7 @@
 
 > **Living architecture document.** The authoritative record of *decisions* (ADRs), invariants, the entity model and the phase plan.
 > **Companion documents:** `BASE44_DEPENDENCY_REGISTER.md` · `MULTIBRAND_RESTORE_RUNBOOK.md`
-> **Status:** Phase 1 deployed · Phase 2 (Joba24 attribution backfill) **deployed** · Package #2.1 (default attribution for new records) **deployed** · Package #3.1B (internal endpoint security closure) **source complete, not yet published** · **⛔ Tranzila payments frozen — must NOT be reactivated until Package #3.1A completes (see runbook blocker)** · Phase 3 otherwise **not approved**.
+> **Status:** Phase 1 deployed · Phase 2 (Joba24 attribution backfill) **deployed** · Package #2.1 (default attribution for new records) **deployed** · Package #3.1B (internal endpoint security closure) **source complete, not yet published** · Package #3.1C (internal tooling closure) **source complete, not yet published** · **⛔ Tranzila payments frozen — must NOT be reactivated until Package #3.1A completes (see runbook blocker)** · Phase 3 otherwise **not approved**.
 > **Governing rule:** the live Joba24 product is the regression baseline and must not change unintentionally at any phase.
 
 ---
@@ -49,6 +49,7 @@
 | **ADR-21** | **Portability documentation precedes Brand #2; execution of any migration is never implied.** No premature rewrite. | **Accepted** |
 | **ADR-22** | **No speculative provider fields.** Add `provider_metadata` only if a real infrastructure identifier is technically unavoidable, and never as the domain identity. | **Accepted** |
 | **ADR-23** | **The canonical relational Brand identifier is `Brand.id`.** Every field or entity reference named `brand_id` — including `origin_brand_id` and `surface_brand_id` — stores a **`Brand.id`**, never a slug. `Brand.slug` is reserved for human-readable identification, URL/subdomain routing, hostname resolution and admin/config lookup. Where routing begins with a slug, the slug is resolved to a `Brand` record and then to `Brand.id` **before** any relational authorization or distribution logic runs. | **Accepted** |
+| **ADR-24** | **Internal tooling is enforced server-side, never by hiding navigation.** A screen reachable by typing its URL is still reachable; internal / QA / Platform-Admin surfaces must be gated by the platform `User.role` (`role === 'admin'`) **at the route** *and* by the same role check **inside every backend function that tool uniquely owns**. The existing `role === 'admin'` check is the single authority — no new role, permission model or capability system is introduced. Corollary of Invariant 9: the intended permission for a security-sensitive action is read from the existing Joba24 lifecycle and UI conventions, never inferred from the action's current technical exposure, which may itself be the defect. | **Accepted** |
 
 ---
 

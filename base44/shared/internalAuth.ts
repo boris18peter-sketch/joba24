@@ -42,3 +42,30 @@ export function unauthorized(message = 'Unauthorized') {
 export function forbidden(message = 'Forbidden') {
   return Response.json({ error: message }, { status: 403 });
 }
+
+/**
+ * Internal-operator authorization (Package #3.1C).
+ *
+ * Allows exactly two kinds of caller:
+ *   • a signed-in user whose app role is `admin`;
+ *   • the platform's own service-role caller (another backend function, or an
+ *     in-app agent, invoking with service authority).
+ *
+ * Rejects every other authenticated user and every anonymous caller.
+ *
+ * Role source is the platform-owned `User.role` field — the same `role === 'admin'`
+ * check the app already uses in the UI (SideMenu, AdminDashboard, …). No new role
+ * or authorization model is introduced.
+ *
+ * `knownUser` lets a caller that has already fetched the user pass it in, so the
+ * user lookup is not performed twice.
+ *
+ * Returns a Response when the caller is rejected, or null when the call is allowed.
+ */
+export async function requireInternalOperator(base44, req, knownUser = undefined) {
+  if (isServiceRoleCall(req)) return null;
+  const user = knownUser !== undefined ? knownUser : await getAuthenticatedUser(base44);
+  if (!user) return unauthorized();
+  if (user.role !== 'admin') return forbidden('Admin only');
+  return null;
+}
