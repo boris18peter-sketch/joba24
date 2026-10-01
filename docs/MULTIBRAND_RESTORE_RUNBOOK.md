@@ -316,6 +316,106 @@ Task and TaskApplication **creation** runtime logic was **not** modified. Record
 
 ---
 
+## Package #2.1 — Default Joba24 Attribution for New Records ✅ **DEPLOYED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 2.1 — closes the attribution gap recorded at the end of Package #2 |
+| **Status** | **Deployed** |
+| **Last Known Good State** | see §LKGS-2.1 |
+| **Canonical identifier** | **`Brand.id` = `6abdfc541dc144ca0d91fde9`** (ADR-23) |
+| **Production data changed** | **NONE** — code only |
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | New `Task` records receive `origin_brand_id`; new `TaskApplication` records receive `surface_brand_id`. Both set to the canonical Joba24 `Brand.id`. |
+| **B. Files/entities/data affected** | 5 existing files edited + 2 new constant modules. **No entity schema change. No data migration. No configuration change.** |
+| **C. Exact rollback procedure** | Remove the two new constant modules; revert the 5 added import lines and the 8 added field lines (full procedure below). |
+| **D. Rollback changes** | Code only. No schema, configuration or data. |
+| **E. Data loss risk on rollback** | **None.** Records created after deployment keep their attribution (valid business data). Rollback stops *future* attribution only. |
+| **F. Online rollback possible** | Yes |
+| **G. Rollback complexity** | **LOW** |
+| **H. Verification after rollback** | Publish a task → confirm the record has no `origin_brand_id`. |
+
+### Complete write-path inventory
+
+**Task creation — 5 paths, all covered:**
+
+| # | Path | Type | File |
+|---|---|---|---|
+| 1 | Publisher form publish | **PRODUCTION** | `src/pages/CreateTask.jsx` |
+| 2 | Publisher chat-composer publish | **PRODUCTION** | `src/pages/CreateTask.jsx` |
+| 3 | QA simulator — task helper | internal tool | `src/pages/SimulatorPanel.jsx` |
+| 4 | QA simulator — story scenario | internal tool | `src/pages/SimulatorPanel.jsx` |
+| 5 | Bulk demo-task generator | internal tool (service role) | `base44/functions/bulkSimulatorTasks/entry.ts` |
+
+**TaskApplication creation — 3 paths, all covered:**
+
+| # | Path | Type | File |
+|---|---|---|---|
+| 1 | Worker applies to a task | **PRODUCTION** | `base44/functions/applyForTask/entry.ts` |
+| 2 | QA bot — apply | internal tool | `base44/functions/qaBot/entry.ts` |
+| 3 | QA bot — full_flow | internal tool | `base44/functions/qaBot/entry.ts` |
+
+No workflow, AI/automation flow, referral flow or admin tool creates either entity. Every other reference to these entities across the codebase is a **read** or an **update** — verified by full-codebase search.
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `src/lib/jobaBrand.js` | **NEW** — `JOBA24_BRAND_ID` (frontend constant) |
+| `base44/shared/jobaBrand.ts` | **NEW** — `JOBA24_BRAND_ID` (backend constant) |
+| `src/pages/CreateTask.jsx` | +1 import · +2 `origin_brand_id` lines |
+| `src/pages/SimulatorPanel.jsx` | +1 import · +2 `origin_brand_id` lines |
+| `base44/functions/bulkSimulatorTasks/entry.ts` | +1 import · +1 `origin_brand_id` line |
+| `base44/functions/applyForTask/entry.ts` | +1 import · +1 `surface_brand_id` line |
+| `base44/functions/qaBot/entry.ts` | +1 import · +2 `surface_brand_id` lines |
+
+### How the canonical ID is obtained
+
+A **single named constant per runtime**: `JOBA24_BRAND_ID = '6abdfc541dc144ca0d91fde9'`.
+
+Frontend and backend have no shared import path (separate bundles), so the constant is defined once in each — `src/lib/jobaBrand.js` and `base44/shared/jobaBrand.ts`. That is the minimum necessary duplication. **All 8 creation sites import the constant**; the literal value appears nowhere else as a value (verified by full-codebase search).
+
+### Failure behaviour if the default Brand cannot be resolved
+
+**There is no runtime resolution step, therefore no runtime failure mode.**
+
+A database lookup on every creation was **explicitly rejected**: it would add latency and a failure point to the most critical write path in the marketplace (publishing a task). A lookup that *blocks* creation risks the marketplace; one that does not block is pointless.
+
+- A record is **never** silently created unattributed — the field is always written from the constant.
+- A slug, domain, hostname or Base44 identifier is **never** substituted.
+- Availability is fully preserved.
+- Drift between the constant and the `Brand` record is detected by a **read-only audit**, not by blocking user writes. Changing the canonical identity means updating the `Brand` record **and** the constant — documented in both module headers.
+
+### Verification
+
+- **Round-trip (executed):** a temporary `Task` and `TaskApplication` were created through the same entity API the production paths use, read back and asserted:
+  - `Task.origin_brand_id === '6abdfc541dc144ca0d91fde9'` ✅ (not a slug, not a Base44 identifier)
+  - `TaskApplication.surface_brand_id === '6abdfc541dc144ca0d91fde9'` ✅
+  - **Both temporary records were deleted.** Counts verified restored: Tasks **272 → 272**, TaskApplications **123 → 123**. **No residue.**
+- **Backend module load:** `qaBot` invoked and returned a normal application-level response — the shared constant import resolves.
+- **Build:** passes (exit 0).
+- **Gap-period audit:** **0** Tasks and **0** TaskApplications were created between Package #2 and Package #2.1. No unattributed records exist.
+- **Historical records untouched:** Tasks remain 272, TaskApplications remain 123, all still carrying the Package #2 attribution.
+
+### Zero business behaviour change
+
+The only record-level change is the two added fields. No change to publishing, pricing, credits, application charging, duplicate protection, eligibility, feed, ranking, search, map, worker selection, chat, tracking, completion, reviews, notifications, analytics, referrals, KYC, payments, auth, OAuth or domains. **No code path reads either field.**
+
+### Rollback
+
+1. Delete `src/lib/jobaBrand.js` and `base44/shared/jobaBrand.ts`.
+2. Remove the 5 import lines added in this package.
+3. Remove the 8 added field lines (`origin_brand_id` × 5, `surface_brand_id` × 3).
+4. Restore the repository to the pre-Package-2.1 commit.
+5. **Do not** modify any `Task` or `TaskApplication` record — Package #2 attribution and any Package #2.1-era attribution remain valid business data.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -361,6 +461,25 @@ Task and TaskApplication **creation** runtime logic was **not** modified. Record
 **Observation 2 — two undeclared fields on `Task`.** Live `Task` records carry `is_sample` and `created_by` (email), neither of which appears in `Task.jsonc`. Pre-existing and unrelated to this package; recorded for completeness.
 
 **To restore to LKGS-2:** no action required — Package #2 changed nothing.
+
+---
+
+## LKGS-2.1 — pre-Package #2.1
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #2.1 |
+| **Entities** | 21 (unchanged) |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9` |
+| **Task records** | **272** — all attributed to Joba24 |
+| **TaskApplication records** | **123** — all attributed to Joba24 |
+| **Records created since Package #2** | **0 Tasks · 0 TaskApplications** — no gap records |
+| **Task creation paths** | 5 (2 production · 3 internal tool) |
+| **TaskApplication creation paths** | 3 (1 production · 2 internal tool) |
+| **Attribution behaviour on creation** | **NONE** — new records were written without brand attribution |
+| **RLS coverage** | 5/21 entities (unchanged) |
+
+**To restore to LKGS-2.1:** perform the Package #2.1 rollback procedure above.
 
 ---
 
