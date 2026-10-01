@@ -1091,6 +1091,39 @@ Both approved probes (item 5: client write rejected; item 7: service-role write 
 
 **Therefore the only faithful probe is a real browser session as a non-admin user.** Blocked pending an owner decision.
 
+### Probe attempt record (2026-10-02) — the sandbox CANNOT perform this probe
+
+A dedicated throwaway account was created and verified, as authorized:
+
+| | |
+|---|---|
+| **Email** | `boris18peter+joba24probe@gmail.com` (`+` alias of the owner's own address, so the OTP lands in an inbox the owner controls) |
+| **User id** | `6abecbd306d8b265edba72c5` |
+| **Role** | `user` (non-admin) |
+| **Status** | registered · **verified** · ready |
+| **Owner's account** | **not touched in any way** — a brand-new, separate user record |
+
+**Three probe attempts were made. All were refused before executing, so nothing was written.**
+
+| # | Path attempted (session confirmed as the throwaway) | Result |
+|---|---|---|
+| 1 | `base44.auth.updateMe({ bio })` — control field | ❌ `Admin permissions required for this operation` |
+| 2 | `base44.auth.updateMe({ brand_ids })` — target field | ❌ `Admin permissions required for this operation` |
+| 3 | `base44.entities.User.update(uid, { bio })` / `{ brand_ids }` — direct entity path | ❌ `Admin permissions required for this operation` |
+| — | `base44.entities.User.get(uid)` — even a **read** | ❌ `Admin permissions required for this operation` |
+
+**Session identity was confirmed independently before any write**, so the refusals cannot be attributed to the wrong account:
+- `loginViaEmailPassword` response → `email = boris18peter+joba24probe@gmail.com`, `role = user`
+- decoded JWT `sub` → `boris18peter+joba24probe@gmail.com`
+
+**Finding: `exec_tool` is an admin-gated context.** Once the session is a non-admin, *every* User-entity operation — read, `updateMe`, and direct entity update — is refused with the same error. The sandbox **cannot represent a normal app user**, and therefore **cannot probe FLS at all**. This is a property of the build environment, not of the app.
+
+**Data impact: NONE.** Every attempt was refused before execution. Confirmed after the fact: the owner's account is unmodified, the throwaway is pristine, and **0 of 147 users** carry `brand_ids`.
+
+**Consequence for the package's stop condition (item 6):** the result is **UNKNOWN — not negative.** FLS must **not** be recorded as broken, and the RLS-anchored architecture must **not** be invalidated on the strength of a sandbox artefact. Item 6 is **not triggered**; it was never exercised.
+
+**Outstanding verification (items 5 and 7):** still open, pending a real browser session as the throwaway. Note the app's own login UI derives its password from the email (`LoginPromptModal.jsx` → `derivePassword`), so the throwaway — registered with an independent password — is **not** reachable through the normal UI login. Any browser-based probe must therefore either (a) log in programmatically via `loginViaEmailPassword`, or (b) first have its password set to the derived value.
+
 ### Known limitations
 
 - `brand_ids` is **declared but not enforced anywhere** — its FLS protection is documented by the platform but not yet empirically confirmed in this app.
