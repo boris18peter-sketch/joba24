@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { getAuthenticatedUser, unauthorized } from '../../shared/internalAuth.ts';
 
 /**
  * Called after a review is submitted.
@@ -11,6 +12,15 @@ import { getJobaSettings } from '../../shared/jobaSettings.ts';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // ── Authorization (Package #3.1B) ──────────────────────────────────────
+    // Previously unauthenticated, so anyone could mint loyalty credits. All
+    // three legitimate callers carry a signed-in user's token: SimulatorPanel
+    // (frontend) and submitReview (twice), which forwards its own authenticated
+    // user token via base44.functions.invoke. Reward amount, eligibility and
+    // timing are unchanged below.
+    const caller = await getAuthenticatedUser(base44);
+    if (!caller) return unauthorized();
 
     const { taskId, workerId, rating, taskTitle } = await req.json();
     if (!taskId || !workerId || rating === undefined) {

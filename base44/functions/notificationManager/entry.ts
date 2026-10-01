@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { isServiceRoleCall, forbidden } from '../../shared/internalAuth.ts';
 
 /**
  * ── NotificationManager ──────────────────────────────────────────────────
@@ -287,6 +288,22 @@ function fillTemplate(template, variables) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // ── Authorization (Package #3.1B) ──────────────────────────────────────
+    // This function has ZERO frontend callers: every legitimate caller is
+    // another backend function invoking it with service-role authority (16
+    // callers, all via base44.asServiceRole.functions.invoke). It must therefore
+    // not be reachable by an end user or anonymously.
+    // Notification content, timing, recipient logic, segmentation, cooldown,
+    // push behaviour and email behaviour are all unchanged below.
+    if (!isServiceRoleCall(req)) {
+      console.warn('[NotificationManager] Rejected non-service-role invocation', {
+        userTokenPresent: !!req.headers.get('Authorization'),
+        serviceCredentialPresent: !!req.headers.get('Base44-Service-Authorization'),
+      });
+      return forbidden();
+    }
+
     const { event_key, user_ids, variables = {}, task_id, force = false } = await req.json();
 
     if (!event_key || !user_ids || !user_ids.length) {

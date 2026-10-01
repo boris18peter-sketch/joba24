@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { getAuthenticatedUser, unauthorized } from '../../shared/internalAuth.ts';
 
 /**
  * Shared helper: refund credits for a single application.
@@ -9,6 +10,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // ── Authorization (Package #3.1B) ──────────────────────────────────────
+    // This function moves credits and previously had NO authentication check, so
+    // anyone could invoke it. Its only legitimate caller is the in-app QA
+    // simulator (src/pages/SimulatorPanel.jsx), which already runs as a
+    // signed-in user. Requiring a signed-in user restores exactly that intended
+    // access level and introduces no new role policy.
+    // Refund calculation and credit behaviour are unchanged below.
+    const caller = await getAuthenticatedUser(base44);
+    if (!caller) return unauthorized();
 
     const { applicationId, reason } = await req.json();
     if (!applicationId || !reason) {
