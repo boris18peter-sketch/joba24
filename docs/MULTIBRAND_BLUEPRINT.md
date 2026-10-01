@@ -17,6 +17,7 @@
 6. **Joba24 is the baseline.** Any change that cannot be introduced without altering existing behaviour is flagged, not assumed acceptable.
 7. **Base44 is infrastructure, not the business architecture.** The domain model stays Joba24-owned and portable.
 8. **One canonical relational Brand identifier.** `Brand.id` is the only value stored in any `brand_id` field. `Brand.slug` is a human-readable / routing / lookup key and is never a relational identifier (ADR-23).
+9. **Joba24 is the reference implementation for core marketplace behavior.** All Brands inherit Joba24's core marketplace lifecycle, permissions and business rules by default. Multi-Brand architecture may parameterize Brand **configuration** and **distribution**, but must not silently fork or redefine core marketplace behavior. A Brand-specific behavioral difference requires an explicit, documented, configurable override approved in its own package. Corollary: when auditing a security-sensitive field or action, the intended permission is determined from the existing Joba24 lifecycle, UI, backend functions and business rules — **never** inferred from the current technical exposure, which may itself be the defect.
 
 ---
 

@@ -416,6 +416,47 @@ The only record-level change is the two added fields. No change to publishing, p
 
 ---
 
+## Package #3.0 — Empirical Security Baseline Verification (READ-ONLY) ✅ **COMPLETED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 3.0 — security prerequisites |
+| **Status** | **Completed — verification only** |
+| **Last Known Good State** | see §LKGS-3.0 |
+| **Production data changed** | **NONE** — no entity, function, schema, RLS, workflow, OAuth or configuration change |
+| **Runtime code changed** | **NONE** |
+| **Documentation changed** | Blueprint Invariant 9 added; this record |
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | Nothing at runtime. Read-only inspection plus one unauthenticated GET against the public `getOpenTasks` endpoint. |
+| **B. Files/entities/data affected** | Documentation only. |
+| **C. Exact rollback procedure** | Revert the two documentation edits. |
+| **D. Rollback changes** | Documentation only. |
+| **E. Data loss risk on rollback** | None. |
+| **F. Online rollback possible** | Yes — no deployment involved. |
+| **G. Rollback complexity** | Trivial. |
+| **H. Verification after rollback** | Confirm no runtime file differs from `a09a35d`. |
+
+### Verification result
+
+- **Build:** exit 0.
+- **Mutation performed:** **none.** No entity record created, updated or deleted. No credit, payment, KYC, settings, chat or task state touched. No push sent.
+- **Disposable test records created:** **none** (see LKGS-3.0 note on Q1/Q2).
+- **Q1 / Q2 (RLS-less and `User` semantics):** **NOT empirically verified.** A controlled non-admin or anonymous session token cannot be obtained from the build environment without either creating a production function or a production user. Reported as unverified; platform RLS authoring guide supplies the authoritative documented semantics.
+- **Q3 / Q4 / Q5 / Q8:** resolved by static call-site and source analysis.
+- **Q9:** resolved empirically — unauthenticated `GET /functions/getOpenTasks` returned HTTP 200 with full Task records.
+
+### Known limitations
+
+- Q1 and Q2 remain empirically open. They are the gating inputs for Package 3.5.
+- Two confirmed findings require remediation packages: unauthenticated credit-minting endpoints, and the unauthenticated Tranzila webhook.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -480,6 +521,47 @@ The only record-level change is the two added fields. No change to publishing, p
 | **RLS coverage** | 5/21 entities (unchanged) |
 
 **To restore to LKGS-2.1:** perform the Package #2.1 rollback procedure above.
+
+---
+
+## LKGS-3.0 — pre-Package #3.0
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, before Package #3.0 |
+| **Repository version** | `a09a35d761d2b3b927727070af702495beb14504` — "Implement multibrand task and application support" |
+| **Build result** | **exit 0** |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active`, origin `platform` |
+| **Task records** | **272** — 272 attributed, 0 unattributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **123** — 123 attributed, 0 unattributed, 1 distinct `surface_brand_id` |
+| **ChatMessage** | 76 |
+| **User** | 145 — roles: `user` 136 · `agent` 8 · `admin` 1 |
+| **CreditTransaction** | 491 |
+| **NotificationLog** | 476 |
+| **ReferralEvent** | 157 |
+| **DemoUser** | 100 |
+| **NotificationConfig** | 23 |
+| **TranzilaPayment** | 15 |
+| **SupportMessage** | 10 |
+| **UserPresence** | 6 |
+| **Review** | 4 |
+| **Report** | 1 |
+| **WorkerStat** | 1 |
+| **JobaSettings** | 1 |
+| **Transaction** | 1 |
+| **IosPurchase** | 0 |
+| **EarlySignup** | 0 |
+| **OAuthHandshake** | 0 |
+| **Users holding KYC artefacts** | `id_number` 40 · `id_photo_url` 40 |
+| **RLS coverage** | **5/21** — `Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat` |
+| **RLS-less entities** | **16** |
+| **Open tasks at capture** | 2 (both with `contactPhone` populated) |
+| **Function authorization state** | 66 functions — 40 authenticated, 26 without an auth check (11 are workflow-invoked `notify*`) |
+
+**Note — no disposable records were created in Package #3.0**, because the Q1/Q2 cross-user tests could not be performed safely without a controlled non-admin session (see Package #3.0 record).
+
+**To restore to LKGS-3.0:** no runtime action required — Package #3.0 changed nothing at runtime.
 
 ---
 
