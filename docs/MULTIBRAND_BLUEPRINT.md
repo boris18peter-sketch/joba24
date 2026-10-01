@@ -2,7 +2,7 @@
 
 > **Living architecture document.** The authoritative record of *decisions* (ADRs), invariants, the entity model and the phase plan.
 > **Companion documents:** `BASE44_DEPENDENCY_REGISTER.md` · `MULTIBRAND_RESTORE_RUNBOOK.md`
-> **Status:** Phase 1 deployed. Phase 2 **not approved**.
+> **Status:** Phase 1 deployed · Phase 2 (Joba24 attribution backfill) **deployed** · Phase 3 **not approved**.
 > **Governing rule:** the live Joba24 product is the regression baseline and must not change unintentionally at any phase.
 
 ---
@@ -16,6 +16,7 @@
 5. **Additive-first.** add nullable → backfill → verify → switch read path → retire legacy (much later). No destructive step early.
 6. **Joba24 is the baseline.** Any change that cannot be introduced without altering existing behaviour is flagged, not assumed acceptable.
 7. **Base44 is infrastructure, not the business architecture.** The domain model stays Joba24-owned and portable.
+8. **One canonical relational Brand identifier.** `Brand.id` is the only value stored in any `brand_id` field. `Brand.slug` is a human-readable / routing / lookup key and is never a relational identifier (ADR-23).
 
 ---
 
@@ -39,12 +40,13 @@
 | ADR-14 | Brand #2 launches **web-only** | Accepted |
 | ADR-15 | `Task.applicants[]` is frozen, not removed, in early phases | Accepted |
 | **ADR-16** | **Base44 is an implementation/infrastructure layer, never the business architecture. The domain model is owned by Joba24.** | **Accepted** |
-| **ADR-17** | **Brand identity is Joba24-owned. `brand_id` / `brand.slug` are Joba24 platform identifiers. A Base44 project ID, app ID or hostname must never be the canonical Brand identity.** | **Accepted** |
+| **ADR-17** | **Brand identity is Joba24-owned. The canonical internal Brand identifier is `Brand.id`. `Brand.slug` is a human-readable / routing / lookup key only — never a relational identifier. A Base44 project ID, app ID or hostname must never be the canonical Brand identity.** | **Accepted** |
 | **ADR-18** | **No Base44 brand leakage in user-facing surfaces** (URLs, login, OAuth redirects, emails, share links, deep links, QR, canonical/OG, support/legal links). | **Accepted** |
-| **ADR-19** | **Provider-independent domain model:** `hostname → BrandDomain → Brand Resolver → brand_id → BrandContext`. `BrandDomain` holds Joba24-owned configuration and must not assume `*.base44.app`. A Brand keeps its identity if its domain changes. | **Accepted** |
+| **ADR-19** | **Provider-independent domain model:** `hostname → BrandDomain → Brand Resolver → slug/lookup key → Brand record → Brand.id → BrandContext` (see ADR-23). `BrandDomain` holds Joba24-owned configuration and must not assume `*.base44.app`. A Brand keeps its identity if its domain changes — `Brand.id` is stable across domain changes. | **Accepted** |
 | **ADR-20** | **Portability boundaries are introduced only when a new Multi-Brand subsystem is built** — smallest reasonable adapter, never a speculative framework. Business logic expresses Joba24 concepts, not provider details. | **Accepted** |
 | **ADR-21** | **Portability documentation precedes Brand #2; execution of any migration is never implied.** No premature rewrite. | **Accepted** |
 | **ADR-22** | **No speculative provider fields.** Add `provider_metadata` only if a real infrastructure identifier is technically unavoidable, and never as the domain identity. | **Accepted** |
+| **ADR-23** | **The canonical relational Brand identifier is `Brand.id`.** Every field or entity reference named `brand_id` — including `origin_brand_id` and `surface_brand_id` — stores a **`Brand.id`**, never a slug. `Brand.slug` is reserved for human-readable identification, URL/subdomain routing, hostname resolution and admin/config lookup. Where routing begins with a slug, the slug is resolved to a `Brand` record and then to `Brand.id` **before** any relational authorization or distribution logic runs. | **Accepted** |
 
 ---
 
@@ -60,6 +62,8 @@
 | **BRAND-SCOPED** | `BrandMembership` · `BrandDomain` · `BrandConfig` · `BrandFeature` · `BrandCommercials` · `BrandCategory` · `BrandAuditLog` · `TaskDistributionRule` |
 | **BRAND-CONFIGURABLE** | `NotificationConfig` · `CategoryFieldSchema` (nullable `brand_id`) |
 | **GLOBAL or BRAND** | `ConsentRecord` (`scope` field) |
+
+> **Identifier rule (ADR-23):** every `brand_id` field above — `Task.origin_brand_id`, `TaskApplication.surface_brand_id`, and every future brand-scoped entity — stores a **`Brand.id`**, never a slug.
 
 ---
 
@@ -87,12 +91,15 @@ Tasks
 ```
 
 ```
+// surface = the resolved Brand.id of the current surface (ADR-23)
 visibleOn(task, surface) =
       task.origin_brand_id === surface
-   || rule[task.origin_brand_id].publish_to_joba24 && surface === 'joba24'
+   || rule[task.origin_brand_id].publish_to_joba24 && surface === JOBA24_BRAND_ID
    || rule[task.origin_brand_id].allow_other_brands_visibility
    || task.distribution_overrides?.[surface] === true
 ```
+
+> **Routing (ADR-23):** a hostname resolves to a slug/lookup key, which resolves to a `Brand` record, which yields `Brand.id`. Every comparison above uses **`Brand.id`**, never a slug. `JOBA24_BRAND_ID` is the `Brand.id` of the default Joba24 brand.
 
 `TaskDistributionRule` is brand-level (N rows). No projection table (ADR-04). Per-task exceptions use the nullable `distribution_overrides` object.
 
@@ -104,7 +111,7 @@ visibleOn(task, surface) =
 |---|---|---|
 | 0 | Architecture freeze · authorization matrix · external verification · regression baseline | LOW |
 | 1 | Safe Brand Foundation — `Brand` entity, Joba24 seed, nullable attribution fields | LOW |
-| 2 | Backfill + reconciliation (existing data → Joba24) | MEDIUM |
+| 2 | Backfill + reconciliation (existing data → Joba24) — **deployed** | MEDIUM |
 | 3 | **Security hardening — RLS + server authorization, entity by entity** | **CRITICAL** |
 | 4 | Categories / configuration as data | HIGH |
 | 5 | Distribution engine | HIGH |

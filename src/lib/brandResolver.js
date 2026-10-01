@@ -1,16 +1,33 @@
 /**
- * brandResolver — פענוח טהור של hostname → מזהה מותג (brand slug).
+ * brandResolver — פענוח טהור של hostname → מפתח חיפוש של מותג (brand slug).
  *
- * ⚠️ PHASE 1 — לא מחובר לשום מקום. שום קובץ לא מייבא את המודול הזה.
- * הוא נוסף כתשתית בלבד (ראה בלופרינט §AD) ואינו משפיע על התנהגות האפליקציה.
+ * ⚠️ המודול אינו מחובר לשום מקום. שום קובץ לא מייבא אותו.
+ * הוא תשתית בלבד ואינו משפיע על התנהגות האפליקציה.
  *
- * סדר הפענוח (לפי §R בבלופרינט):
+ * ── חוזה (ADR-23) ─────────────────────────────────────────────────────
+ * הזהות המקשרת הקנונית של מותג היא **Brand.id**
+ * (לדוגמה: "6abdfc541dc144ca0d91fde9").
+ *
+ * ה-slug (לדוגמה: "joba24") הוא **מפתח חיפוש / ניתוב בלבד**. הוא
+ * אינו זהות המותג, ואינו נשמר בשדה בשם:
+ *   brand_id · origin_brand_id · surface_brand_id
+ *
+ * שרשרת הפענוח המלאה (תמומש רק בחבילת Brand Runtime עתידית ומאושרת):
+ *
+ *   hostname
+ *     → slug / domain lookup key        ← הצעד שהמודול הזה אחראי לו
+ *     → Brand record (חיפוש לפי slug)
+ *     → Brand.id                        ← הזהות הקנונית
+ *     → BrandContext
+ *
+ * המודול הזה אחראי על הצעד הראשון בלבד. הוא **מודול טהור**:
+ * אין בו קריאת רשת, אין בו גישה למסד נתונים ואין בו תלות ב-Base44.
+ * המרת ה-slug ל-Brand.id תתבצע בשכבת Brand Runtime — לא כאן.
+ *
+ * סדר הפענוח:
  *   1. מיפוי דומיינים מוכרים
  *   2. תת-דומיין בפורמט <slug>.joba24.com
- *   3. נפילה למותג ברירת המחדל
- *
- * מיפוי הדומיינים מבוסס-הנתונים (BrandDomain) יגיע בשלב 6.
- * עד אז הפונקציה טהורה, דטרמיניסטית וניתנת לבדיקה — ואינה קוראת לרשת.
+ *   3. נפילה ל-slug ברירת המחדל
  */
 
 export const DEFAULT_BRAND_SLUG = 'joba24';
@@ -24,11 +41,13 @@ const KNOWN_DOMAINS = {
 };
 
 /**
- * resolveBrandSlug — מחזיר את מזהה המותג עבור hostname נתון.
+ * resolveBrandSlug — מחזיר את מפתח החיפוש (slug) של המותג עבור hostname נתון.
  * לעולם לא נכשל: כל קלט לא מזוהה מוחזר כברירת מחדל.
  *
+ * ⚠️ הערך המוחזר הוא מפתח חיפוש בלבד — אינו Brand.id ואינו זהות מותג (ADR-23).
+ *
  * @param {string} hostname — לדוגמה: 'events.joba24.com' או 'joba24.com:443'
- * @returns {string} brand slug
+ * @returns {string} brand slug (מפתח חיפוש בלבד)
  */
 export function resolveBrandSlug(hostname) {
   if (!hostname || typeof hostname !== 'string') return DEFAULT_BRAND_SLUG;
@@ -48,7 +67,8 @@ export function resolveBrandSlug(hostname) {
 }
 
 /**
- * resolveBrandSlugFromLocation — עטיפה נוחה לדפדפן. אינה נקראת באף מקום בשלב 1.
+ * resolveBrandSlugFromLocation — עטיפה נוחה לדפדפן. אינה נקראת באף מקום.
+ * מחזירה מפתח חיפוש בלבד — לא Brand.id (ADR-23).
  */
 export function resolveBrandSlugFromLocation() {
   if (typeof window === 'undefined') return DEFAULT_BRAND_SLUG;
