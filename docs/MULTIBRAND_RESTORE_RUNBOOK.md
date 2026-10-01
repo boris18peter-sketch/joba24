@@ -219,15 +219,16 @@ Yes — no downtime required.
 
 ---
 
-## Package #2 — Joba24 Historical Attribution Backfill ⛔ **BLOCKED — NOT DEPLOYED**
+## Package #2 — Joba24 Historical Attribution Backfill ✅ **DEPLOYED**
 
 | | |
 |---|---|
 | **Date** | 2026-10-01 |
 | **Phase** | 2 (Backfill) |
-| **Status** | **BLOCKED — canonical Brand identifier unresolved** |
+| **Status** | **Deployed** |
 | **Last Known Good State** | see §LKGS-2 |
-| **Production data changed** | **NONE** |
+| **Canonical identifier** | **`Brand.id` = `6abdfc541dc144ca0d91fde9`** (ADR-23) |
+| **Production data changed** | `Task.origin_brand_id` × 272 · `TaskApplication.surface_brand_id` × 123 · `updated_date` (platform auto-bump) |
 
 ### Change plan (A–H)
 
@@ -242,7 +243,11 @@ Yes — no downtime required.
 | **G. Rollback complexity** | LOW |
 | **H. Verification after rollback** | Re-run counts; confirm all Task/TaskApplication fields identical to LKGS-2 |
 
-### ⛔ Blocker — canonical Brand identifier is ambiguous
+### ✅ Resolved — identifier decision
+
+**RESOLVED 2026-10-01.** Option **A — `Brand.id`** approved as the canonical relational Brand identifier and codified as **ADR-23**. The blocker record below is retained as the historical evidence of why the gate fired.
+
+#### Original blocker — canonical Brand identifier was ambiguous
 
 The implementation and the blueprint **disagree** on whether these fields hold the Brand **record ID** or the Brand **slug**:
 
@@ -264,6 +269,50 @@ The implementation and the blueprint **disagree** on whether these fields hold t
 | **B — Brand slug** | `joba24` | Matches `brandResolver`; requires reinterpreting the `_id`-suffixed field names and breaks the codebase naming convention |
 
 **No production data may be written until one option is chosen and the blueprint, the resolver and the field semantics are aligned.**
+
+### ✅ Execution record (deployed 2026-10-01)
+
+| | |
+|---|---|
+| **Executed at** | 2026-10-01 07:27 UTC (10:27 Asia/Jerusalem) |
+| **Canonical identifier written** | `Brand.id` = `6abdfc541dc144ca0d91fde9` |
+| **Precondition checks** | **8/8 passed** at execution time (exactly one Brand · exactly one default · exactly one `joba24` slug · id match · slug match · `is_default=true` · `status=active` · `origin=platform`) |
+| **Tasks changed** | **272** |
+| **TaskApplications changed** | **123** |
+| **Skipped (already non-null)** | 0 Tasks · 0 TaskApplications |
+| **Remaining missing/null** | 0 Tasks · 0 TaskApplications |
+| **Other Brand IDs found** | 0 |
+| **Records created during execution** | 0 |
+| **Migration manifest** | `docs/PACKAGE2_MIGRATION_MANIFEST.json` (272 task IDs · 123 application IDs, all unique) |
+| **Method** | Read all records → select where the field was **missing OR null** → `bulkUpdate` only those records, setting only the brand field |
+| **Idempotency** | Confirmed — a second run selects 0 eligible records and writes nothing |
+
+### Data-integrity verification
+
+Every record's only non-brand change is **`updated_date`**, which the platform bumps automatically on any write. Confirmed by field-level before/after diff against the LKGS-2 capture:
+
+- `Task 6abd35f75c91b85155828cd4` — changed: `origin_brand_id` (intended) + `updated_date` (auto). `title`, `price`, `status`, `client_id`, `client_name`, `category`, `applicants`, `created_date`, `description`, `base_price`, `views_count`, `clicks_count`, `is_story`, `urgency_tag` — **all unchanged**.
+- `TaskApplication 6ab9a98fc542590392825e7b` — changed: `surface_brand_id` (intended) + `updated_date` (auto). **All 18 other fields unchanged.**
+
+All 272 Tasks share one `updated_date` minute (07:26) and all 123 applications another (07:27) — consistent with a single bulk write per entity, and with no other writer touching the records.
+
+### Documentation corrected in this package
+
+| File | Change |
+|---|---|
+| `docs/MULTIBRAND_BLUEPRINT.md` | New **ADR-23** (canonical `Brand.id`); **ADR-17** rewritten; **ADR-19** resolution chain corrected; new **Invariant 8**; identifier note added to §3; §5 pseudo-code `'joba24'` → `JOBA24_BRAND_ID` + routing note; Phase 2 marked deployed; status line updated |
+| `src/lib/brandResolver.js` | **Documentation/contract only.** Now states the slug is a **lookup key only**, never `Brand.id`; removed the stale "§R" reference; documents the full `hostname → slug → Brand → Brand.id → BrandContext` chain. **No logic change, no lookup added, still imported nowhere.** |
+
+### Known gap — intentionally unresolved
+
+Task and TaskApplication **creation** runtime logic was **not** modified. Records created after this migration may still be written **without** brand attribution. This is a deliberate, explicitly reported gap, to be addressed only in a separately approved package.
+
+### Rollback
+
+1. Read `docs/PACKAGE2_MIGRATION_MANIFEST.json`.
+2. Unset `origin_brand_id` **only** on the 272 listed task IDs.
+3. Unset `surface_brand_id` **only** on the 123 listed application IDs.
+4. **Never** run a global clear. No other field may be modified.
 
 ---
 
