@@ -27,6 +27,8 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import BuyCreditsModal from '@/components/BuyCreditsModal';
 import { moderateText, moderateImage } from '@/hooks/useModeration';
 import CategoryExtraFields from '@/components/CategoryExtraFields';
+import BrandCategoryFields from '@/components/BrandCategoryFields';
+import { useBrandCategories, isBrandSpecificKey } from '@/lib/brand/brandCategories';
 import LiveSearchOverlay from '@/components/LiveSearchOverlay';
 import { WorkerPoolBanner, CategoryWorkerHint } from '@/components/WorkerPoolScanner';
 import { trackEvent } from '@/lib/analytics';
@@ -252,6 +254,10 @@ export default function CreateTask() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [extraFieldsText, setExtraFieldsText] = useState('');
   const [categoryDetails, setCategoryDetails] = useState({});
+  // BrandCategory is the authoritative source for the categories THIS Brand
+  // offers (falls back to the platform catalogue). A brand-specific category is
+  // persisted on the Task as 'other' with its brand key kept in category_details.
+  const { categories: brandCategories, taskCategoryFor } = useBrandCategories();
   const draftTimerRef = useRef(null);
 
   // Initialize form: repost params > saved draft > defaults (edit mode initializes via useEffect)
@@ -385,6 +391,7 @@ export default function CreateTask() {
   };
   const getFinalCategoryDetails = () => {
     const cd = { ...(Object.keys(categoryDetails).length > 0 ? categoryDetails : {}) };
+    if (isBrandSpecificKey(form.category)) cd.brand_category_key = form.category;
     if (isHourly && form.hourly_rate && form.hours) {
       cd.hourly_rate = Number(form.hourly_rate);
       cd.hours = parseFloat(form.hours);
@@ -749,7 +756,9 @@ export default function CreateTask() {
     // heuristic if the background generation hasn't finished yet.
     const autoTitle = suggestedTitle || heuristicTitle(form.description);
     // Respect user's explicit category choice — do NOT auto-detect on submit
-    const finalCategory = form.category || 'other';
+    // A brand-specific category is stored as 'other' on the Task (the enum is
+    // fixed) with the brand key preserved in category_details.
+    const finalCategory = taskCategoryFor(form.category || 'other');
 
     for (const imgUrl of (form.images || [])) {
       setCheckingModeration('images');
@@ -1142,7 +1151,7 @@ export default function CreateTask() {
           <Label className="text-sm font-bold mb-2 block" style={{ color: 'var(--text-1)' }}>{t('ct_category')}</Label>
           <SelectionSheet
             value={form.category}
-            options={CATEGORIES.map(c => ({ value: c.value, label: getCategoryLabel(c.value, t) }))}
+            options={brandCategories.map(c => ({ value: c.value, label: c.label || getCategoryLabel(c.value, t) }))}
             onChange={val => {
               set('category', val);
               // Re-validate mismatch immediately when category changes
@@ -1172,6 +1181,13 @@ export default function CreateTask() {
           originLng={form.lng}
           initialValues={isEditMode ? form.category_details : undefined}
           onChange={(data, text) => { setCategoryDetails(data); setExtraFieldsText(text); }}
+        />
+
+        {/* Brand-configured task fields for this category (BrandCategory.form_config) */}
+        <BrandCategoryFields
+          category={form.category}
+          values={categoryDetails}
+          onChange={(k, v) => setCategoryDetails(prev => ({ ...prev, [k]: v }))}
         />
 
         {/* Description — the main input. Title and category are auto-generated from this. */}

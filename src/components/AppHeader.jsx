@@ -12,6 +12,7 @@ import LoginPromptModal from '@/components/LoginPromptModal';
 import { useLanguage } from '@/lib/LanguageContext';
 import { computeLockedJobas } from '@/lib/jobaBalance';
 import { peekBuyFlow, clearBuyFlow } from '@/lib/buyFlowState';
+import { useBrand } from '@/lib/brand/BrandProvider';
 
 export default function AppHeader({ onOpenMenu }) {
   const location = useLocation();
@@ -23,6 +24,9 @@ export default function AppHeader({ onOpenMenu }) {
   const [restoreState, setRestoreState] = useState(null);
   const prevPath = useRef(location.pathname);
   const { t, isRTL } = useLanguage();
+  // Brand identity — the resolved Brand's own logo/name when it has one.
+  // The platform Brand (Joba24) keeps its existing header untouched.
+  const { effective: brandTheme, isPlatformBrand } = useBrand();
 
   // Restore the buy-credits flow when returning from a legal page (Terms /
   // Privacy) opened from inside the purchase step — so "back" lands the user
@@ -79,12 +83,19 @@ export default function AppHeader({ onOpenMenu }) {
         {/* Right: Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0, textDecoration: 'none' }}>
           <img
-            src="https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg"
-            alt="Joba24"
-            style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 'var(--r-sm)' }}
+            src={!isPlatformBrand && brandTheme.logoUrl
+              ? brandTheme.logoUrl
+              : 'https://media.base44.com/images/public/69e6bdb4986a04a256653a23/d5824a161_IMG_0357.jpg'}
+            alt={brandTheme.displayName || 'Joba24'}
+            style={{
+              width: 34, height: 34, borderRadius: 'var(--r-sm)',
+              objectFit: !isPlatformBrand && brandTheme.logoUrl ? 'contain' : 'cover',
+            }}
           />
           <span style={{ fontWeight: 900, fontSize: 18, color: 'var(--text-1)', letterSpacing: -0.6 }}>
-            Joba<span style={{ color: 'var(--brand-accent)' }}>24</span>
+            {!isPlatformBrand && brandTheme.displayName
+              ? brandTheme.displayName
+              : <>Joba<span style={{ color: 'var(--brand-accent)' }}>24</span></>}
           </span>
         </Link>
 

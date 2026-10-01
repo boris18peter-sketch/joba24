@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
 
 /**
  * boostTask — Deducts credits from the task owner and updates the task's boost metadata.
@@ -44,7 +44,8 @@ Deno.serve(async (req) => {
     }
 
     // Load configurable boost cost
-    const settings = await getJobaSettings(base44);
+    // Pricing follows the Brand the TASK belongs to (its own overrides, else Joba24).
+    const settings = await getBrandMarketplaceSettings(base44, task.origin_brand_id);
     const BOOST_COST = settings.boost_cost;
 
     // Fetch fresh user data for credits check

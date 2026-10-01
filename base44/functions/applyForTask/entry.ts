@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
 import { JOBA24_BRAND_ID } from '../../shared/jobaBrand.ts';
 
 /**
@@ -33,7 +33,8 @@ Deno.serve(async (req) => {
     if (alreadyActive) return Response.json({ error: 'already_applied' }, { status: 409 });
 
     // Calculate credits from configurable settings: Round(price * %), minimum min
-    const settings = await getJobaSettings(base44);
+    // Pricing follows the Brand the TASK belongs to (its own overrides, else Joba24).
+    const settings = await getBrandMarketplaceSettings(base44, task.origin_brand_id);
     const creditsRequired = Math.max(settings.application_fee_min, Math.round(task.price * settings.application_fee_percent / 100));
 
     // Fetch fresh worker data for credits check

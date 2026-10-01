@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
 
 /**
  * deductStoryCredits — Deducts credits for a Story task publication.
@@ -27,7 +27,9 @@ Deno.serve(async (req) => {
     }
 
     // Load configurable story cost
-    const settings = await getJobaSettings(base44);
+    // Pricing follows the Brand the TASK belongs to (its own overrides, else Joba24).
+    const storyTasks = await base44.asServiceRole.entities.Task.filter({ id: taskId });
+    const settings = await getBrandMarketplaceSettings(base44, storyTasks?.[0]?.origin_brand_id);
     const STORY_COST = settings.story_cost;
 
     // Fetch fresh credits

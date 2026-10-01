@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useBrand } from '@/lib/brand/BrandProvider';
 
 /**
  * Default values used when no JobaSettings record exists yet.
@@ -25,6 +26,12 @@ export const DEFAULT_JOBA_SETTINGS = {
   guest_access_enabled: true,
 };
 
+/** Pricing keys a Brand is allowed to override (mirrors base44/shared/brandSettings.ts). */
+const BRAND_OVERRIDABLE_KEYS = [
+  'application_fee_percent', 'application_fee_min', 'story_cost',
+  'boost_cost', 'loyalty_reward_percent', 'loyalty_reward_min',
+];
+
 /**
  * useJobaSettings — single hook for reading the admin-configured Joba settings.
  * Returns settings merged over defaults, so every field is always defined.
@@ -41,6 +48,16 @@ export function useJobaSettings() {
     refetchOnWindowFocus: false,
   });
 
-  const settings = { ...DEFAULT_JOBA_SETTINGS, ...(data || {}) };
+  // A Brand may override a small, explicitly listed subset of pricing keys.
+  // Applied here so displayed prices match what the server actually charges.
+  const { effective } = useBrand();
+  const overrides = effective?.marketplace || {};
+  const applied = {};
+  for (const key of BRAND_OVERRIDABLE_KEYS) {
+    const value = Number(overrides[key]);
+    if (Number.isFinite(value) && value >= 0) applied[key] = value;
+  }
+
+  const settings = { ...DEFAULT_JOBA_SETTINGS, ...(data || {}), ...applied };
   return { settings, isLoading };
 }

@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/lib/LanguageContext';
 import { BrandProvider } from '@/lib/brand/BrandProvider';
 import BrandGate from '@/components/BrandGate';
+import BrandTheme from '@/components/BrandTheme';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -110,6 +111,7 @@ const ReferralRedirect = lazyRetry(() => import('@/pages/ReferralRedirect'));
 const AuthCallback = lazyRetry(() => import('@/pages/AuthCallback'));
 const StoreKitStudio = lazyRetry(() => import('@/pages/StoreKitStudio'));
 const DesignPreviewV2 = lazyRetry(() => import('@/pages/DesignPreviewV2'));
+const BrandManager = lazyRetry(() => import('@/pages/BrandManager'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -270,6 +272,7 @@ const AuthenticatedApp = () => {
                 {/* Platform Admin only — same guard as /simulator */}
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/brands/:brandId" element={<BrandManager />} />
                 </Route>
                 <Route path="/admin/agent-referrals" element={<AgentReferralsReport />} />
                 <Route path="/agent-dashboard" element={<AgentDashboard />} />
@@ -309,6 +312,8 @@ function App() {
       <LanguageProvider>
         <BrandProvider>
         <BrandGate>
+        {/* Applies the resolved Brand's colours / favicon / title / language to the surface */}
+        <BrandTheme />
         <AuthProvider>
           <QueryClientProvider client={queryClientInstance}>
             <Router>

@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
-import { getJobaSettings } from '../../shared/jobaSettings.ts';
+import { getBrandMarketplaceSettings } from '../../shared/brandSettings.ts';
 import { getAuthenticatedUser, unauthorized, forbidden } from '../../shared/internalAuth.ts';
 
 /**
@@ -88,7 +88,8 @@ Deno.serve(async (req) => {
     const effectiveCharged = creditsCharged > 0 ? creditsCharged : 1;
 
     // Load configurable loyalty reward settings
-    const settings = await getJobaSettings(base44);
+    // Pricing follows the Brand the TASK belongs to (its own overrides, else Joba24).
+    const settings = await getBrandMarketplaceSettings(base44, task.origin_brand_id);
     const bonus = Math.max(settings.loyalty_reward_min, Math.round(effectiveCharged * settings.loyalty_reward_percent / 100));
 
     // Fetch worker's current balance

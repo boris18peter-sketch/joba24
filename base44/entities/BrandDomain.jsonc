@@ -24,6 +24,16 @@
       ],
       "default": "active",
       "description": "active = resolves to the Brand. pending = registered but not live. disabled = must not resolve."
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Brand Manager: set only after a server-side check confirmed the hostname actually serves this app. A hostname typed into this entity is NEVER shown as connected without it. Activating a domain requires it."
+    },
+    "last_checked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Brand Manager: when the reachability check last ran, whether or not it succeeded."
     }
   },
   "required": [
