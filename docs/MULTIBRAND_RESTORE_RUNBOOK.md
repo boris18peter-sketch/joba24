@@ -13,6 +13,8 @@ Tranzila payments are frozen and **not active in production**.
 
 > **Tranzila payments must NOT be reactivated until Package #3.1A is completed, after the required answers are received from Tranzila support.**
 
+> **Status clarification (2026-10-01, Package #3.1F):** the freeze is **external** — Tranzila has frozen the merchant account and it is **PARKED**. Verified during 3.1F: the Tranzila code path (`BuyCreditsModal` → `PaymentConfirm` → `tranzilaCreatePayment` → `TranzilaIframe`) is present in the published app and is **not** gated by any in-app kill switch; `tranzilaCreatePayment` / `verifyTranzilaPayment` / `checkTranzilaPayment` carry only `auth.me()` (no role gate) and `tranzilaNotify` is unauthenticated. **The freeze therefore rests on Tranzila's side, not on an application control** — recorded so the freeze is not mistaken for code enforcement, and so the 3.1A forge paths are understood to be unreachable only because Tranzila will not process the transaction. No payment flow was modified, tested or activated in 3.1F. `TranzilaPayment` = **17** records (16 pending · 1 completed), unchanged from LKGS-3.1B.
+
 There is **no server-side verification of Tranzila payment authenticity**, and there are **two** independent credit-granting paths that trust client-supplied results:
 
 | Path | Exposure |
@@ -891,6 +893,79 @@ No second rating update and no second loyalty trigger is introduced: `submitRevi
 
 ---
 
+## Package #3.1F — Review Entity Write Lockdown ✅ **IMPLEMENTED**
+
+| | |
+|---|---|
+| **Date** | 2026-10-01 |
+| **Phase** | 3.1F — closes residual risk #1 recorded in Package #3.1E (the entity API itself remained directly writable) |
+| **Status** | **Implemented · build passing.** |
+| **Last Known Good State** | see §LKGS-3.1F |
+| **Production data changed** | **NONE** — configuration only (one RLS rule) |
+
+### Scope (exactly what was approved — no expansion)
+
+`base44/entities/Review.jsonc` — the `create` rule only. No code file changed.
+
+### Change plan (A–H)
+
+| | |
+|---|---|
+| **A. What will change** | The Review `create` rule becomes admin-only. Normal authenticated users can no longer create Review records directly through the entity API. |
+| **B. Files/entities/data affected** | **1 entity file, `rls.create` only.** No code, schema property, `required`, read/update/delete rule, workflow, secret, payment, credit or notification change. |
+| **C. Exact rollback procedure** | Restore `"create": { "data.reviewer_id": "{{user.id}}" }`. |
+| **D. Rollback changes** | Configuration only. |
+| **E. Data loss risk on rollback** | **None.** |
+| **F. Online rollback possible** | Yes — rules apply immediately, no deployment. |
+| **G. Rollback complexity** | **TRIVIAL** — one line. |
+| **H. Verification after rollback** | A normal user can again POST a Review row via the SDK. |
+
+### ⚠️ Critical implementation note — `false` is NOT a valid lockdown
+
+`"create": false` **is not enforced** by the platform. Per the authoritative RLS model, a `false` value means "no one" only on `read` and `delete`; on **`create`/`update` it is treated as open**. The supported way to close a write operation is to point it at whoever should still have access. The approved rule therefore uses `user_condition` admin-only, **not** `false`. This is why the implementation matches the assessment exactly.
+
+### Exact change
+
+```diff
+-    "create": { "data.reviewer_id": "{{user.id}}" },
++    "create": { "user_condition": { "role": "admin" } },
+```
+
+`read` · `update` · `delete` — **byte-identical, untouched.**
+
+### Files changed
+
+| File | Change |
+|---|---|
+| `base44/entities/Review.jsonc` | `rls.create` → admin-only |
+| `docs/MULTIBRAND_RESTORE_RUNBOOK.md` | this record + LKGS-3.1F + Tranzila blocker clarification |
+| `docs/MULTIBRAND_BLUEPRINT.md` | status line + ADR-27 |
+
+### Caller impact — every Review CREATE path
+
+| # | Caller | Scope | After 3.1F |
+|---|---|---|---|
+| 1 | `base44/functions/submitReview/entry.ts:71` | **service-role** | **Unaffected** — service role is not an app-user request, so RLS does not apply |
+| 2 | `src/pages/SimulatorPanel.jsx:609` | user-scoped, **admin token** | **Unaffected** — caller is admin |
+| 3 | `src/pages/SimulatorPanel.jsx:618` | user-scoped, **admin token** | **Unaffected** — caller is admin |
+| 4 | any normal authenticated user via raw SDK | user-scoped | **DENIED** — the objective |
+
+**Required code changes: ZERO.** No backend move was needed for the simulator, because the admin-only rule is satisfied by the admin's own token.
+
+### Behaviour parity
+
+Unchanged: `Review` read/update/delete · all 10 read sites · existing Review records · `submitReview` · `RatingModal` · `CompletionModal` · the admin simulator (both buttons) · the `Push: Review Created` entity trigger · the QA agent (holds `read`+`delete` only, no `create`) · credit/loyalty math.
+
+The only behavioural change is that a non-admin raw-SDK create is refused — which is the purpose of the package.
+
+### Rollback
+
+Restore the single line in `base44/entities/Review.jsonc`:
+`"create": { "data.reviewer_id": "{{user.id}}" }`.
+No data action required.
+
+---
+
 # PART 3 — LAST KNOWN GOOD STATE REGISTRY
 
 ## LKGS-1 — pre-Package #1
@@ -1158,6 +1233,37 @@ No second rating update and no second loyalty trigger is introduced: `submitRevi
 | `CompletionModal` direct create | signed-in user, **no server-side validation** | `reviewee_id`, `role` written straight through |
 
 **To restore to LKGS-3.1E:** perform the rollback in the Package #3.1E record above.
+
+---
+
+## LKGS-3.1F — pre-Package #3.1F
+
+| | |
+|---|---|
+| **Captured** | 2026-10-01, **before** Package #3.1F |
+| **Build result** | **exit 0** |
+| **Deployed source** | `dc3eebe` — "Refactor review submission to server-side authority" (3.1B–3.1E deployed) |
+| **Entities** | 21 |
+| **Brand records** | **1** — id `6abdfc541dc144ca0d91fde9`, slug `joba24`, is_default `true`, status `active` |
+| **Task records** | **272** — 272 attributed, 0 unattributed, 1 distinct `origin_brand_id` |
+| **TaskApplication records** | **123** — 123 attributed, 0 unattributed, 1 distinct `surface_brand_id` |
+| **Review** | **4** — 3 client-role · 1 worker-role · 4/4 reviewer is a party to their task |
+| **Review write paths** | **3** — 1 secured production (`submitReview`, service-role) · 2 admin-only simulator · **0** unvalidated production paths |
+| **Review RLS at capture** | `read` = reviewee \| reviewer \| admin · **`create` = `data.reviewer_id` (open to any authenticated user)** · `update`/`delete` = reviewer \| admin |
+| **RLS coverage** | 5/21 entities (`Brand`, `DemoUser`, `OAuthHandshake`, `Review`, `WorkerStat`) |
+| **TranzilaPayment** | **17** — 16 pending · 1 completed. Unchanged from LKGS-3.1B. Tranzila is **externally frozen/parked by Tranzila** (see blocker section). |
+| **JobaSettings loyalty** | `loyalty_reward_percent` **10** · `loyalty_reward_min` **1** |
+| **Runtime verification (3.1B–3.1E)** | Manual production tests 1–7 **passed** (feed, application, approval, completion, client→worker 5★ review, worker rating update, loyalty reward granted, duplicate protection, worker→client review with no reward, `/simulator` admin-allow / user-deny) |
+
+**Review trust-boundary state at capture:**
+
+| Path | Auth at capture | Relationship inputs trusted from client |
+|---|---|---|
+| `submitReview` | signed-in user, must be a party to the task (3.1D) | none — fully derived |
+| `SimulatorPanel` ×2 | admin only (3.1C route guard) | client-computed, admin-only tooling |
+| any authenticated user via raw SDK | authenticated | **fully client-supplied — the exposure closed by this package** |
+
+**To restore to LKGS-3.1F:** perform the rollback in the Package #3.1F record above.
 
 ---
 
